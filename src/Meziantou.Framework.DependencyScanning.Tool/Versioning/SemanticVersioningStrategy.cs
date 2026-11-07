@@ -56,15 +56,13 @@ internal sealed class SemanticVersioningStrategy : VersioningStrategy
 
     private bool TryParseVersion(string? value, out SemanticVersion? version)
     {
-        value = Normalize(value);
+        version = null;
+
+        // SemanticVersion.TryParse skips a leading 'v' on its own, so stripping it here made no difference
+        // and 'Strict' silently accepted 'v1.0.0'. Rejecting it is what makes the two strategies differ.
+        if (!_allowVPrefix && value is ['v' or 'V', ..])
+            return false;
+
         return SemanticVersion.TryParse(value, out version);
-    }
-
-    private string? Normalize(string? value)
-    {
-        if (_allowVPrefix && value is ['v' or 'V', .. var version])
-            return version;
-
-        return value;
     }
 }

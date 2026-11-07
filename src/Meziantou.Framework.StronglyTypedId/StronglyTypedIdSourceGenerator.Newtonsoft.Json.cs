@@ -72,6 +72,13 @@ public partial class StronglyTypedIdSourceGenerator
                         }
                     }
 
+                    // The object may not contain the 'Value' property, in which case the default value is returned.
+                    // Returning null would throw a NullReferenceException when the id is a value type.
+                    using (writer.BeginBlock("if (!valueRead)"))
+                    {
+                        writer.WriteLine($"return default({context.TypeName});");
+                    }
+
                     writer.WriteLine("return value;");
                 }
 

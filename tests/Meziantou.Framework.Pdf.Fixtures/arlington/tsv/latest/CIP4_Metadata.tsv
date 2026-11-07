@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Metadata]			ISO 21812-1:2019 Table 4
+CIP4_Accounting	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Contact]	
+CIP4_Administrator	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Contact]	
+CIP4_Author	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Contact]	
+CIP4_Conformance	array	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE				[ArrayOfStringsText]	
+CIP4_Creator	string	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE					
+CIP4_JobID	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_ModificationDate	date	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_ProjectID	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Sender	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Contact]	

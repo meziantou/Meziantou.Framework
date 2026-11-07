@@ -63,4 +63,49 @@ public sealed class PathGetDirectoryNameWithFullPathRuleTests : FullPathAnalyzer
 
         await CreateAnalyzerTest<PathGetDirectoryNameWithFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotOfferCodeFix_WhenTheResultIsAStringReceiver()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static int M(FullPath fullPath)
+                    {
+                        return {|MFFP0008:Path.GetDirectoryName(fullPath)|}.Length;
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathGetDirectoryNameWithFullPathAnalyzerType, PathGetDirectoryNameWithFullPathCodeFixProviderType>(source, source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotOfferCodeFix_WhenTheResultInitializesAVar()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        var directory = {|MFFP0008:Path.GetDirectoryName(fullPath)|};
+                        return directory.Replace('a', 'b');
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathGetDirectoryNameWithFullPathAnalyzerType, PathGetDirectoryNameWithFullPathCodeFixProviderType>(source, source).RunAsync(XunitCancellationToken);
+    }
 }

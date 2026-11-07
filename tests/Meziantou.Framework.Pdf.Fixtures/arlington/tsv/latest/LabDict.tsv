@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+WhitePoint	array	1.1		TRUE	FALSE	FALSE				[WhitepointArray]	Table 64
+BlackPoint	array	1.1		FALSE	FALSE	FALSE	[0.0 0.0 0.0]			[BlackpointArray]	
+Range	array	1.1		FALSE	FALSE	FALSE				[LabRangeArray]	

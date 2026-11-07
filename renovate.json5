@@ -3,6 +3,39 @@
   "extends": [
     "github>meziantou/renovate-config"
   ],
+  "customManagers": [
+    {
+      // The shared preset only matches the ImageSource.FromRegistry(...) call, so the image named in the XML
+      // documentation right above it was left behind and drifted (postgres was documented as 17 while the code
+      // created an 18 container). Anchored on the 'using the <c>image:tag</c> image' wording so it cannot match
+      // the illustrative <c>redis:8</c> samples or <c>host:port</c> elsewhere in the documentation.
+      "customType": "regex",
+      "description": "Default container images named in the XML documentation of the ContainerDefinition factory methods",
+      "managerFilePatterns": [
+        "/^src/Meziantou\\.Framework\\.TemporaryContainers/Containers/.*Extensions\\.cs$/"
+      ],
+      "matchStrings": [
+        "using the <c>(?<depName>[^<]+):(?<currentValue>[^<@]+)</c> image"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      // Only the 'references' of docgen.json: the 'packages' are the packages of src/, packed locally before
+      // building the site.
+      "customType": "regex",
+      "description": "NuGet packages referenced by the documentation site (docgen.json)",
+      "managerFilePatterns": [
+        "/^docgen\\.json$/"
+      ],
+      "matchStringsStrategy": "recursive",
+      "matchStrings": [
+        "\"references\"\\s*:\\s*\\[[^\\]]*\\]",
+        "\\{[^}]*\\}",
+        "\"id\"\\s*:\\s*\"(?<depName>[^\"]+)\"\\s*,\\s*\"version\"\\s*:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "nuget"
+    }
+  ],
   "packageRules": [
     {
       "matchPackageNames": [ "/^Microsoft\\.Build\\..*/" ],
@@ -16,6 +49,7 @@
       "matchPackageNames": [
         "Microsoft.CodeAnalysis",
         "Microsoft.CodeAnalysis.Analyzers",
+        "Microsoft.CodeAnalysis.Common",
         "Microsoft.CodeAnalysis.CSharp",
         "Microsoft.CodeAnalysis.CSharp.Workspaces"
       ],
@@ -28,9 +62,19 @@
         "src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj",
         "src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj",
         "src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj",
+        "src/Meziantou.Framework.Iconify.SourceGenerator/Meziantou.Framework.Iconify.SourceGenerator.csproj",
         "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
+        "src/Meziantou.Framework.Roslyn/Meziantou.Framework.Roslyn.csproj",
+        "src/Meziantou.Framework.SnapshotTesting.Roslyn/Meziantou.Framework.SnapshotTesting.Roslyn.csproj",
         "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj",
-        "src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj"
+        "src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj",
+        "src/Meziantou.Framework.TaggedValues.CodeFix/Meziantou.Framework.TaggedValues.CodeFix.csproj",
+        "src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj",
+        "src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj",
+        "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn4_8.csproj",
+        "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_0.csproj",
+        "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_3.csproj",
+        "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_6.csproj"
       ],
       "groupName": "roslyn-analyzers",
       "enabled": false
@@ -62,9 +106,42 @@
       "enabled": false
     },
     {
+      "matchPackageNames": [ "Microsoft.OpenApi" ],
+      "matchFileNames": [
+        "src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj"
+      ],
+      "matchUpdateTypes": [ "major" ],
+      "enabled": false
+    },
+    {
       "matchPackageNames": [ "Microsoft.Windows.CsWin32" ],
       "groupName": "cswin32",
       "enabled": true
+    },
+    {
+      "matchFileNames": [
+        "tests/Meziantou.Framework.SyntaxHighlighting.Tests/DockerfileHighlighterTests.cs"
+      ],
+      "enabled": false
+    },
+    {
+      // The client must have the major and minor versions of PlaywrightServer.PlaywrightVersion: the
+      // update-playwright-scripts.yml workflow updates them together with the vendored scripts of Playwright
+      "matchPackageNames": [ "Microsoft.Playwright" ],
+      "matchFileNames": [
+        "tests/Meziantou.Framework.WebPlatform.Playwright.Tests/Meziantou.Framework.WebPlatform.Playwright.Tests.csproj",
+        "samples/Meziantou.Framework.WebPlatform.Playwright.Samples/Meziantou.Framework.WebPlatform.Playwright.Samples.csproj"
+      ],
+      "enabled": false
+    },
+    {
+      // The expected results of the workloads come from Chromium: a new version of a package or of Playwright needs them
+      // regenerated (see the readme of the project), which Renovate cannot do
+      "matchFileNames": [
+        "tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package.json",
+        "tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/generator/package.json"
+      ],
+      "enabled": false
     }
   ]
 }

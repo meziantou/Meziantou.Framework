@@ -3,13 +3,15 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>3.0.5</Version>
+    <Version>3.0.28</Version>
     <Description>Find dependencies in source files. Support multiple package managers such as NuGet, npm, Docker, PyPi, and so on</Description>
+    <PackageTags>dependencies, scanner, nuget, npm, docker, pypi, dependency-update</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
   </ItemGroup>

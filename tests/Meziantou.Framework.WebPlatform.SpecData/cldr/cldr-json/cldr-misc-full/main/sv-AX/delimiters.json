@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sv-AX": {
+      "identity": {
+        "language": "sv",
+        "territory": "AX"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

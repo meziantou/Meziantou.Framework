@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	array	1.5		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(*)>0)]	[ArrayOfOptContentGroups]	Table 99 and https://github.com/pdf-association/pdf-issues/issues/225

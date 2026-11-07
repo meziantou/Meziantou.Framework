@@ -1,0 +1,3 @@
+maction > :not(:first-child) {
+  display: none;
+}

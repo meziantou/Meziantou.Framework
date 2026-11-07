@@ -8,11 +8,11 @@ public sealed class HarCookie
 {
     /// <summary>Gets or sets the name of the cookie.</summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; } = "";
+    public string? Name { get; set; } = "";
 
     /// <summary>Gets or sets the cookie value.</summary>
     [JsonPropertyName("value")]
-    public string Value { get; set; } = "";
+    public string? Value { get; set; } = "";
 
     /// <summary>Gets or sets the path pertaining to the cookie.</summary>
     [JsonPropertyName("path")]

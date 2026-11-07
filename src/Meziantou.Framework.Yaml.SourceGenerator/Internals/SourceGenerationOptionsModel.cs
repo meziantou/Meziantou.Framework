@@ -7,11 +7,12 @@ internal sealed class SourceGenerationOptionsModel
 {
     public bool? WriteIndented { get; set; }
     public int? IndentSize { get; set; }
+    public bool? IndentBlockSequences { get; set; }
+    public string? StringStyle { get; set; }
     public bool? PropertyNameCaseInsensitive { get; set; }
     public bool? IncludeFields { get; set; }
     public bool? IgnoreReadOnlyFields { get; set; }
     public bool? IgnoreReadOnlyProperties { get; set; }
-    public bool? RejectUnmatchedProperties { get; set; }
     public bool? RespectRequiredConstructorParameters { get; set; }
     public bool? RespectNullableAnnotations { get; set; }
     public string? DefaultIgnoreCondition { get; set; }
@@ -33,17 +34,19 @@ internal sealed class SourceGenerationOptionsModel
     public string? DiscriminatorStyle { get; set; }
     public string? TypeDiscriminatorPropertyName { get; set; }
     public string? UnknownDerivedTypeHandling { get; set; }
+    public bool? InferClosedTypePolymorphism { get; set; }
     public ImmutableArray<ITypeSymbol> ConverterTypes { get; set; } = ImmutableArray<ITypeSymbol>.Empty;
 
     public void ApplyFrom(SourceGenerationOptionsModel other)
     {
         if (other.WriteIndented.HasValue) WriteIndented = other.WriteIndented;
         if (other.IndentSize.HasValue) IndentSize = other.IndentSize;
+        if (other.IndentBlockSequences.HasValue) IndentBlockSequences = other.IndentBlockSequences;
+        if (!string.IsNullOrEmpty(other.StringStyle)) StringStyle = other.StringStyle;
         if (other.PropertyNameCaseInsensitive.HasValue) PropertyNameCaseInsensitive = other.PropertyNameCaseInsensitive;
         if (other.IncludeFields.HasValue) IncludeFields = other.IncludeFields;
         if (other.IgnoreReadOnlyFields.HasValue) IgnoreReadOnlyFields = other.IgnoreReadOnlyFields;
         if (other.IgnoreReadOnlyProperties.HasValue) IgnoreReadOnlyProperties = other.IgnoreReadOnlyProperties;
-        if (other.RejectUnmatchedProperties.HasValue) RejectUnmatchedProperties = other.RejectUnmatchedProperties;
         if (other.RespectRequiredConstructorParameters.HasValue) RespectRequiredConstructorParameters = other.RespectRequiredConstructorParameters;
         if (other.RespectNullableAnnotations.HasValue) RespectNullableAnnotations = other.RespectNullableAnnotations;
         if (!string.IsNullOrEmpty(other.DefaultIgnoreCondition)) DefaultIgnoreCondition = other.DefaultIgnoreCondition;
@@ -65,6 +68,7 @@ internal sealed class SourceGenerationOptionsModel
         if (!string.IsNullOrEmpty(other.DiscriminatorStyle)) DiscriminatorStyle = other.DiscriminatorStyle;
         if (other.TypeDiscriminatorPropertyName is not null) TypeDiscriminatorPropertyName = other.TypeDiscriminatorPropertyName;
         if (!string.IsNullOrEmpty(other.UnknownDerivedTypeHandling)) UnknownDerivedTypeHandling = other.UnknownDerivedTypeHandling;
+        if (other.InferClosedTypePolymorphism.HasValue) InferClosedTypePolymorphism = other.InferClosedTypePolymorphism;
         if (!other.ConverterTypes.IsDefaultOrEmpty) ConverterTypes = other.ConverterTypes;
     }
 }

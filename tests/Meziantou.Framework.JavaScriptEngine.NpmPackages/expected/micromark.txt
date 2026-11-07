@@ -1,0 +1,104 @@
+<h1>Release notes</h1>
+<p>Version <strong>2.0</strong> brings <em>many</em> changes:</p>
+<ul>
+<li><input type="checkbox" disabled="" checked="" /> Faster parser</li>
+<li><input type="checkbox" disabled="" /> Better errors</li>
+<li>Links: <a href="https://example.com">https://example.com</a> and <a href="https://example.com/docs" title="Docs">docs</a></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Feature</th>
+<th align="right">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">tables</td>
+<td align="right">✅</td>
+</tr>
+<tr>
+<td align="left"><del>old</del></td>
+<td align="right">removed</td>
+</tr>
+</tbody>
+</table>
+<p>Here is a footnote<sup><a href="#user-content-fn-note" id="user-content-fnref-note" data-footnote-ref="" aria-describedby="footnote-label">1</a></sup>.</p>
+<pre><code class="language-js">console.log(&quot;hi&quot;);
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>
+Quoted &lt;span&gt;html&lt;/span&gt; &amp; entities ©.</p>
+</blockquote>
+<section data-footnotes="" class="footnotes"><h2 id="footnote-label" class="sr-only">Footnotes</h2>
+<ol>
+<li id="user-content-fn-note">
+<p>The footnote. <a href="#user-content-fnref-note" data-footnote-backref="" aria-label="Back to reference 1" class="data-footnote-backref">↩</a></p>
+</li>
+</ol>
+</section>
+----
+<h1>Release notes</h1>
+<p>Version <strong>2.0</strong> brings <em>many</em> changes:</p>
+<ul>
+<li>[x] Faster parser</li>
+<li>[ ] Better errors</li>
+<li>Links: https://example.com and <a href="https://example.com/docs" title="Docs">docs</a></li>
+</ul>
+<p>| Feature | Status |
+| :------ | -----: |
+| tables  | ✅ |
+| ~~old~~ | removed |</p>
+<p>Here is a footnote[^note].</p>
+<pre><code class="language-js">console.log(&quot;hi&quot;);
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>
+Quoted <span>html</span> &amp; entities ©.</p>
+</blockquote>
+<p>[^note]: The footnote.</p>
+
+----
+root@1 heading@1 text@1 paragraph@3 text@3 strong@3 text@3 text@3 emphasis@3 text@3 text@3 list@5 listItem@5 paragraph@5 text@5 listItem@6 paragraph@6 text@6 listItem@7 paragraph@7 text@7 link@7 text@7 text@7 linkReference@7 text@7 table@9 tableRow@9 tableCell@9 text@9 tableCell@9 text@9 tableRow@11 tableCell@11 text@11 tableCell@11 text@11 tableRow@12 tableCell@12 delete@12 text@12 tableCell@12 text@12 paragraph@14 text@14 footnoteReference@14 text@14 code@16 blockquote@20 paragraph@20 strong@20 text@20 text@20 html@21 text@21 html@21 text@21 definition@23 footnoteDefinition@24 paragraph@24 text@24
+----
+<h2>Release notes</h2>
+<p>Version <strong>2.0</strong> brings <em>many</em> changes:</p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" checked disabled> Faster parser</li>
+<li class="task-list-item"><input type="checkbox" disabled> Better errors</li>
+<li>Links: <a href="https://example.com">https://example.com</a> and <a href="https://example.com/docs" title="Docs">docs</a></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Feature</th>
+<th align="right">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">tables</td>
+<td align="right">✅</td>
+</tr>
+<tr>
+<td align="left"><del>old</del></td>
+<td align="right">removed</td>
+</tr>
+</tbody>
+</table>
+<p>Here is a footnote<sup><a href="#user-content-fn-note" id="user-content-fnref-note" data-footnote-ref aria-describedby="footnote-label">1</a></sup>.</p>
+<pre><code class="language-js">console.log("hi");
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>
+Quoted <span>html</span> &#x26; entities ©.</p>
+</blockquote>
+<section data-footnotes class="footnotes"><h2 class="sr-only" id="footnote-label">Footnotes</h2>
+<ol>
+<li id="user-content-fn-note">
+<p>The footnote. <a href="#user-content-fnref-note" data-footnote-backref="" aria-label="Back to reference 1" class="data-footnote-backref">↩</a></p>
+</li>
+</ol>
+</section>
+----
+<p class="a b" data-x="1" hidden>&#x3C;&#x26;></p>

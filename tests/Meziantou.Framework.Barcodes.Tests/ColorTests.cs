@@ -1,0 +1,108 @@
+namespace Meziantou.Framework.Barcodes.Tests;
+
+public class ColorTests
+{
+    [Theory]
+    [InlineData("rgba(255,0,0,1)", 255, 255, 0, 0)]
+    [InlineData("rgba(0,0,0,1)", 255, 0, 0, 0)]
+    [InlineData("rgba(255,0,0,0)", 0, 255, 0, 0)]
+    [InlineData("rgba(17,34,51,0.5)", 128, 17, 34, 51)]
+    [InlineData("rgba(17,34,51,0.502)", 128, 17, 34, 51)]
+    [InlineData("rgba(1,2,3,0.25)", 64, 1, 2, 3)]
+    [InlineData("rgba(1,2,3,.5)", 128, 1, 2, 3)]
+    public void Parse_Rgba_TreatsAlphaAsAFraction(string value, byte alpha, byte red, byte green, byte blue)
+    {
+        var color = Color.Parse(value);
+
+        Assert.Equal(Color.FromArgb(alpha, red, green, blue), color);
+    }
+
+    [Theory]
+    [InlineData("rgba(0,0,0,2)")]
+    [InlineData("rgba(0,0,0,255)")]
+    [InlineData("rgba(0,0,0,-1)")]
+    [InlineData("rgba(0,0,0,abc)")]
+    public void TryParse_RgbaWithAlphaOutsideZeroToOne_Fails(string value)
+    {
+        Assert.False(Color.TryParse(value, out _));
+    }
+
+    [Fact]
+    public void Parse_RgbaWithAlphaOne_IsOpaque()
+    {
+        // rgba(r,g,b,1) is the most common way to write an opaque colour. Parsing the 1 as a
+        // 0-255 byte produced a colour that is 99.6% transparent, which renders an invisible
+        // QR code with no error raised anywhere.
+        Assert.Equal(Color.Black, Color.Parse("rgba(0,0,0,1)"));
+        Assert.Equal("#000000", Color.Parse("rgba(0,0,0,1)").ToCssString());
+    }
+
+    [Theory]
+    [InlineData("rgb(255,0,0)", 255, 0, 0)]
+    [InlineData("rgb(1, 2, 3)", 1, 2, 3)]
+    public void Parse_Rgb_IsOpaque(string value, byte red, byte green, byte blue)
+    {
+        Assert.Equal(Color.FromRgb(red, green, blue), Color.Parse(value));
+    }
+
+    [Theory]
+    [InlineData("#f00", 255, 255, 0, 0)]
+    [InlineData("#8f00", 136, 255, 0, 0)]
+    [InlineData("#ff0000", 255, 255, 0, 0)]
+    [InlineData("#80ff0000", 128, 255, 0, 0)]
+    public void Parse_Hex(string value, byte alpha, byte red, byte green, byte blue)
+    {
+        Assert.Equal(Color.FromArgb(alpha, red, green, blue), Color.Parse(value));
+    }
+
+    [Theory]
+    [InlineData("#000000")]
+    [InlineData("#80ff0000")]
+    [InlineData("rgba(17,34,51,0.502)")]
+    public void ToCssString_RoundTripsThroughParse(string value)
+    {
+        var color = Color.Parse(value);
+
+        Assert.Equal(color, Color.Parse(color.ToCssString()));
+    }
+
+    [Theory]
+    [InlineData("rgb(1,,2,3)")]
+    [InlineData("rgb(,1,2,3)")]
+    [InlineData("rgb(1,2,3,)")]
+    [InlineData("rgb(1, ,2)")]
+    [InlineData("rgb(1,2,)")]
+    [InlineData("rgb(,)")]
+    [InlineData("rgba(1,,2,3,0.5)")]
+    [InlineData("rgba(1,2,3,0.5,)")]
+    [InlineData("rgba(,1,2,3,0.5)")]
+    [InlineData("rgba(1,2,,0.5)")]
+    public void TryParse_FunctionWithEmptyComponent_Fails(string value)
+    {
+        Assert.False(Color.TryParse(value, out _));
+        Assert.Throws<ArgumentException>(() => Color.Parse(value));
+    }
+
+    [Fact]
+    public void Parse_InvalidValue_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => Color.Parse("not a color"));
+    }
+    [Fact]
+    public void Documentation_ParseColors()
+    {
+        #region Color_Parse
+        Assert.Equal(Color.FromRgb(0x1e, 0x3a, 0x8a), Color.Parse("#1e3a8a"));
+        Assert.Equal(Color.FromRgb(0x11, 0x22, 0x33), Color.Parse("#123"));
+        Assert.Equal(Color.FromRgb(239, 246, 255), Color.Parse("rgb(239, 246, 255)"));
+
+        // The alpha comes first in the hexadecimal forms, and is a fraction in rgba()
+        Assert.Equal(Color.FromArgb(0x80, 0x00, 0x00, 0x00), Color.Parse("#80000000"));
+        Assert.Equal(Color.FromArgb(128, 0, 0, 0), Color.Parse("rgba(0, 0, 0, 0.5)"));
+
+        Assert.False(Color.TryParse("navy", out _)); // no color names
+        Assert.Equal("rgba(0,0,0,0.502)", Color.FromArgb(128, 0, 0, 0).ToCssString());
+        #endregion
+    }
+
+}

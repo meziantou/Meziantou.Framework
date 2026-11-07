@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3	2.0	FALSE	FALSE	FALSE		[SpiderContentSet]			Table 388 and Table 389
+S	name	1.3	2.0	TRUE	FALSE	FALSE		[SPS]			
+ID	string-byte	1.3	2.0	TRUE	FALSE	FALSE					
+O	array	1.3	2.0	TRUE	FALSE	FALSE				[ArrayOfWebCapturePages]	
+SI	array;dictionary	1.3	2.0	TRUE	FALSE	FALSE				[ArrayOfSourceInformation];[SourceInformation]	
+CT	string-ascii	1.3	2.0	FALSE	FALSE	FALSE					shall conform to the content type specification described in Internet RFC 2045
+TS	date	1.3	2.0	FALSE	FALSE	FALSE					
+T	string-text	1.3	2.0	FALSE	FALSE	FALSE					
+TID	string-byte	1.3	2.0	FALSE	FALSE	FALSE					

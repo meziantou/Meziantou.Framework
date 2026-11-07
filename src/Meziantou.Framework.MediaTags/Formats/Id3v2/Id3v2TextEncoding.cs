@@ -78,12 +78,15 @@ internal static class Id3v2TextEncoding
         if (data.Length < 2)
             return string.Empty;
 
-        // Check BOM
-        var encoding = data[0] == 0xFE && data[1] == 0xFF
-            ? Encoding.BigEndianUnicode
-            : Encoding.Unicode;
+        // The spec requires a BOM, but taggers do write encoding 0x01 without one. The two bytes may only be
+        // skipped when they really are a BOM: skipping them unconditionally eats the first character.
+        var isBigEndianBom = data[0] == 0xFE && data[1] == 0xFF;
+        var isLittleEndianBom = data[0] == 0xFF && data[1] == 0xFE;
 
-        return encoding.GetString(TrimNulls(data[2..], 2));
+        var encoding = isBigEndianBom ? Encoding.BigEndianUnicode : Encoding.Unicode;
+        var text = isBigEndianBom || isLittleEndianBom ? data[2..] : data;
+
+        return encoding.GetString(TrimNulls(text, 2));
     }
 
     private static ReadOnlySpan<byte> TrimNulls(ReadOnlySpan<byte> data, int nullSize)

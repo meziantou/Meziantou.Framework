@@ -28,12 +28,21 @@ internal static partial class Program
         var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids") { Description = "List of rule ids to exclude from analysis", CustomParser = ParseIntValues };
         var githubTokenOptions = new Option<string?>("--github-token") { Description = "GitHub token to authenticate requests" };
         var onlyReportErrorsOptions = new Option<bool>("--only-report-errors") { Description = "Only report errors on the output" };
+        var maxParallelismOptions = new Option<int?>("--max-parallelism") { Description = "Maximum number of packages to validate concurrently (default: number of processors)" };
+        maxParallelismOptions.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<int?>() is <= 0)
+            {
+                result.AddError("--max-parallelism must be greater than 0");
+            }
+        });
         rootCommand.Arguments.Add(pathsArgument);
         rootCommand.Options.Add(rulesOptions);
         rootCommand.Options.Add(excludedRulesOptions);
         rootCommand.Options.Add(excludedRuleIdsOptions);
         rootCommand.Options.Add(githubTokenOptions);
         rootCommand.Options.Add(onlyReportErrorsOptions);
+        rootCommand.Options.Add(maxParallelismOptions);
         rootCommand.SetAction(async (parseResult, cancellationToken) =>
         {
             var paths = parseResult.GetValue(pathsArgument);
@@ -50,6 +59,13 @@ internal static partial class Program
             if (includedRules is null || includedRules.Length == 0)
             {
                 foreach (var rule in NuGetPackageValidationRules.Default)
+                {
+                    options.Rules.Add(rule);
+                }
+            }
+            else
+            {
+                foreach (var rule in includedRules)
                 {
                     options.Rules.Add(rule);
                 }
@@ -82,34 +98,44 @@ internal static partial class Program
                     if (host is null)
                         return;
 
-                    if (host.EndsWith("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase))
+                    if (IsGitHubRawHost(host))
                     {
                         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", githubToken);
                     }
                 };
             }
 
-            var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths is null ? 0 : paths.Length, StringComparer.Ordinal);
-            if (paths is not null)
+            // FullPath knows whether the file system is case-sensitive, a plain string comparison does not
+            var packagePaths = paths.Select(path => FullPath.FromPath(path)).Distinct().ToArray();
+            var packageResults = new NuGetPackageValidationResult[packagePaths.Length];
+            var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
+            if (parseResult.GetValue(maxParallelismOptions) is { } maxParallelism)
             {
-                foreach (var path in paths)
+                parallelOptions.MaxDegreeOfParallelism = maxParallelism;
+            }
+
+            await Parallel.ForEachAsync(Enumerable.Range(0, packagePaths.Length), parallelOptions, async (index, cancellationToken) =>
+            {
+                packageResults[index] = await NuGetPackageValidator.ValidateAsync(packagePaths[index], options, cancellationToken).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+            // Report packages in the order they were provided, whatever the order in which their validation completed
+            var reportedResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: packagePaths.Length, StringComparer.Ordinal);
+            for (var i = 0; i < packagePaths.Length; i++)
+            {
+                if (!packageResults[i].IsValid || !onlyReportErrors)
                 {
-                    var packagePath = FullPath.FromPath(path);
-                    if (packageResults.ContainsKey(packagePath))
-                        continue;
-
-                    var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, cancellationToken).ConfigureAwait(false);
-
-                    if (!packageResult.IsValid || !onlyReportErrors)
-                        packageResults.Add(packagePath, packageResult);
+                    reportedResults.Add(packagePaths[i], packageResults[i]);
                 }
             }
 
-            var result = new Result(packageResults);
+            var result = new Result(reportedResults);
 
             var jsonOptions = new JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                RespectNullableAnnotations = true,
+                RespectRequiredConstructorParameters = true,
                 TypeInfoResolver = ResultContext.Default,
                 WriteIndented = true,
             };
@@ -126,6 +152,16 @@ internal static partial class Program
         var invocationConfiguration = new InvocationConfiguration();
         configure?.Invoke(invocationConfiguration);
         return rootCommand.Parse(args).InvokeAsync(invocationConfiguration);
+    }
+
+    /// <summary>Checks the host is raw.githubusercontent.com or one of its subdomains. A plain EndsWith would also
+    /// match a host such as "notraw.githubusercontent.com".</summary>
+    internal static bool IsGitHubRawHost(string host)
+    {
+        const string GitHubRawHost = "raw.githubusercontent.com";
+
+        return string.Equals(host, GitHubRawHost, StringComparison.OrdinalIgnoreCase)
+            || host.EndsWith("." + GitHubRawHost, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string GetRulesDescription()
@@ -205,7 +241,9 @@ internal static partial class Program
     [JsonSourceGenerationOptions(
        GenerationMode = JsonSourceGenerationMode.Serialization | JsonSourceGenerationMode.Metadata,
        WriteIndented = true,
-       DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
+       DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+       RespectNullableAnnotations = true,
+       RespectRequiredConstructorParameters = true)]
     [JsonSerializable(typeof(Result))]
     private sealed partial class ResultContext : JsonSerializerContext
     {

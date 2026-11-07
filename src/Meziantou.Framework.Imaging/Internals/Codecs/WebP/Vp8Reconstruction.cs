@@ -1,0 +1,945 @@
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>
+/// VP8 intra prediction and residual reconstruction of one macroblock (RFC 6386 section 12), shared by the decoder and the
+/// encoder's reconstruction loop: the 16x16 luma and 8x8 chroma modes (DC, V, H, TM) and the ten 4x4 sub-block modes.
+/// </summary>
+/// <remarks>
+/// Pixels outside the frame are 127 above the first row (including the above-left corner of the first row) and 129 left of
+/// the first column. DC prediction of whole macroblocks averages only the available edges (128 without any). Sub-blocks of
+/// the right column read their above-right pixels from the macroblock row above (for every sub-block row); on the last
+/// macroblock of a row they repeat the last above pixel, and on the first row they are 127.
+/// <para>
+/// With 128-bit hardware vectors, TrueMotion adds the signed row offset with unsigned saturation (one row of a whole block,
+/// or a whole sub-block, per vector), and the other sub-block modes pick their 16 pixels from the 3-tap and 2-tap averages
+/// of the edge computed once per sub-block; the results are the ones of the scalar reference
+/// (<see cref="PredictBlockScalar"/>, <see cref="PredictSubBlockScalar"/>).
+/// </para>
+/// </remarks>
+internal static class Vp8Reconstruction
+{
+    /// <summary>The length of an edge passed to <see cref="PredictSubBlock(ReadOnlySpan{byte}, int, Span{byte})"/>: 13 pixels and 3 bytes of padding for a vector load.</summary>
+    public const int SubBlockEdgeLength = 16;
+
+    /// <summary>Predicts the macroblock and adds the residuals of its 24 blocks (luma blocks 0-15, U 16-19, V 20-23).</summary>
+    /// <param name="planes">The planes being reconstructed.</param>
+    /// <param name="mbX">The macroblock column.</param>
+    /// <param name="mbY">The macroblock row.</param>
+    /// <param name="mbWidth">The number of macroblocks in a row.</param>
+    /// <param name="yMode">The luma mode.</param>
+    /// <param name="subModes">The 16 sub-block modes of a B_PRED macroblock.</param>
+    /// <param name="uvMode">The chroma mode.</param>
+    /// <param name="coefficients">The dequantized coefficients of the 24 blocks.</param>
+    /// <param name="blocksWithCoefficients">Bit <c>i</c> is clear when every coefficient of block <c>i</c> is zero (no residual).</param>
+    /// <param name="blocksWithAc">Bit <c>i</c> is clear when every coefficient of block <c>i</c> but the DC is zero.</param>
+    /// <param name="lumaOrigin">The frame row of the first luma row of the planes (a multiple of 8; <c>lumaOrigin / 2</c> for chroma).</param>
+    public static void ReconstructMacroblock(Vp8Planes planes, int mbX, int mbY, int mbWidth, int yMode, ReadOnlySpan<byte> subModes, int uvMode, ReadOnlySpan<short> coefficients, uint blocksWithCoefficients, uint blocksWithAc, int lumaOrigin)
+    {
+        var y = planes.Y;
+        var yStride = planes.YStride;
+        var yOffset = (((mbY * 16) - lumaOrigin) * yStride) + (mbX * 16);
+        if (yMode == Vp8Tables.BPred)
+        {
+            Span<byte> aboveRight = stackalloc byte[4];
+            GetMacroblockAboveRight(y, yStride, yOffset, mbX, mbY, mbWidth, aboveRight);
+            var aboveRightPixels = BinaryPrimitives.ReadUInt32LittleEndian(aboveRight);
+            for (var by = 0; by < 4; by++)
+            {
+                for (var bx = 0; bx < 4; bx++)
+                {
+                    var offset = yOffset + (by * 4 * yStride) + (bx * 4);
+                    var px = (mbX * 16) + (bx * 4);
+                    var py = (mbY * 16) + (by * 4);
+                    var index = (by * 4) + bx;
+                    if (UseVectors && px > 0 && py > 0)
+                    {
+                        ReconstructSubBlockVector(y, yStride, offset, bx == 3, aboveRightPixels, subModes[index], coefficients, index, blocksWithCoefficients, blocksWithAc);
+                        continue;
+                    }
+
+                    PredictSubBlock(y, yStride, offset, px, py, bx == 3 ? aboveRight : default, subModes[index]);
+                    AddResidual(coefficients, index, y[offset..], yStride, blocksWithCoefficients, blocksWithAc);
+                }
+            }
+        }
+        else if (UseVectors && (blocksWithAc & 0xFFFF) == 0)
+        {
+            PredictLumaWithDcResiduals(y, yStride, yOffset, mbX, mbY, yMode, coefficients);
+        }
+        else
+        {
+            PredictBlock(y, yStride, yOffset, 16, mbX, mbY, yMode);
+            for (var index = 0; index < 16; index++)
+            {
+                var offset = yOffset + ((index >> 2) * 4 * yStride) + ((index & 3) * 4);
+                AddResidual(coefficients, index, y[offset..], yStride, blocksWithCoefficients, blocksWithAc);
+            }
+        }
+
+        var uvStride = planes.UVStride;
+        var uvOffset = (((mbY * 8) - (lumaOrigin / 2)) * uvStride) + (mbX * 8);
+        if (UseVectors && (blocksWithAc & 0xFF0000) == 0)
+        {
+            PredictChromaWithDcResiduals(planes.U, planes.V, uvStride, uvOffset, mbX, mbY, uvMode, coefficients);
+            return;
+        }
+
+        for (var plane = 0; plane < 2; plane++)
+        {
+            var data = plane == 0 ? planes.U : planes.V;
+            PredictBlock(data, uvStride, uvOffset, 8, mbX, mbY, uvMode);
+            for (var block = 0; block < 4; block++)
+            {
+                var offset = uvOffset + ((block >> 1) * 4 * uvStride) + ((block & 1) * 4);
+                var index = 16 + (plane * 4) + block;
+                AddResidual(coefficients, index, data[offset..], uvStride, blocksWithCoefficients, blocksWithAc);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Predicts a sub-block inside the frame (not on its first row or column) and adds its residual, the 16 pixels in one
+    /// vector: the result of <see cref="PredictSubBlock(Span{byte}, int, int, int, int, ReadOnlySpan{byte}, int)"/> followed by
+    /// the inverse transform of the block, written once.
+    /// </summary>
+    /// <param name="plane">The luma plane.</param>
+    /// <param name="stride">The plane row length.</param>
+    /// <param name="offset">The offset of the sub-block's top-left pixel, below the first row and right of the first column.</param>
+    /// <param name="rightColumn">Whether the sub-block is in the right column of its macroblock (its above-right pixels are <paramref name="aboveRight"/>).</param>
+    /// <param name="aboveRight">The 4 above-right pixels of the right column of the macroblock (little-endian).</param>
+    /// <param name="mode">The sub-block mode.</param>
+    /// <param name="coefficients">The dequantized coefficients of the macroblock.</param>
+    /// <param name="index">The block index (0-15).</param>
+    /// <param name="blocksWithCoefficients">Bit <c>i</c> is clear when every coefficient of block <c>i</c> is zero.</param>
+    /// <param name="blocksWithAc">Bit <c>i</c> is clear when every coefficient of block <c>i</c> but the DC is zero.</param>
+    private static void ReconstructSubBlockVector(Span<byte> plane, int stride, int offset, bool rightColumn, uint aboveRight, int mode, ReadOnlySpan<short> coefficients, int index, uint blocksWithCoefficients, uint blocksWithAc)
+    {
+        // The edge L3, L2, L1, L0, P, A0 ... A7 in lanes 0 to 12 (the lanes 13-15 are not used), from loads of the 4 bytes that
+        // a sub-block row was stored with (a wider load across the recent stores of several sub-blocks waits for them)
+        _ = plane.Slice(offset - stride - 1, (4 * stride) + 5);
+        ref var origin = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(plane), offset));
+        ulong left;
+        ulong corner;
+        ulong above;
+        ulong aboveNext;
+        unsafe
+        {
+            left = Unsafe.Add(ref origin, (3 * stride) - 1) | ((uint)Unsafe.Add(ref origin, (2 * stride) - 1) << 8) | ((uint)Unsafe.Add(ref origin, stride - 1) << 16) | ((uint)Unsafe.Add(ref origin, -1) << 24);
+            corner = Unsafe.Add(ref origin, -stride - 1);
+            above = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref origin, -stride));
+            aboveNext = rightColumn ? aboveRight : Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref origin, -stride + 4));
+        }
+
+        var edge = Vector128.Create(left | (corner << 32) | (above << 40), (above >> 24) | (aboveNext << 8)).AsByte();
+        var pixels = PredictSubBlockVector(edge, mode);
+        var bit = 1u << index;
+        if ((blocksWithAc & bit) != 0)
+        {
+            pixels = Vp8Transforms.InverseDctAdd(coefficients.Slice(index * 16, 16), pixels);
+        }
+        else if ((blocksWithCoefficients & bit) != 0)
+        {
+            // The DC-only residual of InverseDctAddDc
+            var dc = (coefficients[index * 16] + 4) >> 3;
+            pixels = Vector128.SubtractSaturate(Vector128.AddSaturate(pixels, Vector128.Create((byte)Math.Clamp(dc, 0, 255))), Vector128.Create((byte)Math.Clamp(-dc, 0, 255)));
+        }
+
+        var rows = pixels.AsUInt32();
+        unsafe
+        {
+            Unsafe.WriteUnaligned(ref origin, rows.ToScalar());
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, stride), rows.GetElement(1));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, 2 * stride), rows.GetElement(2));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, 3 * stride), rows.GetElement(3));
+        }
+    }
+
+    /// <summary>
+    /// Writes the 16x16 luma prediction of a macroblock whose blocks have no AC coefficient, with the DC residuals of its 16
+    /// blocks added: each row is written once.
+    /// </summary>
+    /// <remarks>
+    /// The result is the one of <see cref="PredictBlock(Span{byte}, int, int, int, int, int, int)"/> followed by
+    /// <see cref="Vp8Transforms.InverseDctAddDc"/> on each block (a block without coefficient has a zero DC): the residual
+    /// <c>(dc + 4) &gt;&gt; 3</c> of the 4 blocks of a row of blocks is added to the 16 pixels of a row with unsigned saturation, as
+    /// the addition of its positive part and the subtraction of its negative part (both clamped to 255).
+    /// </remarks>
+    private static void PredictLumaWithDcResiduals(Span<byte> plane, int stride, int offset, int mbX, int mbY, int mode, ReadOnlySpan<short> coefficients)
+    {
+        // The edges of GetEdges, read in place: the row above (127 on the first row), the column on the left (129 on the first
+        // column) and the above-left pixel
+        var start = offset - (mbY > 0 ? stride : 0) - (mbX > 0 ? 1 : 0);
+        _ = plane.Slice(start, offset + (15 * stride) + 16 - start);
+        _ = coefficients[..256];
+        ref var origin = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(plane), offset));
+        var aboveRow = mbY > 0 ? unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref origin, -stride))) : Vector128.Create((byte)127);
+        int aboveLeft = mbY == 0 ? 127 : mbX == 0 ? 129 : unsafe(Unsafe.Add(ref origin, -stride - 1));
+        var prediction = aboveRow;
+        if (mode == Vp8Tables.DcPred)
+        {
+            var leftSum = 0;
+            if (mbX > 0)
+            {
+                for (var y = 0; y < 16; y++)
+                {
+                    leftSum += unsafe(Unsafe.Add(ref origin, (y * stride) - 1));
+                }
+            }
+
+            var value = (mbY > 0, mbX > 0) switch
+            {
+                (true, true) => (SumBytes(aboveRow) + leftSum + 16) >> 5,
+                (true, false) => (SumBytes(aboveRow) + 8) >> 4,
+                (false, true) => (leftSum + 8) >> 4,
+                _ => 128,
+            };
+            prediction = Vector128.Create((byte)value);
+        }
+
+        for (var blockRow = 0; blockRow < 4; blockRow++)
+        {
+            var first = blockRow * 4 * 16;
+            var (add, subtract) = GetDcResiduals(coefficients[first], coefficients[first + 16], coefficients[first + 32], coefficients[first + 48], Vector128.Create((byte)0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3));
+            for (var y = blockRow * 4; y < (blockRow * 4) + 4; y++)
+            {
+                var row = prediction;
+                if (mode is Vp8Tables.HPred or Vp8Tables.TmPred)
+                {
+                    int left = mbX > 0 ? unsafe(Unsafe.Add(ref origin, (y * stride) - 1)) : 129;
+                    row = mode == Vp8Tables.HPred ? Vector128.Create((byte)left) : TrueMotionRow(aboveRow, left - aboveLeft);
+                }
+
+                unsafe { Vector128.SubtractSaturate(Vector128.AddSaturate(row, add), subtract).StoreUnsafe(ref Unsafe.Add(ref origin, y * stride)); }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Writes the 8x8 predictions of the Cb and Cr blocks of a macroblock whose blocks have no AC coefficient, with the DC
+    /// residuals of their blocks added, as <see cref="PredictLumaWithDcResiduals"/>: a row of Cb (the low 8 byte lanes) and
+    /// the row of Cr (the high ones) per vector.
+    /// </summary>
+    private static void PredictChromaWithDcResiduals(Span<byte> u, Span<byte> v, int stride, int offset, int mbX, int mbY, int mode, ReadOnlySpan<short> coefficients)
+    {
+        var start = offset - (mbY > 0 ? stride : 0) - (mbX > 0 ? 1 : 0);
+        _ = u.Slice(start, offset + (7 * stride) + 8 - start);
+        _ = v.Slice(start, offset + (7 * stride) + 8 - start);
+        _ = coefficients[..384];
+        ref var uOrigin = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(u), offset));
+        ref var vOrigin = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(v), offset));
+        const ulong Spread = 0x0101010101010101;
+        var aboveRows = mbY > 0
+            ? Vector128.Create(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref uOrigin, -stride))), unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref vOrigin, -stride)))).AsByte()
+            : Vector128.Create((byte)127);
+        int aboveLeftU = mbY == 0 ? 127 : mbX == 0 ? 129 : unsafe(Unsafe.Add(ref uOrigin, -stride - 1));
+        int aboveLeftV = mbY == 0 ? 127 : mbX == 0 ? 129 : unsafe(Unsafe.Add(ref vOrigin, -stride - 1));
+        var prediction = aboveRows;
+        if (mode == Vp8Tables.DcPred)
+        {
+            var leftSumU = 0;
+            var leftSumV = 0;
+            if (mbX > 0)
+            {
+                for (var y = 0; y < 8; y++)
+                {
+                    leftSumU += unsafe(Unsafe.Add(ref uOrigin, (y * stride) - 1));
+                    leftSumV += unsafe(Unsafe.Add(ref vOrigin, (y * stride) - 1));
+                }
+            }
+
+            var aboveSumU = SumBytes(aboveRows & Vector128.Create(ulong.MaxValue, 0).AsByte());
+            var aboveSumV = SumBytes(aboveRows & Vector128.Create(0, ulong.MaxValue).AsByte());
+            prediction = Vector128.Create((ulong)GetChromaDc(aboveSumU, leftSumU, mbX, mbY) * Spread, (ulong)GetChromaDc(aboveSumV, leftSumV, mbX, mbY) * Spread).AsByte();
+        }
+
+        for (var blockRow = 0; blockRow < 2; blockRow++)
+        {
+            // Blocks 16 + 2 r and 17 + 2 r (Cb), 20 + 2 r and 21 + 2 r (Cr)
+            var first = (16 + (2 * blockRow)) * 16;
+            var (add, subtract) = GetDcResiduals(coefficients[first], coefficients[first + 16], coefficients[first + 64], coefficients[first + 80], Vector128.Create((byte)0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3));
+            for (var y = blockRow * 4; y < (blockRow * 4) + 4; y++)
+            {
+                var row = prediction;
+                if (mode is Vp8Tables.HPred or Vp8Tables.TmPred)
+                {
+                    int leftU = mbX > 0 ? unsafe(Unsafe.Add(ref uOrigin, (y * stride) - 1)) : 129;
+                    int leftV = mbX > 0 ? unsafe(Unsafe.Add(ref vOrigin, (y * stride) - 1)) : 129;
+                    row = mode == Vp8Tables.HPred ? Vector128.Create((ulong)leftU * Spread, (ulong)leftV * Spread).AsByte() : TrueMotionRows(aboveRows, leftU - aboveLeftU, leftV - aboveLeftV);
+                }
+
+                var values = Vector128.SubtractSaturate(Vector128.AddSaturate(row, add), subtract).AsUInt64();
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref uOrigin, y * stride), values.ToScalar()); }
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref vOrigin, y * stride), values.GetElement(1)); }
+            }
+        }
+
+        // The DC prediction of an 8x8 block from the sums of its edges: the rounded average of the available edges, 128 without any
+        static int GetChromaDc(int aboveSum, int leftSum, int mbX, int mbY) => (mbY > 0, mbX > 0) switch
+        {
+            (true, true) => (aboveSum + leftSum + 8) >> 4,
+            (true, false) => (aboveSum + 4) >> 3,
+            (false, true) => (leftSum + 4) >> 3,
+            _ => 128,
+        };
+
+        // The rows of the two 8-pixel blocks: above + (left - above-left) clamped, as in TrueMotionVector
+        static Vector128<byte> TrueMotionRows(Vector128<byte> aboveRows, int deltaU, int deltaV)
+        {
+            var add = Vector128.Create((ulong)Math.Max(deltaU, 0) * Spread, (ulong)Math.Max(deltaV, 0) * Spread).AsByte();
+            var subtract = Vector128.Create((ulong)Math.Max(-deltaU, 0) * Spread, (ulong)Math.Max(-deltaV, 0) * Spread).AsByte();
+            return Vector128.SubtractSaturate(Vector128.AddSaturate(aboveRows, add), subtract);
+        }
+    }
+
+    /// <summary>A row of the TrueMotion prediction: above + delta clamped, as in TrueMotionVector.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> TrueMotionRow(Vector128<byte> aboveRow, int delta)
+        => Vector128.SubtractSaturate(Vector128.AddSaturate(aboveRow, Vector128.Create((byte)Math.Max(delta, 0))), Vector128.Create((byte)Math.Max(-delta, 0)));
+
+    /// <summary>
+    /// The DC residuals <c>(dc + 4) &gt;&gt; 3</c> of 4 blocks as their positive and negative parts clamped to 255, each one spread
+    /// over 4 byte lanes by <paramref name="spread"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> Add, Vector128<byte> Subtract) GetDcResiduals(short dc0, short dc1, short dc2, short dc3, Vector128<byte> spread)
+    {
+        // The residuals in lanes 0-3, their negations in lanes 4-7: (dc + 4) >> 3 is between -4096 and 4095
+        var residuals = Vector128.ShiftRightArithmetic(Vector128.Create(dc0, dc1, dc2, dc3, 0, 0, 0, 0) + Vector128.Create((short)4), 3);
+        residuals = Vector128.ConditionalSelect(Vector128.Create(0, 0, 0, 0, -1, -1, -1, -1), -Vector128.Shuffle(residuals, Vector128.Create((short)0, 1, 2, 3, 0, 1, 2, 3)), residuals);
+        var parts = Vector128.Narrow(Vector128.Min(Vector128.Max(residuals, Vector128<short>.Zero), Vector128.Create((short)255)).AsUInt16(), Vector128<ushort>.Zero);
+        return (Vector128.Shuffle(parts, spread), Vector128.Shuffle(parts, spread + Vector128.Create((byte)4)));
+    }
+
+    private static void AddResidual(ReadOnlySpan<short> coefficients, int index, Span<byte> destination, int stride, uint blocksWithCoefficients, uint blocksWithAc)
+    {
+        var bit = 1u << index;
+        if ((blocksWithAc & bit) != 0)
+        {
+            Vp8Transforms.InverseDctAddFull(coefficients.Slice(index * 16, 16), destination, stride);
+        }
+        else if ((blocksWithCoefficients & bit) != 0)
+        {
+            Vp8Transforms.InverseDctAddDc(coefficients[index * 16], destination, stride);
+        }
+    }
+
+    /// <summary>
+    /// Writes a whole-block prediction (16x16 luma or 8x8 chroma) at <paramref name="offset"/> from the reconstructed
+    /// neighbors in <paramref name="plane"/>.
+    /// </summary>
+    public static void PredictBlock(Span<byte> plane, int stride, int offset, int size, int mbX, int mbY, int mode)
+        => PredictBlock(plane, stride, offset, size, mbX, mbY, mode, UseVectors);
+
+    /// <summary>The scalar reference of <see cref="PredictBlock(Span{byte}, int, int, int, int, int, int)"/>.</summary>
+    internal static void PredictBlockScalar(Span<byte> plane, int stride, int offset, int size, int mbX, int mbY, int mode)
+        => PredictBlock(plane, stride, offset, size, mbX, mbY, mode, useVectors: false);
+
+    private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
+
+    private static void PredictBlock(Span<byte> plane, int stride, int offset, int size, int mbX, int mbY, int mode, bool useVectors)
+    {
+        Span<byte> above = stackalloc byte[16];
+        Span<byte> left = stackalloc byte[16];
+        above = above[..size];
+        left = left[..size];
+        GetEdges(plane, stride, offset, size, mbX, mbY, above, left, out var aboveLeft);
+        if (useVectors && mode != Vp8Tables.TmPred)
+        {
+            PredictBlockVector(plane, stride, offset, size, mbX, mbY, mode, above, left);
+            return;
+        }
+
+        switch (mode)
+        {
+            case Vp8Tables.DcPred:
+            {
+                var shift = size == 16 ? 3 : 2;
+                int value;
+                if (mbY > 0 && mbX > 0)
+                {
+                    value = (Sum(above) + Sum(left) + size) >> (shift + 2);
+                }
+                else if (mbY > 0)
+                {
+                    value = (Sum(above) + (size >> 1)) >> (shift + 1);
+                }
+                else if (mbX > 0)
+                {
+                    value = (Sum(left) + (size >> 1)) >> (shift + 1);
+                }
+                else
+                {
+                    value = 128;
+                }
+
+                for (var y = 0; y < size; y++)
+                {
+                    plane.Slice(offset + (y * stride), size).Fill((byte)value);
+                }
+
+                break;
+            }
+
+            case Vp8Tables.VPred:
+                for (var y = 0; y < size; y++)
+                {
+                    above.CopyTo(plane.Slice(offset + (y * stride), size));
+                }
+
+                break;
+
+            case Vp8Tables.HPred:
+                for (var y = 0; y < size; y++)
+                {
+                    plane.Slice(offset + (y * stride), size).Fill(left[y]);
+                }
+
+                break;
+
+            default:
+                if (useVectors)
+                {
+                    TrueMotionVector(plane, stride, offset, size, above, left, aboveLeft);
+                    break;
+                }
+
+                for (var y = 0; y < size; y++)
+                {
+                    var row = plane.Slice(offset + (y * stride), size);
+                    var delta = left[y] - aboveLeft;
+                    for (var x = 0; x < size; x++)
+                    {
+                        row[x] = Vp8Transforms.ClampByte(above[x] + delta);
+                    }
+                }
+
+                break;
+        }
+    }
+
+    // DC, V and H predictions of a whole block with one store per row (16 bytes, or 8 for chroma), after one check that the
+    // block lies in the plane
+    private static void PredictBlockVector(Span<byte> plane, int stride, int offset, int size, int mbX, int mbY, int mode, ReadOnlySpan<byte> above, ReadOnlySpan<byte> left)
+    {
+        _ = plane.Slice(offset, ((size - 1) * stride) + size);
+        ref var origin = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(plane), offset));
+        if (mode == Vp8Tables.HPred)
+        {
+            for (var y = 0; y < size; y++)
+            {
+                StoreRow(ref origin, y * stride, size, Vector128.Create(left[y]));
+            }
+
+            return;
+        }
+
+        Vector128<byte> row;
+        if (mode == Vp8Tables.VPred)
+        {
+            row = size == 16 ? Vector128.Create(above[..16]) : Vector128.CreateScalar(BinaryPrimitives.ReadUInt64LittleEndian(above[..8])).AsByte();
+        }
+        else
+        {
+            var shift = size == 16 ? 3 : 2;
+            int value;
+            if (mbY > 0 && mbX > 0)
+            {
+                value = (SumVector(above, size) + SumVector(left, size) + size) >> (shift + 2);
+            }
+            else if (mbY > 0)
+            {
+                value = (SumVector(above, size) + (size >> 1)) >> (shift + 1);
+            }
+            else if (mbX > 0)
+            {
+                value = (SumVector(left, size) + (size >> 1)) >> (shift + 1);
+            }
+            else
+            {
+                value = 128;
+            }
+
+            row = Vector128.Create((byte)value);
+        }
+
+        for (var y = 0; y < size; y++)
+        {
+            StoreRow(ref origin, y * stride, size, row);
+        }
+
+        static int SumVector(ReadOnlySpan<byte> values, int size)
+        {
+            var vector = size == 16 ? Vector128.Create(values[..16]) : Vector128.CreateScalar(BinaryPrimitives.ReadUInt64LittleEndian(values[..8])).AsByte();
+            return Vector128.Sum(Vector128.WidenLower(vector)) + Vector128.Sum(Vector128.WidenUpper(vector));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void StoreRow(ref byte origin, int offset, int size, Vector128<byte> row)
+        {
+            if (size == 16)
+            {
+                unsafe { row.StoreUnsafe(ref Unsafe.Add(ref origin, offset)); }
+            }
+            else
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, offset), row.AsUInt64().ToScalar()); }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the above-right pixels of the right sub-block column of a B_PRED macroblock: the four pixels after the macroblock
+    /// on the row above it (127 on the first row; the last above pixel repeated on the last macroblock of a row).
+    /// </summary>
+    public static void GetMacroblockAboveRight(ReadOnlySpan<byte> plane, int stride, int mbX, int mbY, int mbWidth, Span<byte> aboveRight)
+        => GetMacroblockAboveRight(plane, stride, (mbY * 16 * stride) + (mbX * 16), mbX, mbY, mbWidth, aboveRight);
+
+    private static void GetMacroblockAboveRight(ReadOnlySpan<byte> plane, int stride, int macroblockOffset, int mbX, int mbY, int mbWidth, Span<byte> aboveRight)
+    {
+        if (mbY == 0)
+        {
+            aboveRight.Fill(127);
+            return;
+        }
+
+        var above = macroblockOffset - stride;
+        if (mbX == mbWidth - 1)
+        {
+            aboveRight.Fill(plane[above + 15]);
+        }
+        else
+        {
+            plane.Slice(above + 16, 4).CopyTo(aboveRight);
+        }
+    }
+
+    /// <summary>Writes the 4x4 prediction of one sub-block at <paramref name="offset"/> (pixel position <paramref name="px"/>, <paramref name="py"/> in the plane).</summary>
+    /// <param name="plane">The luma plane.</param>
+    /// <param name="stride">The plane row length.</param>
+    /// <param name="offset">The offset of the sub-block's top-left pixel.</param>
+    /// <param name="px">The column of the sub-block's top-left pixel.</param>
+    /// <param name="py">The row of the sub-block's top-left pixel.</param>
+    /// <param name="mode">The sub-block mode.</param>
+    /// <param name="macroblockAboveRight">For the right sub-block column, the macroblock's above-right pixels; otherwise empty (the above-right pixels are read from the plane).</param>
+    public static void PredictSubBlock(Span<byte> plane, int stride, int offset, int px, int py, ReadOnlySpan<byte> macroblockAboveRight, int mode)
+    {
+        Span<byte> e = stackalloc byte[SubBlockEdgeLength];
+        GetSubBlockEdge(plane, stride, offset, px, py, macroblockAboveRight, e);
+        Span<byte> b = stackalloc byte[16];
+        PredictSubBlock(e, mode, b);
+        for (var y = 0; y < 4; y++)
+        {
+            b.Slice(y * 4, 4).CopyTo(plane.Slice(offset + (y * stride), 4));
+        }
+    }
+
+    /// <summary>Gets the 13 edge pixels of a sub-block (see <see cref="PredictSubBlock(Span{byte}, int, int, int, int, ReadOnlySpan{byte}, int)"/>) for <see cref="PredictSubBlock(ReadOnlySpan{byte}, int, Span{byte})"/>.</summary>
+    public static void GetSubBlockEdge(ReadOnlySpan<byte> plane, int stride, int offset, int px, int py, ReadOnlySpan<byte> macroblockAboveRight, Span<byte> e)
+    {
+        // Edge: E[0..3] = L3..L0, E[4] = P (above-left), E[5..8] = A0..A3, E[9..12] = above-right
+        if (px > 0 && py > 0)
+        {
+            // Inside the frame: the above-left, above and above-right pixels are contiguous on the row above
+            e[3] = plane[offset - 1];
+            e[2] = plane[offset + stride - 1];
+            e[1] = plane[offset + (2 * stride) - 1];
+            e[0] = plane[offset + (3 * stride) - 1];
+            if (macroblockAboveRight.IsEmpty)
+            {
+                plane.Slice(offset - stride - 1, 9).CopyTo(e[4..]);
+            }
+            else
+            {
+                plane.Slice(offset - stride - 1, 5).CopyTo(e[4..]);
+                macroblockAboveRight.CopyTo(e[9..]);
+            }
+
+            return;
+        }
+
+        for (var i = 0; i < 4; i++)
+        {
+            e[3 - i] = px > 0 ? plane[offset + (i * stride) - 1] : (byte)129;
+        }
+
+        e[4] = py > 0 ? (px > 0 ? plane[offset - stride - 1] : (byte)129) : (byte)127;
+        for (var i = 0; i < 4; i++)
+        {
+            e[5 + i] = py > 0 ? plane[offset - stride + i] : (byte)127;
+        }
+
+        if (!macroblockAboveRight.IsEmpty)
+        {
+            macroblockAboveRight.CopyTo(e[9..]);
+        }
+        else
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                e[9 + i] = py > 0 ? plane[offset - stride + 4 + i] : (byte)127;
+            }
+        }
+    }
+
+    /// <summary>Computes a 4x4 sub-block prediction from its 13 edge pixels (left bottom-up, above-left, above, above-right).</summary>
+    /// <param name="e">The edge pixels.</param>
+    /// <param name="mode">The sub-block mode.</param>
+    /// <param name="b">The 16 predicted pixels, raster order.</param>
+    public static void PredictSubBlock(ReadOnlySpan<byte> e, int mode, Span<byte> b)
+    {
+        if (UseVectors && e.Length >= SubBlockEdgeLength)
+        {
+            PredictSubBlockVector(e, mode, b);
+        }
+        else
+        {
+            PredictSubBlockScalar(e, mode, b);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="PredictSubBlock(ReadOnlySpan{byte}, int, Span{byte})"/>.</summary>
+    internal static void PredictSubBlockScalar(ReadOnlySpan<byte> e, int mode, Span<byte> b)
+    {
+        // Indexes into e: L0 = 3, L1 = 2, L2 = 1, L3 = 0, P = 4, A0 = 5 ... A7 = 12
+        const int P = 4;
+        switch (mode)
+        {
+            case Vp8Tables.BDcPred:
+            {
+                var sum = 4;
+                for (var i = 0; i < 4; i++)
+                {
+                    sum += e[5 + i] + e[3 - i];
+                }
+
+                b.Fill((byte)(sum >> 3));
+                break;
+            }
+
+            case Vp8Tables.BTmPred:
+                for (var r = 0; r < 4; r++)
+                {
+                    for (var c = 0; c < 4; c++)
+                    {
+                        b[(r * 4) + c] = Vp8Transforms.ClampByte(e[3 - r] + e[5 + c] - e[P]);
+                    }
+                }
+
+                break;
+
+            case Vp8Tables.BVePred:
+                for (var c = 0; c < 4; c++)
+                {
+                    var value = Avg3(e[4 + c], e[5 + c], e[6 + c]);
+                    for (var r = 0; r < 4; r++)
+                    {
+                        b[(r * 4) + c] = value;
+                    }
+                }
+
+                break;
+
+            case Vp8Tables.BHePred:
+            {
+                // Rows: avg3(P, L0, L1), avg3(L0, L1, L2), avg3(L1, L2, L3), avg3(L2, L3, L3)
+                b[..4].Fill(Avg3(e[P], e[3], e[2]));
+                b.Slice(4, 4).Fill(Avg3(e[3], e[2], e[1]));
+                b.Slice(8, 4).Fill(Avg3(e[2], e[1], e[0]));
+                b.Slice(12, 4).Fill(Avg3(e[1], e[0], e[0]));
+
+                break;
+            }
+
+            case Vp8Tables.BLdPred:
+                // Down-left: A[r + c], A[r + c + 1], A[r + c + 2] with A = e[5..12]; the last one repeats A7
+                for (var r = 0; r < 4; r++)
+                {
+                    for (var c = 0; c < 4; c++)
+                    {
+                        var i = r + c;
+                        b[(r * 4) + c] = i == 6 ? Avg3(e[11], e[12], e[12]) : Avg3(e[5 + i], e[6 + i], e[7 + i]);
+                    }
+                }
+
+                break;
+
+            case Vp8Tables.BRdPred:
+                // Down-right along the edge E[0..8] = L3, L2, L1, L0, P, A0, A1, A2, A3
+                for (var r = 0; r < 4; r++)
+                {
+                    for (var c = 0; c < 4; c++)
+                    {
+                        var i = 4 - r + c;
+                        b[(r * 4) + c] = Avg3(e[i - 1], e[i], e[i + 1]);
+                    }
+                }
+
+                break;
+
+            case Vp8Tables.BVrPred:
+                Set(b, 3, 0, Avg3(e[1], e[2], e[3]));
+                Set(b, 2, 0, Avg3(e[2], e[3], e[4]));
+                Set(b, 3, 1, Avg3(e[3], e[4], e[5]));
+                Set(b, 1, 0, Avg3(e[3], e[4], e[5]));
+                Set(b, 2, 1, Avg2(e[4], e[5]));
+                Set(b, 0, 0, Avg2(e[4], e[5]));
+                Set(b, 3, 2, Avg3(e[4], e[5], e[6]));
+                Set(b, 1, 1, Avg3(e[4], e[5], e[6]));
+                Set(b, 2, 2, Avg2(e[5], e[6]));
+                Set(b, 0, 1, Avg2(e[5], e[6]));
+                Set(b, 3, 3, Avg3(e[5], e[6], e[7]));
+                Set(b, 1, 2, Avg3(e[5], e[6], e[7]));
+                Set(b, 2, 3, Avg2(e[6], e[7]));
+                Set(b, 0, 2, Avg2(e[6], e[7]));
+                Set(b, 1, 3, Avg3(e[6], e[7], e[8]));
+                Set(b, 0, 3, Avg2(e[7], e[8]));
+                break;
+
+            case Vp8Tables.BVlPred:
+                // A0..A7 = e[5..12]
+                Set(b, 0, 0, Avg2(e[5], e[6]));
+                Set(b, 1, 0, Avg3(e[5], e[6], e[7]));
+                Set(b, 2, 0, Avg2(e[6], e[7]));
+                Set(b, 0, 1, Avg2(e[6], e[7]));
+                Set(b, 1, 1, Avg3(e[6], e[7], e[8]));
+                Set(b, 3, 0, Avg3(e[6], e[7], e[8]));
+                Set(b, 2, 1, Avg2(e[7], e[8]));
+                Set(b, 0, 2, Avg2(e[7], e[8]));
+                Set(b, 3, 1, Avg3(e[7], e[8], e[9]));
+                Set(b, 1, 2, Avg3(e[7], e[8], e[9]));
+                Set(b, 2, 2, Avg2(e[8], e[9]));
+                Set(b, 0, 3, Avg2(e[8], e[9]));
+                Set(b, 3, 2, Avg3(e[8], e[9], e[10]));
+                Set(b, 1, 3, Avg3(e[8], e[9], e[10]));
+
+                // The last two values do not follow the pattern
+                Set(b, 2, 3, Avg3(e[9], e[10], e[11]));
+                Set(b, 3, 3, Avg3(e[10], e[11], e[12]));
+                break;
+
+            case Vp8Tables.BHdPred:
+                Set(b, 3, 0, Avg2(e[0], e[1]));
+                Set(b, 3, 1, Avg3(e[0], e[1], e[2]));
+                Set(b, 2, 0, Avg2(e[1], e[2]));
+                Set(b, 3, 2, Avg2(e[1], e[2]));
+                Set(b, 2, 1, Avg3(e[1], e[2], e[3]));
+                Set(b, 3, 3, Avg3(e[1], e[2], e[3]));
+                Set(b, 2, 2, Avg2(e[2], e[3]));
+                Set(b, 1, 0, Avg2(e[2], e[3]));
+                Set(b, 2, 3, Avg3(e[2], e[3], e[4]));
+                Set(b, 1, 1, Avg3(e[2], e[3], e[4]));
+                Set(b, 1, 2, Avg2(e[3], e[4]));
+                Set(b, 0, 0, Avg2(e[3], e[4]));
+                Set(b, 1, 3, Avg3(e[3], e[4], e[5]));
+                Set(b, 0, 1, Avg3(e[3], e[4], e[5]));
+                Set(b, 0, 2, Avg3(e[4], e[5], e[6]));
+                Set(b, 0, 3, Avg3(e[5], e[6], e[7]));
+                break;
+
+            default: // B_HU_PRED: L0..L3 = e[3], e[2], e[1], e[0]
+                Set(b, 0, 0, Avg2(e[3], e[2]));
+                Set(b, 0, 1, Avg3(e[3], e[2], e[1]));
+                Set(b, 0, 2, Avg2(e[2], e[1]));
+                Set(b, 1, 0, Avg2(e[2], e[1]));
+                Set(b, 0, 3, Avg3(e[2], e[1], e[0]));
+                Set(b, 1, 1, Avg3(e[2], e[1], e[0]));
+                Set(b, 1, 2, Avg2(e[1], e[0]));
+                Set(b, 2, 0, Avg2(e[1], e[0]));
+                Set(b, 1, 3, Avg3(e[1], e[0], e[0]));
+                Set(b, 2, 1, Avg3(e[1], e[0], e[0]));
+                Set(b, 2, 2, e[0]);
+                Set(b, 2, 3, e[0]);
+                Set(b, 3, 0, e[0]);
+                Set(b, 3, 1, e[0]);
+                Set(b, 3, 2, e[0]);
+                Set(b, 3, 3, e[0]);
+                break;
+        }
+    }
+
+    // TrueMotion of a 16x16 or 8x8 block: above + (left - above-left) clamped, as a saturating addition of the positive part
+    // of the offset and a saturating subtraction of its negative part (one of them is zero)
+    private static void TrueMotionVector(Span<byte> plane, int stride, int offset, int size, ReadOnlySpan<byte> above, ReadOnlySpan<byte> left, int aboveLeft)
+    {
+        if (size == 16)
+        {
+            var aboveRow = Vector128.Create(above);
+            for (var y = 0; y < 16; y++)
+            {
+                var delta = left[y] - aboveLeft;
+                var row = Vector128.SubtractSaturate(Vector128.AddSaturate(aboveRow, Vector128.Create((byte)Math.Max(delta, 0))), Vector128.Create((byte)Math.Max(-delta, 0)));
+                row.CopyTo(plane.Slice(offset + (y * stride), 16));
+            }
+
+            return;
+        }
+
+        // 8x8: two rows per vector
+        var aboveRows = Vector128.Create(BinaryPrimitives.ReadUInt64LittleEndian(above)).AsByte();
+        for (var y = 0; y < 8; y += 2)
+        {
+            var delta0 = left[y] - aboveLeft;
+            var delta1 = left[y + 1] - aboveLeft;
+            var add = Vector128.Create((ulong)Math.Max(delta0, 0) * 0x0101010101010101ul, (ulong)Math.Max(delta1, 0) * 0x0101010101010101ul).AsByte();
+            var subtract = Vector128.Create((ulong)Math.Max(-delta0, 0) * 0x0101010101010101ul, (ulong)Math.Max(-delta1, 0) * 0x0101010101010101ul).AsByte();
+            var rows = Vector128.SubtractSaturate(Vector128.AddSaturate(aboveRows, add), subtract).AsUInt64();
+            BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(offset + (y * stride), 8), rows.GetElement(0));
+            BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(offset + ((y + 1) * stride), 8), rows.GetElement(1));
+        }
+    }
+
+    // Where the pixels of each sub-block mode come from, in raster order: 0-15 the 3-tap average centered on edge pixel i,
+    // 16-31 the 2-tap average of edge pixels i - 16 and i - 15, 32-47 edge pixel i - 32 (the formulas of
+    // PredictSubBlockScalar); B_DC_PRED and B_TM_PRED are computed
+    private static ReadOnlySpan<byte> SubBlockSources =>
+    [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, // B_VE_PRED
+        3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, // B_HE_PRED
+        6, 7, 8, 9, 7, 8, 9, 10, 8, 9, 10, 11, 9, 10, 11, 12, // B_LD_PRED
+        4, 5, 6, 7, 3, 4, 5, 6, 2, 3, 4, 5, 1, 2, 3, 4, // B_RD_PRED
+        20, 21, 22, 23, 4, 5, 6, 7, 3, 20, 21, 22, 2, 4, 5, 6, // B_VR_PRED
+        21, 22, 23, 24, 6, 7, 8, 9, 22, 23, 24, 10, 7, 8, 9, 11, // B_VL_PRED
+        19, 4, 5, 6, 18, 3, 19, 4, 17, 2, 18, 3, 16, 1, 17, 2, // B_HD_PRED
+        18, 2, 17, 1, 17, 1, 16, 0, 16, 0, 32, 32, 32, 32, 32, 32, // B_HU_PRED
+    ];
+
+    private static void PredictSubBlockVector(ReadOnlySpan<byte> e, int mode, Span<byte> b)
+        => PredictSubBlockVector(Vector128.Create(e), mode).CopyTo(b);
+
+    /// <summary>The 16 pixels (raster order) of a sub-block prediction from the edge in lanes 0 to 12 (the other lanes are not used).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> PredictSubBlockVector(Vector128<byte> edge, int mode)
+    {
+        switch (mode)
+        {
+            case Vp8Tables.BDcPred:
+            {
+                // The sum of L3 ... L0 (lanes 0-3) and A0 ... A3 (lanes 5-8)
+                var sides = edge & Vector128.Create(0xFF, 0xFF, 0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0, 0, 0).AsByte();
+                return Vector128.Create((byte)((SumBytes(sides) + 4) >> 3));
+            }
+
+            case Vp8Tables.BTmPred:
+            {
+                // A[c] + L[r] - P, clamped
+                var aboveValues = Vector128.Shuffle(edge, Vector128.Create((byte)5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8, 5, 6, 7, 8));
+                var leftValues = Vector128.Shuffle(edge, Vector128.Create((byte)3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0));
+                var corner = Vector128.Shuffle(edge, Vector128.Create((byte)4));
+                return Vector128.SubtractSaturate(Vector128.AddSaturate(aboveValues, Vector128.SubtractSaturate(leftValues, corner)), Vector128.SubtractSaturate(corner, leftValues));
+            }
+
+            default:
+            {
+                // With the neighbors of edge pixel i (the first and the last pixel repeat), (e[i - 1] + 2 e[i] + e[i + 1] + 2) >> 2
+                // is the rounded average of e[i] and the truncated average of its neighbors
+                var previous = Vector128.Shuffle(edge, Vector128.Create((byte)0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 12));
+                var next = Vector128.Shuffle(edge, Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 12, 12, 12));
+                var average3 = RoundedAverage(edge, TruncatedAverage(previous, next));
+                var average2 = RoundedAverage(edge, next);
+                return Lookup(average3, average2, edge, Vector128.Create(SubBlockSources.Slice(mode * 16, 16)));
+            }
+        }
+    }
+
+    /// <summary>The sum of the 16 bytes (PSADBW on x64, UADDLV on Arm64).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SumBytes(Vector128<byte> values)
+    {
+        if (Sse2.IsSupported)
+        {
+            var sums = Sse2.SumAbsoluteDifferences(values, Vector128<byte>.Zero).AsUInt64();
+            return (int)(sums.ToScalar() + sums.GetElement(1));
+        }
+
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.AddAcrossWidening(values).ToScalar();
+
+        return Vector128.Sum(Vector128.WidenLower(values)) + Vector128.Sum(Vector128.WidenUpper(values));
+    }
+
+    /// <summary>Selects bytes of three tables (indices 0-47).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> Lookup(Vector128<byte> table0, Vector128<byte> table1, Vector128<byte> table2, Vector128<byte> indices)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.VectorTableLookup((table0, table1, table2), indices);
+
+        // An index out of the 0-15 range selects zero
+        return Vector128.Shuffle(table0, indices) | Vector128.Shuffle(table1, indices - Vector128.Create((byte)16)) | Vector128.Shuffle(table2, indices - Vector128.Create((byte)32));
+    }
+
+    /// <summary>(a + b + 1) &gt;&gt; 1 per byte.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> RoundedAverage(Vector128<byte> a, Vector128<byte> b)
+    {
+        if (AdvSimd.IsSupported)
+            return AdvSimd.FusedAddRoundedHalving(a, b);
+
+        if (Sse2.IsSupported)
+            return Sse2.Average(a, b);
+
+        return (a | b) - Vector128.ShiftRightLogical(a ^ b, 1);
+    }
+
+    /// <summary>(a + b) &gt;&gt; 1 per byte.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> TruncatedAverage(Vector128<byte> a, Vector128<byte> b)
+    {
+        if (AdvSimd.IsSupported)
+            return AdvSimd.FusedAddHalving(a, b);
+
+        return (a & b) + Vector128.ShiftRightLogical(a ^ b, 1);
+    }
+
+    private static void Set(Span<byte> b, int row, int column, byte value) => b[(row * 4) + column] = value;
+
+    private static byte Avg2(int a, int b) => (byte)((a + b + 1) >> 1);
+
+    private static byte Avg3(int a, int b, int c) => (byte)((a + (2 * b) + c + 2) >> 2);
+
+    private static int Sum(ReadOnlySpan<byte> values)
+    {
+        var sum = 0;
+        foreach (var value in values)
+        {
+            sum += value;
+        }
+
+        return sum;
+    }
+
+    private static void GetEdges(ReadOnlySpan<byte> plane, int stride, int offset, int size, int mbX, int mbY, Span<byte> above, Span<byte> left, out int aboveLeft)
+    {
+        if (mbY > 0)
+        {
+            plane.Slice(offset - stride, size).CopyTo(above);
+        }
+        else
+        {
+            above.Fill(127);
+        }
+
+        if (mbX > 0)
+        {
+            for (var i = 0; i < size; i++)
+            {
+                left[i] = plane[offset + (i * stride) - 1];
+            }
+        }
+        else
+        {
+            left.Fill(129);
+        }
+
+        aboveLeft = mbY == 0 ? 127 : mbX == 0 ? 129 : plane[offset - stride - 1];
+    }
+}

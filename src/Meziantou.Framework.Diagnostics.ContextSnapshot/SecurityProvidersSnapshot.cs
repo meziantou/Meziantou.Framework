@@ -1,30 +1,46 @@
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.System.SecurityCenter;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
 /// <summary>Represents a snapshot of all security providers on the system including antivirus, firewall, and anti-spyware (Windows only).</summary>
 public sealed class SecurityProvidersSnapshot
 {
-    private static readonly Guid CLSID_WSCProductList = new(0x17072F7B, 0x9ABE, 0x4A74, 0xA2, 0x61, 0x1E, 0xB7, 0x6B, 0x55, 0x10, 0x7A) /* 17072F7B-9ABE-4A74-A261-1EB76B55107A */;
-
     internal SecurityProvidersSnapshot()
     {
     }
 
     public string? HealthStatus { get; } = Utils.SafeGet(GetHealthStatus);
-    public ImmutableArray<SecurityProviderSnapshot> Antivirus { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS);
-    public ImmutableArray<SecurityProviderSnapshot> Firewall { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL);
-    public ImmutableArray<SecurityProviderSnapshot> AntiSpyware { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTISPYWARE);
+    public ImmutableArray<SecurityProviderSnapshot> Antivirus { get; } = SafeGet(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS);
+    public ImmutableArray<SecurityProviderSnapshot> Firewall { get; } = SafeGet(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL);
+    public ImmutableArray<SecurityProviderSnapshot> AntiSpyware { get; } = SafeGet(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTISPYWARE);
 
-    private static ImmutableArray<SecurityProviderSnapshot> Get(WSC_SECURITY_PROVIDER provider)
+    // Utils.SafeGet cannot be used here: on failure it would return a default ImmutableArray, which throws when enumerated.
+    private static ImmutableArray<SecurityProviderSnapshot> SafeGet(WSC_SECURITY_PROVIDER provider)
     {
-        if (!OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindowsVersionAtLeast(8))
             return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
-        var wscProductListType = Type.GetTypeFromCLSID(CLSID_WSCProductList, throwOnError: false);
-        if (wscProductListType == null)
+        try
+        {
+            return Get(provider);
+        }
+        catch
+        {
+            return ImmutableArray<SecurityProviderSnapshot>.Empty;
+        }
+    }
+
+    [SupportedOSPlatform("windows8.0")]
+    private static ImmutableArray<SecurityProviderSnapshot> Get(WSC_SECURITY_PROVIDER provider)
+    {
+        var wscProductListType = Type.GetTypeFromCLSID(typeof(WSCProductList).GUID, throwOnError: false);
+        if (wscProductListType is null)
             return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
         var wscProductList = Utils.SafeGet(() => Activator.CreateInstance(wscProductListType));
@@ -32,61 +48,94 @@ public sealed class SecurityProvidersSnapshot
             return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
         var pWSCProductList = (IWSCProductList)wscProductList;
-        var hr = pWSCProductList.Initialize((uint)provider);
-        if (hr != HRESULT.S_OK)
-            return ImmutableArray<SecurityProviderSnapshot>.Empty;
-
-        hr = pWSCProductList.get_Count(out var nProductCount);
-        if (hr != HRESULT.S_OK)
-            return ImmutableArray<SecurityProviderSnapshot>.Empty;
-
-        var products = ImmutableArray.CreateBuilder<SecurityProviderSnapshot>(initialCapacity: (int)nProductCount);
-        for (uint i = 0; i < nProductCount; i++)
+        try
         {
-            string? productName = null;
-            string? productState = null;
-            string? productStatus = null;
-            string? remediationPath = null;
-            string? stateTimestamp = null;
+            pWSCProductList.Initialize(provider);
+            var nProductCount = pWSCProductList.Count;
 
-            hr = pWSCProductList.get_Item(i, out var pWscProduct);
-            if (hr == HRESULT.S_OK)
+            var products = ImmutableArray.CreateBuilder<SecurityProviderSnapshot>(initialCapacity: nProductCount);
+            for (var i = 0u; i < (uint)nProductCount; i++)
             {
-                pWscProduct.get_ProductName(out productName);
-                hr = pWscProduct.get_ProductState(out var nProductState);
-                if (hr == HRESULT.S_OK)
-                {
-                    productState = nProductState switch
-                    {
-                        WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_ON => "On",
-                        WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_OFF => "Off",
-                        WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_SNOOZED => "Snoozed",
-                        _ => "Expired",
-                    };
-                }
+                string? productName = null;
+                string? productState = null;
+                string? productStatus = null;
+                string? remediationPath = null;
+                string? stateTimestamp = null;
 
-                if (provider != WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL)
+                var index = i;
+                var pWscProduct = Utils.SafeGet(() =>
                 {
-                    hr = pWscProduct.get_SignatureStatus(out var nProductStatus);
-                    if (hr == HRESULT.S_OK)
+                    pWSCProductList.get_Item(index, out var product);
+                    return product;
+                });
+
+                if (pWscProduct is not null)
+                {
+                    try
                     {
-                        productStatus = (nProductStatus == WSC_SECURITY_SIGNATURE_STATUS.WSC_SECURITY_PRODUCT_UP_TO_DATE) ? "Up-to-date" : "Out-of-date";
+                        productName = GetString(() => pWscProduct.ProductName);
+                        productState = Utils.SafeGet<WSC_SECURITY_PRODUCT_STATE?>(() => pWscProduct.ProductState) switch
+                        {
+                            WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_ON => "On",
+                            WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_OFF => "Off",
+                            WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_SNOOZED => "Snoozed",
+                            null => null,
+                            _ => "Expired",
+                        };
+
+                        if (provider != WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL)
+                        {
+                            productStatus = Utils.SafeGet<WSC_SECURITY_SIGNATURE_STATUS?>(() => pWscProduct.SignatureStatus) switch
+                            {
+                                WSC_SECURITY_SIGNATURE_STATUS.WSC_SECURITY_PRODUCT_UP_TO_DATE => "Up-to-date",
+                                null => null,
+                                _ => "Out-of-date",
+                            };
+                        }
+
+                        remediationPath = GetString(() => pWscProduct.RemediationPath);
+                        if (provider == WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS)
+                        {
+                            stateTimestamp = GetString(() => pWscProduct.ProductStateTimestamp);
+                        }
+                    }
+                    finally
+                    {
+                        Marshal.ReleaseComObject(pWscProduct);
                     }
                 }
 
-                pWscProduct.get_RemediationPath(out remediationPath);
-                if (provider == WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS)
-                {
-                    pWscProduct.get_ProductStateTimestamp(out stateTimestamp);
-                }
+                products.Add(new SecurityProviderSnapshot(productName, remediationPath, productStatus, productState, stateTimestamp));
             }
 
-            products.Add(new SecurityProviderSnapshot(productName, remediationPath, productStatus, productState, stateTimestamp));
-
+            return products.ToImmutable();
+        }
+        finally
+        {
             Marshal.ReleaseComObject(pWSCProductList);
         }
+    }
 
-        return products.ToImmutable();
+    // The projected properties hand back an owned BSTR, so it must be released once it has been copied to a managed string.
+    private static string? GetString(Func<BSTR> getter)
+    {
+        var value = default(BSTR);
+        try
+        {
+            value = getter();
+            return value.ToString();
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            if (value != default)
+            {
+                Marshal.FreeBSTR(value);
+            }
+        }
     }
 
     private static string? GetHealthStatus()
@@ -94,16 +143,16 @@ public sealed class SecurityProvidersSnapshot
         if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
             return null;
 
-        Windows.Win32.System.SecurityCenter.WSC_SECURITY_PROVIDER_HEALTH health = default;
-        var hr = Windows.Win32.PInvoke.WscGetSecurityProviderHealth((uint)WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS, ref health);
+        WSC_SECURITY_PROVIDER_HEALTH health = default;
+        var hr = PInvoke.WscGetSecurityProviderHealth((uint)WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS, ref health);
         if (hr.Succeeded)
         {
             return health switch
             {
-                Windows.Win32.System.SecurityCenter.WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_GOOD => "Good",
-                Windows.Win32.System.SecurityCenter.WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_NOTMONITORED => "Not monitored",
-                Windows.Win32.System.SecurityCenter.WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_POOR => "Poor",
-                Windows.Win32.System.SecurityCenter.WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_SNOOZE => "Snooze",
+                WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_GOOD => "Good",
+                WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_NOTMONITORED => "Not monitored",
+                WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_POOR => "Poor",
+                WSC_SECURITY_PROVIDER_HEALTH.WSC_SECURITY_PROVIDER_HEALTH_SNOOZE => "Snooze",
                 _ => null,
             };
         }
@@ -111,4 +160,3 @@ public sealed class SecurityProvidersSnapshot
         return null;
     }
 }
-

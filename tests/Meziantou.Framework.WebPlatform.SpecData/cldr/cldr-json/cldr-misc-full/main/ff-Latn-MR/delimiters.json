@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ff-Latn-MR": {
+      "identity": {
+        "language": "ff",
+        "script": "Latn",
+        "territory": "MR"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

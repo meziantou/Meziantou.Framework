@@ -11,31 +11,23 @@ namespace Meziantou.Framework;
 /// Argument names are case-insensitive.
 /// </remarks>
 /// <example>
-/// <code>
-/// // Parse current process arguments
-/// var parser = CommandLineParser.Current;
-///
-/// // Or parse custom arguments
-/// var customParser = new CommandLineParser();
-/// customParser.Parse(new[] { "/name=John", "/verbose", "input.txt" });
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CommandLineTests/CommandLineParserTests.cs" ref:region="CommandLineParser_Example" ref:dedent="true">
+/// // CommandLineParser.Current contains the arguments of the current process.
+/// // You can also parse custom arguments:
+/// var parser = new CommandLineParser();
+/// parser.Parse(["/name=John", "/verbose", "input.txt", "--help"]);
 ///
 /// // Check if an argument exists
-/// if (parser.HasArgument("verbose"))
-/// {
-///     Console.WriteLine("Verbose mode enabled");
-/// }
+/// Assert.True(parser.HasArgument("verbose"));
 ///
 /// // Get named argument value
-/// var name = parser.GetArgument("name"); // Returns "John"
+/// Assert.Equal("John", parser.GetArgument("name"));
 ///
-/// // Get argument at position (zero-based array index)
-/// var inputFile = parser.GetArgument(2); // Returns "input.txt" from position 2
+/// // Get argument at position (zero-based index in the argument array)
+/// Assert.Equal("input.txt", parser.GetArgument(2));
 ///
 /// // Check if help was requested (detects -?, /?, -help, /help, --help)
-/// if (parser.HelpRequested)
-/// {
-///     ShowHelp();
-/// }
+/// Assert.True(parser.HelpRequested);
 /// </code>
 /// </example>
 public sealed class CommandLineParser
@@ -47,13 +39,16 @@ public sealed class CommandLineParser
     private readonly Dictionary<string, string> _namedArguments = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, string> _positionArguments = [];
 
-    /// <summary>Gets a parser for the current process's command-line arguments.</summary>
+    /// <summary>Gets a parser for the current process's command-line arguments, excluding the executable path.</summary>
+    /// <remarks>Positions match the array provided to the application entry point: position 0 is the first argument, not the path of the executable.</remarks>
     public static CommandLineParser Current { get; } = ParseCurrent();
 
     private static CommandLineParser ParseCurrent()
     {
+        // Environment.GetCommandLineArgs() starts with the executable path, unlike the array provided to the entry point.
+        var args = Environment.GetCommandLineArgs();
         var parser = new CommandLineParser();
-        parser.Parse(Environment.GetCommandLineArgs());
+        parser.Parse(args.Length > 1 ? args[1..] : []);
         return parser;
     }
 

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
@@ -13,6 +14,8 @@ namespace Meziantou.Framework.ResxSourceGenerator;
 [Generator]
 public sealed partial class ResxGenerator : IIncrementalGenerator
 {
+    private const string ResxGeneratorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var compilationProvider = context.CompilationProvider.Select(static (compilation, cancellationToken) =>
@@ -29,6 +32,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
     {
         // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
         var resxGroups = ResxGeneratorCommon.GetResxGroups(files);
+        var hintNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var resxGroup in resxGroups)
         {
@@ -53,7 +57,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
             var generateResourcesTypeConfiguration = GetMetadataValue("GenerateResourcesType", globalName: null);
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
-            var projectDir = projectDirConfiguration ?? assemblyName ?? "";
+            var projectDir = projectDirConfiguration ?? "";
             var defaultResourceName = defaultResourceNameConfiguration ?? ResxGeneratorCommon.ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
             var defaultNamespace = ResxGeneratorCommon.ComputeNamespace(rootNamespace, projectDir, resxGroup.Key);
 
@@ -104,7 +108,40 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 ";
             content += GenerateCode(ns, className, resourceName, visibility, generateResourcesType, generateKeyNamesType, entries!, supportNullableReferenceTypes);
 
-            context.AddSource($"{Path.GetFileName(resxGroup.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));
+            context.AddSource(GetHintName(hintNames, projectDir, resxGroup.Key), SourceText.From(content, Encoding.UTF8));
+        }
+    }
+
+    private static string GetHintName(HashSet<string> hintNames, string projectDir, string resourcePath)
+    {
+        var name = ResxGeneratorCommon.ComputeHintName(projectDir, resourcePath);
+        if (hintNames.Add(name))
+            return name + ".resx.g.cs";
+
+        // Two different paths can lead to the same name once the invalid characters are replaced
+        for (var i = 1; ; i++)
+        {
+            var candidate = name + i.ToString(CultureInfo.InvariantCulture);
+            if (hintNames.Add(candidate))
+                return candidate + ".resx.g.cs";
+        }
+    }
+
+    /// <summary>
+    /// Returns <paramref name="name"/>, or the first "name1", "name2"... that is still free. Mirrors
+    /// <see cref="GetHintName"/>: two resx names can produce the same identifier once the characters that are
+    /// invalid in one are replaced, and a resx name can collide with a member the generated type always declares.
+    /// </summary>
+    private static string GetUniqueMemberName(HashSet<string> memberNames, string name)
+    {
+        if (memberNames.Add(name))
+            return name;
+
+        for (var i = 1; ; i++)
+        {
+            var candidate = name + i.ToString(CultureInfo.InvariantCulture);
+            if (memberNames.Add(candidate))
+                return candidate;
         }
     }
 
@@ -138,7 +175,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
             {
                 if (resourceMan is null)
                 {
-                    resourceMan = new global::System.Resources.ResourceManager(""" + resourceName + @""", typeof(" + className + @").Assembly);
+                    resourceMan = new global::System.Resources.ResourceManager(" + ToLiteral(resourceName) + @", typeof(" + className + @").Assembly);
                 }
 
                 return resourceMan;
@@ -149,7 +186,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         public static global::System.Globalization.CultureInfo? Culture { get; set; }
 
         " + AppendNotNullIfNotNull("defaultValue") + @"
@@ -278,10 +315,27 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
 ");
 
+            // Resx names are free-form text, so two of them can map to the same identifier ("A B" and "A-B"), and
+            // one can collide with a member this class always declares. Emitting both is a compilation error, so
+            // the later ones get a numeric suffix. Entries are ordered by name, which keeps the result stable.
+            var memberNames = new HashSet<string>(StringComparer.Ordinal)
+            {
+                className,
+                "resourceMan",
+                "ResourceManager",
+                "Culture",
+                "GetObject",
+                "GetStream",
+                "GetString",
+                "GetStringWithDefault",
+            };
+
             foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
             {
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
+
+                var memberName = GetUniqueMemberName(memberNames, ToCSharpNameIdentifier(entry.Name));
 
                 if (entry.IsText)
                 {
@@ -300,11 +354,11 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                     sb.AppendLine(@"
         /// " + comment + @"
-        public static string? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static string? @" + memberName + @"
         {
             get
             {
-                return GetString(""" + entry.Name + @""");
+                return GetString(" + ToLiteral(entry.Name) + @");
             }
         }
 ");
@@ -320,38 +374,46 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                         if (args >= 0)
                         {
-                            var inParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "object? arg" + arg.ToString(CultureInfo.InvariantCulture)));
-                            var callParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "arg" + arg.ToString(CultureInfo.InvariantCulture)));
+                            var formatName = GetUniqueMemberName(memberNames, "Format" + memberName);
+                            var parameters = GetFormatParameters(entry, args);
+                            var inParams = string.Join(", ", parameters.Select(parameter => parameter.TypeName + " " + EscapeCSharpIdentifier(parameter.Name)));
+                            var callParams = string.Join(", ", parameters.Select(parameter => EscapeCSharpIdentifier(parameter.Name)));
+                            var formatComment = CreateFormatComment(comment, parameters);
 
                             sb.AppendLine(@"
-        /// " + comment + @"
-        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
+        /// " + formatComment + @"
+        public static string? " + formatName + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
-            return GetString(provider, """ + entry.Name + "\", " + callParams + @");
+            return GetString(culture: provider, name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
 ");
 
                             sb.AppendLine(@"
-        /// " + comment + @"
-        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
+        /// " + formatComment + @"
+        public static string? " + formatName + "(" + inParams + @")
         {
-            return GetString(""" + entry.Name + "\", " + callParams + @");
+            return GetString(name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
 ");
                         }
                     }
                 }
-                else
+                else if (entry.FullTypeName is string fullTypeName)
                 {
                     sb.AppendLine(@"
-        public static global::" + entry.FullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static global::" + fullTypeName + "? @" + memberName + @"
         {
             get
             {
-                return (global::" + entry.FullTypeName + @"?)GetObject(""" + entry.Name + @""");
+                return (global::" + fullTypeName + @"?)GetObject(" + ToLiteral(entry.Name) + @");
             }
         }
 ");
+                }
+                else
+                {
+                    // Emitting the member would produce "global::?" and break the whole compilation
+                    sb.AppendLine("        // Could not determine the type of the resource " + memberName);
                 }
             }
 
@@ -363,12 +425,16 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         {
             sb.AppendLine($"    {visibility} partial class {className}Names");
             sb.AppendLine("    {");
-            foreach (var entry in entries)
+            // Ordered and de-duplicated exactly like the resource type, so a given resx entry gets the same
+            // member name in both
+            var keyNames = new HashSet<string>(StringComparer.Ordinal) { className + "Names" };
+            foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
             {
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
 
-                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = \"" + entry.Name + "\";");
+                var keyName = GetUniqueMemberName(keyNames, ToCSharpNameIdentifier(entry.Name));
+                sb.AppendLine("        public const string @" + keyName + " = " + ToLiteral(entry.Name) + ";");
             }
 
             sb.AppendLine("    }");
@@ -408,15 +474,27 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                     var type = element.Attribute("type")?.Value;
                     var comment = element.Attribute("comment")?.Value;
                     var value = element.Element("value")?.Value;
+                    var parameters = element.Elements(XName.Get("parameter", ResxGeneratorNamespace))
+                        .Select(parameter => new ResxParameter
+                        {
+                            Name = parameter.Attribute("name")?.Value,
+                            TypeName = parameter.Attribute("typename")?.Value,
+                            Comment = parameter.Attribute("comment")?.Value,
+                        })
+                        .ToList();
 
                     var existingEntry = entries.Find(e => e.Name == name);
                     if (existingEntry is not null)
                     {
                         existingEntry.Comment ??= comment;
+                        if (existingEntry.Parameters.Count == 0)
+                        {
+                            existingEntry.Parameters.AddRange(parameters);
+                        }
                     }
                     else
                     {
-                        entries.Add(new ResxEntry { Name = name, Value = value, Comment = comment, Type = type });
+                        entries.Add(new ResxEntry { Name = name, Value = value, Comment = comment, Type = type, Parameters = parameters });
                     }
                 }
             }
@@ -427,6 +505,177 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
 
         return entries;
+    }
+
+    private static List<FormatParameter> GetFormatParameters(ResxEntry entry, int maxArgumentIndex)
+    {
+        const string DefaultTypeName = "object?";
+        var parameters = new List<FormatParameter>();
+        var usedNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "provider",
+        };
+
+        for (var index = 0; index <= maxArgumentIndex; index++)
+        {
+            var fallbackName = GetUniqueFallbackName(index, usedNames);
+            var name = fallbackName;
+            var typeName = DefaultTypeName;
+            var comment = (string?)null;
+            if (index < entry.Parameters.Count)
+            {
+                var parameter = entry.Parameters[index];
+                comment = parameter.Comment;
+                if (!string.IsNullOrWhiteSpace(parameter.TypeName))
+                {
+                    typeName = parameter.TypeName.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(parameter.Name))
+                {
+                    var csharpName = ToCSharpNameIdentifier(parameter.Name);
+                    if (!string.IsNullOrEmpty(csharpName) && usedNames.Add(csharpName))
+                    {
+                        name = csharpName;
+                    }
+                }
+            }
+
+            if (name == fallbackName)
+            {
+                _ = usedNames.Add(name);
+            }
+
+            parameters.Add(new FormatParameter(name, typeName, comment));
+        }
+
+        return parameters;
+    }
+
+    private static string GetUniqueFallbackName(int index, HashSet<string> usedNames)
+    {
+        var name = "arg" + index.ToString(CultureInfo.InvariantCulture);
+        while (usedNames.Contains(name))
+        {
+            name += "_";
+        }
+
+        return name;
+    }
+
+    private static string CreateFormatComment(string comment, List<FormatParameter> parameters)
+    {
+        var elements = new List<string>
+        {
+            comment,
+        };
+
+        foreach (var parameter in parameters)
+        {
+            if (string.IsNullOrWhiteSpace(parameter.Comment))
+                continue;
+
+            var element = new XElement("param", new XAttribute("name", parameter.Name), parameter.Comment);
+            elements.Add(element.ToString().Replace(Environment.NewLine, Environment.NewLine + "       /// ", StringComparison.Ordinal));
+        }
+
+        return string.Join(Environment.NewLine + "        /// ", elements);
+    }
+
+    /// <summary>
+    /// Formats a value read from the resx file as a C# string literal, quotes included. Resource names and
+    /// resource file names are arbitrary text, so they cannot be concatenated into the generated source as-is.
+    /// </summary>
+    private static string ToLiteral(string value)
+    {
+        return SymbolDisplay.FormatLiteral(value, quote: true);
+    }
+
+    private static string EscapeCSharpIdentifier(string name)
+    {
+        return IsCSharpKeyword(name) ? "@" + name : name;
+    }
+
+    private static bool IsCSharpKeyword(string name)
+    {
+        return name is
+            "abstract" or
+            "as" or
+            "base" or
+            "bool" or
+            "break" or
+            "byte" or
+            "case" or
+            "catch" or
+            "char" or
+            "checked" or
+            "class" or
+            "const" or
+            "continue" or
+            "decimal" or
+            "default" or
+            "delegate" or
+            "do" or
+            "double" or
+            "else" or
+            "enum" or
+            "event" or
+            "explicit" or
+            "extern" or
+            "false" or
+            "finally" or
+            "fixed" or
+            "float" or
+            "for" or
+            "foreach" or
+            "goto" or
+            "if" or
+            "implicit" or
+            "in" or
+            "int" or
+            "interface" or
+            "internal" or
+            "is" or
+            "lock" or
+            "long" or
+            "namespace" or
+            "new" or
+            "null" or
+            "object" or
+            "operator" or
+            "out" or
+            "override" or
+            "params" or
+            "private" or
+            "protected" or
+            "public" or
+            "readonly" or
+            "ref" or
+            "return" or
+            "sbyte" or
+            "sealed" or
+            "short" or
+            "sizeof" or
+            "stackalloc" or
+            "static" or
+            "string" or
+            "struct" or
+            "switch" or
+            "this" or
+            "throw" or
+            "true" or
+            "try" or
+            "typeof" or
+            "uint" or
+            "ulong" or
+            "unchecked" or
+            "unsafe" or
+            "ushort" or
+            "using" or
+            "virtual" or
+            "void" or
+            "volatile" or
+            "while";
     }
 
 
@@ -475,6 +724,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         public string? Value { get; set; }
         public string? Comment { get; set; }
         public string? Type { get; set; }
+        public List<ResxParameter> Parameters { get; set; } = [];
 
         public bool IsText
         {
@@ -505,20 +755,38 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 if (IsText)
                     return "string";
 
-                if (Value is not null)
+                // A file reference stores the type of the referenced content in its value: "path;type name;encoding"
+                if (IsFileRef && Value is not null)
                 {
                     var parts = Value.Split(';');
                     if (parts.Length > 1)
-                    {
-                        var type = parts[1];
-                        return type.Split(',')[0];
-                    }
+                        return NullIfEmpty(parts[1].Split(',')[0]);
                 }
 
+                // An inline value carries its type in the type attribute:
+                // <data name="Color" type="System.Drawing.Color, System.Drawing"><value>Red</value></data>
+                if (Type is not null)
+                    return NullIfEmpty(Type.Split(',')[0]);
+
                 return null;
+
+                static string? NullIfEmpty(string value)
+                {
+                    var trimmed = value.Trim();
+                    return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+                }
             }
         }
 
         public bool IsFileRef => Type is not null && Type.StartsWith("System.Resources.ResXFileRef,", StringComparison.Ordinal);
     }
+
+    private sealed class ResxParameter
+    {
+        public string? Name { get; set; }
+        public string? TypeName { get; set; }
+        public string? Comment { get; set; }
+    }
+
+    private sealed record FormatParameter(string Name, string TypeName, string? Comment);
 }

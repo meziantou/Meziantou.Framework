@@ -1,0 +1,63 @@
+{
+  "spec": {
+    "title": "Web Extensions",
+    "url": "https://w3c.github.io/webextensions/specification/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "RunAt": {
+        "fragment": "enum RunAt {\n    \"document_start\",\n    \"document_end\",\n    \"document_idle\"\n};",
+        "type": "enum",
+        "name": "RunAt",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "document_start",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-runat-document_start"
+          },
+          {
+            "type": "enum-value",
+            "value": "document_end",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-runat-document_end"
+          },
+          {
+            "type": "enum-value",
+            "value": "document_idle",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-runat-document_idle"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webextensions/specification/#enumdef-runat"
+      },
+      "ExecutionWorld": {
+        "fragment": "enum ExecutionWorld {\n    \"ISOLATED\",\n    \"MAIN\"\n};",
+        "type": "enum",
+        "name": "ExecutionWorld",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "ISOLATED",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-executionworld-isolated"
+          },
+          {
+            "type": "enum-value",
+            "value": "MAIN",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-executionworld-main"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webextensions/specification/#enumdef-executionworld"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {},
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

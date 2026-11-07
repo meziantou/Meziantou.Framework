@@ -1,0 +1,494 @@
+{
+  "spec": {
+    "title": "Resize Observer Module Level 1",
+    "url": "https://drafts.csswg.org/resize-observer-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "ResizeObserver"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "ResizeObserverEntry",
+          "ResizeObserverSize"
+        ]
+      }
+    },
+    "idlNames": {
+      "ResizeObserverBoxOptions": {
+        "fragment": "enum ResizeObserverBoxOptions {\n    \"border-box\", \"content-box\", \"device-pixel-content-box\"\n};",
+        "type": "enum",
+        "name": "ResizeObserverBoxOptions",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "border-box",
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-border-box"
+          },
+          {
+            "type": "enum-value",
+            "value": "content-box",
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-content-box"
+          },
+          {
+            "type": "enum-value",
+            "value": "device-pixel-content-box",
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-device-pixel-content-box"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/resize-observer-1/#enumdef-resizeobserverboxoptions"
+      },
+      "ResizeObserverOptions": {
+        "fragment": "dictionary ResizeObserverOptions {\n    ResizeObserverBoxOptions box = \"content-box\";\n};",
+        "type": "dictionary",
+        "name": "ResizeObserverOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "box",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ResizeObserverBoxOptions"
+            },
+            "default": {
+              "type": "string",
+              "value": "content-box"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserveroptions-box"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/resize-observer-1/#dictdef-resizeobserveroptions"
+      },
+      "ResizeObserver": {
+        "fragment": "[Exposed=(Window)]\ninterface ResizeObserver {\n    constructor(ResizeObserverCallback callback);\n    undefined observe(Element target, optional ResizeObserverOptions options = {});\n    undefined unobserve(Element target);\n    undefined disconnect();\n};",
+        "type": "interface",
+        "name": "ResizeObserver",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResizeObserverCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-resizeobserver"
+          },
+          {
+            "type": "operation",
+            "name": "observe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "target",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResizeObserverOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-observe"
+          },
+          {
+            "type": "operation",
+            "name": "unobserve",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "target",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-unobserve"
+          },
+          {
+            "type": "operation",
+            "name": "disconnect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-disconnect"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/resize-observer-1/#resizeobserver"
+      },
+      "ResizeObserverCallback": {
+        "fragment": "callback ResizeObserverCallback = undefined (sequence<ResizeObserverEntry> entries, ResizeObserver observer);",
+        "type": "callback",
+        "name": "ResizeObserverCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "entries",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResizeObserverEntry"
+                }
+              ]
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "observer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ResizeObserver"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/resize-observer-1/#callbackdef-resizeobservercallback"
+      },
+      "ResizeObserverEntry": {
+        "fragment": "[Exposed=Window]\ninterface ResizeObserverEntry {\n    readonly attribute Element target;\n    readonly attribute DOMRectReadOnly contentRect;\n    readonly attribute FrozenArray<ResizeObserverSize> borderBoxSize;\n    readonly attribute FrozenArray<ResizeObserverSize> contentBoxSize;\n    readonly attribute FrozenArray<ResizeObserverSize> devicePixelContentBoxSize;\n};",
+        "type": "interface",
+        "name": "ResizeObserverEntry",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "target",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-target"
+          },
+          {
+            "type": "attribute",
+            "name": "contentRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-contentrect"
+          },
+          {
+            "type": "attribute",
+            "name": "borderBoxSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResizeObserverSize"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-borderboxsize"
+          },
+          {
+            "type": "attribute",
+            "name": "contentBoxSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResizeObserverSize"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-contentboxsize"
+          },
+          {
+            "type": "attribute",
+            "name": "devicePixelContentBoxSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResizeObserverSize"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-devicepixelcontentboxsize"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/resize-observer-1/#resizeobserverentry"
+      },
+      "ResizeObserverSize": {
+        "fragment": "[Exposed=Window]\ninterface ResizeObserverSize {\n    readonly attribute unrestricted double inlineSize;\n    readonly attribute unrestricted double blockSize;\n};",
+        "type": "interface",
+        "name": "ResizeObserverSize",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "inlineSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserversize-inlinesize"
+          },
+          {
+            "type": "attribute",
+            "name": "blockSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserversize-blocksize"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/resize-observer-1/#resizeobserversize"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ResizeObserver",
+        "ResizeObserverEntry",
+        "ResizeObserverSize"
+      ]
+    },
+    "dependencies": {
+      "ResizeObserverOptions": [
+        "ResizeObserverBoxOptions"
+      ],
+      "ResizeObserver": [
+        "ResizeObserverCallback",
+        "Element",
+        "ResizeObserverOptions"
+      ],
+      "ResizeObserverEntry": [
+        "Element",
+        "DOMRectReadOnly",
+        "ResizeObserverSize"
+      ],
+      "ResizeObserverSize": []
+    },
+    "externalDependencies": [
+      "Element",
+      "DOMRectReadOnly"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

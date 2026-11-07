@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Accounting,Administator,Agency,Approver,ArtDelivery,ArtReturn,Author,Customer,Delivery,DeliveryCharge,Designer,Editor,Illustrator,Owner,Photographer,Recipient,SenderAlias,SurplusReturn,*]			ISO 21812-1:2019, Table 25

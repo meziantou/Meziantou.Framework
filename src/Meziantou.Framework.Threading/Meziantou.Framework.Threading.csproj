@@ -4,8 +4,13 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Description>Types and extension methods to help with threading</Description>
-    <Version>3.0.0</Version>
+    <PackageTags>threading, concurrency, async, synchronization, collections</PackageTags>
+    <Version>3.1.8</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Threading.Tests" />
+  </ItemGroup>
 
 </Project>

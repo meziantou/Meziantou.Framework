@@ -11,26 +11,33 @@ This library provides two interfaces that can be implemented by strongly-typed I
 
 ## Usage
 
-When you use the `StronglyTypedId` source generator, the generated types automatically implement these interfaces if this package is referenced in your project.
+When you use the `StronglyTypedId` source generator, the generated types automatically implement these interfaces if this package is referenced in your project. The interfaces are in the `Meziantou.Framework` namespace, and the `[StronglyTypedId]` attribute is in the `Meziantou.Framework.Annotations` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedIdAttribute_Declaration;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework;
-using Meziantou.Framework.Annotations;
-
 [StronglyTypedId(typeof(int))]
-public partial struct UserId { }
+public partial struct UserId
+{
+}
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Interfaces;format=md-fenced-code-block;dedent=true -->
+```csharp
 // The generated type implements IStronglyTypedId and IStronglyTypedId<int>
 var userId = UserId.FromInt32(42);
 
 // Access via interface
 IStronglyTypedId stronglyTypedId = userId;
-Console.WriteLine(stronglyTypedId.ValueAsString); // "42"
+Assert.Equal("42", stronglyTypedId.ValueAsString);
+Assert.Equal(typeof(int), stronglyTypedId.UnderlyingType);
 
 // Access via generic interface
-IStronglyTypedId<int> typedId = userId;
-Console.WriteLine(typedId.Value); // 42
+Assert.Equal(42, GetValue(userId));
+
+static T GetValue<T>(IStronglyTypedId<T> id) => id.Value;
 ```
+<!-- endref -->
 
 ## Interfaces
 

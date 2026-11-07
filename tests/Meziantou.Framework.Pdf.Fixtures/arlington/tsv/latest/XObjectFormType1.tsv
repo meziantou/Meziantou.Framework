@@ -1,0 +1,32 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.0		FALSE	FALSE	FALSE		[XObject]			Table 5 and Table 93
+Subtype	name	1.0		TRUE	FALSE	FALSE		[Form]			
+FormType	integer	1.0		fn:IsRequired(fn:BeforeVersion(1.3))	FALSE	FALSE		[1]			
+BBox	rectangle	1.0		TRUE	FALSE	FALSE					
+Matrix	matrix	1.0		fn:IsRequired(fn:BeforeVersion(1.3))	FALSE	FALSE	[1 0 0 1 0 0]				
+Resources	dictionary	1.2		TRUE	FALSE	FALSE				[Resource]	
+Group	dictionary	1.4		FALSE	FALSE	FALSE				[GroupAttributes]	
+Ref	dictionary	1.4		FALSE	FALSE	FALSE				[Reference]	
+Metadata	stream	1.4		FALSE	TRUE	FALSE				[Metadata]	
+PieceInfo	dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:IsPresent(LastModified))]	[PagePiece]	
+LastModified	date	1.3		fn:IsRequired(fn:IsPresent(PieceInfo))	FALSE	FALSE					
+StructParent	integer	1.3		FALSE	FALSE	FALSE			[fn:Not(fn:IsPresent(StructParents))]		Table 359
+StructParents	integer	1.3		FALSE	FALSE	FALSE			[fn:Not(fn:IsPresent(StructParent))]		Table 359
+OPI	dictionary	1.2	2.0	FALSE	FALSE	FALSE				[OPIVersion13,OPIVersion20]	
+OC	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+Name	name	1.0	2.0	fn:IsRequired(fn:BeforeVersion(1.3))	FALSE	FALSE					
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+Measure	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[MeasureRL,MeasureGEO]	
+PtData	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[PointData]	
+Length	integer	1.0		TRUE	FALSE	FALSE					from stream
+Filter	array;name	1.0		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,fn:SinceVersion(1.2,FlateDecode),RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfCompressionFilterNames];[]	Table 6
+DecodeParms	array;dictionary	1.0		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,fn:SinceVersion(1.2,FilterFlateDecode),fn:SinceVersion(1.5,FilterCrypt)]	
+F	dictionary;string	1.2		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.2		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfCompressionFilterNames];[]	Table 6
+FDecodeParms	array;dictionary	1.2		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+DL	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DL>=0)]		
+XUID	array	1.0	1.3	FALSE	FALSE	FALSE				[ArrayOfIntegersGeneral]	
+GTS_XID	string	fn:Extension(PDF_VT2,1.6)		FALSE	FALSE	FALSE					PDF/VT-2
+GTS_Scope	name	fn:Extension(PDF_VT2,1.6)		FALSE	FALSE	FALSE		[SingleUse,Record,File,Stream,Global,Unknown]			PDF/VT-2
+GTS_Env	string-text	fn:Extension(PDF_VT2,1.6)		fn:IsRequired((@GTS_Scope==Stream) || (@GTS_Scope==Global))	FALSE	FALSE					PDF/VT-2
+GTS_Encapsulated	boolean	fn:Extension(PDF_VT2,1.6)		FALSE	FALSE	FALSE					PDF/VT-2

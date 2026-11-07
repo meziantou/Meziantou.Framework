@@ -1,0 +1,22 @@
+summary 0/0
+summary 0/1
+visible a
+summary 0/2
+visible a,b
+summary 1/2
+visible a
+summary 3/3
+visible a,b,c
+box 10 doubled 20 set 1 map 1
+box 10 doubled 20 set 1 map 2
+map update x 1 -> 2
+map add y undefined -> 3
+box 10 doubled 20 set 1|2 map 2
+box 5 doubled 10 set 1|2 map 2
+box 7 doubled 14 set 2 map 2
+summary 3/4
+visible a,b,c,d
+when resolved
+[{"title":"a","done":true},{"title":"b","done":true},{"title":"c","done":true},{"title":"d","done":false},{"title":"ignored","done":false}]
+--- console ---
+warn: [mobx.spy] Is a no-op in production builds

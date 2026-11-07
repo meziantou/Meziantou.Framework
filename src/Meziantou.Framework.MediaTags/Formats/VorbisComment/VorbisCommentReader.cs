@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.VorbisComment;
 
@@ -16,32 +17,33 @@ internal static class VorbisCommentReader
 
         var offset = 0;
 
-        // Vendor string
-        var vendorLength = (int)BinaryPrimitives.ReadUInt32LittleEndian(data[offset..]);
+        // Vendor string. Lengths are unsigned 32-bit values, so they are compared as such: cast to int, a large
+        // one turns negative and passes the bounds check.
+        var vendorLength = BinaryPrimitives.ReadUInt32LittleEndian(data[offset..]);
         offset += 4;
-        if (offset + vendorLength > data.Length)
+        if (vendorLength > (uint)(data.Length - offset))
             return false;
-        offset += vendorLength; // Skip vendor string
+        offset += (int)vendorLength; // Skip vendor string
 
         // Comment count
         if (offset + 4 > data.Length)
             return false;
-        var commentCount = (int)BinaryPrimitives.ReadUInt32LittleEndian(data[offset..]);
+        var commentCount = BinaryPrimitives.ReadUInt32LittleEndian(data[offset..]);
         offset += 4;
 
-        for (var i = 0; i < commentCount; i++)
+        for (var i = 0u; i < commentCount; i++)
         {
             if (offset + 4 > data.Length)
                 break;
 
-            var commentLength = (int)BinaryPrimitives.ReadUInt32LittleEndian(data[offset..]);
+            var commentLength = BinaryPrimitives.ReadUInt32LittleEndian(data[offset..]);
             offset += 4;
 
-            if (commentLength < 0 || offset + commentLength > data.Length)
+            if (commentLength > (uint)(data.Length - offset))
                 break;
 
-            var comment = Encoding.UTF8.GetString(data.Slice(offset, commentLength));
-            offset += commentLength;
+            var comment = Encoding.UTF8.GetString(data.Slice(offset, (int)commentLength));
+            offset += (int)commentLength;
 
             var eqIdx = comment.IndexOf('=', StringComparison.Ordinal);
             if (eqIdx < 0)
@@ -68,30 +70,53 @@ internal static class VorbisCommentReader
             tags.AlbumArtist ??= value;
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Genre, StringComparison.OrdinalIgnoreCase))
             tags.Genre ??= value;
+        // A value that does not parse is kept as a custom field. Dropping it would delete it from the file on the
+        // next write, since the writer rebuilds the comment from MediaTagInfo.
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Date, StringComparison.OrdinalIgnoreCase))
         {
-            if (tags.Year is null && value.Length >= 4 && int.TryParse(value.AsSpan(0, 4), NumberStyles.None, CultureInfo.InvariantCulture, out var year))
-                tags.Year = year;
+            if (value.Length >= 4 && int.TryParse(value.AsSpan(0, 4), NumberStyles.None, CultureInfo.InvariantCulture, out var year))
+                tags.Year ??= year;
+            else
+                tags.CustomFields.TryAdd(fieldName, value);
         }
         else if (string.Equals(fieldName, VorbisCommentFieldNames.TrackNumber, StringComparison.OrdinalIgnoreCase))
         {
-            if (tags.TrackNumber is null && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var num))
-                tags.TrackNumber = num;
+            // Some taggers store the total in the same field, as "3/12".
+            if (TagFieldMapping.TryParseNumberPair(value, out var number, out var total))
+            {
+                tags.TrackNumber ??= number;
+                tags.TrackTotal ??= total;
+            }
+            else
+            {
+                tags.CustomFields.TryAdd(fieldName, value);
+            }
         }
         else if (string.Equals(fieldName, VorbisCommentFieldNames.TrackTotal, StringComparison.OrdinalIgnoreCase))
         {
-            if (tags.TrackTotal is null && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var total))
-                tags.TrackTotal = total;
+            if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var total))
+                tags.TrackTotal ??= total;
+            else
+                tags.CustomFields.TryAdd(fieldName, value);
         }
         else if (string.Equals(fieldName, VorbisCommentFieldNames.DiscNumber, StringComparison.OrdinalIgnoreCase))
         {
-            if (tags.DiscNumber is null && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var num))
-                tags.DiscNumber = num;
+            if (TagFieldMapping.TryParseNumberPair(value, out var number, out var total))
+            {
+                tags.DiscNumber ??= number;
+                tags.DiscTotal ??= total;
+            }
+            else
+            {
+                tags.CustomFields.TryAdd(fieldName, value);
+            }
         }
         else if (string.Equals(fieldName, VorbisCommentFieldNames.DiscTotal, StringComparison.OrdinalIgnoreCase))
         {
-            if (tags.DiscTotal is null && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var total))
-                tags.DiscTotal = total;
+            if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var total))
+                tags.DiscTotal ??= total;
+            else
+                tags.CustomFields.TryAdd(fieldName, value);
         }
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Comment, StringComparison.OrdinalIgnoreCase)
               || string.Equals(fieldName, VorbisCommentFieldNames.Description, StringComparison.OrdinalIgnoreCase))
@@ -109,52 +134,17 @@ internal static class VorbisCommentReader
             tags.Copyright ??= value;
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Bpm, StringComparison.OrdinalIgnoreCase))
         {
-            if (tags.Bpm is null && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var bpm))
-                tags.Bpm = bpm;
+            if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var bpm))
+                tags.Bpm ??= bpm;
+            else
+                tags.CustomFields.TryAdd(fieldName, value);
         }
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Compilation, StringComparison.OrdinalIgnoreCase))
             tags.IsCompilation ??= value == "1";
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainTrackGain, StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseReplayGainValue(value, out var gain))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackGain = gain };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainTrackPeak, StringComparison.OrdinalIgnoreCase))
-        {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackPeak = peak };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainAlbumGain, StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseReplayGainValue(value, out var gain))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumGain = gain };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainAlbumPeak, StringComparison.OrdinalIgnoreCase))
-        {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumPeak = peak };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzTrackId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzTrackId ??= value;
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzArtistId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzArtistId ??= value;
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzAlbumId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzAlbumId ??= value;
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzReleaseGroupId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzReleaseGroupId ??= value;
         else if (string.Equals(fieldName, VorbisCommentFieldNames.MetadataBlockPicture, StringComparison.OrdinalIgnoreCase))
             TryParseMetadataBlockPicture(value, tags);
-        else
+        else if (!TagFieldMapping.TryApplySharedField(fieldName, value, tags))
             tags.CustomFields.TryAdd(fieldName, value);
-    }
-
-    private static bool TryParseReplayGainValue(string value, out double result)
-    {
-        var trimmed = value.AsSpan().Trim();
-        if (trimmed.EndsWith(" dB", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^3].Trim();
-
-        return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
     private static void TryParseMetadataBlockPicture(string base64Value, MediaTagInfo tags)

@@ -62,6 +62,8 @@ internal sealed class ByDay : IEquatable<ByDay>
     /// <inheritdoc />
     public override string ToString()
     {
-        return Ordinal + Utilities.DayOfWeekToString(DayOfWeek);
+        // The RFC 5545 grammar writes the ordinal with an ASCII sign, whatever the current culture
+        var dayOfWeek = Utilities.DayOfWeekToString(DayOfWeek);
+        return Ordinal is { } ordinal ? ordinal.ToString(CultureInfo.InvariantCulture) + dayOfWeek : dayOfWeek;
     }
 }

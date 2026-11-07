@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		FALSE	FALSE	FALSE		[EmbeddedFile]			Table 5 and Table 44
+Subtype	name	1.3		FALSE	FALSE	FALSE					https://github.com/pdf-association/pdf-issues/issues/155, https://github.com/pdf-association/pdf-issues/issues/156 - also check every page/Annots/RichMediaContent/Assets
+Params	dictionary	1.3		FALSE	FALSE	FALSE				[EmbeddedFileParameter]	
+Length	integer	1.3		TRUE	FALSE	FALSE					
+Filter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,CCITTFaxDecode,fn:SinceVersion(1.4,JBIG2Decode),DCTDecode,fn:SinceVersion(1.5,JPXDecode),fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfFilterNames];[]	
+DecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCCITTFaxDecode,fn:SinceVersion(1.4,FilterJBIG2Decode),FilterDCTDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+F	dictionary;string	1.3		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,CCITTFaxDecode,fn:SinceVersion(1.4,JBIG2Decode),DCTDecode,fn:SinceVersion(1.5,JPXDecode),fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfFilterNames];[]	
+FDecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCCITTFaxDecode,fn:SinceVersion(1.4,FilterJBIG2Decode),FilterDCTDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+DL	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DL>=0)]		
+Mail_MediaTypeParameters	string-text	fn:Extension(EAPDF_1,1.7)		FALSE	FALSE	FALSE					EA=PDF 1.0 and https://github.com/pdf-association/pdf-issues/issues/155

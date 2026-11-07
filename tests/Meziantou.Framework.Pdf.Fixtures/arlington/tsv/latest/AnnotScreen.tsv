@@ -1,0 +1,24 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[Annot]			Table 166 and Table 190 (NOT markup annot)
+Subtype	name	1.5		TRUE	FALSE	FALSE		[Screen]			
+Rect	rectangle	1.5		TRUE	FALSE	FALSE					
+Contents	string-text	1.5		FALSE	FALSE	FALSE					
+P	dictionary	1.5		FALSE	TRUE	FALSE				[PageObject]	
+NM	string-text	1.5		FALSE	FALSE	FALSE					
+M	date;string-text	1.5		FALSE	FALSE	FALSE					
+F	bitmask	1.5		FALSE	FALSE	FALSE	0		[fn:Eval(fn:BeforeVersion(1.7,fn:BitsClear(10,32)) && fn:SinceVersion(1.7,fn:BitsClear(11,32)))]		Table 167
+AP	dictionary	1.5		fn:IsRequired(fn:SinceVersion(2.0,(fn:RectWidth(Rect)>0) || (fn:RectHeight(Rect)>0)))	FALSE	FALSE				[Appearance]	
+AS	name	1.5		fn:IsRequired(fn:IsPresent(AP::N::*) || fn:IsPresent(AP::R::*) || fn:IsPresent(AP::D::*))	FALSE	FALSE					
+Border	array	1.5		FALSE	FALSE	FALSE	[0 0 1]			[ArrayOf_4AnnotBorderCharacteristics]	
+C	array	1.5		FALSE	FALSE	FALSE				[ArrayOf_4NumbersColorAnnotation]	
+StructParent	integer	1.5		FALSE	FALSE	FALSE					Table 359
+OC	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+AF	array	2.0		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+ca	number	2.0		FALSE	FALSE	FALSE	@CA	[fn:Eval((@ca>=0.0) && (@ca<=1.0))]			https://github.com/pdf-association/pdf-issues/issues/577
+CA	number	2.0		FALSE	FALSE	FALSE	1.0	[fn:Eval((@CA>=0.0) && (@CA<=1.0))]			
+BM	name	2.0		FALSE	FALSE	FALSE	Normal	[fn:Deprecated(1.4,Compatible),Normal,Multiply,Screen,Difference,Darken,Lighten,ColorDodge,ColorBurn,Exclusion,HardLight,Overlay,SoftLight,Luminosity,Hue,Saturation,Color]			Table 134 and Table 135
+Lang	string-text	2.0		FALSE	FALSE	FALSE					
+T	string-text	1.5		FALSE	FALSE	FALSE					
+MK	dictionary	1.5		FALSE	FALSE	FALSE				[AppearanceCharacteristics]	
+A	dictionary	1.5		FALSE	FALSE	FALSE				[ActionGoTo,ActionGoToR,fn:SinceVersion(1.6,ActionGoToE),fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData,ActionSetOCGState,ActionRendition,ActionTransition,fn:SinceVersion(1.6,ActionGoTo3DView),ActionECMAScript,fn:SinceVersion(2.0,ActionRichMediaExecute)]	
+AA	dictionary	1.5		FALSE	FALSE	FALSE				[AddActionScreenAnnotation]	

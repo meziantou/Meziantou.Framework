@@ -2598,4 +2598,24 @@ echo "hi";
 
 """);
     }
+
+    [Fact]
+    public void Heredoc_QuotedLabel()
+    {
+        AssertHighlighter("php",
+"""
+<?php
+$a = <<<"EOS"
+hi
+EOS;
+$b = 1;
+""",
+"""
+<span class="hljs-meta">&lt;?php</span>
+<span class="hljs-variable">$a</span> = <span class="hljs-string">&lt;&lt;&lt;&quot;EOS&quot;
+hi
+EOS</span>;
+<span class="hljs-variable">$b</span> = <span class="hljs-number">1</span>;
+""");
+    }
 }

@@ -1,11 +1,28 @@
 ﻿<Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Tests Meziantou.Framework.Uri, which depends on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="files/public_suffix_tests.txt" />
+    <EmbeddedResource Include="files/public_suffix_tests.txt">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <None Remove="files/urlpatterntestdata.json" />
+    <EmbeddedResource Include="files/urlpatterntestdata.json">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <None Remove="files/urltestdata.json" />
+    <EmbeddedResource Include="files/urltestdata.json">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.1</Version>
-    <IsTrimmable>false</IsTrimmable>
+    <Version>2.0.20</Version>
     <Description>Convert HTML fragments to Markdown</Description>
+    <PackageTags>html, markdown, converter, conversion</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.5.2" />
+    <ProjectReference Include="../Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
   </ItemGroup>
 
 </Project>

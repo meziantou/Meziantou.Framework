@@ -1,0 +1,103 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_debug_renderer_info Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_debug_renderer_info/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_debug_renderer_info"
+        ],
+        "Worker": [
+          "WEBGL_debug_renderer_info"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_debug_renderer_info": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_debug_renderer_info {\n\n      const GLenum UNMASKED_VENDOR_WEBGL            = 0x9245;\n      const GLenum UNMASKED_RENDERER_WEBGL          = 0x9246;\n\n};",
+        "type": "interface",
+        "name": "WEBGL_debug_renderer_info",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "UNMASKED_VENDOR_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9245"
+            }
+          },
+          {
+            "type": "const",
+            "name": "UNMASKED_RENDERER_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9246"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_debug_renderer_info"
+      ],
+      "Worker": [
+        "WEBGL_debug_renderer_info"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_debug_renderer_info": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

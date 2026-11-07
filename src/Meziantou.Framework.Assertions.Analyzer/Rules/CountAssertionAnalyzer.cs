@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -10,8 +11,8 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor UseEmptyDescriptor = new(
         id: RuleIdentifiers.UseEmptyAssertionDiagnosticId,
-        title: "Use Assert.Empty for zero count checks",
-        messageFormat: "Use Assert.Empty for count checks equal to zero",
+        title: "Use Assert.Empty or Assert.NotEmpty for zero count checks",
+        messageFormat: "Use Assert.{0} for count checks against zero",
         category: "Assertions",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -19,7 +20,7 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
     public static readonly DiagnosticDescriptor UseHasCountDescriptor = new(
         id: RuleIdentifiers.UseHasCountAssertionDiagnosticId,
         title: "Use specialized count assertions",
-        messageFormat: "Use a specialized count assertion method",
+        messageFormat: "Use Assert.{0}(expected, actual) to report the actual count",
         category: "Assertions",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -46,6 +47,13 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
         if (!CountAssertionAnalyzerCommon.TryGetAssertionMatch(invocationOperation, assertType, symbols, out var match))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(match.UseEmptyAssertion ? UseEmptyDescriptor : UseHasCountDescriptor, match.CountOperation.Syntax.GetLocation()));
+        if (match.UseEmptyAssertion)
+        {
+            context.ReportDiagnostic(UseEmptyDescriptor, match.CountOperation, match.AssertionMethodName);
+        }
+        else
+        {
+            context.ReportDiagnostic(UseHasCountDescriptor, match.CountOperation, match.AssertionMethodName);
+        }
     }
 }

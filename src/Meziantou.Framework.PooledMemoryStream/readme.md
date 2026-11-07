@@ -4,27 +4,28 @@
 
 ## Basic usage
 
-```csharp
-using Meziantou.Framework;
+`PooledMemoryStream` is in the `Meziantou.Framework` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.PooledMemoryStream.Tests/PooledMemoryStreamTests.cs;region=PooledMemoryStream_BasicUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var stream = new PooledMemoryStream();
 stream.Write("Hello, "u8);
 stream.Write("World!"u8);
 
 stream.Position = 0;
 using var reader = new StreamReader(stream);
-Console.WriteLine(reader.ReadToEnd()); // Hello, World!
+Assert.Equal("Hello, World!", reader.ReadToEnd());
 
 // The pooled buffers are returned to the shared pool when the stream is disposed.
 ```
+<!-- endref -->
 
 ## Use it as an `IBufferWriter<byte>`
 
-```csharp
-using System.Buffers;
-using System.Text.Json;
-using Meziantou.Framework;
+`IBufferWriter<T>` is in the `System.Buffers` namespace, and `Utf8JsonWriter` in `System.Text.Json`.
 
+<!-- ref:../../tests/Meziantou.Framework.PooledMemoryStream.Tests/PooledMemoryStreamTests.cs;region=PooledMemoryStream_BufferWriter;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var stream = new PooledMemoryStream();
 
 // PooledMemoryStream implements IBufferWriter<byte> (explicit), so it can be passed where one is expected.
@@ -36,16 +37,17 @@ await using (var json = new Utf8JsonWriter(writer))
     json.WriteEndObject();
 }
 
-var bytes = stream.ToArray(); // {"message":"hello"}
+var bytes = stream.ToArray();
+Assert.Equal("""{"message":"hello"}"""u8.ToArray(), bytes);
 ```
+<!-- endref -->
 
 Data written through `IBufferWriter<byte>` is appended at the end of the stream; after `Advance`, `Position` is moved to the new end.
 
 ## Configure the buffer sizes
 
+<!-- ref:../../tests/Meziantou.Framework.PooledMemoryStream.Tests/PooledMemoryStreamTests.cs;region=PooledMemoryStream_Options;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework;
-
 var options = new PooledMemoryStreamOptions
 {
     // Any number of strictly ascending tiers (bytes). Small streams use the smallest size and
@@ -57,10 +59,14 @@ var options = new PooledMemoryStreamOptions
 
 using var stream = new PooledMemoryStream(options);
 ```
+<!-- endref -->
 
 `PooledMemoryStreamOptions` becomes immutable (frozen) the first time it is used to create a stream; after that, setting any property throws `InvalidOperationException`. The shared `PooledMemoryStreamOptions.Default` is always frozen. Configure all properties before passing the options to a stream.
 
 ## Notes
 
 - The byte arrays (including the array returned by `GetBuffer()` / `TryGetBuffer()`, and the spans/memory returned by the `IBufferWriter<byte>` members) are owned by the stream and are returned to the shared pool on `Dispose`. **Do not use them after the stream is disposed.**
+- The array returned by `GetBuffer()` / `TryGetBuffer()` is never returned to the shared pool before `Dispose`, so another stream cannot rent it while you hold it. Like with `MemoryStream`, it stays the stream's storage (shrinking with `SetLength` or `Capacity` keeps it, so later writes overwrite it) until a later `GetBuffer()` / `TryGetBuffer()` call consolidates several blocks into a new array; the old array then stays valid but no longer reflects the stream contents.
+- `GetBuffer()` returns the whole underlying array, not just the first `Length` bytes. Only `[0, Length)` is meaningful; the rest is zeroed before the array is handed out, so it never exposes data written by another stream. The spans returned by the `IBufferWriter<byte>` members are uninitialized, as usual for a buffer writer.
+- Because the storage is a chain of blocks rather than a single array, the stream is not bounded by `Array.MaxLength`: it can hold as many bytes as memory allows. The members that must produce a single array (`ToArray()`, `GetBuffer()`, `TryGetBuffer()`) are still bounded by it and throw an `InvalidOperationException` on a longer stream. `Capacity` is an `int` inherited from `MemoryStream`, so its getter is clamped to `int.MaxValue`.
 - The instance is not thread-safe (like `MemoryStream`); the shared pool is.

@@ -1,0 +1,165 @@
+{
+  "element-timing/background-image-data-uri.html": {
+    "total": 1
+  },
+  "element-timing/background-image-multiple-elements.html": {
+    "total": 1
+  },
+  "element-timing/background-image-stretched.html": {
+    "total": 1
+  },
+  "element-timing/buffer-before-onload.html": {
+    "total": 1
+  },
+  "element-timing/buffered-flag.html": {
+    "total": 1
+  },
+  "element-timing/cross-origin-element.sub.html": {
+    "total": 1
+  },
+  "element-timing/cross-origin-iframe-element.sub.html": {
+    "total": 1
+  },
+  "element-timing/css-generated-text.html": {
+    "total": 1
+  },
+  "element-timing/disconnect-image.html": {
+    "total": 1
+  },
+  "element-timing/element-only-when-fully-active.html": {
+    "total": 1
+  },
+  "element-timing/first-letter-background.html": {
+    "total": 1
+  },
+  "element-timing/fixed-id-identifier.html": {
+    "total": 1
+  },
+  "element-timing/idlharness.window.js": {
+    "total": 4,
+    "failures": {
+      "idl_test setup": "FAIL"
+    }
+  },
+  "element-timing/image-TAO.sub.html": {
+    "total": 1
+  },
+  "element-timing/image-carousel.html": {
+    "total": 1
+  },
+  "element-timing/image-clipped-svg.html": {
+    "total": 1
+  },
+  "element-timing/image-data-uri.html": {
+    "total": 1
+  },
+  "element-timing/image-not-added.html": {
+    "total": 1
+  },
+  "element-timing/image-not-fully-visible.html": {
+    "total": 1
+  },
+  "element-timing/image-rect-iframe.html": {
+    "total": 1
+  },
+  "element-timing/image-src-change.html": {
+    "total": 1
+  },
+  "element-timing/image-with-css-scale.html": {
+    "total": 1
+  },
+  "element-timing/image-with-rotation.html": {
+    "total": 1
+  },
+  "element-timing/images-repeated-resource.html": {
+    "total": 1
+  },
+  "element-timing/input-type-image.html": {
+    "total": 1
+  },
+  "element-timing/invisible-images.html": {
+    "total": 1
+  },
+  "element-timing/list-style-image.html": {
+    "total": 1
+  },
+  "element-timing/multiple-background-images.html": {
+    "total": 1
+  },
+  "element-timing/object.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Element with an object containing an image.": "TIMEOUT"
+    }
+  },
+  "element-timing/observe-background-image.html": {
+    "total": 1
+  },
+  "element-timing/observe-child-element.html": {
+    "total": 1
+  },
+  "element-timing/observe-elementtiming.html": {
+    "total": 1
+  },
+  "element-timing/observe-empty-attribute.html": {
+    "total": 1
+  },
+  "element-timing/observe-multiple-images.html": {
+    "total": 1
+  },
+  "element-timing/observe-shadow-image.html": {
+    "total": 1
+  },
+  "element-timing/observe-shadow-text.html": {
+    "total": 1
+  },
+  "element-timing/observe-svg-image.html": {
+    "total": 1
+  },
+  "element-timing/observe-text.html": {
+    "total": 1
+  },
+  "element-timing/observe-video-poster.html": {
+    "total": 1
+  },
+  "element-timing/picture.html": {
+    "total": 1
+  },
+  "element-timing/progressively-loaded-image.html": {
+    "total": 1
+  },
+  "element-timing/pseudo-background-image.html": {
+    "total": 1
+  },
+  "element-timing/pseudo-content-image.html": {
+    "total": 1
+  },
+  "element-timing/pseudo-content-text.html": {
+    "total": 1
+  },
+  "element-timing/rectangular-image.html": {
+    "total": 1
+  },
+  "element-timing/retrievability.html": {
+    "total": 1
+  },
+  "element-timing/same-origin-redirects.html": {
+    "total": 1
+  },
+  "element-timing/scroll-to-text.html": {
+    "total": 1
+  },
+  "element-timing/supported-element-type.html": {
+    "total": 1
+  },
+  "element-timing/text-not-observed-when-changed.html": {
+    "total": 1
+  },
+  "element-timing/text-with-display-style.html": {
+    "total": 1
+  },
+  "element-timing/toJSON.html": {
+    "total": 1
+  }
+}

@@ -1,0 +1,875 @@
+{
+  "spec": {
+    "title": "CSS Inline Layout Module Level 3",
+    "url": "https://drafts.csswg.org/css-inline-3/"
+  },
+  "properties": [
+    {
+      "name": "dominant-baseline",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-dominant-baseline",
+      "value": "auto | <baseline-metric>",
+      "initial": "auto",
+      "appliesTo": "block containers, inline boxes, table rows, grid containers, flex containers, and SVG text content elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Equivalent to alphabetic in horizontal writing modes and in vertical writing modes when text-orientation is sideways. Equivalent to central in vertical writing modes when text-orientation is mixed or upright. However, in SVG text, the origin point of glyphs (used for coordinate-based glyph positioning) is always handled as for central in vertical writing modes.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "text-bottom",
+          "prose": "Use the text-under baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-text-bottom",
+          "type": "value",
+          "value": "text-bottom"
+        },
+        {
+          "name": "alphabetic",
+          "prose": "Use the alphabetic baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-alphabetic",
+          "type": "value",
+          "value": "alphabetic"
+        },
+        {
+          "name": "ideographic",
+          "prose": "Use the ideographic-under baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-ideographic",
+          "type": "value",
+          "value": "ideographic"
+        },
+        {
+          "name": "middle",
+          "prose": "Use the x-middle baselines; except under text-orientation: upright (where the alphabetic and x-height baselines are essentially meaningless) use the central baseline.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-middle",
+          "type": "value",
+          "value": "middle"
+        },
+        {
+          "name": "central",
+          "prose": "Use the central baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-central",
+          "type": "value",
+          "value": "central"
+        },
+        {
+          "name": "mathematical",
+          "prose": "Use the math baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-mathematical",
+          "type": "value",
+          "value": "mathematical"
+        },
+        {
+          "name": "hanging",
+          "prose": "Use the hanging baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-hanging",
+          "type": "value",
+          "value": "hanging"
+        },
+        {
+          "name": "text-top",
+          "prose": "Use the text-over baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-text-top",
+          "type": "value",
+          "value": "text-top"
+        }
+      ],
+      "styleDeclaration": [
+        "dominant-baseline",
+        "dominantBaseline"
+      ]
+    },
+    {
+      "name": "vertical-align",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-vertical-align",
+      "value": "[ first | last] || <'alignment-baseline'> || <'baseline-shift'>",
+      "initial": "baseline",
+      "appliesTo": "see individual properties",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Specifies last-baseline alignment for inline-block, first-baseline alignment for everything else.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-source-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "first",
+          "prose": "Specifies first-baseline alignment.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-source-first",
+          "type": "value",
+          "value": "first"
+        },
+        {
+          "name": "last",
+          "prose": "Specifies last-baseline alignment.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-source-last",
+          "type": "value",
+          "value": "last"
+        },
+        {
+          "name": "<length>",
+          "prose": "Raise (positive value) or lower (negative value) by the specified length.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "<percentage>",
+          "prose": "Raise (positive value) or lower (negative value) by the specified percentage of the line-height.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        },
+        {
+          "name": "sub",
+          "prose": "Lower by the offset appropriate for subscripts of the parent’s box. The UA may use the parent’s font metrics to find this offset; otherwise it defaults to dropping by one fifth of the parent’s used font-size.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-sub",
+          "type": "value",
+          "value": "sub"
+        },
+        {
+          "name": "super",
+          "prose": "Raise by the offset appropriate for superscripts of the parent’s box. The UA may use the parent’s font metrics to find this offset; otherwise it defaults to raising by one third of the parent’s used font-size.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-super",
+          "type": "value",
+          "value": "super"
+        },
+        {
+          "name": "top",
+          "prose": "Align the line-over edge of the aligned subtree with the line-over edge of the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "center",
+          "prose": "Align the center of the aligned subtree with the center of the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "bottom",
+          "prose": "Align the line-under edge of the aligned subtree with the line-under edge of the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-bottom",
+          "type": "value",
+          "value": "bottom"
+        }
+      ],
+      "styleDeclaration": [
+        "vertical-align",
+        "verticalAlign"
+      ],
+      "longhands": [
+        "alignment-baseline",
+        "baseline-shift",
+        "baseline-source"
+      ]
+    },
+    {
+      "name": "baseline-source",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-baseline-source",
+      "value": "auto | first | last",
+      "initial": "auto",
+      "appliesTo": "inline-level boxes that establish an independent formatting context",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Specifies last-baseline alignment for inline-block, first-baseline alignment for everything else.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-source-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "first",
+          "prose": "Specifies first-baseline alignment.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-source-first",
+          "type": "value",
+          "value": "first"
+        },
+        {
+          "name": "last",
+          "prose": "Specifies last-baseline alignment.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-source-last",
+          "type": "value",
+          "value": "last"
+        }
+      ],
+      "styleDeclaration": [
+        "baseline-source",
+        "baselineSource"
+      ]
+    },
+    {
+      "name": "alignment-baseline",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-alignment-baseline",
+      "value": "baseline | <baseline-metric>",
+      "initial": "baseline",
+      "appliesTo": "inline-level boxes, flex items, grid items, table cells, and SVG text content elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "baseline",
+          "prose": "This property specifies the box’s alignment baseline: the baseline used to align the box prior to applying its post-alignment shift (if applicable). Values have the same meanings as for dominant-baseline; the baseline keyword uses the dominant baseline choice of the parent.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-alignment-baseline-baseline",
+          "type": "value",
+          "value": "baseline"
+        },
+        {
+          "name": "text-before-edge",
+          "prose": "text-before-edge aliasing text-top",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-alignment-baseline-text-before-edge",
+          "type": "value",
+          "value": "text-before-edge"
+        },
+        {
+          "name": "text-after-edge",
+          "prose": "text-after-edge aliasing text-bottom",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-alignment-baseline-text-after-edge",
+          "type": "value",
+          "value": "text-after-edge"
+        }
+      ],
+      "styleDeclaration": [
+        "alignment-baseline",
+        "alignmentBaseline"
+      ]
+    },
+    {
+      "name": "baseline-shift",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-baseline-shift",
+      "value": "<length-percentage> | sub | super | top | center | bottom",
+      "initial": "0",
+      "appliesTo": "inline-level boxes and SVG text content elements",
+      "inherited": "no",
+      "percentages": "refer to the used value of line-height",
+      "computedValue": "the specified keyword or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<length>",
+          "prose": "Raise (positive value) or lower (negative value) by the specified length.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "<percentage>",
+          "prose": "Raise (positive value) or lower (negative value) by the specified percentage of the line-height.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        },
+        {
+          "name": "sub",
+          "prose": "Lower by the offset appropriate for subscripts of the parent’s box. The UA may use the parent’s font metrics to find this offset; otherwise it defaults to dropping by one fifth of the parent’s used font-size.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-sub",
+          "type": "value",
+          "value": "sub"
+        },
+        {
+          "name": "super",
+          "prose": "Raise by the offset appropriate for superscripts of the parent’s box. The UA may use the parent’s font metrics to find this offset; otherwise it defaults to raising by one third of the parent’s used font-size.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-super",
+          "type": "value",
+          "value": "super"
+        },
+        {
+          "name": "top",
+          "prose": "Align the line-over edge of the aligned subtree with the line-over edge of the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "center",
+          "prose": "Align the center of the aligned subtree with the center of the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "bottom",
+          "prose": "Align the line-under edge of the aligned subtree with the line-under edge of the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-bottom",
+          "type": "value",
+          "value": "bottom"
+        },
+        {
+          "name": "baseline",
+          "prose": "User agents may additionally support the keyword baseline as computing to 0 if is necessary for them to support legacy SVG content. This value is not allowed in the vertical-align shorthand.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-baseline-shift-baseline",
+          "type": "value",
+          "value": "baseline"
+        }
+      ],
+      "styleDeclaration": [
+        "baseline-shift",
+        "baselineShift"
+      ]
+    },
+    {
+      "name": "line-height",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-line-height",
+      "value": "normal | <number [0,∞]> | <length-percentage [0,∞]>",
+      "initial": "normal",
+      "appliesTo": "non-replaced inline boxes and SVG text content elements",
+      "inherited": "yes",
+      "percentages": "computed relative to 1em",
+      "computedValue": "the specified keyword, a number, or a computed <length> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Determine the preferred line height automatically based on the metrics of the used font.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-height-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<length [0,∞]>",
+          "prose": "The specified length is used as the preferred line height. Negative values are illegal.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-height-length-0",
+          "type": "value",
+          "value": "<length [0,∞]>"
+        },
+        {
+          "name": "<number [0,∞]>",
+          "prose": "The preferred line height is this number multiplied by the element’s used font-size. Negative values are illegal. The computed value is the same as the specified value.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-height-number-0",
+          "type": "value",
+          "value": "<number [0,∞]>"
+        },
+        {
+          "name": "<percentage [0,∞]>",
+          "prose": "The preferred line height and computed value of the property is this percentage of the element’s computed font-size. Negative values are illegal.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-height-percentage-0",
+          "type": "value",
+          "value": "<percentage [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "line-height",
+        "lineHeight"
+      ]
+    },
+    {
+      "name": "line-fit-edge",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-line-fit-edge",
+      "value": "leading | <text-edge>",
+      "initial": "leading",
+      "appliesTo": "inline boxes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "leading",
+          "prose": "Use the ascent/descent plus any positive half-leading. Margin/padding/border is ignored for the purpose of sizing the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-leading",
+          "type": "value",
+          "value": "leading"
+        },
+        {
+          "name": "text",
+          "prose": "Use the text-over baseline/text-under baseline as the over/under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-text",
+          "type": "value",
+          "value": "text"
+        },
+        {
+          "name": "cap",
+          "prose": "Use the cap-height baseline as the over edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-cap",
+          "type": "value",
+          "value": "cap"
+        },
+        {
+          "name": "ex",
+          "prose": "Use the x-height baseline as the over edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-ex",
+          "type": "value",
+          "value": "ex"
+        },
+        {
+          "name": "ideographic",
+          "prose": "Use the ideographic-over baseline/ideographic-under baseline as the over/under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-ideographic",
+          "type": "value",
+          "value": "ideographic"
+        },
+        {
+          "name": "ideographic-ink",
+          "prose": "Use the ideographic-ink-over baseline/ideographic-ink-under baseline as the over/under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-ideographic-ink",
+          "type": "value",
+          "value": "ideographic-ink"
+        },
+        {
+          "name": "alphabetic",
+          "prose": "Use the alphabetic baseline as the under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-alphabetic",
+          "type": "value",
+          "value": "alphabetic"
+        }
+      ],
+      "styleDeclaration": [
+        "line-fit-edge",
+        "lineFitEdge"
+      ]
+    },
+    {
+      "name": "text-box",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-text-box",
+      "value": "normal | <'text-box-trim'> || <'text-box-edge'>",
+      "initial": "normal",
+      "appliesTo": "block containers, multi-column containers, and inline boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "If the single keyword normal is specified, it sets text-box-trim to none and text-box-edge to auto. Otherwise, omitting the text-box-trim value sets it to trim-both (not the initial value), while omitting the text-box-edge value sets it to auto (the initial value).",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-text-box-normal",
+          "type": "value",
+          "value": "normal"
+        }
+      ],
+      "styleDeclaration": [
+        "text-box",
+        "textBox"
+      ]
+    },
+    {
+      "name": "text-box-trim",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-text-box-trim",
+      "value": "none | trim-start | trim-end | trim-both",
+      "initial": "none",
+      "appliesTo": "block containers, multi-column containers, and inline boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No special handling of the first/last line box when applied to a block container. When applied to an inline box, specifies that the over/under content edges coincide with the text-over/text-under baselines regardless of text-box-edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-text-box-trim-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "trim-start",
+          "prose": "For block containers and column boxes: trim the block-start side of the first formatted line to the specified metric of its root inline box. If there is no such line, or if there is intervening non-zero padding or borders, there is no effect. For inline boxes: trims the block-start side of the box to match its content edge to the metric specified by text-box-edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-text-box-trim-trim-start",
+          "type": "value",
+          "value": "trim-start"
+        },
+        {
+          "name": "trim-end",
+          "prose": "For block containers and column boxes: trim the block-end side of the last formatted line to the specified metric of its root inline box. If there is no such line, or if there is intervening non-zero padding or borders, there is no effect. For inline boxes: trims the block-end side of the box to match its content edge to the metric specified by text-box-edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-text-box-trim-trim-end",
+          "type": "value",
+          "value": "trim-end"
+        },
+        {
+          "name": "trim-both",
+          "prose": "Specifies the behavior of trim-start and trim-end simultaneously.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-text-box-trim-trim-both",
+          "type": "value",
+          "value": "trim-both"
+        }
+      ],
+      "styleDeclaration": [
+        "text-box-trim",
+        "textBoxTrim"
+      ]
+    },
+    {
+      "name": "text-box-edge",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-text-box-edge",
+      "value": "auto | <text-edge>",
+      "initial": "auto",
+      "appliesTo": "block containers and inline boxes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "This property specifies the metrics to use for text-box-trim effects. Values have the same meanings as for line-fit-edge; the auto keyword uses the value of line-fit-edge, interpreting leading (the initial value) as text.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-text-box-edge-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "text-box-edge",
+        "textBoxEdge"
+      ]
+    },
+    {
+      "name": "inline-sizing",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-inline-sizing",
+      "value": "normal | stretch",
+      "initial": "normal",
+      "appliesTo": "inline boxes, but not ruby container boxes nor internal ruby boxes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The content area of the inline box is sized and positioned to fit (possibly hypothetical) text from its first available font. If text-box-trim indicates trimming, then the specified metric must be used. Otherwise, this specification does not specify how. A UA may, e.g., use the maximum ascender and descender of the font. (This would ensure that glyphs with parts above or below the em-box still fall within the content area, but leads to differently sized boxes for different fonts.)",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-inline-sizing-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "stretch",
+          "prose": "Once the line box has been sized and its contents positioned as for normal, the inline box’s box edges are shifted such that its over/under margin edges coincide with the corresponding line box’s edges, stretching the inline box’s inner logical height so that its block-axis outer size fills the line box. (The sizes and positions of its in-flow contents are not affected.)",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-inline-sizing-stretch",
+          "type": "value",
+          "value": "stretch"
+        }
+      ],
+      "styleDeclaration": [
+        "inline-sizing",
+        "inlineSizing"
+      ]
+    },
+    {
+      "name": "initial-letter",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-initial-letter",
+      "value": "normal | <number [1,∞]> <integer [1,∞]> | <number [1,∞]> && [ drop | raise ]?",
+      "initial": "normal",
+      "appliesTo": "certain inline-level boxes and ::first-letter and inside ::marker boxes (see prose)",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword normal or a number paired with an integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "No special initial letter effect. Text behaves as normal.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<number [1,∞]>",
+          "prose": "This first argument defines the size of the initial letter in terms of how many lines it occupies. Values less than one are invalid.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-number-1",
+          "type": "value",
+          "value": "<number [1,∞]>"
+        },
+        {
+          "name": "<integer [1,∞]>",
+          "prose": "This optional second argument defines the number of lines the initial letter should sink. A value of 1 indicates a raised initial; values greater than 1 indicate a sunken initial. Values less than one are invalid.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-integer-1",
+          "type": "value",
+          "value": "<integer [1,∞]>"
+        },
+        {
+          "name": "raise",
+          "prose": "Computes to an initial letter sink of 1.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-raise",
+          "type": "value",
+          "value": "raise"
+        },
+        {
+          "name": "drop",
+          "prose": "Computes to an initial letter sink equal to the initial letter size floored to the nearest positive whole number.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-drop",
+          "type": "value",
+          "value": "drop"
+        }
+      ],
+      "styleDeclaration": [
+        "initial-letter",
+        "initialLetter"
+      ]
+    },
+    {
+      "name": "initial-letter-align",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-initial-letter-align",
+      "value": "[ border-box? [ alphabetic | ideographic | hanging | leading ]? ]!",
+      "initial": "alphabetic",
+      "appliesTo": "certain inline-level boxes and ::first-letter and inside ::marker boxes (see prose)",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "alphabetic",
+          "prose": "Use the cap-height and alphabetic baselines of the surrounding text to align the initial letter.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-align-alphabetic",
+          "type": "value",
+          "value": "alphabetic"
+        },
+        {
+          "name": "ideographic",
+          "prose": "Use the ideographic-ink-over and ideographic-ink-under baselines of the surrounding text to align the initial letter.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-align-ideographic",
+          "type": "value",
+          "value": "ideographic"
+        },
+        {
+          "name": "hanging",
+          "prose": "Use the hanging and alphabetic baselines of the surrounding text to align the initial letter.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-align-hanging",
+          "type": "value",
+          "value": "hanging"
+        },
+        {
+          "name": "leading",
+          "prose": "Use the over/under half-leading edges (i.e. ascent/descent + half-leading) of the surrounding text to align the initial letter.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-align-leading",
+          "type": "value",
+          "value": "leading"
+        },
+        {
+          "name": "border-box",
+          "prose": "Use the initial letter box’s line-under and line-over border edges as the over and under alignment points, respectively.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-align-border-box",
+          "type": "value",
+          "value": "border-box"
+        }
+      ],
+      "styleDeclaration": [
+        "initial-letter-align",
+        "initialLetterAlign"
+      ]
+    },
+    {
+      "name": "initial-letter-wrap",
+      "href": "https://drafts.csswg.org/css-inline-3/#propdef-initial-letter-wrap",
+      "value": "none | first | all | grid | <length-percentage>",
+      "initial": "none",
+      "appliesTo": "certain inline-level boxes and ::first-letter and inside ::marker boxes (see prose)",
+      "inherited": "yes",
+      "percentages": "relative to logical width of (last fragment of) initial letter",
+      "computedValue": "specified keyword or computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No contour-fitting is performed: each impacted line is aligned flush to the inline-end margin edge of the initial letter.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-wrap-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "first",
+          "prose": "Behaves as none if the first typographic character unit after the initial letter belongs to Unicode General Category Zs. Otherwise behaves as for all on the first line of the block containing the initial letter and as none on the rest. This example shows why contour-fitting the first line is necessary, and why it is dropped when the initial letter is followed by a space: In the top paragraph, the initial letter \"A\" has a word space after it: the gap between the top of the \"A\" and the next letter provides the necessary word separation. In the next paragraph, the initial letter \"A\" is part of the first word, and leaving a gap between the top of the \"A\" and the next letter would create a jarring visual break within the word. In this case, the first line of text should be kerned into the initial letter’s area, as shown in the bottom paragraph. Do we need an unconditional first? (I.e. Should we rename this value to auto and add a first value that does not check for spaces?) See GitHub issue 410",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-wrap-first",
+          "type": "value",
+          "value": "first"
+        },
+        {
+          "name": "all",
+          "prose": "For each line of text impacted by the initial letter, the line box adjacent to the initial letter starts at the start-most point that does not overlap the initial letter’s glyph outline. If the value of shape-outside is not none, shape-outside is used instead of the glyph outline. In both cases, shape-margin is applied to expand the outline, and the resulting outline is clipped by the initial letter’s margin edges.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-wrap-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "grid",
+          "prose": "This value is the same as none, except that the exclusion area of the impacted lines is increased as necessary for its end-edge to land on the character grid, i.e. to be a multiple of (1ic + letter-spacing) as computed on the containing block. The justify-self property can then be used to align the initial letter box within the exclusion area. Diagram of Japanese initial letter in vertical writing mode",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-wrap-grid",
+          "type": "value",
+          "value": "grid"
+        },
+        {
+          "name": "<length>",
+          "prose": "This value behaves the same as first except that the adjustment to the first line is given explicitly instead of being inferred from the glyph shape. This really needs font-relative lengths to be relative to the used size. In the following example, UAs that support first will use the glyph outline plus the specified margin in order to place the first line, whereas UAs that only support <length> or <percentage> values will pull in the first line by 40% of the initial letter’s width (and then add the margin to that point). h1 + p:first-letter { initial-letter: 3; /* 3-line drop-cap */ initial-letter-wrap: first; margin-right: 0.1em; } @supports (not (initial-letter-wrap: first)) { /* Classes auto-generated on paragraphs to match first letter. */ p.A:first-letter { initial-letter-wrap: -40%; /* Start of glyph outline, assuming correct font. */ } } These values and related annoyance is likely unnecessary if someone submits a patch to Blink to support first.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-wrap-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "<percentage>",
+          "prose": "This value behaves the same as first except that the adjustment to the first line is given explicitly instead of being inferred from the glyph shape. This really needs font-relative lengths to be relative to the used size. In the following example, UAs that support first will use the glyph outline plus the specified margin in order to place the first line, whereas UAs that only support <length> or <percentage> values will pull in the first line by 40% of the initial letter’s width (and then add the margin to that point). h1 + p:first-letter { initial-letter: 3; /* 3-line drop-cap */ initial-letter-wrap: first; margin-right: 0.1em; } @supports (not (initial-letter-wrap: first)) { /* Classes auto-generated on paragraphs to match first letter. */ p.A:first-letter { initial-letter-wrap: -40%; /* Start of glyph outline, assuming correct font. */ } } These values and related annoyance is likely unnecessary if someone submits a patch to Blink to support first.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-initial-letter-wrap-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        }
+      ],
+      "styleDeclaration": [
+        "initial-letter-wrap",
+        "initialLetterWrap"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<baseline-metric>",
+      "prose": "The <baseline-metric> value, which identifies specific baseline metrics, expands to",
+      "href": "https://drafts.csswg.org/css-inline-3/#typedef-baseline-metric",
+      "type": "type",
+      "value": "text-bottom | alphabetic | ideographic | middle | central | mathematical | hanging | text-top",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Equivalent to alphabetic in horizontal writing modes and in vertical writing modes when text-orientation is sideways. Equivalent to central in vertical writing modes when text-orientation is mixed or upright. However, in SVG text, the origin point of glyphs (used for coordinate-based glyph positioning) is always handled as for central in vertical writing modes.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "text-bottom",
+          "prose": "Use the text-under baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-text-bottom",
+          "type": "value",
+          "value": "text-bottom"
+        },
+        {
+          "name": "alphabetic",
+          "prose": "Use the alphabetic baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-alphabetic",
+          "type": "value",
+          "value": "alphabetic"
+        },
+        {
+          "name": "ideographic",
+          "prose": "Use the ideographic-under baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-ideographic",
+          "type": "value",
+          "value": "ideographic"
+        },
+        {
+          "name": "middle",
+          "prose": "Use the x-middle baselines; except under text-orientation: upright (where the alphabetic and x-height baselines are essentially meaningless) use the central baseline.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-middle",
+          "type": "value",
+          "value": "middle"
+        },
+        {
+          "name": "central",
+          "prose": "Use the central baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-central",
+          "type": "value",
+          "value": "central"
+        },
+        {
+          "name": "mathematical",
+          "prose": "Use the math baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-mathematical",
+          "type": "value",
+          "value": "mathematical"
+        },
+        {
+          "name": "hanging",
+          "prose": "Use the hanging baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-hanging",
+          "type": "value",
+          "value": "hanging"
+        },
+        {
+          "name": "text-top",
+          "prose": "Use the text-over baselines.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-text-top",
+          "type": "value",
+          "value": "text-top"
+        }
+      ]
+    },
+    {
+      "name": "<text-edge>",
+      "prose": "The <text-edge> value, which identifies specific font metrics, expands to",
+      "href": "https://drafts.csswg.org/css-inline-3/#typedef-text-edge",
+      "type": "type",
+      "value": "[ text | ideographic | ideographic-ink ] | [ text | ideographic | ideographic-ink | cap | ex ] [ text | ideographic | ideographic-ink | alphabetic ]",
+      "values": [
+        {
+          "name": "leading",
+          "prose": "Use the ascent/descent plus any positive half-leading. Margin/padding/border is ignored for the purpose of sizing the line box.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-leading",
+          "type": "value",
+          "value": "leading"
+        },
+        {
+          "name": "text",
+          "prose": "Use the text-over baseline/text-under baseline as the over/under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-text",
+          "type": "value",
+          "value": "text"
+        },
+        {
+          "name": "cap",
+          "prose": "Use the cap-height baseline as the over edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-cap",
+          "type": "value",
+          "value": "cap"
+        },
+        {
+          "name": "ex",
+          "prose": "Use the x-height baseline as the over edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-ex",
+          "type": "value",
+          "value": "ex"
+        },
+        {
+          "name": "ideographic",
+          "prose": "Use the ideographic-over baseline/ideographic-under baseline as the over/under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-ideographic",
+          "type": "value",
+          "value": "ideographic"
+        },
+        {
+          "name": "ideographic-ink",
+          "prose": "Use the ideographic-ink-over baseline/ideographic-ink-under baseline as the over/under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-ideographic-ink",
+          "type": "value",
+          "value": "ideographic-ink"
+        },
+        {
+          "name": "alphabetic",
+          "prose": "Use the alphabetic baseline as the under edge.",
+          "href": "https://drafts.csswg.org/css-inline-3/#valdef-line-fit-edge-alphabetic",
+          "type": "value",
+          "value": "alphabetic"
+        }
+      ]
+    }
+  ]
+}

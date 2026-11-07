@@ -1,0 +1,37 @@
+{
+  "language": "json",
+  "diagnostics": [
+    {
+      "id": "JSON0007",
+      "severity": "Error",
+      "message": "Expected a JSON value."
+    }
+  ],
+  "root": {
+    "kind": "JsonDocument",
+    "type": "JsonDocumentSyntax",
+    "text": "{\"port\": }\n",
+    "children": [
+      {
+        "kind": "JsonObject",
+        "type": "JsonObjectSyntax",
+        "text": "{\"port\": }\n",
+        "children": [
+          {
+            "kind": "JsonMember",
+            "type": "JsonMemberSyntax",
+            "text": "\"port\": ",
+            "children": [
+              {
+                "kind": "JsonSkippedText",
+                "type": "JsonSkippedTextSyntax",
+                "isMissing": true,
+                "text": ""
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

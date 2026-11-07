@@ -1,6 +1,6 @@
 # Meziantou.AspNetCore.Components.LogViewer
 
-A Blazor component for displaying and analyzing log entries with support for filtering, highlighting, and interactive exploration.
+A Blazor component for displaying and analyzing log entries with support for highlighting and interactive exploration.
 
 ## Features
 
@@ -18,6 +18,7 @@ A Blazor component for displaying and analyzing log entries with support for fil
 
 ### Basic Example
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/LogViewerBasicExample.razor;format=md-fenced-code-block -->
 ```razor
 @page "/logs"
 @using Meziantou.AspNetCore.Components
@@ -48,11 +49,13 @@ A Blazor component for displaying and analyzing log entries with support for fil
     };
 }
 ```
+<!-- endref -->
 
 ### Advanced Example with Configuration
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/LogViewerAdvancedExample.razor;format=md-fenced-code-block -->
 ```razor
-@page "/logs"
+@page "/logs/advanced"
 @using Meziantou.AspNetCore.Components
 
 <LogViewer
@@ -85,10 +88,14 @@ A Blazor component for displaying and analyzing log entries with support for fil
     };
 }
 ```
+<!-- endref -->
 
 ### Log Entries with Structured Messages
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/LogViewerStructuredMessageExample.razor;format=md-fenced-code-block -->
 ```razor
+<LogViewer Entries="@logEntries" />
+
 @code {
     private List<LogEntry> logEntries = new()
     {
@@ -112,21 +119,45 @@ A Blazor component for displaying and analyzing log entries with support for fil
     };
 }
 ```
+<!-- endref -->
 
 When `Message` is a string, it is displayed as highlighted text. For non-string `Message` values, the structured payload is rendered inline and can be viewed as either a table or JSON.
+
+The table view walks the object with reflection: dictionaries are rendered as key/value rows, other sequences as
+indexed rows, and anything else by its public instance properties. Indexers are skipped, a property getter that
+throws is rendered as an error instead of failing the render, and nesting is capped by `MaxDepth` (default `32`),
+which also bounds cyclic object graphs.
+
+> **Trimming and Native AOT:** the table and JSON views use reflection over arbitrary objects, so `LogEntryDetails`
+> is not compatible with trimming or Native AOT. In a trimmed Blazor WebAssembly app, properties of logged types may
+> be removed and silently omitted from the output. Keep the types you log rooted, or pass a `Dictionary<string, object>`
+> instead of an arbitrary object.
 
 ### ANSI-formatted Messages
 
 `LogViewer` parses ANSI SGR escape sequences embedded in string messages and renders the corresponding foreground/background colors and text styles.
 
+<!-- ref:../../tests/Meziantou.AspNetCore.Components.LogViewer.Tests/LogViewerComponentTests.cs;region=LogEntry_AnsiMessage;format=md-fenced-code-block;dedent=true -->
 ```csharp
-new LogEntry
+var entry = new LogEntry
 {
     Timestamp = DateTimeOffset.UtcNow,
     LogLevel = LogLevel.Information,
     Message = "\u001b[1;33mwarning\u001b[0m \u001b[38;2;100;200;50mcustom color\u001b[0m",
-}
+};
 ```
+<!-- endref -->
+
+### Highlighters
+
+`LogHighlighters` receives an ordered collection of `ILogHighlighter`. Each highlighter returns
+`LogHighlighterResult` values describing a range of the message to mark up. When two results overlap, the one with
+the higher `Priority` wins — even when the other one starts earlier; ties are broken on the lowest index, then on
+the longest match.
+
+A result can carry a `Link`, which turns the range into an anchor. Only `http` and `https` links are rendered as
+anchors; any other scheme falls back to a plain highlight, so a highlighter cannot inject a `javascript:` URL into
+the page from untrusted log text.
 
 ### Hierarchical / Nested Logs
 
@@ -134,7 +165,10 @@ A `LogEntry` can contain child entries via the `Children` property, with an unli
 Each entry is independently collapsible. Set `Expanded = true` on an entry to make it start expanded
 (the default is collapsed). The toggle controls nested children.
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/LogViewerNestedLogsExample.razor;format=md-fenced-code-block -->
 ```razor
+<LogViewer Entries="@logEntries" />
+
 @code {
     private List<LogEntry> logEntries = new()
     {
@@ -166,6 +200,7 @@ Each entry is independently collapsible. Set `Expanded = true` on an entry to ma
     };
 }
 ```
+<!-- endref -->
 
 Line numbers count every entry in the tree (including collapsed children), so the numbers stay stable
 when you expand or collapse nodes.

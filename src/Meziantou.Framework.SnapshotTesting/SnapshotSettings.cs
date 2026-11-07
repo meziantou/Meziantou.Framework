@@ -7,6 +7,10 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 public sealed record SnapshotSettings
 {
+    // The longest file name ext4, APFS and most other file systems accept, in UTF-8 bytes. NTFS counts UTF-16
+    // code units instead, which never exceed the UTF-8 byte count.
+    private const int MaxFileNameByteCount = 255;
+
     private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create(
         MergeTool.DiffToolFromEnvironmentVariable,
         MergeTool.GitMergeTool,
@@ -17,24 +21,20 @@ public sealed record SnapshotSettings
         new AutoDiffEngineTool());
 
 
+    internal const string AutoDetectContinuousEnvironmentVariableName = "SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT";
+
     public static SnapshotSettings Default { get; set; } = new();
 
     /// <summary>Gets or sets a value indicating whether to automatically detect continuous integration, continuous testing, and LLM environments and disable snapshot updates.</summary>
-    public bool AutoDetectContinuousEnvironment { get; set; } = true;
+    /// <remarks>
+    /// The default value is <see langword="true" />, unless the <c>SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT</c>
+    /// environment variable is set to <c>false</c>, <c>0</c>, <c>no</c> or <c>off</c>.
+    /// </remarks>
+    public bool AutoDetectContinuousEnvironment { get; set; } = ContinuousEnvironmentDetector.IsAutoDetectionEnabled(AutoDetectContinuousEnvironmentVariableName);
 
     public bool ForceUpdateSnapshots { get; set; }
 
     public SnapshotUpdateStrategy SnapshotUpdateStrategy
-    {
-        get;
-        set
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            field = value;
-        }
-    }
-
-    public AssertionExceptionBuilder AssertionExceptionCreator
     {
         get;
         set
@@ -79,14 +79,17 @@ public sealed record SnapshotSettings
     public SnapshotSerializerCollection Serializers { get; }
 
     /// <summary>
-    /// Set the ordered list of tools to diff snapshots.
-    /// If null or empty, the diff tool is determined by
-    /// <list type="bullet">
-    ///   <item>The <c>DiffEngine_Tool</c> environment variable</item>
-    ///   <item>The current IDE (Visual Studio, Visual Studio Code, Rider)</item>
-    /// </list>
+    /// Gets or sets the ordered list of tools used by <see cref="SnapshotUpdateStrategy.MergeTool" /> and
+    /// <see cref="SnapshotUpdateStrategy.MergeToolSync" />. The first tool that can be started is used.
+    /// The default list tries the <c>DiffEngine_Tool</c> environment variable, the git merge and diff tools, the current IDE
+    /// (Visual Studio, Visual Studio Code, Rider), and then the GUI tools detected by DiffEngine. Terminal tools such as Vim
+    /// are only used when named explicitly.
+    /// If <see langword="null" /> or empty, no merge tool is launched and the assertion failure is reported.
     /// </summary>
-    /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
+    /// <remarks>
+    /// The <c>DiffEngine_Disabled</c> environment variable disables all merge tools, even the ones set explicitly. Merge tools
+    /// are also never launched on a continuous integration server, in a continuous testing runner, or in an LLM agent.
+    /// </remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; }
 
     public SnapshotComparerCollection Comparers { get; }
@@ -103,9 +106,10 @@ public sealed record SnapshotSettings
         ];
         Comparers = new SnapshotComparerCollection();
         Comparers.Set(SnapshotType.None, ByteArraySnapshotComparer.Instance);
-        Scrubbers = [];
+        Comparers.Set(SnapshotType.Default, TextSnapshotComparer.Instance);
+        Comparers.Set(SnapshotType.Svg, TextSnapshotComparer.Instance);
+        Scrubbers = new CopyOnWriteList<Scrubber>();
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
-        AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         MaxSnapshotFileNameLength = 128;
         SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName;
         SnapshotPathStrategy = DefaultSnapshotPath;
@@ -117,23 +121,35 @@ public sealed record SnapshotSettings
         ArgumentNullException.ThrowIfNull(options);
         Serializers = new SnapshotSerializerCollection(options.Serializers);
         Comparers = new SnapshotComparerCollection(options.Comparers);
-        Scrubbers = [];
-        foreach (var scrubber in options.Scrubbers)
-        {
-            Scrubbers.Add(scrubber);
-        }
+        Scrubbers = new CopyOnWriteList<Scrubber>(options.Scrubbers);
 
         AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
         ForceUpdateSnapshots = options.ForceUpdateSnapshots;
         SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
-        AssertionExceptionCreator = options.AssertionExceptionCreator;
         MaxSnapshotFileNameLength = options.MaxSnapshotFileNameLength;
         SnapshotNamingStrategy = options.SnapshotNamingStrategy;
         SnapshotPathStrategy = options.SnapshotPathStrategy;
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
     }
 
-    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMContextDetector.IsLLMContext();
+    internal static bool IsRunningOnContinuousIntegration() => ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is not null;
+
+    /// <summary>
+    /// Indicates whether the snapshot names come from the library: the default path strategy combined with a
+    /// built-in naming strategy. Only those names are checked for collisions, as a custom strategy may give
+    /// several tests the same file on purpose.
+    /// </summary>
+    internal static bool UsesBuiltInSnapshotNames(SnapshotSettings settings)
+    {
+        return settings.SnapshotPathStrategy == (SnapshotPathStrategy)DefaultSnapshotPath && IsBuiltInNamingStrategy(settings.SnapshotNamingStrategy);
+    }
+
+    private static bool IsBuiltInNamingStrategy(SnapshotNamingStrategy strategy)
+    {
+        return ReferenceEquals(strategy, SnapshotNamingStrategies.ClassName_TestName) ||
+               ReferenceEquals(strategy, SnapshotNamingStrategies.TestName) ||
+               ReferenceEquals(strategy, SnapshotNamingStrategies.FullName);
+    }
 
     private static FullPath DefaultSnapshotPath(SnapshotPathContext context)
     {
@@ -160,39 +176,138 @@ public sealed record SnapshotSettings
             }
         }
 
-        var rawStartPart = context.Settings.SnapshotNamingStrategy(context);
-        var startPart = SanitizeFragment(rawStartPart ?? "");
-        if (startPart.Length == 0)
-        {
-            startPart = "snapshot";
-        }
+        var name = GetSnapshotNameParts(context);
 
-        var hasMultipleSnapshots = context.SnapshotCount > 1;
-        var indexPart = context.Index.ToString(CultureInfo.InvariantCulture);
-        var suffixWithoutHash = hasMultipleSnapshots ? "_" + indexPart + ".verified." + extension : ".verified." + extension;
+        // The '_<index>' suffix tells apart the files of an assertion that produces several snapshots.
+        var indexPart = context.SnapshotCount > 1 ? "_" + context.Index.ToString(CultureInfo.InvariantCulture) : "";
+        var extensionPart = ".verified." + extension;
+        var maxLength = context.Settings.MaxSnapshotFileNameLength;
+        var fileName = name.Stem + name.OrdinalPart + indexPart + extensionPart;
         var shouldAddHashSuffix =
-            startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
-            IsReservedSnapshotName(startPart);
+            name.RequiresHash ||
+            fileName.Length > maxLength ||
+            Encoding.UTF8.GetByteCount(fileName) > MaxFileNameByteCount ||
+            IsWindowsReservedDeviceName(name.Stem + name.OrdinalPart + indexPart);
 
-        var suffix = suffixWithoutHash;
-        if (shouldAddHashSuffix)
+        if (!shouldAddHashSuffix)
+            return fileName;
+
+        var suffix = "_" + ComputeNameHash(context, name.RawName) + name.OrdinalPart + indexPart + extensionPart;
+
+        // The stem keeps at least one character, so the file name never starts with the '_' of the hash. A suffix too
+        // long to leave room for it cannot be shortened without losing the format or the index of the snapshot.
+        var maxStemLength = maxLength - suffix.Length;
+        var maxStemByteCount = MaxFileNameByteCount - Encoding.UTF8.GetByteCount(suffix);
+        var stem = name.Stem;
+        if (stem.Length > maxStemLength)
         {
-            var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.ClassName}|{context.LineNumber}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
-            var hash = ToHexSha256(hashInput, length: 8);
-            suffix = hasMultipleSnapshots ? "_" + hash + "_" + indexPart + ".verified." + extension : "_" + hash + ".verified." + extension;
+            stem = TruncateToLength(stem, maxStemLength);
         }
 
-        var maxStartLength = context.Settings.MaxSnapshotFileNameLength - suffix.Length;
-        if (maxStartLength <= 0)
+        stem = TruncateToByteCount(stem, maxStemByteCount);
+        if (stem.Length == 0)
         {
-            startPart = "s";
-        }
-        else if (startPart.Length > maxStartLength)
-        {
-            startPart = startPart[..maxStartLength];
+            throw new SnapshotException(
+                $"Cannot name the snapshot '{name.RawName}': its suffix '{suffix}' leaves no room for the name within {maxLength.ToString(CultureInfo.InvariantCulture)} characters " +
+                $"(MaxSnapshotFileNameLength) and {MaxFileNameByteCount.ToString(CultureInfo.InvariantCulture)} UTF-8 bytes. Increase MaxSnapshotFileNameLength or use a shorter extension.");
         }
 
-        return startPart + suffix;
+        return stem + suffix;
+    }
+
+    /// <summary>
+    /// Returns the identity the default path strategy gives the snapshots of an assertion when it adds a hash to their
+    /// names, whether or not it does for this context. See <see cref="SnapshotHashedName" />.
+    /// </summary>
+    internal static SnapshotHashedName GetHashedSnapshotName(SnapshotPathContext context)
+    {
+        var name = GetSnapshotNameParts(context);
+        return new SnapshotHashedName(name.Stem, ComputeNameHash(context, name.RawName), name.OrdinalPart);
+    }
+
+    /// <summary>
+    /// Computes the part of the default file name that depends neither on the extension nor on the index of the snapshot.
+    /// </summary>
+    private static SnapshotNameParts GetSnapshotNameParts(SnapshotPathContext context)
+    {
+        var rawName = context.Settings.SnapshotNamingStrategy(context) ?? "";
+        var stem = RemoveSnapshotFileMarkers(SanitizeFragment(rawName));
+
+        // Sanitizing loses information - 'Case_a/b' and 'Case_a?b' both become 'Case_a_b' - so a name it
+        // changed only stays distinct once the hash of the original name is part of the file name.
+        var requiresHash = !string.Equals(stem, rawName, StringComparison.Ordinal);
+        if (stem.Length == 0)
+        {
+            stem = "snapshot";
+        }
+
+        requiresHash |= IsReservedSnapshotName(stem);
+
+        // Windows only looks at the part before the first dot: 'NUL.report.verified.txt' is the 'NUL' device too. The
+        // hash added after the name does not change that part, so it is escaped. A name without a dot is followed by the
+        // hash, which makes it safe already, and keeps the name it always had.
+        var dotIndex = stem.IndexOf('.', StringComparison.Ordinal);
+        if (dotIndex >= 0 && IsWindowsReservedDeviceName(stem))
+        {
+            stem = stem.Insert(dotIndex, "_");
+            requiresHash = true;
+        }
+
+        // The '~<ordinal>' suffix tells apart the assertions of a test that would otherwise share a name. '~' is never
+        // produced by the sanitization, so the second assertion of a test cannot take the name of another test.
+        // The naming of a custom strategy is left alone: it may already tell the assertions apart.
+        var callOrdinal = IsBuiltInNamingStrategy(context.Settings.SnapshotNamingStrategy) ? context.CallOrdinal : 1;
+        var ordinalPart = callOrdinal > 1 ? "~" + callOrdinal.ToString(CultureInfo.InvariantCulture) : "";
+        return new SnapshotNameParts(rawName, stem, ordinalPart, requiresHash);
+    }
+
+    private static string ComputeNameHash(SnapshotPathContext context, string rawName)
+    {
+        // The line number is deliberately not part of the hash: it would rename the snapshot whenever
+        // anything above the assertion moves. Two assertions of one test are told apart by the ordinal
+        // suffix instead.
+        // The source file name is used rather than its full path: the snapshot is stored next to the
+        // source file, so the name is enough to tell two files of that directory apart, while the
+        // absolute path would tie the file name to where the repository happens to be checked out.
+        // The index and the extension are not part of it either: the hash identifies the files of an assertion.
+        var hashInput = $"{context.SourceFilePath.Name}|{context.MethodName}|{context.ClassName}|{context.Type.Type}|{rawName}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
+        return ToHexSha256(hashInput, length: SnapshotHashedName.HashLength);
+    }
+
+    /// <summary>Shortens a name to the given number of UTF-16 code units, without splitting a surrogate pair.</summary>
+    private static string TruncateToLength(string value, int maxLength)
+    {
+        if (maxLength <= 0)
+            return "";
+
+        if (char.IsHighSurrogate(value[maxLength - 1]))
+        {
+            maxLength--;
+        }
+
+        return value[..maxLength];
+    }
+
+    /// <summary>
+    /// Shortens a name so its UTF-8 encoding fits in the given number of bytes, without splitting a character.
+    /// </summary>
+    private static string TruncateToByteCount(string value, int maxByteCount)
+    {
+        if (Encoding.UTF8.GetByteCount(value) <= maxByteCount)
+            return value;
+
+        var byteCount = 0;
+        var length = 0;
+        foreach (var rune in value.EnumerateRunes())
+        {
+            byteCount += rune.Utf8SequenceLength;
+            if (byteCount > maxByteCount)
+                break;
+
+            length += rune.Utf16SequenceLength;
+        }
+
+        return value[..length];
     }
 
     private static bool IsReservedSnapshotName(string value)
@@ -201,7 +316,49 @@ public sealed record SnapshotSettings
                value.EndsWith(".actual", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string FormatMetadata(IReadOnlyDictionary<string, string?>? metadata)
+    /// <summary>
+    /// Replaces the dot that starts a <c>.verified.</c> or <c>.actual.</c> sequence inside a name with <c>_</c>. With a
+    /// marker in its name - a test called <c>Parse.actual.value</c> - a verified file looks like an actual file to the
+    /// approval tool, including the versions of the tool that are already installed. The case is ignored, as the tool's
+    /// file pattern matches the marker in any case on Windows and macOS.
+    /// </summary>
+    private static string RemoveSnapshotFileMarkers(string value)
+    {
+        while (true)
+        {
+            var index = value.IndexOf(SnapshotFileName.VerifiedMarker, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                index = value.IndexOf(SnapshotFileName.ActualMarker, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    return value;
+            }
+
+            value = string.Concat(value.AsSpan(0, index), "_", value.AsSpan(index + 1));
+        }
+    }
+
+    /// <summary>
+    /// Indicates whether Windows opens a device rather than the file: on the Windows versions that map a device name
+    /// followed by an extension, <c>NUL.verified.txt</c> is the <c>NUL</c> device.
+    /// </summary>
+    private static bool IsWindowsReservedDeviceName(string fileName)
+    {
+        var dotIndex = fileName.IndexOf('.', StringComparison.Ordinal);
+        var name = dotIndex < 0 ? fileName.AsSpan() : fileName.AsSpan(0, dotIndex);
+        return name.Length switch
+        {
+            3 => name.Equals("CON", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("PRN", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("AUX", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("NUL", StringComparison.OrdinalIgnoreCase),
+            4 => (name.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || name.StartsWith("LPT", StringComparison.OrdinalIgnoreCase)) &&
+                 name[3] is (>= '0' and <= '9') or '\u00B9' or '\u00B2' or '\u00B3',
+            _ => false,
+        };
+    }
+
+    internal static string FormatMetadata(IReadOnlyDictionary<string, string?>? metadata)
     {
         if (metadata is null || metadata.Count == 0)
             return "";
@@ -240,4 +397,6 @@ public sealed record SnapshotSettings
 
         return buffer.ToString().Trim('_');
     }
+
+    private readonly record struct SnapshotNameParts(string RawName, string Stem, string OrdinalPart, bool RequiresHash);
 }

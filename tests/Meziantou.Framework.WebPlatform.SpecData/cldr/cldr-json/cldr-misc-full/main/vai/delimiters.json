@@ -1,0 +1,15 @@
+{
+  "main": {
+    "vai": {
+      "identity": {
+        "language": "vai"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

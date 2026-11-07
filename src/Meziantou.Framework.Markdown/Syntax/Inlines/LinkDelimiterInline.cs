@@ -1,0 +1,74 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+
+namespace Meziantou.Framework.Markdown.Syntax.Inlines;
+
+/// <summary>
+/// A delimiter for a link.
+/// </summary>
+/// <seealso cref="DelimiterInline" />
+public class LinkDelimiterInline : DelimiterInline
+{
+    private TriviaProperties? TriviaOrNull => GetTrivia<TriviaProperties>();
+    private TriviaProperties Trivia => GetOrSetTrivia<TriviaProperties>();
+
+    /// <summary>
+    /// Initializes a new instance of the LinkDelimiterInline class.
+    /// </summary>
+    public LinkDelimiterInline(InlineParser parser) : base(parser)
+    {
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this delimiter is an image link.
+    /// </summary>
+    public bool IsImage
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                if (IsInOpenChain)
+                {
+                    InlineContainerChain.OnLinkDelimiterChanged(this, resetDeactivation: true);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the label of this link.
+    /// </summary>
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// The label span
+    /// </summary>
+    public SourceSpan LabelSpan;
+
+    /// <summary>
+    /// Gets or sets the <see cref="Label"/> with trivia.
+    /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
+    /// <see cref="StringSlice.Empty"/>.
+    /// </summary>
+    public StringSlice LabelWithTrivia { get => TriviaOrNull?.LabelWithTrivia ?? StringSlice.Empty; set => Trivia.LabelWithTrivia = value; }
+
+    /// <summary>
+    /// Performs the to literal operation.
+    /// </summary>
+    public override string ToLiteral()
+    {
+        return IsImage ? "![" : "[";
+    }
+
+    private sealed class TriviaProperties
+    {
+        public StringSlice LabelWithTrivia;
+    }
+}

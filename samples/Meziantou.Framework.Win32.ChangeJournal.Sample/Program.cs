@@ -7,7 +7,7 @@ changeJournal.EnableTrackModifiedRanges(1, 1);
 //changeJournal.Create(ByteSize.FromMegaBytes(10).Value, ByteSize.FromMegaBytes(1).Value);
 File.Delete("D:/test.txt");
 File.WriteAllBytes("D:/test.txt", new byte[ByteSize.FromMegaBytes(10).Value]);
-var entries = changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
+var entries = changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero).ToList();
 var lastUsn = entries.OfType<ChangeJournalEntryVersion2or3>().LastOrDefault()?.UniqueSequenceNumber;
 
 Console.WriteLine($"Last USN: {lastUsn}");
@@ -25,7 +25,7 @@ using (var fs = new FileStream("D:/test.txt", FileMode.Open, FileAccess.Write))
     fs.SetLength(ByteSize.FromMegaBytes(200).Value);
 }
 
-entries = changeJournal.GetEntries(lastUsn!.Value, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
+entries = changeJournal.GetEntries(lastUsn!.Value, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero).ToList();
 Console.WriteLine($"Entries: {entries.Count}");
 foreach (var entry in entries)
 {

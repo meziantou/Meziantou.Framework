@@ -1,0 +1,50 @@
+{
+  "spec": {
+    "title": "CSS Conditional Rules Module Level 3",
+    "url": "https://drafts.csswg.org/css-conditional-3/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@media",
+      "prose": "The @media rule is a conditional group rule whose condition is a media query. Its syntax is:",
+      "href": "https://drafts.csswg.org/css-conditional-3/#at-ruledef-media",
+      "descriptors": [],
+      "value": "@media <media-query-list> { <rule-list> }"
+    },
+    {
+      "name": "@supports",
+      "prose": "The @supports rule is a conditional group rule whose condition tests whether the user agent supports CSS property:value pairs. Authors can use it to write style sheets that use new features when available but degrade gracefully when those features are not supported. These queries are called CSS feature queries or (colloquially) supports queries.",
+      "href": "https://drafts.csswg.org/css-conditional-3/#at-ruledef-supports",
+      "descriptors": [],
+      "value": "@supports <supports-condition> { <rule-list> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<supports-condition>",
+      "href": "https://drafts.csswg.org/css-conditional-3/#typedef-supports-condition",
+      "type": "type",
+      "value": "not <supports-in-parens> | <supports-in-parens> [ and <supports-in-parens> ]* | <supports-in-parens> [ or <supports-in-parens> ]*"
+    },
+    {
+      "name": "<supports-in-parens>",
+      "href": "https://drafts.csswg.org/css-conditional-3/#typedef-supports-in-parens",
+      "type": "type",
+      "value": "( <supports-condition> ) | <supports-feature> | <general-enclosed>"
+    },
+    {
+      "name": "<supports-feature>",
+      "href": "https://drafts.csswg.org/css-conditional-3/#typedef-supports-feature",
+      "type": "type",
+      "value": "<supports-decl>"
+    },
+    {
+      "name": "<supports-decl>",
+      "href": "https://drafts.csswg.org/css-conditional-3/#typedef-supports-decl",
+      "type": "type",
+      "value": "( <declaration> )"
+    }
+  ]
+}

@@ -1,0 +1,919 @@
+{
+  "spec": {
+    "title": "URL Pattern Standard",
+    "url": "https://urlpattern.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "URLPattern"
+        ],
+        "Worker": [
+          "URLPattern"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "URLPatternInput": {
+        "fragment": "typedef (USVString or URLPatternInit) URLPatternInput;",
+        "type": "typedef",
+        "name": "URLPatternInput",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternInit"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://urlpattern.spec.whatwg.org/#typedefdef-urlpatterninput"
+      },
+      "URLPattern": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface URLPattern {\n  constructor(URLPatternInput input, USVString baseURL, optional URLPatternOptions options = {});\n  constructor(optional URLPatternInput input = {}, optional URLPatternOptions options = {});\n\n  boolean test(optional URLPatternInput input = {}, optional USVString baseURL);\n\n  URLPatternResult? exec(optional URLPatternInput input = {}, optional USVString baseURL);\n\n  readonly attribute USVString protocol;\n  readonly attribute USVString username;\n  readonly attribute USVString password;\n  readonly attribute USVString hostname;\n  readonly attribute USVString port;\n  readonly attribute USVString pathname;\n  readonly attribute USVString search;\n  readonly attribute USVString hash;\n\n  readonly attribute boolean hasRegExpGroups;\n};",
+        "type": "interface",
+        "name": "URLPattern",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "URLPatternInput"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "baseURL",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "URLPatternOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-urlpattern"
+          },
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "URLPatternInput"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "URLPatternOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-urlpattern-input-options"
+          },
+          {
+            "type": "operation",
+            "name": "test",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "URLPatternInput"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "baseURL",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-test"
+          },
+          {
+            "type": "operation",
+            "name": "exec",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "URLPatternResult"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "URLPatternInput"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "baseURL",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec"
+          },
+          {
+            "type": "attribute",
+            "name": "protocol",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-protocol"
+          },
+          {
+            "type": "attribute",
+            "name": "username",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-username"
+          },
+          {
+            "type": "attribute",
+            "name": "password",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-password"
+          },
+          {
+            "type": "attribute",
+            "name": "hostname",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-hostname"
+          },
+          {
+            "type": "attribute",
+            "name": "port",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-port"
+          },
+          {
+            "type": "attribute",
+            "name": "pathname",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-pathname"
+          },
+          {
+            "type": "attribute",
+            "name": "search",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-search"
+          },
+          {
+            "type": "attribute",
+            "name": "hash",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-hash"
+          },
+          {
+            "type": "attribute",
+            "name": "hasRegExpGroups",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpattern-hasregexpgroups"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://urlpattern.spec.whatwg.org/#urlpattern"
+      },
+      "URLPatternInit": {
+        "fragment": "dictionary URLPatternInit {\n  USVString protocol;\n  USVString username;\n  USVString password;\n  USVString hostname;\n  USVString port;\n  USVString pathname;\n  USVString search;\n  USVString hash;\n  USVString baseURL;\n};",
+        "type": "dictionary",
+        "name": "URLPatternInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "protocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-protocol"
+          },
+          {
+            "type": "field",
+            "name": "username",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-username"
+          },
+          {
+            "type": "field",
+            "name": "password",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-password"
+          },
+          {
+            "type": "field",
+            "name": "hostname",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-hostname"
+          },
+          {
+            "type": "field",
+            "name": "port",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-port"
+          },
+          {
+            "type": "field",
+            "name": "pathname",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-pathname"
+          },
+          {
+            "type": "field",
+            "name": "search",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-search"
+          },
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-hash"
+          },
+          {
+            "type": "field",
+            "name": "baseURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-baseurl"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit"
+      },
+      "URLPatternOptions": {
+        "fragment": "dictionary URLPatternOptions {\n  boolean ignoreCase = false;\n};",
+        "type": "dictionary",
+        "name": "URLPatternOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "ignoreCase",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternoptions-ignorecase"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://urlpattern.spec.whatwg.org/#dictdef-urlpatternoptions"
+      },
+      "URLPatternResult": {
+        "fragment": "dictionary URLPatternResult {\n  sequence<URLPatternInput> inputs;\n\n  URLPatternComponentResult protocol;\n  URLPatternComponentResult username;\n  URLPatternComponentResult password;\n  URLPatternComponentResult hostname;\n  URLPatternComponentResult port;\n  URLPatternComponentResult pathname;\n  URLPatternComponentResult search;\n  URLPatternComponentResult hash;\n};",
+        "type": "dictionary",
+        "name": "URLPatternResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "inputs",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "URLPatternInput"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-inputs"
+          },
+          {
+            "type": "field",
+            "name": "protocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-protocol"
+          },
+          {
+            "type": "field",
+            "name": "username",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-username"
+          },
+          {
+            "type": "field",
+            "name": "password",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-password"
+          },
+          {
+            "type": "field",
+            "name": "hostname",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-hostname"
+          },
+          {
+            "type": "field",
+            "name": "port",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-port"
+          },
+          {
+            "type": "field",
+            "name": "pathname",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-pathname"
+          },
+          {
+            "type": "field",
+            "name": "search",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-search"
+          },
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternComponentResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-hash"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://urlpattern.spec.whatwg.org/#dictdef-urlpatternresult"
+      },
+      "URLPatternComponentResult": {
+        "fragment": "dictionary URLPatternComponentResult {\n  USVString input;\n  record<USVString, (USVString or undefined)> groups;\n};",
+        "type": "dictionary",
+        "name": "URLPatternComponentResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "input",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterncomponentresult-input"
+          },
+          {
+            "type": "field",
+            "name": "groups",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USVString"
+                    },
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "undefined"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://urlpattern.spec.whatwg.org/#dom-urlpatterncomponentresult-groups"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://urlpattern.spec.whatwg.org/#dictdef-urlpatterncomponentresult"
+      },
+      "URLPatternCompatible": {
+        "fragment": "typedef (USVString or URLPatternInit or URLPattern) URLPatternCompatible;",
+        "type": "typedef",
+        "name": "URLPatternCompatible",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternInit"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPattern"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://urlpattern.spec.whatwg.org/#typedefdef-urlpatterncompatible"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "URLPattern"
+      ],
+      "Worker": [
+        "URLPattern"
+      ]
+    },
+    "dependencies": {
+      "URLPattern": [
+        "URLPatternInput",
+        "URLPatternOptions",
+        "URLPatternResult"
+      ],
+      "URLPatternInit": [],
+      "URLPatternOptions": [],
+      "URLPatternResult": [
+        "URLPatternInput",
+        "URLPatternComponentResult"
+      ],
+      "URLPatternComponentResult": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,1656 @@
+{
+  "spec": {
+    "title": "Federated Credential Management API",
+    "url": "https://w3c-fedid.github.io/FedCM/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "IdentityCredentialError"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "IdentityCredential",
+          "IdentityProvider"
+        ]
+      }
+    },
+    "idlNames": {
+      "IdentityCredentialDisconnectOptions": {
+        "fragment": "dictionary IdentityCredentialDisconnectOptions : IdentityProviderConfig {\n  required USVString accountHint;\n};",
+        "type": "dictionary",
+        "name": "IdentityCredentialDisconnectOptions",
+        "inheritance": "IdentityProviderConfig",
+        "members": [
+          {
+            "type": "field",
+            "name": "accountHint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialdisconnectoptions-accounthint"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identitycredentialdisconnectoptions"
+      },
+      "IdentityCredential": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface IdentityCredential : Credential {\n  static Promise<undefined> disconnect(IdentityCredentialDisconnectOptions options);\n  readonly attribute any token;\n  readonly attribute boolean isAutoSelected;\n  readonly attribute USVString configURL;\n};",
+        "type": "interface",
+        "name": "IdentityCredential",
+        "inheritance": "Credential",
+        "members": [
+          {
+            "type": "operation",
+            "name": "disconnect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdentityCredentialDisconnectOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredential-disconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "token",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredential-token"
+          },
+          {
+            "type": "attribute",
+            "name": "isAutoSelected",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredential-isautoselected"
+          },
+          {
+            "type": "attribute",
+            "name": "configURL",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredential-configurl"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#identitycredential"
+      },
+      "DisconnectedAccount": {
+        "fragment": "dictionary DisconnectedAccount {\n  required USVString account_id;\n};",
+        "type": "dictionary",
+        "name": "DisconnectedAccount",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "account_id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-disconnectedaccount-account_id"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-disconnectedaccount"
+      },
+      "IdentityCredentialErrorInit": {
+        "fragment": "dictionary IdentityCredentialErrorInit {\n  DOMString error;\n  USVString url;\n};",
+        "type": "dictionary",
+        "name": "IdentityCredentialErrorInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "error",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialerrorinit-error"
+          },
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialerrorinit-url"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identitycredentialerrorinit"
+      },
+      "IdentityCredentialError": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface IdentityCredentialError : DOMException {\n  constructor(optional DOMString message = \"\", optional IdentityCredentialErrorInit options = {});\n  readonly attribute DOMString error;\n  readonly attribute USVString url;\n};",
+        "type": "interface",
+        "name": "IdentityCredentialError",
+        "inheritance": "DOMException",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdentityCredentialErrorInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialerror-identitycredentialerror"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialerror-error"
+          },
+          {
+            "type": "attribute",
+            "name": "url",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialerror-url"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#identitycredentialerror"
+      },
+      "IdentityCredentialRequestOptionsContext": {
+        "fragment": "enum IdentityCredentialRequestOptionsContext {\n  \"signin\",\n  \"signup\",\n  \"use\",\n  \"continue\"\n};",
+        "type": "enum",
+        "name": "IdentityCredentialRequestOptionsContext",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "signin",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptionscontext-signin"
+          },
+          {
+            "type": "enum-value",
+            "value": "signup",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptionscontext-signup"
+          },
+          {
+            "type": "enum-value",
+            "value": "use",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptionscontext-use"
+          },
+          {
+            "type": "enum-value",
+            "value": "continue",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptionscontext-continue"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c-fedid.github.io/FedCM/#enumdef-identitycredentialrequestoptionscontext"
+      },
+      "IdentityCredentialRequestOptionsMode": {
+        "fragment": "enum IdentityCredentialRequestOptionsMode {\n  \"active\",\n  \"passive\"\n};",
+        "type": "enum",
+        "name": "IdentityCredentialRequestOptionsMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "active",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptionsmode-active"
+          },
+          {
+            "type": "enum-value",
+            "value": "passive",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptionsmode-passive"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c-fedid.github.io/FedCM/#enumdef-identitycredentialrequestoptionsmode"
+      },
+      "IdentityCredentialRequestOptions": {
+        "fragment": "dictionary IdentityCredentialRequestOptions {\n  required sequence<IdentityProviderRequestOptions> providers;\n  IdentityCredentialRequestOptionsContext context = \"signin\";\n  IdentityCredentialRequestOptionsMode mode = \"passive\";\n};",
+        "type": "dictionary",
+        "name": "IdentityCredentialRequestOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "providers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdentityProviderRequestOptions"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptions-providers"
+          },
+          {
+            "type": "field",
+            "name": "context",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IdentityCredentialRequestOptionsContext"
+            },
+            "default": {
+              "type": "string",
+              "value": "signin"
+            },
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptions-context"
+          },
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IdentityCredentialRequestOptionsMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "passive"
+            },
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identitycredentialrequestoptions-mode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identitycredentialrequestoptions"
+      },
+      "IdentityProviderConfig": {
+        "fragment": "dictionary IdentityProviderConfig {\n  required USVString configURL;\n  required USVString clientId;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "configURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderconfig-configurl"
+          },
+          {
+            "type": "field",
+            "name": "clientId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderconfig-clientid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityproviderconfig"
+      },
+      "IdentityProviderRequestOptions": {
+        "fragment": "dictionary IdentityProviderRequestOptions : IdentityProviderConfig {\n  DOMString loginHint;\n  DOMString domainHint;\n  sequence<USVString> fields;\n  any params;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderRequestOptions",
+        "inheritance": "IdentityProviderConfig",
+        "members": [
+          {
+            "type": "field",
+            "name": "loginHint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderrequestoptions-loginhint"
+          },
+          {
+            "type": "field",
+            "name": "domainHint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderrequestoptions-domainhint"
+          },
+          {
+            "type": "field",
+            "name": "fields",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderrequestoptions-fields"
+          },
+          {
+            "type": "field",
+            "name": "params",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderrequestoptions-params"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityproviderrequestoptions"
+      },
+      "IdentityProviderWellKnown": {
+        "fragment": "dictionary IdentityProviderWellKnown {\n  sequence<USVString> provider_urls;\n  USVString accounts_endpoint;\n  USVString login_url;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderWellKnown",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "provider_urls",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderwellknown-provider_urls"
+          },
+          {
+            "type": "field",
+            "name": "accounts_endpoint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderwellknown-accounts_endpoint"
+          },
+          {
+            "type": "field",
+            "name": "login_url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderwellknown-login_url"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityproviderwellknown"
+      },
+      "IdentityProviderIcon": {
+        "fragment": "dictionary IdentityProviderIcon {\n  required USVString url;\n  unsigned long size;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderIcon",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovidericon-url"
+          },
+          {
+            "type": "field",
+            "name": "size",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovidericon-size"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityprovidericon"
+      },
+      "IdentityProviderBranding": {
+        "fragment": "dictionary IdentityProviderBranding {\n  USVString background_color;\n  USVString color;\n  sequence<IdentityProviderIcon> icons;\n  USVString name;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderBranding",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "background_color",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderbranding-background_color"
+          },
+          {
+            "type": "field",
+            "name": "color",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderbranding-color"
+          },
+          {
+            "type": "field",
+            "name": "icons",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdentityProviderIcon"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderbranding-icons"
+          },
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderbranding-name"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityproviderbranding"
+      },
+      "IdentityProviderAPIConfig": {
+        "fragment": "dictionary IdentityProviderAPIConfig {\n  required USVString accounts_endpoint;\n  USVString client_metadata_endpoint;\n  required USVString id_assertion_endpoint;\n  required USVString login_url;\n  USVString disconnect_endpoint;\n  IdentityProviderBranding branding;\n  boolean supports_use_other_account = false;\n  USVString account_label;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderAPIConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "accounts_endpoint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-accounts_endpoint"
+          },
+          {
+            "type": "field",
+            "name": "client_metadata_endpoint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-client_metadata_endpoint"
+          },
+          {
+            "type": "field",
+            "name": "id_assertion_endpoint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-id_assertion_endpoint"
+          },
+          {
+            "type": "field",
+            "name": "login_url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-login_url"
+          },
+          {
+            "type": "field",
+            "name": "disconnect_endpoint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-disconnect_endpoint"
+          },
+          {
+            "type": "field",
+            "name": "branding",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IdentityProviderBranding"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-branding"
+          },
+          {
+            "type": "field",
+            "name": "supports_use_other_account",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-supports_use_other_account"
+          },
+          {
+            "type": "field",
+            "name": "account_label",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderapiconfig-account_label"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityproviderapiconfig"
+      },
+      "IdentityProviderAccount": {
+        "fragment": "dictionary IdentityProviderAccount {\n  required USVString id;\n  USVString name;\n  USVString email;\n  USVString tel;\n  USVString username;\n  USVString given_name;\n  USVString picture;\n  sequence<USVString> approved_clients;\n  sequence<DOMString> login_hints;\n  sequence<DOMString> domain_hints;\n  sequence<DOMString> label_hints;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderAccount",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-id"
+          },
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-name"
+          },
+          {
+            "type": "field",
+            "name": "email",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-email"
+          },
+          {
+            "type": "field",
+            "name": "tel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-tel"
+          },
+          {
+            "type": "field",
+            "name": "username",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-username"
+          },
+          {
+            "type": "field",
+            "name": "given_name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-given_name"
+          },
+          {
+            "type": "field",
+            "name": "picture",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-picture"
+          },
+          {
+            "type": "field",
+            "name": "approved_clients",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-approved_clients"
+          },
+          {
+            "type": "field",
+            "name": "login_hints",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-login_hints"
+          },
+          {
+            "type": "field",
+            "name": "domain_hints",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-domain_hints"
+          },
+          {
+            "type": "field",
+            "name": "label_hints",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccount-label_hints"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityprovideraccount"
+      },
+      "IdentityProviderAccountList": {
+        "fragment": "dictionary IdentityProviderAccountList {\n  sequence<IdentityProviderAccount> accounts;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderAccountList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "accounts",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdentityProviderAccount"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovideraccountlist-accounts"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityprovideraccountlist"
+      },
+      "IdentityAssertionResponse": {
+        "fragment": "dictionary IdentityAssertionResponse {\n  any token;\n  USVString continue_on;\n  IdentityCredentialErrorInit error;\n};",
+        "type": "dictionary",
+        "name": "IdentityAssertionResponse",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "token",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityassertionresponse-token"
+          },
+          {
+            "type": "field",
+            "name": "continue_on",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityassertionresponse-continue_on"
+          },
+          {
+            "type": "field",
+            "name": "error",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IdentityCredentialErrorInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityassertionresponse-error"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityassertionresponse"
+      },
+      "IdentityProviderClientMetadata": {
+        "fragment": "dictionary IdentityProviderClientMetadata {\n  USVString privacy_policy_url;\n  USVString terms_of_service_url;\n  boolean client_is_third_party_to_top_frame_origin = false;\n};",
+        "type": "dictionary",
+        "name": "IdentityProviderClientMetadata",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "privacy_policy_url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderclientmetadata-privacy_policy_url"
+          },
+          {
+            "type": "field",
+            "name": "terms_of_service_url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderclientmetadata-terms_of_service_url"
+          },
+          {
+            "type": "field",
+            "name": "client_is_third_party_to_top_frame_origin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityproviderclientmetadata-client_is_third_party_to_top_frame_origin"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityproviderclientmetadata"
+      },
+      "IdentityUserInfo": {
+        "fragment": "dictionary IdentityUserInfo {\n  USVString email;\n  USVString name;\n  USVString givenName;\n  USVString picture;\n};",
+        "type": "dictionary",
+        "name": "IdentityUserInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "email",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityuserinfo-email"
+          },
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityuserinfo-name"
+          },
+          {
+            "type": "field",
+            "name": "givenName",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityuserinfo-givenname"
+          },
+          {
+            "type": "field",
+            "name": "picture",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityuserinfo-picture"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityuserinfo"
+      },
+      "IdentityResolveOptions": {
+        "fragment": "dictionary IdentityResolveOptions {\n  USVString accountId;\n};",
+        "type": "dictionary",
+        "name": "IdentityResolveOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "accountId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityresolveoptions-accountid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#dictdef-identityresolveoptions"
+      },
+      "IdentityProvider": {
+        "fragment": "[Exposed=Window, SecureContext] interface IdentityProvider {\n    static undefined close();\n    static Promise<undefined> resolve(any token, optional IdentityResolveOptions options = {});\n    static Promise<sequence<IdentityUserInfo>> getUserInfo(IdentityProviderConfig config);\n};",
+        "type": "interface",
+        "name": "IdentityProvider",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovider-close"
+          },
+          {
+            "type": "operation",
+            "name": "resolve",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "token",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdentityResolveOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovider-resolve"
+          },
+          {
+            "type": "operation",
+            "name": "getUserInfo",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "IdentityUserInfo"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "config",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdentityProviderConfig"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c-fedid.github.io/FedCM/#dom-identityprovider-getuserinfo"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/FedCM/#identityprovider"
+      }
+    },
+    "idlExtendedNames": {
+      "CredentialRequestOptions": [
+        {
+          "fragment": "partial dictionary CredentialRequestOptions {\n  IdentityCredentialRequestOptions identity;\n};",
+          "type": "dictionary",
+          "name": "CredentialRequestOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "identity",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "IdentityCredentialRequestOptions"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c-fedid.github.io/FedCM/#dom-credentialrequestoptions-identity"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "IdentityCredential",
+        "IdentityCredentialError",
+        "IdentityProvider"
+      ]
+    },
+    "dependencies": {
+      "IdentityCredentialDisconnectOptions": [
+        "IdentityProviderConfig"
+      ],
+      "IdentityCredential": [
+        "Credential",
+        "IdentityCredentialDisconnectOptions"
+      ],
+      "DisconnectedAccount": [],
+      "IdentityCredentialErrorInit": [],
+      "IdentityCredentialError": [
+        "DOMException",
+        "IdentityCredentialErrorInit"
+      ],
+      "CredentialRequestOptions": [
+        "IdentityCredentialRequestOptions"
+      ],
+      "IdentityCredentialRequestOptions": [
+        "IdentityProviderRequestOptions",
+        "IdentityCredentialRequestOptionsContext",
+        "IdentityCredentialRequestOptionsMode"
+      ],
+      "IdentityProviderConfig": [],
+      "IdentityProviderRequestOptions": [
+        "IdentityProviderConfig"
+      ],
+      "IdentityProviderWellKnown": [],
+      "IdentityProviderIcon": [],
+      "IdentityProviderBranding": [
+        "IdentityProviderIcon"
+      ],
+      "IdentityProviderAPIConfig": [
+        "IdentityProviderBranding"
+      ],
+      "IdentityProviderAccount": [],
+      "IdentityProviderAccountList": [
+        "IdentityProviderAccount"
+      ],
+      "IdentityAssertionResponse": [
+        "IdentityCredentialErrorInit"
+      ],
+      "IdentityProviderClientMetadata": [],
+      "IdentityUserInfo": [],
+      "IdentityResolveOptions": [],
+      "IdentityProvider": [
+        "IdentityResolveOptions",
+        "IdentityUserInfo",
+        "IdentityProviderConfig"
+      ]
+    },
+    "externalDependencies": [
+      "Credential",
+      "DOMException",
+      "CredentialRequestOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -2,6 +2,92 @@ namespace Meziantou.Framework.Versioning.Tests;
 
 public class SemanticVersionTests
 {
+    [Fact]
+    public void Documentation_ParseAndFormat()
+    {
+        #region SemanticVersion_ParseAndFormat
+        // A leading "v" is accepted, and not written back
+        var version = SemanticVersion.Parse("v2.1.0-rc.1+build.42");
+        Assert.Equal("2.1.0-rc.1+build.42", version.ToString());
+
+        // Versions that do not follow Semantic Versioning 2.0.0 are rejected
+        Assert.False(SemanticVersion.TryParse("1.0", out _));       // Three numbers are required
+        Assert.False(SemanticVersion.TryParse("1.02.0", out _));    // No leading zero
+        Assert.False(SemanticVersion.TryParse("1.0.0-beta.01", out _));
+        Assert.Throws<ArgumentException>(() => SemanticVersion.Parse("1.0.0.0"));
+
+        // Create a version from its parts
+        var prerelease = new SemanticVersion(1, 4, 0, prereleaseLabel: "beta.2", metadata: "sha.5114f85");
+        Assert.Equal("1.4.0-beta.2+sha.5114f85", prerelease.ToString());
+        Assert.Equal(["beta", "2"], prerelease.PrereleaseLabels);
+        Assert.Equal(["sha", "5114f85"], prerelease.Metadata);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Compare()
+    {
+        #region SemanticVersion_Compare
+        var versions = new[] { "1.0.0", "1.0.0-rc.1", "1.0.0-beta.11", "1.0.0-beta.2", "1.0.0-alpha", "0.9.0" }
+            .Select(SemanticVersion.Parse)
+            .Order()
+            .Select(version => version.ToString());
+
+        Assert.Equal(["0.9.0", "1.0.0-alpha", "1.0.0-beta.2", "1.0.0-beta.11", "1.0.0-rc.1", "1.0.0"], versions);
+
+        // Build metadata does not take part in comparisons and equality
+        Assert.True(SemanticVersion.Parse("1.0.0+linux") == SemanticVersion.Parse("1.0.0+windows"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NextVersions()
+    {
+        #region SemanticVersion_NextVersions
+        var stable = SemanticVersion.Parse("1.2.3");
+        Assert.Equal("1.2.4", stable.NextPatchVersion().ToString());
+        Assert.Equal("1.3.0", stable.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", stable.NextMajorVersion().ToString());
+
+        // A prerelease is followed by the smallest stable version that is greater
+        var beta = SemanticVersion.Parse("1.2.3-beta");
+        Assert.Equal("1.2.3", beta.NextPatchVersion().ToString());
+        Assert.Equal("1.3.0", beta.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", beta.NextMajorVersion().ToString());
+
+        var rc = SemanticVersion.Parse("2.0.0-rc.1");
+        Assert.Equal("2.0.0", rc.NextPatchVersion().ToString());
+        Assert.Equal("2.0.0", rc.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", rc.NextMajorVersion().ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample()
+    {
+        #region SemanticVersion_Example
+        // Parse a semantic version string
+        var version = SemanticVersion.Parse("1.2.3-alpha.1+build");
+        Assert.Equal(1, version.Major);
+        Assert.Equal(2, version.Minor);
+        Assert.Equal(3, version.Patch);
+        Assert.True(version.IsPrerelease);
+        Assert.Equal(["alpha", "1"], version.PrereleaseLabels);
+        Assert.True(version.HasMetadata);
+        Assert.Equal(["build"], version.Metadata);
+
+        // Create and compare versions (prerelease versions have lower precedence)
+        var v1 = new SemanticVersion(1, 0, 0, "alpha");
+        var v2 = new SemanticVersion(1, 0, 0);
+        Assert.True(v1 < v2);
+
+        // Get the next version
+        Assert.Equal("1.0.1", v2.NextPatchVersion().ToString());
+        Assert.Equal("1.1.0", v2.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", v2.NextMajorVersion().ToString());
+        #endregion
+    }
+
     [Theory]
     [MemberData(nameof(TryParse_ShouldParseVersion_Data))]
     public void TryParse_ShouldParseVersion(string version, SemanticVersion expected)
@@ -19,6 +105,9 @@ public class SemanticVersionTests
             { "1.0.0-alpha", new SemanticVersion(1, 0, 0, "alpha") },
             { "1.0.0-alpha.1", new SemanticVersion(1, 0, 0, ["alpha", "1"], []) },
             { "1.0.0-0123alpha", new SemanticVersion(1, 0, 0, "0123alpha") },
+            { "1.0.0-0", new SemanticVersion(1, 0, 0, "0") }, // A zero numeric identifier has no leading zero
+            { "1.0.0-0.3.7", new SemanticVersion(1, 0, 0, ["0", "3", "7"], []) },
+            { "1.0.0-alpha.0", new SemanticVersion(1, 0, 0, ["alpha", "0"], []) },
             { "1.1.2-alpha.1+label", new SemanticVersion(1, 1, 2, ["alpha", "1"], ["label"]) },
         };
     }
@@ -34,6 +123,15 @@ public class SemanticVersionTests
     [InlineData("1.0.0-01")] // No leading 0
     [InlineData("1.0.0-beta.01")] // No leading 0
     [InlineData("1.0.0+é")] // Invalid character
+    [InlineData("1.2.3-")] // Prerelease section must contain at least one identifier
+    [InlineData("1.2.3-.")] // Prerelease identifiers must not be empty
+    [InlineData("1.2.3-alpha.")] // Trailing dot leaves an empty identifier
+    [InlineData("1.2.3-alpha..beta")] // Empty identifier between two dots
+    [InlineData("1.2.3+")] // Metadata section must contain at least one identifier
+    [InlineData("1.2.3+build.")] // Trailing dot leaves an empty identifier
+    [InlineData("1.2.3+a..b")] // Empty identifier between two dots
+    [InlineData("1.2.3+.-")] // Metadata identifiers must not be empty
+    [InlineData("1.2.3-alpha.+build")] // Empty prerelease identifier before the metadata section
     public void TryParse_ShouldNotParseVersion(string version)
     {
         Assert.False(SemanticVersion.TryParse(version, out _));
@@ -52,6 +150,22 @@ public class SemanticVersionTests
     public void Parse_ShouldNotParseNullVersion()
     {
         Assert.Throws<ArgumentNullException>(() => SemanticVersion.Parse((string)null!));
+    }
+
+    [Fact]
+    public void CompareTo_Object_Null_ReturnsPositive()
+    {
+        var version = SemanticVersion.Parse("1.0.0");
+
+        Assert.True(version.CompareTo(obj: null) > 0);
+    }
+
+    [Fact]
+    public void CompareTo_Object_UnrelatedType_ShouldThrowException()
+    {
+        var version = SemanticVersion.Parse("1.0.0");
+
+        Assert.Throws<ArgumentException>(() => version.CompareTo(obj: "1.0.0"));
     }
 
     [Fact]
@@ -109,6 +223,27 @@ public class SemanticVersionTests
     }
 
     [Theory]
+    // Numeric identifiers compare numerically, whatever their magnitude
+    [InlineData("1.0.0-0", "1.0.0-1")]
+    [InlineData("1.0.0-2", "1.0.0-10")]
+    [InlineData("1.0.0-99999999999", "1.0.0-100000000000")]
+    [InlineData("1.0.0-2147483647", "1.0.0-2147483648")] // Straddles int.MaxValue
+    [InlineData("1.0.0-9999999999999999999999", "1.0.0-10000000000000000000000")]
+    [InlineData("1.0.0-alpha.9", "1.0.0-alpha.100000000000")]
+    // A numeric identifier always has lower precedence than an alphanumeric one
+    [InlineData("1.0.0-100000000000", "1.0.0-alpha")]
+    [InlineData("1.0.0-100000000000", "1.0.0-Alpha")]
+    public void Operator_NumericPrereleaseIdentifiers_CompareByValue(string lowerString, string greaterString)
+    {
+        var lower = SemanticVersion.Parse(lowerString);
+        var greater = SemanticVersion.Parse(greaterString);
+
+        Assert.True(lower < greater);
+        Assert.True(greater > lower);
+        Assert.NotEqual(lower, greater);
+    }
+
+    [Theory]
     [InlineData("1.2.3", "1.2.3")]
     [InlineData("1.0.0+left", "1.0.0+right")]
     [InlineData("1.0.0-alpha+left", "1.0.0-alpha+right")]
@@ -139,6 +274,29 @@ public class SemanticVersionTests
         Assert.Equal(version, semanticVersion.ToString());
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("G")]
+    [InlineData("g")]
+    public void ToString_SupportedFormats_ReturnTheGeneralFormat(string? format)
+    {
+        var version = SemanticVersion.Parse("1.0.0-alpha.1+build");
+
+        Assert.Equal("1.0.0-alpha.1+build", version.ToString(format, formatProvider: null));
+    }
+
+    [Theory]
+    [InlineData("X")]
+    [InlineData("zzz")]
+    [InlineData(" ")]
+    public void ToString_UnsupportedFormat_ShouldThrowFormatException(string format)
+    {
+        var version = SemanticVersion.Parse("1.0.0");
+
+        Assert.Throws<FormatException>(() => version.ToString(format, formatProvider: null));
+    }
+
     [Fact]
     public void Constructor_WithInvalidPrerelease_ShouldThrowException()
     {
@@ -149,6 +307,27 @@ public class SemanticVersionTests
     public void Constructor_WithEmptyPrerelease_ShouldThrowException()
     {
         Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: [""], metadata: null));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(".")]
+    [InlineData("alpha.")]
+    [InlineData("alpha..beta")]
+    public void Constructor_WithInvalidPrereleaseString_ShouldThrowException(string prereleaseLabel)
+    {
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(".")]
+    [InlineData("build.")]
+    [InlineData("a..b")]
+    [InlineData("label./")]
+    public void Constructor_WithInvalidMetadataString_ShouldThrowException(string metadata)
+    {
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata));
     }
 
     [Fact]
@@ -163,10 +342,24 @@ public class SemanticVersionTests
         Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: ["/"]));
     }
 
-    [Fact]
-    public void Constructor_WithInvalidMetadataString_ShouldThrowException()
+    [Theory]
+    [InlineData(-1, 0, 0)]
+    [InlineData(0, -1, 0)]
+    [InlineData(0, 0, -1)]
+    [InlineData(int.MinValue, int.MinValue, int.MinValue)]
+    public void Constructor_WithNegativeComponent_ShouldThrowException(int major, int minor, int patch)
     {
-        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SemanticVersion(major, minor, patch));
+    }
+
+    [Fact]
+    public void NextVersion_AtMaxValue_ShouldThrowOverflowException()
+    {
+        var version = new SemanticVersion(int.MaxValue, int.MaxValue, int.MaxValue);
+
+        Assert.Throws<OverflowException>(() => version.NextMajorVersion());
+        Assert.Throws<OverflowException>(() => version.NextMinorVersion());
+        Assert.Throws<OverflowException>(() => version.NextPatchVersion());
     }
 
     [Fact]
@@ -209,5 +402,23 @@ public class SemanticVersionTests
     {
         var version = new SemanticVersion(1, 2, 3);
         Assert.Equal(new SemanticVersion(2, 0, 0), version.NextMajorVersion());
+    }
+
+    [Theory]
+    [InlineData("1.2.3-beta", "1.2.3", "1.3.0", "2.0.0")]
+    [InlineData("1.2.0-beta", "1.2.0", "1.2.0", "2.0.0")]
+    [InlineData("1.0.3-beta", "1.0.3", "1.1.0", "2.0.0")]
+    [InlineData("2.0.0-beta", "2.0.0", "2.0.0", "2.0.0")]
+    [InlineData("0.0.1-beta", "0.0.1", "0.1.0", "1.0.0")]
+    public void NextVersions_OfPrerelease_AreGreaterThanTheVersion(string version, string expectedPatch, string expectedMinor, string expectedMajor)
+    {
+        var semanticVersion = SemanticVersion.Parse(version);
+
+        Assert.Equal(SemanticVersion.Parse(expectedPatch), semanticVersion.NextPatchVersion());
+        Assert.Equal(SemanticVersion.Parse(expectedMinor), semanticVersion.NextMinorVersion());
+        Assert.Equal(SemanticVersion.Parse(expectedMajor), semanticVersion.NextMajorVersion());
+        Assert.True(semanticVersion.NextPatchVersion() > semanticVersion);
+        Assert.True(semanticVersion.NextMinorVersion() > semanticVersion);
+        Assert.True(semanticVersion.NextMajorVersion() > semanticVersion);
     }
 }

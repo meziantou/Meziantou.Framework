@@ -5,11 +5,16 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Description>C# wrapper for Windows RestartManager</Description>
-    <Version>4.0.0</Version>
+    <PackageTags>windows, win32, restart-manager, file-lock, process</PackageTags>
+    <Version>4.0.9</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298">
+    <Compile Include="../Meziantou.Framework/SafeHandleValue.cs" Link="SafeHandleValue.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.367">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

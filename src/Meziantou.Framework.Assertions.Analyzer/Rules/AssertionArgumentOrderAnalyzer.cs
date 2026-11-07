@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -44,6 +45,6 @@ public sealed partial class AssertionArgumentOrderAnalyzer : DiagnosticAnalyzer
         if (AssertionArgumentOrderAnalyzerCommon.IsConstantOrCollectionContainingConstant(match.ExpectedArgument.Value))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, match.ActualArgument.Value.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, match.ActualArgument.Value);
     }
 }

@@ -4,7 +4,8 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Json</RootNamespace>
     <Description>An implementation of JSONPath (RFC 9535) for System.Text.Json and custom object models.</Description>
-    <Version>3.0.1</Version>
+    <PackageTags>jsonpath, rfc9535, json, system-text-json, query</PackageTags>
+    <Version>3.0.9</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

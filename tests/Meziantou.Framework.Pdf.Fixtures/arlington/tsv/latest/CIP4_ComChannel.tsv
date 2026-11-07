@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_ComChannel]			ISO 21812-1:2019 Table 29
+CIP4_ChannelType	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Email,Fax,Phone,Mobile,WWW,*]			extendible
+CIP4_ChannelUsage	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_ChannelUsage]	
+CIP4_DescriptiveName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Locator	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "hsb": {
+      "identity": {
+        "language": "hsb"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

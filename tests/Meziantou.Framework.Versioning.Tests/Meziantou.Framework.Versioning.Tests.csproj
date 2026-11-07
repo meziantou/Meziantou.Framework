@@ -5,6 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Used to cross-check that ParseNuGet agrees with the reference NuGet range parser -->
+    <PackageReference Include="NuGet.Versioning" Version="7.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
   </ItemGroup>
 

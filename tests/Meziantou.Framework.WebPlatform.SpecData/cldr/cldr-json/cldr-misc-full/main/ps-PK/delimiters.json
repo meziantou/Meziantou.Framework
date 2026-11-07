@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ps-PK": {
+      "identity": {
+        "language": "ps",
+        "territory": "PK"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

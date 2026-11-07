@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Win32
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public static class LsaPrivateData
     {
+        public static string? GetValue(string key) => throw null;
         public static void RemoveValue(string key) { }
         public static void SetValue(string key, string? value) { }
-        public static string? GetValue(string key) => throw null;
     }
 }

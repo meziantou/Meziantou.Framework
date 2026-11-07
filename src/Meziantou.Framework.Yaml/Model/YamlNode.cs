@@ -11,29 +11,29 @@ public abstract class YamlNode
     /// <summary>Reads the next YAML element from the event stream.</summary>
     protected static YamlElement? ReadElement(EventReader eventReader)
     {
-        return ReadElement(eventReader, anchors: null);
+        return ReadElement(eventReader, context: null);
     }
 
-    internal static YamlElement? ReadElement(EventReader eventReader, Dictionary<string, YamlElement>? anchors)
+    internal static YamlElement? ReadElement(EventReader eventReader, YamlModelLoadContext? context)
     {
-        if (eventReader.Accept<MappingStart>())
+        if (eventReader.Peek<MappingStart>() is { } mappingStart)
         {
-            var mapping = YamlMapping.Load(eventReader, anchors);
-            RegisterAnchor(mapping, anchors);
+            var mapping = YamlMapping.Load(eventReader, context);
+            RegisterAnchor(mapping, context, mappingStart.Start, mappingStart.End);
             return mapping;
         }
 
-        if (eventReader.Accept<SequenceStart>())
+        if (eventReader.Peek<SequenceStart>() is { } sequenceStart)
         {
-            var sequence = YamlSequence.Load(eventReader, anchors);
-            RegisterAnchor(sequence, anchors);
+            var sequence = YamlSequence.Load(eventReader, context);
+            RegisterAnchor(sequence, context, sequenceStart.Start, sequenceStart.End);
             return sequence;
         }
 
-        if (eventReader.Accept<Scalar>())
+        if (eventReader.Peek<Scalar>() is { } scalarStart)
         {
             var value = YamlValue.Load(eventReader);
-            RegisterAnchor(value, anchors);
+            RegisterAnchor(value, context, scalarStart.Start, scalarStart.End);
             return value;
         }
 
@@ -41,13 +41,20 @@ public abstract class YamlNode
         {
             var alias = eventReader.Expect<AnchorAlias>();
 
-            if (anchors == null || !anchors.TryGetValue(alias.Value, out var anchored))
+            if (context is not null && !context.AllowAliases)
+            {
+                throw new YamlException(alias.Start, alias.End, "YAML aliases are not allowed.");
+            }
+
+            if (context is null || !context.Anchors.TryGetValue(alias.Value, out var anchored))
             {
                 throw new YamlException(alias.Start, alias.End, FormattableString.Invariant($"Found an alias '*{alias.Value}' referencing an unknown anchor."));
             }
 
-            // The model API does not currently preserve aliases as a distinct node type.
-            // We materialize a copy so that writing the model back out does not emit duplicate anchors.
+            // The model API does not currently preserve aliases as a distinct node type, so the anchored subtree is
+            // copied. That copy is what makes alias amplification possible, so it is charged against a budget first.
+            context.ChargeAliasExpansion(anchored, alias.Value, alias.Start, alias.End);
+
             var clone = (YamlElement)anchored.DeepClone();
             clone.Anchor = null;
             return clone;
@@ -56,9 +63,9 @@ public abstract class YamlNode
         return null;
     }
 
-    private static void RegisterAnchor(YamlElement element, Dictionary<string, YamlElement>? anchors)
+    private static void RegisterAnchor(YamlElement element, YamlModelLoadContext? context, Mark start, Mark end)
     {
-        if (anchors == null)
+        if (context is null)
         {
             return;
         }
@@ -66,7 +73,13 @@ public abstract class YamlNode
         var anchor = element.Anchor;
         if (!string.IsNullOrEmpty(anchor))
         {
-            anchors[anchor] = element;
+            if (!context.AllowAnchors)
+            {
+                throw new YamlException(start, end, "YAML anchors are not allowed.");
+            }
+
+            context.Anchors[anchor] = element;
+            context.RegisterNodeCount(element);
         }
     }
 
@@ -85,24 +98,26 @@ public abstract class YamlNode
     /// <summary>Writes to.</summary>
     public void WriteTo(IEmitter emitter, bool suppressDocumentTags = false)
     {
-        var events = EnumerateEvents().ToList();
+        ArgumentNullException.ThrowIfNull(emitter);
 
-        // Emitter will throw an exception if we attempt to use it without
-        // starting StremStart and DocumentStart events.
-        if (events[0] is not StreamStart)
-            events.Insert(0, new StreamStart());
-
-        if (events[1] is not DocumentStart)
-            events.Insert(1, new DocumentStart());
-
-        foreach (var evnt in events)
+        // The emitter expects a stream, and a node inside a document. A stream provides both, even when it has no
+        // document at all, and a document provides the latter.
+        if (this is not YamlStream)
         {
-            if (suppressDocumentTags)
+            emitter.Emit(new StreamStart());
+            if (this is not YamlDocument)
             {
-                if (evnt is DocumentStart document && document.Tags != null)
-                {
-                    document.Tags.Clear();
-                }
+                emitter.Emit(new DocumentStart());
+            }
+        }
+
+        foreach (var evnt in EnumerateEvents())
+        {
+            if (suppressDocumentTags && evnt is DocumentStart { Tags.Count: > 0 } document)
+            {
+                // The event belongs to the document, so clearing its directives would remove them from the model.
+                emitter.Emit(new DocumentStart(document.Version, tags: null, document.IsImplicit, document.Start, document.End));
+                continue;
             }
 
             emitter.Emit(evnt);
@@ -112,9 +127,19 @@ public abstract class YamlNode
     /// <summary>Returns a string representation of the current instance.</summary>
     public override string ToString()
     {
+        return ToYaml().Trim();
+    }
+
+    /// <summary>Writes this node as a YAML document.</summary>
+    /// <remarks>
+    /// Unlike <see cref="ToString"/>, the text is not trimmed: the trailing line breaks of a "keep" block scalar and
+    /// the indentation of its content are part of the value.
+    /// </remarks>
+    private string ToYaml()
+    {
         var sb = new StringBuilder();
-        WriteTo(new StringWriter(sb), true);
-        return sb.ToString().Trim();
+        WriteTo(new StringWriter(sb, CultureInfo.InvariantCulture), suppressDocumentTags: true);
+        return sb.ToString();
     }
 
     /// <summary>Converts this node to an instance of <typeparamref name="T"/>.</summary>
@@ -127,7 +152,7 @@ public abstract class YamlNode
     public object? ToObject(Type type, YamlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(type);
-        return YamlSerializer.Deserialize(ToString(), type, options);
+        return YamlSerializer.Deserialize(ToYaml(), type, options);
     }
 
     /// <summary>Creates a YAML element from an object.</summary>

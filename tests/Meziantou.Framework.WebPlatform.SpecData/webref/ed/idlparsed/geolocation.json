@@ -1,0 +1,780 @@
+{
+  "spec": {
+    "title": "Geolocation",
+    "url": "https://w3c.github.io/geolocation/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Geolocation",
+          "GeolocationPosition",
+          "GeolocationCoordinates",
+          "GeolocationPositionError"
+        ]
+      }
+    },
+    "idlNames": {
+      "Geolocation": {
+        "fragment": "[Exposed=Window]\ninterface Geolocation {\n  undefined getCurrentPosition (\n    PositionCallback successCallback,\n    optional PositionErrorCallback? errorCallback = null,\n    optional PositionOptions options = {}\n  );\n\n  long watchPosition (\n    PositionCallback successCallback,\n    optional PositionErrorCallback? errorCallback = null,\n    optional PositionOptions options = {}\n  );\n\n  undefined clearWatch (long watchId);\n};",
+        "type": "interface",
+        "name": "Geolocation",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getCurrentPosition",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "successCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PositionCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "PositionErrorCallback"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PositionOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/geolocation/#dom-geolocation-getcurrentposition"
+          },
+          {
+            "type": "operation",
+            "name": "watchPosition",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "successCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PositionCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "PositionErrorCallback"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PositionOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/geolocation/#dom-geolocation-watchposition"
+          },
+          {
+            "type": "operation",
+            "name": "clearWatch",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "watchId",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/geolocation/#dom-geolocation-clearwatch"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/geolocation/#dom-geolocation"
+      },
+      "PositionCallback": {
+        "fragment": "callback PositionCallback = undefined (\n  GeolocationPosition position\n);",
+        "type": "callback",
+        "name": "PositionCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "position",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GeolocationPosition"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/geolocation/#dom-positioncallback"
+      },
+      "PositionErrorCallback": {
+        "fragment": "callback PositionErrorCallback = undefined (\n  GeolocationPositionError positionError\n);",
+        "type": "callback",
+        "name": "PositionErrorCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "positionError",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GeolocationPositionError"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/geolocation/#dom-positionerrorcallback"
+      },
+      "PositionOptions": {
+        "fragment": "dictionary PositionOptions {\n  boolean enableHighAccuracy = false;\n  [Clamp] unsigned long timeout = 0xFFFFFFFF;\n  [Clamp] unsigned long maximumAge = 0;\n};",
+        "type": "dictionary",
+        "name": "PositionOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "enableHighAccuracy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/geolocation/#dom-positionoptions-enablehighaccuracy"
+          },
+          {
+            "type": "field",
+            "name": "timeout",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Clamp",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0xFFFFFFFF"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/geolocation/#dom-positionoptions-timeout"
+          },
+          {
+            "type": "field",
+            "name": "maximumAge",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Clamp",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/geolocation/#dom-positionoptions-maximumage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/geolocation/#dom-positionoptions"
+      },
+      "GeolocationPosition": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface GeolocationPosition {\n  readonly attribute GeolocationCoordinates coords;\n  readonly attribute EpochTimeStamp timestamp;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "GeolocationPosition",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "coords",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GeolocationCoordinates"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationposition-coords"
+          },
+          {
+            "type": "attribute",
+            "name": "timestamp",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EpochTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationposition-timestamp"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationposition-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/geolocation/#dom-geolocationposition"
+      },
+      "GeolocationCoordinates": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface GeolocationCoordinates {\n  readonly attribute double accuracy;\n  readonly attribute double latitude;\n  readonly attribute double longitude;\n  readonly attribute double? altitude;\n  readonly attribute double? altitudeAccuracy;\n  readonly attribute double? heading;\n  readonly attribute double? speed;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "GeolocationCoordinates",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "accuracy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-accuracy"
+          },
+          {
+            "type": "attribute",
+            "name": "latitude",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-latitude"
+          },
+          {
+            "type": "attribute",
+            "name": "longitude",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-longitude"
+          },
+          {
+            "type": "attribute",
+            "name": "altitude",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-altitude"
+          },
+          {
+            "type": "attribute",
+            "name": "altitudeAccuracy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-altitudeaccuracy"
+          },
+          {
+            "type": "attribute",
+            "name": "heading",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-heading"
+          },
+          {
+            "type": "attribute",
+            "name": "speed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-speed"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/geolocation/#dom-geolocationcoordinates"
+      },
+      "GeolocationPositionError": {
+        "fragment": "[Exposed=Window]\ninterface GeolocationPositionError {\n  const unsigned short PERMISSION_DENIED = 1;\n  const unsigned short POSITION_UNAVAILABLE = 2;\n  const unsigned short TIMEOUT = 3;\n  readonly attribute unsigned short code;\n  readonly attribute DOMString message;\n};",
+        "type": "interface",
+        "name": "GeolocationPositionError",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "PERMISSION_DENIED",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationpositionerror-permission_denied"
+          },
+          {
+            "type": "const",
+            "name": "POSITION_UNAVAILABLE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationpositionerror-position_unavailable"
+          },
+          {
+            "type": "const",
+            "name": "TIMEOUT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationpositionerror-timeout"
+          },
+          {
+            "type": "attribute",
+            "name": "code",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationpositionerror-code"
+          },
+          {
+            "type": "attribute",
+            "name": "message",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/geolocation/#dom-geolocationpositionerror-message"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/geolocation/#dom-geolocationpositionerror"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SameObject] readonly attribute Geolocation geolocation;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "geolocation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Geolocation"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/geolocation/#dom-navigator-geolocation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Geolocation",
+        "GeolocationPosition",
+        "GeolocationCoordinates",
+        "GeolocationPositionError"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "Geolocation"
+      ],
+      "Geolocation": [
+        "PositionCallback",
+        "PositionErrorCallback",
+        "PositionOptions"
+      ],
+      "PositionOptions": [],
+      "GeolocationPosition": [
+        "GeolocationCoordinates",
+        "EpochTimeStamp"
+      ],
+      "GeolocationCoordinates": [],
+      "GeolocationPositionError": []
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EpochTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

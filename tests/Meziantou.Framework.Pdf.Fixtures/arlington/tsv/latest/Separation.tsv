@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Pages	array	1.3		TRUE	FALSE	FALSE				[ArrayOfPages]	Table 400
+DeviceColorant	name;string	1.3		TRUE	FALSE	FALSE					
+ColorSpace	array	1.3		FALSE	FALSE	FALSE				[SeparationColorSpace,DeviceNColorSpace]	

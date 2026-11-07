@@ -40,7 +40,7 @@ internal static class Graphql
                     ExcludeEnd = true,
                 },
                 new() { Scope = "meta", Match = @"@\w+" },
-                new() { Scope = "symbol", Begin = GqlName + @"(?=\s*:)" },
+                new() { Scope = "symbol", Begin = CommonModes.RunStart("_0-9A-Za-z", "_A-Za-z") + GqlName + @"(?=\s*:)" },
             ],
         };
     }

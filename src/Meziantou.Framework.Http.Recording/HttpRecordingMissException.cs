@@ -6,7 +6,7 @@ public sealed class HttpRecordingMissException : InvalidOperationException
 {
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public HttpRecordingMissException(string method, string requestUri)
-        : base($"No recorded response found for {method} {requestUri}.")
+        : base($"No recorded response found for {method} {HttpRecordingUri.Redact(requestUri)}.")
     {
         Method = method;
         RequestUri = requestUri;
@@ -15,7 +15,7 @@ public sealed class HttpRecordingMissException : InvalidOperationException
     /// <summary>Gets the HTTP method of the unmatched request.</summary>
     public string Method { get; }
 
-    /// <summary>Gets the request URI of the unmatched request.</summary>
+    /// <summary>Gets the request URI of the unmatched request. Unlike the exception message, this value is not redacted.</summary>
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings")]
     public string RequestUri { get; }
 }

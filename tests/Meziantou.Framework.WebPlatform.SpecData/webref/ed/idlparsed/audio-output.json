@@ -1,0 +1,202 @@
+{
+  "spec": {
+    "title": "Audio Output Devices API",
+    "url": "https://w3c.github.io/mediacapture-output/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "AudioOutputOptions": {
+        "fragment": "dictionary AudioOutputOptions {\n  DOMString deviceId = \"\";\n};",
+        "type": "dictionary",
+        "name": "AudioOutputOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "deviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-output/#dom-audiooutputoptions-deviceid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-output/#dom-audiooutputoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLMediaElement": [
+        {
+          "fragment": "partial interface HTMLMediaElement {\n  [SecureContext] readonly attribute DOMString sinkId;\n  [SecureContext] Promise<undefined> setSinkId (DOMString sinkId);\n};",
+          "type": "interface",
+          "name": "HTMLMediaElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "sinkId",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/mediacapture-output/#dom-htmlmediaelement-sinkid"
+            },
+            {
+              "type": "operation",
+              "name": "setSinkId",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "sinkId",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-output/#dom-htmlmediaelement-setsinkid"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaDevices": [
+        {
+          "fragment": "partial interface MediaDevices {\n  Promise<MediaDeviceInfo> selectAudioOutput(optional AudioOutputOptions options = {});\n};",
+          "type": "interface",
+          "name": "MediaDevices",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "selectAudioOutput",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "MediaDeviceInfo"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AudioOutputOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-output/#dom-mediadevices-selectaudiooutput"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "HTMLMediaElement": [],
+      "MediaDevices": [
+        "MediaDeviceInfo",
+        "AudioOutputOptions"
+      ],
+      "AudioOutputOptions": []
+    },
+    "externalDependencies": [
+      "HTMLMediaElement",
+      "MediaDevices",
+      "MediaDeviceInfo"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

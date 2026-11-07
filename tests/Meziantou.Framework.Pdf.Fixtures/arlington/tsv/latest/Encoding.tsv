@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2		FALSE	FALSE	FALSE		[Encoding]			Table 112
+BaseEncoding	name	1.0		FALSE	FALSE	FALSE		[MacRomanEncoding,MacExpertEncoding,WinAnsiEncoding]			
+Differences	array	1.0		FALSE	FALSE	FALSE				[ArrayOfDifferences]	

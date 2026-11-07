@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.DependencyScanning. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The files written by the scanner tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.DependencyScanning.Tests\ScannerTests.cs" LogicalName="ScannerTests.cs" Link="Seeds\ScannerTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.DependencyScanning\Meziantou.Framework.DependencyScanning.csproj" />
+  </ItemGroup>
+</Project>

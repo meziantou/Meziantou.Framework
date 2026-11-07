@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.Collections;
 
 namespace Meziantou.Framework.Tests.Collections;
@@ -70,7 +71,7 @@ public sealed class SortedListTests
     public void AsSpan()
     {
         var list = new SortedList<int> { 1, 3, 2 };
-        Assert.Equal(3, list.UnsafeAsReadOnlySpan().Length);
+        Assert.HasCount(3, list.UnsafeAsReadOnlySpan());
     }
 
     [Fact]
@@ -365,5 +366,165 @@ public sealed class SortedListTests
         }
 
         Assert.Equal([42], result);
+    }
+
+    [Fact]
+    public void Indexer_ThrowsBeyondCountEvenWhenTheBackingArrayIsLarger()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        // The test only means something while the backing array is larger than the item count
+        Assert.HasCountLessThan(list.Capacity, list);
+        Assert.Throws<ArgumentOutOfRangeException>(() => list[list.Count]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => list[-1]);
+    }
+
+    [Fact]
+    public void CopyToSpan_CopiesOnlyTheItems()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[list.Count];
+        list.CopyTo(destination.AsSpan());
+
+        Assert.Equal([1, 2], destination);
+    }
+
+    [Fact]
+    public void CopyToMemory_CopiesOnlyTheItems()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[list.Count];
+        list.CopyTo(destination.AsMemory());
+
+        Assert.Equal([1, 2], destination);
+    }
+
+    [Fact]
+    public void CopyToSpanRange_ValidatesAgainstCount()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[4];
+        Assert.Throws<ArgumentOutOfRangeException>(() => list.CopyTo(0, destination.AsSpan(), list.Count + 1));
+    }
+
+    [Fact]
+    public void CopyToMemoryRange_ValidatesAgainstCount()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[4];
+        Assert.Throws<ArgumentOutOfRangeException>(() => list.CopyTo(0, destination.AsMemory(), list.Count + 1));
+    }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region SortedList_Usage
+        var scores = new SortedList<int>();
+        scores.Add(42);
+        scores.Add(7);
+        scores.Add(42);
+        scores.Add(19);
+
+        // Items are kept sorted, duplicates included, and can be read by index
+        Assert.Equal([7, 19, 42, 42], scores);
+        Assert.Equal(7, scores[0]);
+        Assert.Equal(2, scores.FirstIndexOf(42));
+        Assert.Equal(3, scores.LastIndexOf(42));
+        #endregion
+    }
+
+    [Fact]
+    public void AddRange_Usage()
+    {
+        #region SortedList_AddRange
+        var list = new SortedList<int> { 5, 1 };
+
+        // Sorts the new items once, then merges them with the existing items
+        list.AddRange([4, 2, 5, 3]);
+
+        Assert.Equal([1, 2, 3, 4, 5, 5], list);
+        #endregion
+    }
+
+    [Fact]
+    public void AddRange_Empty()
+    {
+        var list = new SortedList<int> { 1 };
+        var enumerator = list.GetEnumerator();
+
+        list.AddRange([]);
+        list.AddRange(Enumerable.Empty<int>().Where(_ => true));
+
+        Assert.Equal([1], list);
+        Assert.True(enumerator.MoveNext());
+    }
+
+    [Fact]
+    public void AddRange_Enumerable()
+    {
+        var list = new SortedList<int>(capacity: 2) { 50 };
+
+        list.AddRange(Enumerable.Range(0, 100).Where(i => i % 3 is 0).Reverse());
+
+        Assert.Equal(Enumerable.Range(0, 100).Where(i => i % 3 is 0).Append(50).Order(), list);
+    }
+
+    [Fact]
+    public void AddRange_Self()
+    {
+        var list = new SortedList<int> { 3, 1, 2 };
+
+        list.AddRange(list);
+
+        Assert.Equal([1, 1, 2, 2, 3, 3], list);
+    }
+
+    [Fact]
+    public void AddRange_CustomComparer()
+    {
+        var list = new SortedList<string>(StringComparer.OrdinalIgnoreCase) { "b", "D" };
+
+        list.AddRange(["c", "A"]);
+
+        Assert.Equal(["A", "b", "c", "D"], list);
+    }
+
+    [Fact]
+    public void AddRange_InvalidatesEnumerator()
+    {
+        var list = new SortedList<int> { 1 };
+        var enumerator = list.GetEnumerator();
+
+        list.AddRange([2]);
+
+        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic test data")]
+    public void AddRange_Random_MatchesSortedItems(int seed)
+    {
+        var random = new Random(seed);
+        var list = new SortedList<string>(StringComparer.Ordinal);
+        var expected = new List<string>();
+        for (var i = 0; i < 20; i++)
+        {
+            var items = Enumerable.Range(0, random.Next(50)).Select(_ => random.Next(100).ToString(CultureInfo.InvariantCulture)).ToArray();
+            list.AddRange(items);
+            expected.AddRange(items);
+            expected.Sort(StringComparer.Ordinal);
+
+            Assert.Equal(expected, list);
+        }
+
+        list.Clear();
+        Assert.Empty(list);
     }
 }

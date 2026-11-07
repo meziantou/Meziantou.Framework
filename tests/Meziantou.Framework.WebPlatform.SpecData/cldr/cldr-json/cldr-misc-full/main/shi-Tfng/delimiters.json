@@ -1,0 +1,16 @@
+{
+  "main": {
+    "shi-Tfng": {
+      "identity": {
+        "language": "shi",
+        "script": "Tfng"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

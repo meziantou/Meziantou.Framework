@@ -57,7 +57,7 @@ public sealed class ThreadSafetyTests
     }
 
     [Fact]
-    public async Task ConcurrentReplay_FIFO_IdenticalRequests()
+    public async Task ConcurrentReplay_EachRecordingHandedOutExactlyOnce()
     {
         const int RequestCount = 10;
 
@@ -80,18 +80,129 @@ public sealed class ThreadSafetyTests
         using var handler = new HttpRecordingHandler(innerHandler, store, options);
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com") };
 
-        // Make requests sequentially to verify FIFO order
-        var bodies = new List<string>();
-        for (var i = 0; i < RequestCount; i++)
+        // Contend on the single queue that backs this fingerprint: every recording must be handed out exactly once,
+        // with none duplicated and none lost.
+        var bodies = new ConcurrentBag<string>();
+        await Parallel.ForAsync(0, RequestCount, async (_, token) =>
         {
-            using var response = await client.GetAsync("/api/same");
-            bodies.Add(await response.Content.ReadAsStringAsync());
+            using var response = await client.GetAsync("/api/same", token);
+            bodies.Add(await response.Content.ReadAsStringAsync(token));
+        });
+
+        var expected = Enumerable.Range(0, RequestCount).Select(i => $"response-{i}").Order(StringComparer.Ordinal);
+        Assert.Equal(expected, bodies.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task ConcurrentReplay_ExhaustedRecordings_ThrowMiss()
+    {
+        var entries = new List<HttpRecordingEntry>
+        {
+            new() { Method = "GET", RequestUri = "https://example.com/api/same", StatusCode = 200 },
+        };
+
+        var store = new InMemoryStore(entries);
+        using var innerHandler = new FakeHandler();
+        var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
+
+        using var handler = new HttpRecordingHandler(innerHandler, store, options);
+        using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com") };
+
+        var successes = 0;
+        var misses = 0;
+        await Parallel.ForAsync(0, 8, async (_, token) =>
+        {
+            try
+            {
+                using var response = await client.GetAsync("/api/same", token);
+                Interlocked.Increment(ref successes);
+            }
+            catch (HttpRecordingMissException)
+            {
+                Interlocked.Increment(ref misses);
+            }
+        });
+
+        Assert.Equal(1, successes);
+        Assert.Equal(7, misses);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WaitsForInFlightRecording()
+    {
+        var store = new InMemoryStore([]);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var innerHandler = new BlockingHandler(entered, release);
+        var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Record };
+
+        using var handler = new HttpRecordingHandler(innerHandler, store, options);
+        using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com") };
+
+        var requestTask = client.GetAsync("/api/slow");
+        await entered.Task;
+
+        var saveTask = handler.SaveAsync();
+        release.SetResult();
+
+        using var response = await requestTask;
+        await saveTask;
+
+        // Saving while a request was still being recorded must not persist a snapshot that omits it, because the
+        // store has already replaced whatever it held before.
+        Assert.Single(store.SavedEntries);
+    }
+
+    [Fact]
+    public async Task DisposeDuringInFlightRequest_DoesNotMaskTheResult()
+    {
+        var entries = new List<HttpRecordingEntry>
+        {
+            new() { Method = "GET", RequestUri = "https://example.com/api/data", StatusCode = 204 },
+        };
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var store = new BlockingLoadStore(entries, entered, release);
+
+        using var innerHandler = new FakeHandler();
+        var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
+
+        var handler = new HttpRecordingHandler(innerHandler, store, options);
+        using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com") };
+
+        var requestTask = client.GetAsync("/api/data");
+        await entered.Task;
+
+        // Disposing while a request holds the initialization lock must not turn the result into an
+        // ObjectDisposedException raised from a finally block.
+        handler.Dispose();
+        release.SetResult();
+
+        using var response = await requestTask;
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    private sealed class BlockingHandler(TaskCompletionSource entered, TaskCompletionSource release) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            entered.TrySetResult();
+            await release.Task;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("ok") };
+        }
+    }
+
+    private sealed class BlockingLoadStore(List<HttpRecordingEntry> entries, TaskCompletionSource entered, TaskCompletionSource release) : IHttpRecordingStore
+    {
+        public async ValueTask<IReadOnlyList<HttpRecordingEntry>> LoadAsync(CancellationToken cancellationToken)
+        {
+            entered.TrySetResult();
+            await release.Task;
+            return entries;
         }
 
-        for (var i = 0; i < RequestCount; i++)
-        {
-            Assert.Equal($"response-{i}", bodies[i]);
-        }
+        public ValueTask SaveAsync(IReadOnlyList<HttpRecordingEntry> entries, CancellationToken cancellationToken) => default;
     }
 
     [Fact]

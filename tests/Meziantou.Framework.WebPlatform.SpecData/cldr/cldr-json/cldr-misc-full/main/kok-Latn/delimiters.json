@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kok-Latn": {
+      "identity": {
+        "language": "kok",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

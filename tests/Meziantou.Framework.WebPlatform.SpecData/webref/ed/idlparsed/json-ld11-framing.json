@@ -1,0 +1,372 @@
+{
+  "spec": {
+    "title": "JSON-LD 1.1 Framing",
+    "url": "https://w3c.github.io/json-ld-framing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "JsonLd": [
+          "JsonLdProcessor"
+        ]
+      }
+    },
+    "idlNames": {
+      "JsonLdFramingError": {
+        "fragment": "dictionary JsonLdFramingError {\n  JsonLdFramingErrorCode code;\n  USVString? message = null;\n};",
+        "type": "dictionary",
+        "name": "JsonLdFramingError",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "code",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "JsonLdFramingErrorCode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldframingerror-code"
+          },
+          {
+            "type": "field",
+            "name": "message",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldframingerror-message"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldframingerror"
+      },
+      "JsonLdFramingErrorCode": {
+        "fragment": "enum JsonLdFramingErrorCode {\n  \"invalid frame\",\n  \"invalid @embed value\"\n};",
+        "type": "enum",
+        "name": "JsonLdFramingErrorCode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "invalid frame",
+            "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldframingerrorcode-invalid-frame"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @embed value",
+            "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldframingerrorcode-invalid-%40embed-value"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldframingerrorcode"
+      },
+      "JsonLdEmbed": {
+        "fragment": "enum JsonLdEmbed {\n  \"@always\",\n  \"@once\",\n  \"@never\"\n};",
+        "type": "enum",
+        "name": "JsonLdEmbed",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "@always",
+            "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldembed-%40always"
+          },
+          {
+            "type": "enum-value",
+            "value": "@once",
+            "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldembed-%40once"
+          },
+          {
+            "type": "enum-value",
+            "value": "@never",
+            "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldembed-%40never"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldembed"
+      }
+    },
+    "idlExtendedNames": {
+      "JsonLdProcessor": [
+        {
+          "fragment": "[Exposed=JsonLd]\npartial interface JsonLdProcessor {\n  static Promise<JsonLdRecord> frame(\n    JsonLdInput input,\n    JsonLdInput frame,\n    optional JsonLdOptions options = {});\n};",
+          "type": "interface",
+          "name": "JsonLdProcessor",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "frame",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "JsonLdRecord"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "input",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "JsonLdInput"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "frame",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "JsonLdInput"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "JsonLdOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldprocessor-frame"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "JsonLd"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "JsonLdOptions": [
+        {
+          "fragment": "partial dictionary JsonLdOptions {\n  (JsonLdEmbed or boolean)  embed         = \"@once\";\n  boolean                   explicit      = false;\n  boolean                   omitDefault   = false;\n  boolean                   omitGraph;\n  boolean                   requireAll    = false;\n  boolean                   frameDefault  = false;\n};",
+          "type": "dictionary",
+          "name": "JsonLdOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "embed",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": true,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "JsonLdEmbed"
+                  },
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  }
+                ]
+              },
+              "default": {
+                "type": "string",
+                "value": "@once"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldoptions-embed"
+            },
+            {
+              "type": "field",
+              "name": "explicit",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": false
+              },
+              "required": false,
+              "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldoptions-explicit"
+            },
+            {
+              "type": "field",
+              "name": "omitDefault",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": false
+              },
+              "required": false,
+              "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldoptions-omitdefault"
+            },
+            {
+              "type": "field",
+              "name": "omitGraph",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldoptions-omitgraph"
+            },
+            {
+              "type": "field",
+              "name": "requireAll",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": false
+              },
+              "required": false,
+              "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldoptions-requireall"
+            },
+            {
+              "type": "field",
+              "name": "frameDefault",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": false
+              },
+              "required": false,
+              "href": "https://w3c.github.io/json-ld-framing/#dom-jsonldoptions-framedefault"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "JsonLd": [
+        "JsonLdProcessor"
+      ]
+    },
+    "dependencies": {
+      "JsonLdProcessor": [
+        "JsonLdRecord",
+        "JsonLdInput",
+        "JsonLdOptions"
+      ],
+      "JsonLdFramingError": [
+        "JsonLdFramingErrorCode"
+      ],
+      "JsonLdOptions": [
+        "JsonLdEmbed"
+      ]
+    },
+    "externalDependencies": [
+      "JsonLdProcessor",
+      "JsonLdRecord",
+      "JsonLdInput",
+      "JsonLdOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

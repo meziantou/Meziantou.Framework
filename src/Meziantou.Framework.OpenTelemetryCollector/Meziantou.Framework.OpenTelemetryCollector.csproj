@@ -2,16 +2,17 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.1</Version>
+    <Version>3.0.6</Version>
     <Description>OpenTelemetry OTLP collector endpoint abstractions for HTTP and gRPC with configurable receiver mappings</Description>
+    <PackageTags>opentelemetry, otlp, collector, telemetry, grpc, http</PackageTags>
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Google.Protobuf" Version="3.35.1" />
-    <PackageReference Include="Grpc.AspNetCore" Version="2.83.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.83.0" PrivateAssets="All" />
+    <PackageReference Include="Google.Protobuf" Version="3.36.2" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.84.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.84.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

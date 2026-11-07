@@ -82,8 +82,14 @@ public sealed class PathGetFullPathOnFullPathCodeFixProvider : CodeFixProvider
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) &&
             invocationOperation.Arguments.Length >= 1)
         {
+            if (!ResultStaysCompilable(invocationOperation))
+            {
+                replacementExpression = null!;
+                return false;
+            }
+
             var argument = invocationOperation.Arguments[0].Value;
-            if (SymbolEqualityComparer.Default.Equals(UnwrapImplicitConversion(argument).Type, fullPathType) &&
+            if (SymbolEqualityComparer.Default.Equals(FullPathAnalyzerCommon.UnwrapToFullPath(argument, fullPathType).Type, fullPathType) &&
                 argument.Syntax is ExpressionSyntax fullPathExpression)
             {
                 replacementExpression = fullPathExpression;
@@ -95,13 +101,28 @@ public sealed class PathGetFullPathOnFullPathCodeFixProvider : CodeFixProvider
         return false;
     }
 
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
+    /// <summary>
+    /// Reports whether replacing the invocation with a FullPath-typed expression leaves the surrounding code valid.
+    /// </summary>
+    /// <remarks>
+    /// FullPath converts implicitly to string, so a string-typed slot keeps compiling. A receiver position does not,
+    /// because the members being invoked belong to string, and a 'var' initializer would change the inferred type.
+    /// </remarks>
+    private static bool ResultStaysCompilable(IOperation operation)
     {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
+        var current = operation;
+        while (current.Parent is IConversionOperation { IsImplicit: true } conversionOperation)
         {
-            operation = conversionOperation.Operand;
+            current = conversionOperation;
         }
 
-        return operation;
+        return current.Parent switch
+        {
+            IInvocationOperation invocationOperation => invocationOperation.Instance != current,
+            IPropertyReferenceOperation propertyReferenceOperation => propertyReferenceOperation.Instance != current,
+            IArrayElementReferenceOperation arrayElementReferenceOperation => arrayElementReferenceOperation.ArrayReference != current,
+            IVariableInitializerOperation { Syntax.Parent: VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Type.IsVar: true } } } => false,
+            _ => true,
+        };
     }
 }

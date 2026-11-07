@@ -6,11 +6,13 @@ namespace Meziantou.Framework.Win32
 {
     public sealed class Credential
     {
-        public Meziantou.Framework.Win32.CredentialType CredentialType { get => throw null; }
         public string ApplicationName { get => throw null; }
-        public string? UserName { get => throw null; }
-        public string? Password { get => throw null; }
         public string? Comment { get => throw null; }
+        public Meziantou.Framework.Win32.CredentialType CredentialType { get => throw null; }
+        public string? Password { get => throw null; }
+        public System.ReadOnlyMemory<byte> Secret { get => throw null; }
+        public string? UserName { get => throw null; }
+        public Credential(Meziantou.Framework.Win32.CredentialType credentialType, string applicationName, string? userName, System.ReadOnlyMemory<byte> secret, string? comment) { }
         public Credential(Meziantou.Framework.Win32.CredentialType credentialType, string applicationName, string? userName, string? password, string? comment) { }
         public override string ToString() => throw null;
     }
@@ -18,44 +20,46 @@ namespace Meziantou.Framework.Win32
     public enum CredentialErrorCode
     {
         None = 0,
-        LogonFailure = 1
+        LogonFailure = 1,
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public static class CredentialManager
     {
-        public static Meziantou.Framework.Win32.Credential? ReadCredential(string applicationName) => throw null;
-        public static Meziantou.Framework.Win32.Credential? ReadCredential(string applicationName, Meziantou.Framework.Win32.CredentialType type) => throw null;
-        public static void WriteCredential(string applicationName, string userName, string secret, Meziantou.Framework.Win32.CredentialPersistence persistence) { }
-        public static void WriteCredential(string applicationName, string userName, string secret, Meziantou.Framework.Win32.CredentialPersistence persistence, Meziantou.Framework.Win32.CredentialType type) { }
-        public static void WriteCredential(string applicationName, string userName, string secret, string? comment, Meziantou.Framework.Win32.CredentialPersistence persistence) { }
-        public static void WriteCredential(string applicationName, string userName, string secret, string? comment, Meziantou.Framework.Win32.CredentialPersistence persistence, Meziantou.Framework.Win32.CredentialType type) { }
         public static void DeleteCredential(string applicationName) { }
         public static void DeleteCredential(string applicationName, Meziantou.Framework.Win32.CredentialType type) { }
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCredentials() => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCredentials(string? filter) => throw null;
-        public static Meziantou.Framework.Win32.CredentialResult PromptForCredentialsConsole(string target, string? userName = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner, string? messageText, string? captionText, string? userName, Meziantou.Framework.Win32.CredentialSaveOption saveCredential) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner, string? messageText, string? captionText, string? userName, string? password, Meziantou.Framework.Win32.CredentialSaveOption saveCredential) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
-        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner = 0, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0, Meziantou.Framework.Win32.CredentialErrorCode error = 0) => throw null;
+        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner = 0, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = Meziantou.Framework.Win32.CredentialSaveOption.Unselected, Meziantou.Framework.Win32.CredentialErrorCode error = Meziantou.Framework.Win32.CredentialErrorCode.None) => throw null;
+        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentialsConsole(string target, string? userName = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = Meziantou.Framework.Win32.CredentialSaveOption.Unselected) => throw null;
+        public static Meziantou.Framework.Win32.Credential? ReadCredential(string applicationName) => throw null;
+        public static Meziantou.Framework.Win32.Credential? ReadCredential(string applicationName, Meziantou.Framework.Win32.CredentialType type) => throw null;
+        public static bool TryDeleteCredential(string applicationName) => throw null;
+        public static bool TryDeleteCredential(string applicationName, Meziantou.Framework.Win32.CredentialType type) => throw null;
+        public static void WriteCredential(string applicationName, string userName, string secret, Meziantou.Framework.Win32.CredentialPersistence persistence) { }
+        public static void WriteCredential(string applicationName, string userName, string secret, Meziantou.Framework.Win32.CredentialPersistence persistence, Meziantou.Framework.Win32.CredentialType type) { }
+        public static void WriteCredential(string applicationName, string userName, string secret, string? comment, Meziantou.Framework.Win32.CredentialPersistence persistence) { }
+        public static void WriteCredential(string applicationName, string userName, string secret, string? comment, Meziantou.Framework.Win32.CredentialPersistence persistence, Meziantou.Framework.Win32.CredentialType type) { }
     }
 
-    public enum CredentialPersistence
+    public enum CredentialPersistence : uint
     {
-        Session = 1,
-        LocalMachine = 2,
-        Enterprise = 3
+        Session = 1U,
+        LocalMachine = 2U,
+        Enterprise = 3U,
     }
 
     public sealed class CredentialResult
     {
-        public string UserName { get => throw null; }
-        public string Password { get => throw null; }
-        public string? Domain { get => throw null; }
         public Meziantou.Framework.Win32.CredentialSaveOption CredentialSaved { get => throw null; }
+        public string? Domain { get => throw null; }
+        public string Password { get => throw null; }
+        public string UserName { get => throw null; }
         public CredentialResult(string userName, string password, string? domain, Meziantou.Framework.Win32.CredentialSaveOption credentialSaved) { }
         public override string ToString() => throw null;
     }
@@ -64,7 +68,7 @@ namespace Meziantou.Framework.Win32
     {
         Unselected = 0,
         Selected = 1,
-        Hidden = 2
+        Hidden = 2,
     }
 
     public enum CredentialType
@@ -76,6 +80,6 @@ namespace Meziantou.Framework.Win32
         GenericCertificate = 5,
         DomainExtended = 6,
         Maximum = 7,
-        MaximumEx = 1007
+        MaximumEx = 1007,
     }
 }

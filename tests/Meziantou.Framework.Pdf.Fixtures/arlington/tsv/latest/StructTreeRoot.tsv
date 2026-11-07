@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		TRUE	FALSE	FALSE		[StructTreeRoot]			Table 354
+K	array;dictionary	1.3		FALSE	FALSE	FALSE				[ArrayOfStructElem];[StructElem]	
+IDTree	name-tree	1.3		FALSE	FALSE	FALSE				[StructElem,MarkedContentReference,ObjectReference]	
+ParentTree	number-tree	1.3		FALSE	FALSE	FALSE				[ArrayOfStructElemParentTree,StructElem,MarkedContentReference,ObjectReference]	https://github.com/pdf-association/pdf-issues/issues/308
+ParentTreeNextKey	integer	1.3		FALSE	FALSE	FALSE					
+RoleMap	dictionary	1.3		FALSE	FALSE	FALSE				[RoleMap]	
+ClassMap	dictionary	1.3		FALSE	FALSE	FALSE				[ClassMap]	
+Namespaces	array	2.0		FALSE	FALSE	FALSE				[ArrayOfNamespace]	
+PronunciationLexicon	array	2.0		FALSE	FALSE	FALSE				[ArrayOfFileSpecifications]	
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	

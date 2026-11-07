@@ -2,28 +2,37 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides a synchronous lock mechanism that locks based on a key, allowing concurrent operations on different keys.</summary>
 /// <typeparam name="TKey">The type of the key.</typeparam>
+/// <remarks>
+/// The lock is thread-affine: it is built on <see cref="System.Threading.Lock"/>, which requires the lease to be
+/// released on the thread that acquired it. The critical section must therefore stay on one thread and must not
+/// <see langword="await"/>. Use <see cref="KeyedAsyncLock{TKey}"/> for asynchronous code.
+/// </remarks>
 /// <example>
-/// <code><![CDATA[
-/// var keyedLock = new KeyedLock<string>();
-/// 
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/KeyedLockTests.cs" ref:region="KeyedLock_Usage" ref:dedent="true">
+/// var keyedLock = new KeyedLock&lt;string&gt;(StringComparer.Ordinal);
+/// var updateCounts = new ConcurrentDictionary&lt;string, int&gt;(StringComparer.Ordinal);
+///
 /// void ProcessUser(string userId)
 /// {
 ///     using (keyedLock.Lock(userId))
 ///     {
 ///         // Only one operation per userId at a time
 ///         // Multiple different userIds can be processed concurrently
-///         UpdateUserData(userId);
+///         var count = updateCounts.GetValueOrDefault(userId);
+///         updateCounts[userId] = count + 1;
 ///     }
 /// }
-/// ]]></code>
+///
+/// Parallel.Invoke(() =&gt; ProcessUser("alice"), () =&gt; ProcessUser("alice"), () =&gt; ProcessUser("bob"));
+/// Assert.Equal(2, updateCounts["alice"]);
+/// Assert.Equal(1, updateCounts["bob"]);
+/// </code>
 /// </example>
 public sealed class KeyedLock<TKey> where TKey : notnull
 {
-    // Entries are reference-counted and removed once no one holds or waits for a key's lock, so the
-    // dictionary doesn't grow without bound when used with high-cardinality keys. The dictionary
-    // bookkeeping (add/remove + ref count) is guarded by locking on the dictionary itself; the
-    // per-key Lock provides the actual mutual exclusion.
-    private readonly Dictionary<TKey, Entry> _locks;
+    // The table reference-counts and evicts entries so it doesn't grow without bound when used with
+    // high-cardinality keys; the per-key Lock provides the actual mutual exclusion.
+    private readonly KeyedEntryTable<TKey, Entry> _locks;
 
     /// <summary>Initializes a new instance of the <see cref="KeyedLock{TKey}"/> class.</summary>
     public KeyedLock()
@@ -35,48 +44,52 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     /// <param name="comparer">The equality comparer to use when comparing keys.</param>
     public KeyedLock(IEqualityComparer<TKey>? comparer)
     {
-        _locks = new Dictionary<TKey, Entry>(comparer);
+        _locks = new KeyedEntryTable<TKey, Entry>(comparer, () => new Entry());
     }
+
+    /// <summary>Gets the number of keys currently tracked. Used by tests to assert that released keys are evicted.</summary>
+    internal int EntryCount => _locks.Count;
 
     /// <summary>Acquires the lock for the specified key.</summary>
     /// <param name="key">The key to lock on.</param>
     /// <returns>A disposable object. Disposing the object releases the lock.</returns>
+    /// <remarks>
+    /// The returned object must be disposed on the thread that called this method. Disposing it on another thread
+    /// throws <see cref="SynchronizationLockException"/> and leaves the underlying lock held; the object is not
+    /// consumed by such a failed disposal, so the owning thread can still dispose it to release the lock.
+    /// </remarks>
     public IDisposable Lock(TKey key)
     {
-        Entry entry;
-        lock (_locks)
+        var entry = _locks.Reserve(key);
+        try
         {
-            if (!_locks.TryGetValue(key, out entry!))
-            {
-                entry = new Entry();
-                _locks.Add(key, entry);
-            }
-
-            // Reserve the entry before releasing the bookkeeping lock so a concurrent release
-            // cannot remove it from under us while we wait to enter the per-key lock.
-            entry.ReferenceCount++;
+            entry.Lock.Enter();
+        }
+        catch
+        {
+            // The lock was not acquired (e.g. the waiting thread was interrupted), so undo the reservation.
+            // Otherwise the entry is never evicted.
+            _locks.Release(key, entry);
+            throw;
         }
 
-        entry.Lock.Enter();
         return new LockLease(this, key, entry);
     }
 
     private void Release(TKey key, Entry entry)
     {
+        // Exit throws when the lease is disposed on a thread that does not own the lock. The lock is then
+        // still held by the owning thread, so the reservation must stay: releasing it could evict the entry
+        // and let another thread acquire a brand new lock for the same key while the critical section is
+        // still running. The lease stays undisposed so the owning thread can release the lock afterwards.
         entry.Lock.Exit();
-        lock (_locks)
-        {
-            if (--entry.ReferenceCount == 0)
-            {
-                _locks.Remove(key);
-            }
-        }
+
+        _locks.Release(key, entry);
     }
 
-    private sealed class Entry
+    private sealed class Entry : KeyedEntry
     {
         public Lock Lock { get; } = new();
-        public int ReferenceCount { get; set; }
     }
 
     private sealed class LockLease : IDisposable
@@ -97,8 +110,10 @@ public sealed class KeyedLock<TKey> where TKey : notnull
         {
             if (!_disposed)
             {
-                _disposed = true;
+                // Only mark the lease as disposed once the lock is actually released, so a failed release
+                // (disposal on the wrong thread) can still be retried from the thread that owns the lock.
                 _owner.Release(_key, _entry);
+                _disposed = true;
             }
         }
     }

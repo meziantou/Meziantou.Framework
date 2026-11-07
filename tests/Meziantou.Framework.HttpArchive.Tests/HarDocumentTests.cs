@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Meziantou.Framework.HttpArchive.Tests;
 
 public sealed class HarDocumentTests
@@ -108,12 +110,12 @@ public sealed class HarDocumentTests
     {
         var doc = HarDocument.Parse(MinimalHar);
 
-        Assert.Equal("1.2", doc.Log.Version);
-        Assert.Equal("TestApp", doc.Log.Creator.Name);
-        Assert.Equal("1.0", doc.Log.Creator.Version);
-        Assert.Null(doc.Log.Browser);
-        Assert.Null(doc.Log.Pages);
-        Assert.Empty(doc.Log.Entries);
+        Assert.Equal("1.2", doc.Log!.Version);
+        Assert.Equal("TestApp", doc.Log!.Creator!.Name);
+        Assert.Equal("1.0", doc.Log!.Creator!.Version);
+        Assert.Null(doc.Log!.Browser);
+        Assert.Null(doc.Log!.Pages);
+        Assert.Empty(doc.Log!.Entries!);
     }
 
     [Fact]
@@ -121,53 +123,53 @@ public sealed class HarDocumentTests
     {
         var doc = HarDocument.Parse(CompleteHar);
 
-        Assert.Equal("1.2", doc.Log.Version);
-        Assert.Equal("WebInspector", doc.Log.Creator.Name);
-        Assert.Equal("Chrome", doc.Log.Browser?.Name);
-        Assert.Equal("120.0", doc.Log.Browser?.Version);
+        Assert.Equal("1.2", doc.Log!.Version);
+        Assert.Equal("WebInspector", doc.Log!.Creator!.Name);
+        Assert.Equal("Chrome", doc.Log!.Browser?.Name);
+        Assert.Equal("120.0", doc.Log!.Browser?.Version);
 
-        Assert.NotNull(doc.Log.Pages);
-        var page = Assert.Single(doc.Log.Pages);
+        Assert.NotNull(doc.Log!.Pages);
+        var page = Assert.Single(doc.Log!.Pages);
         Assert.Equal("page_1", page.Id);
         Assert.Equal("Test Page", page.Title);
-        Assert.Equal(1500, page.PageTimings.OnContentLoad);
-        Assert.Equal(2500, page.PageTimings.OnLoad);
+        Assert.Equal(1500, page.PageTimings!.OnContentLoad);
+        Assert.Equal(2500, page.PageTimings!.OnLoad);
 
-        var entry = Assert.Single(doc.Log.Entries);
+        var entry = Assert.Single(doc.Log!.Entries!);
         Assert.Equal("page_1", entry.Pageref);
         Assert.Equal(150.5, entry.Time);
         Assert.Equal("93.184.216.34", entry.ServerIPAddress);
         Assert.Equal("443", entry.Connection);
 
-        Assert.Equal("GET", entry.Request.Method);
-        Assert.Equal("https://example.com/api/data", entry.Request.Url);
-        Assert.Equal("HTTP/1.1", entry.Request.HttpVersion);
-        Assert.Equal(200, entry.Request.HeadersSize);
-        Assert.HasCount(2, entry.Request.Headers);
-        var cookie = Assert.Single(entry.Request.Cookies);
+        Assert.Equal("GET", entry.Request!.Method);
+        Assert.Equal("https://example.com/api/data", entry.Request!.Url);
+        Assert.Equal("HTTP/1.1", entry.Request!.HttpVersion);
+        Assert.Equal(200, entry.Request!.HeadersSize);
+        Assert.HasCount(2, entry.Request!.Headers!);
+        var cookie = Assert.Single(entry.Request!.Cookies!);
         Assert.Equal("session", cookie.Name);
         Assert.Equal("abc123", cookie.Value);
         Assert.Equal("/", cookie.Path);
         Assert.True(cookie.HttpOnly);
         Assert.True(cookie.Secure);
-        var queryParam = Assert.Single(entry.Request.QueryString);
+        var queryParam = Assert.Single(entry.Request!.QueryString!);
         Assert.Equal("page", queryParam.Name);
         Assert.Equal("1", queryParam.Value);
 
-        Assert.Equal(200, entry.Response.Status);
-        Assert.Equal("OK", entry.Response.StatusText);
-        Assert.Equal(42, entry.Response.Content.Size);
-        Assert.Equal(0, entry.Response.Content.Compression);
-        Assert.Equal("application/json", entry.Response.Content.MimeType);
-        Assert.Equal("{\"key\":\"value\"}", entry.Response.Content.Text);
+        Assert.Equal(200, entry.Response!.Status);
+        Assert.Equal("OK", entry.Response!.StatusText);
+        Assert.Equal(42, entry.Response!.Content!.Size);
+        Assert.Equal(0, entry.Response!.Content!.Compression);
+        Assert.Equal("application/json", entry.Response!.Content!.MimeType);
+        Assert.Equal("{\"key\":\"value\"}", entry.Response!.Content!.Text);
 
-        Assert.Equal(0.5, entry.Timings.Blocked);
-        Assert.Equal(10.0, entry.Timings.Dns);
-        Assert.Equal(25.0, entry.Timings.Connect);
-        Assert.Equal(1.0, entry.Timings.Send);
-        Assert.Equal(100.0, entry.Timings.Wait);
-        Assert.Equal(14.0, entry.Timings.Receive);
-        Assert.Equal(12.0, entry.Timings.Ssl);
+        Assert.Equal(0.5, entry.Timings!.Blocked);
+        Assert.Equal(10.0, entry.Timings!.Dns);
+        Assert.Equal(25.0, entry.Timings!.Connect);
+        Assert.Equal(1.0, entry.Timings!.Send);
+        Assert.Equal(100.0, entry.Timings!.Wait);
+        Assert.Equal(14.0, entry.Timings!.Receive);
+        Assert.Equal(12.0, entry.Timings!.Ssl);
     }
 
     [Fact]
@@ -177,17 +179,190 @@ public sealed class HarDocumentTests
         var json = doc.ToJsonString();
         var doc2 = HarDocument.Parse(json);
 
-        Assert.Equal(doc.Log.Version, doc2.Log.Version);
-        Assert.Equal(doc.Log.Creator.Name, doc2.Log.Creator.Name);
-        Assert.Equal(doc.Log.Browser?.Name, doc2.Log.Browser?.Name);
-        Assert.HasCount(doc.Log.Entries.Count, doc2.Log.Entries);
+        Assert.Equal(doc.Log!.Version, doc2.Log!.Version);
+        Assert.Equal(doc.Log!.Creator!.Name, doc2.Log!.Creator!.Name);
+        Assert.Equal(doc.Log!.Browser?.Name, doc2.Log!.Browser?.Name);
+        Assert.HasCount(doc.Log!.Entries!.Count, doc2.Log!.Entries!);
 
-        var entry1 = doc.Log.Entries[0];
-        var entry2 = doc2.Log.Entries[0];
-        Assert.Equal(entry1.Request.Url, entry2.Request.Url);
-        Assert.Equal(entry1.Response.Status, entry2.Response.Status);
-        Assert.Equal(entry1.Response.Content.Text, entry2.Response.Content.Text);
-        Assert.Equal(entry1.Timings.Wait, entry2.Timings.Wait);
+        var entry1 = doc.Log!.Entries![0];
+        var entry2 = doc2.Log!.Entries![0];
+        Assert.Equal(entry1.Request!.Url, entry2.Request!.Url);
+        Assert.Equal(entry1.Response!.Status, entry2.Response!.Status);
+        Assert.Equal(entry1.Response!.Content!.Text, entry2.Response!.Content!.Text);
+        Assert.Equal(entry1.Timings!.Wait, entry2.Timings!.Wait);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CreateAndWrite()
+    {
+        #region HarDocument_CreateAndWrite
+        var document = new HarDocument
+        {
+            Log = new HarLog
+            {
+                Version = "1.2",
+                Creator = new HarCreator
+                {
+                    Name = "MyTool",
+                    Version = "1.0.0",
+                },
+                Entries =
+                [
+                    new HarEntry
+                    {
+                        StartedDateTime = DateTimeOffset.UtcNow,
+                        Request = new HarRequest
+                        {
+                            Method = "GET",
+                            Url = "https://example.com/api/data",
+                        },
+                        Response = new HarResponse
+                        {
+                            Status = 200,
+                            StatusText = "OK",
+                        },
+                    },
+                ],
+            },
+        };
+
+        using var stream = new MemoryStream();
+        await document.WriteToAsync(stream, indented: true);
+        #endregion
+
+        stream.Position = 0;
+        var parsed = await HarDocument.ParseAsync(stream);
+        Assert.Equal("MyTool", parsed.Log!.Creator!.Name);
+        Assert.Equal("https://example.com/api/data", Assert.Single(parsed.Log.Entries!).Request!.Url);
+    }
+
+    [Fact]
+    public void Documentation_Parse()
+    {
+        #region HarDocument_Parse
+        var document = HarDocument.Parse("""
+            {
+              "log": {
+                "version": "1.2",
+                "creator": { "name": "MyTool", "version": "1.0" },
+                "entries": [
+                  {
+                    "startedDateTime": "2026-01-15T10:00:00.000Z",
+                    "time": 42.5,
+                    "request": { "method": "GET", "url": "https://example.com/api/items" },
+                    "response": { "status": 200, "statusText": "OK", "content": { "size": 2, "mimeType": "application/json", "text": "[]" } }
+                  }
+                ]
+              }
+            }
+            """);
+
+        var entry = Assert.Single(document.Log!.Entries!);
+        Assert.Equal("GET", entry.Request!.Method);
+        Assert.Equal("https://example.com/api/items", entry.Request.Url);
+        Assert.Equal(200, entry.Response!.Status);
+        Assert.Equal("[]", entry.Response.Content!.Text);
+        Assert.Equal(42.5, entry.Time);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ToJsonString()
+    {
+        #region HarDocument_ToJsonString
+        var document = new HarDocument();
+        document.Log!.Creator = new HarCreator { Name = "MyTool", Version = "1.0" };
+        document.Log.Entries!.Add(new HarEntry
+        {
+            StartedDateTime = new DateTimeOffset(2026, 1, 15, 10, 0, 0, TimeSpan.Zero),
+            Request = new HarRequest { Method = "GET", Url = "https://example.com/" },
+            Response = new HarResponse { Status = 204, StatusText = "No Content" },
+        });
+
+        var json = document.ToJsonString(indented: true);
+
+        var copy = HarDocument.Parse(json);
+        Assert.Equal("1.2", copy.Log!.Version);
+        Assert.Equal(204, Assert.Single(copy.Log.Entries!).Response!.Status);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ExtensionData()
+    {
+        #region HarDocument_ExtensionData
+        var document = HarDocument.Parse("""
+            {
+              "log": {
+                "version": "1.2",
+                "entries": [
+                  { "_resourceType": "xhr", "request": { "method": "GET", "url": "https://example.com/" } }
+                ]
+              }
+            }
+            """);
+
+        var entry = Assert.Single(document.Log!.Entries!);
+        Assert.Equal("xhr", entry.ExtensionData!["_resourceType"].GetString());
+
+        // Custom fields are written back
+        Assert.Contains("\"_resourceType\":\"xhr\"", document.ToJsonString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Nullability()
+    {
+        #region HarDocument_Nullability
+        var document = HarDocument.Parse("""
+            {
+              "log": {
+                "entries": [
+                  { "request": { "method": "GET", "url": "https://example.com/", "headers": null } },
+                  { "request": null }
+                ]
+              }
+            }
+            """);
+
+        var entries = document.Log!.Entries!;
+
+        // A missing property keeps its default value
+        Assert.Equal("", entries[0].Request!.HttpVersion);
+        Assert.Empty(entries[0].Request!.Cookies!);
+
+        // An explicit null is kept as null
+        Assert.Null(entries[0].Request!.Headers);
+        Assert.Null(entries[1].Request);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RemoveCredentials()
+    {
+        var document = HarDocument.Parse(CompleteHar);
+
+        #region HarDocument_RemoveCredentials
+        string[] sensitiveHeaders = ["Authorization", "Cookie", "Set-Cookie"];
+        foreach (var entry in document.Log?.Entries ?? [])
+        {
+            if (entry.Request is { } request)
+            {
+                request.Headers?.RemoveAll(header => sensitiveHeaders.Contains(header.Name, StringComparer.OrdinalIgnoreCase));
+                request.Cookies?.Clear();
+            }
+
+            if (entry.Response is { } response)
+            {
+                response.Headers?.RemoveAll(header => sensitiveHeaders.Contains(header.Name, StringComparer.OrdinalIgnoreCase));
+                response.Cookies?.Clear();
+            }
+        }
+        #endregion
+
+        var cleaned = Assert.Single(document.Log!.Entries!);
+        Assert.Empty(cleaned.Request!.Cookies!);
+        Assert.Equal(["Host", "Accept"], cleaned.Request.Headers!.Select(header => header.Name));
     }
 
     [Fact]
@@ -196,8 +371,8 @@ public sealed class HarDocumentTests
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(CompleteHar));
         var doc = await HarDocument.ParseAsync(stream);
 
-        Assert.Equal("1.2", doc.Log.Version);
-        Assert.Single(doc.Log.Entries);
+        Assert.Equal("1.2", doc.Log!.Version);
+        Assert.Single(doc.Log!.Entries!);
     }
 
     [Fact]
@@ -206,8 +381,8 @@ public sealed class HarDocumentTests
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(CompleteHar));
         var doc = HarDocument.Parse(stream);
 
-        Assert.Equal("1.2", doc.Log.Version);
-        Assert.Single(doc.Log.Entries);
+        Assert.Equal("1.2", doc.Log!.Version);
+        Assert.Single(doc.Log!.Entries!);
     }
 
     [Fact]
@@ -238,8 +413,8 @@ public sealed class HarDocumentTests
         stream.Position = 0;
 
         var doc2 = HarDocument.Parse(stream);
-        Assert.Equal("1.2", doc2.Log.Version);
-        Assert.Equal("TestApp", doc2.Log.Creator.Name);
+        Assert.Equal("1.2", doc2.Log!.Version);
+        Assert.Equal("TestApp", doc2.Log!.Creator!.Name);
     }
 
     [Fact]
@@ -251,7 +426,7 @@ public sealed class HarDocumentTests
         stream.Position = 0;
 
         var doc2 = HarDocument.Parse(stream);
-        Assert.Equal("1.2", doc2.Log.Version);
+        Assert.Equal("1.2", doc2.Log!.Version);
     }
 
     [Fact]
@@ -304,7 +479,7 @@ public sealed class HarDocumentTests
             """;
 
         var doc = HarDocument.Parse(Har);
-        var timings = doc.Log.Entries[0].Timings;
+        var timings = doc.Log!.Entries![0].Timings!;
 
         Assert.Equal(-1, timings.Blocked);
         Assert.Equal(-1, timings.Dns);
@@ -314,8 +489,8 @@ public sealed class HarDocumentTests
         Assert.Equal(9, timings.Receive);
         Assert.Equal(-1, timings.Ssl);
 
-        Assert.Equal(-1, doc.Log.Entries[0].Request.HeadersSize);
-        Assert.Equal(-1, doc.Log.Entries[0].Request.BodySize);
+        Assert.Equal(-1, doc.Log!.Entries![0].Request!.HeadersSize);
+        Assert.Equal(-1, doc.Log!.Entries![0].Request!.BodySize);
     }
 
     [Fact]
@@ -364,7 +539,7 @@ public sealed class HarDocumentTests
             """;
 
         var doc = HarDocument.Parse(Har);
-        Assert.Equal("https://www.example.com", doc.Log.Entries[0].Response.RedirectUrl);
+        Assert.Equal("https://www.example.com", doc.Log!.Entries![0].Response!.RedirectUrl);
 
         var json = doc.ToJsonString();
         Assert.Contains("\"redirectURL\"", json);
@@ -414,15 +589,15 @@ public sealed class HarDocumentTests
             """;
 
         var doc = HarDocument.Parse(Har);
-        var entry = doc.Log.Entries[0];
+        var entry = doc.Log!.Entries![0];
 
         Assert.NotNull(entry.ExtensionData);
         Assert.Contains("_priority", entry.ExtensionData);
         Assert.Equal("High", entry.ExtensionData["_priority"].GetString());
         Assert.Equal("xhr", entry.ExtensionData["_resourceType"].GetString());
 
-        Assert.NotNull(entry.Response.Content.ExtensionData);
-        Assert.Equal(1234, entry.Response.Content.ExtensionData["_transferSize"].GetInt32());
+        Assert.NotNull(entry.Response!.Content!.ExtensionData);
+        Assert.Equal(1234, entry.Response!.Content!.ExtensionData["_transferSize"].GetInt32());
 
         var json = doc.ToJsonString();
         Assert.Contains("_priority", json);
@@ -475,7 +650,7 @@ public sealed class HarDocumentTests
             """;
 
         var doc = HarDocument.Parse(Har);
-        var postData = doc.Log.Entries[0].Request.PostData;
+        var postData = doc.Log!.Entries![0].Request!.PostData;
 
         Assert.NotNull(postData);
         Assert.Equal("application/json", postData.MimeType);
@@ -531,11 +706,90 @@ public sealed class HarDocumentTests
             """;
 
         var doc = HarDocument.Parse(Har);
-        var cache = doc.Log.Entries[0].Cache;
+        var cache = doc.Log!.Entries![0].Cache!;
 
         Assert.Null(cache.BeforeRequest);
         Assert.NotNull(cache.AfterRequest);
         Assert.Equal("\"abc123\"", cache.AfterRequest.ETag);
         Assert.Equal(5, cache.AfterRequest.HitCount);
+    }
+
+    [Fact]
+    public void Parse_NullLog_IsAllowed()
+    {
+        var document = HarDocument.Parse("""{"log":null}""");
+
+        Assert.Null(document.Log);
+    }
+
+    [Fact]
+    public void Parse_NullOnStringProperty_IsAllowed()
+    {
+        var json = """{"log":{"version":"1.2","entries":[{"request":{"method":null,"url":null}}]}}""";
+
+        var document = HarDocument.Parse(json);
+
+        var request = Assert.Single(document.Log!.Entries!).Request;
+        Assert.NotNull(request);
+        Assert.Null(request.Method);
+        Assert.Null(request.Url);
+    }
+
+    [Fact]
+    public void Parse_NullOnCollectionProperty_IsAllowed()
+    {
+        var json = """{"log":{"version":"1.2","entries":[{"request":{"headers":null}}]}}""";
+
+        var document = HarDocument.Parse(json);
+
+        var request = Assert.Single(document.Log!.Entries!).Request;
+        Assert.NotNull(request);
+        Assert.Null(request.Headers);
+    }
+
+    [Fact]
+    public void Parse_NullOnNestedObjectProperty_IsAllowed()
+    {
+        var json = """{"log":{"version":"1.2","entries":[{"request":null,"response":null}]}}""";
+
+        var document = HarDocument.Parse(json);
+
+        var entry = Assert.Single(document.Log!.Entries!);
+        Assert.Null(entry.Request);
+        Assert.Null(entry.Response);
+    }
+
+    [Fact]
+    public void Parse_NullOnNullableProperty_IsAllowed()
+    {
+        var json = """{"log":{"version":"1.2","comment":null,"browser":null,"entries":[]}}""";
+
+        var document = HarDocument.Parse(json);
+
+        Assert.Null(document.Log!.Comment);
+        Assert.Null(document.Log.Browser);
+    }
+
+    [Fact]
+    public void Parse_MissingProperty_KeepsTheDefault()
+    {
+        var document = HarDocument.Parse("""{"log":{"version":"1.2","entries":[{}]}}""");
+
+        var entry = Assert.Single(document.Log!.Entries!);
+        Assert.NotNull(entry.Request);
+        Assert.Equal("", entry.Request.Method);
+        Assert.Empty(entry.Request.Headers!);
+    }
+
+    [Fact]
+    public void ToJsonString_OmitsPropertiesThatWereNullInTheSource()
+    {
+        var document = HarDocument.Parse("""{"log":{"version":"1.2","entries":[{"request":{"method":null,"headers":null}}]}}""");
+
+        using var json = JsonDocument.Parse(document.ToJsonString());
+
+        var request = json.RootElement.GetProperty("log").GetProperty("entries")[0].GetProperty("request");
+        Assert.False(request.TryGetProperty("method", out _));
+        Assert.False(request.TryGetProperty("headers", out _));
     }
 }

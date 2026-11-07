@@ -1,0 +1,170 @@
+{
+  "css/css-scrollbars/inheritance.html": {
+    "total": 4
+  },
+  "css/css-scrollbars/input-scrollbar-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-after-remove-resize.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-001.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-color-002.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-color-003.html": {
+    "total": 2
+  },
+  "css/css-scrollbars/scrollbar-color-004.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-color-005.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-color-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-6.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-7.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-dynamic-8.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-parsing.html": {
+    "total": 13
+  },
+  "css/css-scrollbars/scrollbar-color-scheme-dynamic-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-scheme-dynamic-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-scheme-dynamic-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-color-scheme-dynamic-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-width-001.html": {
+    "total": 8
+  },
+  "css/css-scrollbars/scrollbar-width-002.html": {
+    "total": 8
+  },
+  "css/css-scrollbars/scrollbar-width-003.html": {
+    "total": 6
+  },
+  "css/css-scrollbars/scrollbar-width-004.html": {
+    "total": 6
+  },
+  "css/css-scrollbars/scrollbar-width-005.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-006.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-007.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-008.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-009.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-010.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-011.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-012.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-013.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-014.html": {
+    "total": 1
+  },
+  "css/css-scrollbars/scrollbar-width-015.html": {
+    "total": 2
+  },
+  "css/css-scrollbars/scrollbar-width-016.html": {
+    "total": 3
+  },
+  "css/css-scrollbars/scrollbar-width-keywords.html": {
+    "total": 2
+  },
+  "css/css-scrollbars/scrollbar-width-paint-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-width-paint-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-width-paint-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-width-paint-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-width-paint-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-width-paint-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/scrollbar-width-parsing.html": {
+    "total": 15
+  },
+  "css/css-scrollbars/textarea-scrollbar-width-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/transparent-on-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/viewport-scrollbar-body.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scrollbars/viewport-scrollbar.html": {
+    "reftest": "PASS"
+  }
+}

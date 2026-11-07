@@ -4,6 +4,8 @@ namespace Meziantou.Framework.Language.Json.Internals;
 
 internal sealed class JsonSyntaxNodeNavigator : JsonPathNavigator<JsonSyntaxNode>
 {
+    public override bool IsPure => true;
+
     public static JsonSyntaxNodeNavigator Instance { get; } = new();
 
     private JsonSyntaxNodeNavigator()
@@ -19,7 +21,7 @@ internal sealed class JsonSyntaxNodeNavigator : JsonPathNavigator<JsonSyntaxNode
             JsonArraySyntax => JsonPathNodeKind.Array,
             JsonStringSyntax => JsonPathNodeKind.String,
             JsonNumberSyntax => JsonPathNodeKind.Number,
-            JsonLiteralSyntax literal => literal.Kind is JsonSyntaxKind.JsonTrueLiteral or JsonSyntaxKind.JsonFalseLiteral ? JsonPathNodeKind.Boolean : JsonPathNodeKind.Null,
+            JsonLiteralSyntax literal => literal.Kind() is SyntaxKind.JsonTrueLiteral or SyntaxKind.JsonFalseLiteral ? JsonPathNodeKind.Boolean : JsonPathNodeKind.Null,
             _ => JsonPathNodeKind.Null,
         };
     }
@@ -76,7 +78,7 @@ internal sealed class JsonSyntaxNodeNavigator : JsonPathNavigator<JsonSyntaxNode
 
         if (value is JsonArraySyntax array && index >= 0 && index < array.Elements.Count)
         {
-            result = array.Elements[index].Value;
+            result = array.Elements[index];
             return true;
         }
 
@@ -109,12 +111,12 @@ internal sealed class JsonSyntaxNodeNavigator : JsonPathNavigator<JsonSyntaxNode
     {
         if (value is JsonLiteralSyntax literal)
         {
-            switch (literal.Kind)
+            switch (literal.Kind())
             {
-                case JsonSyntaxKind.JsonTrueLiteral:
+                case SyntaxKind.JsonTrueLiteral:
                     result = true;
                     return true;
-                case JsonSyntaxKind.JsonFalseLiteral:
+                case SyntaxKind.JsonFalseLiteral:
                     result = false;
                     return true;
             }

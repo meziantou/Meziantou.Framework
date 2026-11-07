@@ -1,0 +1,43 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Published documentation (Documentation/DocumentationSnippetTests, DocumentationExampleTests, DocumentationImageTests):
+      the usage examples of the README and of docs/1-Imaging are compiled and run here (the README quick starts, which use
+      relative paths, are only compiled by the samples project).
+    -->
+    <Compile Include="..\..\samples\Meziantou.Framework.Imaging.Samples\*Examples.cs" LinkBase="Documentation\Samples" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Benchmark workload validation (Conformance/Benchmarks/BenchmarkWorkloadTests): the benchmarked operations and input
+      generators are compiled here (they have no BenchmarkDotNet dependency).
+    -->
+    <Compile Include="..\..\benchmarks\Meziantou.Framework.Imaging.Benchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
+    <!-- The font builder and the synthetic fonts are shared with the corpus generator, which writes these fonts to the corpus -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" LinkBase="Shared" />
+    <!--
+      The lists of the files each section of the manifest references, as the corpus generator computes them to keep the
+      sections a generator does not own (Conformance/CorpusManifestTests), with its manifest object type
+    -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Infrastructure\CorpusDriver.Files.cs" LinkBase="Shared\CorpusGenerator" />
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\GlobalUsings.cs" LinkBase="Shared\CorpusGenerator" />
+  </ItemGroup>
+
+  <!-- Shared helpers -->
+  <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
+  <ItemGroup>
+    <!-- The internal API of the font reader and the shaper -->
+    <Using Include="Meziantou.Framework.Fonts" />
+  </ItemGroup>
+</Project>

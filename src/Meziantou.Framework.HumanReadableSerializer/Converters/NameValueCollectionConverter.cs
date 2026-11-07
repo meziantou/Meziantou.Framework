@@ -9,51 +9,38 @@ internal sealed class NameValueCollectionConverter : HumanReadableConverter<Name
     {
         Debug.Assert(value is not null);
 
+        if (value.Count is 0)
+        {
+            writer.WriteEmptyObject();
+            return;
+        }
+
+        // Sort the indices rather than copying the entries: the collection allows a null key and several values per key
+        IEnumerable<int> indices = Enumerable.Range(0, value.Count);
         if (options.DictionaryKeyOrder is not null)
         {
-            var dict = new Dictionary<string, string?>(StringComparer.Ordinal);
-            foreach (string item in value.Keys)
-            {
-                dict.Add(item, value[item]);
-            }
-
-            HumanReadableSerializer.Serialize(writer, dict, options);
+            indices = indices.OrderBy(index => value.GetKey(index) ?? "", options.DictionaryKeyOrder);
         }
-        else
+
+        writer.StartObject();
+        foreach (var index in indices)
         {
-            var hasItem = false;
-            for (var i = 0; i < value.Count; i++)
+            writer.WritePropertyName(value.GetKey(index) ?? "");
+            var values = value.GetValues(index);
+            if (values is null)
             {
-                if (!hasItem)
-                {
-                    writer.StartObject();
-                    hasItem = true;
-                }
-
-                writer.WritePropertyName(value.GetKey(i) ?? "");
-                var values = value.GetValues(i);
-                if (values is null)
-                {
-                    writer.WriteNullValue();
-                }
-                else if (values.Length is 1)
-                {
-                    HumanReadableSerializer.Serialize(writer, values[0], options);
-                }
-                else
-                {
-                    HumanReadableSerializer.Serialize(writer, values, options);
-                }
+                writer.WriteNullValue();
             }
-
-            if (hasItem)
+            else if (values.Length is 1)
             {
-                writer.EndObject();
+                HumanReadableSerializer.Serialize(writer, values[0], options);
             }
             else
             {
-                writer.WriteEmptyObject();
+                HumanReadableSerializer.Serialize(writer, values, options);
             }
         }
+
+        writer.EndObject();
     }
 }

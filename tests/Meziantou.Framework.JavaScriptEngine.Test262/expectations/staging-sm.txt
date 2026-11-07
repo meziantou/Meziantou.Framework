@@ -1,0 +1,4 @@
+staging/sm/String/string-upper-lower-mapping.js:sloppy # Unicode 17 data: the engine uses Unicode 18, where U+0277 has the uppercase mapping U+A7DD
+staging/sm/String/string-upper-lower-mapping.js:strict # Unicode 17 data: the engine uses Unicode 18, where U+0277 has the uppercase mapping U+A7DD
+staging/sm/lexical-environment/block-scoped-functions-annex-b-arguments.js:sloppy # outdated: "arguments" is one of the parameter names when the function has an arguments object, so a block function named arguments is not hoisted (test262 annexB/language/function-code/block-decl-func-skip-arguments.js)
+staging/sm/regress/regress-602621.js:sloppy # outdated: "arguments" is one of the parameter names when the function has an arguments object, so a block function named arguments is not hoisted (test262 annexB/language/function-code/block-decl-func-skip-arguments.js)

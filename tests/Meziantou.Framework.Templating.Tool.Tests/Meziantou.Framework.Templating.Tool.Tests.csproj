@@ -8,6 +8,12 @@
     <Compile Include="../../common/ConsoleHelper.cs" Link="ConsoleHelper.cs" />
   </ItemGroup>
 
+  <!-- Templates of the documentation, and the files the tool must produce from them -->
+  <ItemGroup>
+    <Compile Remove="Examples/**" />
+    <None Include="Examples/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Templating.Tool/Meziantou.Framework.Templating.Tool.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />

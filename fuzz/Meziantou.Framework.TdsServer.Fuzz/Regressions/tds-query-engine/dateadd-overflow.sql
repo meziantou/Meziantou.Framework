@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE DATEADD(day, 1-2147483648, CAST('2024-01-01' AS datetime)) > CAST('2024-01-01' AS datetime) AND Id = 1

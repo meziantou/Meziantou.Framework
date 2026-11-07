@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Win32
         System = 7,
         Application = 8,
         GameMedia = 9,
-        Contacts = 10
+        Contacts = 10,
     }
 
     [System.Flags]
@@ -44,6 +44,5 @@ namespace Meziantou.Framework.Win32
         GdiPlus = 16,
         WmSdk = 32,
         ZipFolder = 64,
-        Mime = 128
     }
 }

@@ -10,11 +10,11 @@ dotnet add package Meziantou.Framework.Http.Caching.Sqlite
 
 ## Usage
 
-```csharp
-using Meziantou.Framework.Http.Caching;
-using Meziantou.Framework.Http.Caching.Sqlite;
-using Microsoft.Data.Sqlite;
+`SqliteHttpCacheStore` is in the `Meziantou.Framework.Http.Caching.Sqlite` namespace, and `SqliteConnectionStringBuilder` in
+`Microsoft.Data.Sqlite`.
 
+<!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=SqliteHttpCacheStore_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var connectionStringBuilder = new SqliteConnectionStringBuilder
 {
     DataSource = Path.Combine(AppContext.BaseDirectory, "http-cache.db"),
@@ -31,3 +31,4 @@ using var httpClient = new HttpClient(cachingHandler);
 // Optional: remove stale entries that cannot be reused
 await provider.PruneObsoleteEntriesAsync();
 ```
+<!-- endref -->

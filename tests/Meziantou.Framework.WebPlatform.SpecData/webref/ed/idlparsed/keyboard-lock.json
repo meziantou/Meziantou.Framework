@@ -1,0 +1,177 @@
+{
+  "spec": {
+    "title": "Keyboard Lock",
+    "url": "https://wicg.github.io/keyboard-lock/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Keyboard"
+        ]
+      }
+    },
+    "idlNames": {
+      "Keyboard": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface Keyboard : EventTarget {\n  Promise<undefined> lock(optional sequence<DOMString> keyCodes = []);\n  undefined unlock();\n};",
+        "type": "interface",
+        "name": "Keyboard",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "lock",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "keyCodes",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "sequence",
+                  "value": []
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/keyboard-lock/#dom-keyboard-lock"
+          },
+          {
+            "type": "operation",
+            "name": "unlock",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/keyboard-lock/#dom-keyboard-unlock"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/keyboard-lock/#keyboard"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext, SameObject] readonly attribute Keyboard keyboard;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "keyboard",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Keyboard"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/keyboard-lock/#dom-navigator-keyboard"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Keyboard"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "Keyboard"
+      ],
+      "Keyboard": [
+        "EventTarget"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EventTarget"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

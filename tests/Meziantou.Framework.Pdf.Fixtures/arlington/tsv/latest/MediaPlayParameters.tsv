@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaPlayParams]			Table 290
+PL	dictionary	1.5		FALSE	FALSE	FALSE				[MediaPlayers]	
+MH	dictionary	1.5		FALSE	FALSE	FALSE				[MediaPlayParametersMH]	
+BE	dictionary	1.5		FALSE	FALSE	FALSE				[MediaPlayParametersBE]	

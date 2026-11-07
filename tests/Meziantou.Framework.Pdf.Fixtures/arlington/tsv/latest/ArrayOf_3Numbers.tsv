@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE					
+1	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE					
+2	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE					

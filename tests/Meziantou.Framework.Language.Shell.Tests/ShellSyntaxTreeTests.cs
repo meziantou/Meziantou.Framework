@@ -1,0 +1,635 @@
+namespace Meziantou.Framework.Language.Shell.Tests;
+
+public sealed class ShellSyntaxTreeTests
+{
+    [Fact]
+    public void ReadmeExample_Parsing()
+    {
+        #region ShellSyntaxTree_Parsing
+        const string Script = """
+            # deploy the app
+            set -euo pipefail
+
+            for target in web api; do
+              if [[ -d "src/$target" ]]; then
+                dotnet publish "src/$target" -c Release | tee "logs/$target.log"
+              fi
+            done
+            """;
+
+        var tree = ShellSyntaxTree.ParseText(Script, ShellDialect.Bash);
+
+        // Nothing is lost: the tree reproduces the input byte for byte.
+        Assert.Equal(Script, tree.GetRoot().ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
+
+        // Invalid input produces diagnostics instead of exceptions.
+        var invalid = ShellSyntaxTree.ParseText("echo 'unterminated", ShellDialect.Bash);
+        var diagnostic = Assert.Single(invalid.GetDiagnostics());
+        Assert.Equal("SHELL0003 at (0,5)-(0,6): Unterminated single-quoted string.", $"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ParseCommand()
+    {
+        #region ShellSyntaxTree_ParseCommand
+        var command = (ShellCommandSyntax)ShellSyntaxTree.ParseCommand("git commit -m 'wip'", ShellDialect.Bash);
+
+        Assert.Equal("git", command.NameValue);
+        Assert.Equal("wip", command.Arguments[2].Value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Expressions()
+    {
+        #region ShellSyntaxTree_Expressions
+        var arithmetic = ShellSyntaxTree.ParseText("echo $((1 + 2 * 3))", ShellDialect.Bash)
+            .GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>().Single();
+
+        // 1 + (2 * 3): precedence is in the tree, not left to the caller.
+        var binary = (ShellBinaryExpressionSyntax)arithmetic.Expression;
+        Assert.Equal("+", binary.OperatorText);
+        Assert.IsType<ShellBinaryExpressionSyntax>(binary.Right);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Comments()
+    {
+        #region ShellSyntaxTree_Comments
+        var tree = ShellSyntaxTree.ParseText("# build\nmake # all targets\n", ShellDialect.Bash);
+
+        var comments = new List<string>();
+        foreach (var comment in tree.GetRoot().DescendantComments())
+        {
+            comments.Add($"{comment.Span.Start}: {comment}");
+        }
+
+        Assert.Equal(["0: # build", "13: # all targets"], comments);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ReplaceNode()
+    {
+        #region ShellSyntaxTree_ReplaceNode
+        var tree = ShellSyntaxTree.ParseText("echo   old    # keep this", ShellDialect.Bash);
+        var command = (ShellCommandSyntax)tree.GetRoot().Statements.Statements[0];
+        var argument = command.Arguments[0];
+
+        var updated = tree.GetRoot().ReplaceNode(argument, SyntaxFactory.Word("new", ShellDialect.Bash).WithTriviaFrom(argument));
+
+        Assert.Equal("echo   new    # keep this", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_WithChanges()
+    {
+        #region ShellSyntaxTree_WithChanges
+        var tree = ShellSyntaxTree.ParseText("echo old", ShellDialect.Bash);
+        var updated = tree.WithChanges(new TextChange(new TextSpan(5, 3), "new"));
+
+        Assert.Equal("echo new", updated.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_IsEquivalentTo()
+    {
+        #region ShellSyntaxTree_IsEquivalentTo
+        var a = ShellSyntaxTree.ParseText("echo   a  # note", ShellDialect.Bash);
+        var b = ShellSyntaxTree.ParseText("echo a", ShellDialect.Bash);
+
+        Assert.True(a.IsEquivalentTo(b));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Annotations()
+    {
+        #region ShellSyntaxTree_Annotations
+        var root = ShellSyntaxTree.ParseText("make build\necho done\n", ShellDialect.Bash).GetRoot();
+        var command = (ShellCommandSyntax)root.Statements.Statements[0];
+
+        var marker = new SyntaxAnnotation();
+        var marked = root.ReplaceNode(command, command.WithAdditionalAnnotations(marker));
+
+        // Something else entirely: replace the argument of the second command
+        var argument = ((ShellCommandSyntax)marked.Statements.Statements[1]).Arguments[0];
+        var edited = marked.ReplaceNode(argument, SyntaxFactory.Word("finished", ShellDialect.Bash).WithTriviaFrom(argument));
+
+        var found = edited.GetAnnotatedNodes(marker).Single();
+        Assert.Equal("make build", found.ToString());
+        Assert.Equal("make build\necho finished\n", edited.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SyntaxFactory()
+    {
+        #region ShellSyntaxTree_SyntaxFactory
+        var command = SyntaxFactory.Command(ShellDialect.Bash, "echo", "two words", "plain");
+
+        Assert.Equal("echo 'two words' plain", command.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Rewriter()
+    {
+        #region ShellSyntaxTree_RewriterUsage
+        var tree = ShellSyntaxTree.ParseText("if true; then\n  # build it\n  make all\nfi\n", ShellDialect.Bash);
+
+        var updated = new RenameCommand("make", "ninja").Visit(tree.GetRoot());
+
+        Assert.Equal("if true; then\n  # build it\n  ninja all\nfi\n", updated?.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ParseOptions()
+    {
+        #region ShellSyntaxTree_ParseOptions
+        var script = "echo $(echo $(echo nested))";
+        var options = new ShellParseOptions(ShellDialect.Bash) { MaxRecursionDepth = 64 };
+        var tree = ShellSyntaxTree.ParseText(script, options);
+
+        Assert.Empty(tree.GetDiagnostics());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Dialects()
+    {
+        #region ShellSyntaxTree_Dialects
+        var powerShell = ShellSyntaxTree.ParseText("Get-ChildItem -Recurse | Where-Object { $_.Length -gt 1kb }", ShellDialect.PowerShellCore);
+        Assert.Empty(powerShell.GetDiagnostics());
+
+        var cmd = ShellSyntaxTree.ParseText("@echo off\r\nif exist out (rmdir /s /q out)\r\n", ShellDialect.Cmd);
+        Assert.Empty(cmd.GetDiagnostics());
+
+        // [[ ]] is bash and zsh only: in sh, it is an ordinary command name
+        Assert.True(ShellDialect.Bash.HasFeature(ShellDialectFeatures.ExtendedTest));
+        Assert.False(ShellDialect.Sh.HasFeature(ShellDialectFeatures.ExtendedTest));
+
+        // Read a dialect from its name
+        Assert.True(ShellDialect.TryParse("pwsh", out var dialect));
+        Assert.Equal(ShellDialect.PowerShellCore, dialect);
+        #endregion
+    }
+
+    public static IEnumerable<ShellDialect> PosixDialects => [ShellDialect.Sh, ShellDialect.Bash, ShellDialect.Zsh];
+
+    public static TheoryData<string> PosixSamples =>
+    [
+        "",
+        "\n",
+        "   ",
+        "echo hello",
+        "echo hello world\n",
+        "  echo   spaced   args  \n\n",
+        "# only a comment",
+        "# leading comment\necho hi # trailing comment\n",
+        "ls -la | grep foo | wc -l",
+        "make build && make test || echo failed",
+        "cd /tmp; ls; pwd",
+        "sleep 5 &",
+        "! grep -q pattern file",
+        "echo 'single quoted'",
+        """echo "double quoted"\n""",
+        """echo "mixed 'inner' quotes"\n""",
+        "echo \"value is $HOME\"",
+        "echo ${HOME}",
+        "echo ${HOME:-/default/path}",
+        "echo $1 $? $@ $$",
+        "echo $(date)",
+        "echo `date`",
+        "echo $(echo $(echo nested))",
+        "FOO=bar",
+        "FOO=bar BAZ=qux command arg",
+        "FOO=",
+        "echo out > file.txt",
+        "echo out >> file.txt 2> err.txt",
+        "cat < input.txt",
+        "command 2>&1",
+        "echo a\\ b",
+        "echo \\$notavar",
+        "echo *.txt",
+        "echo file?.log",
+        "echo one \\\n  two",
+        "echo 'unterminated",
+        "echo \"unterminated",
+        "echo $(unterminated",
+        "echo ${unterminated",
+        ";",
+        ";;;",
+        "|",
+        "echo a |",
+        "echo >",
+        "\n\n\n",
+        "a=1\nb=2\necho $a$b\n",
+    ];
+
+    public static TheoryData<string> BashOnlySamples =>
+    [
+        "echo $((1 + 2))",
+        "echo $(( (3 * 4) - 1 ))",
+        "cat <<< 'here string'",
+        "echo $((unterminated",
+    ];
+
+    [Theory]
+    [MemberData(nameof(PosixSamples))]
+    public void ParseText_RoundTripsExactly_ForEveryPosixDialect(string text)
+    {
+        foreach (var dialect in PosixDialects)
+        {
+            var tree = ShellSyntaxTree.ParseText(text, dialect);
+
+            Assert.Equal(text, tree.GetRoot().ToFullString());
+            Assert.Equal(text, tree.GetText().Text);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(BashOnlySamples))]
+    public void ParseText_RoundTripsExactly_ForBashSpecificSyntax(string text)
+    {
+        foreach (var dialect in PosixDialects)
+        {
+            var tree = ShellSyntaxTree.ParseText(text, dialect);
+
+            Assert.Equal(text, tree.GetRoot().ToFullString());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PosixSamples))]
+    public void ParseText_NeverThrows(string text)
+    {
+        foreach (var dialect in PosixDialects)
+        {
+            Assert.Null(Record.Exception(() => ShellSyntaxTree.ParseText(text, dialect)));
+        }
+    }
+
+    [Fact]
+    public void ParseText_SimpleCommand_BuildsExpectedTree()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo hello world", ShellDialect.Bash);
+
+        Assert.Empty(tree.GetDiagnostics());
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Equal("echo", command.NameValue);
+        Assert.Equal(2, command.Arguments.Count);
+        Assert.Equal("hello", command.Arguments[0].Value);
+        Assert.Equal("world", command.Arguments[1].Value);
+    }
+
+    [Fact]
+    public void ParseText_Pipeline_BuildsPipelineNode()
+    {
+        var tree = ShellSyntaxTree.ParseText("ls | grep foo | wc -l", ShellDialect.Bash);
+
+        var pipeline = Assert.IsType<ShellPipelineSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Equal(3, pipeline.Commands.Count);
+        Assert.Equal(2, pipeline.OperatorTokens.Count);
+        Assert.All(pipeline.OperatorTokens, token => Assert.Equal(SyntaxKind.PipeToken, token.Kind()));
+    }
+
+    [Fact]
+    public void ParseText_AndOrList_BuildsCommandListNode()
+    {
+        var tree = ShellSyntaxTree.ParseText("a && b || c", ShellDialect.Bash);
+
+        var list = Assert.IsType<ShellCommandListSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Equal(3, list.Pipelines.Count);
+        Assert.Equal(SyntaxKind.AmpersandAmpersandToken, list.OperatorTokens[0].Kind());
+        Assert.Equal(SyntaxKind.PipePipeToken, list.OperatorTokens[1].Kind());
+    }
+
+    [Fact]
+    public void ParseText_SemicolonSeparatedStatements_AreSiblings()
+    {
+        var tree = ShellSyntaxTree.ParseText("cd /tmp; ls; pwd", ShellDialect.Bash);
+
+        Assert.Equal(3, tree.GetRoot().Statements.Statements.Count);
+        Assert.Equal(2, tree.GetRoot().Statements.SeparatorTokens.Count);
+    }
+
+    [Fact]
+    public void ParseText_NewlineSeparatedStatements_AreSiblings()
+    {
+        var tree = ShellSyntaxTree.ParseText("cd /tmp\nls\npwd\n", ShellDialect.Bash);
+
+        Assert.Equal(3, tree.GetRoot().Statements.Statements.Count);
+
+        // `SeparatorTokens[i]` follows `Statements[i]`, so a statement ended by a line break gets a missing separator
+        // rather than none; a real `;` further down the script would otherwise be rebuilt at the wrong index.
+        Assert.All(tree.GetRoot().Statements.SeparatorTokens, separator =>
+        {
+            Assert.True(separator.IsMissing);
+            Assert.Empty(separator.Text);
+        });
+    }
+
+    [Fact]
+    public void ParseText_SeparatorsLineUpWithTheirStatements()
+    {
+        // A `;` or `&` further down the script must line up with the statement it follows, not with the first one.
+        (string Text, ShellDialect Dialect)[] cases =
+        [
+            ("cd /tmp\nls\npwd; echo done\n", ShellDialect.Bash),
+            ("cd /tmp\nls\npwd & echo done\n", ShellDialect.Bash),
+            ("Get-Item\nGet-Date; Get-Host\n", ShellDialect.PowerShellCore),
+            ("echo a\r\necho b\r\necho c & echo d\r\n", ShellDialect.Cmd),
+        ];
+
+        foreach (var (text, dialect) in cases)
+        {
+            var list = ShellSyntaxAssert.TextIsFaithful(text, dialect).GetRoot().Statements;
+
+            // The real separator sits on the statement it follows; the ones before it are placeholders.
+            Assert.All(list.SeparatorTokens.Take(list.Statements.Count - 2), separator => Assert.True(separator.IsMissing));
+            Assert.False(list.SeparatorTokens[list.Statements.Count - 2].IsMissing);
+        }
+    }
+
+    [Fact]
+    public void ParseText_Assignment_IsAttachedToTheCommand()
+    {
+        var tree = ShellSyntaxTree.ParseText("FOO=bar BAZ=qux run --now", ShellDialect.Bash);
+
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Equal(2, command.Assignments.Count);
+        Assert.Equal("FOO", command.Assignments[0].Name);
+        Assert.Equal("bar", command.Assignments[0].Value?.Value);
+        Assert.Equal("run", command.NameValue);
+    }
+
+    [Fact]
+    public void ParseText_Redirections_KeepIoNumberAndTarget()
+    {
+        var tree = ShellSyntaxTree.ParseText("run 2> errors.log >> out.log", ShellDialect.Bash);
+
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Equal(2, command.Redirections.Count);
+        Assert.Equal("2", command.Redirections[0].IoNumberToken.Text);
+        Assert.Equal("errors.log", command.Redirections[0].Target?.Value);
+        Assert.Equal(SyntaxKind.GreaterThanGreaterThanToken, command.Redirections[1].OperatorToken.Kind());
+        Assert.False(command.Redirections[1].IoNumberToken.IsPresent());
+    }
+
+    [Fact]
+    public void ParseText_RedirectionInTheMiddle_KeepsSourceOrder()
+    {
+        const string Text = "echo >out hi";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
+
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Equal("echo", command.NameValue);
+        Assert.Equal("hi", Assert.Single(command.Arguments).Value);
+        Assert.Equal(Text, command.ToFullString());
+    }
+
+    [Fact]
+    public void ParseText_CommentsAreTriviaWithSourceLocations()
+    {
+        const string Text = "# leading\necho hi # trailing\n";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
+
+        var comments = tree.GetRoot().DescendantComments().ToArray();
+
+        Assert.HasCount(2, comments);
+        Assert.Equal("# leading", comments[0].ToString());
+        Assert.Equal(0, comments[0].Span.Start);
+        Assert.Equal("# trailing", comments[1].ToString());
+        Assert.Equal(Text.IndexOf("# trailing", StringComparison.Ordinal), comments[1].Span.Start);
+    }
+
+    [Fact]
+    public void ParseText_HashInsideAWordIsNotAComment()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo abc#def", ShellDialect.Bash);
+
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Equal("abc#def", Assert.Single(command.Arguments).Value);
+        Assert.Empty(tree.GetRoot().DescendantComments());
+    }
+
+    [Fact]
+    public void ParseText_VariableReferences_ExposeTheirName()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo $HOME ${PATH} $1", ShellDialect.Bash);
+
+        var names = tree.GetRoot().DescendantNodes().OfType<ShellVariableReferenceSyntax>().Select(reference => reference.Name).ToArray();
+
+        Assert.Equal(["HOME", "PATH", "1"], names);
+    }
+
+    [Fact]
+    public void ParseText_CommandSubstitution_ParsesInnerCommand()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo $(date -u)", ShellDialect.Bash);
+
+        var substitution = Assert.Single(tree.GetRoot().DescendantNodes().OfType<ShellCommandSubstitutionSyntax>());
+        var inner = Assert.IsType<ShellCommandSyntax>(Assert.Single(substitution.Statements.Statements));
+
+        Assert.False(substitution.IsBackquoted);
+        Assert.Equal("date", inner.NameValue);
+    }
+
+    [Theory]
+    // POSIX defines arithmetic expansion, so it is modelled for every dialect in the family.
+    [InlineData("sh")]
+    [InlineData("bash")]
+    [InlineData("zsh")]
+    public void ParseText_ArithmeticExpansion_IsModeledForEveryPosixDialect(string dialectName)
+    {
+        Assert.True(ShellDialect.TryParse(dialectName, out var dialect));
+
+        var tree = ShellSyntaxTree.ParseText("echo $((1 + 2))", dialect);
+
+        var expansion = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        Assert.Equal("1 + 2", expansion.ExpressionText);
+    }
+
+    [Fact]
+    public void ParseText_InvalidInput_ProducesDiagnosticsAndSkippedText()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo 'unterminated", ShellDialect.Bash);
+
+        Assert.NotEmpty(tree.GetDiagnostics());
+        Assert.All(tree.GetDiagnostics(), diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.Equal("SHELL0003", tree.GetDiagnostics()[0].Id);
+    }
+
+    [Fact]
+    public void ParseText_StraySeparator_IsKeptAsSkippedText()
+    {
+        const string Text = "; echo hi";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
+
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+        Assert.True(tree.GetRoot().ContainsSkippedText);
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0002");
+    }
+
+    [Fact]
+    public void ParseText_DeeplyNestedSubstitution_ReportsDepthAndStillRoundTrips()
+    {
+        var text = string.Concat(Enumerable.Repeat("$(", 40)) + "x" + string.Concat(Enumerable.Repeat(")", 40));
+        var options = new ShellParseOptions(ShellDialect.Bash) { MaxRecursionDepth = 8 };
+
+        var tree = ShellSyntaxTree.ParseText(text, options);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0100");
+    }
+
+    public static TheoryData<string, ShellDialect> DeeplyNestedScripts()
+    {
+        // Nesting that the parser descends into recursively. The depth guard stops it long before the stack runs out,
+        // so these stay cheap however large the input is.
+        const int Nested = 20_000;
+
+        // Chains are built by a loop rather than by recursion, so the guard never sees them and the tree really is
+        // this deep. Every node caches its own text, which makes the memory quadratic in the depth, so keep it small.
+        const int Chained = 2_000;
+
+        return new TheoryData<string, ShellDialect>
+        {
+            { "echo $((" + new string('(', Nested) + "1" + new string(')', Nested) + "))", ShellDialect.Bash },
+            { "echo $((" + new string('-', Nested) + "x))", ShellDialect.Bash },
+            { "echo " + Repeat("$((", Nested) + "1" + Repeat("))", Nested), ShellDialect.Bash },
+            { "[[ " + Repeat("( ", Nested) + "-f a" + Repeat(" )", Nested) + " ]]", ShellDialect.Bash },
+            { "[[ " + new string('!', Nested) + " -f a ]]", ShellDialect.Bash },
+            { new string('(', Nested) + "echo" + new string(')', Nested), ShellDialect.Bash },
+            { new string('(', Nested) + "echo" + new string(')', Nested), ShellDialect.Cmd },
+            { "$a = " + Repeat("@{k=", Nested) + "1" + new string('}', Nested), ShellDialect.PowerShellCore },
+            { "$a = " + Repeat("[int]", Nested) + "1", ShellDialect.PowerShellCore },
+            { "$a = " + new string('!', Nested) + "$x", ShellDialect.PowerShellCore },
+            { "$a = $x" + Repeat("[0", Nested) + new string(']', Nested), ShellDialect.PowerShellCore },
+            { "echo $((1" + Repeat("+1", Chained) + "))", ShellDialect.Bash },
+            { "[[ -f a" + Repeat(" && -f a", Chained) + " ]]", ShellDialect.Bash },
+            { "$a = $x" + Repeat(".p", Chained), ShellDialect.PowerShellCore },
+            // Right-associative chains recurse into their own parser rather than back through ParseExpression.
+            { "$a = " + Repeat("$b = ", Nested) + "1", ShellDialect.PowerShellCore },
+            { "$a = " + Repeat("$c ? 1 : ", Nested) + "2", ShellDialect.PowerShellCore },
+        };
+
+        static string Repeat(string value, int count) => string.Concat(Enumerable.Repeat(value, count));
+    }
+
+    [Theory]
+    [MemberData(nameof(DeeplyNestedScripts))]
+    public void ParseText_DeeplyNestedScript_DoesNotExhaustTheStack(string text, ShellDialect dialect)
+    {
+        // A stack overflow cannot be caught, so a regression here takes the test host down rather than failing.
+        // Checking faithfulness walks every node and token, and the equivalence check walks the tree a second time.
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, dialect);
+
+        Assert.True(tree.GetRoot().IsEquivalentTo(ShellSyntaxTree.ParseText(text, dialect).GetRoot()));
+    }
+
+    [Fact]
+    public void Span_ExcludesTriviaAndFullSpanIncludesIt()
+    {
+        const string Text = "  echo hi  ";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+
+        Assert.Equal(2, command.Span.Start);
+        Assert.Equal(9, command.Span.End);
+        Assert.Equal(0, command.FullSpan.Start);
+    }
+
+    [Fact]
+    public void WithChanges_ReparsesInTheSameDialect()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo old", ShellDialect.Zsh);
+        var updated = tree.WithChanges(new TextChange(new TextSpan(5, 3), "new"));
+
+        Assert.Equal("echo new", updated.GetText().Text);
+        Assert.Equal(ShellDialect.Zsh, updated.Dialect);
+    }
+
+    [Fact]
+    public void GetChanges_ReturnsEmptyForIdenticalText()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo hi", ShellDialect.Bash);
+        var other = ShellSyntaxTree.ParseText("echo hi", ShellDialect.Bash);
+
+        Assert.Empty(tree.GetChanges(other));
+        Assert.True(tree.IsEquivalentTo(other));
+    }
+
+    [Fact]
+    public void IsEquivalentTo_IsFalseAcrossDialects()
+    {
+        var bash = ShellSyntaxTree.ParseText("echo hi", ShellDialect.Bash);
+        var sh = ShellSyntaxTree.ParseText("echo hi", ShellDialect.Sh);
+
+        Assert.False(bash.IsEquivalentTo(sh));
+    }
+
+    [Fact]
+    public void SourceText_ToStringReturnsTheText()
+    {
+        const string Text = "a\nb\nc";
+
+        Assert.Equal(Text, ShellSyntaxTree.ParseText(Text, ShellDialect.Bash).GetText().ToString());
+    }
+
+    [Fact]
+    public void SourceText_ReportsLines()
+    {
+        var tree = ShellSyntaxTree.ParseText("a\nb\nc", ShellDialect.Bash);
+
+        Assert.Equal(3, tree.GetText().Lines.Count);
+        Assert.Equal("b", tree.GetText().Lines[1].Text);
+        Assert.Equal(1, tree.GetText().GetLine(2).LineNumber);
+    }
+
+    [Fact]
+    public void Diagnostics_AreLocatedInTheTreesOwnSourceText()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo a\necho 'unterminated", ShellDialect.Bash);
+        var diagnostic = tree.GetDiagnostics()[0];
+
+        Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
+        Assert.Equal(1, diagnostic.Location.GetLineSpan().Start.Line);
+    }
+
+    [Fact]
+    public void OnlyAComment_RootSpanExcludesTheComment()
+    {
+        var root = ShellSyntaxTree.ParseText("#", ShellDialect.Bash).GetRoot();
+
+        Assert.Equal(new TextSpan(1, 0), root.Span);
+        Assert.Equal(new TextSpan(0, 1), root.FullSpan);
+    }
+
+    #region ShellSyntaxTree_Rewriter
+    private sealed class RenameCommand(string oldName, string newName) : ShellSyntaxRewriter
+    {
+        public override SyntaxNode? VisitCommand(ShellCommandSyntax node)
+        {
+            if (node.NameValue != oldName || node.Name is null)
+            {
+                return base.VisitCommand(node);
+            }
+
+            // WithText keeps the word's own leading trivia, so the comment and indentation in front of the
+            // command are not lost. A node built from scratch carries no trivia and would drop them.
+            var renamed = node.Name.WithText(newName);
+
+            return node.WithElements(new SyntaxList<ShellSyntaxNode>(
+                node.Elements.Select(child => ReferenceEquals(child, node.Name) ? renamed : child)));
+        }
+    }
+    #endregion
+}

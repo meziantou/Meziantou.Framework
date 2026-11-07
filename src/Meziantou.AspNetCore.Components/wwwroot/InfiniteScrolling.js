@@ -63,6 +63,9 @@ function isValidTableElement(element) {
     if (element === null) {
         return false;
     }
-    return ((element instanceof HTMLTableElement && element.style.display === '') || element.style.display === 'table')
-        || ((element instanceof HTMLTableSectionElement && element.style.display === '') || element.style.display === 'table-row-group');
+    // Use the computed style: element.style only exposes the inline attribute, so a table styled by a
+    // stylesheet would not be detected.
+    const display = getComputedStyle(element).display;
+    return (element instanceof HTMLTableElement && (display === '' || display === 'table'))
+        || (element instanceof HTMLTableSectionElement && (display === '' || display === 'table-row-group'));
 }

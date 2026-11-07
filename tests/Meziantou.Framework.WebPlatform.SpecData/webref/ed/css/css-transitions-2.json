@@ -1,0 +1,47 @@
+{
+  "spec": {
+    "title": "CSS Transitions Module Level 2",
+    "url": "https://drafts.csswg.org/css-transitions-2/"
+  },
+  "properties": [
+    {
+      "name": "transition-behavior",
+      "href": "https://drafts.csswg.org/css-transitions-2/#propdef-transition-behavior",
+      "value": "<transition-behavior-value>#",
+      "initial": "normal",
+      "appliesTo": "All elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "transition-behavior",
+        "transitionBehavior"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@starting-style",
+      "prose": "The @starting-style rule is a grouping rule. The style rules inside it are used to establish styles to transition from, if the previous style change event did not establish a before-change style for the element whose styles are being computed.",
+      "href": "https://drafts.csswg.org/css-transitions-2/#at-ruledef-starting-style",
+      "descriptors": []
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<transition-behavior-value>",
+      "value": "normal | allow-discrete",
+      "href": "https://drafts.csswg.org/css-transitions-2/#typedef-transition-behavior-value",
+      "type": "type"
+    },
+    {
+      "name": "<single-transition>",
+      "value": "[ none | <single-transition-property> ] || <time> || <easing-function> || <time> || <transition-behavior-value>",
+      "href": "https://drafts.csswg.org/css-transitions-2/#single-transition",
+      "type": "type"
+    }
+  ]
+}

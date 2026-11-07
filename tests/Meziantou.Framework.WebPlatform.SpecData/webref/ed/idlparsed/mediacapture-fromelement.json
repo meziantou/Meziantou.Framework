@@ -1,0 +1,171 @@
+{
+  "spec": {
+    "title": "Media Capture from DOM Elements",
+    "url": "https://w3c.github.io/mediacapture-fromelement/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CanvasCaptureMediaStreamTrack"
+        ]
+      }
+    },
+    "idlNames": {
+      "CanvasCaptureMediaStreamTrack": {
+        "fragment": "[Exposed=Window] interface CanvasCaptureMediaStreamTrack : MediaStreamTrack {\n    readonly        attribute HTMLCanvasElement canvas;\n    undefined requestFrame ();\n};",
+        "type": "interface",
+        "name": "CanvasCaptureMediaStreamTrack",
+        "inheritance": "MediaStreamTrack",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "canvas",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HTMLCanvasElement"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-fromelement/#dom-canvascapturemediastreamtrack-canvas"
+          },
+          {
+            "type": "operation",
+            "name": "requestFrame",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-fromelement/#dom-canvascapturemediastreamtrack-requestframe"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-fromelement/#dom-canvascapturemediastreamtrack"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLMediaElement": [
+        {
+          "fragment": "partial interface HTMLMediaElement {\n    MediaStream captureStream ();\n};",
+          "type": "interface",
+          "name": "HTMLMediaElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "captureStream",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaStream"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-fromelement/#dom-htmlmediaelement-capturestream"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "HTMLCanvasElement": [
+        {
+          "fragment": "partial interface HTMLCanvasElement {\n    MediaStream captureStream (optional double frameRequestRate);\n};",
+          "type": "interface",
+          "name": "HTMLCanvasElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "captureStream",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "frameRequestRate",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "double"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-fromelement/#dom-htmlcanvaselement-capturestream"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CanvasCaptureMediaStreamTrack"
+      ]
+    },
+    "dependencies": {
+      "HTMLMediaElement": [
+        "MediaStream"
+      ],
+      "HTMLCanvasElement": [
+        "MediaStream"
+      ],
+      "CanvasCaptureMediaStreamTrack": [
+        "MediaStreamTrack",
+        "HTMLCanvasElement"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLMediaElement",
+      "MediaStream",
+      "HTMLCanvasElement",
+      "MediaStreamTrack"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

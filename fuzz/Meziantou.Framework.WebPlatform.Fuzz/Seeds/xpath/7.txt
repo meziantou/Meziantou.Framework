@@ -1,0 +1,1 @@
+(//li | //td)[2]/following-sibling::node()/preceding::comment()

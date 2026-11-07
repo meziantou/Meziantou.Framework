@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.DnsServer, Meziantou.Framework.DnsClient and Meziantou.Framework.DnsFilter. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The filter lists and the queried names of the unit tests are the seeds of the filter targets -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.DnsFilter.Tests\DnsFilterListReaderTests.cs" LogicalName="DnsFilterListReaderTests.cs" Link="Seeds\DnsFilterListReaderTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.DnsFilter.Tests\DnsFilterEngineTests.cs" LogicalName="DnsFilterEngineTests.cs" Link="Seeds\DnsFilterEngineTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.DnsClient\Meziantou.Framework.DnsClient.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.DnsFilter\Meziantou.Framework.DnsFilter.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.DnsServer\Meziantou.Framework.DnsServer.csproj" />
+  </ItemGroup>
+</Project>

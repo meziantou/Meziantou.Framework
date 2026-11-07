@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Person]			ISO 21812-1:2019 Table 26
+CIP4_DescriptiveName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_AdditionalNames	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_FirstName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_FullName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_JobTitle	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_FamilyName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_NamePrefix	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_NameSuffix	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					

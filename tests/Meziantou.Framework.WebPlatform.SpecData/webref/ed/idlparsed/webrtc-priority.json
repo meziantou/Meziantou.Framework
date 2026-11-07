@@ -1,0 +1,170 @@
+{
+  "spec": {
+    "title": "WebRTC Priority Control API",
+    "url": "https://w3c.github.io/webrtc-priority/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "RTCPriorityType": {
+        "fragment": "enum RTCPriorityType {\n  \"very-low\",\n  \"low\",\n  \"medium\",\n  \"high\"\n};",
+        "type": "enum",
+        "name": "RTCPriorityType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "very-low",
+            "href": "https://w3c.github.io/webrtc-priority/#dom-rtcprioritytype-very-low"
+          },
+          {
+            "type": "enum-value",
+            "value": "low",
+            "href": "https://w3c.github.io/webrtc-priority/#dom-rtcprioritytype-low"
+          },
+          {
+            "type": "enum-value",
+            "value": "medium",
+            "href": "https://w3c.github.io/webrtc-priority/#dom-rtcprioritytype-medium"
+          },
+          {
+            "type": "enum-value",
+            "value": "high",
+            "href": "https://w3c.github.io/webrtc-priority/#dom-rtcprioritytype-high"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-priority/#enumdef-rtcprioritytype"
+      }
+    },
+    "idlExtendedNames": {
+      "RTCRtpEncodingParameters": [
+        {
+          "fragment": "partial dictionary RTCRtpEncodingParameters {\n  RTCPriorityType priority = \"low\";\n  RTCPriorityType networkPriority;\n};",
+          "type": "dictionary",
+          "name": "RTCRtpEncodingParameters",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "priority",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCPriorityType"
+              },
+              "default": {
+                "type": "string",
+                "value": "low"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-priority/#dom-rtcrtpencodingparameters-priority"
+            },
+            {
+              "type": "field",
+              "name": "networkPriority",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCPriorityType"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCDataChannel": [
+        {
+          "fragment": "partial interface RTCDataChannel {\n  readonly attribute RTCPriorityType priority;\n};",
+          "type": "interface",
+          "name": "RTCDataChannel",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "priority",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCPriorityType"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webrtc-priority/#dom-rtcdatachannel-priority"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCDataChannelInit": [
+        {
+          "fragment": "partial dictionary RTCDataChannelInit {\n  RTCPriorityType priority = \"low\";\n};",
+          "type": "dictionary",
+          "name": "RTCDataChannelInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "priority",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCPriorityType"
+              },
+              "default": {
+                "type": "string",
+                "value": "low"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-priority/#dom-rtcdatachannelinit-priority"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "RTCRtpEncodingParameters": [
+        "RTCPriorityType"
+      ],
+      "RTCDataChannel": [
+        "RTCPriorityType"
+      ],
+      "RTCDataChannelInit": [
+        "RTCPriorityType"
+      ]
+    },
+    "externalDependencies": [
+      "RTCRtpEncodingParameters",
+      "RTCDataChannel",
+      "RTCDataChannelInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

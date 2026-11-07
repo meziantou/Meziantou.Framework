@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-GQ": {
+      "identity": {
+        "language": "fr",
+        "territory": "GQ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

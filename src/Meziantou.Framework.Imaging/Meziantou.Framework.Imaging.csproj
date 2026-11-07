@@ -1,0 +1,67 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <Version>1.2.9</Version>
+    <Description>Fully managed, performance-oriented image library for .NET: PNG, APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF, HEIC and JPEG 2000 decoding/encoding, JPEG XL decoding and lossless/lossy encoding, lossless JPEG recompression as JPEG XL, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming.</Description>
+    <PackageTags>image;imaging;png;apng;gif;jpeg;webp;qoi;bmp;tga;netpbm;tiff;ico;cur;ani;cursor;avif;av1;heic;heif;hevc;jpegxl;jxl;jpeg2000;jp2;j2k;htj2k;animation;resize;drawing;icc;color-management</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Unicode algorithms text layout needs (properties, normalization, scripts, line breaking, bidi) -->
+    <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
+    <!-- The font reader and the shaper, shared with Meziantou.Framework.WebPlatform -->
+    <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+    <!-- The CRC-32 of PNG and the Adler-32 of zlib -->
+    <ProjectReference Include="..\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Fonts" />
+  </ItemGroup>
+
+  <!-- Helpers of Meziantou.Framework.Fonts the library also needs: the files are compiled here too, in the namespace of the library, so that they stay internal to both -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_IMAGING</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Meziantou.Framework.Fonts\Infrastructure\DeterministicAngle.cs" Link="Internals\Shared\DeterministicAngle.cs" />
+    <Compile Include="..\Meziantou.Framework.Fonts\Fonts\FontTags.cs" Link="Internals\Shared\FontTags.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Av1.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Avif.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.AvifEncoder.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Heic.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.HeicEncoder.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Hevc.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Bmp.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Exr.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Gif.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Ico.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Jpeg.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Jpeg2000.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.JpegXl.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Png.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Pnm.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Processing.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Qoi.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tga.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tiff.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.WebP.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.InteropTests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Benchmarks" />
+    <!-- The rendering backend of Meziantou.Framework.WebPlatform draws with the faces the layout measured the text with -->
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
+    <!-- The tests of Meziantou.Framework.Pdf encode their CCITT and JBIG2 data with the encoders of TIFF and JPEG 2000 -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
+  </ItemGroup>
+</Project>

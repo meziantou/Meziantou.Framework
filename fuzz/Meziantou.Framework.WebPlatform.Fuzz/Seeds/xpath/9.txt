@@ -1,0 +1,1 @@
+//li[not(@class)][starts-with(string(.), '1')]/ancestor-or-self::*/@*

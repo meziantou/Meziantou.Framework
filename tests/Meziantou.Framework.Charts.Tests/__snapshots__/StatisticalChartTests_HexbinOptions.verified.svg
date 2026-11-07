@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220" viewBox="0 0 400 220" role="img" font-family="Helvetica, Arial, sans-serif">
+<defs>
+<linearGradient id="chart-gradient0" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="250" y2="0">
+<stop offset="0" stop-color="#440154"/>
+<stop offset="0.0667" stop-color="#471b69"/>
+<stop offset="0.1333" stop-color="#472f7b"/>
+<stop offset="0.2" stop-color="#414386"/>
+<stop offset="0.2667" stop-color="#3a568b"/>
+<stop offset="0.3333" stop-color="#31688e"/>
+<stop offset="0.4" stop-color="#2b788e"/>
+<stop offset="0.4667" stop-color="#25888d"/>
+<stop offset="0.5333" stop-color="#21988a"/>
+<stop offset="0.6" stop-color="#28a883"/>
+<stop offset="0.6667" stop-color="#35b779"/>
+<stop offset="0.7333" stop-color="#5ac567"/>
+<stop offset="0.8" stop-color="#7ed152"/>
+<stop offset="0.8667" stop-color="#a8db38"/>
+<stop offset="0.9333" stop-color="#d3e229"/>
+<stop offset="1" stop-color="#fde725"/>
+</linearGradient>
+</defs>
+<rect width="400" height="220" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="189.83" x2="204.14" y2="189.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="126.05" x2="204.14" y2="126.05" stroke="#e3e6ea"/>
+<line x1="32.23" y1="62.28" x2="204.14" y2="62.28" stroke="#e3e6ea"/>
+<line x1="218.09" y1="189.83" x2="390" y2="189.83" stroke="#e3e6ea"/>
+<line x1="218.09" y1="126.05" x2="390" y2="126.05" stroke="#e3e6ea"/>
+<line x1="218.09" y1="62.28" x2="390" y2="62.28" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g class="facet">
+<g>
+<path d="M125.76,176.28 L136.16,182.28 L136.16,194.28 L125.76,200.28 L115.37,194.28 L115.37,182.28 Z" fill="#30b27d" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M115.37,158.28 L125.76,164.28 L125.76,176.28 L115.37,182.28 L104.98,176.28 L104.98,164.28 Z" fill="#d0e229" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M136.16,122.28 L146.55,128.28 L146.55,140.28 L136.16,146.28 L125.76,140.28 L125.76,128.28 Z" fill="#50c16d" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M125.76,104.28 L136.16,110.28 L136.16,122.28 L125.76,128.28 L115.37,122.28 L115.37,110.28 Z" fill="#d0e229" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M104.98,68.28 L115.37,74.28 L115.37,86.28 L104.98,92.28 L94.59,86.28 L94.59,74.28 Z" fill="#23908c" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M84.19,176.28 L94.59,182.28 L94.59,194.28 L84.19,200.28 L73.8,194.28 L73.8,182.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M136.16,158.28 L146.55,164.28 L146.55,176.28 L136.16,182.28 L125.76,176.28 L125.76,164.28 Z" fill="#22a287" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M115.37,122.28 L125.76,128.28 L125.76,140.28 L115.37,146.28 L104.98,140.28 L104.98,128.28 Z" fill="#50c16d" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M136.16,86.28 L146.55,92.28 L146.55,104.28 L136.16,110.28 L125.76,104.28 L125.76,92.28 Z" fill="#471c6b" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M104.98,176.28 L115.37,182.28 L115.37,194.28 L104.98,200.28 L94.59,194.28 L94.59,182.28 Z" fill="#fde725" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M146.55,104.28 L156.94,110.28 L156.94,122.28 L146.55,128.28 L136.16,122.28 L136.16,110.28 Z" fill="#385b8c" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M125.76,68.28 L136.16,74.28 L136.16,86.28 L125.76,92.28 L115.37,86.28 L115.37,74.28 Z" fill="#74cf56" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M146.55,176.28 L156.94,182.28 L156.94,194.28 L146.55,200.28 L136.16,194.28 L136.16,182.28 Z" fill="#3f4788" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M94.59,158.28 L104.98,164.28 L104.98,176.28 L94.59,182.28 L84.19,176.28 L84.19,164.28 Z" fill="#2f6e8e" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M94.59,122.28 L104.98,128.28 L104.98,140.28 L94.59,146.28 L84.19,140.28 L84.19,128.28 Z" fill="#2f6e8e" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M146.55,68.28 L156.94,74.28 L156.94,86.28 L146.55,92.28 L136.16,86.28 L136.16,74.28 Z" fill="#3f4788" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M104.98,104.28 L115.37,110.28 L115.37,122.28 L104.98,128.28 L94.59,122.28 L94.59,110.28 Z" fill="#30b27d" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M84.19,68.28 L94.59,74.28 L94.59,86.28 L84.19,92.28 L73.8,86.28 L73.8,74.28 Z" fill="#46327d" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M73.8,122.28 L84.19,128.28 L84.19,140.28 L73.8,146.28 L63.41,140.28 L63.41,128.28 Z" fill="#471c6b" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M84.19,104.28 L94.59,110.28 L94.59,122.28 L84.19,128.28 L73.8,122.28 L73.8,110.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M156.94,158.28 L167.33,164.28 L167.33,176.28 L156.94,182.28 L146.55,176.28 L146.55,164.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+<path d="M94.59,86.28 L104.98,92.28 L104.98,104.28 L94.59,110.28 L84.19,104.28 L84.19,92.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Even</title></path>
+</g>
+</g>
+<g class="facet">
+<g>
+<path d="M322.01,158.28 L332.41,164.28 L332.41,176.28 L322.01,182.28 L311.62,176.28 L311.62,164.28 Z" fill="#50c16d" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M311.62,140.28 L322.01,146.28 L322.01,158.28 L311.62,164.28 L301.23,158.28 L301.23,146.28 Z" fill="#74cf56" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M322.01,122.28 L332.41,128.28 L332.41,140.28 L322.01,146.28 L311.62,140.28 L311.62,128.28 Z" fill="#3f4788" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M280.44,86.28 L290.84,92.28 L290.84,104.28 L280.44,110.28 L270.05,104.28 L270.05,92.28 Z" fill="#46327d" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M332.41,68.28 L342.8,74.28 L342.8,86.28 L332.41,92.28 L322.01,86.28 L322.01,74.28 Z" fill="#287e8e" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M301.23,158.28 L311.62,164.28 L311.62,176.28 L301.23,182.28 L290.84,176.28 L290.84,164.28 Z" fill="#a2da3d" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M353.19,140.28 L363.58,146.28 L363.58,158.28 L353.19,164.28 L342.8,158.28 L342.8,146.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M301.23,122.28 L311.62,128.28 L311.62,140.28 L301.23,146.28 L290.84,140.28 L290.84,128.28 Z" fill="#30b27d" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M301.23,86.28 L311.62,92.28 L311.62,104.28 L301.23,110.28 L290.84,104.28 L290.84,92.28 Z" fill="#d0e229" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M270.05,140.28 L280.44,146.28 L280.44,158.28 L270.05,164.28 L259.66,158.28 L259.66,146.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M311.62,104.28 L322.01,110.28 L322.01,122.28 L311.62,128.28 L301.23,122.28 L301.23,110.28 Z" fill="#3f4788" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M322.01,86.28 L332.41,92.28 L332.41,104.28 L322.01,110.28 L311.62,104.28 L311.62,92.28 Z" fill="#50c16d" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M290.84,68.28 L301.23,74.28 L301.23,86.28 L290.84,92.28 L280.44,86.28 L280.44,74.28 Z" fill="#22a287" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M290.84,140.28 L301.23,146.28 L301.23,158.28 L290.84,164.28 L280.44,158.28 L280.44,146.28 Z" fill="#74cf56" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M290.84,104.28 L301.23,110.28 L301.23,122.28 L290.84,128.28 L280.44,122.28 L280.44,110.28 Z" fill="#287e8e" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M270.05,68.28 L280.44,74.28 L280.44,86.28 L270.05,92.28 L259.66,86.28 L259.66,74.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M249.27,68.28 L259.66,74.28 L259.66,86.28 L249.27,92.28 L238.87,86.28 L238.87,74.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M311.62,68.28 L322.01,74.28 L322.01,86.28 L311.62,92.28 L301.23,86.28 L301.23,74.28 Z" fill="#74cf56" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M270.05,104.28 L280.44,110.28 L280.44,122.28 L270.05,128.28 L259.66,122.28 L259.66,110.28 Z" fill="#471c6b" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M259.66,86.28 L270.05,92.28 L270.05,104.28 L259.66,110.28 L249.27,104.28 L249.27,92.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M280.44,158.28 L290.84,164.28 L290.84,176.28 L280.44,182.28 L270.05,176.28 L270.05,164.28 Z" fill="#46327d" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M332.41,140.28 L342.8,146.28 L342.8,158.28 L332.41,164.28 L322.01,158.28 L322.01,146.28 Z" fill="#3f4788" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M259.66,122.28 L270.05,128.28 L270.05,140.28 L259.66,146.28 L249.27,140.28 L249.27,128.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M311.62,176.28 L322.01,182.28 L322.01,194.28 L311.62,200.28 L301.23,194.28 L301.23,182.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M280.44,122.28 L290.84,128.28 L290.84,140.28 L280.44,146.28 L270.05,140.28 L270.05,128.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M332.41,104.28 L342.8,110.28 L342.8,122.28 L332.41,128.28 L322.01,122.28 L322.01,110.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M259.66,158.28 L270.05,164.28 L270.05,176.28 L259.66,182.28 L249.27,176.28 L249.27,164.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M342.8,158.28 L353.19,164.28 L353.19,176.28 L342.8,182.28 L332.41,176.28 L332.41,164.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+<path d="M342.8,86.28 L353.19,92.28 L353.19,104.28 L342.8,110.28 L332.41,104.28 L332.41,92.28 Z" fill="#440154" stroke="#000000" stroke-linejoin="round"><title>Odd</title></path>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="189.83" x2="32.23" y2="189.83" stroke="#8c959f"/>
+<text x="24.23" y="192.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="27.23" y1="126.05" x2="32.23" y2="126.05" stroke="#8c959f"/>
+<text x="24.23" y="128.86" text-anchor="end" font-size="11" fill="#59636e">5</text>
+<line x1="27.23" y1="62.28" x2="32.23" y2="62.28" stroke="#8c959f"/>
+<text x="24.23" y="65.09" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="32.23" y1="189.83" x2="32.23" y2="194.83" stroke="#8c959f"/>
+<text x="32.23" y="205.72" text-anchor="middle" font-size="11" fill="#59636e">-5</text>
+<line x1="118.19" y1="189.83" x2="118.19" y2="194.83" stroke="#8c959f"/>
+<text x="118.19" y="205.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="204.14" y1="189.83" x2="204.14" y2="194.83" stroke="#8c959f"/>
+<text x="204.14" y="205.72" text-anchor="middle" font-size="11" fill="#59636e">5</text>
+<line x1="32.23" y1="189.83" x2="204.14" y2="189.83" stroke="#8c959f"/>
+<text x="118.19" y="53.79" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">Even</text>
+<line x1="218.09" y1="189.83" x2="218.09" y2="194.83" stroke="#8c959f"/>
+<text x="218.09" y="205.72" text-anchor="middle" font-size="11" fill="#59636e">-5</text>
+<line x1="304.04" y1="189.83" x2="304.04" y2="194.83" stroke="#8c959f"/>
+<text x="304.04" y="205.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="390" y1="189.83" x2="390" y2="194.83" stroke="#8c959f"/>
+<text x="390" y="205.72" text-anchor="middle" font-size="11" fill="#59636e">5</text>
+<line x1="218.09" y1="189.83" x2="390" y2="189.83" stroke="#8c959f"/>
+<text x="304.04" y="53.79" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">Odd</text>
+</g>
+<g class="legend">
+<rect x="10" y="10" width="240" height="10" fill="url(#chart-gradient0)"/>
+<line x1="27.14" y1="20" x2="27.14" y2="23" stroke="#8c959f"/>
+<text x="27.14" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">2</text>
+<line x1="61.43" y1="20" x2="61.43" y2="23" stroke="#8c959f"/>
+<text x="61.43" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">4</text>
+<line x1="95.71" y1="20" x2="95.71" y2="23" stroke="#8c959f"/>
+<text x="95.71" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">6</text>
+<line x1="130" y1="20" x2="130" y2="23" stroke="#8c959f"/>
+<text x="130" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">8</text>
+<line x1="164.29" y1="20" x2="164.29" y2="23" stroke="#8c959f"/>
+<text x="164.29" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">10</text>
+<line x1="198.57" y1="20" x2="198.57" y2="23" stroke="#8c959f"/>
+<text x="198.57" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">12</text>
+<line x1="232.86" y1="20" x2="232.86" y2="23" stroke="#8c959f"/>
+<text x="232.86" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">14</text>
+</g>
+</svg>

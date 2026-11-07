@@ -41,12 +41,20 @@ internal sealed class SemanticVersionComparer : IComparer<SemanticVersion>, IEqu
             var left = x.PrereleaseLabels[i];
             var right = y.PrereleaseLabels[i];
 
-            var isLeftNumber = int.TryParse(left, NumberStyles.None, CultureInfo.InvariantCulture, out var leftNumber);
-            var isRightNumber = int.TryParse(right, NumberStyles.None, CultureInfo.InvariantCulture, out var rightNumber);
+            var isLeftNumber = IsNumericIdentifier(left);
+            var isRightNumber = IsNumericIdentifier(right);
 
             if (isLeftNumber && isRightNumber)
             {
-                result = leftNumber.CompareTo(rightNumber);
+                // Numeric identifiers cannot carry a leading zero, so the one with more digits is
+                // the larger number and identifiers of equal length compare correctly as text.
+                // Comparing this way is exact for identifiers of any length, whereas parsing to a
+                // fixed-width integer is not.
+                result = left.Length.CompareTo(right.Length);
+                if (result != 0)
+                    return result;
+
+                result = StringComparer.Ordinal.Compare(left, right);
                 if (result != 0)
                     return result;
             }
@@ -71,6 +79,11 @@ internal sealed class SemanticVersionComparer : IComparer<SemanticVersion>, IEqu
             return -1;
 
         return 0;
+    }
+
+    private static bool IsNumericIdentifier(string identifier)
+    {
+        return identifier.Length > 0 && !identifier.AsSpan().ContainsAnyExceptInRange('0', '9');
     }
 
     public bool Equals(SemanticVersion? x, SemanticVersion? y)

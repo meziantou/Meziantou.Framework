@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	name	1.5	2.0	FALSE	FALSE	FALSE		[FullSave]			Table 258, Document cell

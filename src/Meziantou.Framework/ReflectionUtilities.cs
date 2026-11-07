@@ -40,15 +40,23 @@ static class ReflectionUtilities
         if (value is null)
             return null;
 
-        var valueType = value.GetType();
-        var methods = valueType.GetMethods(BindingFlags.Public | BindingFlags.Static);
-        foreach (var method in methods)
-        {
-            if (IsImplicitOperator(method, valueType, targetType))
-                return method;
-        }
+        ArgumentNullException.ThrowIfNull(targetType);
 
-        return null;
+        // The operator can be declared by the source type or by the target type
+        var valueType = value.GetType();
+        return FindImplicitOperator(valueType, valueType, targetType)
+            ?? FindImplicitOperator(targetType, valueType, targetType);
+
+        static MethodInfo? FindImplicitOperator(Type declaringType, Type sourceType, Type targetType)
+        {
+            foreach (var method in declaringType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (IsImplicitOperator(method, sourceType, targetType))
+                    return method;
+            }
+
+            return null;
+        }
 
         static bool IsImplicitOperator(MethodInfo mi, Type sourceType, Type targetType)
         {
@@ -75,6 +83,7 @@ static class ReflectionUtilities
     /// corresponds to the first executable line of the method in the source file.</remarks>
     /// <param name="methodInfo">The reflection metadata for the method whose source location is to be determined.</param>
     /// <returns>A tuple containing the source file path and the first sequence point for the method, or null if the assembly location is unavailable.</returns>
+    [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
     public static (string FilePath, SequencePoint SequencePoint)? GetMethodLocation(this MethodInfo methodInfo)
     {
         ArgumentNullException.ThrowIfNull(methodInfo);
@@ -93,6 +102,7 @@ static class ReflectionUtilities
     /// corresponds to the first executable line of the method in the source file.</remarks>
     /// <param name="methodInfo">The reflection metadata for the method whose source location is to be determined.</param>
     /// <returns>A tuple containing the source file path and the first sequence point for the method, or null if the assembly location is unavailable.</returns>
+    [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
     public static async Task<(string FilePath, SequencePoint SequencePoint)?> GetMethodLocationAsync(this MethodInfo methodInfo)
     {
         ArgumentNullException.ThrowIfNull(methodInfo);

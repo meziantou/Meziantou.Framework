@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[SigRef]			Table 256
+TransformMethod	name	1.5		TRUE	FALSE	FALSE		[DocMDP]			
+TransformParams	dictionary	1.5		FALSE	FALSE	FALSE				[DocMDPTransformParameters]	
+Data	array;boolean;dictionary;integer;name;stream;string	1.5		FALSE	[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[TRUE];[FALSE]	FALSE				[_UniversalArray];[];[_UniversalDictionary];[];[];[Stream];[]	various
+DigestMethod	name	1.5	2.0	FALSE	FALSE	FALSE	fn:Eval(fn:BeforeVersion(2.0,MD5) || fn:Extension(ISO_TS_32001,SHA256))	[fn:Deprecated(2.0,MD5),fn:Deprecated(2.0,SHA1),fn:SinceVersion(2.0,SHA256),fn:SinceVersion(2.0,SHA384),fn:SinceVersion(2.0,SHA512),fn:SinceVersion(2.0,RIPEMD160),fn:Extension(ISO_TS_32001,SHA3-256),fn:Extension(ISO_TS_32001,SHA3-384),fn:Extension(ISO_TS_32001,SHA3-512),fn:Extension(ISO_TS_32001,SHAKE256)]			see https://github.com/pdf-association/pdf-issues/issues/117
+DigestValue	string	1.5	2.0	fn:IsRequired(fn:IsPDFVersion(1.5))	FALSE	FALSE					see Adobe PDF 1.7 reference, Table 8.103
+DigestLocation	array	1.5	2.0	fn:IsRequired(fn:IsPDFVersion(1.5) && ((@TransformMethod==FieldMDP) || (@TransformMethod==DocMDP)))	FALSE	FALSE				[ArrayOf_2NonNegativeIntegers]	see Adobe PDF 1.7 reference, Table 8.103

@@ -1,0 +1,384 @@
+{
+  "spec": {
+    "title": "CSS Shapes Module Level 1",
+    "url": "https://drafts.csswg.org/css-shapes-1/"
+  },
+  "properties": [
+    {
+      "name": "shape-outside",
+      "href": "https://drafts.csswg.org/css-shapes-1/#propdef-shape-outside",
+      "value": "none | [ <basic-shape> || <shape-box> ] | <image>",
+      "initial": "none",
+      "appliesTo": "floats and initial letter boxes",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as defined for <basic-shape> (with <shape-box> following, if supplied); else the computed <image>; else the keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "as defined for <basic-shape>, otherwise discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The float area is unaffected.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-outside-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<basic-shape>",
+          "prose": "The shape is computed based on one of the <basic-shape> functions. If a <shape-box> is also supplied, this defines the reference box for the <basic-shape> function. If <shape-box> is not supplied, then the reference box defaults to margin-box.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-outside-basic-shape",
+          "type": "value",
+          "value": "<basic-shape>"
+        },
+        {
+          "name": "<image>",
+          "prose": "The shape is extracted and computed based on the alpha channel of the specified <image> as defined by shape-image-threshold. User agents must use the CORS protocol defined by the [FETCH] specification for all URLs in a shape-outside value. When fetching, user agents must use \"Anonymous\" mode, set the referrer source to the stylesheet’s URL and set the origin to the URL of the containing document. If this results in network errors such that there is no valid fallback image, the effect is as if the value none had been specified.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-outside-image",
+          "type": "value",
+          "value": "<image>"
+        }
+      ],
+      "styleDeclaration": [
+        "shape-outside",
+        "shapeOutside"
+      ]
+    },
+    {
+      "name": "shape-image-threshold",
+      "href": "https://drafts.csswg.org/css-shapes-1/#propdef-shape-image-threshold",
+      "value": "<opacity-value>",
+      "initial": "0",
+      "appliesTo": "floats",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified number, clamped to the range [0,1]",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<number>",
+          "prose": "Sets the threshold used for extracting a shape from an image. The shape is defined by the pixels whose alpha value is greater than the threshold. A threshold value outside the range 0.0 (fully transparent) to 1.0 (fully opaque) will be clamped to this range.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-image-threshold-number",
+          "type": "value",
+          "value": "<number>"
+        }
+      ],
+      "styleDeclaration": [
+        "shape-image-threshold",
+        "shapeImageThreshold"
+      ]
+    },
+    {
+      "name": "shape-margin",
+      "href": "https://drafts.csswg.org/css-shapes-1/#propdef-shape-margin",
+      "value": "<length-percentage [0,∞]>",
+      "initial": "0",
+      "appliesTo": "floats and initial letter boxes",
+      "inherited": "no",
+      "percentages": "refer to the inline size of the containing block",
+      "computedValue": "computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Sets the margin of the shape to the specified value.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-margin-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "shape-margin",
+        "shapeMargin"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<basic-shape>",
+      "prose": "The <basic-shape> type can be specified using basic shape functions.",
+      "href": "https://drafts.csswg.org/css-shapes-1/#typedef-basic-shape",
+      "type": "type",
+      "value": "<basic-shape-rect> | <circle()> | <ellipse()> | <polygon()> | <path()> | <shape()>",
+      "values": [
+        {
+          "name": "inset()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-inset",
+          "type": "function",
+          "value": "inset( <length-percentage>{1,4} [ round <'border-radius'> ]? )"
+        },
+        {
+          "name": "xywh()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-xywh",
+          "type": "function",
+          "value": "xywh( <length-percentage>{2} <length-percentage [0,∞]>{2} [ round <'border-radius'> ]? )"
+        },
+        {
+          "name": "rect()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-rect",
+          "type": "function",
+          "value": "rect( [ <length-percentage> | auto ]{4} [ round <'border-radius'> ]? )"
+        },
+        {
+          "name": "circle()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-circle",
+          "type": "function",
+          "value": "circle( <radial-size>? [ at <position> ]? )"
+        },
+        {
+          "name": "ellipse()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-ellipse",
+          "type": "function",
+          "value": "ellipse( <radial-size>? [ at <position> ]? )"
+        },
+        {
+          "name": "polygon()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-polygon",
+          "type": "function",
+          "value": "polygon( <'fill-rule'>? [ round <length> ]? , [<length-percentage> <length-percentage>]# )"
+        },
+        {
+          "name": "path()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-path",
+          "type": "function",
+          "value": "path( <'fill-rule'>? , <string> )"
+        },
+        {
+          "name": "shape()",
+          "href": "https://drafts.csswg.org/css-shapes-1/#funcdef-basic-shape-shape",
+          "type": "function",
+          "value": "shape( <'fill-rule'>? from <position> , <shape-command># )",
+          "values": [
+            {
+              "name": "<coordinate-pair>",
+              "value": "<length-percentage>{2}",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-coordinate-pair",
+              "type": "type"
+            },
+            {
+              "name": "<command-end-point>",
+              "value": "[ to <position> | by <coordinate-pair> ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-command-end-point",
+              "type": "type",
+              "values": [
+                {
+                  "name": "to",
+                  "prose": "<command-end-point> = [ to <position> | by <coordinate-pair> ]",
+                  "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-to",
+                  "type": "value",
+                  "value": "to"
+                },
+                {
+                  "name": "by",
+                  "prose": "<command-end-point> = [ to <position> | by <coordinate-pair> ]",
+                  "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-by",
+                  "type": "value",
+                  "value": "by"
+                }
+              ]
+            },
+            {
+              "name": "<move-command>",
+              "value": "move <command-end-point>",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-move-command",
+              "type": "type"
+            },
+            {
+              "name": "move",
+              "prose": "<move-command> = move <command-end-point>",
+              "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-move",
+              "type": "value",
+              "value": "move"
+            },
+            {
+              "name": "<line-command>",
+              "value": "line <command-end-point>",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-line-command",
+              "type": "type"
+            },
+            {
+              "name": "line",
+              "prose": "<line-command> = line <command-end-point>",
+              "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-line",
+              "type": "value",
+              "value": "line"
+            },
+            {
+              "name": "<horizontal-line-command>",
+              "value": "hline [ to [ <length-percentage> | left | center | right | x-start | x-end ] | by <length-percentage> ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-horizontal-line-command",
+              "type": "type"
+            },
+            {
+              "name": "<vertical-line-command>",
+              "value": "vline [ to [ <length-percentage> | top | center | bottom | y-start | y-end ] | by <length-percentage> ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-vertical-line-command",
+              "type": "type"
+            },
+            {
+              "name": "<curve-command>",
+              "value": "curve [ [ to <position> with <control-point> [ / <control-point> ]? ] | [ by <coordinate-pair> with <relative-control-point> [ / <relative-control-point> ]? ] ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-curve-command",
+              "type": "type"
+            },
+            {
+              "name": "curve",
+              "prose": "<curve-command> = curve [ [ to <position> with <control-point> [ / <control-point> ]? ] | [ by <coordinate-pair> with <relative-control-point> [ / <relative-control-point> ]? ] ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-curve",
+              "type": "value",
+              "value": "curve"
+            },
+            {
+              "name": "<smooth-command>",
+              "value": "smooth [ [ to <position> [ with <control-point> ]? ] | [ by <coordinate-pair> [ with <relative-control-point> ]? ] ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-smooth-command",
+              "type": "type"
+            },
+            {
+              "name": "smooth",
+              "prose": "<smooth-command> = smooth [ [ to <position> [with <control-point> ]? ] | [ by <coordinate-pair> [ with <relative-control-point> ]? ] ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-smooth",
+              "type": "value",
+              "value": "smooth"
+            },
+            {
+              "name": "<control-point>",
+              "value": "[ <position> | <relative-control-point> ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-control-point",
+              "type": "type"
+            },
+            {
+              "name": "<relative-control-point>",
+              "value": "<coordinate-pair> [ from [ start | end | origin ] ]?",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-relative-control-point",
+              "type": "type"
+            },
+            {
+              "name": "<arc-command>",
+              "value": "arc <command-end-point> [ [ of <length-percentage>{1,2} ] && <arc-sweep>? && <arc-size>? && [rotate <angle>]? ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-arc-command",
+              "type": "type"
+            },
+            {
+              "name": "arc",
+              "prose": "<arc-command> = arc <command-end-point> [of <length-percentage>{1,2}] && <arc-sweep>? && <arc-size>? && rotate <angle>? ]",
+              "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-arc",
+              "type": "value",
+              "value": "arc",
+              "values": [
+                {
+                  "name": "cw",
+                  "prose": "<arc-sweep> can be cw or ccw, indicating that the arc that is traced around the ellipse clockwise or counter-clockwise from the center, respectively, must be chosen. If omitted, this defaults to ccw.",
+                  "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-cw",
+                  "type": "value",
+                  "value": "cw"
+                },
+                {
+                  "name": "ccw",
+                  "prose": "<arc-sweep> can be cw or ccw, indicating that the arc that is traced around the ellipse clockwise or counter-clockwise from the center, respectively, must be chosen. If omitted, this defaults to ccw.",
+                  "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-ccw",
+                  "type": "value",
+                  "value": "ccw"
+                },
+                {
+                  "name": "large",
+                  "prose": "<arc-size> can be large or small, indicating that the larger or smaller, respectively, of the two possible arcs must be chosen. If omitted, this defaults to small.",
+                  "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-large",
+                  "type": "value",
+                  "value": "large"
+                },
+                {
+                  "name": "small",
+                  "prose": "<arc-size> can be large or small, indicating that the larger or smaller, respectively, of the two possible arcs must be chosen. If omitted, this defaults to small.",
+                  "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-small",
+                  "type": "value",
+                  "value": "small"
+                }
+              ]
+            },
+            {
+              "name": "<arc-sweep>",
+              "prose": "<arc-sweep> can be cw or ccw, indicating that the arc that is traced around the ellipse clockwise or counter-clockwise from the center, respectively, must be chosen. If omitted, this defaults to ccw.",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-arc-sweep",
+              "type": "type",
+              "value": "cw | ccw"
+            },
+            {
+              "name": "<arc-size>",
+              "prose": "<arc-size> can be large or small, indicating that the larger or smaller, respectively, of the two possible arcs must be chosen. If omitted, this defaults to small.",
+              "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-arc-size",
+              "type": "type",
+              "value": "large | small"
+            },
+            {
+              "name": "close",
+              "prose": "Adds a closepath command to the list of path data commands.",
+              "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-close",
+              "type": "value",
+              "value": "close"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "<basic-shape-rect>",
+      "href": "https://drafts.csswg.org/css-shapes-1/#typedef-basic-shape-rect",
+      "type": "type",
+      "value": "<inset()> | <rect()> | <xywh()>"
+    },
+    {
+      "name": "<shape-command>",
+      "prose": "The sequence of <shape-command>s represent further path data commands. Each command’s starting point is the previous command’s ending point.",
+      "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-command",
+      "type": "type",
+      "value": "<move-command> | <line-command> | close | <horizontal-line-command> | <vertical-line-command> | <curve-command> | <smooth-command> | <arc-command>"
+    },
+    {
+      "name": "<shape-box>",
+      "href": "https://drafts.csswg.org/css-shapes-1/#typedef-shape-box",
+      "type": "type",
+      "value": "<visual-box> | margin-box | half-border-box",
+      "values": [
+        {
+          "name": "margin-box",
+          "prose": "The margin-box value defines the shape enclosed by the outside margin edge. The corner radii of this shape are determined by the corresponding border-radius and margin values. If the ratio of border-radius/margin is 1 or more, or margin is negative or zero, then the margin box corner radius is max(border-radius + margin, 0). The margin box’s corners are outset-adjusted given the element’s border box, border-radius, and the margin.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-margin-box",
+          "type": "value",
+          "value": "margin-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "The border-box value defines the shape enclosed by the outside border edge. This shape follows all of the normal border radius shaping rules for the outside of the border.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "The padding-box value defines the shape enclosed by the outside padding edge. This shape follows all of the normal border radius shaping rules for the inside of the border.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "content-box",
+          "prose": "The content-box value defines the shape enclosed by the outside content edge. Each corner radius of this box is the larger of 0 or border-radius - border-width - padding.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "half-border-box",
+          "prose": "The half-border-box value defines the shape enclosed by a box that is in the middle between the padding-box and the border-box.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-half-border-box",
+          "type": "value",
+          "value": "half-border-box"
+        }
+      ]
+    }
+  ]
+}

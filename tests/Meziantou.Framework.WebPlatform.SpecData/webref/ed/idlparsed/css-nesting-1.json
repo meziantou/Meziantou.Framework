@@ -1,0 +1,89 @@
+{
+  "spec": {
+    "title": "CSS Nesting Module Level 1",
+    "url": "https://drafts.csswg.org/css-nesting-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSNestedDeclarations"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSNestedDeclarations": {
+        "fragment": "[Exposed=Window]\ninterface CSSNestedDeclarations : CSSRule {\n  [SameObject, PutForwards=cssText] readonly attribute CSSStyleProperties style;\n};",
+        "type": "interface",
+        "name": "CSSNestedDeclarations",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSStyleProperties"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-nesting-1/#dom-cssnesteddeclarations-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-nesting-1/#cssnesteddeclarations"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSNestedDeclarations"
+      ]
+    },
+    "dependencies": {
+      "CSSNestedDeclarations": [
+        "CSSRule",
+        "CSSStyleProperties"
+      ]
+    },
+    "externalDependencies": [
+      "CSSRule",
+      "CSSStyleProperties"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,259 @@
+{
+  "spec": {
+    "title": "Local Font Access API",
+    "url": "https://wicg.github.io/local-font-access/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "FontData"
+        ]
+      }
+    },
+    "idlNames": {
+      "QueryOptions": {
+        "fragment": "dictionary QueryOptions {\n  sequence<DOMString> postscriptNames;\n};",
+        "type": "dictionary",
+        "name": "QueryOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "postscriptNames",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/local-font-access/#dom-queryoptions-postscriptnames"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/local-font-access/#dictdef-queryoptions"
+      },
+      "FontData": {
+        "fragment": "[Exposed=Window]\ninterface FontData {\n  Promise<Blob> blob();\n\n  // Names\n  readonly attribute USVString postscriptName;\n  readonly attribute USVString fullName;\n  readonly attribute USVString family;\n  readonly attribute USVString style;\n};",
+        "type": "interface",
+        "name": "FontData",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "blob",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/local-font-access/#dom-fontdata-blob"
+          },
+          {
+            "type": "attribute",
+            "name": "postscriptName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/local-font-access/#dom-fontdata-postscriptname"
+          },
+          {
+            "type": "attribute",
+            "name": "fullName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/local-font-access/#dom-fontdata-fullname"
+          },
+          {
+            "type": "attribute",
+            "name": "family",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/local-font-access/#dom-fontdata-family"
+          },
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/local-font-access/#dom-fontdata-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/local-font-access/#fontdata"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "[SecureContext]\npartial interface Window {\n  Promise<sequence<FontData>> queryLocalFonts(optional QueryOptions options = {});\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "queryLocalFonts",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "FontData"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "QueryOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/local-font-access/#dom-window-querylocalfonts"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "FontData"
+      ]
+    },
+    "dependencies": {
+      "Window": [
+        "FontData",
+        "QueryOptions"
+      ],
+      "QueryOptions": [],
+      "FontData": [
+        "Blob"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "Blob"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

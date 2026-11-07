@@ -8,15 +8,17 @@ using System.Net.Sockets;
 
 namespace Meziantou.DnsProxy.Forwarding;
 
-internal sealed class UpstreamDnsClientFactory : IDisposable
+internal sealed class UpstreamDnsClientFactory : IUpstreamDnsClientProvider, IDisposable
 {
-    private readonly IReadOnlyList<UpstreamDnsClientInfo> _upstreams;
+    private readonly List<UpstreamDnsClientInfo> _upstreams;
+    private readonly IReadOnlyList<IUpstreamDnsClient> _clients;
 
-    public UpstreamDnsClientFactory(IOptions<DnsProxyOptions> options, ILogger<UpstreamDnsClientFactory> logger)
+    public UpstreamDnsClientFactory(IOptions<DnsProxyOptions> options, TimeProvider timeProvider, ILogger<UpstreamDnsClientFactory> logger)
     {
         var upstreams = new List<UpstreamDnsClientInfo>();
         var dnsProxyOptions = options.Value;
-        var serverAddressResolver = CreateBootstrapResolver(dnsProxyOptions);
+        var bootstrapResolver = CreateBootstrapResolver(dnsProxyOptions, timeProvider);
+        Func<string, IReadOnlyList<IPAddress>>? serverAddressResolver = bootstrapResolver is null ? null : bootstrapResolver.Resolve;
         foreach (var upstream in dnsProxyOptions.Upstreams.OrderBy(upstream => upstream.Priority))
         {
             if (upstream.Url is null)
@@ -27,7 +29,7 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
             var protocol = GetProtocol(upstream.Url);
             var endpoint = GetEndpoint(upstream.Url, protocol);
             var displayName = string.IsNullOrWhiteSpace(upstream.Name) ? upstream.Url.OriginalString : $"{upstream.Name} ({upstream.Url.OriginalString})";
-            SocketsHttpHandler? httpHandler = protocol == DnsClientProtocol.Https ? CreateHttpHandler(upstream.Url.Scheme.Equals("h3", StringComparison.OrdinalIgnoreCase), serverAddressResolver) : null;
+            SocketsHttpHandler? httpHandler = protocol == DnsClientProtocol.Https ? CreateHttpHandler(upstream.Url.Scheme.Equals("h3", StringComparison.OrdinalIgnoreCase), bootstrapResolver) : null;
             DnsClient dnsClient;
             DnsClientProtocol effectiveProtocol = protocol;
             var clientOptions = CreateDnsClientOptions(dnsProxyOptions, httpHandler, serverAddressResolver);
@@ -38,7 +40,7 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
             catch (PlatformNotSupportedException ex) when (protocol == DnsClientProtocol.Quic)
             {
                 httpHandler?.Dispose();
-                httpHandler = CreateHttpHandler(useHttp3: false, serverAddressResolver);
+                httpHandler = CreateHttpHandler(useHttp3: false, bootstrapResolver);
                 endpoint = GetHttpsFallbackEndpoint(upstream.Url);
                 dnsClient = new DnsClient(endpoint, DnsClientProtocol.Https, CreateDnsClientOptions(dnsProxyOptions, httpHandler, serverAddressResolver));
                 effectiveProtocol = DnsClientProtocol.Https;
@@ -49,9 +51,12 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
         }
 
         _upstreams = upstreams;
+        _clients = [.. upstreams];
     }
 
-    public IReadOnlyList<UpstreamDnsClientInfo> GetUpstreams() => _upstreams;
+    public IReadOnlyList<IUpstreamDnsClient> GetUpstreams() => _clients;
+
+    public IReadOnlyList<UpstreamDnsClientInfo> GetUpstreamDetails() => _upstreams;
 
     public void Dispose()
     {
@@ -109,14 +114,14 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
         return builder.Uri;
     }
 
-    private static SocketsHttpHandler CreateHttpHandler(bool useHttp3, Func<string, IReadOnlyList<IPAddress>>? serverAddressResolver)
+    private static SocketsHttpHandler CreateHttpHandler(bool useHttp3, BootstrapDnsResolver? bootstrapResolver)
     {
         var handler = new SocketsHttpHandler();
-        if (serverAddressResolver is not null)
+        if (bootstrapResolver is not null)
         {
             handler.ConnectCallback = async (context, cancellationToken) =>
             {
-                var addresses = serverAddressResolver(context.DnsEndPoint.Host);
+                var addresses = await bootstrapResolver.ResolveAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
                 foreach (var address in addresses)
                 {
                     var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -158,7 +163,7 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
         };
     }
 
-    private static Func<string, IReadOnlyList<IPAddress>>? CreateBootstrapResolver(DnsProxyOptions options)
+    private static BootstrapDnsResolver? CreateBootstrapResolver(DnsProxyOptions options, TimeProvider timeProvider)
     {
         var bootstrapServers = options.BootstrapDnsServers
             .Select(server => IPAddress.TryParse(server, out var address) ? address : null)
@@ -167,41 +172,6 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
         if (bootstrapServers.Length == 0)
             return null;
 
-        return host => ResolveWithBootstrapServers(host, bootstrapServers);
-    }
-
-    private static List<IPAddress> ResolveWithBootstrapServers(string host, IReadOnlyList<IPAddress> bootstrapServers)
-    {
-        if (IPAddress.TryParse(host, out var address))
-            return [address];
-
-        var addresses = new List<IPAddress>();
-        foreach (var bootstrapServer in bootstrapServers)
-        {
-            using var client = new DnsClient(bootstrapServer.ToString(), DnsClientProtocol.Udp, new DnsClientOptions
-            {
-                Timeout = TimeSpan.FromSeconds(2),
-                EnableEdns = false,
-            });
-
-            QueryBootstrapServer(client, host, DnsQueryType.A, addresses);
-            QueryBootstrapServer(client, host, DnsQueryType.AAAA, addresses);
-            if (addresses.Count > 0)
-                break;
-        }
-
-        return addresses;
-    }
-
-    private static void QueryBootstrapServer(DnsClient client, string host, DnsQueryType queryType, List<IPAddress> addresses)
-    {
-        try
-        {
-            var response = client.QueryAsync(host, queryType).GetAwaiter().GetResult();
-            addresses.AddRange(response.Answers.GetIPAddresses());
-        }
-        catch
-        {
-        }
+        return new BootstrapDnsResolver(bootstrapServers, timeProvider);
     }
 }

@@ -2,6 +2,41 @@ namespace Meziantou.Framework.LLMContext.Tests;
 
 public sealed class LLMContextDetectorTests
 {
+    [Fact]
+    public void ReadmeExample_Detect()
+    {
+        #region LLMContextDetector_Detect
+        if (LLMContextDetector.IsLLMContext())
+        {
+            IReadOnlyList<LLMContextKind> contexts = LLMContextDetector.Detect();
+            Assert.NotEmpty(contexts);
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ListContexts()
+    {
+        #region LLMContextDetector_ListContexts
+        // Several contexts can be detected at once, for instance an agent started from another one
+        foreach (LLMContextKind context in LLMContextDetector.Detect())
+        {
+            string name = context switch
+            {
+                LLMContextKind.ClaudeCode => "Claude Code",
+                LLMContextKind.GitHubCopilot => "GitHub Copilot",
+                LLMContextKind.GenericAgent => "an agent",
+                _ => context.ToString(),
+            };
+
+            Assert.NotEmpty(name);
+        }
+
+        // IsLLMContext is true when Detect finds at least one context
+        Assert.Equal(LLMContextDetector.Detect().Count > 0, LLMContextDetector.IsLLMContext());
+        #endregion
+    }
+
     public static TheoryData<LLMContextKind, string, string> DetectionRules()
     {
         return new()
@@ -19,12 +54,10 @@ public sealed class LLMContextDetectorTests
             { LLMContextKind.Codex, "CODEX_SANDBOX", "1" },
             { LLMContextKind.Aider, "OR_APP_NAME", "Aider" },
             { LLMContextKind.Plandex, "OR_APP_NAME", "plandex" },
-            { LLMContextKind.Amp, "AMP_HOME", "1" },
+            { LLMContextKind.Amp, "AMP_CURRENT_THREAD_ID", "T-0123" },
             { LLMContextKind.QwenCode, "QWEN_CODE", "1" },
             { LLMContextKind.Droid, "DROID_CLI", "true" },
             { LLMContextKind.OpenCode, "OPENCODE_AI", "1" },
-            { LLMContextKind.ZedAI, "ZED_ENVIRONMENT", "1" },
-            { LLMContextKind.ZedAI, "ZED_TERM", "1" },
             { LLMContextKind.KimiCLI, "KIMI_CLI", "true" },
             { LLMContextKind.OpenHands, "OR_APP_NAME", "OpenHands" },
             { LLMContextKind.Goose, "GOOSE_TERMINAL", "1" },
@@ -80,6 +113,18 @@ public sealed class LLMContextDetectorTests
     public void Detect_RejectsMissingOrEmptyPresenceValues(string? value)
     {
         var result = Detect(("CLAUDECODE", value));
+
+        Assert.Empty(result);
+    }
+
+    // These variables are also set in a shell a developer uses, so they must not be mistaken for an agent.
+    [Theory]
+    [InlineData("ZED_TERM", "true")]
+    [InlineData("ZED_ENVIRONMENT", "1")]
+    [InlineData("AMP_HOME", "/home/user/.amp")]
+    public void Detect_IgnoresVariablesThatAreNotSpecificToAnAgent(string variable, string value)
+    {
+        var result = Detect((variable, value));
 
         Assert.Empty(result);
     }

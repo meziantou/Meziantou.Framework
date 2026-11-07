@@ -1,0 +1,16 @@
+name: 'Install .NET tool'
+description: 'Installs or updates a global .NET tool, retrying when the package source fails'
+
+inputs:
+  package:
+    description: Package ID of the tool
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install ${{ inputs.package }}
+      shell: pwsh
+      env:
+        PACKAGE_ID: ${{ inputs.package }}
+      run: '& "$env:GITHUB_ACTION_PATH/install-dotnet-tool.ps1" -PackageId $env:PACKAGE_ID'

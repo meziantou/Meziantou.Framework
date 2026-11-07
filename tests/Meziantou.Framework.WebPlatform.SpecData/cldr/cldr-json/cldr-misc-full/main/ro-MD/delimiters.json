@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ro-MD": {
+      "identity": {
+        "language": "ro",
+        "territory": "MD"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

@@ -50,4 +50,10 @@ public enum DnssecValidationIssueCode
 
     /// <summary>The response is not valid DNSSEC data.</summary>
     InvalidData,
+
+    /// <summary>A query needed to build the chain of trust failed.</summary>
+    ChainQueryFailed,
+
+    /// <summary>Validation needed more queries than the configured budget allows.</summary>
+    QueryBudgetExceeded,
 }

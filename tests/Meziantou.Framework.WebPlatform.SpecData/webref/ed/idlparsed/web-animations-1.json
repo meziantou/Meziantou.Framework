@@ -1,0 +1,2066 @@
+{
+  "spec": {
+    "title": "Web Animations Module Level 1",
+    "url": "https://drafts.csswg.org/web-animations-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "DocumentTimeline",
+          "Animation",
+          "KeyframeEffect"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "AnimationTimeline",
+          "AnimationEffect"
+        ]
+      }
+    },
+    "idlNames": {
+      "AnimationTimeline": {
+        "fragment": "[Exposed=Window]\ninterface AnimationTimeline {\n};",
+        "type": "interface",
+        "name": "AnimationTimeline",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#animationtimeline"
+      },
+      "DocumentTimelineOptions": {
+        "fragment": "dictionary DocumentTimelineOptions {\n  DOMHighResTimeStamp originTime = 0;\n};",
+        "type": "dictionary",
+        "name": "DocumentTimelineOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "originTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-documenttimelineoptions-origintime"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-documenttimelineoptions"
+      },
+      "DocumentTimeline": {
+        "fragment": "[Exposed=Window]\ninterface DocumentTimeline : AnimationTimeline {\n  constructor(optional DocumentTimelineOptions options = {});\n};",
+        "type": "interface",
+        "name": "DocumentTimeline",
+        "inheritance": "AnimationTimeline",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DocumentTimelineOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-documenttimeline-documenttimeline"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#documenttimeline"
+      },
+      "Animation": {
+        "fragment": "[Exposed=Window]\ninterface Animation : EventTarget {\n  constructor(optional AnimationEffect? effect = null,\n              optional AnimationTimeline? timeline);\n           attribute DOMString                id;\n           attribute AnimationEffect?         effect;\n           attribute AnimationTimeline?       timeline;\n           attribute double                   playbackRate;\n  readonly attribute AnimationPlayState       playState;\n  readonly attribute AnimationReplaceState    replaceState;\n  readonly attribute boolean                  pending;\n  readonly attribute Promise<Animation>       ready;\n  readonly attribute Promise<Animation>       finished;\n           attribute EventHandler             onfinish;\n           attribute EventHandler             oncancel;\n           attribute EventHandler             onremove;\n  undefined cancel();\n  undefined finish();\n  undefined play();\n  undefined pause();\n  undefined updatePlaybackRate(double playbackRate);\n  undefined reverse();\n  undefined persist();\n  [CEReactions]\n  undefined commitStyles();\n};",
+        "type": "interface",
+        "name": "Animation",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "effect",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "AnimationEffect"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "timeline",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "AnimationTimeline"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-animation"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-id"
+          },
+          {
+            "type": "attribute",
+            "name": "effect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AnimationEffect"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-effect"
+          },
+          {
+            "type": "attribute",
+            "name": "timeline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AnimationTimeline"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-timeline"
+          },
+          {
+            "type": "attribute",
+            "name": "playbackRate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-playbackrate"
+          },
+          {
+            "type": "attribute",
+            "name": "playState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AnimationPlayState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-playstate"
+          },
+          {
+            "type": "attribute",
+            "name": "replaceState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AnimationReplaceState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-replacestate"
+          },
+          {
+            "type": "attribute",
+            "name": "pending",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-pending"
+          },
+          {
+            "type": "attribute",
+            "name": "ready",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Animation"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-ready"
+          },
+          {
+            "type": "attribute",
+            "name": "finished",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Animation"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-finished"
+          },
+          {
+            "type": "attribute",
+            "name": "onfinish",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-onfinish"
+          },
+          {
+            "type": "attribute",
+            "name": "oncancel",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-oncancel"
+          },
+          {
+            "type": "attribute",
+            "name": "onremove",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-onremove"
+          },
+          {
+            "type": "operation",
+            "name": "cancel",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-cancel"
+          },
+          {
+            "type": "operation",
+            "name": "finish",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-finish"
+          },
+          {
+            "type": "operation",
+            "name": "play",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-play"
+          },
+          {
+            "type": "operation",
+            "name": "pause",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-pause"
+          },
+          {
+            "type": "operation",
+            "name": "updatePlaybackRate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "playbackRate",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-updateplaybackrate"
+          },
+          {
+            "type": "operation",
+            "name": "reverse",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-reverse"
+          },
+          {
+            "type": "operation",
+            "name": "persist",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-persist"
+          },
+          {
+            "type": "operation",
+            "name": "commitStyles",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#animation"
+      },
+      "AnimationPlayState": {
+        "fragment": "enum AnimationPlayState { \"idle\", \"running\", \"paused\", \"finished\" };",
+        "type": "enum",
+        "name": "AnimationPlayState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "idle",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationplaystate-idle"
+          },
+          {
+            "type": "enum-value",
+            "value": "running",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationplaystate-running"
+          },
+          {
+            "type": "enum-value",
+            "value": "paused",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationplaystate-paused"
+          },
+          {
+            "type": "enum-value",
+            "value": "finished",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationplaystate-finished"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/web-animations-1/#enumdef-animationplaystate"
+      },
+      "AnimationReplaceState": {
+        "fragment": "enum AnimationReplaceState { \"active\", \"removed\", \"persisted\" };",
+        "type": "enum",
+        "name": "AnimationReplaceState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "active",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationreplacestate-active"
+          },
+          {
+            "type": "enum-value",
+            "value": "removed",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationreplacestate-removed"
+          },
+          {
+            "type": "enum-value",
+            "value": "persisted",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationreplacestate-persisted"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/web-animations-1/#enumdef-animationreplacestate"
+      },
+      "AnimationEffect": {
+        "fragment": "[Exposed=Window]\ninterface AnimationEffect {\n    EffectTiming         getTiming();\n    ComputedEffectTiming getComputedTiming();\n    undefined            updateTiming(optional OptionalEffectTiming timing = {});\n};",
+        "type": "interface",
+        "name": "AnimationEffect",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getTiming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EffectTiming"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationeffect-gettiming"
+          },
+          {
+            "type": "operation",
+            "name": "getComputedTiming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ComputedEffectTiming"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationeffect-getcomputedtiming"
+          },
+          {
+            "type": "operation",
+            "name": "updateTiming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "timing",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "OptionalEffectTiming"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animationeffect-updatetiming"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#animationeffect"
+      },
+      "EffectTiming": {
+        "fragment": "dictionary EffectTiming {\n  FillMode                           fill = \"auto\";\n  double                             iterationStart = 0.0;\n  unrestricted double                iterations = 1.0;\n  PlaybackDirection                  direction = \"normal\";\n  DOMString                          easing = \"linear\";\n};",
+        "type": "dictionary",
+        "name": "EffectTiming",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "fill",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FillMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-fill"
+          },
+          {
+            "type": "field",
+            "name": "iterationStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-iterationstart"
+          },
+          {
+            "type": "field",
+            "name": "iterations",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1.0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-iterations"
+          },
+          {
+            "type": "field",
+            "name": "direction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PlaybackDirection"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-direction"
+          },
+          {
+            "type": "field",
+            "name": "easing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "linear"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-easing"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-effecttiming"
+      },
+      "OptionalEffectTiming": {
+        "fragment": "dictionary OptionalEffectTiming {\n  double                             delay;\n  double                             endDelay;\n  FillMode                           fill;\n  double                             iterationStart;\n  unrestricted double                iterations;\n  (unrestricted double or DOMString) duration;\n  PlaybackDirection                  direction;\n  DOMString                          easing;\n};",
+        "type": "dictionary",
+        "name": "OptionalEffectTiming",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "delay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-delay"
+          },
+          {
+            "type": "field",
+            "name": "endDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-enddelay"
+          },
+          {
+            "type": "field",
+            "name": "fill",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FillMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-fill"
+          },
+          {
+            "type": "field",
+            "name": "iterationStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-iterationstart"
+          },
+          {
+            "type": "field",
+            "name": "iterations",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-iterations"
+          },
+          {
+            "type": "field",
+            "name": "duration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-duration"
+          },
+          {
+            "type": "field",
+            "name": "direction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PlaybackDirection"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-direction"
+          },
+          {
+            "type": "field",
+            "name": "easing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-easing"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-optionaleffecttiming"
+      },
+      "FillMode": {
+        "fragment": "enum FillMode { \"none\", \"forwards\", \"backwards\", \"both\", \"auto\" };",
+        "type": "enum",
+        "name": "FillMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-fillmode-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "forwards",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-fillmode-forwards"
+          },
+          {
+            "type": "enum-value",
+            "value": "backwards",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-fillmode-backwards"
+          },
+          {
+            "type": "enum-value",
+            "value": "both",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-fillmode-both"
+          },
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-fillmode-auto"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/web-animations-1/#enumdef-fillmode"
+      },
+      "PlaybackDirection": {
+        "fragment": "enum PlaybackDirection { \"normal\", \"reverse\", \"alternate\", \"alternate-reverse\" };",
+        "type": "enum",
+        "name": "PlaybackDirection",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "normal",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-playbackdirection-normal"
+          },
+          {
+            "type": "enum-value",
+            "value": "reverse",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-playbackdirection-reverse"
+          },
+          {
+            "type": "enum-value",
+            "value": "alternate",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-playbackdirection-alternate"
+          },
+          {
+            "type": "enum-value",
+            "value": "alternate-reverse",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-playbackdirection-alternate-reverse"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/web-animations-1/#enumdef-playbackdirection"
+      },
+      "ComputedEffectTiming": {
+        "fragment": "dictionary ComputedEffectTiming : EffectTiming {\n  double?              progress;\n  unrestricted double? currentIteration;\n};",
+        "type": "dictionary",
+        "name": "ComputedEffectTiming",
+        "inheritance": "EffectTiming",
+        "members": [
+          {
+            "type": "field",
+            "name": "progress",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-computedeffecttiming-progress"
+          },
+          {
+            "type": "field",
+            "name": "currentIteration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-computedeffecttiming-currentiteration"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-computedeffecttiming"
+      },
+      "KeyframeEffect": {
+        "fragment": "[Exposed=Window]\ninterface KeyframeEffect : AnimationEffect {\n  constructor(Element?       target,\n              object?        keyframes,\n              optional (unrestricted double or KeyframeEffectOptions) options = {});\n  constructor(KeyframeEffect source);\n  attribute Element?           target;\n  attribute CSSOMString?       pseudoElement;\n  attribute CompositeOperation composite;\n  sequence<object> getKeyframes();\n  undefined        setKeyframes(object? keyframes);\n};",
+        "type": "interface",
+        "name": "KeyframeEffect",
+        "inheritance": "AnimationEffect",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "target",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "keyframes",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unrestricted double"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "KeyframeEffectOptions"
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect"
+          },
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "source",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "KeyframeEffect"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect-source"
+          },
+          {
+            "type": "attribute",
+            "name": "target",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-target"
+          },
+          {
+            "type": "attribute",
+            "name": "pseudoElement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-pseudoelement"
+          },
+          {
+            "type": "attribute",
+            "name": "composite",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CompositeOperation"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-composite"
+          },
+          {
+            "type": "operation",
+            "name": "getKeyframes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-getkeyframes"
+          },
+          {
+            "type": "operation",
+            "name": "setKeyframes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "keyframes",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-setkeyframes"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#keyframeeffect"
+      },
+      "BaseComputedKeyframe": {
+        "fragment": "dictionary BaseComputedKeyframe {\n     double?                  offset = null;\n     double                   computedOffset;\n     DOMString                easing = \"linear\";\n     CompositeOperationOrAuto composite = \"auto\";\n};",
+        "type": "dictionary",
+        "name": "BaseComputedKeyframe",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "offset",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basecomputedkeyframe-offset"
+          },
+          {
+            "type": "field",
+            "name": "computedOffset",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basecomputedkeyframe-computedoffset"
+          },
+          {
+            "type": "field",
+            "name": "easing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "linear"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basecomputedkeyframe-easing"
+          },
+          {
+            "type": "field",
+            "name": "composite",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CompositeOperationOrAuto"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basecomputedkeyframe-composite"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-basecomputedkeyframe"
+      },
+      "BasePropertyIndexedKeyframe": {
+        "fragment": "dictionary BasePropertyIndexedKeyframe {\n  (double? or sequence<double?>)                         offset = [];\n  (DOMString or sequence<DOMString>)                     easing = [];\n  (CompositeOperationOrAuto or sequence<CompositeOperationOrAuto>) composite = [];\n};",
+        "type": "dictionary",
+        "name": "BasePropertyIndexedKeyframe",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "offset",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "double"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": true,
+                      "union": false,
+                      "idlType": "double"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basepropertyindexedkeyframe-offset"
+          },
+          {
+            "type": "field",
+            "name": "easing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basepropertyindexedkeyframe-easing"
+          },
+          {
+            "type": "field",
+            "name": "composite",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CompositeOperationOrAuto"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CompositeOperationOrAuto"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basepropertyindexedkeyframe-composite"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-basepropertyindexedkeyframe"
+      },
+      "BaseKeyframe": {
+        "fragment": "dictionary BaseKeyframe {\n  double?                  offset = null;\n  DOMString                easing = \"linear\";\n  CompositeOperationOrAuto composite = \"auto\";\n};",
+        "type": "dictionary",
+        "name": "BaseKeyframe",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "offset",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-offset"
+          },
+          {
+            "type": "field",
+            "name": "easing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "linear"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-easing"
+          },
+          {
+            "type": "field",
+            "name": "composite",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CompositeOperationOrAuto"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-composite"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-basekeyframe"
+      },
+      "KeyframeEffectOptions": {
+        "fragment": "dictionary KeyframeEffectOptions : EffectTiming {\n    CompositeOperation composite = \"replace\";\n    CSSOMString?       pseudoElement = null;\n};",
+        "type": "dictionary",
+        "name": "KeyframeEffectOptions",
+        "inheritance": "EffectTiming",
+        "members": [
+          {
+            "type": "field",
+            "name": "composite",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CompositeOperation"
+            },
+            "default": {
+              "type": "string",
+              "value": "replace"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffectoptions-composite"
+          },
+          {
+            "type": "field",
+            "name": "pseudoElement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffectoptions-pseudoelement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-keyframeeffectoptions"
+      },
+      "CompositeOperation": {
+        "fragment": "enum CompositeOperation { \"replace\", \"add\", \"accumulate\" };",
+        "type": "enum",
+        "name": "CompositeOperation",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "replace",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-compositeoperation-replace"
+          },
+          {
+            "type": "enum-value",
+            "value": "add",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-compositeoperation-add"
+          },
+          {
+            "type": "enum-value",
+            "value": "accumulate",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-compositeoperation-accumulate"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/web-animations-1/#enumdef-compositeoperation"
+      },
+      "CompositeOperationOrAuto": {
+        "fragment": "enum CompositeOperationOrAuto { \"replace\", \"add\", \"accumulate\", \"auto\" };",
+        "type": "enum",
+        "name": "CompositeOperationOrAuto",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "replace",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-compositeoperation-replace"
+          },
+          {
+            "type": "enum-value",
+            "value": "add",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-compositeoperation-add"
+          },
+          {
+            "type": "enum-value",
+            "value": "accumulate",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-compositeoperation-accumulate"
+          },
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-compositeoperationorauto-auto"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/web-animations-1/#enumdef-compositeoperationorauto"
+      },
+      "Animatable": {
+        "fragment": "interface mixin Animatable {\n    Animation           animate(object? keyframes,\n                                optional (unrestricted double or KeyframeAnimationOptions) options = {});\n    sequence<Animation> getAnimations(optional GetAnimationsOptions options = {});\n};",
+        "type": "interface mixin",
+        "name": "Animatable",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "animate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Animation"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "keyframes",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unrestricted double"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "KeyframeAnimationOptions"
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animatable-animate"
+          },
+          {
+            "type": "operation",
+            "name": "getAnimations",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Animation"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GetAnimationsOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-animatable-getanimations"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#animatable"
+      },
+      "KeyframeAnimationOptions": {
+        "fragment": "dictionary KeyframeAnimationOptions : KeyframeEffectOptions {\n    DOMString id = \"\";\n    AnimationTimeline? timeline;\n};",
+        "type": "dictionary",
+        "name": "KeyframeAnimationOptions",
+        "inheritance": "KeyframeEffectOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeanimationoptions-id"
+          },
+          {
+            "type": "field",
+            "name": "timeline",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AnimationTimeline"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-keyframeanimationoptions-timeline"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-keyframeanimationoptions"
+      },
+      "GetAnimationsOptions": {
+        "fragment": "dictionary GetAnimationsOptions {\n    boolean subtree = false;\n    CSSOMString? pseudoElement = null;\n};",
+        "type": "dictionary",
+        "name": "GetAnimationsOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "subtree",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-getanimationsoptions-subtree"
+          },
+          {
+            "type": "field",
+            "name": "pseudoElement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/web-animations-1/#dom-getanimationsoptions-pseudoelement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/web-animations-1/#dictdef-getanimationsoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n    readonly attribute DocumentTimeline timeline;\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "timeline",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DocumentTimeline"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/web-animations-1/#dom-document-timeline"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "DocumentOrShadowRoot": [
+        {
+          "fragment": "partial interface mixin DocumentOrShadowRoot {\n    sequence<Animation> getAnimations();\n};",
+          "type": "interface mixin",
+          "name": "DocumentOrShadowRoot",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getAnimations",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Animation"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Element": [
+        {
+          "fragment": "Element includes Animatable;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Element",
+          "includes": "Animatable"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AnimationTimeline",
+        "DocumentTimeline",
+        "Animation",
+        "AnimationEffect",
+        "KeyframeEffect"
+      ]
+    },
+    "dependencies": {
+      "AnimationTimeline": [],
+      "DocumentTimelineOptions": [
+        "DOMHighResTimeStamp"
+      ],
+      "DocumentTimeline": [
+        "AnimationTimeline",
+        "DocumentTimelineOptions"
+      ],
+      "Animation": [
+        "EventTarget",
+        "AnimationEffect",
+        "AnimationTimeline",
+        "AnimationPlayState",
+        "AnimationReplaceState",
+        "Animation",
+        "EventHandler"
+      ],
+      "AnimationEffect": [
+        "EffectTiming",
+        "ComputedEffectTiming",
+        "OptionalEffectTiming"
+      ],
+      "EffectTiming": [
+        "FillMode",
+        "PlaybackDirection"
+      ],
+      "OptionalEffectTiming": [
+        "FillMode",
+        "PlaybackDirection"
+      ],
+      "ComputedEffectTiming": [
+        "EffectTiming"
+      ],
+      "KeyframeEffect": [
+        "AnimationEffect",
+        "Element",
+        "KeyframeEffectOptions",
+        "KeyframeEffect",
+        "CSSOMString",
+        "CompositeOperation"
+      ],
+      "BaseComputedKeyframe": [
+        "CompositeOperationOrAuto"
+      ],
+      "BasePropertyIndexedKeyframe": [
+        "CompositeOperationOrAuto"
+      ],
+      "BaseKeyframe": [
+        "CompositeOperationOrAuto"
+      ],
+      "KeyframeEffectOptions": [
+        "EffectTiming",
+        "CompositeOperation",
+        "CSSOMString"
+      ],
+      "Animatable": [
+        "Animation",
+        "KeyframeAnimationOptions",
+        "GetAnimationsOptions"
+      ],
+      "KeyframeAnimationOptions": [
+        "KeyframeEffectOptions",
+        "AnimationTimeline"
+      ],
+      "GetAnimationsOptions": [
+        "CSSOMString"
+      ],
+      "Document": [
+        "DocumentTimeline"
+      ],
+      "DocumentOrShadowRoot": [
+        "Animation"
+      ],
+      "Element": [
+        "Animatable"
+      ]
+    },
+    "externalDependencies": [
+      "DOMHighResTimeStamp",
+      "EventTarget",
+      "EventHandler",
+      "Element",
+      "CSSOMString",
+      "Document",
+      "DocumentOrShadowRoot"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

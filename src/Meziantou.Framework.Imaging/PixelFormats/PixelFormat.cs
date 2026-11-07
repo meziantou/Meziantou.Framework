@@ -1,0 +1,64 @@
+namespace Meziantou.Framework.Imaging;
+
+/// <summary>Identifies one of the built-in working pixel representations used to store decoded pixels.</summary>
+/// <remarks>
+/// A pixel format describes the in-memory storage of an <see cref="Image{TPixel}"/>, not the compressed
+/// encoding of a file. Use <see cref="ImageInfo.ColorModel"/> and <see cref="ImageInfo.BitsPerComponent"/>
+/// for information about the source encoding.
+/// </remarks>
+public enum PixelFormat
+{
+    /// <summary>Unknown or unspecified. Never returned by an <see cref="Image"/>.</summary>
+    Unknown = 0,
+
+    /// <summary>8-bit red, green, blue and straight alpha components, stored in that byte order (<see cref="Imaging.Rgba32"/>).</summary>
+    Rgba32 = 1,
+
+    /// <summary>8-bit blue, green, red and straight alpha components, stored in that byte order (<see cref="Imaging.Bgra32"/>).</summary>
+    Bgra32 = 2,
+
+    /// <summary>8-bit red, green and blue components without alpha (<see cref="Imaging.Rgb24"/>).</summary>
+    Rgb24 = 3,
+
+    /// <summary>16-bit red, green, blue and straight alpha components in native endianness (<see cref="Imaging.Rgba64"/>).</summary>
+    Rgba64 = 4,
+
+    /// <summary>8-bit grayscale without alpha (<see cref="Imaging.Gray8"/>).</summary>
+    Gray8 = 5,
+
+    /// <summary>16-bit grayscale without alpha in native endianness (<see cref="Imaging.Gray16"/>).</summary>
+    Gray16 = 6,
+
+    /// <summary>
+    /// Single-precision floating-point red, green, blue and straight alpha components (<see cref="Imaging.RgbaFloat"/>):
+    /// linear light where 1 is the reference white, with values outside [0, 1] allowed.
+    /// </summary>
+    RgbaFloat = 7,
+
+    /// <summary>Half-precision floating-point red, green, blue and straight alpha components (<see cref="Imaging.RgbaHalf"/>), with the meaning of <see cref="RgbaFloat"/>.</summary>
+    RgbaHalf = 8,
+
+    /// <summary>8-bit gray level and straight alpha components, stored in that byte order (<see cref="Imaging.La16"/>).</summary>
+    La16 = 9,
+
+    /// <summary>16-bit gray level and straight alpha components in native endianness (<see cref="Imaging.La32"/>).</summary>
+    La32 = 10,
+
+    /// <summary>16-bit red, green and blue components without alpha in native endianness (<see cref="Imaging.Rgb48"/>).</summary>
+    Rgb48 = 11,
+
+    /// <summary>8-bit alpha without color (<see cref="Imaging.A8"/>): an alpha mask, read as black with its alpha.</summary>
+    A8 = 12,
+
+    /// <summary>8-bit straight alpha, red, green and blue components, stored in that byte order (<see cref="Imaging.Argb32"/>).</summary>
+    Argb32 = 13,
+
+    /// <summary>8-bit straight alpha, blue, green and red components, stored in that byte order (<see cref="Imaging.Abgr32"/>).</summary>
+    Abgr32 = 14,
+
+    /// <summary>5-bit red, 6-bit green and 5-bit blue components without alpha, packed in a native-endian 16-bit value with blue in the low bits (<see cref="Imaging.Bgr565"/>).</summary>
+    Bgr565 = 15,
+
+    /// <summary>10-bit red, green and blue components and a 2-bit straight alpha, packed in a native-endian 32-bit value with red in the low bits (<see cref="Imaging.Rgba1010102"/>).</summary>
+    Rgba1010102 = 16,
+}

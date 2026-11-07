@@ -1,134 +1,223 @@
-﻿@if (Data != null)
+﻿@if (Data is not null)
 {
-	if (CanChangeDisplayFormat)
-	{
-		<div class="format-selector-group">
-			<a class="format-selector @(Format == LogDetailsDisplayFormat.Table ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Table" @onclick:preventDefault="true">table</a> |
-			<a class="format-selector @(Format == LogDetailsDisplayFormat.Json ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Json" @onclick:preventDefault="true">json</a>
-		</div>
-	}
-	if (Format == LogDetailsDisplayFormat.Json)
-	{
-		<pre>@FormatDataAsJson(Data)</pre>
-	}
-	else if (Format == LogDetailsDisplayFormat.Table)
-	{
-		<table>
-			@foreach (var (propertyName, propertyValue, isSimpleType) in GetValues(Data))
-			{
-				<tr>
-					<th>@propertyName:</th>
-					<td>
-						@if (propertyValue == null)
-						{
-							<i>null</i>
-						}
-						else if (isSimpleType)
-						{
-							@propertyValue
-						}
-						else
-						{
-							<LogEntryDetails Data="propertyValue" Format="Format" CanChangeDisplayFormat="false" />
-						}
-					</td>
-				</tr>
-			}
-		</table>
-	}
+    if (MaxDepth <= 0)
+    {
+        <i>&#8230;</i>
+    }
+    else if (IsSimpleType(Data))
+    {
+        @Data
+    }
+    else
+    {
+        if (CanChangeDisplayFormat)
+        {
+            <div class="format-selector-group">
+                <a class="format-selector @(_format == LogDetailsDisplayFormat.Table ? "selected" : "")" href="#" @onclick="() => _format = LogDetailsDisplayFormat.Table" @onclick:preventDefault="true">table</a> |
+                <a class="format-selector @(_format == LogDetailsDisplayFormat.Json ? "selected" : "")" href="#" @onclick="() => _format = LogDetailsDisplayFormat.Json" @onclick:preventDefault="true">json</a>
+            </div>
+        }
+        if (_format == LogDetailsDisplayFormat.Json)
+        {
+            <pre>@FormatDataAsJson(Data)</pre>
+        }
+        else if (_format == LogDetailsDisplayFormat.Table)
+        {
+            <table>
+                @foreach (var (propertyName, propertyValue, isSimpleType) in GetValues(Data))
+                {
+                    <tr>
+                        <th>@propertyName:</th>
+                        <td>
+                            @if (propertyValue is null)
+                            {
+                                <i>null</i>
+                            }
+                            else if (propertyValue is PropertyError error)
+                            {
+                                <i class="value-error">@error.Message</i>
+                            }
+                            else if (isSimpleType)
+                            {
+                                @propertyValue
+                            }
+                            else
+                            {
+                                <LogEntryDetails Data="propertyValue" Format="_format" CanChangeDisplayFormat="false" MaxDepth="MaxDepth - 1" />
+                            }
+                        </td>
+                    </tr>
+                }
+            </table>
+        }
+    }
 }
 
-@code{
-	private static System.Text.Json.JsonSerializerOptions s_options = new System.Text.Json.JsonSerializerOptions()
-	{
-		WriteIndented = true,
-		Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
-	};
+@code {
+    private static readonly System.Text.Json.JsonSerializerOptions s_options = new()
+    {
+        WriteIndented = true,
+        // Logged objects are arbitrary graphs and may contain cycles; without this the serializer throws.
+        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
+    };
 
-	/// <summary>
-	/// Gets or sets the data object to display. This can be any object that will be rendered as a table or JSON.
-	/// </summary>
-	[Parameter]
-	public object? Data { get; set; }
+    private LogDetailsDisplayFormat _format;
+    private LogDetailsDisplayFormat _lastFormatParameter;
 
-	/// <summary>
-	/// Gets or sets the format for displaying log entry details.
-	/// </summary>
-	[Parameter]
-	public LogDetailsDisplayFormat Format { get; set; }
+    /// <summary>
+    /// Gets or sets the data object to display. This can be any object that will be rendered as a table or JSON.
+    /// </summary>
+    /// <remarks>
+    /// The object graph is walked using reflection, so this component is not compatible with trimming or Native AOT.
+    /// </remarks>
+    [Parameter]
+    public object? Data { get; set; }
 
-	/// <summary>
-	/// Gets or sets a value indicating whether the user can change the display format. Default is <c>true</c>.
-	/// </summary>
-	[Parameter]
-	public bool CanChangeDisplayFormat { get; set; } = true;
+    /// <summary>
+    /// Gets or sets the format for displaying log entry details. The value is used as the initial format; the user can
+    /// change it when <see cref="CanChangeDisplayFormat"/> is <c>true</c>, and their choice is kept until this parameter changes.
+    /// </summary>
+    [Parameter]
+    public LogDetailsDisplayFormat Format { get; set; }
 
-	private static IEnumerable<(string PropertyName, object? Value, bool IsSimpleType)> GetValues(object data)
-	{
-		if (data is System.Collections.Generic.IEnumerable<KeyValuePair<string, object>> dict)
-		{
-			foreach (var item in dict)
-			{
-				yield return (item.Key, item.Value, IsSimpleType(item.Value));
-			}
-		}
-		else if (data is System.Collections.IEnumerable enumerable)
-		{
-			var index = 0;
-			foreach (var item in enumerable)
-			{
-				yield return ($"[{index}]", item, IsSimpleType(item));
-				index++;
-			}
-		}
-		else
-		{
-			foreach (var prop in data.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy))
-			{
-				if (prop.GetMethod == null)
-					continue;
+    /// <summary>
+    /// Gets or sets a value indicating whether the user can change the display format. Default is <c>true</c>.
+    /// </summary>
+    [Parameter]
+    public bool CanChangeDisplayFormat { get; set; } = true;
 
-				var value = prop.GetValue(data);
-				yield return (prop.Name, value, IsSimpleType(value));
-			}
-		}
+    /// <summary>
+    /// Gets or sets how many levels of nested objects are rendered. Deeper values are elided, which also bounds
+    /// cyclic object graphs. Default is <c>32</c>.
+    /// </summary>
+    [Parameter]
+    public int MaxDepth { get; set; } = 32;
 
-		static bool IsSimpleType(object? data)
-		{
-			if (data == null)
-				return true;
+    protected override void OnParametersSet()
+    {
+        // Only reset the format when the parameter itself changes, so a parent re-render does not
+        // discard the format the user selected.
+        if (_lastFormatParameter != Format)
+        {
+            _lastFormatParameter = Format;
+            _format = Format;
+        }
+    }
 
-			var type = data.GetType();
-			return
-				type == typeof(char) ||
-				type == typeof(string) ||
-				type == typeof(bool) ||
-				type == typeof(byte) ||
-				type == typeof(sbyte) ||
-				type == typeof(short) ||
-				type == typeof(ushort) ||
-				type == typeof(int) ||
-				type == typeof(uint) ||
-				type == typeof(long) ||
-				type == typeof(ulong) ||
-				type == typeof(Half) ||
-				type == typeof(float) ||
-				type == typeof(double) ||
-				type == typeof(decimal) ||
-				type == typeof(Guid) ||
-				type == typeof(TimeSpan) ||
-				type == typeof(DateTime) ||
-				type == typeof(DateTimeOffset) ||
-				type == typeof(Uri) ||
-				type == typeof(TimeZoneInfo) ||
-				type == typeof(Type) ||
-				type == typeof(Version) ||
-				type.IsEnum;
-		}
-	}
+    // Signals that a property getter threw. Rendered inline so the failure is visible without taking down the render.
+    private sealed record PropertyError(string Message);
 
-	private static string FormatDataAsJson(object data)
-	{
-		return System.Text.Json.JsonSerializer.Serialize(data, data.GetType(), s_options);
-	}
+    private static IEnumerable<(string PropertyName, object? Value, bool IsSimpleType)> GetValues(object data)
+    {
+        if (data is IEnumerable<KeyValuePair<string, object>> dict)
+        {
+            foreach (var item in dict)
+            {
+                yield return (item.Key, item.Value, IsSimpleType(item.Value));
+            }
+        }
+        else if (data is System.Collections.IDictionary dictionary)
+        {
+            // Covers dictionaries whose value type is not object, such as Dictionary<string, string>, which is
+            // not an IEnumerable<KeyValuePair<string, object>> because KeyValuePair is a struct.
+            foreach (System.Collections.DictionaryEntry item in dictionary)
+            {
+                var key = System.Convert.ToString(item.Key, System.Globalization.CultureInfo.InvariantCulture) ?? "";
+                yield return (key, item.Value, IsSimpleType(item.Value));
+            }
+        }
+        else if (data is System.Collections.IEnumerable enumerable)
+        {
+            var index = 0;
+            foreach (var item in enumerable)
+            {
+                yield return ($"[{index}]", item, IsSimpleType(item));
+                index++;
+            }
+        }
+        else
+        {
+            foreach (var prop in data.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy))
+            {
+                if (prop.GetMethod is null)
+                    continue;
+
+                // Indexers cannot be read without arguments; GetValue would throw TargetParameterCountException.
+                if (prop.GetIndexParameters().Length > 0)
+                    continue;
+
+                var value = GetPropertyValue(prop, data);
+                yield return (prop.Name, value, IsSimpleType(value));
+            }
+        }
+    }
+
+    private static object? GetPropertyValue(System.Reflection.PropertyInfo property, object data)
+    {
+        // A property getter can throw for any reason. Rendering the failure is better than tearing down the circuit.
+        try
+        {
+            return property.GetValue(data);
+        }
+        catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            return new PropertyError(ex.InnerException.Message);
+        }
+        catch (Exception ex)
+        {
+            return new PropertyError(ex.Message);
+        }
+    }
+
+    private static bool IsSimpleType(object? data)
+    {
+        if (data is null)
+            return true;
+
+        if (data is Type or Uri or TimeZoneInfo)
+            return true;
+
+        var type = data.GetType();
+        return
+            type == typeof(char) ||
+            type == typeof(string) ||
+            type == typeof(bool) ||
+            type == typeof(byte) ||
+            type == typeof(sbyte) ||
+            type == typeof(short) ||
+            type == typeof(ushort) ||
+            type == typeof(int) ||
+            type == typeof(uint) ||
+            type == typeof(long) ||
+            type == typeof(ulong) ||
+            type == typeof(Int128) ||
+            type == typeof(UInt128) ||
+            type == typeof(nint) ||
+            type == typeof(nuint) ||
+            type == typeof(Half) ||
+            type == typeof(float) ||
+            type == typeof(double) ||
+            type == typeof(decimal) ||
+            type == typeof(Guid) ||
+            type == typeof(TimeSpan) ||
+            type == typeof(DateTime) ||
+            type == typeof(DateTimeOffset) ||
+            type == typeof(DateOnly) ||
+            type == typeof(TimeOnly) ||
+            type == typeof(Version) ||
+            type.IsEnum;
+    }
+
+    private static string FormatDataAsJson(object data)
+    {
+        try
+        {
+            return System.Text.Json.JsonSerializer.Serialize(data, data.GetType(), s_options);
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException or NotSupportedException)
+        {
+            return ex.Message;
+        }
+    }
 }

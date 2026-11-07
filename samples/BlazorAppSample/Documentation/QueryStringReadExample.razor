@@ -1,0 +1,16 @@
+@inject NavigationManager NavigationManager
+
+<p>Search: @search</p>
+<p>Tags: @string.Join(", ", tags)</p>
+
+@code {
+    private string? search;
+    private IReadOnlyList<string> tags = [];
+
+    protected override void OnInitialized()
+    {
+        // For https://example.com/products?q=shoes&tag=red&tag=sale
+        search = NavigationManager.GetQueryStringParameterValue("q");   // "shoes"
+        tags = NavigationManager.GetQueryStringParameterValues("tag");  // ["red", "sale"]
+    }
+}

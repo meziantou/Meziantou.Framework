@@ -31,8 +31,10 @@ public sealed class ProcessWrapper
     private ImmutableArray<OutputTarget> _errorTargets;
     private InputSource? _inputSource;
     private ProcessLimits? _limits;
+    private bool _searchExecutableInWorkingDirectory;
     private Action<JobObject>? _windowsJobObjectConfiguration;
     private Action<CGroup2>? _linuxControlGroupConfiguration;
+    private bool _validationModeConfigured;
 
     private ProcessWrapper(string fileName)
     {
@@ -57,8 +59,10 @@ public sealed class ProcessWrapper
         _errorTargets = other._errorTargets;
         _inputSource = other._inputSource;
         _limits = other._limits;
+        _searchExecutableInWorkingDirectory = other._searchExecutableInWorkingDirectory;
         _windowsJobObjectConfiguration = other._windowsJobObjectConfiguration;
         _linuxControlGroupConfiguration = other._linuxControlGroupConfiguration;
+        _validationModeConfigured = other._validationModeConfigured;
         _processFactory = other._processFactory;
         _processWrapperInterceptors = other._processWrapperInterceptors;
         _processStartInfoInterceptors = other._processStartInfoInterceptors;
@@ -136,6 +140,19 @@ public sealed class ProcessWrapper
         }
 
         CopyWindowsStartInfoCredentials(source, startInfo);
+#if NET11_0_OR_GREATER
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
+        {
+            startInfo.KillOnParentExit = source.KillOnParentExit;
+        }
+
+        startInfo.StartDetached = source.StartDetached;
+
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        {
+            startInfo.StartSuspended = source.StartSuspended;
+        }
+#endif
 
         return startInfo;
     }
@@ -160,6 +177,12 @@ public sealed class ProcessWrapper
     public static ProcessPipeline operator |(ProcessWrapper left, ProcessWrapper right) => ProcessPipeline.Create(left, right);
 
     /// <summary>Returns the command line representation of this process configuration.</summary>
+    /// <remarks>
+    /// The executable path and the arguments are always included, regardless of the verbosity set by
+    /// <see cref="WithLogVerbosity(ProcessLogVerbosity)"/>. Use <see cref="ProcessResult.ToString()"/> or the
+    /// message of <see cref="ProcessExecutionException"/> when the rendering has to honor that verbosity, for
+    /// example to keep a secret passed as an argument out of the logs.
+    /// </remarks>
     public override string ToString()
     {
         return ProcessCommandLineFormatter.Format(_startInfo.FileName, _startInfo.ArgumentList);
@@ -209,6 +232,25 @@ public sealed class ProcessWrapper
         return this;
     }
 
+    /// <summary>Also looks for the executable in the working directory, before the directories listed in <c>PATH</c>.</summary>
+    /// <remarks>
+    /// <para>
+    /// Windows resolves a bare executable name against the current directory before <c>PATH</c>, so this is the
+    /// native behavior there. POSIX shells deliberately do not.
+    /// </para>
+    /// <para>
+    /// It is nevertheless disabled by default on every platform, Windows included, for security reasons: a file
+    /// sitting in the working directory would otherwise take precedence over the command <c>PATH</c> resolves for
+    /// the same name, letting an untrusted working directory substitute its own executable for the intended one.
+    /// Only enable it when the working directory is trusted.
+    /// </para>
+    /// </remarks>
+    public ProcessWrapper WithSearchWorkingDirectory(bool searchWorkingDirectory = true)
+    {
+        _searchExecutableInWorkingDirectory = searchWorkingDirectory;
+        return this;
+    }
+
     /// <summary>Sets alternate Windows credentials used to start the process.</summary>
     /// <remarks><paramref name="userName"/> can be in the <c>user@domain</c> format when <paramref name="domain"/> is not set.</remarks>
     [SupportedOSPlatform("windows")]
@@ -248,6 +290,34 @@ public sealed class ProcessWrapper
         return this;
     }
 
+#if NET11_0_OR_GREATER
+    /// <summary>Sets whether the child process should be killed when the parent process exits.</summary>
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("android")]
+    public ProcessWrapper WithKillOnParentExit(bool killOnParentExit = true)
+    {
+        _startInfo.KillOnParentExit = killOnParentExit;
+        return this;
+    }
+
+    /// <summary>Sets whether the child process should be detached from the parent process.</summary>
+    public ProcessWrapper WithStartDetached(bool startDetached = true)
+    {
+        _startInfo.StartDetached = startDetached;
+        return this;
+    }
+
+    /// <summary>Sets whether the child process should start in a suspended state.</summary>
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("macos")]
+    public ProcessWrapper WithStartSuspended(bool startSuspended = true)
+    {
+        _startInfo.StartSuspended = startSuspended;
+        return this;
+    }
+#endif
+
     /// <summary>Configures environment variables using a callback. Accumulates with previous calls.</summary>
     public ProcessWrapper WithEnvironmentVariables(Action<ProcessWrapperEnvironmentVariables> configure)
     {
@@ -279,6 +349,7 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithValidation(ProcessValidationMode mode)
     {
         _validationMode = mode;
+        _validationModeConfigured = true;
         return this;
     }
 
@@ -438,6 +509,38 @@ public sealed class ProcessWrapper
             cancellationToken);
     }
 
+#if NET11_0_OR_GREATER
+    /// <summary>Starts the process without tracking it and returns its process ID.</summary>
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("maccatalyst")]
+    public int StartAndForget()
+    {
+        ApplyProcessWrapperInterceptors();
+
+        if (!_outputTargets.IsEmpty)
+            throw new InvalidOperationException("Output streams cannot be configured when starting a process without tracking it.");
+
+        if (!_errorTargets.IsEmpty)
+            throw new InvalidOperationException("Error streams cannot be configured when starting a process without tracking it.");
+
+        if (_inputSource is not null)
+            throw new InvalidOperationException("Input streams cannot be configured when starting a process without tracking it.");
+
+        if (_limits is not null || _windowsJobObjectConfiguration is not null || _linuxControlGroupConfiguration is not null)
+            throw new InvalidOperationException("Process limits cannot be configured when starting a process without tracking it.");
+
+        if (_validationModeConfigured && _validationMode != ProcessValidationMode.None)
+            throw new InvalidOperationException("Process validation cannot be configured when starting a process without tracking it.");
+
+        var startInfo = CloneStartInfo(_startInfo);
+        startInfo.FileName = ResolveFileName(startInfo.FileName, GetExecutableSearchDirectory(startInfo));
+        ApplyProcessStartInfoInterceptors(startInfo);
+
+        return Process.StartAndForget(startInfo);
+    }
+#endif
+
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ProcessInstance will dispose it")]
     private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<IProcessHandle, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, string, IReadOnlyList<string>, ProcessLogVerbosity, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
@@ -450,7 +553,7 @@ public sealed class ProcessWrapper
         var hasStandardErrorOutput = 0;
 
         var startInfo = CloneStartInfo(_startInfo);
-        var resolvedFileName = ResolveFileName(startInfo.FileName, startInfo.WorkingDirectory);
+        var resolvedFileName = ResolveFileName(startInfo.FileName, GetExecutableSearchDirectory(startInfo));
         startInfo.RedirectStandardOutput = hasOutputHandlers;
         startInfo.RedirectStandardError = hasErrorHandlers;
         startInfo.RedirectStandardInput = hasInputStream;
@@ -462,7 +565,7 @@ public sealed class ProcessWrapper
         var processLimiter = CreateProcessLimiter();
 #if NET11_0_OR_GREATER
         var shouldResumeProcess = false;
-        if (processLimiter is not null && (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()))
+        if (processLimiter is not null && (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) && !startInfo.StartSuspended)
         {
             startInfo.StartSuspended = true;
             shouldResumeProcess = true;
@@ -532,15 +635,18 @@ public sealed class ProcessWrapper
                             break;
                         }
 
-                        inputStream.Write(buffer, 0, bytesRead);
+                        if (!TryWriteProcessInput(inputStream, buffer, bytesRead))
+                        {
+                            break;
+                        }
                     }
 
-                    inputStream.Flush();
+                    TryFlushProcessInput(inputStream);
                 }
                 finally
                 {
                     inputSource.NotifyProcessCompleted();
-                    inputStream.Close();
+                    TryCloseProcessInput(inputStream);
                 }
             }, cancellationToken);
         }
@@ -551,8 +657,16 @@ public sealed class ProcessWrapper
             registration = cancellationToken.Register(static state => ProcessInstance.KillProcess((IProcessHandle)state!, entireProcessTree: true), processHandle);
         }
 
+        // StartActivity makes the new activity ambient on this thread, but it is stopped later from the
+        // completion task. Activity.Stop only restores Activity.Current where it runs, so the caller
+        // would keep a stopped activity as its ambient one and parent everything it does next to it.
+        var previousActivity = Activity.Current;
         var activity = ProcessWrapperTelemetry.ActivitySource.StartActivity("process.execute");
-        activity?.SetTag("process.executable.path", resolvedFileName);
+        if (activity is not null)
+        {
+            activity.SetTag("process.executable.path", resolvedFileName);
+            Activity.Current = previousActivity;
+        }
 
         return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, processFileName, arguments, _logVerbosity, cancellationToken);
     }
@@ -625,6 +739,54 @@ public sealed class ProcessWrapper
             {
                 target.NotifyProcessCompleted();
             }
+        }
+    }
+
+    // A process that stops reading its standard input closes the pipe, so the remaining writes fail.
+    // That is normal for commands such as head or grep -q, so treat it as the end of the input rather
+    // than an error, matching how ReadBufferAsync treats the same failure on the output side.
+    private static bool TryWriteProcessInput(Stream stream, byte[] buffer, int count)
+    {
+        try
+        {
+            stream.Write(buffer, 0, count);
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (ObjectDisposedException)
+        {
+            return false;
+        }
+    }
+
+    private static void TryFlushProcessInput(Stream stream)
+    {
+        try
+        {
+            stream.Flush();
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private static void TryCloseProcessInput(Stream stream)
+    {
+        try
+        {
+            stream.Close();
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 
@@ -954,6 +1116,11 @@ public sealed class ProcessWrapper
             }
         }
     }
+
+    // A file dropped in the working directory must not shadow a command resolved from PATH, so the working
+    // directory is searched only when the caller opts in with WithSearchWorkingDirectory.
+    private string? GetExecutableSearchDirectory(ProcessStartInfo startInfo)
+        => _searchExecutableInWorkingDirectory ? startInfo.WorkingDirectory : null;
 
     private static string ResolveFileName(string fileName, string? workingDirectory)
     {

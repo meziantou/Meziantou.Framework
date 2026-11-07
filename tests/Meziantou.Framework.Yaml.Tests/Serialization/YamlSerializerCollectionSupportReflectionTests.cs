@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlSerializerCollectionSupportReflectionTests
@@ -28,6 +29,79 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         Assert.HasCount(2, result);
         Assert.Contains("a", result);
         Assert.Contains("b", result);
+    }
+
+    [Fact]
+    public void Deserialize_IReadOnlySet_ShouldReturnHashSet()
+    {
+        var yaml = "- a\n- b\n- a\n";
+
+        var result = YamlSerializer.Deserialize<IReadOnlySet<string>>(yaml);
+
+        Assert.NotNull(result);
+        Assert.HasCount(2, result);
+        Assert.Contains("a", result);
+        Assert.Contains("b", result);
+    }
+
+    [Fact]
+    public void Serialize_IReadOnlySet_ShouldWriteSequence()
+    {
+        var value = (IReadOnlySet<int>)new HashSet<int> { 1, 2 };
+
+        var yaml = YamlSerializer.Serialize(value);
+
+        Assert.Equal("- 1\n- 2\n", yaml, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void RoundTrip_IReadOnlySetMember_ShouldPreserveValues()
+    {
+        var payload = new ReadOnlySetPayload
+        {
+            Tags = new HashSet<string>(StringComparer.Ordinal) { "a", "b" },
+        };
+
+        var yaml = YamlSerializer.Serialize(payload);
+        var result = YamlSerializer.Deserialize<ReadOnlySetPayload>(yaml);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.Tags);
+        Assert.HasCount(2, result.Tags);
+        Assert.Contains("a", result.Tags);
+        Assert.Contains("b", result.Tags);
+    }
+
+    [Fact]
+    public void RoundTrip_IReadOnlySetMember_ShouldPreserveSharedReferences()
+    {
+        var shared = new HashSet<int> { 1, 2 };
+        var payload = new ReadOnlySetReferencePayload
+        {
+            Primary = shared,
+            Secondary = shared,
+        };
+
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+        var yaml = YamlSerializer.Serialize(payload, options);
+
+        var anchor = ExtractAnchor(yaml, "Primary: &");
+        Assert.Contains($"Secondary: *{anchor}", yaml);
+
+        var result = YamlSerializer.Deserialize<ReadOnlySetReferencePayload>(yaml, options);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.Primary);
+        Assert.Same(result.Primary, result.Secondary);
+        Assert.HasCount(2, result.Primary);
+    }
+
+    [Fact]
+    public void Deserialize_IReadOnlySetMember_WithExplicitPopulate_ShouldThrow()
+    {
+        var yaml = "Tags:\n- a\n";
+
+        Assert.Throws<InvalidOperationException>(() => YamlSerializer.Deserialize<PopulateReadOnlySetPayload>(yaml));
     }
 
     [Fact]
@@ -80,7 +154,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         Assert.NotNull(result);
         Assert.NotNull(result.Primary);
         Assert.NotNull(result.Secondary);
-        Assert.True(ReferenceEquals(result.Primary, result.Secondary));
+        Assert.Same(result.Primary, result.Secondary);
         Assert.Equal("one", result.Primary[1]);
         Assert.Equal("two", result.Primary[2]);
     }
@@ -111,7 +185,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         Assert.NotNull(result);
         Assert.NotNull(result.Primary);
         Assert.NotNull(result.Secondary);
-        Assert.True(ReferenceEquals(result.Primary, result.Secondary));
+        Assert.Same(result.Primary, result.Secondary);
         Assert.Equal(1, result.Primary[TestColor.Red]);
         Assert.Equal(2, result.Primary[TestColor.Green]);
     }
@@ -133,7 +207,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
 
         var result = YamlSerializer.Deserialize<ImmutableArray<int>>(yaml);
 
-        Assert.Equal(2, result.Length);
+        Assert.HasCount(2, result);
         Assert.Equal(10, result[0]);
         Assert.Equal(20, result[1]);
     }
@@ -179,7 +253,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         Assert.NotNull(result);
         Assert.NotNull(result.Values);
         Assert.NotNull(result.Other);
-        Assert.True(ReferenceEquals(result.Values, result.Other));
+        Assert.Same(result.Values, result.Other);
     }
 
     [Fact]
@@ -195,8 +269,8 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         var result = YamlSerializer.Deserialize<ImmutableArrayAnchorPayload>(yaml, options);
 
         Assert.NotNull(result);
-        Assert.Equal(2, result.Values.Length);
-        Assert.Equal(2, result.Other.Length);
+        Assert.HasCount(2, result.Values);
+        Assert.HasCount(2, result.Other);
         Assert.Equal(result.Values[0], result.Other[0]);
         Assert.Equal(result.Values[1], result.Other[1]);
     }
@@ -205,6 +279,28 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
     {
         Red = 1,
         Green = 2,
+    }
+
+    private sealed class ReadOnlySetPayload
+    {
+        [SuppressMessage("Performance", "CA1859: Use concrete types when possible for improved performance", Justification = "Test class")]
+        public IReadOnlySet<string>? Tags { get; set; }
+    }
+
+    private sealed class ReadOnlySetReferencePayload
+    {
+        [SuppressMessage("Performance", "CA1859: Use concrete types when possible for improved performance", Justification = "Test class")]
+        public IReadOnlySet<int>? Primary { get; set; }
+
+        [SuppressMessage("Performance", "CA1859: Use concrete types when possible for improved performance", Justification = "Test class")]
+        public IReadOnlySet<int>? Secondary { get; set; }
+    }
+
+    private sealed class PopulateReadOnlySetPayload
+    {
+        [SuppressMessage("Performance", "CA1859: Use concrete types when possible for improved performance", Justification = "Test class")]
+        [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
+        public IReadOnlySet<string> Tags { get; } = new HashSet<string>(StringComparer.Ordinal);
     }
 
     private sealed class ImmutableAnchorPayload

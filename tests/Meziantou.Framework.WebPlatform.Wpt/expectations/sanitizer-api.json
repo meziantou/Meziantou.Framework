@@ -1,0 +1,274 @@
+{
+  "sanitizer-api/html5lib-basics.html": {
+    "total": 18
+  },
+  "sanitizer-api/parsehtml-noscript.html": {
+    "total": 6
+  },
+  "sanitizer-api/parsehtmlunsafe-with-trustedtypes.html": {
+    "total": 7
+  },
+  "sanitizer-api/parsehtmlunsafe-with-trustedtypes.tentative.html": {
+    "total": 7,
+    "failures": {
+      "Document.parseHTMLUnsafe: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Document.parseHTMLUnsafe: createParserOptions returning undefined succeeds and skips sanitization": "FAIL"
+    }
+  },
+  "sanitizer-api/sanitizer-a-navigation.html?target=html": {
+    "total": 27
+  },
+  "sanitizer-api/sanitizer-a-navigation.html?target=mathml": {
+    "total": 117
+  },
+  "sanitizer-api/sanitizer-a-navigation.html?target=svg": {
+    "total": 81
+  },
+  "sanitizer-api/sanitizer-base-immutable.html": {
+    "total": 27
+  },
+  "sanitizer-api/sanitizer-basic-filtering.html": {
+    "total": 354
+  },
+  "sanitizer-api/sanitizer-boolean-defaults.html": {
+    "total": 3
+  },
+  "sanitizer-api/sanitizer-config.html": {
+    "total": 72
+  },
+  "sanitizer-api/sanitizer-custom-elements-constructor.html": {
+    "total": 14
+  },
+  "sanitizer-api/sanitizer-custom-elements-is.html": {
+    "total": 20
+  },
+  "sanitizer-api/sanitizer-custom-elements-is.tentative.html": {
+    "total": 8
+  },
+  "sanitizer-api/sanitizer-default-config.html": {
+    "total": 1
+  },
+  "sanitizer-api/sanitizer-duplicate-html-body.html": {
+    "total": 12
+  },
+  "sanitizer-api/sanitizer-get.html": {
+    "total": 9
+  },
+  "sanitizer-api/sanitizer-in-adoption-agency.html": {
+    "total": 55
+  },
+  "sanitizer-api/sanitizer-in-noahs-ark.html": {
+    "total": 22
+  },
+  "sanitizer-api/sanitizer-inert-document.html": {
+    "total": 4
+  },
+  "sanitizer-api/sanitizer-javascript-url.html": {
+    "total": 1334
+  },
+  "sanitizer-api/sanitizer-mathml-elements.html": {
+    "total": 84
+  },
+  "sanitizer-api/sanitizer-modifiers.html": {
+    "total": 22
+  },
+  "sanitizer-api/sanitizer-names.html": {
+    "total": 27
+  },
+  "sanitizer-api/sanitizer-parseHTML.html": {
+    "total": 49
+  },
+  "sanitizer-api/sanitizer-processing-instructions.html": {
+    "total": 63
+  },
+  "sanitizer-api/sanitizer-removeUnsafe.html": {
+    "total": 8
+  },
+  "sanitizer-api/sanitizer-script-tokenizer.html": {
+    "total": 10
+  },
+  "sanitizer-api/sanitizer-svg-animate.html": {
+    "total": 22
+  },
+  "sanitizer-api/sanitizer-unknown.html": {
+    "total": 4
+  },
+  "sanitizer-api/sethtml-context.tentative.html": {
+    "total": 10
+  },
+  "sanitizer-api/sethtml-custom-element-reactions.html": {
+    "total": 8
+  },
+  "sanitizer-api/sethtml-form-owner.html": {
+    "total": 4
+  },
+  "sanitizer-api/sethtml-noscript.html": {
+    "total": 6
+  },
+  "sanitizer-api/sethtml-replace-with-children.html": {
+    "total": 6
+  },
+  "sanitizer-api/sethtml-safety.html": {
+    "total": 33
+  },
+  "sanitizer-api/sethtml-scoped-custom-element-registry.html": {
+    "total": 9
+  },
+  "sanitizer-api/sethtml-tree-construction.html": {
+    "total": 126
+  },
+  "sanitizer-api/sethtml-with-custom-elements.html": {
+    "total": 24
+  },
+  "sanitizer-api/sethtml-with-declarative-shadow-root.html": {
+    "total": 14,
+    "failures": {
+      "shadowRoot.referenceTarget does not propagate to the shadow root when shadowrootreferencetarget is removed by sanitizer": "FAIL"
+    }
+  },
+  "sanitizer-api/sethtml-with-declarative-shadow-root.tentative.html": {
+    "total": 10,
+    "failures": {
+      "shadowRoot.referenceTarget does not propagate to the shadow root when shadowrootreferencetarget is removed by sanitizer": "FAIL"
+    }
+  },
+  "sanitizer-api/sethtml-with-trustedhtml-createParserOptions.html": {
+    "total": 166
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions-null.html": {
+    "total": 2
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions-null.tentative.html": {
+    "total": 2,
+    "failures": {
+      "Element.setHTMLUnsafe: when TrustedHTMLParserOptions has null sanitizer, no sanitization occurs": "FAIL",
+      "TrustedHTMLParserOptions has no public members when createParserOptions returns null/empty": "FAIL"
+    }
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions-report-only.html": {
+    "total": 134
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions.html": {
+    "total": 97
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions.tentative.html": {
+    "total": 11,
+    "failures": {
+      "Element.setHTMLUnsafe: TrustedHTMLParserOptions without sanitizer still requires createHTML": "FAIL",
+      "ShadowRoot.setHTMLUnsafe: TrustedHTMLParserOptions without sanitizer still requires createHTML": "FAIL"
+    }
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-immutable.html": {
+    "total": 16
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-immutable.tentative.html": {
+    "total": 6
+  },
+  "sanitizer-api/sethtml-with-trustedtypes.html": {
+    "total": 253
+  },
+  "sanitizer-api/sethtml-with-trustedtypes.tentative.html": {
+    "total": 151,
+    "failures": {
+      "Element.afterbegin: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.afterbegin: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.afterbegin: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element.afterend: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.afterend: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.afterend: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element.beforebegin: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.beforebegin: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.beforebegin: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element.beforeend: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.beforeend: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.beforeend: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element.createContextualFragment: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.createContextualFragment: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.createContextualFragment: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element.innerHTML: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.innerHTML: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.innerHTML: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element.outerHTML: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.outerHTML: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.outerHTML: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element.parseHTMLUnsafe: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.parseHTMLUnsafe: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.setHTMLUnsafe: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "Element.setHTMLUnsafe: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "Element.setHTMLUnsafe: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "Element: createParserOptions cannot change runScripts from false to true": "FAIL",
+      "ShadowRoot.afterend: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.afterend: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.afterend: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "ShadowRoot.beforebegin: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.beforebegin: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.beforebegin: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "ShadowRoot.innerHTML: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.innerHTML: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.innerHTML: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "ShadowRoot.setHTMLUnsafe: createParserOptions returning null succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.setHTMLUnsafe: createParserOptions returning undefined succeeds and skips sanitization": "FAIL",
+      "ShadowRoot.setHTMLUnsafe: exception in createHTML happens after createParserOptions runs": "FAIL",
+      "ShadowRoot: createParserOptions cannot change runScripts from false to true": "FAIL"
+    }
+  },
+  "sanitizer-api/sethtml-xml-document-sanitizer-report-only.html": {
+    "total": 21
+  },
+  "sanitizer-api/sethtml-xml-document-sanitizer.html": {
+    "total": 26
+  },
+  "sanitizer-api/sethtml-xml-document-sanitizer.tentative.html": {
+    "total": 7,
+    "failures": {
+      "createContextualFragment on XML document throws TypeError if default policy provides a sanitizer": "FAIL",
+      "innerHTML on XML document created by DOMParser throws TypeError if default policy provides a sanitizer": "FAIL",
+      "innerHTML on XML document from XHR response throws TypeError if default policy provides a sanitizer": "FAIL",
+      "innerHTML on XML document throws TypeError if default policy provides a sanitizer": "FAIL",
+      "insertAdjacentHTML on XML document throws TypeError if default policy provides a sanitizer": "FAIL",
+      "outerHTML on XML document throws TypeError if default policy provides a sanitizer": "FAIL"
+    }
+  },
+  "sanitizer-api/sethtml-xml-document.html": {
+    "total": 8,
+    "failures": {
+      "Testcase #0, shadow inside xmlDoc, shadowroot.setHTML(\"Hello!\")": "FAIL",
+      "Testcase #1, shadow inside xmlDoc, shadowroot.setHTML(\"<br>\")": "FAIL",
+      "Testcase #2, shadow inside xmlDoc, shadowroot.setHTML(\"<p>Hi</p>\")": "FAIL",
+      "Testcase #3, shadow inside xmlDoc, shadowroot.setHTML(\"<iframe></iframe><p>text</p>\")": "FAIL"
+    }
+  },
+  "sanitizer-api/sethtmlunsafe-toplevel-template-script.html": {
+    "total": 10
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-default-createHTML.html": {
+    "total": 180
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-default-createHTML.tentative.html": {
+    "total": 54
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-default-createParserOptions.html": {
+    "total": 19
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-default-createParserOptions.tentative.html": {
+    "total": 5
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-no-enforcement.html": {
+    "total": 29
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-no-enforcement.tentative.html": {
+    "total": 8
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-report-only.html": {
+    "total": 39
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-report-only.tentative.html": {
+    "total": 8
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options.html": {
+    "total": 141
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options.tentative.html": {
+    "total": 43
+  }
+}

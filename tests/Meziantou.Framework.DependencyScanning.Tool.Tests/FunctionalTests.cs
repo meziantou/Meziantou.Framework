@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Meziantou.Framework;
+using NuGet.Configuration;
 using NuGet.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool.Tests;
@@ -12,6 +13,8 @@ public sealed class FunctionalTests
     {
         _testOutputHelper = testOutputHelper;
     }
+
+    private static string[] Urls(IReadOnlyList<PackageSource> sources) => [.. sources.Select(source => source.Source)];
 
     [Fact]
     public async Task UpdateNuGetPackage()
@@ -33,6 +36,47 @@ public sealed class FunctionalTests
 
         var deps = await ScanDependencies(tempDir);
         Assert.True(SemanticVersion.Parse(deps[0].Version!) > SemanticVersion.Parse("1.0.700"));
+    }
+
+    [Fact]
+    public async Task UpdateDotNetSdk()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        var path = tempDir.CreateEmptyFile("global.json");
+        await File.WriteAllTextAsync(path, """
+            {
+              "sdk": {
+                "version": "8.0.404"
+              }
+            }
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+
+        // Every supported .NET channel publishes a new SDK on the same day, so the default 7-day minimum age
+        // rejects all of them during the week following a release. The age filter is covered by MinimumAgeTests.
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DotNetSdk", "--minimum-age", "0"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
+        var sdk = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DotNetSdk);
+        Assert.True(SemanticVersion.Parse(sdk.Version!) > SemanticVersion.Parse("8.0.404"));
+    }
+
+    [Theory]
+    [InlineData(DependencyType.NuGet)]
+    [InlineData(DependencyType.Npm)]
+    [InlineData(DependencyType.DockerImage)]
+    [InlineData(DependencyType.GitHubActions)]
+    public async Task UpdatersRequiringAPackageNameIgnoreNamelessDependencies(DependencyType dependencyType)
+    {
+        var dependency = new Dependency(name: null, "1.0.0", dependencyType, nameLocation: null, versionLocation: null);
+
+        foreach (var updater in new PackageUpdater[] { new NuGetPackageUpdater(), new NpmPackageUpdater(), new DockerPackageUpdater(), new GitHubActionsUpdater() })
+        {
+            Assert.Null(await updater.GetUpdatedVersionAsync(dependency, XunitCancellationToken));
+        }
     }
 
     [Fact]
@@ -66,6 +110,31 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task UpdateListsOnlyTheSelectedDependencyTypes()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("Dockerfile"), """
+            FROM nginx:1.27.1
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("package.json"), """
+            {
+            "dependencies": {
+                "npm": "8.0.0"
+              }
+            }
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "Npm"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        // The listing must match what is about to be updated, not everything that was scanned
+        Assert.Contains("1 dependencies found", console.Output);
+        Assert.DoesNotContain("DockerImage", console.Output);
+    }
+
+    [Fact]
     public async Task FilterDependencyType_DockerImage()
     {
         await using var tempDir = TemporaryDirectory.Create();
@@ -95,6 +164,25 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task Update_DockerImage_RegistryRedirectsToAnotherHost()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        // registry.k8s.io answers the tags request with a redirection to a regional registry
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("Dockerfile"), """
+            FROM registry.k8s.io/pause:3.1
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DockerImage"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
+        var dockerDependency = Assert.Single(dependencies, dep => dep.Type is DependencyType.DockerImage);
+        Assert.NotEqual("3.1", dockerDependency.Version);
+    }
+
+    [Fact]
     public async Task FilterDependencyType_GitHubActions()
     {
         await using var tempDir = TemporaryDirectory.Create();
@@ -114,13 +202,50 @@ public sealed class FunctionalTests
         var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "GitHubActions"], console.ConfigureConsole);
         Assert.Equal(0, result);
 
+        // The tool's own listing is what proves the glob fix: before it, the scan reported only the
+        // Dockerfile and the workflow under .github was never visited. This is decided before any network
+        // call, unlike the resulting version - updating an action needs a live GitHub API request, which is
+        // anonymous in CI and routinely rate-limited on shared runner IPs, so it cannot be asserted here.
+        Assert.Contains("GitHubActions:actions/checkout", console.Output);
+
         var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
-        var gitHubActionsDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
-        Assert.NotNull(gitHubActionsDependency.Version);
-        Assert.True(GitHubActionsVersioningStrategy.Instance.CompareVersions(gitHubActionsDependency.Version, "v2") >= 0);
+        Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
 
         var dockerDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DockerImage);
         Assert.Equal("1.27.1", dockerDependency.Version);
+    }
+
+    [Fact]
+    public async Task UnreachableSourceDoesNotAbortTheRun()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="broken" value="https://nonexistent-feed.invalid/v3/index.json" />
+              </packageSources>
+            </configuration>
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("a.csproj"), """
+            <Project>
+                <ItemGroup>
+                    <PackageReference Include="Meziantou.Framework" Version="1.0.0" />
+                    <PackageReference Include="Newtonsoft.Json" Version="10.0.0" />
+                </ItemGroup>
+            </Project>
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath], console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        // The run continued past the first failure instead of throwing out of the command
+        Assert.Contains("Meziantou.Framework", console.Error);
+        Assert.Contains("Newtonsoft.Json", console.Error);
+        Assert.Contains("2 failed", console.Output);
     }
 
     [Fact]
@@ -158,6 +283,28 @@ public sealed class FunctionalTests
         Assert.Equal("npm", dependency.GetProperty("name").GetString());
         Assert.Equal("8.0.0", dependency.GetProperty("version").GetString());
         Assert.True(dependency.GetProperty("isUpdatable").GetBoolean());
+    }
+
+    [Fact]
+    public async Task DefaultGlobScansDotDirectories()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/sample.yml"), """
+            jobs:
+              test:
+                steps:
+                  - uses: actions/checkout@v2
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["list", "--directory", tempDir.FullPath, "--format", "json"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        using var json = JsonDocument.Parse(console.Output);
+        var dependency = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("GitHubActions", dependency.GetProperty("type").GetString());
+        Assert.Equal("actions/checkout", dependency.GetProperty("name").GetString());
     }
 
     [Fact]
@@ -210,8 +357,8 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
 
-        Assert.Equal(["https://feed1/v3/index.json"], resolution.PackageSources);
-        Assert.Equal(["https://feed1/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://feed1/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://feed1/v3/index.json"], Urls(resolution.AllConfiguredSources));
         Assert.False(resolution.HasSourceMappings);
     }
 
@@ -257,8 +404,8 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
 
-        Assert.Equal(["https://child/v3/index.json"], resolution.PackageSources);
-        Assert.Equal(["https://child/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://child/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://child/v3/index.json"], Urls(resolution.AllConfiguredSources));
     }
 
     [Fact]
@@ -291,8 +438,8 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
 
-        Assert.Equal(["https://feed3/v3/index.json"], resolution.PackageSources);
-        Assert.Equal(["https://feed3/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://feed3/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://feed3/v3/index.json"], Urls(resolution.AllConfiguredSources));
     }
 
     [Fact]
@@ -321,8 +468,102 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
 
-        Assert.Equal(["https://private/v3/index.json"], resolution.PackageSources);
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.PackageSources));
         Assert.True(resolution.HasSourceMappings);
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_LongestPatternWinsOverWildcard()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+                <add key="private" value="https://private/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="nuget">
+                  <package pattern="*" />
+                </packageSource>
+                <packageSource key="private">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var contoso = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+        var newtonsoft = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Newtonsoft.Json");
+
+        // 'Contoso.*' is more specific than '*', so the public feed must not be queried for it
+        Assert.Equal(["https://private/v3/index.json"], Urls(contoso.PackageSources));
+        Assert.Equal(["https://api.nuget.org/v3/index.json"], Urls(newtonsoft.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_ExactPatternWinsOverPrefix()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="prefix" value="https://prefix/v3/index.json" />
+                <add key="exact" value="https://exact/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="prefix">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+                <packageSource key="exact">
+                  <package pattern="Contoso.Library" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+        var other = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Other");
+
+        Assert.Equal(["https://exact/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://prefix/v3/index.json"], Urls(other.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_EquallySpecificPatternsKeepEverySource()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="first" value="https://first/v3/index.json" />
+                <add key="second" value="https://second/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="first">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+                <packageSource key="second">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+
+        Assert.Equal(2, resolution.PackageSources.Count);
+        Assert.Contains("https://first/v3/index.json", Urls(resolution.PackageSources));
+        Assert.Contains("https://second/v3/index.json", Urls(resolution.PackageSources));
     }
 
     [Fact]
@@ -348,7 +589,7 @@ public sealed class FunctionalTests
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Newtonsoft.Json");
 
         Assert.Empty(resolution.PackageSources);
-        Assert.Equal(["https://private/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.AllConfiguredSources));
         Assert.True(resolution.HasSourceMappings);
     }
 
@@ -420,7 +661,116 @@ public sealed class FunctionalTests
         var newtonsoftResolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Newtonsoft.Json");
 
         Assert.Empty(contosoResolution.PackageSources);
-        Assert.Equal(["https://api.nuget.org/v3/index.json"], newtonsoftResolution.PackageSources);
+        Assert.Equal(["https://api.nuget.org/v3/index.json"], Urls(newtonsoftResolution.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_PackageIdIsCaseInsensitive()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+                <add key="private" value="https://private/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="nuget">
+                  <package pattern="*" />
+                </packageSource>
+                <packageSource key="private">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "CONTOSO.library");
+
+        // Package ids are case-insensitive on every platform, so the public feed must not be queried
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_OnlyThePrefixBeforeTheWildcardMatters()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+                <add key="private" value="https://private/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="nuget">
+                  <package pattern="*" />
+                </packageSource>
+                <packageSource key="private">
+                  <package pattern="Contoso.*.Extensions" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+
+        // NuGet ignores everything after the first '*', so 'Contoso.*.Extensions' behaves like 'Contoso.*'
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_DisabledPackageSourceIsIgnored()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="enabled" value="https://enabled/v3/index.json" />
+                <add key="disabled" value="https://disabled/v3/index.json" />
+              </packageSources>
+              <disabledPackageSources>
+                <add key="disabled" value="true" />
+              </disabledPackageSources>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
+
+        Assert.Equal(["https://enabled/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://enabled/v3/index.json"], Urls(resolution.AllConfiguredSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_RelativeSourceIsResolvedAgainstTheConfigFile()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var srcDirectory = tempDir.GetFullPath("src");
+        Directory.CreateDirectory(srcDirectory);
+
+        var projectFile = srcDirectory / "a.csproj";
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="local" value="./packages" />
+              </packageSources>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
+
+        var source = Assert.Single(resolution.PackageSources);
+        Assert.Equal(tempDir.GetFullPath("packages"), FullPath.FromPath(source.Source));
     }
 
     [Fact]
@@ -433,6 +783,23 @@ public sealed class FunctionalTests
         var registry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(packageFile), "lodash");
 
         Assert.Equal("https://registry.npmjs.org/", registry.ToString());
+    }
+
+    [Fact]
+    public async Task NpmPackageSourceResolver_DeclaredRegistryTakesPrecedence()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var marketplaceFile = tempDir.CreateEmptyFile(".claude-plugin/marketplace.json");
+        await File.WriteAllTextAsync(marketplaceFile, "{}", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".npmrc"), "registry=https://npmrc.registry/", XunitCancellationToken);
+
+        var declaredRegistry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(marketplaceFile), "@acme/plugin", "https://declared.registry");
+        var invalidDeclaredRegistry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(marketplaceFile), "@acme/plugin", "not a url");
+        var noDeclaredRegistry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(marketplaceFile), "@acme/plugin", declaredRegistry: null);
+
+        Assert.Equal("https://declared.registry/", declaredRegistry.ToString());
+        Assert.Equal("https://npmrc.registry/", invalidDeclaredRegistry.ToString());
+        Assert.Equal("https://npmrc.registry/", noDeclaredRegistry.ToString());
     }
 
     [Fact]
@@ -528,6 +895,35 @@ public sealed class FunctionalTests
         Assert.Equal("^2.0.0", strategy.GetUpdateReferenceText("^1.0.0", "2.0.0"));
         Assert.Equal("~2.0.0", strategy.GetUpdateReferenceText("~1.0.0", "2.0.0"));
         Assert.Equal("2.0.0", strategy.GetUpdateReferenceText("1.0.0", "2.0.0"));
+
+        // A partial range keeps its prefix and gains the full version, like 'npm update --save'
+        Assert.Equal("^1.9.4", strategy.GetUpdateReferenceText("^1.1", "1.9.4"));
+        Assert.Equal("~7.7.4", strategy.GetUpdateReferenceText("~7", "7.7.4"));
+    }
+
+    [Theory]
+    [InlineData("1.0.0", true)]
+    [InlineData("^1.1", true)]
+    [InlineData("~7", true)]
+    [InlineData(">=2.4", true)]
+    [InlineData("v1.2", true)]
+    [InlineData("1.x", false)]
+    [InlineData("*", false)]
+    [InlineData("latest", false)]
+    [InlineData("", false)]
+    public void NpmVersioningStrategy_IsSupportedVersion(string version, bool expectedResult)
+    {
+        Assert.Equal(expectedResult, NpmVersioningStrategy.Instance.IsSupportedVersion(version));
+    }
+
+    [Theory]
+    [InlineData("^1.1", "1.9.4", true)]
+    [InlineData("~7", "7.7.4", true)]
+    [InlineData("^1.1", "1.1.0", false)]
+    [InlineData("^2", "1.9.4", false)]
+    public void NpmVersioningStrategy_IsCompatibleVersion(string currentVersion, string candidateVersion, bool expectedResult)
+    {
+        Assert.Equal(expectedResult, NpmVersioningStrategy.Instance.IsCompatibleVersion(currentVersion, candidateVersion));
     }
 
     [Theory]
@@ -535,6 +931,18 @@ public sealed class FunctionalTests
     [InlineData("1.0.0-alpine", "1.0.1-slim", false)]
     [InlineData("1.0.0", "1.0.1-alpine", false)]
     [InlineData("1.0.0", "1.1.0", true)]
+    // Two- and one-component tags are the common shape for official images
+    [InlineData("1.27", "1.31", true)]
+    [InlineData("9.0", "10.0", true)]
+    [InlineData("20-alpine", "24-alpine", true)]
+    [InlineData("20-alpine", "24-slim", false)]
+    // The candidate is written back as the tag, so the number of components must not change
+    [InlineData("1.27", "1.31.4", false)]
+    [InlineData("1.27.1", "1.31", false)]
+    [InlineData("20-alpine", "24.1-alpine", false)]
+    // Still not a version
+    [InlineData("latest", "1.0.0", false)]
+    [InlineData("1.0.0", "latest", false)]
     public void DockerVersioningStrategy_IsCompatibleVersion(string currentVersion, string candidateVersion, bool expectedResult)
     {
         var strategy = DockerVersioningStrategy.Instance;
@@ -556,11 +964,24 @@ public sealed class FunctionalTests
 
     [Theory]
     [InlineData("v1.0.0", true)]
+    [InlineData("V1.0.0", true)]
     [InlineData("1.0.0", true)]
     [InlineData("latest", false)]
     public void SemanticVersioningStrategy_PrefixAllowed_IsSupportedVersion(string version, bool expectedResult)
     {
         var strategy = SemanticVersioningStrategy.PrefixAllowed;
+
+        Assert.Equal(expectedResult, strategy.IsSupportedVersion(version));
+    }
+
+    [Theory]
+    [InlineData("1.0.0", true)]
+    [InlineData("v1.0.0", false)]
+    [InlineData("V1.0.0", false)]
+    [InlineData("latest", false)]
+    public void SemanticVersioningStrategy_Strict_IsSupportedVersion(string version, bool expectedResult)
+    {
+        var strategy = SemanticVersioningStrategy.Strict;
 
         Assert.Equal(expectedResult, strategy.IsSupportedVersion(version));
     }
@@ -582,6 +1003,31 @@ public sealed class FunctionalTests
         var strategy = GitHubActionsVersioningStrategy.Instance;
 
         Assert.Equal(expectedResult, strategy.IsCompatibleVersion(currentVersion, candidateVersion));
+    }
+
+    [Theory]
+    // GitHub sends absolute URLs and several relations in one header
+    [InlineData("<https://api.github.com/repositories/1/tags?page=2>; rel=\"next\", <https://api.github.com/repositories/1/tags?page=9>; rel=\"last\"", "https://api.github.com/repositories/1/tags?page=2")]
+    // Docker registries send a relative URL that has to be resolved against the request
+    [InlineData("</v2/library/nginx/tags/list?n=100&last=1.27>; rel=\"next\"", "https://registry-1.docker.io/v2/library/nginx/tags/list?n=100&last=1.27")]
+    // The last page only advertises relations other than 'next'
+    [InlineData("<https://api.github.com/repositories/1/tags?page=1>; rel=\"prev\", <https://api.github.com/repositories/1/tags?page=1>; rel=\"first\"", null)]
+    public void LinkHeader_TryGetNextPageUri(string headerValue, string? expected)
+    {
+        using var response = new HttpResponseMessage();
+        response.Headers.TryAddWithoutValidation("Link", headerValue);
+
+        var result = LinkHeader.TryGetNextPageUri(response, new Uri("https://registry-1.docker.io/v2/library/nginx/tags/list"));
+
+        Assert.Equal(expected, result?.ToString());
+    }
+
+    [Fact]
+    public void LinkHeader_TryGetNextPageUri_NoHeader()
+    {
+        using var response = new HttpResponseMessage();
+
+        Assert.Null(LinkHeader.TryGetNextPageUri(response, new Uri("https://registry-1.docker.io/v2/library/nginx/tags/list")));
     }
 
     private static async Task<IReadOnlyList<Dependency>> ScanDependencies(TemporaryDirectory temporaryDirectory)

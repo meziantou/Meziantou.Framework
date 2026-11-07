@@ -1,0 +1,3001 @@
+{
+  "content-security-policy/base-uri/base-uri-allow-leading-zero-port.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/base-uri/base-uri-allow.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/base-uri/base-uri-deny-url-encoded-host.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/base-uri/base-uri-deny.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/base-uri/base-uri_iframe_sandbox.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/base-uri/report-uri-does-not-respect-base-uri.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/blob/blob-urls-do-not-match-self.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/blob/blob-urls-match-blob.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/blob/frame-src-blob-matches-blob.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/blob/frame-src-self-does-not-match-blob.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/blob/self-doesnt-match-blob.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/blob/star-doesnt-match-blob.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/child-src/child-src-about-blank-allowed-by-default.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/child-src/child-src-about-blank-allowed-by-scheme.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/child-src/child-src-allowed.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/child-src/child-src-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/child-src/child-src-conflicting-frame-src.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/child-src/child-src-cross-origin-load.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/child-src/child-src-redirect-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/child-src/child-src-worker-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/child-src/child-src-worker-blocked.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/connect-src/connect-src-beacon-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-beacon-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-beacon-redirect-to-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-eventsource-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-eventsource-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-eventsource-redirect-to-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-fetch-keepalive-allowed.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/connect-src/connect-src-fetch-keepalive-blocked.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/connect-src/connect-src-fetch-keepalive-redirect-to-blocked.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/connect-src/connect-src-json-import-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-json-import-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-syncxmlhttprequest-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-syncxmlhttprequest-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-syncxmlhttprequest-redirect-to-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-text-import-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-text-import-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-websocket-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-websocket-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-websocket-self.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-webtransport-allowed.sub.https.html": {
+    "total": 3,
+    "failures": {
+      "CSP connect-src url vs WebTransport. Expecting connect-src": "FAIL",
+      "CSP connect-src url vs WebTransport. Expecting undefined": "FAIL",
+      "CSP connect-src url vs serverCertificateHashes. Expecting connect-src": "FAIL"
+    }
+  },
+  "content-security-policy/connect-src/connect-src-webtransport-blocked.sub.https.html": {
+    "total": 2,
+    "failures": {
+      "CSP connect-src self vs WebTransport. Expecting connect-src": "FAIL",
+      "CSP connect-src self vs serverCertificateHashes. Expecting connect-src": "FAIL"
+    }
+  },
+  "content-security-policy/connect-src/connect-src-webtransport-hashes.sub.https.html": {
+    "total": 3,
+    "failures": {
+      "CSP connect-src url webtransport-hashes vs WebTransport. Expecting connect-src": "FAIL",
+      "CSP connect-src url webtransport-hashes vs WebTransport. Expecting undefined": "FAIL",
+      "CSP connect-src url webtransport-hashes vs serverCertificateHashes. Expecting undefined": "FAIL"
+    }
+  },
+  "content-security-policy/connect-src/connect-src-xmlhttprequest-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-xmlhttprequest-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/connect-src-xmlhttprequest-redirect-to-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/shared-worker-connect-src-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/shared-worker-connect-src-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/worker-connect-src-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/worker-connect-src-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/connect-src/worker-from-guid.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/default-src/default-src-inline-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/default-src/default-src-inline-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/default-src/default-src-sri_hash.sub.html": {
+    "total": 12
+  },
+  "content-security-policy/default-src/default-src-strict_dynamic_and_unsafe_inline.html": {
+    "total": 1
+  },
+  "content-security-policy/embedded-enforcement/allow_csp_from-header.html": {
+    "total": 12
+  },
+  "content-security-policy/embedded-enforcement/blocked-iframe-are-cross-origin.html": {
+    "total": 2
+  },
+  "content-security-policy/embedded-enforcement/change-csp-attribute-and-history-navigation.html": {
+    "total": 2
+  },
+  "content-security-policy/embedded-enforcement/idlharness.window.js": {
+    "total": 15
+  },
+  "content-security-policy/embedded-enforcement/iframe-csp-attribute.html": {
+    "total": 4
+  },
+  "content-security-policy/embedded-enforcement/required-csp-header-cascade.html": {
+    "total": 9
+  },
+  "content-security-policy/embedded-enforcement/required_csp-header-crlf.html": {
+    "total": 18
+  },
+  "content-security-policy/embedded-enforcement/required_csp-header.html": {
+    "total": 75
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-general.html": {
+    "total": 16
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-hashes.html": {
+    "total": 13
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-hosts.html": {
+    "total": 5
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-paths.html": {
+    "total": 9
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-ports.html": {
+    "total": 15
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-protocols.html": {
+    "total": 11
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-nonces.html": {
+    "total": 8
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-none.html": {
+    "total": 18
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-self.html": {
+    "total": 7
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-source_list-wildcards.html": {
+    "total": 24
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-strict_dynamic.html": {
+    "total": 11
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-trusted_types.tentative.html": {
+    "total": 21,
+    "failures": {
+      "Combined requirement: require-trusted-types-for mismatches even though script-src matches.": "FAIL",
+      "require-trusted-types-for present in required, absent in returned.": "FAIL",
+      "trusted-types '*' required but returned has an explicit list only.": "FAIL",
+      "trusted-types 'allow-duplicates' required but missing in returned.": "FAIL",
+      "trusted-types intersection of several returned policies differs from required.": "FAIL",
+      "trusted-types present in required, absent from all returned policies.": "FAIL",
+      "trusted-types stricter returned subset is not an exact match.": "FAIL"
+    }
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_eval.html": {
+    "total": 7
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_hashes.html": {
+    "total": 7
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_inline.html?1-8": {
+    "total": 8
+  },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_inline.html?9-last": {
+    "total": 8
+  },
+  "content-security-policy/font-src/font-match-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/font-mismatch-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/font-none-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/font-self-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/font-stylesheet-font-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/shared-stylesheet-font-cache-bypass-strict-first.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/shared-stylesheet-font-cache-bypass.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-self-allowed-target-blank.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-allowed-target-blank.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-allowed-target-frame.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-default-ignored.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-get-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-get-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-javascript-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-javascript-prevented.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-redirect-allowed-target-blank.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-redirect-allowed-target-frame.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/form-action/form-action-src-redirect-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-from-serviceworker.https.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-cross-none-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-cross-self-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-cross-star-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-cross-url-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-cross-url-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-same-none-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-same-self-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-same-star-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-same-url-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-same-url-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-cross-in-sandboxed-cross-url-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-cross-none-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-cross-self-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-cross-star-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-cross-url-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-cross-url-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-same-none-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-same-self-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-same-star-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-same-url-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-nested-same-in-same-url-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-none-block.html": {
+    "total": 2
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-overrides-xfo.html": {
+    "total": 2
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-path-ignored.window.js": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-sandbox-same-origin-self.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-self-allow.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-self-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-star-allow-crossorigin.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-star-allow-sameorigin.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-url-allow.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/frame-ancestors-url-block.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/report-blocked-frame.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-ancestors/report-only-frame.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-about-blank-allowed-by-default.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-about-blank-allowed-by-scheme.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-allowed.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/frame-src/frame-src-blocked-path-matching.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/frame-src/frame-src-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-cross-origin-load.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/frame-src/frame-src-cross-origin-same-document-navigation.window.js": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-redirect.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Redirected iframe src should evaluate both enforced and report-only policies on both original request and when following redirect": "TIMEOUT"
+    }
+  },
+  "content-security-policy/frame-src/frame-src-same-document-meta.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-same-document.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-sandboxed-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/frame-src/frame-src-self-unique-origin.html": {
+    "total": 1
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-self/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-none/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-self/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-self/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/script-src-wildcard/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-none/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-self/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/script-tag.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/script-tag.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/sharedworker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-classic.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-classic.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-import-data.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-import.http.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-import.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-module.http.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worker-module.https.html": {
+    "total": 4
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-animation-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-animation.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-audio-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-audio.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-layout-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-layout.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-paint-import-data.https.html": {
+    "total": 12
+  },
+  "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-paint.https.html": {
+    "total": 12
+  },
+  "content-security-policy/generic/304-response-should-update-csp.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/generic/case-insensitive-scheme.sub.html": {
+    "total": 6
+  },
+  "content-security-policy/generic/cspro-not-enforced-in-worker.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/directive-name-case-insensitive.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/generic/domparser-document-suppresses-csp-warning-for-inline-style.tentative.html": {
+    "total": 1
+  },
+  "content-security-policy/generic/duplicate-directive.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/generic/eval-typecheck-callout-order.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/filesystem-urls-do-not-match-self.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Expecting logs: [\"violated-directive=script-src-elem\"]": "NOTRUN",
+      "filesystem-urls-do-not-match-self": "NOTRUN"
+    }
+  },
+  "content-security-policy/generic/filesystem-urls-match-filesystem.sub.html": {
+    "total": 1,
+    "failures": {
+      "Expecting logs: [\"PASS (1/1)\"]": "NOTRUN"
+    }
+  },
+  "content-security-policy/generic/generic-0_1-img-src.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/generic-0_1-script-src.html": {
+    "total": 3
+  },
+  "content-security-policy/generic/generic-0_10.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/generic/generic-0_10_1.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/generic-0_2.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/generic-0_2_2.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/generic-0_2_3.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/generic-0_8.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/generic-0_8_1.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/generic/generic-0_9.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/image-document-applies-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/generic/image-document-ignores-csp-for-loading-main-image.tentative.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/generic/invalid-characters-in-policy.html": {
+    "total": 12
+  },
+  "content-security-policy/generic/no-default-src.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/only-valid-whitespaces-are-allowed.html": {
+    "total": 28
+  },
+  "content-security-policy/generic/policy-does-not-affect-child.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/generic/policy-inherited-correctly-by-plznavigate.html": {
+    "total": 2
+  },
+  "content-security-policy/generic/source-list-wildcard-host-and-port.https.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/generic/src-trailing-dot.sub.any.js": {
+    "total": 1,
+    "failures": {
+      "Fetch from host with trailing dot should be allowed by CSP.": "FAIL"
+    }
+  },
+  "content-security-policy/generic/src-trailing-dot.sub.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Fetch from host with trailing dot should be allowed by CSP.": "FAIL"
+    }
+  },
+  "content-security-policy/generic/src-trailing-dot.sub.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "Fetch from host with trailing dot should be allowed by CSP.": "FAIL"
+    }
+  },
+  "content-security-policy/generic/wildcard-host-part-002.sub.window.js": {
+    "total": 5
+  },
+  "content-security-policy/generic/wildcard-host-part.sub.window.js": {
+    "total": 5
+  },
+  "content-security-policy/img-src/css-filter-blocked.tentative.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/icon-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/icon-blocked.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/img-src/img-src-4_1.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/img-src/img-src-full-host-wildcard-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/img-src-host-partial-wildcard-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/img-src-none-blocks-css-background-image.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/img-src-none-blocks-data-uri.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/img-src-none-blocks.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/img-src-port-wildcard-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/img-src-self-unique-origin.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/img-src-targeting.html": {
+    "total": 2
+  },
+  "content-security-policy/img-src/img-src-wildcard-allowed.html": {
+    "total": 2
+  },
+  "content-security-policy/img-src/report-blocked-data-uri.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-cache-bypass-strict-first.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-cache-bypass.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-set-cache-bypass-strict-first.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-set-cache-bypass.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-mask-cache-bypass-strict-first.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-mask-cache-bypass.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/svg-use-blocked.tentative.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/about-blank-from-javascript-url-inherits-csp-from-initiator.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/auxiliary-blank-document.html": {
+    "total": 3
+  },
+  "content-security-policy/inheritance/blob-inherits-from-meta-http-equiv-with-invalid-characters.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/blob-url-in-child-frame-self-navigate-inherits.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/blob-url-in-main-window-self-navigate-inherits.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/blob-url-inherits-from-initiator.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/inheritance/document-write-iframe.html": {
+    "total": 3
+  },
+  "content-security-policy/inheritance/frame-src-javascript-url.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/history-iframe.sub.html": {
+    "total": 8
+  },
+  "content-security-policy/inheritance/history.sub.html": {
+    "total": 6
+  },
+  "content-security-policy/inheritance/iframe-all-local-schemes-inherit-self.sub.html": {
+    "total": 6
+  },
+  "content-security-policy/inheritance/iframe-all-local-schemes.sub.html": {
+    "total": 10
+  },
+  "content-security-policy/inheritance/iframe-srcdoc-history-inheritance.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/iframe-srcdoc-inheritance.html": {
+    "total": 2
+  },
+  "content-security-policy/inheritance/inheritance-from-initiator.sub.html?scheme=blob": {
+    "total": 5,
+    "failures": {
+      "blob: Changing contentWindow.location inherits from who changed it (apart from javascript:, which keeps target policies, and blob:, which always inherits from creator).": "FAIL",
+      "blob: Click on anchor inherits from owner of the anchor (apart from javascript:, which keeps target policies, and blob:, which always inherits from creator).": "FAIL",
+      "blob: window.open() inherits from caller (apart from javascript:, which keeps target policies, and blob:, which always inherits from creator).": "FAIL"
+    }
+  },
+  "content-security-policy/inheritance/inheritance-from-initiator.sub.html?scheme=data": {
+    "total": 7
+  },
+  "content-security-policy/inheritance/inheritance-from-initiator.sub.html?scheme=javascript": {
+    "total": 7
+  },
+  "content-security-policy/inheritance/inherited-csp-list-modifications-are-local.html": {
+    "total": 3
+  },
+  "content-security-policy/inheritance/javascript-url-open-in-main-window.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/javascript-url-srcdoc-cross-origin-iframe-inheritance.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/location-reload.html": {
+    "total": 3
+  },
+  "content-security-policy/inheritance/sandboxed-blob-scheme.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/sandboxed-data-scheme.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/unsandboxed-blob-scheme.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/unsandboxed-data-scheme.html": {
+    "total": 1
+  },
+  "content-security-policy/inheritance/window-open-local-after-network-scheme.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/inheritance/window.html": {
+    "total": 4
+  },
+  "content-security-policy/inside-worker/dedicatedworker-connect-src.html": {
+    "total": 21
+  },
+  "content-security-policy/inside-worker/dedicatedworker-report-only.html": {
+    "total": 7
+  },
+  "content-security-policy/inside-worker/dedicatedworker-script-src.html": {
+    "total": 12
+  },
+  "content-security-policy/inside-worker/dedicatedworker-worker-src.html": {
+    "total": 1
+  },
+  "content-security-policy/inside-worker/serviceworker-connect-src.https.sub.html": {
+    "total": 17
+  },
+  "content-security-policy/inside-worker/serviceworker-report-only.https.sub.html": {
+    "total": 6
+  },
+  "content-security-policy/inside-worker/serviceworker-script-src.https.sub.html": {
+    "total": 14
+  },
+  "content-security-policy/inside-worker/sharedworker-connect-src.sub.html": {
+    "total": 21
+  },
+  "content-security-policy/inside-worker/sharedworker-report-only.sub.html": {
+    "total": 7
+  },
+  "content-security-policy/inside-worker/sharedworker-script-src.sub.html": {
+    "total": 12
+  },
+  "content-security-policy/media-src/media-src-7_1.html": {
+    "total": 3
+  },
+  "content-security-policy/media-src/media-src-7_1_2.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "Test that securitypolicyviolation events are fired": "TIMEOUT"
+    }
+  },
+  "content-security-policy/media-src/media-src-7_2.html": {
+    "total": 3
+  },
+  "content-security-policy/media-src/media-src-7_2_2.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/media-src/media-src-7_3.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/media-src/media-src-7_3_2.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/media-src/media-src-blocked-blob-url.html": {
+    "total": 2
+  },
+  "content-security-policy/media-src/media-src-blocked-data-url.html": {
+    "total": 2
+  },
+  "content-security-policy/media-src/media-src-blocked.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/media-src/media-src-redir-bug.sub.html": {
+    "total": 5
+  },
+  "content-security-policy/meta/combine-header-and-meta-policies.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/meta/meta-img-src.html": {
+    "total": 1
+  },
+  "content-security-policy/meta/meta-modified.html": {
+    "total": 1
+  },
+  "content-security-policy/meta/meta-outside-head.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/meta/sandbox-iframe.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/javascript-url-navigation-evaluated-to-string-inherits-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/javascript-url-navigation-to-other-win-evaluated-to-string-inherits-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/javascript-url-navigation-to-popup-evaluated-to-string-inherits-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/javascript-url-navigation-to-self-evaluated-to-string-inherits-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/to-javascript-parent-initiated-check-csp-order.html": {
+    "total": 7
+  },
+  "content-security-policy/navigation/to-javascript-parent-initiated-child-csp.html": {
+    "harness": "TIMEOUT",
+    "total": 9,
+    "failures": {
+      "Should not have executed the javascript URL for\n        a[target=iframeWithScriptSrcNone].href with child's CSP \"script-src 'none'\"": "NOTRUN",
+      "Should not have executed the javascript URL for\n        area[target=iframeWithScriptSrcNone].href with child's CSP \"script-src 'none'\"": "NOTRUN",
+      "Should not have executed the javascript URL for\n        area[target=otherTabWithScriptSrcNone].href with child's CSP \"script-src 'none'\"": "NOTRUN",
+      "Should not have executed the javascript URL for\n        iframe.contentWindow.location.href with child's CSP \"script-src 'none'\"": "TIMEOUT",
+      "Should not have executed the javascript URL for\n        iframe.src with child's CSP \"script-src 'none'\"": "NOTRUN",
+      "Should not have executed the javascript URL for\n        otherTabWithScriptSrcNone.location.href with child's CSP \"script-src 'none'\"": "NOTRUN"
+    }
+  },
+  "content-security-policy/navigation/to-javascript-parent-initiated-parent-csp.html": {
+    "total": 7
+  },
+  "content-security-policy/navigation/to-javascript-url-frame-src.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/to-javascript-url-script-src.html": {
+    "total": 4
+  },
+  "content-security-policy/nonce-hiding/dangling-html-or-body.html": {
+    "total": 2
+  },
+  "content-security-policy/nonce-hiding/nonce-hiding-move-document.html": {
+    "total": 1
+  },
+  "content-security-policy/nonce-hiding/nonces-css-selector.html": {
+    "total": 9
+  },
+  "content-security-policy/nonce-hiding/nonces.html": {
+    "total": 44
+  },
+  "content-security-policy/nonce-hiding/script-nonces-hidden-meta.sub.html": {
+    "total": 11
+  },
+  "content-security-policy/nonce-hiding/script-nonces-hidden.html": {
+    "total": 12
+  },
+  "content-security-policy/nonce-hiding/svgscript-nonces-hidden-meta.sub.html": {
+    "total": 9
+  },
+  "content-security-policy/nonce-hiding/svgscript-nonces-hidden.html": {
+    "total": 9
+  },
+  "content-security-policy/object-src/object-src-no-url-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-no-url-blocked.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Should block the object and fire a spv": "NOTRUN"
+    }
+  },
+  "content-security-policy/object-src/object-src-no-url-embed-blocked.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Should block the embed and fire a spv": "NOTRUN"
+    }
+  },
+  "content-security-policy/object-src/object-src-no-url-empty-source-list-blocked.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Empty object-src source list should block the object and fire a spv": "NOTRUN"
+    }
+  },
+  "content-security-policy/object-src/object-src-no-url-empty-source-list-embed-blocked.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Empty object-src source list should block the embed and fire a spv": "NOTRUN"
+    }
+  },
+  "content-security-policy/object-src/object-src-pdf-byte-range-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-allowed-img-src-none.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-embed-allowed-img-src-none.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-embed-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-embed-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-redirect-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/object-src/object-src-url-redirect-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/parsing/invalid-bytes.html": {
+    "total": 18
+  },
+  "content-security-policy/parsing/invalid-directive.html": {
+    "total": 1
+  },
+  "content-security-policy/parsing/keyword-source-with-trailing-characters.html": {
+    "total": 6
+  },
+  "content-security-policy/plugin-types/plugin-types-does-not-block-pdf-embed.html": {
+    "total": 1
+  },
+  "content-security-policy/plugin-types/plugin-types-ignored.html": {
+    "total": 1
+  },
+  "content-security-policy/report-hash/default-src.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/multiple-policies.https.sub.html": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/reportonly-default-src.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/reportonly-script-src-elem.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/reportonly-script-src-none.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/reportonly-script-src.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/script-src-elem.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/script-src-sha512.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/report-hash/script-src.https.window.js": {
+    "total": 8
+  },
+  "content-security-policy/reporting-api/dedicated-worker-correct-url-in-report.html": {
+    "total": 4
+  },
+  "content-security-policy/reporting-api/report-to-directive-allowed-in-meta.https.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/reporting-api/reporting-api-doesnt-send-reports-without-violation.https.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting-api/reporting-api-report-only-sends-reports-on-violation.https.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting-api/reporting-api-report-to-only-sends-reports-to-first-endpoint.https.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting-api/reporting-api-report-to-overrides-report-uri-1.https.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting-api/reporting-api-report-to-overrides-report-uri-2.https.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-css-background-image.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-shared-worker-import.https.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation.https.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/reporting-api/reporting-api-works-on-frame-ancestors.https.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting-api/reporting-api-works-on-frame-src.https.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting/link-preload-from-header-report-only-nonce.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/link-preload-report-only-nonce.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/multiple-report-policies.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting/post-redirect-stacktrace.https.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "CSP report do not leak cross-origin post-redirect URL": "NOTRUN",
+      "CSP report do not leak cross-site post-redirect URL": "NOTRUN"
+    }
+  },
+  "content-security-policy/reporting/report-and-enforce.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting/report-blocked-data-uri.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-blocked-uri-cross-origin.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-blocked-uri.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-clips-sample.https.html": {
+    "total": 7
+  },
+  "content-security-policy/reporting/report-cross-origin-no-cookies.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting/report-frame-ancestors-no-parent-cookies.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting/report-frame-ancestors-with-x-frame-options.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-frame-ancestors.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-multiple-violations-01.html": {
+    "total": 2
+  },
+  "content-security-policy/reporting/report-multiple-violations-02.html": {
+    "total": 2,
+    "failures": {
+      "Test number of sent reports.": "FAIL"
+    }
+  },
+  "content-security-policy/reporting/report-only-cross-origin-frame.sub.html": {
+    "total": 4
+  },
+  "content-security-policy/reporting/report-only-in-meta.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting/report-only-unsafe-eval.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting/report-original-url-on-mixed-content-frame.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "Violation report status OK.": "FAIL"
+    }
+  },
+  "content-security-policy/reporting/report-original-url.sub.html": {
+    "total": 5
+  },
+  "content-security-policy/reporting/report-preload-and-consume.https.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-same-origin-with-cookies.html": {
+    "total": 3
+  },
+  "content-security-policy/reporting/report-strips-fragment.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-strips-username-password.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-uri-effective-directive.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-uri-from-child-frame.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-uri-from-inline-javascript.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-uri-from-javascript.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-uri-multiple-reversed.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-uri-multiple.html": {
+    "total": 1
+  },
+  "content-security-policy/reporting/report-uri-scheme-relative.html": {
+    "total": 1
+  },
+  "content-security-policy/resource-hints/prefetch-allowed-by-any-directive.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/resource-hints/prefetch-allowed-by-default.html": {
+    "total": 1
+  },
+  "content-security-policy/resource-hints/prefetch-allowed-no-default.html": {
+    "total": 1
+  },
+  "content-security-policy/resource-hints/prefetch-allowed-with-conflicting-permissive-policies.html": {
+    "total": 1
+  },
+  "content-security-policy/resource-hints/prefetch-blocked-by-default-multiple-policies.html": {
+    "total": 1
+  },
+  "content-security-policy/resource-hints/prefetch-blocked-by-default.html": {
+    "total": 1
+  },
+  "content-security-policy/resource-hints/prefetch-generate-directives.html": {
+    "total": 26
+  },
+  "content-security-policy/resource-hints/prefetch-ignores-prefetch-src.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/resource-hints/prefetch-no-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/autoplay-disabled-by-csp.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "csp-derived sandboxing flags prevent autoplay.": "TIMEOUT"
+    }
+  },
+  "content-security-policy/sandbox/iframe-inside-csp.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/iframe-self-after-redirect.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/iframe-self-all-directives.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/iframe-self-allows-same-origin.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/iframe-self-blocks-cross-origin.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/iframe-self-via-header.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/meta-element.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/sandbox/sandbox-allow-scripts-subframe.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/sandbox-allow-scripts.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/sandbox-empty-subframe.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/sandbox-empty.sub.html": {
+    "total": 1,
+    "failures": {
+      "Expecting logs: [\"PASS2\"]": "FAIL"
+    }
+  },
+  "content-security-policy/sandbox/sandbox-last-directive-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/service-worker-sandbox.https.html": {
+    "total": 8
+  },
+  "content-security-policy/sandbox/shared-worker-sandbox.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/window-reuse-sandboxed.html": {
+    "total": 1
+  },
+  "content-security-policy/sandbox/window-reuse-unsandboxed.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src-attr-elem/script-src-attr-allowed-src-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src-attr-elem/script-src-attr-blocked-src-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src-attr-elem/script-src-elem-allowed-attr-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src-attr-elem/script-src-elem-allowed-src-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src-attr-elem/script-src-elem-blocked-attr-allowed.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src-attr-elem/script-src-elem-blocked-src-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src-attr-elem/strict-dynamic-elem-allowed-src-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src-attr-elem/strict-dynamic-elem-blocked-src-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/audioworklet-eval-blocked.https.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/audioworklet-trusted-types-eval-blocked.https.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/eval-allowed-in-report-only-mode-and-sends-report.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/eval-allowed-in-report-only-mode.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/hash-always-converted-to-utf-8/iso-8859-1.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/hash-always-converted-to-utf-8/iso-8859-3.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/hash-always-converted-to-utf-8/iso-8859-7.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/hash-always-converted-to-utf-8/iso-8859-9.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/hash-always-converted-to-utf-8/utf-8-lone-surrogate.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/hash-always-converted-to-utf-8/utf-8.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/injected-inline-script-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/injected-inline-script-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/javascript-window-open-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/non-nonceable-elements.html": {
+    "total": 10
+  },
+  "content-security-policy/script-src/nonce-enforce-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/nonce-with-trailing-characters-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-1_1.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-1_10.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-1_10_1.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-1_2.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-1_2_1.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-1_3.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-1_4.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-1_4_1.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-1_4_2.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-event-handler-on-inline-script.html": {
+    "total": 4
+  },
+  "content-security-policy/script-src/script-src-multiple-policies-multiple-hashing-algorithms.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-multiple-policies-one-using-hashing-algorithms.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-overrides-default-src.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-report-only-policy-works-with-external-hash-policy.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-report-only-policy-works-with-hash-policy.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-sri_hash.sub.html": {
+    "total": 12
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_and_unsafe_eval_eval.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_and_unsafe_eval_new_function.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_discard_source_expressions.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_double_policy_different_nonce.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_double_policy_honor_source_expressions.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_double_policy_report_only.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_eval.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_hashes.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_in_img-src.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_javascript_uri.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_meta_tag.html": {
+    "total": 4
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_new_function.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_non_parser_inserted.html": {
+    "total": 4
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_non_parser_inserted_incorrect_nonce.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_non_parser_inserted_module.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_parser_inserted.html": {
+    "total": 10
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_parser_inserted_correct_nonce.html": {
+    "total": 8
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_parser_inserted_error_event.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_parser_inserted_module.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_parser_inserted_module_empty_hash.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_worker-importScripts.https.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_worker.https.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_DedicatedWorker.html": {
+    "total": 9
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_multiple_policies_allowed.window.js": {
+    "total": 4
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_multiple_policies_blocked.window.js": {
+    "total": 4
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_multiple_policies_report_only.window.js": {
+    "total": 2
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_report_only_policies.window.js": {
+    "total": 4
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_report_only_policies_without_default_policy.window.js": {
+    "total": 4
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_with_report_only_require_trusted_types_eval.html": {
+    "total": 5
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_with_require_trusted_types_eval.html": {
+    "total": 5
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_without_default_policy.window.js": {
+    "total": 6
+  },
+  "content-security-policy/script-src/script-src-trusted_types_eval_without_require_trusted_types_eval.html": {
+    "total": 5
+  },
+  "content-security-policy/script-src/script-src-wildcards-disallowed.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/scripthash-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-base64url-converts-to-base64.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-basic-blocked-error-event.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-basic-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-case-insensitive.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-changed-1.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-changed-2.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-default-src.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-ignore-unsafeinline.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scripthash-unicode-normalization.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/scriptnonce-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scriptnonce-and-scripthash.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scriptnonce-basic-blocked.sub.html": {
+    "total": 1,
+    "failures": {
+      "Expecting alerts: [\"PASS (closely-quoted nonce)\",\"PASS (nonce w/whitespace)\", \"violated-directive=script-src-elem\", \"violated-directive=script-src-elem\", \"violated-directive=script-src-elem\"]": "FAIL"
+    }
+  },
+  "content-security-policy/script-src/scriptnonce-changed-1.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scriptnonce-changed-2.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scriptnonce-ignore-unsafeinline.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scriptnonce-redirect.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/scriptnonce-specified-source.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/script-src/srcdoc-doesnt-bypass-script-src.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/tentative/script-url-allowed-by-hash.https.html": {
+    "total": 28,
+    "failures": {
+      "A parseable url-hash should ignore hostname allowlists - header": "FAIL",
+      "A parseable url-hash should ignore hostname allowlists - metatag": "FAIL",
+      "default-src should allow script by its url hash - header": "FAIL",
+      "default-src should allow script by its url hash - metatag": "FAIL",
+      "dynamically inserted parser-inserted script should be allowed if strict-dynamic-url is present - header": "FAIL",
+      "dynamically inserted parser-inserted script should be allowed if strict-dynamic-url is present - metatag": "FAIL",
+      "dynamically inserted script inserted by an inline script should be allowed if strict-dynamic-url is present - header": "FAIL",
+      "dynamically inserted script inserted by an inline script should be allowed if strict-dynamic-url is present - metatag": "FAIL",
+      "script-src should allow script by its relative url's hash - header": "FAIL",
+      "script-src should allow script by its relative url's hash - metatag": "FAIL",
+      "script-src should allow script by its relative url's hash in an iframe in child dir - header": "FAIL",
+      "script-src should allow script by its relative url's hash in an iframe in child dir - metatag": "FAIL",
+      "script-src should allow script by its relative url's hash in child directory - header": "FAIL",
+      "script-src should allow script by its relative url's hash in child directory - metatag": "FAIL",
+      "script-src should allow script by its url hash - header": "FAIL",
+      "script-src should allow script by its url hash - metatag": "FAIL",
+      "script-src should allow script in parent dir by its relative url's hash in an iframe in child dir - header": "FAIL",
+      "script-src should allow script in parent dir by its relative url's hash in an iframe in child dir - metatag": "FAIL",
+      "script-src-elem should allow script by its url hash - header": "FAIL",
+      "script-src-elem should allow script by its url hash - metatag": "FAIL",
+      "url hashes should allow dynamically inserted script if allowlisted - header": "FAIL",
+      "url hashes should allow dynamically inserted script if allowlisted - metatag": "FAIL",
+      "url hashes should allow redirected scripts - header": "FAIL",
+      "url hashes should allow redirected scripts - metatag": "FAIL"
+    }
+  },
+  "content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash-dedicated-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "script-specific violation report contains correct urlHash in dedicated worker": "FAIL"
+    }
+  },
+  "content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash-service-worker.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "script-specific violation report contains correct urlHash in service worker": "TIMEOUT"
+    }
+  },
+  "content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash-shared-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "script-specific violation report contains correct urlHash in shared worker": "FAIL"
+    }
+  },
+  "content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "script-specific violation report contains correct urlHash": "TIMEOUT"
+    }
+  },
+  "content-security-policy/script-src/tentative/url-hash-in-header-and-meta.https.html": {
+    "total": 6,
+    "failures": {
+      "more lax meta tag should still allow script": "FAIL",
+      "multiple meta tags should apply most strict policy - both lax": "FAIL"
+    }
+  },
+  "content-security-policy/script-src/worker-data-set-timeout.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/worker-eval-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/worker-function-function-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/worker-importscripts.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/script-src/worker-script-src.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/script-src/worker-set-timeout.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/securitypolicyviolation/blockeduri-eval.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/blockeduri-inline.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/blockeduri-ws-wss-scheme.html": {
+    "total": 4,
+    "failures": {
+      "redirect": "FAIL"
+    }
+  },
+  "content-security-policy/securitypolicyviolation/constructor-required-fields.html": {
+    "total": 14
+  },
+  "content-security-policy/securitypolicyviolation/idlharness.window.js": {
+    "total": 34
+  },
+  "content-security-policy/securitypolicyviolation/img-src-redirect-upgrade-reporting.https.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/img-src-redirect.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/inside-dedicated-worker.html": {
+    "total": 3
+  },
+  "content-security-policy/securitypolicyviolation/inside-nested-dedicated-worker.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/inside-service-worker.https.html": {
+    "total": 3
+  },
+  "content-security-policy/securitypolicyviolation/inside-shared-worker.html": {
+    "total": 3
+  },
+  "content-security-policy/securitypolicyviolation/linenumber.tentative.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html": {
+    "total": 5
+  },
+  "content-security-policy/securitypolicyviolation/script-sample-no-opt-in.html": {
+    "total": 4
+  },
+  "content-security-policy/securitypolicyviolation/script-sample.html": {
+    "total": 6
+  },
+  "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image-from-script.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/source-file-blob-scheme.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/source-file-data-scheme.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/source-file.html": {
+    "total": 17
+  },
+  "content-security-policy/securitypolicyviolation/style-sample-no-opt-in.html": {
+    "total": 2
+  },
+  "content-security-policy/securitypolicyviolation/style-sample.html": {
+    "total": 2
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-connected-after-set.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-markup-disconnected-after-set.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-markup-then-disconnected.html": {
+    "total": 2
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-markup.html": {
+    "total": 2
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-shadow-dom.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-disconnected-element.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-element-in-disconnected-document-fragment.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-main-frame-element-moved-to-subframe.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-subframe-element.html": {
+    "total": 9
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-script-without-nonce.html": {
+    "total": 5
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-style-in-shadow-dom.html": {
+    "total": 9
+  },
+  "content-security-policy/securitypolicyviolation/targeting-for-inline-style.html": {
+    "total": 5
+  },
+  "content-security-policy/securitypolicyviolation/upgrade-insecure-requests-reporting.https.html": {
+    "total": 3
+  },
+  "content-security-policy/securitypolicyviolation/worklet-import-nested-cross-origin-blocked.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/worklet-import-report-only.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src-attr-elem/style-src-attr-allowed-src-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src-attr-elem/style-src-attr-blocked-src-allowed.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src-attr-elem/style-src-elem-allowed-attr-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src-attr-elem/style-src-elem-allowed-src-blocked-link.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src-attr-elem/style-src-elem-allowed-src-blocked.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src-attr-elem/style-src-elem-blocked-attr-allowed.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src-attr-elem/style-src-elem-blocked-src-allowed.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/import-style-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/import-style-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/injected-inline-style-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/injected-inline-style-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/inline-style-allowed-while-cloning-objects.sub.html": {
+    "total": 25,
+    "failures": {
+      "inline-style-allowed-while-cloning-objects 19": "FAIL",
+      "inline-style-allowed-while-cloning-objects 20": "FAIL",
+      "non-HTML namespace": "FAIL"
+    }
+  },
+  "content-security-policy/style-src/inline-style-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/inline-style-attribute-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/inline-style-attribute-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/inline-style-attribute-on-html.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/inline-style-blocked.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-attr-blocked-createhtmldocument-adopt.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-attr-blocked-domparser-adopt.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-attr-blocked-template-move.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-error-event-fires.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-hash-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-hash-blocked.html": {
+    "total": 3
+  },
+  "content-security-policy/style-src/style-src-hash-case-insensitive.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-hash-default-src-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-imported-style-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-imported-style-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-injected-inline-style-allowed-with-content-hash.html": {
+    "total": 4
+  },
+  "content-security-policy/style-src/style-src-injected-inline-style-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-injected-inline-style-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-injected-stylesheet-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-injected-stylesheet-blocked.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-inline-style-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-inline-style-attribute-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-inline-style-attribute-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-inline-style-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-inline-style-nonce-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-inline-style-nonce-blocked-error-event.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-inline-style-nonce-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-inline-style-with-csstext.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-multiple-policies-multiple-hashing-algorithms.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-none-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-star-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-stylesheet-nonce-allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/style-src-stylesheet-nonce-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/stylehash-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/stylehash-basic-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/stylehash-default-src.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/style-src/stylenonce-allowed.sub.html": {
+    "total": 3
+  },
+  "content-security-policy/style-src/stylenonce-blocked.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/svg/object-in-svg-foreignobject.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/svg/svg-from-guid.html": {
+    "total": 1
+  },
+  "content-security-policy/svg/svg-inline-without-scripting.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/svg/svg-inline.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/svg/svg-policy-resource-doc-includes.html": {
+    "total": 1
+  },
+  "content-security-policy/svg/svg-policy-with-resource.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-blocked-and-sends-report.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-blocked-in-about-blank-iframe.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-in-iframe.html": {
+    "total": 6
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setInterval-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setInterval-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setTimeout-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setTimeout-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setTimeout-setInterval-blocked-no-exception.html": {
+    "total": 2
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setTimeout-setInterval-cross-realm.html": {
+    "total": 6
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setTimeout-setInterval-policy-added-later.html": {
+    "total": 2
+  },
+  "content-security-policy/unsafe-eval/eval-scripts-setTimeout-setInterval-report-only.html": {
+    "total": 4
+  },
+  "content-security-policy/unsafe-eval/function-constructor-allowed.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/function-constructor-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash-long-script.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-eval/tentative/eval-blocked-report-contains-hash.html": {
+    "total": 2
+  },
+  "content-security-policy/unsafe-eval/tentative/eval-hashes-override-unsafe-eval.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_allowed-href.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_allowed-href_blank-script-src-attr.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_allowed-href_blank-script-src-elem.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_allowed-href_blank.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_allowed-window_location.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_allowed-window_open.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_missing_unsafe_hashes-href.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_missing_unsafe_hashes-href_blank-script-src-attr.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_missing_unsafe_hashes-href_blank-script-src-elem.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_missing_unsafe_hashes-href_blank.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_missing_unsafe_hashes-window_location.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_missing_unsafe_hashes-window_open.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_wrong_hash-href.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_wrong_hash-href_blank-script-src-attr.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_wrong_hash-href_blank-script-src-elem.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_wrong_hash-href_blank.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_wrong_hash-window_location.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/javascript_src_denied_wrong_hash-window_open.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/script_event_handlers_allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/script_event_handlers_denied_missing_unsafe_hashes.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/script_event_handlers_denied_wrong_hash.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/style_attribute_allowed.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/style_attribute_denied_missing_unsafe_hashes.html": {
+    "total": 1
+  },
+  "content-security-policy/unsafe-hashes/style_attribute_denied_wrong_hash.html": {
+    "total": 1
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-blocks-wasm-streaming.any.js": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-blocks-wasm-streaming.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-blocks-wasm-streaming.any.js#sharedworker": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-blocks-wasm.any.js": {
+    "total": 3
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-blocks-wasm.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-blocks-wasm.any.js#sharedworker": {
+    "total": 3
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-unsafe-eval-allows-wasm.any.js": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-unsafe-eval-allows-wasm.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-unsafe-eval-allows-wasm.any.js#sharedworker": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-wasm-unsafe-eval-allows-wasm.any.js": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-wasm-unsafe-eval-allows-wasm.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/default-src-wasm-unsafe-eval-allows-wasm.any.js#sharedworker": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/postMessage-wasm-module.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Got the expected securitypolicyviolation in the iframe": "TIMEOUT"
+    }
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm-streaming.any.js": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm-streaming.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm-streaming.any.js#sharedworker": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm.any.js": {
+    "total": 3
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm.any.js#sharedworker": {
+    "total": 3
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-spv-asynch.any.js": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-spv-asynch.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-spv-asynch.any.js#sharedworker": {
+    "total": 2
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-unsafe-eval-allows-wasm.any.js": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-unsafe-eval-allows-wasm.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-unsafe-eval-allows-wasm.any.js#sharedworker": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-wasm-unsafe-eval-allows-wasm.any.js": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-wasm-unsafe-eval-allows-wasm.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "content-security-policy/wasm-unsafe-eval/script-src-wasm-unsafe-eval-allows-wasm.any.js#sharedworker": {
+    "total": 5
+  },
+  "content-security-policy/webrtc/webrtc-allowed-default-src-none.html": {
+    "total": 1,
+    "failures": {
+      "webrtc allowed with default-src 'none'": "FAIL"
+    }
+  },
+  "content-security-policy/webrtc/webrtc-allowed-explicit.html": {
+    "total": 1,
+    "failures": {
+      "webrtc allowed with an explicit webrtc allowed policy": "FAIL"
+    }
+  },
+  "content-security-policy/webrtc/webrtc-allowed-nopolicy.html": {
+    "total": 1,
+    "failures": {
+      "webrtc allowed with no policy": "FAIL"
+    }
+  },
+  "content-security-policy/webrtc/webrtc-blocked-explicit.html": {
+    "total": 1,
+    "failures": {
+      "webrtc blocked with an explicit webrtc blocked policy": "FAIL"
+    }
+  },
+  "content-security-policy/webrtc/webrtc-blocked-unknown.html": {
+    "total": 1,
+    "failures": {
+      "webrtc blocked with an unrecognized explicit webrtc policy": "FAIL"
+    }
+  },
+  "content-security-policy/worker-src/dedicated-child.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/dedicated-fallback.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/dedicated-list.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/dedicated-none.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/dedicated-self.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/dedicated-worker-src-child-fallback-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/dedicated-worker-src-child-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/dedicated-worker-src-default-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/dedicated-worker-src-script-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/dedicated-worker-src-self-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-child.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-fallback.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-list.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-none.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-self.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-worker-src-child-fallback-blocked.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-worker-src-child-fallback.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-worker-src-default-fallback.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-worker-src-script-fallback.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-worker-src-self-fallback.https.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/service-worker-static-import-blocked.https.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/shared-child.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/shared-fallback.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/shared-list.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/shared-none.sub.html": {
+    "total": 2
+  },
+  "content-security-policy/worker-src/shared-self.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/shared-worker-src-child-fallback-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/shared-worker-src-child-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/shared-worker-src-default-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/shared-worker-src-script-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/worker-src/shared-worker-src-self-fallback.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/xslt/document-function-blocked.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "XSL document() function is blocked by CSP": "TIMEOUT"
+    }
+  },
+  "content-security-policy/xslt/xslt-strict-dynamic-blocked.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "XSLT stylesheet is blocked by 'strict-dynamic'": "TIMEOUT"
+    }
+  },
+  "content-security-policy/xslt/xsltprocessor-include-blocked.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "xsltprocessor-include-blocked": "TIMEOUT"
+    }
+  }
+}

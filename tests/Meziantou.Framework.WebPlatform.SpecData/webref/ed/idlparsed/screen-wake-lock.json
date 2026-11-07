@@ -1,0 +1,284 @@
+{
+  "spec": {
+    "title": "Screen Wake Lock API",
+    "url": "https://w3c.github.io/screen-wake-lock/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WakeLock",
+          "WakeLockSentinel"
+        ]
+      }
+    },
+    "idlNames": {
+      "WakeLock": {
+        "fragment": "[SecureContext, Exposed=(Window)]\ninterface WakeLock {\n  Promise<WakeLockSentinel> request(optional WakeLockType type = \"screen\");\n};",
+        "type": "interface",
+        "name": "WakeLock",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "request",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WakeLockSentinel"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WakeLockType"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "screen"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelock-request"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelock"
+      },
+      "WakeLockSentinel": {
+        "fragment": "[SecureContext, Exposed=(Window)]\ninterface WakeLockSentinel : EventTarget {\n  readonly attribute boolean released;\n  readonly attribute WakeLockType type;\n  Promise<undefined> release();\n  attribute EventHandler onrelease;\n};",
+        "type": "interface",
+        "name": "WakeLockSentinel",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "released",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelocksentinel-released"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WakeLockType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelocksentinel-type"
+          },
+          {
+            "type": "operation",
+            "name": "release",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelocksentinel-release"
+          },
+          {
+            "type": "attribute",
+            "name": "onrelease",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelocksentinel-onrelease"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelocksentinel"
+      },
+      "WakeLockType": {
+        "fragment": "enum WakeLockType { \"screen\" };",
+        "type": "enum",
+        "name": "WakeLockType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "screen",
+            "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelocktype-screen"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/screen-wake-lock/#dom-wakelocktype"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[SecureContext]\npartial interface Navigator {\n  [SameObject] readonly attribute WakeLock wakeLock;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "wakeLock",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WakeLock"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/screen-wake-lock/#dom-navigator-wakelock"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WakeLock",
+        "WakeLockSentinel"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "WakeLock"
+      ],
+      "WakeLock": [
+        "WakeLockSentinel",
+        "WakeLockType"
+      ],
+      "WakeLockSentinel": [
+        "EventTarget",
+        "WakeLockType",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

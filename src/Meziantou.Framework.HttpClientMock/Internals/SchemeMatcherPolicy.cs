@@ -34,14 +34,14 @@ internal sealed class SchemeMatcherPolicy : MatcherPolicy, IEndpointSelectorPoli
         for (var i = 0; i < candidates.Count; i++)
         {
             var metadata = candidates[i].Endpoint?.Metadata.GetMetadata<SchemeMetadata>();
-            if (metadata == null || metadata.Scheme is null)
+            if (metadata?.Scheme is null)
                 continue;
 
             if (!candidates.IsValidCandidate(i))
                 continue;
 
-            var httpMethod = httpContext.Request.Scheme;
-            if (!string.Equals(httpMethod, metadata.Scheme, StringComparison.OrdinalIgnoreCase))
+            var scheme = httpContext.Request.Scheme;
+            if (!string.Equals(scheme, metadata.Scheme, StringComparison.OrdinalIgnoreCase))
             {
                 candidates.SetValidity(i, false);
                 continue;

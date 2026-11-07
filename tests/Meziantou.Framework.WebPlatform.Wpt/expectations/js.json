@@ -1,0 +1,168 @@
+{
+  "js/behaviours/HostEnsureCanAddPrivateElement.window.js": {
+    "total": 13
+  },
+  "js/behaviours/SetPrototypeOf-window.html": {
+    "total": 4
+  },
+  "js/builtins/Array.DefineOwnProperty.html": {
+    "total": 1
+  },
+  "js/builtins/Array.prototype.join-order.html": {
+    "total": 51
+  },
+  "js/builtins/Math.max.html": {
+    "total": 6
+  },
+  "js/builtins/Math.min.html": {
+    "total": 6
+  },
+  "js/builtins/Object.prototype.freeze.html": {
+    "total": 1
+  },
+  "js/builtins/Object.prototype.getOwnPropertyNames.html": {
+    "total": 4
+  },
+  "js/builtins/Object.prototype.hasOwnProperty-order.html": {
+    "total": 4
+  },
+  "js/builtins/Object.prototype.hasOwnProperty-prototype-chain.html": {
+    "total": 3
+  },
+  "js/builtins/Object.prototype.preventExtensions.html": {
+    "total": 1
+  },
+  "js/builtins/Object.prototype.seal.html": {
+    "total": 1
+  },
+  "js/builtins/Promise-incumbent-global.sub.html": {
+    "total": 1
+  },
+  "js/builtins/Promise-subclassing.html": {
+    "total": 8
+  },
+  "js/builtins/WeakMap.prototype-properties.html": {
+    "total": 20
+  },
+  "js/builtins/weakrefs/cleanup-prevented-with-reference.optional.any.js": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/cleanup-prevented-with-reference.optional.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/cleanup-prevented-with-unregister.optional.any.js": {
+    "total": 1,
+    "failures": {
+      "Cleanup might be prevented with an unregister usage": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/cleanup-prevented-with-unregister.optional.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Cleanup might be prevented with an unregister usage": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/finalizationregistry-cleanupCallback-throws-onerror-interaction.optional.window.js": {
+    "total": 1
+  },
+  "js/builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback-queueMicrotask.optional.any.js": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback-queueMicrotask.optional.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback-queueMicrotaskMutationObserver.optional.window.js": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback.optional.any.js": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback.optional.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/holdings-multiple-values.optional.any.js": {
+    "total": 9,
+    "failures": {
+      "Requires FinalizationRegistry.prototype.cleanupSome": "FAIL",
+      "`\"\"` as registered holding value": "FAIL",
+      "`42` as registered holding value": "FAIL",
+      "`Symbol(1)` as registered holding value": "FAIL",
+      "`false` as registered holding value": "FAIL",
+      "`null` as registered holding value": "FAIL",
+      "`true` as registered holding value": "FAIL",
+      "`undefined` as registered holding value": "FAIL",
+      "`{}` as registered holding value": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/holdings-multiple-values.optional.any.js#dedicatedworker": {
+    "total": 9,
+    "failures": {
+      "Requires FinalizationRegistry.prototype.cleanupSome": "FAIL",
+      "`\"\"` as registered holding value": "FAIL",
+      "`42` as registered holding value": "FAIL",
+      "`Symbol(1)` as registered holding value": "FAIL",
+      "`false` as registered holding value": "FAIL",
+      "`null` as registered holding value": "FAIL",
+      "`true` as registered holding value": "FAIL",
+      "`undefined` as registered holding value": "FAIL",
+      "`{}` as registered holding value": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/reentrancy.optional.any.js": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/reentrancy.optional.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "cleanupCallback has only one optional chance to be called for a GC that cleans up a registered target.": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/return-undefined-with-gc.optional.any.js": {
+    "total": 1,
+    "failures": {
+      "Return undefined regardless the result of CleanupFinalizationRegistry": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/return-undefined-with-gc.optional.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Return undefined regardless the result of CleanupFinalizationRegistry": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/unregister-cleaned-up-cell.optional.any.js": {
+    "total": 1,
+    "failures": {
+      "Cannot unregister a cell that has been cleaned up": "FAIL"
+    }
+  },
+  "js/builtins/weakrefs/unregister-cleaned-up-cell.optional.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Cannot unregister a cell that has been cleaned up": "FAIL"
+    }
+  }
+}

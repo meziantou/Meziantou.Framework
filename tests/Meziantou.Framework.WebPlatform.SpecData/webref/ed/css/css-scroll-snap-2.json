@@ -1,0 +1,74 @@
+{
+  "spec": {
+    "title": "CSS Scroll Snap Module Level 2",
+    "url": "https://drafts.csswg.org/css-scroll-snap-2/"
+  },
+  "properties": [
+    {
+      "name": "scroll-initial-target",
+      "href": "https://drafts.csswg.org/css-scroll-snap-2/#propdef-scroll-initial-target",
+      "value": "none | nearest",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "none",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element is not an initial scroll target.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-2/#valdef-scroll-initial-target-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "nearest",
+          "prose": "The element is potentially an initial scroll target for its nearest scroll container ancestor.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-2/#valdef-scroll-initial-target-nearest",
+          "type": "value",
+          "value": "nearest"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-initial-target",
+        "scrollInitialTarget"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": ":snapped",
+      "prose": "The :snapped pseudo-class matches any snap targets, regardless of axis. The longform physical and logical pseudo-class selectors allow for more finite snapped children styling as they can target an individual axis.",
+      "href": "https://drafts.csswg.org/css-scroll-snap-2/#selectordef-snapped",
+      "value": ":snapped"
+    },
+    {
+      "name": ":snapped-x",
+      "prose": "Matches the child snapped on the horizontal axis.",
+      "href": "https://drafts.csswg.org/css-scroll-snap-2/#selectordef-snapped-x",
+      "value": ":snapped-x"
+    },
+    {
+      "name": ":snapped-y",
+      "prose": "Matches the child snapped on the vertical axis.",
+      "href": "https://drafts.csswg.org/css-scroll-snap-2/#selectordef-snapped-y",
+      "value": ":snapped-y"
+    },
+    {
+      "name": ":snapped-inline",
+      "prose": "Matches the child snapped on the inline axis.",
+      "href": "https://drafts.csswg.org/css-scroll-snap-2/#selectordef-snapped-inline",
+      "value": ":snapped-inline"
+    },
+    {
+      "name": ":snapped-block",
+      "prose": "Matches the child snapped on the block axis.",
+      "href": "https://drafts.csswg.org/css-scroll-snap-2/#selectordef-snapped-block",
+      "value": ":snapped-block"
+    }
+  ],
+  "values": []
+}

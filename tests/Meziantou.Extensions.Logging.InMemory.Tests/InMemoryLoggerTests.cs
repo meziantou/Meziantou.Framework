@@ -9,6 +9,31 @@ public sealed partial class InMemoryLoggerTests
     private static readonly Action<ILogger, int, Exception?> SampleMessage = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
 
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region InMemoryLogger_Usage
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var logger = loggerProvider.CreateLogger("sample");
+        var typedLogger = loggerProvider.CreateLogger<Sample>();
+
+        // Short version if you need a single logger instance:
+        var singleLogger = InMemoryLogger.CreateLogger("sample");
+        var singleTypedLogger = InMemoryLogger.CreateLogger<Sample>();
+
+        // do stuff with the logger
+        logger.LogInformation(new EventId(1), "This is a test");
+        typedLogger.LogWarning("Something to check");
+        singleLogger.LogInformation("Only in the logs of singleLogger");
+
+        Assert.Empty(loggerProvider.Logs.Errors);
+        Assert.Single(loggerProvider.Logs, log => log.Message.Contains("test", StringComparison.Ordinal) && log.EventId.Id == 1);
+        Assert.Single(loggerProvider.Logs.Warnings);
+        Assert.Single(singleLogger.Logs);
+        Assert.Empty(singleTypedLogger.Logs);
+        #endregion
+    }
+
+    [Fact]
     public void CreateLogger()
     {
         var logger = InMemoryLogger.CreateLogger("sample");
@@ -23,6 +48,152 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void InMemoryLogger_Example()
+    {
+        #region InMemoryLogger_Example
+        // Create a logger directly
+        var logger = InMemoryLogger.CreateLogger("MyCategory");
+        logger.LogInformation("Test message");
+
+        // Access captured logs
+        Assert.Single(logger.Logs.Informations);
+        Assert.Contains(logger.Logs, log => log.Message == "Test message");
+        #endregion
+    }
+
+    [Fact]
+    public void InMemoryLogCollection_Example()
+    {
+        #region InMemoryLogCollection_Example
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogInformation("Application started");
+        logger.LogError("Error while processing the request");
+
+        // Filter by log level
+        var errors = logger.Logs.Errors;
+        var infos = logger.Logs.Informations;
+        Assert.Single(errors);
+        Assert.Single(infos);
+
+        // Search for specific entries
+        var entry = logger.Logs.Find(log => log.Message.StartsWith("Error", StringComparison.Ordinal));
+        Assert.NotNull(entry);
+        Assert.Equal(LogLevel.Error, entry.LogLevel);
+        #endregion
+    }
+
+    [Fact]
+    public void InMemoryLogEntry_Example()
+    {
+        #region InMemoryLogEntry_Example
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogInformation("User {UserId} logged in", 123);
+
+        var log = logger.Logs.Informations.Single();
+        Assert.Equal("User 123 logged in", log.Message);
+        Assert.True(log.TryGetParameterValue("UserId", out var userId));
+        Assert.Equal(123, userId);
+        #endregion
+    }
+
+    [Fact]
+    public void InMemoryLoggerProvider_Example()
+    {
+        #region InMemoryLoggerProvider_Example
+        // Use with dependency injection
+        var services = new ServiceCollection();
+        using var provider = new InMemoryLoggerProvider();
+        services.AddLogging(builder => builder.AddProvider(provider));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("MyCategory");
+        logger.LogInformation("Test message");
+
+        // Access logs through the provider
+        var log = Assert.Single(provider.Logs.Informations);
+        Assert.Equal("Test message", log.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Scopes()
+    {
+        #region InMemoryLogger_Scopes
+        var logger = InMemoryLogger.CreateLogger("sample");
+        using (logger.BeginScope("Processing order {OrderId}", 42))
+        {
+            logger.LogInformation("Item {ItemId} shipped", "A-1");
+        }
+
+        var log = Assert.Single(logger.Logs);
+        Assert.Equal("Processing order 42", Assert.Single(log.Scopes)?.ToString());
+
+        // The parameters are searched in the message first, then in the scopes
+        Assert.True(log.TryGetParameterValue("ItemId", out var itemId));
+        Assert.Equal("A-1", itemId);
+        Assert.True(log.TryGetParameterValue("OrderId", out var orderId));
+        Assert.Equal(42, orderId);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SharedCollection()
+    {
+        #region InMemoryLogger_SharedCollection
+        var logs = new InMemoryLogCollection();
+        var orderLogger = InMemoryLogger.CreateLogger("Orders", logs);
+        var paymentLogger = InMemoryLogger.CreateLogger("Payments", logs);
+
+        orderLogger.LogInformation("Order created");
+        paymentLogger.LogWarning("Payment declined");
+
+        Assert.HasCount(2, logs);
+        Assert.Equal("Payments", Assert.Single(logs.Warnings).Category);
+
+        // Forget the entries logged so far, for instance after the setup of a test
+        logs.Clear();
+        Assert.Empty(logs);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ToString()
+    {
+        #region InMemoryLogger_ToString
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogWarning("Disk {Drive} is almost full", "C:");
+
+        // ToString describes the entry: use it in assertion messages, or to inspect the entries in the debugger
+        Assert.Equal("""
+            [sample] Warning: Disk C: is almost full
+              => [{"Key":"Drive","Value":"C:"},{"Key":"{OriginalFormat}","Value":"Disk {Drive} is almost full"}]
+            """, Assert.Single(logger.Logs).ToString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(LogLevel.Trace)]
+    [InlineData(LogLevel.Debug)]
+    [InlineData(LogLevel.Information)]
+    [InlineData(LogLevel.Warning)]
+    [InlineData(LogLevel.Error)]
+    [InlineData(LogLevel.Critical)]
+    public void IsEnabled_ReturnsTrueForEveryLevelThatCanBeLogged(LogLevel logLevel)
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        Assert.True(logger.IsEnabled(logLevel));
+    }
+
+    [Fact]
+    public void IsEnabled_ReturnsFalseForNone()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        Assert.False(logger.IsEnabled(LogLevel.None));
+    }
+
+    [Fact]
     public void CreateTypedLogger()
     {
         var logger = InMemoryLogger.CreateLogger<InMemoryLoggerTests>();
@@ -34,6 +205,52 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
         Assert.Empty(log.Scopes);
         Assert.Equal("[Meziantou.Extensions.Logging.InMemory.Tests.InMemoryLoggerTests] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
+    }
+
+    [Fact]
+    public void ToString_DoesNotThrow_WhenAParameterValueIsNotJsonSerializable()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("handled by {Handler}", typeof(string));
+
+        var log = logger.Logs.Informations.Single();
+        var text = log.ToString();
+        Assert.Contains("handled by System.String", text);
+        Assert.Contains("handled by System.String", logger.Logs.ToString());
+    }
+
+    [Fact]
+    public void ToString_DoesNotThrow_WhenAScopeIsNotJsonSerializable()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+
+        using (logger.BeginScope(new { Callback = (Action)(() => { }) }))
+        {
+            logger.LogInformation("Test");
+        }
+
+        var log = provider.Logs.Informations.Single();
+        Assert.StartsWith("[my_category] Information: Test", log.ToString());
+    }
+
+    [Fact]
+    public void ToString_DoesNotThrow_WhenTheStateContainsAReferenceCycle()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        var node = new SelfReferencingNode();
+        node.Self = node;
+
+        logger.LogInformation("node {Node}", node);
+
+        var log = logger.Logs.Informations.Single();
+        Assert.StartsWith("[sample] Information: node ", log.ToString());
+    }
+
+    private sealed class SelfReferencingNode
+    {
+        public SelfReferencingNode? Self { get; set; }
     }
 
     [Fact]
@@ -71,6 +288,28 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
         Assert.Empty(log.Scopes);
         Assert.Equal("[my_category] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
+    }
+
+    [Fact]
+    public void SetScopeProviderUpdatesExistingAndNewLoggers()
+    {
+        using var provider = new InMemoryLoggerProvider();
+        var loggerCreatedBeforeSet = provider.CreateLogger("before");
+
+        var scopeProvider = new LoggerExternalScopeProvider();
+        ((ISupportExternalScope)provider).SetScopeProvider(scopeProvider);
+
+        var loggerCreatedAfterSet = provider.CreateLogger("after");
+
+        using (scopeProvider.Push("external scope"))
+        {
+            loggerCreatedBeforeSet.LogInformation("Test");
+            loggerCreatedAfterSet.LogInformation("Test");
+        }
+
+        var logs = provider.Logs.Informations.ToArray();
+        Assert.HasCount(2, logs);
+        Assert.All(logs, log => Assert.Equivalent(new object[] { "external scope" }, log.Scopes));
     }
 
     [Fact]
@@ -120,6 +359,88 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equal(["test", "John"], log.GetAllParameterValues("Name"));
     }
 
+    [Fact]
+    public void TryGetParameterValue_DictionaryScope()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+        using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Age"] = 52, ["Name"] = "John" }))
+        {
+            logger.LogInformation("Test {Number}", 1);
+        }
+
+        var log = provider.Logs.Informations.Single();
+        Assert.True(log.TryGetParameterValue("Number", out var number));
+        Assert.Equal(1, number);
+        Assert.True(log.TryGetParameterValue("Name", out var name));
+        Assert.Equal("John", name);
+        Assert.True(log.TryGetParameterValue("Age", out var age));
+        Assert.Equal(52, age);
+        Assert.False(log.TryGetParameterValue("Unknown", out var unknown));
+        Assert.Null(unknown);
+    }
+
+    [Fact]
+    public void WithScope_Parallel()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+        Parallel.For(0, 10_000, i =>
+        {
+            using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Index"] = i }))
+            {
+                logger.LogInformation("Test {Number}", i);
+            }
+        });
+
+        Assert.HasCount(10_000, provider.Logs);
+        foreach (var log in provider.Logs)
+        {
+            var scope = Assert.Single(log.Scopes);
+            Assert.True(log.TryGetParameterValue("Number", out var number));
+            Assert.Equal(number, Assert.IsType<Dictionary<string, object?>>(scope)["Index"]);
+        }
+    }
+
+    [Fact]
+    public void WithDeepScopeStack_ThenShallowScope()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+
+        // Deep enough to grow the scope buffer past the capacity at which it is dropped instead of reused
+        var scopes = new List<IDisposable?>();
+        try
+        {
+            for (var i = 0; i < 200; i++)
+            {
+                scopes.Add(logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Index"] = i }));
+            }
+
+            logger.LogInformation("Deep");
+        }
+        finally
+        {
+            for (var i = scopes.Count - 1; i >= 0; i--)
+            {
+                scopes[i]?.Dispose();
+            }
+        }
+
+        using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Index"] = 42 }))
+        {
+            logger.LogInformation("Shallow");
+        }
+
+        var deep = provider.Logs.Informations.Single(log => log.Message is "Deep");
+        Assert.HasCount(200, deep.Scopes);
+        Assert.Equal(Enumerable.Range(0, 200).Cast<object?>(), deep.Scopes.Select(scope => Assert.IsType<Dictionary<string, object?>>(scope)["Index"]));
+
+        var shallow = provider.Logs.Informations.Single(log => log.Message is "Shallow");
+        var shallowScope = Assert.Single(shallow.Scopes);
+        Assert.Equal(42, Assert.IsType<Dictionary<string, object?>>(shallowScope)["Index"]);
+    }
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Value is {value}")]
     private static partial void Log(ILogger logger, int value);
 
@@ -134,6 +455,108 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void EntriesKeepTheirOrderAcrossChunkBoundaries()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        // Chunks hold 16, then 32, then 64 entries, so this spans three of them
+        for (var i = 0; i < 100; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        Assert.HasCount(100, logger.Logs);
+        Assert.Equal(Enumerable.Range(0, 100).Cast<object?>(), logger.Logs.Select(log =>
+        {
+            Assert.True(log.TryGetParameterValue("Index", out var index));
+            return index;
+        }));
+    }
+
+    [Fact]
+    public async Task CanEnumerateWhileAnotherThreadLogs()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        var writer = Task.Run(() =>
+        {
+            for (var i = 0; i < 200_000; i++)
+            {
+                logger.LogInformation("Test");
+            }
+        });
+
+        // A smoke test: the window this guards is a few instructions wide, so it does not reliably
+        // reproduce on its own. It does catch a reader walking the chunks being broken outright.
+        var missing = 0;
+        do
+        {
+            foreach (var log in logger.Logs)
+            {
+                if (log is null)
+                {
+                    missing++;
+                }
+            }
+        }
+        while (!writer.IsCompleted);
+
+        await writer;
+
+        Assert.Equal(0, missing);
+        Assert.HasCount(200_000, logger.Logs);
+    }
+
+    [Fact]
+    public void Count_TracksTheNumberOfEntries()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        Assert.Equal(0, logger.Logs.Count);
+
+        logger.LogInformation("first");
+        Assert.Equal(1, logger.Logs.Count);
+
+        // Past the first chunk boundary
+        for (var i = 0; i < 50; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        Assert.Equal(51, logger.Logs.Count);
+        Assert.HasCount(51, logger.Logs);
+    }
+
+    [Fact]
+    public void Clear_RemovesEveryEntry()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        for (var i = 0; i < 50; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        logger.Logs.Clear();
+
+        Assert.Equal(0, logger.Logs.Count);
+        Assert.Empty(logger.Logs);
+        Assert.Empty(logger.Logs.Informations);
+        Assert.Null(logger.Logs.Find(_ => true));
+        Assert.Empty(logger.Logs.ToString());
+    }
+
+    [Fact]
+    public void Clear_LeavesTheCollectionUsable()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogInformation("before");
+
+        logger.Logs.Clear();
+        logger.LogInformation("after");
+
+        Assert.Equal(1, logger.Logs.Count);
+        Assert.Equal("after", Assert.Single(logger.Logs).Message);
+    }
+
+    [Fact]
     public void WithTimeProvider()
     {
         using var provider = new InMemoryLoggerProvider(new CustomTimeProvider());
@@ -144,8 +567,108 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equal(new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero), log.CreatedAt);
     }
 
+    [Fact]
+    public void LogLevelProperties_ReturnOnlyTheMatchingEntries()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogTrace("trace");
+        logger.LogDebug("debug");
+        logger.LogInformation("information");
+        logger.LogWarning("warning");
+        logger.LogError("error");
+        logger.LogCritical("critical");
+
+        Assert.Equal("trace", Assert.Single(logger.Logs.Traces).Message);
+        Assert.Equal("debug", Assert.Single(logger.Logs.Debugs).Message);
+        Assert.Equal("information", Assert.Single(logger.Logs.Informations).Message);
+        Assert.Equal("warning", Assert.Single(logger.Logs.Warnings).Message);
+        Assert.Equal("error", Assert.Single(logger.Logs.Errors).Message);
+        Assert.Equal("critical", Assert.Single(logger.Logs.Criticals).Message);
+    }
+
+    [Fact]
+    public void LogLevelProperties_AreEmptyWhenNothingMatches()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("information");
+
+        Assert.Empty(logger.Logs.Traces);
+        Assert.Empty(logger.Logs.Debugs);
+        Assert.Empty(logger.Logs.Warnings);
+        Assert.Empty(logger.Logs.Errors);
+        Assert.Empty(logger.Logs.Criticals);
+    }
+
+    [Fact]
+    public void Find_ReturnsTheFirstMatchingEntry()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("alpha");
+        logger.LogInformation("beta-match");
+        logger.LogInformation("gamma-match");
+
+        var found = logger.Logs.Find(log => log.Message.EndsWith("-match", StringComparison.Ordinal));
+        Assert.NotNull(found);
+        Assert.Equal("beta-match", found.Message);
+    }
+
+    [Fact]
+    public void Find_ReturnsNullWhenNothingMatches()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("first");
+
+        Assert.Null(logger.Logs.Find(log => log.Message is "missing"));
+    }
+
+    [Fact]
+    public void Contains_ReportsWhetherAnEntryMatches()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("first");
+
+        Assert.True(logger.Logs.Contains(log => log.Message is "first"));
+        Assert.False(logger.Logs.Contains(log => log.Message is "missing"));
+    }
+
+    [Fact]
+    public void Exception_IsCapturedAndRendered()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        var exception = new InvalidOperationException("kaboom");
+
+        logger.LogError(exception, "boom");
+
+        var log = Assert.Single(logger.Logs.Errors);
+        Assert.Same(exception, log.Exception);
+        Assert.Equal("boom", log.Message);
+        Assert.Contains("kaboom", log.ToString());
+        Assert.Contains("kaboom", logger.Logs.ToString());
+    }
+
+    [Fact]
+    public void CollectionToString_RendersEveryEntryOnItsOwnLine()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("first");
+        logger.LogWarning("second");
+
+        var lines = logger.Logs.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.HasCount(4, lines);
+        Assert.StartsWith("[sample] Information: first", lines[0]);
+        Assert.StartsWith("[sample] Warning: second", lines[2]);
+    }
+
     private sealed class CustomTimeProvider : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
     }
 }
+
+file sealed class Sample;

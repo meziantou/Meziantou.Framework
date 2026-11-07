@@ -1,0 +1,74 @@
+{
+  "spec": {
+    "title": "Referrer Policy",
+    "url": "https://w3c.github.io/webappsec-referrer-policy/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "ReferrerPolicy": {
+        "fragment": "enum ReferrerPolicy {\n  \"\",\n  \"no-referrer\",\n  \"no-referrer-when-downgrade\",\n  \"same-origin\",\n  \"origin\",\n  \"strict-origin\",\n  \"origin-when-cross-origin\",\n  \"strict-origin-when-cross-origin\",\n  \"unsafe-url\"\n};",
+        "type": "enum",
+        "name": "ReferrerPolicy",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy"
+          },
+          {
+            "type": "enum-value",
+            "value": "no-referrer",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-no-referrer"
+          },
+          {
+            "type": "enum-value",
+            "value": "no-referrer-when-downgrade",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-no-referrer-when-downgrade"
+          },
+          {
+            "type": "enum-value",
+            "value": "same-origin",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-same-origin"
+          },
+          {
+            "type": "enum-value",
+            "value": "origin",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-origin"
+          },
+          {
+            "type": "enum-value",
+            "value": "strict-origin",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-strict-origin"
+          },
+          {
+            "type": "enum-value",
+            "value": "origin-when-cross-origin",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-origin-when-cross-origin"
+          },
+          {
+            "type": "enum-value",
+            "value": "strict-origin-when-cross-origin",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-strict-origin-when-cross-origin"
+          },
+          {
+            "type": "enum-value",
+            "value": "unsafe-url",
+            "href": "https://w3c.github.io/webappsec-referrer-policy/#dom-referrerpolicy-unsafe-url"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webappsec-referrer-policy/#enumdef-referrerpolicy"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {},
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

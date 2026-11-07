@@ -4,6 +4,8 @@ namespace Meziantou.Framework.Json.Internals;
 
 internal sealed class JsonElementNavigator : JsonPathNavigator<JsonElement>
 {
+    public override bool IsPure => true;
+
     public static JsonElementNavigator Instance { get; } = new();
 
     private JsonElementNavigator()
@@ -62,6 +64,24 @@ internal sealed class JsonElementNavigator : JsonPathNavigator<JsonElement>
 
         result = default;
         return false;
+    }
+
+    /// <summary>
+    /// The indexer of an array whose elements are objects or arrays walks the array from its start, so reading
+    /// every element by index would take quadratic time.
+    /// </summary>
+    public override bool HasConstantTimeElementAccess => false;
+
+    public override bool HasConstantTimePropertyLookup => false;
+
+    public override void CopyElements(JsonElement value, JsonElement[] destination)
+    {
+        var index = 0;
+        foreach (var element in value.EnumerateArray())
+        {
+            destination[index] = element;
+            index++;
+        }
     }
 
     public override bool TryGetString(JsonElement value, out string? result)

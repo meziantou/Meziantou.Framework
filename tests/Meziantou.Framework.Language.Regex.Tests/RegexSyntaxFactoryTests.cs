@@ -1,0 +1,179 @@
+namespace Meziantou.Framework.Language.Regex.Tests;
+
+public sealed class RegexSyntaxFactoryTests
+{
+    [Theory]
+    [InlineData('a', "a")]
+    [InlineData('0', "0")]
+    [InlineData('.', @"\.")]
+    [InlineData('*', @"\*")]
+    [InlineData('(', @"\(")]
+    [InlineData('[', @"\[")]
+    [InlineData(']', @"\]")]
+    [InlineData('\\', @"\\")]
+    [InlineData('|', @"\|")]
+    [InlineData('^', @"\^")]
+    [InlineData('$', @"\$")]
+    [InlineData('-', @"\-")]
+    [InlineData('#', @"\#")]
+    [InlineData(' ', @"\ ")]
+    public void Literal_EscapesWhatHasToBeEscaped(char value, string expected)
+    {
+        Assert.Equal(expected, SyntaxFactory.Literal(value, RegexDialect.Net).ToFullString());
+    }
+
+    /// <summary>What the factory builds has to parse back to what it says it is.</summary>
+    [Fact]
+    public void LiteralText_ProducesAPatternThatMatchesTheTextItself()
+    {
+        const string Text = @"a.b*c(d)[e]{f}|g^h$i\j#k l-m";
+
+        var built = SyntaxFactory.LiteralText(Text, RegexDialect.Net).ToFullString();
+        var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.Net);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexQuantifiedSyntax>());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
+    }
+
+    [Fact]
+    public void Group_WrapsItsBody()
+    {
+        var group = SyntaxFactory.Group(SyntaxFactory.Alternation(SyntaxFactory.LiteralText("ab", RegexDialect.Net)));
+
+        Assert.Equal("(ab)", group.ToFullString());
+    }
+
+    [Fact]
+    public void Alternation_InsertsOneBarBetweenBranches()
+    {
+        var alternation = SyntaxFactory.Alternation(
+            SyntaxFactory.LiteralText("a", RegexDialect.Net),
+            SyntaxFactory.LiteralText("b", RegexDialect.Net),
+            SyntaxFactory.LiteralText("c", RegexDialect.Net));
+
+        Assert.Equal("a|b|c", alternation.ToFullString());
+    }
+
+    [Theory]
+    [InlineData('*', RegexQuantifierMode.Greedy, "a*")]
+    [InlineData('+', RegexQuantifierMode.Lazy, "a+?")]
+    [InlineData('?', RegexQuantifierMode.Possessive, "a?+")]
+    public void Quantified_WritesTheOperatorAndItsModifier(char quantifier, RegexQuantifierMode mode, string expected)
+    {
+        var atom = (RegexAtomSyntax)SyntaxFactory.Literal('a', RegexDialect.Net);
+
+        Assert.Equal(expected, SyntaxFactory.Quantified(atom, quantifier, mode).ToFullString());
+    }
+
+    [Theory]
+    [InlineData(2, 2, "a{2}")]
+    [InlineData(2, null, "a{2,}")]
+    [InlineData(2, 5, "a{2,5}")]
+    public void Quantified_WritesBounds(int min, int? max, string expected)
+    {
+        var atom = (RegexAtomSyntax)SyntaxFactory.Literal('a', RegexDialect.Net);
+
+        var built = SyntaxFactory.Quantified(atom, min, max).ToFullString();
+        Assert.Equal(expected, built);
+
+        var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.Net);
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.GetRoot().Alternation.Branches[0].Terms[0]);
+        Assert.Equal(min, quantified.Quantifier.MinCount);
+        Assert.Equal(max, quantified.Quantifier.MaxCount);
+    }
+
+    [Fact]
+    public void CharacterClass_WritesItsMembers()
+    {
+        var characterClass = SyntaxFactory.CharacterClass(
+            negated: true,
+            SyntaxFactory.CharacterRange('a', 'z', RegexDialect.Net),
+            SyntaxFactory.ClassEscape('d'));
+
+        var built = characterClass.ToFullString();
+        Assert.Equal(@"[^a-z\d]", built);
+
+        var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.Net);
+        Assert.Empty(tree.GetDiagnostics());
+    }
+
+    [Fact]
+    public void Anchor_WritesEveryKind()
+    {
+        foreach (var kind in Enum.GetValues<RegexAnchorKind>())
+        {
+            var built = SyntaxFactory.Anchor(kind).ToFullString();
+
+            // The word anchors are the GNU ones, which only the POSIX dialects have.
+            var dialect = kind is RegexAnchorKind.StartOfWord or RegexAnchorKind.EndOfWord ? RegexDialect.PosixExtended : RegexDialect.PcrePerl;
+            var tree = RegexSyntaxAssert.TextIsFaithful(built, dialect);
+
+            var anchor = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>());
+            Assert.Equal(kind, anchor.AnchorKind);
+        }
+    }
+
+    /// <summary>
+    /// In a basic expression the escaped form is the construct, so escaping a parenthesis there would open a group
+    /// rather than match one. The literal is the bare character.
+    /// </summary>
+    [Theory]
+    [InlineData('(', "(")]
+    [InlineData(')', ")")]
+    [InlineData('{', "{")]
+    [InlineData('}', "}")]
+    [InlineData('+', "+")]
+    [InlineData('?', "?")]
+    [InlineData('|', "|")]
+    [InlineData('.', @"\.")]
+    [InlineData('*', @"\*")]
+    [InlineData('[', @"\[")]
+    public void PosixBasicLeavesTheEscapedDelimitersBare(char value, string expected)
+    {
+        Assert.Equal(expected, SyntaxFactory.Literal(value, RegexDialect.PosixBasic).ToFullString());
+    }
+
+    [Theory]
+    [InlineData('(', @"\(")]
+    [InlineData('{', @"\{")]
+    [InlineData('+', @"\+")]
+    [InlineData('|', @"\|")]
+    public void PosixExtendedEscapesTheCharactersThatAreConstructsThere(char value, string expected)
+    {
+        Assert.Equal(expected, SyntaxFactory.Literal(value, RegexDialect.PosixExtended).ToFullString());
+    }
+
+    /// <summary>Whatever the factory escapes has to parse back as a literal, in the dialect it was built for.</summary>
+    [Theory]
+    [InlineData("net")]
+    [InlineData("javascript")]
+    [InlineData("pcre")]
+    [InlineData("ere")]
+    [InlineData("bre")]
+    public void AnEscapedLiteralParsesBackAsOneAtomInItsOwnDialect(string dialectName)
+    {
+        Assert.True(RegexDialect.TryParse(dialectName, out var dialect));
+
+        foreach (var value in @"a1 .*+?[]{}()|^$\-#/<>=!:'")
+        {
+            var built = SyntaxFactory.Literal(value, dialect).ToFullString();
+            var tree = RegexSyntaxAssert.TextIsFaithful(built, dialect);
+
+            Assert.Empty(tree.GetDiagnostics(), $"[{built}] built for {value} in {dialectName}");
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexQuantifiedSyntax>());
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>());
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
+            Assert.Single(tree.GetRoot().Alternation.Branches[0].Terms);
+        }
+    }
+
+    [Fact]
+    public void Quantified_RejectsAnOperatorThatIsNotOne()
+    {
+        var literal = (RegexAtomSyntax)SyntaxFactory.Literal('a', RegexDialect.Net);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => SyntaxFactory.Quantified(literal, 'x'));
+    }
+}

@@ -7,6 +7,10 @@ public sealed class JsonSnapshotSerializer : SnapshotSerializer
 {
     private static readonly JsonSerializerOptions DefaultOptions = new()
     {
+        // A snapshot must show the actual value, including a null that the nullable annotations rule out, and must
+        // not depend on the RespectNullableAnnotations switch of the test application.
+        RespectNullableAnnotations = false,
+        RespectRequiredConstructorParameters = false,
         WriteIndented = true,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };

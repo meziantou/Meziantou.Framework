@@ -1,0 +1,205 @@
+{
+  "spec": {
+    "title": "CSS Conditional Rules Module Level 5",
+    "url": "https://drafts.csswg.org/css-conditional-5/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSContainerRule",
+          "CSSSupportsConditionRule"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSContainerCondition": {
+        "fragment": "dictionary CSSContainerCondition {\n  required CSSOMString name;\n  required CSSOMString query;\n};",
+        "type": "dictionary",
+        "name": "CSSContainerCondition",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-csscontainercondition-name"
+          },
+          {
+            "type": "field",
+            "name": "query",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-csscontainercondition-query"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-conditional-5/#dictdef-csscontainercondition"
+      },
+      "CSSContainerRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSContainerRule : CSSConditionRule {\n  readonly attribute CSSOMString containerName;\n  readonly attribute CSSOMString containerQuery;\n  readonly attribute FrozenArray<CSSContainerCondition> conditions;\n};",
+        "type": "interface",
+        "name": "CSSContainerRule",
+        "inheritance": "CSSConditionRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "containerName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-containername"
+          },
+          {
+            "type": "attribute",
+            "name": "containerQuery",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-containerquery"
+          },
+          {
+            "type": "attribute",
+            "name": "conditions",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSContainerCondition"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-conditions"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-conditional-5/#csscontainerrule"
+      },
+      "CSSSupportsConditionRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSSupportsConditionRule : CSSGroupingRule {\n  readonly attribute CSSOMString name;\n};",
+        "type": "interface",
+        "name": "CSSSupportsConditionRule",
+        "inheritance": "CSSGroupingRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-csssupportsconditionrule-name"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-conditional-5/#csssupportsconditionrule"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSContainerRule",
+        "CSSSupportsConditionRule"
+      ]
+    },
+    "dependencies": {
+      "CSSContainerCondition": [
+        "CSSOMString"
+      ],
+      "CSSContainerRule": [
+        "CSSConditionRule",
+        "CSSOMString",
+        "CSSContainerCondition"
+      ],
+      "CSSSupportsConditionRule": [
+        "CSSGroupingRule",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSOMString",
+      "CSSConditionRule",
+      "CSSGroupingRule"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

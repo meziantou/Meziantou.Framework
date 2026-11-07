@@ -5,6 +5,8 @@ namespace Meziantou.Framework.EmbeddedConstantsGenerator;
 
 public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Task
 {
+    private const string UnexpectedFailureCode = "MFECG0011";
+
     [SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "MSBuild task item parameters are represented as arrays.")]
     [Required]
     public ITaskItem[] EmbeddedConstants { get; set; } = [];
@@ -24,16 +26,27 @@ public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Ta
 
     public override bool Execute()
     {
-        var options = new EmbeddedConstantsGeneratorTask.GeneratorOptions(Namespace, ClassName, ClassVisibility, MemberVisibility, ProjectDirectory);
-        var files = EmbeddedConstants
-            .Select(item => new EmbeddedConstantsGeneratorTask.InputFile(
-                item.ItemSpec,
-                GetMetadata(item, "Meziantou_EmbeddedConstantKind", "EmbeddedConstantKind", "Kind"),
-                GetMetadata(item, "Meziantou_EmbeddedConstantName", "EmbeddedConstantName", "Name"),
-                ProjectDirectory))
-            .ToArray();
+        EmbeddedConstantsGeneratorTask.Result result;
+        try
+        {
+            var options = new EmbeddedConstantsGeneratorTask.GeneratorOptions(Namespace, ClassName, ClassVisibility, MemberVisibility, ProjectDirectory);
+            var files = EmbeddedConstants
+                .Select(item => new EmbeddedConstantsGeneratorTask.InputFile(
+                    item.ItemSpec,
+                    GetMetadata(item, "Meziantou_EmbeddedConstantKind", "EmbeddedConstantKind", "Kind"),
+                    GetMetadata(item, "Meziantou_EmbeddedConstantName", "EmbeddedConstantName", "Name"),
+                    ProjectDirectory))
+                .ToArray();
 
-        var result = EmbeddedConstantsGeneratorTask.Create(options, files);
+            result = EmbeddedConstantsGeneratorTask.Create(options, files);
+        }
+        catch (Exception ex)
+        {
+            // Without this the failure surfaces as MSB4018 with a stack trace instead of a documented diagnostic
+            LogError(UnexpectedFailureCode, filePath: null, string.Create(CultureInfo.InvariantCulture, $"The embedded constants could not be computed: {ex.Message}"));
+            return false;
+        }
+
         foreach (var error in result.Errors)
         {
             LogValidationError(error);
@@ -43,22 +56,36 @@ public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Ta
             return false;
 
         var source = EmbeddedConstantsGeneratorTask.GenerateSource(result.Options, result.Entries);
-        WriteFileIfChanged(OutputPath, source);
+        try
+        {
+            WriteFileIfChanged(OutputPath, source);
+        }
+        catch (Exception ex)
+        {
+            LogError(UnexpectedFailureCode, OutputPath, string.Create(CultureInfo.InvariantCulture, $"The generated file could not be written: {ex.Message}"));
+            return false;
+        }
+
         return !Log.HasLoggedErrors;
     }
 
     private void LogValidationError(EmbeddedConstantsGeneratorTask.ValidationError error)
     {
+        LogError(error.Code, error.FilePath, error.Message);
+    }
+
+    private void LogError(string code, string? filePath, string message)
+    {
         Log.LogError(
             subcategory: string.Empty,
-            errorCode: error.Code,
+            errorCode: code,
             helpKeyword: string.Empty,
-            file: error.FilePath ?? string.Empty,
+            file: filePath ?? string.Empty,
             lineNumber: 0,
             columnNumber: 0,
             endLineNumber: 0,
             endColumnNumber: 0,
-            message: error.Message);
+            message: message);
     }
 
     private static string? GetMetadata(ITaskItem item, params string[] names)

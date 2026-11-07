@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	string-text	1.7		FALSE	FALSE	FALSE					Table 238, SubjectDN cell

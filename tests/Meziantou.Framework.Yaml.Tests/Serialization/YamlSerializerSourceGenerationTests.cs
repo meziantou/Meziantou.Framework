@@ -1,4 +1,7 @@
 #pragma warning disable MA0048 // File name must match type name
+#if NET11_0_OR_GREATER
+using System.Numerics;
+#endif
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
@@ -52,6 +55,15 @@ internal sealed class GeneratedWithDefaultOptions
     public string? Optional { get; set; }
 }
 
+#pragma warning disable IDE1006 // Naming Styles - the members must start with a lowercase character for the PascalCase policy to have an effect
+internal sealed class GeneratedWithPascalCaseOptions
+{
+    public string displayName { get; set; } = string.Empty;
+
+    public Dictionary<string, int>? values { get; set; }
+}
+#pragma warning restore IDE1006 // Naming Styles
+
 internal sealed class GeneratedOptionsPayload
 {
     public int Value;
@@ -86,6 +98,19 @@ internal sealed class GeneratedNullableAnnotationsPayload
     public string Name { get; set; } = string.Empty;
 
     public string? Optional { get; set; }
+}
+
+internal sealed class GeneratedLiteralStrings
+{
+    public string? Text { get; set; }
+}
+
+internal sealed class GeneratedScriptStrings
+{
+    [YamlStringStyle(ScalarStyle.Literal)]
+    public string? Script { get; set; }
+
+    public string? Description { get; set; }
 }
 
 internal sealed class GeneratedNamingPolicyPayload
@@ -158,6 +183,14 @@ internal sealed class GeneratedWellKnownScalars
     public TimeSpan Duration { get; set; }
 }
 
+internal sealed class GeneratedUriAndCultureScalars
+{
+    public Uri? Absolute { get; set; }
+    public Uri? Relative { get; set; }
+    public CultureInfo? Culture { get; set; }
+    public Dictionary<Uri, string>? ByUri { get; set; }
+}
+
 internal sealed class GeneratedNullableScalars
 {
     public DateTimeOffset? PublishDate { get; set; }
@@ -171,6 +204,13 @@ internal sealed class GeneratedModernScalars
     public Half Ratio { get; set; }
     public Int128 Big { get; set; }
     public UInt128 UBig { get; set; }
+#if NET11_0_OR_GREATER
+    public System.Numerics.BFloat16 Brain { get; set; }
+    public System.Numerics.Decimal32 Small { get; set; }
+    public System.Numerics.Decimal64 Medium { get; set; }
+    public System.Numerics.Decimal128 Large { get; set; }
+    public System.Numerics.Decimal64? OptionalMedium { get; set; }
+#endif
 }
 
 internal sealed class GeneratedCollections
@@ -191,6 +231,8 @@ internal sealed class GeneratedMoreCollections
     public IReadOnlyList<int>? ReadOnlyNumbers { get; set; }
 
     public ISet<string>? Tags { get; set; }
+
+    public IReadOnlySet<string>? ReadOnlyTags { get; set; }
 
     public Dictionary<int, string> IntKeyMap { get; set; } = new();
 
@@ -491,6 +533,51 @@ internal sealed class GeneratedExtensionDataMappingPayload
     public YamlMapping? Extra { get; set; }
 }
 
+internal sealed class GeneratedInterfaceExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IDictionary<string, object?>? Extra { get; set; }
+}
+
+internal sealed class GeneratedReadOnlyExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?>? Extra { get; set; }
+}
+
+internal sealed class GeneratedPrePopulatedReadOnlyExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?> Extra { get; set; } = ImmutableDictionary<string, object?>.Empty.Add("existing", "kept");
+}
+
+internal sealed class GeneratedConstructorReadOnlyExtensionDataDictionaryPayload
+{
+    public GeneratedConstructorReadOnlyExtensionDataDictionaryPayload(int known)
+    {
+        Known = known;
+    }
+
+    public int Known { get; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?>? Extra { get; set; }
+}
+
+internal sealed class GeneratedInitOnlyReadOnlyExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?> Extra { get; init; } = ImmutableDictionary<string, object?>.Empty.Add("existing", "kept");
+}
+
 internal sealed class GeneratedInitOnlyExtensionDataDictionaryPayload
 {
     public int Known { get; set; }
@@ -545,6 +632,105 @@ internal sealed class GeneratedTypeConverter : YamlConverter<GeneratedTypeWithCo
 
     public override void Write(YamlWriter writer, GeneratedTypeWithConverter value)
         => writer.WriteScalar(value.Value);
+}
+
+[YamlConverter(typeof(GeneratedOpenGenericBoxConverter<>))]
+internal sealed class GeneratedOpenGenericBox<T>
+{
+    public GeneratedOpenGenericBox(T? value) => Value = value;
+
+    public T? Value { get; }
+}
+
+internal sealed class GeneratedOpenGenericBoxConverter<T> : YamlConverter<GeneratedOpenGenericBox<T>?>
+{
+    public override GeneratedOpenGenericBox<T>? Read(YamlReader reader)
+    {
+        if (reader.TokenType is YamlTokenType.Scalar && YamlScalar.IsNull(reader.ScalarValue.AsSpan()))
+        {
+            reader.Read();
+            return null;
+        }
+
+        var scalar = reader.GetScalarValue();
+        reader.Read();
+        return new GeneratedOpenGenericBox<T>((T)Convert.ChangeType(scalar, typeof(T), CultureInfo.InvariantCulture));
+    }
+
+    public override void Write(YamlWriter writer, GeneratedOpenGenericBox<T>? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture));
+    }
+}
+
+internal sealed class GeneratedOpenGenericCell<T>
+{
+    public T? Value { get; set; }
+}
+
+internal sealed class GeneratedOpenGenericCellConverter<T> : YamlConverter<GeneratedOpenGenericCell<T>?>
+{
+    public override GeneratedOpenGenericCell<T>? Read(YamlReader reader)
+    {
+        if (reader.TokenType is YamlTokenType.Scalar && YamlScalar.IsNull(reader.ScalarValue.AsSpan()))
+        {
+            reader.Read();
+            return null;
+        }
+
+        var scalar = reader.GetScalarValue();
+        reader.Read();
+        return new GeneratedOpenGenericCell<T> { Value = (T)Convert.ChangeType(scalar, typeof(T), CultureInfo.InvariantCulture) };
+    }
+
+    public override void Write(YamlWriter writer, GeneratedOpenGenericCell<T>? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture));
+    }
+}
+
+internal sealed class GeneratedOpenGenericConverterHolder
+{
+    public GeneratedOpenGenericBox<int>? Number { get; set; }
+
+    [YamlConverter(typeof(GeneratedOpenGenericCellConverter<>))]
+    public GeneratedOpenGenericCell<string>? Text { get; set; }
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(GeneratedGenericDog<>), "dog")]
+internal abstract class GeneratedGenericAnimal<T>
+{
+    public T? Name { get; set; }
+}
+
+internal sealed class GeneratedGenericDog<T> : GeneratedGenericAnimal<T>
+{
+    public int BarkVolume { get; set; }
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(GeneratedWrappedLeaf<>), "leaf")]
+internal abstract class GeneratedWrapperNode<T>
+{
+    public int Depth { get; set; }
+}
+
+internal sealed class GeneratedWrappedLeaf<T> : GeneratedWrapperNode<List<T>>
+{
+    public string Label { get; set; } = string.Empty;
 }
 
 internal sealed class GeneratedConvertedScalar
@@ -712,6 +898,194 @@ internal sealed class GeneratedInternalJsonCtorModel
     public int Age { get; }
 }
 
+internal sealed class GeneratedPrivateMemberModel
+{
+    [YamlInclude]
+    private string _name = string.Empty;
+
+    [YamlInclude]
+    private int Age { get; set; }
+
+    public string GetName() => _name;
+
+    public int GetAge() => Age;
+
+    public void Initialize(string name, int age)
+    {
+        _name = name;
+        Age = age;
+    }
+}
+
+internal sealed class GeneratedPrivateSetterModel
+{
+    [YamlInclude]
+    public string Name { get; private set; } = string.Empty;
+}
+
+internal sealed class GeneratedPrivateInitOnlyModel
+{
+    [YamlInclude]
+    private string Secret { get; init; } = string.Empty;
+
+    public string GetSecret() => Secret;
+}
+
+internal struct GeneratedPrivateStructModel
+{
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private int _value;
+#pragma warning restore IDE0044
+
+    [YamlInclude]
+    private string? Text { get; set; }
+
+    public readonly int GetValue() => _value;
+
+    public readonly string? GetText() => Text;
+}
+
+internal class GeneratedProtectedMemberBase
+{
+    [YamlInclude]
+    protected string Inherited { get; set; } = string.Empty;
+
+    public string GetInherited() => Inherited;
+}
+
+internal sealed class GeneratedProtectedMemberModel : GeneratedProtectedMemberBase
+{
+}
+
+internal sealed class GeneratedPrivateCtorModel
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorModel(string name, int age)
+    {
+        Name = name;
+        Age = age;
+    }
+#pragma warning restore IDE0051
+
+    public string Name { get; }
+
+    public int Age { get; }
+}
+
+internal sealed class GeneratedPrivateParameterlessCtorModel
+{
+    [YamlConstructor]
+    private GeneratedPrivateParameterlessCtorModel()
+    {
+    }
+
+    public string Name { get; set; } = string.Empty;
+}
+
+internal sealed class GeneratedPrivateCtorWithInitOnlyModel
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorWithInitOnlyModel(string name) => Name = name;
+#pragma warning restore IDE0051
+
+    public string Name { get; }
+
+    public int Age { get; init; }
+
+    public required string Tag { get; init; }
+}
+
+internal sealed class GeneratedPrivateExtensionDataModel
+{
+    public string Name { get; set; } = string.Empty;
+
+    [YamlExtensionData]
+    private Dictionary<string, object?> Extra { get; set; } = new(StringComparer.Ordinal);
+
+    public IReadOnlyDictionary<string, object?> GetExtra() => Extra;
+}
+
+internal abstract class GeneratedGenericPayloadBase
+{
+    public int Id { get; set; }
+}
+
+internal sealed class GeneratedGenericPayload : GeneratedGenericPayloadBase
+{
+}
+
+internal sealed class GeneratedOtherGenericPayload : GeneratedGenericPayloadBase
+{
+}
+
+internal sealed class GeneratedConstrainedEnvelope<T>
+    where T : notnull, GeneratedGenericPayloadBase
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedConstrainedEnvelope(T body) => Body = body;
+#pragma warning restore IDE0051
+
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private string _tag = string.Empty;
+#pragma warning restore IDE0044
+
+    [YamlInclude]
+    private int Version { get; set; }
+
+    public T Body { get; }
+
+    public string GetTag() => _tag;
+
+    public int GetVersion() => Version;
+}
+
+/// <summary>
+/// Mirrors the System.Text.Json repro from https://github.com/dotnet/runtime/issues/133369: an unconstrained
+/// generic type whose only constructor is private. The accessor must not name the closed type <c>Wrapper&lt;int&gt;</c>.
+/// </summary>
+internal sealed class GeneratedPrivateCtorGenericWrapper<T>
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorGenericWrapper(T value) => Value = value;
+#pragma warning restore IDE0051
+
+    public T Value { get; }
+}
+
+internal struct GeneratedUnmanagedHolder<T>
+    where T : unmanaged
+{
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private T _value;
+#pragma warning restore IDE0044
+
+    public readonly T GetValue() => _value;
+}
+
+internal static class GeneratedGenericOuter<TOuter>
+    where TOuter : class
+{
+    internal sealed class Inner<TInner>
+        where TInner : struct
+    {
+#pragma warning disable IDE0044 // Add readonly modifier
+#pragma warning disable CS0649 // Field is never assigned to
+        [YamlInclude]
+        private TInner _inner;
+#pragma warning restore CS0649
+#pragma warning restore IDE0044
+
+        public TInner GetInner() => _inner;
+    }
+}
+
 internal sealed record GeneratedFunctionDto(string Name, string? Description, string Abbreviation);
 
 internal sealed class GeneratedPopulateChild
@@ -791,6 +1165,7 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedContainer))]
 [YamlSerializable(typeof(GeneratedPrimitives))]
 [YamlSerializable(typeof(GeneratedWellKnownScalars))]
+[YamlSerializable(typeof(GeneratedUriAndCultureScalars))]
 [YamlSerializable(typeof(GeneratedNullableScalars))]
 [YamlSerializable(typeof(GeneratedModernScalars))]
 [YamlSerializable(typeof(GeneratedColor))]
@@ -807,6 +1182,7 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(Dictionary<int, string>))]
 [YamlSerializable(typeof(IReadOnlyList<int>))]
 [YamlSerializable(typeof(ISet<string>))]
+[YamlSerializable(typeof(IReadOnlySet<string>))]
 [YamlSerializable(typeof(HashSet<int>))]
 [YamlSerializable(typeof(IReadOnlyDictionary<GeneratedColor, int>))]
 [YamlSerializable(typeof(ImmutableArray<int>))]
@@ -845,17 +1221,43 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedNullableInitOnlyPayload))]
 [YamlSerializable(typeof(GeneratedExtensionDataDictionaryPayload))]
 [YamlSerializable(typeof(GeneratedExtensionDataMappingPayload))]
+[YamlSerializable(typeof(GeneratedInterfaceExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedReadOnlyExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedPrePopulatedReadOnlyExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedConstructorReadOnlyExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedInitOnlyReadOnlyExtensionDataDictionaryPayload))]
 [YamlSerializable(typeof(GeneratedInitOnlyExtensionDataDictionaryPayload))]
 [YamlSerializable(typeof(GeneratedInitOnlyExtensionDataMappingPayload))]
 [YamlSerializable(typeof(GeneratedAttributedUnmappedPayload))]
 [YamlSerializable(typeof(GeneratedAttributedExtensionDataPayload))]
 [YamlSerializable(typeof(GeneratedMemberConverterPayload))]
 [YamlSerializable(typeof(GeneratedTypeWithConverter))]
+[YamlSerializable(typeof(GeneratedOpenGenericBox<int>))]
+[YamlSerializable(typeof(GeneratedOpenGenericConverterHolder))]
+[YamlSerializable(typeof(GeneratedGenericAnimal<string>))]
+[YamlSerializable(typeof(GeneratedWrapperNode<List<int>>))]
 [YamlSerializable(typeof(GeneratedRuntimeConverterHolder))]
 [YamlSerializable(typeof(GeneratedYamlCtorModel))]
 [YamlSerializable(typeof(GeneratedJsonCtorModel))]
 [YamlSerializable(typeof(GeneratedInternalYamlCtorModel))]
 [YamlSerializable(typeof(GeneratedInternalJsonCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateMemberModel))]
+[YamlSerializable(typeof(GeneratedPrivateSetterModel))]
+[YamlSerializable(typeof(GeneratedPrivateInitOnlyModel))]
+[YamlSerializable(typeof(GeneratedPrivateStructModel))]
+[YamlSerializable(typeof(GeneratedProtectedMemberModel))]
+[YamlSerializable(typeof(GeneratedPrivateCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateParameterlessCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateCtorWithInitOnlyModel))]
+[YamlSerializable(typeof(GeneratedPrivateExtensionDataModel))]
+[YamlSerializable(typeof(GeneratedGenericPayload))]
+[YamlSerializable(typeof(GeneratedOtherGenericPayload))]
+[YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedGenericPayload>))]
+[YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedOtherGenericPayload>))]
+[YamlSerializable(typeof(GeneratedPrivateCtorGenericWrapper<int>))]
+[YamlSerializable(typeof(GeneratedPrivateCtorGenericWrapper<string>))]
+[YamlSerializable(typeof(GeneratedUnmanagedHolder<double>))]
+[YamlSerializable(typeof(GeneratedGenericOuter<object>.Inner<int>))]
 [YamlSerializable(typeof(GeneratedPopulateChild))]
 [YamlSerializable(typeof(GeneratedPopulateContainer))]
 [YamlSerializable(typeof(GeneratedPopulateViaTypeAttributeContainer))]
@@ -880,6 +1282,7 @@ internal sealed partial class TestYamlSerializerContext : YamlSerializerContext
 
 [YamlSourceGenerationOptions(
     WriteIndented = false,
+    IndentBlockSequences = false,
     PropertyNameCaseInsensitive = true,
     DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull,
     BlockSequenceMappingStyle = YamlSequenceItemStyle.Expanded,
@@ -898,6 +1301,17 @@ internal sealed partial class TestYamlSerializerContextWithOptions : YamlSeriali
         : base(options)
     {
     }
+}
+
+[YamlSourceGenerationOptions(StringStyle = ScalarStyle.Literal)]
+[YamlSerializable(typeof(GeneratedLiteralStrings))]
+internal sealed partial class TestYamlSerializerContextWithLiteralStrings : YamlSerializerContext
+{
+}
+
+[YamlSerializable(typeof(GeneratedScriptStrings))]
+internal sealed partial class TestYamlSerializerContextWithStringStyleAttribute : YamlSerializerContext
+{
 }
 
 [YamlSourceGenerationOptions(PropertyNamingPolicy = YamlKnownNamingPolicy.SnakeCaseLower)]
@@ -930,6 +1344,14 @@ internal sealed partial class TestYamlSerializerContextWithSchema : YamlSerializ
 }
 
 [YamlSourceGenerationOptions(
+    PropertyNamingPolicy = YamlKnownNamingPolicy.PascalCase,
+    DictionaryKeyPolicy = YamlKnownNamingPolicy.PascalCase)]
+[YamlSerializable(typeof(GeneratedWithPascalCaseOptions))]
+internal sealed partial class TestYamlSerializerContextWithPascalCase : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(
     UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow)]
 [YamlSerializable(typeof(GeneratedWithDefaultOptions))]
 internal sealed partial class TestYamlSerializerContextWithStrictUnmappedMembers : YamlSerializerContext
@@ -954,8 +1376,106 @@ internal sealed partial class TransitiveYamlSerializerContext : YamlSerializerCo
 internal sealed partial class TestYamlSerializerContextWithCustomPropertyNames : YamlSerializerContext
 {
 }
+
+internal sealed class GeneratedGetOnlyPropertyPayload
+{
+    public int A { get; } = 1;
+}
+
+internal sealed class GeneratedPublicFieldPayload
+{
+    public int F;
+}
+
+internal sealed class GeneratedValueTuplePayload
+{
+    public (int A, string B) Value { get; set; }
+}
+
+[YamlSourceGenerationOptions(DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull)]
+[YamlSerializable(typeof(GeneratedGetOnlyPropertyPayload))]
+[YamlSerializable(typeof(GeneratedPublicFieldPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeIgnoreCondition : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(
+    PropertyNameCaseInsensitive = false,
+    Schema = YamlSchemaKind.Core,
+    DuplicateKeyHandling = YamlDuplicateKeyHandling.Error,
+    PreferredObjectCreationHandling = YamlObjectCreationHandling.Replace,
+    UnmappedMemberHandling = YamlUnmappedMemberHandling.Skip)]
+[YamlSerializable(typeof(GeneratedPublicFieldPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeReadOptions : YamlSerializerContext
+{
+}
+
+[YamlSerializable(typeof(GeneratedValueTuplePayload))]
+internal sealed partial class TestYamlSerializerContextWithValueTuple : YamlSerializerContext
+{
+}
+
+internal sealed class GeneratedMemberInclusionPayload
+{
+    public int Property { get; set; } = 1;
+
+    public int GetOnly { get; } = 2;
+
+    public int Field = 3;
+
+    public readonly int ReadOnlyField = 4;
+}
+
+[YamlSourceGenerationOptions(IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true)]
+[YamlSerializable(typeof(GeneratedMemberInclusionPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeMemberInclusion : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(IncludeFields = false, IgnoreReadOnlyProperties = false)]
+[YamlSerializable(typeof(GeneratedMemberInclusionPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeMemberExclusion : YamlSerializerContext
+{
+}
 public class YamlSerializerSourceGenerationTests
 {
+    [Fact]
+    public void ReadmeExample_TypeInfo()
+    {
+        #region YamlSerializerContext_TypeInfo
+        var product = new Product { Id = 1, DisplayName = "Sample product", Tags = ["new"] };
+
+        var yaml = YamlSerializer.Serialize(product, AppYamlContext.Default.Product);
+        Assert.Equal("id: 1\nname: Sample product\ntags:\n  - new\n", yaml);
+
+        var copy = YamlSerializer.Deserialize(yaml, AppYamlContext.Default.Product);
+        Assert.Equal("Sample product", copy!.DisplayName);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Context()
+    {
+        #region YamlSerializerContext_Context
+        var product = new Product { Id = 1, DisplayName = "Sample product" };
+
+        var yaml = YamlSerializer.Serialize(product, AppYamlContext.Default);
+        var copy = YamlSerializer.Deserialize<Product>(yaml, AppYamlContext.Default);
+        Assert.Equal("Sample product", copy!.DisplayName);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CreateOptions()
+    {
+        #region YamlSerializerContext_CreateOptions
+        var options = AppYamlContext.Default.CreateOptions(o => o with { SourceName = "config.yaml" });
+        #endregion
+
+        Assert.Equal("config.yaml", options.SourceName);
+        Assert.Same(AppYamlContext.Default, options.TypeInfoResolver);
+    }
+
     [Fact]
     public void GeneratedContext_YamlNodeRoot_UsesModelConverter()
     {
@@ -1017,9 +1537,9 @@ public class YamlSerializerSourceGenerationTests
         Assert.Equal("collection", roundtripped.Bars[0].Baz?.Value);
         Assert.Equal("b", roundtripped.Matrix[1][0].Value);
         Assert.Equal(new object?[] { "node" }, (List<object?>)roundtripped.Dynamic!);
-        Assert.Equal(3L, ((Dictionary<string, object?>)roundtripped.DynamicList[2]!)["three"]);
+        Assert.Equal(3L, ((Dictionary<object, object?>)roundtripped.DynamicList[2]!)["three"]);
         Assert.Equal(new object?[] { "x", 4L }, (List<object?>)roundtripped.DynamicMap["items"]!);
-        Assert.Equal("value", ((Dictionary<string, object?>)roundtripped.DynamicMap["mapping"]!)["key"]);
+        Assert.Equal("value", ((Dictionary<object, object?>)roundtripped.DynamicMap["mapping"]!)["key"]);
     }
 
     [Fact]
@@ -1380,6 +1900,105 @@ public class YamlSerializerSourceGenerationTests
         Assert.Equal(payload.UBig, roundTrip.UBig);
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void GeneratedContext_Ieee754ScalarTypes_RoundTrip()
+    {
+        var payload = new GeneratedModernScalars
+        {
+            Date = new DateOnly(2026, 03, 01),
+            Time = new TimeOnly(12, 34, 56),
+            Ratio = (Half)1.5f,
+            Big = Int128.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture),
+            UBig = UInt128.Parse("123456789012345678901234567891", CultureInfo.InvariantCulture),
+            Brain = (BFloat16)1.5f,
+            Small = Decimal32.Parse("-5.30", CultureInfo.InvariantCulture),
+            Medium = Decimal64.NaN,
+            Large = Decimal128.Pi,
+            OptionalMedium = Decimal64.PositiveInfinity,
+        };
+
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedModernScalars;
+
+        var yaml = YamlSerializer.Serialize(payload, typeInfo);
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.Contains("Brain: 1.5", yaml);
+        Assert.Contains("Small: -5.30", yaml);
+        Assert.Contains("Medium: .nan", yaml);
+        Assert.Contains("Large: 3.141592653589793238462643383279503", yaml);
+        Assert.Contains("OptionalMedium: .inf", yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal(payload.Brain, roundTrip.Brain);
+        Assert.Equal(payload.Small, roundTrip.Small);
+        Assert.True(Decimal64.IsNaN(roundTrip.Medium));
+        Assert.Equal(payload.Large, roundTrip.Large);
+        Assert.Equal(payload.OptionalMedium, roundTrip.OptionalMedium);
+    }
+#endif
+
+    [Fact]
+    public void GeneratedContext_UriAndCultureInfo_RoundTrip()
+    {
+        var payload = new GeneratedUriAndCultureScalars
+        {
+            Absolute = new Uri("https://example.com/path?query=1#fragment", UriKind.Absolute),
+            Relative = new Uri("path/to/resource", UriKind.Relative),
+            Culture = CultureInfo.InvariantCulture,
+            ByUri = new Dictionary<Uri, string> { [new Uri("https://example.com/", UriKind.Absolute)] = "root" },
+        };
+
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var yaml = YamlSerializer.Serialize(payload, typeInfo);
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal(payload.Absolute, roundTrip.Absolute);
+        Assert.Equal(payload.Relative, roundTrip.Relative);
+        Assert.Equal(CultureInfo.InvariantCulture, roundTrip.Culture);
+        Assert.Equal(payload.ByUri, roundTrip.ByUri);
+    }
+
+    [Fact]
+    public void GeneratedContext_NullUriAndCultureInfo_RoundTrip()
+    {
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var yaml = YamlSerializer.Serialize(new GeneratedUriAndCultureScalars(), typeInfo);
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(roundTrip);
+        Assert.Null(roundTrip.Absolute);
+        Assert.Null(roundTrip.Relative);
+        Assert.Null(roundTrip.Culture);
+        Assert.Null(roundTrip.ByUri);
+    }
+
+    [Fact]
+    public void GeneratedContext_InvalidUri_ShouldThrowYamlException()
+    {
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize("Absolute: \"http://\"", typeInfo));
+        Assert.Contains("Uri", ex.Message);
+    }
+
+    [Fact]
+    public void GeneratedContext_InvalidCultureInfo_ShouldThrowYamlException()
+    {
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize("Culture: not a culture!", typeInfo));
+        Assert.Contains("CultureInfo", ex.Message);
+    }
+
     [Fact]
     public void GeneratedContextExposesDefaultTypeInfoPropertyNames()
     {
@@ -1504,6 +2123,7 @@ public class YamlSerializerSourceGenerationTests
         var options = context.GeneratedWithDefaultOptions.Options;
 
         Assert.False(options.WriteIndented);
+        Assert.False(options.IndentBlockSequences);
         Assert.True(options.PropertyNameCaseInsensitive);
         Assert.Equal(YamlIgnoreCondition.WhenWritingNull, options.DefaultIgnoreCondition);
         Assert.Equal(YamlSequenceItemStyle.Expanded, options.BlockSequenceMappingStyle);
@@ -1514,7 +2134,6 @@ public class YamlSerializerSourceGenerationTests
         Assert.False(options.IncludeFields);
         Assert.False(options.IgnoreReadOnlyFields);
         Assert.False(options.IgnoreReadOnlyProperties);
-        Assert.False(options.RejectUnmatchedProperties);
         Assert.True(options.RespectRequiredConstructorParameters);
         Assert.True(options.RespectNullableAnnotations);
         Assert.Same(context, options.TypeInfoResolver);
@@ -1530,6 +2149,63 @@ public class YamlSerializerSourceGenerationTests
 
         Assert.Contains("displayName: Ada", yaml);
         Assert.DoesNotContain("optional:", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextQuotesAStringThatWouldResolveToAnotherType()
+    {
+        var typeInfo = TestYamlSerializerContextWithStringStyleAttribute.Default.GeneratedScriptStrings;
+        var yaml = YamlSerializer.Serialize(new GeneratedScriptStrings { Description = "true" }, typeInfo);
+
+        Assert.Equal("Script: null\nDescription: \"true\"\n", yaml);
+        Assert.Equal("true", YamlSerializer.Deserialize(yaml, typeInfo)?.Description);
+    }
+
+    [Fact]
+    public void GeneratedContextAppliesTheStringStyleOption()
+    {
+        var typeInfo = TestYamlSerializerContextWithLiteralStrings.Default.GeneratedLiteralStrings;
+        Assert.Equal(ScalarStyle.Literal, typeInfo.Options.ScalarStylePreferences.StringStyle);
+
+        var yaml = YamlSerializer.Serialize(new GeneratedLiteralStrings { Text = "a\nb" }, typeInfo);
+        Assert.Equal("Text: |-\n  a\n  b\n", yaml);
+        Assert.Equal("a\nb", YamlSerializer.Deserialize(yaml, typeInfo)?.Text);
+    }
+
+    [Fact]
+    public void GeneratedContextAppliesTheStringStyleAttribute()
+    {
+        var typeInfo = TestYamlSerializerContextWithStringStyleAttribute.Default.GeneratedScriptStrings;
+        var yaml = YamlSerializer.Serialize(new GeneratedScriptStrings { Script = "a\nb", Description = "c\nd" }, typeInfo);
+
+        Assert.Equal("Script: |-\n  a\n  b\nDescription: \"c\\nd\"\n", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+        Assert.Equal("a\nb", roundTrip?.Script);
+        Assert.Equal("c\nd", roundTrip?.Description);
+    }
+
+    [Fact]
+    public void GeneratedContextAppliesPascalCaseNamingPolicies()
+    {
+        var context = TestYamlSerializerContextWithPascalCase.Default;
+        var options = context.GeneratedWithPascalCaseOptions.Options;
+
+        Assert.Same(YamlNamingPolicy.PascalCase, options.DictionaryKeyPolicy);
+
+        var yaml = YamlSerializer.Serialize(
+            new GeneratedWithPascalCaseOptions
+            {
+                displayName = "Ada",
+                values = new Dictionary<string, int>(StringComparer.Ordinal) { ["firstKey"] = 1 },
+            },
+            context.GeneratedWithPascalCaseOptions);
+
+        Assert.Contains("DisplayName: Ada", yaml);
+        Assert.Contains("FirstKey: 1", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize(yaml, context.GeneratedWithPascalCaseOptions)!;
+        Assert.Equal("Ada", roundTrip.displayName);
     }
 
     [Fact]
@@ -1616,7 +2292,7 @@ public class YamlSerializerSourceGenerationTests
             },
             typeInfo);
 
-        Assert.Contains("url_value: \"https://example.com\"", yaml);
+        Assert.Contains("url_value: https://example.com", yaml);
         Assert.Contains("display_name: Ada", yaml);
 
         var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
@@ -1722,9 +2398,9 @@ public class YamlSerializerSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_RejectUnmatchedProperties_DisallowsUnknownMembers()
+    public void GeneratedContext_RuntimeUnmappedMemberHandling_DisallowsUnknownMembers()
     {
-        var context = new TestYamlSerializerContextWithOptions(new YamlSerializerOptions { RejectUnmatchedProperties = true });
+        var context = new TestYamlSerializerContextWithOptions(new YamlSerializerOptions { UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow });
 
         var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize(
             "displayName: Ada\nUnknown: test\n",
@@ -1734,9 +2410,9 @@ public class YamlSerializerSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_RejectUnmatchedProperties_DoesNotConflictWithExtensionData()
+    public void GeneratedContext_RuntimeUnmappedMemberHandling_DoesNotConflictWithExtensionData()
     {
-        var context = new TestYamlSerializerContext(new YamlSerializerOptions { RejectUnmatchedProperties = true });
+        var context = new TestYamlSerializerContext(new YamlSerializerOptions { UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow });
 
         var value = YamlSerializer.Deserialize(
             "DisplayName: Ada\nUnknown: test\n",
@@ -2036,6 +2712,13 @@ public class YamlSerializerSourceGenerationTests
         Assert.NotNull(roundSet);
         Assert.HasCount(2, roundSet);
 
+        var readOnlySetTypeInfo = context.IReadOnlySetString;
+        var yamlReadOnlySet = YamlSerializer.Serialize((IReadOnlySet<string>)new HashSet<string>(StringComparer.Ordinal) { "a", "b", "a" }, readOnlySetTypeInfo);
+        var roundReadOnlySet = YamlSerializer.Deserialize(yamlReadOnlySet, readOnlySetTypeInfo);
+        Assert.NotNull(roundReadOnlySet);
+        Assert.HasCount(2, roundReadOnlySet);
+        Assert.Contains("a", roundReadOnlySet);
+
         var dictTypeInfo = context.DictionaryInt32Int32;
         var yamlDict = YamlSerializer.Serialize(new Dictionary<int, int> { [1] = 2 }, dictTypeInfo);
         Assert.Contains("1:", yamlDict);
@@ -2068,6 +2751,7 @@ public class YamlSerializerSourceGenerationTests
         {
             ReadOnlyNumbers = new List<int> { 1, 2 },
             Tags = new HashSet<string>(StringComparer.Ordinal) { "a", "b", "a" },
+            ReadOnlyTags = new HashSet<string>(StringComparer.Ordinal) { "c", "d" },
             IntKeyMap = new Dictionary<int, string> { [1] = "one", [2] = "two" },
             EnumKeyMap = new Dictionary<GeneratedColor, int> { [GeneratedColor.Green] = 2 },
             ImmutableNumbers = ImmutableArray.Create(10, 20),
@@ -2085,6 +2769,11 @@ public class YamlSerializerSourceGenerationTests
         Assert.NotNull(roundtripped.Tags);
         Assert.HasCount(2, roundtripped.Tags);
         Assert.Contains("a", roundtripped.Tags);
+
+        Assert.NotNull(roundtripped.ReadOnlyTags);
+        Assert.HasCount(2, roundtripped.ReadOnlyTags);
+        Assert.Contains("c", roundtripped.ReadOnlyTags);
+        Assert.Contains("d", roundtripped.ReadOnlyTags);
 
         Assert.Equal("one", roundtripped.IntKeyMap[1]);
         Assert.NotNull(roundtripped.EnumKeyMap);
@@ -2171,7 +2860,7 @@ public class YamlSerializerSourceGenerationTests
         Assert.NotNull(roundtripped);
         Assert.NotNull(roundtripped.First);
         Assert.NotNull(roundtripped.Second);
-        Assert.True(ReferenceEquals(roundtripped.First, roundtripped.Second));
+        Assert.Same(roundtripped.First, roundtripped.Second);
         Assert.Equal("shared", roundtripped.First.Name);
     }
 
@@ -2195,7 +2884,7 @@ public class YamlSerializerSourceGenerationTests
         var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
         Assert.NotNull(roundtripped);
         Assert.NotNull(roundtripped.Next);
-        Assert.True(ReferenceEquals(roundtripped, roundtripped.Next));
+        Assert.Same(roundtripped, roundtripped.Next);
     }
 
     [Fact]
@@ -2599,6 +3288,100 @@ extra_list:
     }
 
     [Fact]
+    public void GeneratedContextSupportsYamlExtensionDataInterfaceDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedInterfaceExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.NotNull(roundtripped.Extra);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+
+        var serialized = YamlSerializer.Serialize(
+            new GeneratedInterfaceExtensionDataDictionaryPayload
+            {
+                Known = 3,
+                Extra = new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = 5 },
+            },
+            typeInfo);
+        Assert.Contains("Known: 3", serialized);
+        Assert.Contains("x: 5", serialized);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\nextra_text: a\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.NotNull(roundtripped.Extra);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+        Assert.Equal("a", roundtripped.Extra["extra_text"]);
+
+        var withoutExtras = YamlSerializer.Deserialize("Known: 3\n", typeInfo);
+        Assert.NotNull(withoutExtras);
+        Assert.Null(withoutExtras.Extra);
+
+        var serialized = YamlSerializer.Serialize(
+            new GeneratedReadOnlyExtensionDataDictionaryPayload
+            {
+                Known = 3,
+                Extra = ImmutableDictionary<string, object?>.Empty.Add("x", 5),
+            },
+            typeInfo);
+        Assert.Contains("Known: 3", serialized);
+        Assert.Contains("x: 5", serialized);
+    }
+
+    [Fact]
+    public void GeneratedContextCopiesExistingEntriesIntoYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrePopulatedReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal("kept", roundtripped.Extra["existing"]);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsConstructorYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedConstructorReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\nextra_text: a\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.NotNull(roundtripped.Extra);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+        Assert.Equal("a", roundtripped.Extra["extra_text"]);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsInitOnlyYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedInitOnlyReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.Equal("kept", roundtripped.Extra["existing"]);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+
+        var withoutExtras = YamlSerializer.Deserialize("Known: 3\n", typeInfo);
+        Assert.NotNull(withoutExtras);
+        Assert.Equal("kept", withoutExtras.Extra["existing"]);
+    }
+
+    [Fact]
     public void GeneratedContextSupportsYamlExtensionDataMapping()
     {
         var context = new TestYamlSerializerContext();
@@ -2773,6 +3556,285 @@ extra_list:
     }
 
     [Fact]
+    public void GeneratedContextReadsAndWritesPrivateMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateMemberModel;
+
+        var value = YamlSerializer.Deserialize("_name: Bob\nAge: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.GetName());
+        Assert.Equal(42, value.GetAge());
+
+        var roundtripped = new GeneratedPrivateMemberModel();
+        roundtripped.Initialize("Alice", 7);
+        var yaml = YamlSerializer.Serialize(roundtripped, typeInfo);
+
+        Assert.Contains("_name: Alice", yaml);
+        Assert.Contains("Age: 7", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextWritesPropertyWithPrivateSetter()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateSetterModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextWritesPrivateInitOnlyProperty()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateInitOnlyModel;
+
+        var value = YamlSerializer.Deserialize("Secret: hidden\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("hidden", value.GetSecret());
+    }
+
+    [Fact]
+    public void GeneratedContextReadsAndWritesPrivateStructMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateStructModel;
+
+        var value = YamlSerializer.Deserialize("_value: 3\nText: hi\n", typeInfo);
+
+        Assert.Equal(3, value.GetValue());
+        Assert.Equal("hi", value.GetText());
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("_value: 3", yaml);
+        Assert.Contains("Text: hi", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextReadsProtectedMemberDeclaredOnBaseType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedProtectedMemberModel;
+
+        var value = YamlSerializer.Deserialize("Inherited: base\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("base", value.GetInherited());
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateYamlConstructor()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateCtorModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nAge: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        Assert.Equal(42, value.Age);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateParameterlessYamlConstructor()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateParameterlessCtorModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateYamlConstructorWithInitOnlyMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateCtorWithInitOnlyModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nAge: 42\nTag: tag\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        Assert.Equal(42, value.Age);
+        Assert.Equal("tag", value.Tag);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateExtensionDataMember()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateExtensionDataModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nUnknown: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        var extra = value.GetExtra();
+        Assert.True(extra.TryGetValue("Unknown", out var unknown));
+        Assert.Equal("42", unknown?.ToString());
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateConstructorOfUnconstrainedGenericTypeWithValueTypeArgument()
+    {
+        var context = new TestYamlSerializerContext();
+
+        var value = YamlSerializer.Deserialize("Value: 42\n", context.GeneratedPrivateCtorGenericWrapperInt32);
+
+        Assert.NotNull(value);
+        Assert.Equal(42, value.Value);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateConstructorOfUnconstrainedGenericTypeWithReferenceTypeArgument()
+    {
+        var context = new TestYamlSerializerContext();
+
+        var value = YamlSerializer.Deserialize("Value: hello\n", context.GeneratedPrivateCtorGenericWrapperString);
+
+        Assert.NotNull(value);
+        Assert.Equal("hello", value.Value);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateMembersAndConstructorOfConstrainedGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedConstrainedEnvelopeGeneratedGenericPayload;
+
+        var value = YamlSerializer.Deserialize("_tag: envelope\nVersion: 3\nBody:\n  Id: 9\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("envelope", value.GetTag());
+        Assert.Equal(3, value.GetVersion());
+        Assert.Equal(9, value.Body.Id);
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("_tag: envelope", yaml);
+        Assert.Contains("Version: 3", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsSeveralInstantiationsOfTheSameGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+
+        var first = YamlSerializer.Deserialize("_tag: first\nBody:\n  Id: 1\n", context.GeneratedConstrainedEnvelopeGeneratedGenericPayload);
+        var second = YamlSerializer.Deserialize("_tag: second\nBody:\n  Id: 2\n", context.GeneratedConstrainedEnvelopeGeneratedOtherGenericPayload);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal("first", first.GetTag());
+        Assert.Equal("second", second.GetTag());
+    }
+
+    [Fact]
+    public void GeneratedContextReadsPrivateMemberOfUnmanagedConstrainedGenericStruct()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedUnmanagedHolderDouble;
+
+        var value = YamlSerializer.Deserialize("_value: 1.5\n", typeInfo);
+
+        Assert.Equal(1.5, value.GetValue());
+        Assert.Contains("_value: 1.5", YamlSerializer.Serialize(value, typeInfo));
+    }
+
+    [Fact]
+    public void GeneratedContextResolvesOpenGenericDerivedType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedGenericAnimalString;
+        GeneratedGenericAnimal<string> animal = new GeneratedGenericDog<string> { Name = "Rex", BarkVolume = 3 };
+
+        var yaml = YamlSerializer.Serialize(animal, typeInfo);
+
+        Assert.Contains("$type: dog", yaml);
+        Assert.Contains("BarkVolume: 3", yaml);
+
+        var value = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(value);
+        Assert.IsType<GeneratedGenericDog<string>>(value);
+        Assert.Equal("Rex", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextResolvesOpenGenericDerivedTypeWithWrappedTypeArgument()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedWrapperNodeListInt32;
+        GeneratedWrapperNode<List<int>> node = new GeneratedWrappedLeaf<int> { Depth = 2, Label = "leaf" };
+
+        var yaml = YamlSerializer.Serialize(node, typeInfo);
+
+        Assert.Contains("$type: leaf", yaml);
+        Assert.Contains("Label: leaf", yaml);
+
+        var value = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(value);
+        Assert.IsType<GeneratedWrappedLeaf<int>>(value);
+        Assert.Equal(2, value.Depth);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesOpenGenericConverterDeclaredOnGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedOpenGenericBoxInt32;
+
+        var yaml = YamlSerializer.Serialize(new GeneratedOpenGenericBox<int>(7), typeInfo);
+
+        Assert.Equal("7\n", yaml);
+        Assert.Equal(7, YamlSerializer.Deserialize(yaml, typeInfo)!.Value);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesOpenGenericConvertersOnMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedOpenGenericConverterHolder;
+        var value = new GeneratedOpenGenericConverterHolder
+        {
+            Number = new GeneratedOpenGenericBox<int>(42),
+            Text = new GeneratedOpenGenericCell<string> { Value = "hello" },
+        };
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("Number: 42", yaml);
+        Assert.Contains("Text: hello", yaml);
+
+        var deserialized = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(deserialized);
+        Assert.Equal(42, deserialized.Number!.Value);
+        Assert.Equal("hello", deserialized.Text!.Value);
+    }
+
+    [Fact]
+    public void GeneratedContextReadsPrivateMemberOfGenericTypeNestedInGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedGenericOuterInnerInt32;
+
+        var value = YamlSerializer.Deserialize("_inner: 4\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal(4, value.GetInner());
+    }
+
+    [Fact]
     public void GeneratedContextThrowsWhenConstructorParameterMissing()
     {
         var context = new TestYamlSerializerContext();
@@ -2852,8 +3914,8 @@ extra_list:
         Assert.NotNull(value);
         Assert.Equal(id, value.Id);
         Assert.Equal(optionalId, value.OptionalId);
-        Assert.Contains("Id: \"ref:id\"", yaml);
-        Assert.Contains("OptionalId: \"ref:optional-id\"", yaml);
+        Assert.Contains("Id: ref:id", yaml);
+        Assert.Contains("OptionalId: ref:optional-id", yaml);
     }
 
     [Fact]
@@ -2879,7 +3941,7 @@ extra_list:
         Assert.Equal(1, createConverterCount);
         Assert.Equal(canConvertCount, factory.CanConvertCount);
         Assert.Equal(createConverterCount, factory.CreateConverterCount);
-        Assert.Contains("Id: \"ref:id\"", yaml);
+        Assert.Contains("Id: ref:id", yaml);
         Assert.NotNull(value);
         Assert.Equal(id, value.Id);
     }
@@ -2930,4 +3992,114 @@ extra_list:
         Assert.Equal("Root", roundtripped.Name);
         Assert.Equal(4, roundtripped.Level);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildTimeDefaultIgnoreCondition_HonorsRuntimeReadOnlyAndFieldOptions(bool useSourceGeneration)
+    {
+        YamlSerializerOptions CreateOptions(Func<YamlSerializerOptions, YamlSerializerOptions> configure)
+            => useSourceGeneration
+                ? TestYamlSerializerContextWithBuildTimeIgnoreCondition.Default.CreateOptions(configure)
+                : configure(new YamlSerializerOptions { DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull });
+
+        var defaults = CreateOptions(static options => options);
+        var ignoreReadOnly = CreateOptions(static options => options with { IgnoreReadOnlyProperties = true });
+        var includeFields = CreateOptions(static options => options with { IncludeFields = true });
+
+        Assert.Equal("A: 1\n", YamlSerializer.Serialize(new GeneratedGetOnlyPropertyPayload(), defaults));
+        Assert.Equal("{}\n", YamlSerializer.Serialize(new GeneratedGetOnlyPropertyPayload(), ignoreReadOnly));
+        Assert.Equal("{}\n", YamlSerializer.Serialize(new GeneratedPublicFieldPayload { F = 2 }, defaults));
+        Assert.Equal("F: 2\n", YamlSerializer.Serialize(new GeneratedPublicFieldPayload { F = 2 }, includeFields));
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedPublicFieldPayload>("F: 3\n", includeFields)!.F);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildTimeReadOptions_HonorRuntimeIncludeFields(bool useSourceGeneration)
+    {
+        YamlSerializerOptions CreateOptions(bool includeFields)
+            => useSourceGeneration
+                ? TestYamlSerializerContextWithBuildTimeReadOptions.Default.CreateOptions(options => options with { IncludeFields = includeFields })
+                : new YamlSerializerOptions { Schema = YamlSchemaKind.Core, IncludeFields = includeFields };
+
+        Assert.Equal(0, YamlSerializer.Deserialize<GeneratedPublicFieldPayload>("F: 3\n", CreateOptions(includeFields: false))!.F);
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedPublicFieldPayload>("F: 3\n", CreateOptions(includeFields: true))!.F);
+        Assert.Equal("F: 4\n", YamlSerializer.Serialize(new GeneratedPublicFieldPayload { F = 4 }, CreateOptions(includeFields: true)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildTimeMemberInclusionOptions_AreHonored(bool useSourceGeneration)
+    {
+        var includeOptions = useSourceGeneration
+            ? TestYamlSerializerContextWithBuildTimeMemberInclusion.Default.Options
+            : new YamlSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true };
+        var excludeOptions = useSourceGeneration
+            ? TestYamlSerializerContextWithBuildTimeMemberExclusion.Default.Options
+            : new YamlSerializerOptions { IncludeFields = false, IgnoreReadOnlyProperties = false };
+
+        Assert.Equal("Property: 1\nField: 3\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), includeOptions));
+        Assert.Equal(7, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", includeOptions)!.Field);
+        Assert.Equal("Property: 1\nGetOnly: 2\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), excludeOptions));
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", excludeOptions)!.Field);
+    }
+
+    [Fact]
+    public void BuildTimeMemberInclusionOptions_IgnoreRuntimeOptions()
+    {
+        var includeOptions = TestYamlSerializerContextWithBuildTimeMemberInclusion.Default.CreateOptions(
+            static options => options with { IncludeFields = false, IgnoreReadOnlyFields = false, IgnoreReadOnlyProperties = false });
+        var excludeOptions = TestYamlSerializerContextWithBuildTimeMemberExclusion.Default.CreateOptions(
+            static options => options with { IncludeFields = true, IgnoreReadOnlyProperties = true });
+
+        Assert.Equal("Property: 1\nField: 3\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), includeOptions));
+        Assert.Equal(7, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", includeOptions)!.Field);
+        Assert.Equal("Property: 1\nGetOnly: 2\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), excludeOptions));
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", excludeOptions)!.Field);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ValueTupleMember_IsSerializedLikeReflection(bool useSourceGeneration)
+    {
+        YamlSerializerOptions CreateOptions(bool includeFields)
+            => useSourceGeneration
+                ? TestYamlSerializerContextWithValueTuple.Default.CreateOptions(options => options with { IncludeFields = includeFields })
+                : new YamlSerializerOptions { IncludeFields = includeFields };
+
+        var payload = new GeneratedValueTuplePayload { Value = (1, "x") };
+
+        Assert.Equal("Value: {}\n", YamlSerializer.Serialize(payload, CreateOptions(includeFields: false)));
+        Assert.Equal("Value:\n  Item1: 1\n  Item2: x\n", YamlSerializer.Serialize(payload, CreateOptions(includeFields: true)));
+        Assert.Equal(default((int, string)), YamlSerializer.Deserialize<GeneratedValueTuplePayload>("Value:\n  Item1: 2\n  Item2: y\n", CreateOptions(includeFields: false))!.Value);
+        Assert.Equal((2, "y"), YamlSerializer.Deserialize<GeneratedValueTuplePayload>("Value:\n  Item1: 2\n  Item2: y\n", CreateOptions(includeFields: true))!.Value);
+    }
 }
+
+#pragma warning disable CA1819 // Properties should not return arrays: the readme example uses an array
+#region YamlSerializer_Product
+public sealed class Product
+{
+    public int Id { get; set; }
+
+    [YamlPropertyName("name")]
+    public string DisplayName { get; set; } = "";
+
+    public string[] Tags { get; set; } = [];
+}
+#endregion
+#pragma warning restore CA1819
+
+#region YamlSerializerContext_Declare
+[YamlSerializable(typeof(Product))]
+[YamlSourceGenerationOptions(
+    PropertyNamingPolicy = YamlKnownNamingPolicy.KebabCaseLower,
+    WriteIndented = true)]
+public sealed partial class AppYamlContext : YamlSerializerContext
+{
+}
+#endregion

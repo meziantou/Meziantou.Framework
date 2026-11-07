@@ -1,9 +1,11 @@
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.StronglyTypedId;
 
@@ -17,25 +19,37 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
     private const string PropertyName = "Value";
     private const string PropertyAsStringName = "ValueAsString";
 
+    internal const string GuidGenerationStrategyPropertyName = "GuidGenerationStrategy";
+    internal const string StronglyTypedIdAttributeName = "Meziantou.Framework.Annotations.StronglyTypedIdAttribute";
+    internal const string StronglyTypedIdGenericAttributeName = "Meziantou.Framework.Annotations.StronglyTypedIdAttribute`1";
+    internal const string StronglyTypedIdDefaultsAttributeName = "Meziantou.Framework.Annotations.StronglyTypedIdDefaultsAttribute";
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var nonGenericTypes = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                "Meziantou.Framework.Annotations.StronglyTypedIdAttribute",
+                StronglyTypedIdAttributeName,
                 predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
                 transform: static (ctx, cancellationToken) => GetNonGenericSemanticTargetForGeneration(ctx, cancellationToken))
             .Where(static m => m is not null)
             .WithTrackingName("Syntax");
         var genericTypes = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                "Meziantou.Framework.Annotations.StronglyTypedIdAttribute`1",
+                StronglyTypedIdGenericAttributeName,
                 predicate: static (syntax, _) => IsSyntaxTargetForGeneration(syntax),
                 transform: static (ctx, cancellationToken) => GetGenericSemanticTargetForGeneration(ctx, cancellationToken))
             .Where(static m => m is not null)
             .WithTrackingName("Syntax");
+        var assemblyDefaults = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                StronglyTypedIdDefaultsAttributeName,
+                predicate: static (_, _) => true,
+                transform: static (ctx, _) => GetAssemblyDefaults(ctx))
+            .Collect()
+            .Select(static (options, _) => options.FirstOrDefault() ?? StronglyTypedIdOptions.Empty);
 
-        context.RegisterSourceOutput(nonGenericTypes, (context, attribute) => Execute(context, attribute!));
-        context.RegisterSourceOutput(genericTypes, (context, attribute) => Execute(context, attribute!));
+        context.RegisterSourceOutput(nonGenericTypes.Combine(assemblyDefaults), (context, item) => Execute(context, item.Left!.ApplyDefaults(item.Right)));
+        context.RegisterSourceOutput(genericTypes.Combine(assemblyDefaults), (context, item) => Execute(context, item.Left!.ApplyDefaults(item.Right)));
 
         static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
         {
@@ -104,49 +118,12 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         {
             var semanticModel = ctx.SemanticModel;
 
+            // Generic types are not supported. The analyzer reports MFSTID0004.
+            if (ctx.TargetSymbol is not INamedTypeSymbol targetSymbol || IsGenericTypeOrNestedInGenericType(targetSymbol))
+                return null;
+
             foreach (var attribute in ctx.Attributes)
             {
-                var converters = StronglyTypedIdConverters.None;
-                AddConverter(arguments[0], StronglyTypedIdConverters.System_Text_Json);
-                AddConverter(arguments[1], StronglyTypedIdConverters.Newtonsoft_Json);
-                AddConverter(arguments[2], StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
-                AddConverter(arguments[3], StronglyTypedIdConverters.MongoDB_Bson_Serialization);
-                void AddConverter(TypedConstant value, StronglyTypedIdConverters converterValue)
-                {
-                    if (value.Value is bool argumentValue && argumentValue)
-                    {
-                        converters |= converterValue;
-                    }
-                }
-
-                var addCodeGeneratedAttribute = false;
-                if (arguments[4].Value is bool addCodeGeneratedAttributeValue)
-                {
-                    addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
-                }
-
-                T GetNamedProperty<T>(string name, T defaultValue)
-                {
-                    foreach (var arg in attribute.NamedArguments)
-                    {
-                        if (arg.Key == name)
-                        {
-                            if (arg.Value.Value is T result)
-                                return result;
-
-                            if (typeof(T).IsEnum && arg.Value.Value is int i && Enum.IsDefined(typeof(T), i))
-                                return (T)Enum.ToObject(typeof(T), i);
-
-                            break;
-                        }
-                    }
-
-                    return defaultValue;
-                }
-
-                var stringComparison = GetNamedProperty("StringComparison", defaultValue: StringComparison.Ordinal);
-                var generateToStringAsRecord = GetNamedProperty("GenerateToStringAsRecord", defaultValue: true);
-
                 var attributeSyntax = attribute.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
                 var idType = GetIdType(semanticModel.Compilation, type);
 
@@ -155,20 +132,107 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                     return null;
                 }
 
+                var explicitConstructorArguments = GetExplicitConstructorArguments(attribute, attributeSyntax);
+                var options = new StronglyTypedIdOptions(
+                    GetConstructorArgument("generateSystemTextJsonConverter", arguments[0]),
+                    GetConstructorArgument("generateNewtonsoftJsonConverter", arguments[1]),
+                    GetConstructorArgument("generateSystemComponentModelTypeConverter", arguments[2]),
+                    GetConstructorArgument("generateMongoDBBsonSerialization", arguments[3]),
+                    GetConstructorArgument("addCodeGeneratedAttribute", arguments[4]),
+                    GetNamedProperty<StringComparison>(attribute, "StringComparison"),
+                    GetNamedProperty<bool>(attribute, "GenerateToStringAsRecord"),
+                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName));
+
+                bool? GetConstructorArgument(string parameterName, TypedConstant value)
+                {
+                    if (!explicitConstructorArguments.Contains(parameterName))
+                        return null;
+
+                    return value.Value is bool result ? result : null;
+                }
+
                 return new AttributeInfo(
                     semanticModel.Compilation,
-                    attributeSyntax,
                     (INamedTypeSymbol)ctx.TargetSymbol,
                     idType,
                     type,
-                    converters,
-                    addCodeGeneratedAttribute,
-                    stringComparison,
-                    generateToStringAsRecord);
+                    options);
             }
 
             return null;
         }
+
+        static StronglyTypedIdOptions GetAssemblyDefaults(GeneratorAttributeSyntaxContext ctx)
+        {
+            var options = StronglyTypedIdOptions.Empty;
+            foreach (var attribute in ctx.Attributes)
+            {
+                options = options.Merge(new StronglyTypedIdOptions(
+                    GetNamedProperty<bool>(attribute, "GenerateSystemTextJsonConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateNewtonsoftJsonConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateSystemComponentModelTypeConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateMongoDBBsonSerialization"),
+                    GetNamedProperty<bool>(attribute, "AddCodeGeneratedAttribute"),
+                    GetNamedProperty<StringComparison>(attribute, "StringComparison"),
+                    GetNamedProperty<bool>(attribute, "GenerateToStringAsRecord"),
+                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName)));
+            }
+
+            return options;
+        }
+    }
+
+    private static T? GetNamedProperty<T>(AttributeData attribute, string name) where T : struct
+    {
+        foreach (var arg in attribute.NamedArguments)
+        {
+            if (arg.Key == name)
+            {
+                if (arg.Value.Value is T result)
+                    return result;
+
+                if (typeof(T).IsEnum && arg.Value.Value is int i && Enum.IsDefined(typeof(T), i))
+                    return (T)Enum.ToObject(typeof(T), i);
+
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the names of the constructor parameters explicitly set in the source code, so optional parameters that are not set can fall back to the assembly-level defaults.
+    /// </summary>
+    private static HashSet<string> GetExplicitConstructorArguments(AttributeData attribute, SyntaxNode attributeSyntax)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        if (attributeSyntax is not AttributeSyntax { ArgumentList: not null } syntax)
+            return result;
+
+        var parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+        var index = 0;
+        foreach (var argument in syntax.ArgumentList.Arguments)
+        {
+            if (argument.NameEquals is not null)
+                continue;
+
+            if (argument.NameColon is not null)
+            {
+                result.Add(argument.NameColon.Name.Identifier.ValueText);
+            }
+            else
+            {
+                if (index < parameters.Length)
+                {
+                    result.Add(parameters[index].Name);
+                }
+
+                index++;
+            }
+        }
+
+        return result;
     }
 
     private static void Execute(SourceProductionContext context, AttributeInfo attribute)
@@ -184,6 +248,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             writer.WriteLine("// StringComparison: " + attribute.StringComparison);
         }
 
+        if (attribute.IdType is IdType.System_Guid)
+        {
+            writer.WriteLine("// GuidGenerationStrategy: " + attribute.GuidGenerationStrategy);
+        }
+
         writer.WriteLine("#pragma warning disable RS0030");
         writer.WriteLine("#nullable enable");
 
@@ -196,6 +265,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         if (attribute.CanImplementISpanParsable())
         {
             baseTypes += $", global::System.ISpanParsable<{attribute.TypeName}>";
+        }
+
+        if (attribute.CanImplementIUtf8SpanParsable())
+        {
+            baseTypes += $", global::System.IUtf8SpanParsable<{attribute.TypeName}>";
+        }
+
+        if (attribute.CanImplementIFormattable())
+        {
+            baseTypes += ", global::System.IFormattable";
+        }
+
+        if (attribute.CanImplementISpanFormattable())
+        {
+            baseTypes += ", global::System.ISpanFormattable";
+        }
+
+        if (attribute.CanImplementIUtf8SpanFormattable())
+        {
+            baseTypes += ", global::System.IUtf8SpanFormattable";
         }
 
         if (attribute.SupportIStronglyTypedId)
@@ -253,7 +342,35 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
 
         Debug.Assert(writer.Indentation == 0);
-        context.AddSource(attribute.TypeName + ".g.cs", writer.ToSourceText());
+        context.AddSource(GetHintName(attribute.PartialTypeContext), writer.ToSourceText());
+    }
+
+    /// <summary>
+    /// Gets the name of the generated file for a type. Roslyn requires the name to be unique within a generator, so the fully-qualified name of the type is used instead of its short name.
+    /// </summary>
+    private static string GetHintName(PartialTypeContext context)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(context.Namespace))
+        {
+            sb.Append(context.Namespace);
+            sb.Append('.');
+        }
+
+        AppendTypeNames(sb, context);
+        sb.Append(".g.cs");
+        return sb.ToString();
+
+        static void AppendTypeNames(StringBuilder sb, PartialTypeContext context)
+        {
+            if (context.Parent is not null)
+            {
+                AppendTypeNames(sb, context.Parent);
+                sb.Append('.');
+            }
+
+            sb.Append(context.Name);
+        }
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Disposed manually")]
@@ -316,6 +433,20 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
     }
 
+    /// <summary>
+    /// Indicates whether the type is generic or is nested in a generic type. The generated code cannot support those types as an attribute argument cannot use a type parameter (CS0416), so the converters could not be associated with the type.
+    /// </summary>
+    internal static bool IsGenericTypeOrNestedInGenericType(INamedTypeSymbol symbol)
+    {
+        for (var current = symbol; current is not null; current = current.ContainingType)
+        {
+            if (current.Arity > 0)
+                return true;
+        }
+
+        return false;
+    }
+
     internal static IdType GetIdType(Compilation compilation, ITypeSymbol symbol)
     {
         var result = symbol.SpecialType switch
@@ -374,16 +505,13 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute, StringComparison stringComparison, bool generateToStringAsRecord)
+        public AttributeInfo(Compilation compilation, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdOptions options)
         {
             Debug.Assert(idType != IdType.Unknown);
 
-            AttributeSyntax = attributeSyntax;
             IdType = idType;
-            Converters = converters;
-            AddCodeGeneratedAttribute = addCodeGeneratedAttribute;
-            StringComparison = stringComparison;
-            GenerateToStringAsRecord = generateToStringAsRecord;
+            Options = options;
+            ApplyOptions();
             TypeName = typeSymbol.Name;
             IsSealed = typeSymbol.IsSealed;
             IsReferenceType = typeSymbol.IsReferenceType;
@@ -392,6 +520,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
             var readOnlySpanSymbol = compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
             var readOnlySpanCharSymbol = readOnlySpanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Char));
+            var readOnlySpanByteSymbol = readOnlySpanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
+            var spanSymbol = compilation.GetTypeByMetadataName("System.Span`1");
+            var spanCharSymbol = spanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Char));
+            var spanByteSymbol = spanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
+            var formatProviderSymbol = compilation.GetTypeByMetadataName("System.IFormatProvider");
             foreach (var member in typeSymbol.GetMembers())
             {
                 switch (member)
@@ -440,6 +573,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                         IsParseDefined_ReadOnlySpan = true;
                         break;
 
+                    case IMethodSymbol { IsStatic: true, Name: "TryParse", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [var param1, { RefKind: RefKind.Out } param2] } when SymbolEqual(param1.Type, readOnlySpanByteSymbol) && SymbolEqual(param2.Type, typeSymbol):
+                        IsTryParseDefined_Utf8 = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: true, Name: "Parse", Parameters: [var param1] } when SymbolEqual(param1.Type, readOnlySpanByteSymbol):
+                        IsParseDefined_Utf8 = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: false, Name: "ToString", ReturnType.SpecialType: SpecialType.System_String, Parameters: [{ Type.SpecialType: SpecialType.System_String }, var param2] } when SymbolEqual(param2.Type, formatProviderSymbol):
+                        IsToStringFormatDefined = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: false, Name: "TryFormat" } method when GetTryFormatSignature(method, spanCharSymbol, readOnlySpanCharSymbol, formatProviderSymbol) is TryFormatSignature.FormatAndProvider:
+                        IsTryFormatDefined_Char = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: false, Name: "TryFormat" } method when GetTryFormatSignature(method, spanByteSymbol, readOnlySpanCharSymbol, formatProviderSymbol) is TryFormatSignature.FormatAndProvider:
+                        IsTryFormatDefined_Utf8 = true;
+                        break;
+
                     case IMethodSymbol { IsStatic: false, Name: ".ctor", Parameters: [var param1] } when SymbolEqual(param1.Type, idTypeSymbol):
                         IsCtorDefined = true;
                         break;
@@ -481,18 +634,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             SupportIStronglyTypedIdOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") is not null;
             SupportIParsable = compilation.GetTypeByMetadataName("System.IParsable`1") is not null;
             SupportISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1") is not null;
+            SupportIUtf8SpanParsable = compilation.GetBestTypeByMetadataName("System.IUtf8SpanParsable`1") is not null && compilation.GetBestTypeByMetadataName("System.Text.Unicode.Utf8") is not null;
+            SupportIFormattable = compilation.GetBestTypeByMetadataName("System.IFormattable") is not null;
+            SupportISpanFormattable = compilation.GetBestTypeByMetadataName("System.ISpanFormattable") is not null;
+            SupportIUtf8SpanFormattable = compilation.GetBestTypeByMetadataName("System.IUtf8SpanFormattable") is not null && compilation.GetBestTypeByMetadataName("System.Text.Unicode.Utf8") is not null;
+            ValueTypeHasToStringFormat = idTypeSymbol.GetMembers("ToString").Any(member => member is IMethodSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public, ReturnType.SpecialType: SpecialType.System_String, Parameters: [{ Type.SpecialType: SpecialType.System_String }, var param2] } && SymbolEqual(param2.Type, formatProviderSymbol));
+            ValueTypeTryFormat_Char = GetValueTypeTryFormatSignature(idTypeSymbol, spanCharSymbol, readOnlySpanCharSymbol, formatProviderSymbol);
+            ValueTypeTryFormat_Utf8 = GetValueTypeTryFormatSignature(idTypeSymbol, spanByteSymbol, readOnlySpanCharSymbol, formatProviderSymbol);
             SupportTypeConverter = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") is not null;
             SupportSystemTextJsonConverter = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") is not null;
             SupportNewtonsoftJsonConverter = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") is not null;
             SupportMongoDbConverter = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") is not null;
             SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") is { } type && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
             SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions { LanguageVersion: >= (LanguageVersion)1100 };
+            SupportGuidCreateVersion7 = compilation.SupportGuidCreateVersion7();
 
             var icomparableSymbol = compilation.GetTypeByMetadataName("System.IComparable");
             var icomparableCompareToMember = icomparableSymbol?.GetMembers("CompareTo").FirstOrDefault();
             if (icomparableSymbol is not null && icomparableCompareToMember is not null)
             {
-                ImplementsIComparable = Implements(typeSymbol, icomparableSymbol);
+                ImplementsIComparable = typeSymbol.Implements(icomparableSymbol);
                 ImplementsIComparable_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableCompareToMember) is not null;
             }
 
@@ -501,7 +662,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             var icomparableOfTCompareToMember = icomparableOfTypeSymbol?.GetMembers("CompareTo").FirstOrDefault();
             if (icomparableOfTSymbol is not null && icomparableOfTCompareToMember is not null)
             {
-                ImplementsIComparableOfT = Implements(typeSymbol, icomparableOfTypeSymbol);
+                ImplementsIComparableOfT = typeSymbol.Implements(icomparableOfTypeSymbol);
                 ImplementsIComparableOfT_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableOfTCompareToMember) is not null;
             }
 
@@ -510,21 +671,25 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             ValueTypeCSharpTypeName = GetCSharpTypeName(IdType);
             ValueTypeCSharpNullableTypeName = ValueTypeCSharpTypeName + (IsReferenceType ? "?" : "");
 
-            static bool Implements(ITypeSymbol symbol, ITypeSymbol? interfaceSymbol)
-            {
-                if (interfaceSymbol is null)
-                    return false;
+            static bool SymbolEqual(ITypeSymbol? left, ITypeSymbol? right) => SymbolEqualityComparer.Default.Equals(left, right);
 
-                foreach (var iface in symbol.AllInterfaces)
+            static TryFormatSignature GetValueTypeTryFormatSignature(ITypeSymbol valueType, ITypeSymbol? spanSymbol, ITypeSymbol? readOnlySpanCharSymbol, ITypeSymbol? formatProviderSymbol)
+            {
+                var result = TryFormatSignature.None;
+                foreach (var member in valueType.GetMembers("TryFormat"))
                 {
-                    if (SymbolEqual(iface, interfaceSymbol))
-                        return true;
+                    if (member is IMethodSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public } method)
+                    {
+                        var signature = GetTryFormatSignature(method, spanSymbol, readOnlySpanCharSymbol, formatProviderSymbol);
+                        if (signature > result)
+                        {
+                            result = signature;
+                        }
+                    }
                 }
 
-                return false;
+                return result;
             }
-
-            static bool SymbolEqual(ITypeSymbol? left, ITypeSymbol? right) => SymbolEqualityComparer.Default.Equals(left, right);
 
             static PartialTypeContext GetContext(ITypeSymbol typeSymbol)
             {
@@ -557,16 +722,52 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             }
         }
 
-        // Only use to report diagnostic
-        public SyntaxNode AttributeSyntax { get; }
-
         // Info provided by the attribute
         public PartialTypeContext PartialTypeContext { get; }
         public IdType IdType { get; }
-        public StronglyTypedIdConverters Converters { get; }
-        public bool AddCodeGeneratedAttribute { get; }
-        public StringComparison StringComparison { get; }
-        public bool GenerateToStringAsRecord { get; }
+
+        /// <summary>Gets the options explicitly set on the attribute. Options that are not set fall back to the assembly-level defaults, then to the default values.</summary>
+        public StronglyTypedIdOptions Options { get; private set; }
+        public StronglyTypedIdConverters Converters { get; private set; }
+        public bool AddCodeGeneratedAttribute { get; private set; }
+        public StringComparison StringComparison { get; private set; }
+        public bool GenerateToStringAsRecord { get; private set; }
+        public GuidGenerationStrategy GuidGenerationStrategy { get; private set; }
+
+        /// <summary>Returns an instance where the options that are not explicitly set on the attribute use the assembly-level default values.</summary>
+        public AttributeInfo ApplyDefaults(StronglyTypedIdOptions defaults)
+        {
+            if (defaults == StronglyTypedIdOptions.Empty)
+                return this;
+
+            var result = (AttributeInfo)MemberwiseClone();
+            result.Options = Options.Merge(defaults);
+            result.ApplyOptions();
+            return result;
+        }
+
+        private void ApplyOptions()
+        {
+            var converters = StronglyTypedIdConverters.None;
+            AddConverter(Options.GenerateSystemTextJsonConverter, StronglyTypedIdConverters.System_Text_Json);
+            AddConverter(Options.GenerateNewtonsoftJsonConverter, StronglyTypedIdConverters.Newtonsoft_Json);
+            AddConverter(Options.GenerateSystemComponentModelTypeConverter, StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
+            AddConverter(Options.GenerateMongoDBBsonSerialization, StronglyTypedIdConverters.MongoDB_Bson_Serialization);
+
+            Converters = converters;
+            AddCodeGeneratedAttribute = Options.AddCodeGeneratedAttribute ?? true;
+            StringComparison = Options.StringComparison ?? StringComparison.Ordinal;
+            GenerateToStringAsRecord = Options.GenerateToStringAsRecord ?? true;
+            GuidGenerationStrategy = Options.GuidGenerationStrategy ?? GuidGenerationStrategy.Version4;
+
+            void AddConverter(bool? value, StronglyTypedIdConverters converterValue)
+            {
+                if (value ?? true)
+                {
+                    converters |= converterValue;
+                }
+            }
+        }
 
         // Computed info
         public string TypeName { get; }
@@ -587,6 +788,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool IsTryParseDefined_ReadOnlySpan { get; }
         public bool IsParseDefined_String { get; }
         public bool IsParseDefined_ReadOnlySpan { get; }
+        public bool IsTryParseDefined_Utf8 { get; }
+        public bool IsParseDefined_Utf8 { get; }
+        public bool IsToStringFormatDefined { get; }
+        public bool IsTryFormatDefined_Char { get; }
+        public bool IsTryFormatDefined_Utf8 { get; }
         public bool IsOpLessThanDefined { get; }
         public bool IsOpGreaterThanDefined { get; }
         public bool IsOpLessThanOrEqualDefined { get; }
@@ -597,8 +803,13 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool ImplementsIComparableOfT_CompareTo { get; }
 
         public bool SupportStaticInterfaces { get; }
+        public bool SupportGuidCreateVersion7 { get; }
         public bool SupportIParsable { get; }
         public bool SupportISpanParsable { get; }
+        public bool SupportIUtf8SpanParsable { get; }
+        public bool SupportIFormattable { get; }
+        public bool SupportISpanFormattable { get; }
+        public bool SupportIUtf8SpanFormattable { get; }
         public bool SupportTypeConverter { get; }
         public bool SupportSystemTextJsonConverter { get; }
         public bool SupportNewtonsoftJsonConverter { get; }
@@ -621,7 +832,17 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public string ValueTypeCSharpNullableTypeName { get; }
         public string CSharpNullableTypeName { get; }
 
+        /// <summary>Gets a value indicating whether the underlying type has a public <c>ToString(string, IFormatProvider)</c> method.</summary>
+        public bool ValueTypeHasToStringFormat { get; }
+
+        /// <summary>Gets the most complete public <c>TryFormat(Span&lt;char&gt;, ...)</c> method of the underlying type.</summary>
+        public TryFormatSignature ValueTypeTryFormat_Char { get; }
+
+        /// <summary>Gets the most complete public <c>TryFormat(Span&lt;byte&gt;, ...)</c> method of the underlying type.</summary>
+        public TryFormatSignature ValueTypeTryFormat_Utf8 { get; }
+
         public bool IsValueTypeNullable => IdType is IdType.System_String;
+        public bool UseGuidVersion7 => GuidGenerationStrategy is GuidGenerationStrategy.Version7 && SupportGuidCreateVersion7;
         public bool ValueTypeHasParseReadOnlySpan => IdType != IdType.MongoDB_Bson_ObjectId && SupportReadOnlySpanChar;
 
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is AttributeInfo attributeInfo && Equals(attributeInfo);
@@ -634,10 +855,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && PartialTypeContext == other.PartialTypeContext
                 && IdType == other.IdType
                 && TypeName == other.TypeName
-                && StringComparison == other.StringComparison
-                && GenerateToStringAsRecord == other.GenerateToStringAsRecord
-                && Converters == other.Converters
-                && AddCodeGeneratedAttribute == other.AddCodeGeneratedAttribute
+                && Options == other.Options
+                && SupportGuidCreateVersion7 == other.SupportGuidCreateVersion7
                 && IsSealed == other.IsSealed
                 && IsCtorDefined == other.IsCtorDefined
                 && IsNewDefined == other.IsNewDefined
@@ -654,11 +873,24 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && IsTryParseDefined_ReadOnlySpan == other.IsTryParseDefined_ReadOnlySpan
                 && IsParseDefined_String == other.IsParseDefined_String
                 && IsParseDefined_ReadOnlySpan == other.IsParseDefined_ReadOnlySpan
+                && IsTryParseDefined_Utf8 == other.IsTryParseDefined_Utf8
+                && IsParseDefined_Utf8 == other.IsParseDefined_Utf8
+                && IsToStringFormatDefined == other.IsToStringFormatDefined
+                && IsTryFormatDefined_Char == other.IsTryFormatDefined_Char
+                && IsTryFormatDefined_Utf8 == other.IsTryFormatDefined_Utf8
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
                 && SupportIStronglyTypedId == other.SupportIStronglyTypedId
+                && SupportIStronglyTypedId_UnderlyingType == other.SupportIStronglyTypedId_UnderlyingType
                 && SupportIStronglyTypedIdOfT == other.SupportIStronglyTypedIdOfT
                 && SupportIParsable == other.SupportIParsable
                 && SupportISpanParsable == other.SupportISpanParsable
+                && SupportIUtf8SpanParsable == other.SupportIUtf8SpanParsable
+                && SupportIFormattable == other.SupportIFormattable
+                && SupportISpanFormattable == other.SupportISpanFormattable
+                && SupportIUtf8SpanFormattable == other.SupportIUtf8SpanFormattable
+                && ValueTypeHasToStringFormat == other.ValueTypeHasToStringFormat
+                && ValueTypeTryFormat_Char == other.ValueTypeTryFormat_Char
+                && ValueTypeTryFormat_Utf8 == other.ValueTypeTryFormat_Utf8
                 && SupportTypeConverter == other.SupportTypeConverter
                 && SupportSystemTextJsonConverter == other.SupportSystemTextJsonConverter
                 && SupportNewtonsoftJsonConverter == other.SupportNewtonsoftJsonConverter
@@ -683,10 +915,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(PartialTypeContext);
             hashcode.Add(IdType);
             hashcode.Add(TypeName, StringComparer.Ordinal);
-            hashcode.Add(Converters);
-            hashcode.Add(StringComparison);
-            hashcode.Add(GenerateToStringAsRecord);
-            hashcode.Add(AddCodeGeneratedAttribute);
+            hashcode.Add(Options);
+            hashcode.Add(SupportGuidCreateVersion7);
             hashcode.Add(IsSealed);
             hashcode.Add(IsCtorDefined);
             hashcode.Add(IsNewDefined);
@@ -703,11 +933,24 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(IsTryParseDefined_ReadOnlySpan);
             hashcode.Add(IsParseDefined_String);
             hashcode.Add(IsParseDefined_ReadOnlySpan);
+            hashcode.Add(IsTryParseDefined_Utf8);
+            hashcode.Add(IsParseDefined_Utf8);
+            hashcode.Add(IsToStringFormatDefined);
+            hashcode.Add(IsTryFormatDefined_Char);
+            hashcode.Add(IsTryFormatDefined_Utf8);
             hashcode.Add(SupportIStronglyTypedId);
+            hashcode.Add(SupportIStronglyTypedId_UnderlyingType);
             hashcode.Add(SupportIStronglyTypedIdOfT);
             hashcode.Add(SupportStaticInterfaces);
             hashcode.Add(SupportIParsable);
             hashcode.Add(SupportISpanParsable);
+            hashcode.Add(SupportIUtf8SpanParsable);
+            hashcode.Add(SupportIFormattable);
+            hashcode.Add(SupportISpanFormattable);
+            hashcode.Add(SupportIUtf8SpanFormattable);
+            hashcode.Add(ValueTypeHasToStringFormat);
+            hashcode.Add(ValueTypeTryFormat_Char);
+            hashcode.Add(ValueTypeTryFormat_Utf8);
             hashcode.Add(SupportTypeConverter);
             hashcode.Add(SupportSystemTextJsonConverter);
             hashcode.Add(SupportNewtonsoftJsonConverter);
@@ -734,6 +977,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool CanImplementIParsable()
         {
             return SupportStaticInterfaces && SupportIParsable && SupportReadOnlySpanChar;
+        }
+
+        public bool CanImplementIUtf8SpanParsable()
+        {
+            return SupportStaticInterfaces && SupportIUtf8SpanParsable && SupportReadOnlySpanChar;
+        }
+
+        public bool CanImplementIFormattable()
+        {
+            return SupportIFormattable;
+        }
+
+        public bool CanImplementISpanFormattable()
+        {
+            return SupportIFormattable && SupportISpanFormattable && SupportReadOnlySpanChar;
+        }
+
+        public bool CanImplementIUtf8SpanFormattable()
+        {
+            return SupportIFormattable && SupportIUtf8SpanFormattable && SupportReadOnlySpanChar;
         }
 
         public bool CanGenerateTypeConverter()
@@ -820,6 +1083,71 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
     }
 
+    /// <summary>
+    /// Options set on an attribute. A <see langword="null"/> value means the option is not set.
+    /// </summary>
+    internal sealed record StronglyTypedIdOptions(
+        bool? GenerateSystemTextJsonConverter,
+        bool? GenerateNewtonsoftJsonConverter,
+        bool? GenerateSystemComponentModelTypeConverter,
+        bool? GenerateMongoDBBsonSerialization,
+        bool? AddCodeGeneratedAttribute,
+        StringComparison? StringComparison,
+        bool? GenerateToStringAsRecord,
+        GuidGenerationStrategy? GuidGenerationStrategy)
+    {
+        public static StronglyTypedIdOptions Empty { get; } = new(null, null, null, null, null, null, null, null);
+
+        /// <summary>Returns the current options where the options that are not set use the values from <paramref name="defaults"/>.</summary>
+        public StronglyTypedIdOptions Merge(StronglyTypedIdOptions defaults)
+        {
+            return new StronglyTypedIdOptions(
+                GenerateSystemTextJsonConverter ?? defaults.GenerateSystemTextJsonConverter,
+                GenerateNewtonsoftJsonConverter ?? defaults.GenerateNewtonsoftJsonConverter,
+                GenerateSystemComponentModelTypeConverter ?? defaults.GenerateSystemComponentModelTypeConverter,
+                GenerateMongoDBBsonSerialization ?? defaults.GenerateMongoDBBsonSerialization,
+                AddCodeGeneratedAttribute ?? defaults.AddCodeGeneratedAttribute,
+                StringComparison ?? defaults.StringComparison,
+                GenerateToStringAsRecord ?? defaults.GenerateToStringAsRecord,
+                GuidGenerationStrategy ?? defaults.GuidGenerationStrategy);
+        }
+    }
+
+    /// <summary>
+    /// Returns the shape of a <c>TryFormat(Span&lt;T&gt; destination, out int written, ReadOnlySpan&lt;char&gt; format[, IFormatProvider? provider])</c> method.
+    /// </summary>
+    private static TryFormatSignature GetTryFormatSignature(IMethodSymbol method, ITypeSymbol? spanSymbol, ITypeSymbol? readOnlySpanCharSymbol, ITypeSymbol? formatProviderSymbol)
+    {
+        if (spanSymbol is null || readOnlySpanCharSymbol is null || method.ReturnType.SpecialType is not SpecialType.System_Boolean)
+            return TryFormatSignature.None;
+
+        var parameters = method.Parameters;
+        if (parameters.Length is not (3 or 4))
+            return TryFormatSignature.None;
+
+        if (!SymbolEqualityComparer.Default.Equals(parameters[0].Type, spanSymbol)
+            || parameters[1] is not { RefKind: RefKind.Out, Type.SpecialType: SpecialType.System_Int32 }
+            || !SymbolEqualityComparer.Default.Equals(parameters[2].Type, readOnlySpanCharSymbol))
+        {
+            return TryFormatSignature.None;
+        }
+
+        if (parameters.Length is 3)
+            return TryFormatSignature.Format;
+
+        if (formatProviderSymbol is not null && SymbolEqualityComparer.Default.Equals(parameters[3].Type, formatProviderSymbol))
+            return TryFormatSignature.FormatAndProvider;
+
+        return TryFormatSignature.None;
+    }
+
+    private enum TryFormatSignature
+    {
+        None,
+        Format,
+        FormatAndProvider,
+    }
+
     [Flags]
     private enum StronglyTypedIdConverters
     {
@@ -828,6 +1156,13 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         Newtonsoft_Json = 0x2,
         System_ComponentModel_TypeConverter = 0x4,
         MongoDB_Bson_Serialization = 0x8,
+    }
+
+    internal enum GuidGenerationStrategy
+    {
+        None,
+        Version4,
+        Version7,
     }
 
     internal enum IdType

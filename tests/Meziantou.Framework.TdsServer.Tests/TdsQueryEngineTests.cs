@@ -9,7 +9,7 @@ using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tds.Tests;
 
-[RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+[RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
 public sealed class TdsQueryEngineTests
 {
     [Fact]
@@ -275,6 +275,30 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_SelectDistinctWithOffsetFetch_PaginatesDistinctRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT DISTINCT Region
+                    FROM orders
+                    ORDER BY Region
+                    OFFSET 1 ROWS
+                    FETCH NEXT 1 ROWS ONLY
+                    """;
+            },
+            """
+            Region
+            South
+            """,
+            expectedMaterializedQueries: "Order[].OrderBy(order => order.Region).Select(order2 => new TdsProjection() {Region = order2.Region}).Distinct().Skip(1).Take(1)");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_Union_ReturnsDistinctRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -377,7 +401,7 @@ public sealed class TdsQueryEngineTests
             UpperName NameLength
             ALICE 5
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = customer2.Name.ToUpperInvariant(), NameLength = customer2.Name.Length})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = IIF((customer2.Name == null), null, customer2.Name.ToUpperInvariant()), NameLength = IIF((customer2.Name == null), null, Convert(customer2.Name.Length, Nullable`1))})");
     }
 
     [Fact]
@@ -833,7 +857,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Name.Length == 3)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (IIF((customer.Name == null), null, Convert(customer.Name.Length, Nullable`1)) == 3)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -924,6 +948,250 @@ public sealed class TdsQueryEngineTests
             2
             """,
             expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => Not((nullableCustomer.Name == null))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotEquals_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name <> 'Alice'
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso (nullableCustomer.Name != \"Alice\"))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotComparison_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name = 'Alice')
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso (nullableCustomer.Name != \"Alice\"))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotAnd_AppliesDeMorgan()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // UNKNOWN AND FALSE is FALSE in SQL, so NOT (...) is TRUE for the NULL row.
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name = 'Alice' AND Id = 1)
+                    """;
+            },
+            """
+            Id
+            2
+            3
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (((nullableCustomer.Name != null) AndAlso (nullableCustomer.Name != \"Alice\")) OrElse (nullableCustomer.Id != 1))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotIsNull_ReturnsNonNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name IS NULL)
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => Not((nullableCustomer.Name == null))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereEqualsNullLiteral_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name = NULL
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => False).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotEqualsNullLiteral_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name <> NULL
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => False).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereEqualsNullParameter_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name = @name
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 50) { Value = DBNull.Value });
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => False).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotInWithoutNull_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name NOT IN ('Alice')
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso Not(new [] {\"Alice\"}.Contains(nullableCustomer.Name)))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereInCollectionContainingNull_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name IN ('Alice', NULL)
+                    """;
+            },
+            """
+            Id
+            1
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso new [] {\"Alice\", null}.Contains(nullableCustomer.Name))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotInCollectionContainingNull_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // NOT IN over a list containing NULL is UNKNOWN for every row, so nothing qualifies.
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name NOT IN ('Alice', NULL)
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso (Not(new [] {\"Alice\", null}.Contains(null)) AndAlso Not(new [] {\"Alice\", null}.Contains(nullableCustomer.Name))))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingNotEquals_ExcludesNullGroups()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Name, COUNT(*) AS Total
+                    FROM nullable_customers
+                    GROUP BY Name
+                    HAVING Name <> 'Alice'
+                    """;
+            },
+            """
+            Name Total
+            Bob 1
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].GroupBy(nullableCustomer => nullableCustomer.Name).Where(group => ((group.Key != null) AndAlso (group.Key != \"Alice\"))).Select(group2 => new TdsProjection() {Name = group2.Key, Total = group2.Count()})");
     }
 
     [Fact]
@@ -1148,7 +1416,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Skip(1).Take(2).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id}).Skip(1).Take(2)");
     }
 
     [Fact]
@@ -1686,7 +1954,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((SubstringCore(customer.Name, 0, 2) == \"Al\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((LeftCore(customer.Name, 2) == \"Al\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1708,7 +1976,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((SubstringCore(customer.Name, (customer.Name.Length - 2), 2) == \"ce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((RightCore(customer.Name, 2) == \"ce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1752,7 +2020,122 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name.Replace(\"li\", \"xx\") == \"Axxce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((IIF((customer.Name == null), null, customer.Name.Replace(\"li\", \"xx\")) == \"Axxce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_CaseAndLengthFunctions_ReturnNullForNullColumn()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, UPPER(Name) AS UpperName, LOWER(Name) AS LowerName, LEN(Name) AS NameLength
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id UpperName LowerName NameLength
+            1 ALICE alice 5
+            2 BOB bob 3
+            3 NULL NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, UpperName = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.ToUpperInvariant()), LowerName = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.ToLowerInvariant()), NameLength = IIF((nullableCustomer.Name == null), null, Convert(nullableCustomer.Name.Length, Nullable`1))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_TrimFunctions_ReturnNullForNullColumn()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, LTRIM(Name) AS TrimmedStart, RTRIM(Name) AS TrimmedEnd, TRIM(Name) AS Trimmed
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id TrimmedStart TrimmedEnd Trimmed
+            1 Alice Alice Alice
+            2 Bob Bob Bob
+            3 NULL NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, TrimmedStart = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.TrimStart()), TrimmedEnd = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.TrimEnd()), Trimmed = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.Trim())})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_SubstringFunctions_ReturnNullForNullColumn()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, LEFT(Name, 2) AS LeftName, RIGHT(Name, 2) AS RightName, REPLACE(Name, 'li', 'xx') AS ReplacedName
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id LeftName RightName ReplacedName
+            1 Al ce Axxce
+            2 Bo ob Bob
+            3 NULL NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, LeftName = LeftCore(nullableCustomer.Name, 2), RightName = RightCore(nullableCustomer.Name, 2), ReplacedName = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.Replace(\"li\", \"xx\"))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereStringFunctionOnNullColumn_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE UPPER(Name) = 'BOB' OR LEN(Name) = 5
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.ToUpperInvariant()) == \"BOB\") OrElse (IIF((nullableCustomer.Name == null), null, Convert(nullableCustomer.Name.Length, Nullable`1)) == 5))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_StringFunctionOnNullableNonStringColumn_ReturnsNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, LEN(Score) AS ScoreLength
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id ScoreLength
+            1 3
+            2 1
+            3 NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, ScoreLength = IIF((ToStringCore(Convert(nullableCustomer.Score, Object)) == null), null, Convert(ToStringCore(Convert(nullableCustomer.Score, Object)).Length, Nullable`1))})");
     }
 
     [Fact]
@@ -1951,6 +2334,136 @@ public sealed class TdsQueryEngineTests
             2
             """,
             expectedMaterializedQueries: "Customer[].Where(customer => ((IIF((customer.Id > 1), \"Y\", \"N\") == \"Y\") AndAlso (customer.Id == 2))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    // The engine reads the arguments of COALESCE, NULLIF and IIF from their SQL text. It used to read it back from
+    // SqlCodeObject.Xml, whose XmlWriter rejects the characters XML does not allow and rewrites "--" in the text.
+    // SqlClient re-encodes the command text, so the query delegate is called directly to keep the unpaired surrogates.
+    [Fact]
+    public async Task QueryEngine_NullScalarFunctions_KeepStringLiteralsXmlCannotRepresent()
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        foreach (var literal in (string[])["fall\0\0\0O", "Ali\uDCE2ce", "\uD800", "a--b"])
+        {
+            Assert.Equal([3], await ExecuteIdQueryAsync(handler, $"SELECT Id FROM nullable_customers WHERE COALESCE(Name, '{literal}') = '{literal}'"));
+            Assert.Equal([1], await ExecuteIdQueryAsync(handler, $"SELECT Id FROM nullable_customers WHERE NULLIF('{literal}', '{literal}') IS NULL AND Id = 1"));
+            Assert.Equal([2], await ExecuteIdQueryAsync(handler, $"SELECT Id FROM nullable_customers WHERE IIF(Id = 2, '{literal}', 'other') = '{literal}'"));
+        }
+
+        static async Task<int[]> ExecuteIdQueryAsync(TdsQueryDelegate handler, string commandText)
+        {
+            var result = await handler(
+                new TdsQueryContext
+                {
+                    RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+                    RequestType = TdsQueryRequestType.SqlBatch,
+                    CommandText = commandText,
+                    HasCompleteParameters = true,
+                },
+                CancellationToken.None);
+
+            Assert.Null(result.Error?.Message);
+            var resultSet = Assert.Single(result.ResultSets);
+            return [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))];
+        }
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithAnExistsCondition_ReturnsProjectedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, IIF(EXISTS(SELECT 1 FROM orders o WHERE o.Id = c.Id), 1, 0) AS HasOrder
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id HasOrder
+            1 1
+            2 1
+            4 0
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, HasOrder = IIF(Order[].Where(order => (order.Id == customer2.Id)).Any(), 1, 0)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithAnInSubqueryCondition_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE IIF(Id IN (SELECT Id FROM orders), 'Y', 'N') = 'Y'
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (IIF(Order[].Select(order => order.Id).Contains(customer.Id), \"Y\", \"N\") == \"Y\")).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithASubqueryOnACommonTableExpression_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH large_orders AS (SELECT Id FROM orders WHERE Amount > 5)
+                    SELECT Id
+                    FROM customers
+                    WHERE IIF(Id IN (SELECT Id FROM large_orders), 'Y', 'N') = 'Y'
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (IIF(Order[].Where(order => (order.Amount > 5)).Select(order2 => new TdsProjection() {Id = order2.Id}).Select(projection => projection.Id).Contains(customer.Id), \"Y\", \"N\") == \"Y\")).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithASubqueryUsingASqlParameter_ReturnsProjectedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, IIF(EXISTS(SELECT 1 FROM orders o WHERE o.Id = @id), 1, 0) AS HasOrder
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 3 });
+            },
+            """
+            Id HasOrder
+            1 1
+            2 1
+            4 1
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, HasOrder = IIF(Order[].Where(order => (order.Id == 3)).Any(), 1, 0)})");
     }
 
     [Fact]
@@ -2322,7 +2835,29 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1, AwayFromZero) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RoundFunction_RoundsMidpointAwayFromZero()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ROUND(2.5, 0) AS PositiveMidpoint, ROUND(-2.5, 0) AS NegativeMidpoint, ROUND(0.25, 1) AS PositiveScaledMidpoint, ROUND(-0.25, 1) AS NegativeScaledMidpoint
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            PositiveMidpoint NegativeMidpoint PositiveScaledMidpoint NegativeScaledMidpoint
+            3 -3 0.3 -0.3
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {PositiveMidpoint = Round(Convert(ConvertToTypeCore(Convert(2.5, Object), System.Double), Double), 0, AwayFromZero), NegativeMidpoint = Round(Convert(ConvertToTypeCore(Convert(-2.5, Object), System.Double), Double), 0, AwayFromZero), PositiveScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(0.25, Object), System.Double), Double), 1, AwayFromZero), NegativeScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(-0.25, Object), System.Double), Double), 1, AwayFromZero)})");
     }
 
     [Fact]
@@ -2756,6 +3291,87 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_ArithmeticOnNullValue_ReturnsNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, JSON_PATH_EXISTS(Payload, '$.name') - 2147 AS X
+                    FROM json_docs
+                    WHERE Id IN (1, 4)
+                    """;
+            },
+            """
+            Id X
+            1 -2146
+            4 NULL
+            """,
+            expectedMaterializedQueries: "JsonDocumentRow[].Where(jsonDocumentRow => new [] {1, 4}.Contains(jsonDocumentRow.Id)).Select(jsonDocumentRow2 => new TdsProjection() {Id = jsonDocumentRow2.Id, X = (JsonPathExistsCore(jsonDocumentRow2.Payload, \"$.name\") - Convert(2147, Nullable`1))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ArithmeticOnNullableColumn_ReturnsNullForNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Score + 1.5 AS X, -Score * 2 AS Y
+                    FROM nullable_customers
+                    WHERE Score - 1 > 10 OR Score IS NULL
+                    """;
+            },
+            """
+            Id X Y
+            1 101.5 -200
+            3 NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (((nullableCustomer.Score - Convert(1, Nullable`1)) > 10) OrElse (nullableCustomer.Score == null))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id, X = (Convert(nullableCustomer2.Score, Nullable`1) + Convert(1.5, Nullable`1)), Y = -(nullableCustomer2.Score * Convert(2, Nullable`1))})");
+    }
+
+    // SqlClient re-encodes the command text, so the query delegate is called directly to keep the unpaired surrogate
+    [Fact]
+    public async Task QueryEngine_JsonFunctions_JsonTextWithAnUnpairedSurrogate_IsNotValidJson()
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        Assert.Equal(0, await ExecuteScalarQueryAsync(handler, "SELECT ISJSON('\"\uDCDC\"') AS X FROM json_docs WHERE Id = 1"));
+        foreach (var function in (string[])["JSON_VALUE('\"\uDCDC\"', '$')", "JSON_QUERY('[\"\uDCDC\"]')", "JSON_PATH_EXISTS('{\"\uDCDC\":1}', '$.a')"])
+        {
+            var result = await ExecuteQueryAsync(handler, $"SELECT {function} AS X FROM json_docs WHERE Id = 1");
+            Assert.Equal(50004, result.Error?.Number);
+            Assert.Contains("input is not a valid JSON document", result.Error?.Message, StringComparison.Ordinal);
+        }
+
+        static async Task<object?> ExecuteScalarQueryAsync(TdsQueryDelegate handler, string commandText)
+        {
+            var result = await ExecuteQueryAsync(handler, commandText);
+            Assert.Null(result.Error?.Message);
+            var resultSet = Assert.Single(result.ResultSets);
+            return Assert.Single(resultSet.Rows)[0];
+        }
+
+        static async Task<TdsQueryResult> ExecuteQueryAsync(TdsQueryDelegate handler, string commandText)
+        {
+            return await handler(
+                new TdsQueryContext
+                {
+                    RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+                    RequestType = TdsQueryRequestType.SqlBatch,
+                    CommandText = commandText,
+                    HasCompleteParameters = true,
+                },
+                CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_XmlDataType_UntypedCast_ReturnsXml()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -2778,6 +3394,27 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_XmlDataType_WithADtd_IsRejected()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // A few hundred bytes of nested internal entities expand into megabytes, once per row, and the query
+        // cannot be cancelled. XDocument.Parse allows that by default, so the engine has to opt out.
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT CAST('<?xml version="1.0"?><!DOCTYPE root [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><root>&b;</root>' AS XML) AS Bomb
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "could not be parsed");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_XmlMethod_Query_ReturnsXmlFragment()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -2797,6 +3434,54 @@ public sealed class TdsQueryEngineTests
             <item id="1">Alpha</item>
             """,
             expectedMaterializedQueries: "XmlDocumentRow[].Where(xmlDocumentRow => (xmlDocumentRow.Id == 1)).Select(xmlDocumentRow2 => new TdsProjection() {Fragment = XmlQueryCore(Convert(xmlDocumentRow2.Payload, Object), \"/root/item[@id=\"1\"]\")})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_Query_Union_RemovesDuplicateFragments()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Payload.query('/root/item[1]') AS Fragment
+                    FROM xml_docs
+                    WHERE Id = 1
+                    UNION
+                    SELECT Payload.query('/root/item[1]') AS Fragment
+                    FROM xml_docs
+                    """;
+            },
+            """
+            Fragment
+            <item id="1">Alpha</item>
+            <item id="3">Gamma</item>
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Distinct_OnAColumnOfANonPublicValueType()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.AddQueryRoot("tickets", context => new[]
+        {
+            new Ticket(1, TicketStatus.Open),
+            new Ticket(2, TicketStatus.Closed),
+            new Ticket(3, TicketStatus.Open),
+        }.AsQueryable());
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = "SELECT DISTINCT Status FROM tickets",
+            """
+            Status
+            0
+            1
+            """,
+            expectedMaterializedQueries: null);
     }
 
     [Fact]
@@ -2949,6 +3634,56 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Parameters_AreSupportedInTheSelectList()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Id + @offset AS Shifted
+                    FROM customers
+                    ORDER BY Id
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@offset", SqlDbType.Int) { Value = 10 });
+            },
+            """
+            Id Shifted
+            1 11
+            2 12
+            4 14
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, Shifted = (customer2.Id + 10)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Parameters_AreSupportedInAGroupedAggregate()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Region, SUM(Amount * @factor) AS Total
+                    FROM orders
+                    GROUP BY Region
+                    ORDER BY Region
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@factor", SqlDbType.Int) { Value = 2 });
+            },
+            """
+            Region Total
+            North 60
+            South 10
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key, Total = group.Sum(order2 => (order2.Amount * 2))}).OrderBy(projection => projection.Region)");
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
     public async Task SqlClient_QueryEngine_StoredProcedure_MapsParametersToDelegate()
     {
@@ -3049,6 +3784,63 @@ public sealed class TdsQueryEngineTests
             expectedMessageContains: "SELECT permission was denied");
     }
 
+    [Theory]
+    // A denied query root has to stay denied however the SQL reaches it, not just as the top-level FROM. Every
+    // one of these funnels through BuildTableSource -> ResolveConfiguredQueryRoot today; these cases pin that
+    // down so a future translation feature cannot resolve a root some other way and skip the check.
+    [InlineData("SELECT Id FROM orders")]
+    [InlineData("SELECT Id FROM dbo.orders")]
+    [InlineData("SELECT o.Id FROM customers c INNER JOIN orders o ON c.Id = o.Id")]
+    [InlineData("SELECT o.Id FROM customers c LEFT JOIN orders o ON c.Id = o.Id")]
+    [InlineData("WITH o AS (SELECT Id FROM orders) SELECT Id FROM o")]
+    [InlineData("SELECT d.Id FROM (SELECT Id FROM orders) d")]
+    [InlineData("SELECT Id FROM customers WHERE Id IN (SELECT Id FROM orders)")]
+    [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM orders)")]
+    [InlineData("SELECT Id FROM customers WHERE IIF(EXISTS (SELECT 1 FROM orders), 1, 0) = 1")]
+    [InlineData("SELECT Id FROM customers UNION ALL SELECT Id FROM orders")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
+    public async Task SqlClient_QueryEngine_QueryRoot_Unauthorized_IsDeniedThroughEveryReference(string commandText)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.QueryRoot ||
+            !string.Equals(resourceName, "orders", StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            expectedErrorNumber: 229,
+            expectedMessageContains: "SELECT permission was denied on the object 'orders'");
+    }
+
+    [Theory]
+    // The mirror of the theory above: with the same handler, a root that is allowed still resolves through each
+    // of those shapes, so the check is not simply denying everything.
+    [InlineData("SELECT Id FROM customers")]
+    [InlineData("SELECT c2.Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id")]
+    [InlineData("WITH c AS (SELECT Id FROM customers) SELECT Id FROM c")]
+    [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM customers)")]
+    [InlineData("SELECT Id FROM customers WHERE IIF(EXISTS (SELECT 1 FROM customers), 1, 0) = 1")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
+    public async Task SqlClient_QueryEngine_QueryRoot_Authorized_StillResolvesThroughEveryReference(string commandText)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.QueryRoot ||
+            !string.Equals(resourceName, "orders", StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: null);
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
     public async Task SqlClient_QueryEngine_UnknownStoredProcedure_RemainsNotFoundError()
@@ -3065,6 +3857,145 @@ public sealed class TdsQueryEngineTests
             },
             expectedErrorNumber: 50004,
             expectedMessageContains: "Unknown stored procedure");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_DuplicateCteName_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH c AS (SELECT Id FROM customers), c AS (SELECT Id FROM customers)
+                    SELECT Id FROM c
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "Duplicate common table expression name 'c'");
+    }
+
+    // Invalid queries the parser accepts, and errors raised while the query runs, must be reported as query errors
+    // rather than escape the engine as generic handler failures
+    [Theory]
+    [InlineData("SELECT Id FROM customers WHERE Id = $", 50004, "Invalid numeric literal '$'")]
+    [InlineData("SELECT Id + 1e AS X FROM customers", 50004, "Invalid numeric literal '1e'")]
+    [InlineData("SELECT Id FROM customers WHERE Id = 99999999999999999999", 50004, "Conversion failed when converting the value '99999999999999999999' to data type 'Int32'")]
+    [InlineData("SELECT Id FROM customers WHERE CAST('x' AS datetime) = Id", 50004, "Cannot implicitly convert a value of type 'Int32' to 'DateTime'")]
+    [InlineData("SELECT Id FROM customers WHERE CAST(-'1' AS datetime) = Id", 50004, "The unary minus operator requires a numeric operand")]
+    [InlineData("SELECT Id FROM customers WHERE Name < 'x'", 50004, "Comparison operator 'LessThan' is not supported between values of type 'String' and 'String'")]
+    [InlineData("SELECT c1.Id FROM customers c1 INNER JOIN customers c1 ON c1.Id = c2.Id", 50004, "Duplicate alias 'c1'")]
+    [InlineData("SELECT c.Id FROM customers c INNER JOIN orders c ON c.Id = c.Id", 50004, "Duplicate alias 'c'")]
+    [InlineData("SELECT Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id", 50004, "Ambiguous or unknown column 'Id'")]
+    [InlineData("SELECT Id '' FROM customers", 50004, "An object or column name is missing or empty")]
+    [InlineData("SELECT Id AS [a\0b] FROM customers", 50004, "An object or column name contains a null character")]
+    [InlineData("SELECT Id.value() AS Value FROM customers", 50004, "xml.value requires an XQuery argument and a SQL type argument")]
+    [InlineData("SELECT Region, Amount, COUNT(*) AS Count FROM orders GROUP BY Region, Amount, Amount", 50004, "Duplicate GROUP BY column 'Amount'")]
+    [InlineData("SELECT ISJSON( FETCH NEXT x FROM json_docs", 50004, "Invalid SQL query")]
+    [InlineData("SELECT Id FROM customers WHERE CASE DAY(CAST('02-70' AS datetime????????????????????????????????????????????????????????????????)) = 10 AND Id = 1", 50004, "Invalid SQL query")]
+    [InlineData("SELECT Id FROM customers WHERE CASE DAY(CAST('02-70' AS datetime ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) )) = 10 AND Id = 1", 50004, "Invalid SQL query")]
+    [InlineData("SELECT CAST('abc' AS int) AS X FROM customers", 50004, "Conversion failed when converting the value 'abc' to data type 'Int32'")]
+    [InlineData("SELECT Id FROM customers WHERE CAST('<garbage>' AS datetime) > CAST('2020-01-01' AS datetime)", 50004, "Conversion failed when converting the value '<garbage>' to data type 'DateTime'")]
+    [InlineData("SELECT Id FROM customers WHERE TAN(Name) = 0", 50004, "Conversion failed")]
+    [InlineData("SELECT Id FROM xml_docs WHERE Payload.exist('1/root/item[@ido.=2]') = 1", 50004, "The XQuery expression cannot be evaluated")]
+    [InlineData("SELECT Id.exist(Score) AS X FROM nullable_customers", 50004, "xml.exist requires a string XQuery argument")]
+    [InlineData("SELECT Id FROM customers WHERE DATEADD(day, -2147483647, CAST('2024-01-01' AS datetime)) > CAST('2024-01-01' AS datetime)", 517, "Adding a value to a 'datetime' column caused an overflow.")]
+    [InlineData("SELECT Id / 0 AS X FROM customers", 8134, "Divide by zero error encountered.")]
+    [InlineData("SELECT Id FROM customers WHERE Id > -21474836482", 8115, "Arithmetic overflow error.")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query comes from the test data and is not user-controlled.")]
+    public async Task SqlClient_QueryEngine_InvalidQuery_ReturnsAQueryError(string commandText, int expectedErrorNumber, string expectedMessage)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            expectedErrorNumber,
+            expectedMessage);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ReplaceFunction_WithAnEmptyPattern_ReturnsTheValue()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT REPLACE(Name, '', 'x') AS Value
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Value
+            Alice
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RoundFunction_AcceptsAnyLength()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ROUND(748.58, -2) AS Hundreds, ROUND(748.58, -4) AS TenThousands, ROUND(1.26, 18) AS ManyDigits, ROUND(1.26, -400) AS Tiny
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Hundreds TenThousands ManyDigits Tiny
+            700 0 1.26 0
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_WithAnXQueryOnlyExpression_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // The XML methods evaluate XPath 1.0, so a FLWOR expression is not supported. It has to say so rather
+        // than letting XPathException escape as a generic handler failure.
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Payload.value('for $i in /root/item return string($i)', 'nvarchar(max)') AS Value
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "is not a supported XPath 1.0 expression");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_SchemaQualifiedTableName_ResolvesTheQueryRoot()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = "SELECT Id FROM dbo.customers",
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: null);
     }
 
     [Fact]
@@ -3106,6 +4037,214 @@ public sealed class TdsQueryEngineTests
 
         Assert.Equal(50004, exception.Number);
         Assert.True(await invalidQueryTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_OptionsAreSnapshottedWhenTheHandlerIsCreated()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        var handler = TdsQueryEngine.CreateQueryHandler(queryEngineOptions);
+
+        // Registering after the handler exists is ignored rather than racing in-flight queries.
+        queryEngineOptions.AddQueryRoot("late_root", _ => GetCustomers().AsQueryable());
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            handler);
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id FROM late_root";
+
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+
+        Assert.Equal(50004, exception.Number);
+        Assert.Contains("late_root", exception.Message);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query is generated within the test and not user-controlled.")]
+    public async Task SqlClient_QueryEngine_ManyDistinctProjectionShapes_AreServedConcurrently()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        // Each alias produces a distinct projection shape, so this exercises both the emit path and the
+        // lock-free cache-hit path from several connections at once.
+        var results = await Task.WhenAll(Enumerable.Range(0, 24).Select(async index =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(port));
+            await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"SELECT Id AS Alias{index % 8} FROM customers";
+
+            await using var reader = await command.ExecuteReaderAsync();
+            return reader.GetName(0);
+        }));
+
+        Assert.Equal(Enumerable.Range(0, 24).Select(index => $"Alias{index % 8}"), results);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query is generated within the test and not user-controlled.")]
+    public async Task SqlClient_QueryEngine_ProjectionShapesSpanningSeveralDynamicAssemblies_CanReferenceEachOther()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        // The emitted types are packed in several dynamic assemblies, and each query emits a new carrier type
+        // because the CROSS APPLY alias changes. The column alias first reuses one projection type, then
+        // alternates with a second projection type emitted more than one assembly later, so the next
+        // carriers reference projection types from two different assemblies.
+        for (var index = 0; index < 250; index++)
+        {
+            await using var command = connection.CreateCommand();
+            var columnAlias = index < 80 ? "Item0" : $"Item{index % 2}";
+            command.CommandText = $"""
+                SELECT n{index}.{columnAlias}.value('(@id)[1]', 'int') AS ItemId
+                FROM xml_docs
+                CROSS APPLY Payload.nodes('/root/item') AS n{index}({columnAlias})
+                WHERE Id = 1
+                ORDER BY n{index}.{columnAlias}.value('(@id)[1]', 'int')
+                """;
+
+            await using var reader = await command.ExecuteReaderAsync();
+            Assert.Equal("ItemId\n1\n2", await ReadResultAsync(reader));
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_QueryEngineQuickStart()
+    {
+        #region TdsServer_QueryEngineQuickStart
+        var products = new[]
+        {
+            new { Id = 1, Name = "Keyboard", Price = 49.90m },
+            new { Id = 2, Name = "Mouse", Price = 19.50m },
+            new { Id = 3, Name = "Monitor", Price = 189.00m },
+        }.AsQueryable();
+
+        var queryEngineOptions = new TdsQueryEngineOptions();
+        queryEngineOptions.AddQueryRoot("products", context => products);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            queryHandler: TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+        await server.StartAsync();
+
+        await using var connection = new SqlConnection($"Server=127.0.0.1,{server.Ports[0]};User ID=app;Password=Password123!;Encrypt=Optional");
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Name, Price FROM dbo.products WHERE Price < @maxPrice ORDER BY Name";
+        command.Parameters.Add(new SqlParameter("@maxPrice", SqlDbType.Decimal) { Value = 50m });
+
+        var names = new List<string>();
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                names.Add(reader.GetString(0));
+            }
+        }
+
+        Assert.Equal(["Keyboard", "Mouse"], names);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_QueryEngineStoredProcedure()
+    {
+        var queryEngineOptions = new TdsQueryEngineOptions();
+
+        #region TdsServer_QueryEngineStoredProcedure
+        var products = new[]
+        {
+            new { Id = 1, Name = "Keyboard" },
+            new { Id = 2, Name = "Mouse" },
+            new { Id = 3, Name = "Webcam" },
+        };
+
+        queryEngineOptions.StoredProcedures.Add(
+            "SearchProducts",
+            async (TdsQueryContext context, string name, int top = 10, CancellationToken cancellationToken = default) =>
+            {
+                await Task.Yield(); // call an async API with cancellationToken here
+                return products.Where(product => product.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).Take(top).ToArray();
+            });
+        #endregion
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandText = "SearchProducts";
+                _ = command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 50) { Value = "o" });
+            },
+            """
+            Id Name
+            1 Keyboard
+            2 Mouse
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task Documentation_QueryEngineScalarFunction()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        #region TdsServer_QueryEngineScalarFunction
+        queryEngineOptions.AddScalarFunction(
+            "UPPER",
+            arguments => Expression.Call(arguments[0], typeof(string).GetMethod(nameof(string.ToUpper), Type.EmptyTypes)!));
+        #endregion
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = "SELECT UPPER(Name) AS Name FROM customers WHERE Id = 1",
+            """
+            Name
+            ALICE
+            """,
+            expectedMaterializedQueries: null);
     }
 
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
@@ -3153,9 +4292,9 @@ public sealed class TdsQueryEngineTests
     {
         return
         [
-            new NullableCustomer(1, "Alice"),
-            new NullableCustomer(2, "Bob"),
-            new NullableCustomer(3, null),
+            new NullableCustomer(1, "Alice", 100),
+            new NullableCustomer(2, "Bob", 5),
+            new NullableCustomer(3, null, null),
         ];
     }
 
@@ -3359,9 +4498,17 @@ public sealed class TdsQueryEngineTests
 
     private sealed record Order(int Id, string Region, int Amount);
 
-    private sealed record NullableCustomer(int Id, string? Name);
+    private sealed record NullableCustomer(int Id, string? Name, int? Score);
 
     private sealed record JsonDocumentRow(int Id, string? Payload);
 
     private sealed record XmlDocumentRow(int Id, string Payload);
+
+    private sealed record Ticket(int Id, TicketStatus Status);
+
+    private enum TicketStatus
+    {
+        Open,
+        Closed,
+    }
 }

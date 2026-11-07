@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ceb": {
+      "identity": {
+        "language": "ceb"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

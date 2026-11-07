@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Assertions;
 
 internal sealed class AsyncCollectionSnapshot<T> : IAsyncEnumerable<T>, IAsyncDisposable
 {
-    private readonly List<T> _cache = [];
+    private readonly WindowedItemBuffer<T> _cache;
     private readonly IAsyncEnumerable<T> _source;
     private IAsyncEnumerator<T>? _enumerator;
     private bool _isComplete;
@@ -12,6 +12,14 @@ internal sealed class AsyncCollectionSnapshot<T> : IAsyncEnumerable<T>, IAsyncDi
     public AsyncCollectionSnapshot(IAsyncEnumerable<T> source)
     {
         _source = source;
+        _cache = new WindowedItemBuffer<T>();
+    }
+
+    /// <summary>Creates a snapshot that retains only the first and the most recent observed items.</summary>
+    public AsyncCollectionSnapshot(IAsyncEnumerable<T> source, int prefixCapacity, int recentCapacity)
+    {
+        _source = source;
+        _cache = new WindowedItemBuffer<T>(prefixCapacity, recentCapacity);
     }
 
     public bool IsComplete => _isComplete;
@@ -23,6 +31,18 @@ internal sealed class AsyncCollectionSnapshot<T> : IAsyncEnumerable<T>, IAsyncDi
     public Enumerator GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         return new Enumerator(this, cancellationToken);
+    }
+
+    /// <inheritdoc cref="CollectionSnapshot{T}.GetCountText"/>
+    public string GetCountText()
+    {
+        return CollectionSnapshot.FormatCount(ObservedCount, IsComplete);
+    }
+
+    /// <inheritdoc cref="CollectionSnapshot{T}.StopDiscardingItems"/>
+    public void StopDiscardingItems()
+    {
+        _cache.RetainAll();
     }
 
     public async ValueTask<(bool Success, T Item)> TryGetItem(int index, CancellationToken cancellationToken = default)

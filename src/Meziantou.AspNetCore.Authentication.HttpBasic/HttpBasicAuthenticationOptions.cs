@@ -9,8 +9,28 @@ public sealed class HttpBasicAuthenticationOptions : AuthenticationSchemeOptions
     /// <summary>The default maximum length (in characters) of the Base64 credential payload.</summary>
     public const int DefaultMaxCredentialLength = 4096;
 
-    /// <summary>Gets or sets the value of the <c>realm</c> parameter in the <c>WWW-Authenticate</c> header. Set to <see langword="null"/> to omit the parameter.</summary>
-    public string? Realm { get; set; } = "Restricted";
+    /// <summary>
+    /// Gets or sets the value of the <c>realm</c> parameter in the <c>WWW-Authenticate</c> header. Set to <see langword="null"/> to omit the parameter.
+    /// Only printable ASCII characters (U+0020 to U+007E) are allowed, as required by RFC 7617.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value contains a character that cannot be written to a response header.</exception>
+    public string? Realm
+    {
+        get;
+        set
+        {
+            if (value is not null)
+            {
+                // Control characters would produce a malformed response header. Kestrel rejects those at write time,
+                // which turns every challenge into a 500, so fail here where the developer can see the cause.
+                var invalidCharacterIndex = value.AsSpan().IndexOfAnyExceptInRange(' ', '~');
+                if (invalidCharacterIndex >= 0)
+                    throw new ArgumentException($"The realm contains an invalid character at index {invalidCharacterIndex}. Only printable ASCII characters (U+0020 to U+007E) are allowed.", nameof(value));
+            }
+
+            field = value;
+        }
+    } = "Restricted";
 
     /// <summary>
     /// Gets or sets the maximum length (in characters) of the Base64 credential payload.
@@ -27,8 +47,22 @@ public sealed class HttpBasicAuthenticationOptions : AuthenticationSchemeOptions
     } = DefaultMaxCredentialLength;
 
     /// <summary>
+    /// Gets or sets a value indicating whether the ASP.NET Core Identity integration authenticates accounts that require two-factor authentication with their password alone.
+    /// The default is <see langword="false"/>: HTTP Basic cannot provide a second factor, so these accounts are rejected.
+    /// </summary>
+    /// <remarks>
+    /// Enabling this lets anyone who knows the password of such an account skip its second factor.
+    /// It is only used by <c>AddHttpBasicIdentity</c>, and has no effect on a custom <see cref="ValidateCredentials"/> delegate.
+    /// </remarks>
+    public bool AllowTwoFactorEnabledAccounts { get; set; }
+
+    /// <summary>
     /// Gets or sets the delegate used to validate credentials and create the <see cref="ClaimsPrincipal"/>.
     /// Returning <see langword="null"/> fails authentication.
     /// </summary>
+    /// <remarks>
+    /// Schemes registered with <c>AddHttpBasicIdentity</c> set this property to an ASP.NET Core Identity validator.
+    /// Changing it for such a scheme fails options validation instead of replacing or being replaced by the Identity validator.
+    /// </remarks>
     public HttpBasicCredentialValidator ValidateCredentials { get; set; } = (_, _, _) => ValueTask.FromResult<ClaimsPrincipal?>(null);
 }

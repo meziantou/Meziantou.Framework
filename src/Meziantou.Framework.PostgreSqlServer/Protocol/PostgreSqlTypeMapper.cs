@@ -4,6 +4,8 @@ namespace Meziantou.Framework.PostgreSql.Protocol;
 
 internal static class PostgreSqlTypeMapper
 {
+    public const uint TextOid = 25;
+
     public static uint GetTypeOid(PostgreSqlColumnType type)
     {
         return type switch

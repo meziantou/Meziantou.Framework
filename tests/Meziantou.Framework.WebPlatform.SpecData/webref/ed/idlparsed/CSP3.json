@@ -1,0 +1,758 @@
+{
+  "spec": {
+    "title": "Content Security Policy Level 3",
+    "url": "https://w3c.github.io/webappsec-csp/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "SecurityPolicyViolationEvent"
+        ],
+        "Worker": [
+          "SecurityPolicyViolationEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "CSPViolationReportBody": {
+        "fragment": "dictionary CSPViolationReportBody : ReportBody {\n  USVString documentURL;\n  USVString? referrer;\n  USVString? blockedURL;\n  DOMString effectiveDirective;\n  DOMString originalPolicy;\n  USVString? sourceFile;\n  DOMString? sample;\n  SecurityPolicyViolationEventDisposition disposition;\n  unsigned short statusCode;\n  unsigned long? lineNumber;\n  unsigned long? columnNumber;\n};",
+        "type": "dictionary",
+        "name": "CSPViolationReportBody",
+        "inheritance": "ReportBody",
+        "members": [
+          {
+            "type": "field",
+            "name": "documentURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-documenturl"
+          },
+          {
+            "type": "field",
+            "name": "referrer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-referrer"
+          },
+          {
+            "type": "field",
+            "name": "blockedURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-blockedurl"
+          },
+          {
+            "type": "field",
+            "name": "effectiveDirective",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-effectivedirective"
+          },
+          {
+            "type": "field",
+            "name": "originalPolicy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-originalpolicy"
+          },
+          {
+            "type": "field",
+            "name": "sourceFile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-sourcefile"
+          },
+          {
+            "type": "field",
+            "name": "sample",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-sample"
+          },
+          {
+            "type": "field",
+            "name": "disposition",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SecurityPolicyViolationEventDisposition"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-disposition"
+          },
+          {
+            "type": "field",
+            "name": "statusCode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-statuscode"
+          },
+          {
+            "type": "field",
+            "name": "lineNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-linenumber"
+          },
+          {
+            "type": "field",
+            "name": "columnNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-columnnumber"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webappsec-csp/#dictdef-cspviolationreportbody"
+      },
+      "SecurityPolicyViolationEventDisposition": {
+        "fragment": "enum SecurityPolicyViolationEventDisposition {\n  \"enforce\", \"report\"\n};",
+        "type": "enum",
+        "name": "SecurityPolicyViolationEventDisposition",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "enforce",
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventdisposition-enforce"
+          },
+          {
+            "type": "enum-value",
+            "value": "report",
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventdisposition-report"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webappsec-csp/#enumdef-securitypolicyviolationeventdisposition"
+      },
+      "SecurityPolicyViolationEvent": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface SecurityPolicyViolationEvent : Event {\n    constructor(DOMString type, optional SecurityPolicyViolationEventInit eventInitDict = {});\n    readonly    attribute USVString      documentURI;\n    readonly    attribute USVString      referrer;\n    readonly    attribute USVString      blockedURI;\n    readonly    attribute DOMString      effectiveDirective;\n    readonly    attribute DOMString      violatedDirective; // historical alias of effectiveDirective\n    readonly    attribute DOMString      originalPolicy;\n    readonly    attribute USVString      sourceFile;\n    readonly    attribute DOMString      sample;\n    readonly    attribute SecurityPolicyViolationEventDisposition      disposition;\n    readonly    attribute unsigned short statusCode;\n    readonly    attribute unsigned long  lineNumber;\n    readonly    attribute unsigned long  columnNumber;\n};",
+        "type": "interface",
+        "name": "SecurityPolicyViolationEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SecurityPolicyViolationEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-securitypolicyviolationevent"
+          },
+          {
+            "type": "attribute",
+            "name": "documentURI",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-documenturi"
+          },
+          {
+            "type": "attribute",
+            "name": "referrer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-referrer"
+          },
+          {
+            "type": "attribute",
+            "name": "blockedURI",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-blockeduri"
+          },
+          {
+            "type": "attribute",
+            "name": "effectiveDirective",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-effectivedirective"
+          },
+          {
+            "type": "attribute",
+            "name": "violatedDirective",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-violateddirective"
+          },
+          {
+            "type": "attribute",
+            "name": "originalPolicy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-originalpolicy"
+          },
+          {
+            "type": "attribute",
+            "name": "sourceFile",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-sourcefile"
+          },
+          {
+            "type": "attribute",
+            "name": "sample",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-sample"
+          },
+          {
+            "type": "attribute",
+            "name": "disposition",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SecurityPolicyViolationEventDisposition"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-disposition"
+          },
+          {
+            "type": "attribute",
+            "name": "statusCode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-statuscode"
+          },
+          {
+            "type": "attribute",
+            "name": "lineNumber",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-linenumber"
+          },
+          {
+            "type": "attribute",
+            "name": "columnNumber",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationevent-columnnumber"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webappsec-csp/#securitypolicyviolationevent"
+      },
+      "SecurityPolicyViolationEventInit": {
+        "fragment": "dictionary SecurityPolicyViolationEventInit : EventInit {\n    USVString      documentURI = \"\";\n    USVString      referrer = \"\";\n    USVString      blockedURI = \"\";\n    DOMString      violatedDirective = \"\";\n    DOMString      effectiveDirective = \"\";\n    DOMString      originalPolicy = \"\";\n    USVString      sourceFile = \"\";\n    DOMString      sample = \"\";\n    SecurityPolicyViolationEventDisposition disposition = \"enforce\";\n    unsigned short statusCode = 0;\n    unsigned long  lineNumber = 0;\n    unsigned long  columnNumber = 0;\n};",
+        "type": "dictionary",
+        "name": "SecurityPolicyViolationEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "documentURI",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-documenturi"
+          },
+          {
+            "type": "field",
+            "name": "referrer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-referrer"
+          },
+          {
+            "type": "field",
+            "name": "blockedURI",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-blockeduri"
+          },
+          {
+            "type": "field",
+            "name": "violatedDirective",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-violateddirective"
+          },
+          {
+            "type": "field",
+            "name": "effectiveDirective",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-effectivedirective"
+          },
+          {
+            "type": "field",
+            "name": "originalPolicy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-originalpolicy"
+          },
+          {
+            "type": "field",
+            "name": "sourceFile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-sourcefile"
+          },
+          {
+            "type": "field",
+            "name": "sample",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-sample"
+          },
+          {
+            "type": "field",
+            "name": "disposition",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SecurityPolicyViolationEventDisposition"
+            },
+            "default": {
+              "type": "string",
+              "value": "enforce"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-disposition"
+          },
+          {
+            "type": "field",
+            "name": "statusCode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-statuscode"
+          },
+          {
+            "type": "field",
+            "name": "lineNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-linenumber"
+          },
+          {
+            "type": "field",
+            "name": "columnNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-csp/#dom-securitypolicyviolationeventinit-columnnumber"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webappsec-csp/#dictdef-securitypolicyviolationeventinit"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SecurityPolicyViolationEvent"
+      ],
+      "Worker": [
+        "SecurityPolicyViolationEvent"
+      ]
+    },
+    "dependencies": {
+      "CSPViolationReportBody": [
+        "ReportBody",
+        "SecurityPolicyViolationEventDisposition"
+      ],
+      "SecurityPolicyViolationEvent": [
+        "Event",
+        "SecurityPolicyViolationEventInit",
+        "SecurityPolicyViolationEventDisposition"
+      ],
+      "SecurityPolicyViolationEventInit": [
+        "EventInit",
+        "SecurityPolicyViolationEventDisposition"
+      ]
+    },
+    "externalDependencies": [
+      "ReportBody",
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

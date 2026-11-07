@@ -1,0 +1,641 @@
+{
+  "spec": {
+    "title": "CSS Animations Module Level 1",
+    "url": "https://drafts.csswg.org/css-animations-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "AnimationEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "CSSKeyframeRule",
+          "CSSKeyframesRule"
+        ]
+      }
+    },
+    "idlNames": {
+      "AnimationEvent": {
+        "fragment": "[Exposed=Window]\ninterface AnimationEvent : Event {\n  constructor(CSSOMString type, optional AnimationEventInit animationEventInitDict = {});\n  readonly attribute CSSOMString animationName;\n  readonly attribute double elapsedTime;\n  readonly attribute CSSOMString pseudoElement;\n};",
+        "type": "interface",
+        "name": "AnimationEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "animationEventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AnimationEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-animationevent-animationevent"
+          },
+          {
+            "type": "attribute",
+            "name": "animationName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-animationevent-animationname"
+          },
+          {
+            "type": "attribute",
+            "name": "elapsedTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-animationevent-elapsedtime"
+          },
+          {
+            "type": "attribute",
+            "name": "pseudoElement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-animationevent-pseudoelement"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-animations-1/#animationevent"
+      },
+      "AnimationEventInit": {
+        "fragment": "dictionary AnimationEventInit : EventInit {\n  CSSOMString animationName = \"\";\n  double elapsedTime = 0.0;\n  CSSOMString pseudoElement = \"\";\n};",
+        "type": "dictionary",
+        "name": "AnimationEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "animationName",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-animationeventinit-animationname"
+          },
+          {
+            "type": "field",
+            "name": "elapsedTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-animationeventinit-elapsedtime"
+          },
+          {
+            "type": "field",
+            "name": "pseudoElement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-animationeventinit-pseudoelement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-animations-1/#dictdef-animationeventinit"
+      },
+      "CSSKeyframeRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSKeyframeRule : CSSRule {\n  attribute CSSOMString keyText;\n  [SameObject, PutForwards=cssText] readonly attribute CSSStyleProperties style;\n};",
+        "type": "interface",
+        "name": "CSSKeyframeRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "keyText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframerule-keytext"
+          },
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSStyleProperties"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframerule-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-animations-1/#csskeyframerule"
+      },
+      "CSSKeyframesRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSKeyframesRule : CSSRule {\n           attribute CSSOMString name;\n  readonly attribute CSSRuleList cssRules;\n  readonly attribute unsigned long length;\n\n  getter CSSKeyframeRule (unsigned long index);\n  undefined        appendRule(CSSOMString rule);\n  undefined        deleteRule(CSSOMString select);\n  CSSKeyframeRule? findRule(CSSOMString select);\n};",
+        "type": "interface",
+        "name": "CSSKeyframesRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-name"
+          },
+          {
+            "type": "attribute",
+            "name": "cssRules",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSRuleList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-cssrules"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-length"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSKeyframeRule"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "operation",
+            "name": "appendRule",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rule",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-appendrule"
+          },
+          {
+            "type": "operation",
+            "name": "deleteRule",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "select",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-deleterule"
+          },
+          {
+            "type": "operation",
+            "name": "findRule",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSKeyframeRule"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "select",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-findrule"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-animations-1/#csskeyframesrule"
+      }
+    },
+    "idlExtendedNames": {
+      "CSSRule": [
+        {
+          "fragment": "partial interface CSSRule {\n    const unsigned short KEYFRAMES_RULE = 7;\n    const unsigned short KEYFRAME_RULE = 8;\n};",
+          "type": "interface",
+          "name": "CSSRule",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "const",
+              "name": "KEYFRAMES_RULE",
+              "idlType": {
+                "type": "const-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned short"
+              },
+              "extAttrs": [],
+              "value": {
+                "type": "number",
+                "value": "7"
+              },
+              "href": "https://drafts.csswg.org/css-animations-1/#dom-cssrule-keyframes_rule"
+            },
+            {
+              "type": "const",
+              "name": "KEYFRAME_RULE",
+              "idlType": {
+                "type": "const-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned short"
+              },
+              "extAttrs": [],
+              "value": {
+                "type": "number",
+                "value": "8"
+              },
+              "href": "https://drafts.csswg.org/css-animations-1/#dom-cssrule-keyframe_rule"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n  attribute EventHandler onanimationstart;\n  attribute EventHandler onanimationiteration;\n  attribute EventHandler onanimationend;\n  attribute EventHandler onanimationcancel;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onanimationstart",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationstart"
+            },
+            {
+              "type": "attribute",
+              "name": "onanimationiteration",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationiteration"
+            },
+            {
+              "type": "attribute",
+              "name": "onanimationend",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationend"
+            },
+            {
+              "type": "attribute",
+              "name": "onanimationcancel",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationcancel"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AnimationEvent",
+        "CSSKeyframeRule",
+        "CSSKeyframesRule"
+      ]
+    },
+    "dependencies": {
+      "AnimationEvent": [
+        "Event",
+        "CSSOMString",
+        "AnimationEventInit"
+      ],
+      "AnimationEventInit": [
+        "EventInit",
+        "CSSOMString"
+      ],
+      "CSSRule": [],
+      "CSSKeyframeRule": [
+        "CSSRule",
+        "CSSOMString",
+        "CSSStyleProperties"
+      ],
+      "CSSKeyframesRule": [
+        "CSSRule",
+        "CSSOMString",
+        "CSSRuleList",
+        "CSSKeyframeRule"
+      ],
+      "GlobalEventHandlers": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Event",
+      "CSSOMString",
+      "EventInit",
+      "CSSRule",
+      "CSSStyleProperties",
+      "CSSRuleList",
+      "GlobalEventHandlers",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -5,11 +5,14 @@
     <IsTrimmable>false</IsTrimmable>
 
     <Description>An in-memory implementation of Microsoft.Extension.Logging.ILogger</Description>
-    <PackageTags>logger</PackageTags>
-    <Version>2.0.1</Version>
+    <PackageTags>logging, logger, in-memory, ilogger, testing, microsoft-extensions-logging</PackageTags>
+    <Version>2.0.9</Version>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework/Collections/AppendOnlyCollection.cs" Link="Collections/AppendOnlyCollection.cs" />
+    <Compile Include="../Meziantou.Framework/Collections/AppendOnlyCollectionSegment.cs" Link="Collections/AppendOnlyCollectionSegment.cs" />
+    <Compile Include="../../common/MutableExternalScopeProvider.cs" Link="MutableExternalScopeProvider.cs" />
     <Compile Include="../../common/TypeNameHelper.cs" Link="TypeNameHelper.cs" />
   </ItemGroup>
 
@@ -18,6 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
   </ItemGroup>
 </Project>

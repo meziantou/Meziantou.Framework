@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lb": {
+      "identity": {
+        "language": "lb"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

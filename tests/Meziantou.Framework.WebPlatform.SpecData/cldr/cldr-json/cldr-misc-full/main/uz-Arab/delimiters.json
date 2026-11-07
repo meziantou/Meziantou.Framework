@@ -1,0 +1,16 @@
+{
+  "main": {
+    "uz-Arab": {
+      "identity": {
+        "language": "uz",
+        "script": "Arab"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

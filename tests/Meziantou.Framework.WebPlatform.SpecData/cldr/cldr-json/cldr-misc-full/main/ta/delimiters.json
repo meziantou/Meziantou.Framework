@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ta": {
+      "identity": {
+        "language": "ta"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

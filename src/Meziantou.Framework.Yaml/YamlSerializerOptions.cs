@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml;
@@ -10,11 +11,13 @@ public sealed record YamlSerializerOptions
 {
     private static readonly YamlConverter[] EmptyConverters = [];
     private static readonly ReadOnlyCollection<YamlConverter> EmptyConvertersReadOnly = Array.AsReadOnly(EmptyConverters);
+    private static readonly ReadOnlyCollection<YamlTypeClassifierFactory> EmptyTypeClassifiersReadOnly = Array.AsReadOnly(Array.Empty<YamlTypeClassifierFactory>());
 
     /// <summary>Gets a default options instance.</summary>
     public static YamlSerializerOptions Default { get; } = new();
 
     private readonly ReadOnlyCollection<YamlConverter> _convertersReadOnly = EmptyConvertersReadOnly;
+    private readonly ReadOnlyCollection<YamlTypeClassifierFactory> _typeClassifiersReadOnly = EmptyTypeClassifiersReadOnly;
 
     /// <summary>Gets the custom converters.</summary>
     /// <remarks>Converters are evaluated in order and take precedence over built-in converters.</remarks>
@@ -48,6 +51,36 @@ public sealed record YamlSerializerOptions
         }
     }
 
+    /// <summary>Gets the type classifier factories used to select a C# union case from a YAML payload.</summary>
+    /// <remarks>
+    /// Factories are evaluated in order, and the first one accepting a type classifies it. Without a factory, union
+    /// cases are selected by YAML shape alone and a payload matching several cases fails to deserialize. Register
+    /// <see cref="YamlUnionTypeStructuralClassifier"/> to also tell mapping cases apart by their keys.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A factory entry is <see langword="null"/>.</exception>
+    public IReadOnlyList<YamlTypeClassifierFactory> TypeClassifiers
+    {
+        get => _typeClassifiersReadOnly;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (value.Count == 0)
+            {
+                _typeClassifiersReadOnly = EmptyTypeClassifiersReadOnly;
+                return;
+            }
+
+            var copy = new YamlTypeClassifierFactory[value.Count];
+            for (var i = 0; i < value.Count; i++)
+            {
+                copy[i] = value[i] ?? throw new ArgumentException("Type classifiers cannot contain null entries.", nameof(value));
+            }
+
+            _typeClassifiersReadOnly = Array.AsReadOnly(copy);
+        }
+    }
+
     /// <summary>Gets or sets the policy used to convert CLR property names.</summary>
     public YamlNamingPolicy? PropertyNamingPolicy { get; init; }
 
@@ -73,9 +106,6 @@ public sealed record YamlSerializerOptions
     /// <summary>Gets or sets a value indicating whether read-only properties are ignored during serialization.</summary>
     public bool IgnoreReadOnlyProperties { get; init; }
 
-    /// <summary>Gets or sets a value indicating whether deserialization rejects properties that do not match a .NET member.</summary>
-    public bool RejectUnmatchedProperties { get; init; }
-
     /// <summary>Gets or sets a value indicating whether required constructor parameters must be present during deserialization.</summary>
     public bool RespectRequiredConstructorParameters { get; init; } = true;
 
@@ -97,6 +127,18 @@ public sealed record YamlSerializerOptions
     public YamlIgnoreCondition DefaultIgnoreCondition { get; init; }
 
     /// <summary>Gets or sets a value indicating whether output should be indented.</summary>
+    /// <remarks>
+    /// <para>
+    /// When <see langword="true"/>, collections are written using the block style and nested collections are indented by
+    /// <see cref="IndentSize"/> columns.
+    /// </para>
+    /// <para>
+    /// When <see langword="false"/>, collections are written using the flow style, which keeps the whole document on a single
+    /// line: <c>{a: {b: 1}, c: [2, 3]}</c>. Block YAML expresses nesting through indentation, so the flow style is what makes
+    /// unindented output possible. <see cref="IndentSize"/>, <see cref="BlockSequenceMappingStyle"/>, and
+    /// <see cref="BlockSequenceSequenceStyle"/> only apply to the block style and are ignored.
+    /// </para>
+    /// </remarks>
     public bool WriteIndented { get; init; } = true;
 
     /// <summary>
@@ -117,13 +159,32 @@ public sealed record YamlSerializerOptions
         }
     } = 2;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether a block sequence that is the value of a mapping key is indented
+    /// relative to that mapping.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A block sequence used as a mapping value does not need its own indentation level: YAML allows the sequence
+    /// dashes to sit at the indentation of the parent mapping. When <see langword="false"/>, the dashes are written
+    /// at the indentation of the parent mapping instead of being indented by <see cref="IndentSize"/> columns.
+    /// </para>
+    /// <para>
+    /// This option only affects sequences written as a mapping value. A sequence nested inside another sequence is
+    /// always indented past its parent dash, because YAML has no unindented form for it. This option is ignored when
+    /// <see cref="WriteIndented"/> is disabled, because the flow style has no sequence dash.
+    /// </para>
+    /// </remarks>
+    public bool IndentBlockSequences { get; init; } = true;
+
     /// <summary>Gets or sets member ordering behavior for emitted mappings.</summary>
     public YamlMappingOrderPolicy MappingOrder { get; init; } = YamlMappingOrderPolicy.Declaration;
 
     /// <summary>Gets or sets how mappings are emitted when they appear as items in block sequences.</summary>
     /// <remarks>
     /// The default is <see cref="YamlSequenceItemStyle.Compact"/>, which emits the first mapping key on the same
-    /// line as the sequence dash when possible.
+    /// line as the sequence dash when possible. This option is ignored when <see cref="WriteIndented"/> is disabled,
+    /// because the flow style has no sequence dash.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="YamlSequenceItemStyle"/>.</exception>
     public YamlSequenceItemStyle BlockSequenceMappingStyle
@@ -139,7 +200,8 @@ public sealed record YamlSerializerOptions
     /// <summary>Gets or sets how nested sequences are emitted when they appear as items in block sequences.</summary>
     /// <remarks>
     /// The default is <see cref="YamlSequenceItemStyle.Expanded"/>, which keeps nested sequence items on lines
-    /// following the parent sequence dash.
+    /// following the parent sequence dash. This option is ignored when <see cref="WriteIndented"/> is disabled,
+    /// because the flow style has no sequence dash.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="YamlSequenceItemStyle"/>.</exception>
     public YamlSequenceItemStyle BlockSequenceSequenceStyle
@@ -180,12 +242,23 @@ public sealed record YamlSerializerOptions
     } = new();
 
     /// <summary>Gets polymorphism options.</summary>
+    /// <remarks>
+    /// The assigned instance becomes read-only: its <see cref="YamlPolymorphismOptions.DerivedTypeMappings"/> are
+    /// copied, and changing them afterwards throws <see cref="NotSupportedException"/>. This keeps options that are
+    /// already in use, and the copies made from them with a <see langword="with"/> expression, from changing.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">Value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A derived type mapping has a <see langword="null"/> list or a <see langword="null"/> entry.</exception>
     public YamlPolymorphismOptions PolymorphismOptions
     {
         get;
-        init => field = value ?? throw new ArgumentNullException(nameof(value));
-    } = new();
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            value.MakeReadOnly(nameof(value));
+            field = value;
+        }
+    } = YamlPolymorphismOptions.ReadOnlyDefault;
 
     /// <summary>Gets or sets object reference handling behavior.</summary>
     public YamlReferenceHandling ReferenceHandling { get; init; }
@@ -222,14 +295,33 @@ public sealed record YamlSerializerOptions
     public bool AllowAliases { get; init; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether YAML merge keys (<c>&lt;&lt;</c>) are allowed during deserialization.
+    /// Gets or sets the maximum number of nodes that aliases are allowed to materialize while building a
+    /// <see cref="Meziantou.Framework.Yaml.Model.YamlNode"/> document object model.
     /// </summary>
     /// <remarks>
-    /// Merge keys are only recognized when <see cref="Schema"/> is <see cref="YamlSchemaKind.Core"/> or
-    /// <see cref="YamlSchemaKind.Extended"/>. When this option is <see langword="false"/> and a merge key would
-    /// otherwise be applied, a <see cref="YamlException"/> is thrown.
+    /// <para>A value of <c>0</c> uses the default limit of 100000.</para>
+    /// <para>
+    /// The document object model does not preserve aliases as a distinct node type, so each alias is expanded into a
+    /// copy of the anchored subtree. Nesting anchors so that each level references the previous one several times makes
+    /// the node count grow exponentially while the document grows linearly, which lets a very small payload exhaust
+    /// memory. Only nodes produced by alias expansion count towards this limit; documents without aliases are never
+    /// affected, and <see cref="MaxDepth"/> does not help because the growth is in breadth rather than depth.
+    /// </para>
+    /// <para>
+    /// The serializer applies the same limit to the nodes a merge key replays when its value is an alias
+    /// (<c>&lt;&lt;: *defaults</c>), as a merged mapping can itself merge other mappings.
+    /// </para>
     /// </remarks>
-    public bool AllowMergeKeys { get; init; } = true;
+    /// <exception cref="ArgumentOutOfRangeException">Value is less than 0.</exception>
+    public int MaxAliasExpansionNodeCount
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
 
     /// <summary>
     /// Gets or sets a metadata resolver used to retrieve <see cref="YamlTypeInfo"/> instances.
@@ -242,13 +334,57 @@ public sealed record YamlSerializerOptions
     /// </remarks>
     public IYamlTypeInfoResolver? TypeInfoResolver { get; init; }
 
+    /// <summary>Gets the <see cref="YamlTypeInfo{T}"/> contract metadata resolved by this options instance.</summary>
+    /// <typeparam name="T">The type to resolve metadata for.</typeparam>
+    /// <returns>The metadata resolved for <typeparamref name="T"/>.</returns>
+    /// <exception cref="InvalidOperationException">No metadata is available for <typeparamref name="T"/>.</exception>
+    public YamlTypeInfo<T> GetTypeInfo<T>()
+    {
+        var typeInfo = YamlSerializer.ResolveTypeInfo(this, typeof(T));
+        return AsGenericTypeInfo<T>(typeInfo);
+    }
+
+    /// <summary>Attempts to get the <see cref="YamlTypeInfo{T}"/> contract metadata resolved by this options instance.</summary>
+    /// <typeparam name="T">The type to resolve metadata for.</typeparam>
+    /// <param name="typeInfo">The metadata resolved for <typeparamref name="T"/>, when available.</param>
+    /// <returns><see langword="true"/> when metadata is available for <typeparamref name="T"/>; otherwise <see langword="false"/>.</returns>
+    public bool TryGetTypeInfo<T>([NotNullWhen(returnValue: true)] out YamlTypeInfo<T>? typeInfo)
+    {
+        var resolved = YamlSerializer.TryResolveTypeInfo(this, typeof(T));
+        if (resolved is null)
+        {
+            typeInfo = null;
+            return false;
+        }
+
+        typeInfo = AsGenericTypeInfo<T>(resolved);
+        return true;
+    }
+
+    private static YamlTypeInfo<T> AsGenericTypeInfo<T>(YamlTypeInfo typeInfo)
+    {
+        return typeInfo as YamlTypeInfo<T> ?? new DelegatingYamlTypeInfo<T>(typeInfo);
+    }
+
     internal int EffectiveMaxDepth => YamlDepthHelper.GetEffectiveMaxDepth(MaxDepth);
+
+    internal const int DefaultMaxAliasExpansionNodeCount = 100_000;
+
+    internal int EffectiveMaxAliasExpansionNodeCount => MaxAliasExpansionNodeCount == 0 ? DefaultMaxAliasExpansionNodeCount : MaxAliasExpansionNodeCount;
 
     internal static void ValidateSequenceItemStyle(YamlSequenceItemStyle value, string paramName)
     {
         if (value is not (YamlSequenceItemStyle.Default or YamlSequenceItemStyle.Expanded or YamlSequenceItemStyle.Compact))
         {
             throw new ArgumentOutOfRangeException(paramName, value, "The YAML sequence item style is not valid.");
+        }
+    }
+
+    internal static void ValidateScalarStyle(ScalarStyle value, string paramName)
+    {
+        if (value is not (ScalarStyle.Any or ScalarStyle.Plain or ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted or ScalarStyle.Literal or ScalarStyle.Folded))
+        {
+            throw new ArgumentOutOfRangeException(paramName, value, "The YAML scalar style is not valid.");
         }
     }
 }

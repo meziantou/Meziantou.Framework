@@ -2,9 +2,19 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a weekly recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new WeeklyRecurrenceRule { Interval = 2, ByWeekDays = { DayOfWeek.Monday, DayOfWeek.Wednesday } };
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="WeeklyRecurrenceRule_Example" ref:dedent="true">
+/// // Monday and Wednesday, every 2 weeks
+/// var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).Take(4).ToArray();
+///
+/// Assert.Equal(
+///     [
+///         new DateTime(2024, 01, 01, 09, 00, 00),
+///         new DateTime(2024, 01, 03, 09, 00, 00),
+///         new DateTime(2024, 01, 15, 09, 00, 00),
+///         new DateTime(2024, 01, 17, 09, 00, 00),
+///     ],
+///     nextOccurrences);
 /// </code>
 /// </example>
 internal sealed class WeeklyRecurrenceRule : RecurrenceRule
@@ -14,83 +24,12 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
-        var byWeekDays = ByWeekDays?.ToList();
-        if (IsEmpty(byWeekDays))
-        {
-            byWeekDays = [startDate.DayOfWeek];
-        }
-
-        var dayOffsets = byWeekDays.Select(day => (day - WeekStart + 7) % 7).Distinct().Order().ToArray();
-        var startOfWeek = Extensions.StartOfWeek(startDate, WeekStart);
-
-        while (true)
-        {
-            foreach (var dayOffset in dayOffsets)
-            {
-                var next = startOfWeek.AddDays(dayOffset);
-                if (next >= startDate)
-                {
-                    var b = true;
-
-                    if (!IsEmpty(ByMonths))
-                    {
-                        if (!ByMonths.Contains(next.Month))
-                        {
-                            b = false;
-                        }
-                    }
-
-                    if (!IsEmpty(ByMonthDays))
-                    {
-                        if (!ByMonthDays.Contains(next.Day))
-                        {
-                            b = false;
-                        }
-                    }
-
-                    if (b)
-                    {
-                        if (hasTimeFilters)
-                        {
-                            foreach (var occurrence in ExpandByTime(next))
-                            {
-                                yield return occurrence;
-                            }
-                        }
-                        else
-                        {
-                            yield return next;
-                        }
-                    }
-                }
-            }
-
-            startOfWeek = startOfWeek.AddDays(7 * Interval);
-        }
+        return GetNextOccurrencesInternal(startDate, endBound: null);
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
     {
-        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
-        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
-        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
-
-        var dateOnly = date.Date;
-        foreach (var hour in hours)
-        {
-            foreach (var minute in minutes)
-            {
-                foreach (var second in seconds)
-                {
-                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= date)
-                    {
-                        yield return result;
-                    }
-                }
-            }
-        }
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Weekly, this, startDate, endBound, weekDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays);
     }
 
     /// <inheritdoc />
@@ -104,19 +43,19 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
             if (Interval != 1)
             {
                 sb.Append(";INTERVAL=");
-                sb.Append(Interval);
+                sb.Append(Interval.ToString(CultureInfo.InvariantCulture));
             }
 
             if (EndDate.HasValue)
             {
                 sb.Append(";UNTIL=");
-                sb.Append(Utilities.DateTimeToString(EndDate.Value));
+                sb.Append(EndDateText);
             }
 
             if (Occurrences.HasValue)
             {
                 sb.Append(";COUNT=");
-                sb.Append(Occurrences.Value);
+                sb.Append(Occurrences.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             if (WeekStart != DefaultFirstDayOfWeek)
@@ -128,13 +67,13 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByMonths))
             {
                 sb.Append(";BYMONTH=");
-                sb.AppendJoin(',', ByMonths);
+                AppendValues(sb, ByMonths);
             }
 
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
-                sb.AppendJoin(',', ByMonthDays);
+                AppendValues(sb, ByMonthDays);
             }
 
             if (!IsEmpty(ByWeekDays))
@@ -146,27 +85,28 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByHours))
             {
                 sb.Append(";BYHOUR=");
-                sb.AppendJoin(',', ByHours);
+                AppendValues(sb, ByHours);
             }
 
             if (!IsEmpty(ByMinutes))
             {
                 sb.Append(";BYMINUTE=");
-                sb.AppendJoin(',', ByMinutes);
+                AppendValues(sb, ByMinutes);
             }
 
             if (!IsEmpty(BySeconds))
             {
                 sb.Append(";BYSECOND=");
-                sb.AppendJoin(',', BySeconds);
+                AppendValues(sb, BySeconds);
             }
 
             if (!IsEmpty(BySetPositions))
             {
                 sb.Append(";BYSETPOS=");
-                sb.AppendJoin(',', BySetPositions);
+                AppendValues(sb, BySetPositions);
             }
 
+            AppendExtensionParts(sb);
             return sb.ToString();
         }
     }

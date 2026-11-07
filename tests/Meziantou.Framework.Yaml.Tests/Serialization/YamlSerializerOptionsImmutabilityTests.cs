@@ -36,6 +36,67 @@ public sealed class YamlSerializerOptionsImmutabilityTests
     }
 
     [Fact]
+    public void DerivedTypeMappings_AreCopiedFromInitializer()
+    {
+        var derivedTypes = new List<YamlDerivedType> { new(typeof(ImmutabilityDog), "dog") };
+        var polymorphismOptions = new YamlPolymorphismOptions
+        {
+            DerivedTypeMappings =
+            {
+                [typeof(ImmutabilityAnimal)] = derivedTypes,
+            },
+        };
+
+        var options = new YamlSerializerOptions { PolymorphismOptions = polymorphismOptions };
+        derivedTypes.Add(new YamlDerivedType(typeof(ImmutabilityCat), "cat"));
+
+        Assert.HasCount(1, options.PolymorphismOptions.DerivedTypeMappings[typeof(ImmutabilityAnimal)]);
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<ImmutabilityAnimal>("$type: cat\n", options));
+    }
+
+    [Fact]
+    public void DerivedTypeMappings_RejectMutationOnceAssigned()
+    {
+        var polymorphismOptions = new YamlPolymorphismOptions
+        {
+            DerivedTypeMappings =
+            {
+                [typeof(ImmutabilityAnimal)] = [new YamlDerivedType(typeof(ImmutabilityDog), "dog")],
+            },
+        };
+
+        var options = new YamlSerializerOptions { PolymorphismOptions = polymorphismOptions };
+        var copy = options with { WriteIndented = false };
+
+        Assert.Same(polymorphismOptions, options.PolymorphismOptions);
+        Assert.Throws<NotSupportedException>(() => polymorphismOptions.DerivedTypeMappings.Add(typeof(ImmutabilityCat), []));
+        Assert.Throws<NotSupportedException>(() => copy.PolymorphismOptions.DerivedTypeMappings.Remove(typeof(ImmutabilityAnimal)));
+        Assert.Throws<NotSupportedException>(() => copy.PolymorphismOptions.DerivedTypeMappings[typeof(ImmutabilityAnimal)].Add(new YamlDerivedType(typeof(ImmutabilityCat), "cat")));
+        Assert.HasCount(1, options.PolymorphismOptions.DerivedTypeMappings);
+    }
+
+    [Fact]
+    public void DerivedTypeMappings_OfDefaultOptionsAreReadOnly()
+    {
+        Assert.Throws<NotSupportedException>(() => YamlSerializerOptions.Default.PolymorphismOptions.DerivedTypeMappings.Add(typeof(ImmutabilityAnimal), []));
+        Assert.Throws<NotSupportedException>(() => new YamlSerializerOptions().PolymorphismOptions.DerivedTypeMappings.Add(typeof(ImmutabilityAnimal), []));
+        Assert.Empty(YamlSerializerOptions.Default.PolymorphismOptions.DerivedTypeMappings);
+    }
+
+    [Fact]
+    public void DerivedTypeMappings_RejectNullEntries()
+    {
+        Assert.Throws<ArgumentException>(() => new YamlSerializerOptions
+        {
+            PolymorphismOptions = new YamlPolymorphismOptions { DerivedTypeMappings = { [typeof(ImmutabilityAnimal)] = null! } },
+        });
+        Assert.Throws<ArgumentException>(() => new YamlSerializerOptions
+        {
+            PolymorphismOptions = new YamlPolymorphismOptions { DerivedTypeMappings = { [typeof(ImmutabilityAnimal)] = [null!] } },
+        });
+    }
+
+    [Fact]
     public void Context_RejectsOptionsWithDifferentTypeInfoResolver()
     {
         var resolver = new DummyResolver();
@@ -45,6 +106,18 @@ public sealed class YamlSerializerOptionsImmutabilityTests
         };
 
         _ = Assert.Throws<ArgumentException>(() => new DummyContext(options));
+    }
+
+    private abstract class ImmutabilityAnimal
+    {
+    }
+
+    private sealed class ImmutabilityDog : ImmutabilityAnimal
+    {
+    }
+
+    private sealed class ImmutabilityCat : ImmutabilityAnimal
+    {
     }
 
     private sealed class DummyResolver : IYamlTypeInfoResolver

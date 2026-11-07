@@ -1,0 +1,22 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.JavaScriptEngine.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Corpus/*.jsonl" />
+    <EmbeddedResource Include="Corpus/*.txt.gz" LogicalName="Corpus.%(Filename)%(Extension)" />
+    <!-- test_parsing of JSONTestSuite (JSONTestSuite/README.md) -->
+    <EmbeddedResource Include="JSONTestSuite/test_parsing/*.json" LogicalName="JSONTestSuite.%(Filename)%(Extension)" />
+    <!-- Test data of CLDR (common/testData and common/uca of the CLDR release) -->
+    <EmbeddedResource Include="Intl/TestData/*.gz" LogicalName="Intl.TestData.%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../common/ThreadCpuStopwatch.cs" Link="ThreadCpuStopwatch.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
+    <!-- The classes of the documentation site (docs/JavaScriptEngine), run by JsEngineTests.cs -->
+    <ProjectReference Include="../../samples/Meziantou.Framework.JavaScriptEngine.Samples/Meziantou.Framework.JavaScriptEngine.Samples.csproj" />
+  </ItemGroup>
+</Project>

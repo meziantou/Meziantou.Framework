@@ -1,0 +1,59 @@
+{
+  "spec": {
+    "title": "CSS Images Module Level 4",
+    "url": "https://drafts.csswg.org/css-images-4/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "CSS": [
+        {
+          "fragment": "partial namespace CSS {\n  [SameObject] readonly attribute any elementSources;\n};",
+          "type": "namespace",
+          "name": "CSS",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "elementSources",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "any"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-images-4/#dom-css-elementsources"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "CSS": []
+    },
+    "externalDependencies": [
+      "CSS"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

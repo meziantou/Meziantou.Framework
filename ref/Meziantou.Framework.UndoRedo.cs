@@ -7,67 +7,80 @@ namespace Meziantou.Framework.UndoRedo
     public interface IUndoRedoAction
     {
         bool AllowToMergeWithPrevious { get; }
-        System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = null);
-        System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = null);
-        bool CanExecute();
-        bool CanUnExecute();
-        System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction);
+        public string? Description { get => throw null; }
+        System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = default);
+    }
+
+    public enum TransactionExecutionMode
+    {
+        Deferred = 0,
+        Immediate = 1,
     }
 
     public abstract class UndoRedoActionBase : Meziantou.Framework.UndoRedo.IUndoRedoAction
     {
-        protected int ExecuteCount { get => throw null; }
         public bool AllowToMergeWithPrevious { get => throw null; set { } }
-        public System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public virtual string? Description { get => throw null; set { } }
+        protected bool IsApplied { get => throw null; }
+        public System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         protected abstract System.Threading.Tasks.ValueTask ExecuteCoreAsync(System.Threading.CancellationToken cancellationToken);
-        public System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         protected abstract System.Threading.Tasks.ValueTask UnExecuteCoreAsync(System.Threading.CancellationToken cancellationToken);
-        public bool CanExecute() => throw null;
-        public bool CanUnExecute() => throw null;
-        public virtual System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction) => throw null;
     }
 
     public sealed class UndoRedoDelegateAction : Meziantou.Framework.UndoRedo.UndoRedoActionBase
     {
-        public UndoRedoDelegateAction(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute) { }
-        public UndoRedoDelegateAction(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Action unexecute) { }
-        public UndoRedoDelegateAction(System.Action execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute) { }
         public UndoRedoDelegateAction(System.Action execute, System.Action unexecute) { }
+        public UndoRedoDelegateAction(System.Action execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute) { }
+        public UndoRedoDelegateAction(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Action unexecute) { }
+        public UndoRedoDelegateAction(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute) { }
         protected override System.Threading.Tasks.ValueTask ExecuteCoreAsync(System.Threading.CancellationToken cancellationToken) => throw null;
         protected override System.Threading.Tasks.ValueTask UnExecuteCoreAsync(System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
-    public sealed class UndoRedoManager
+    public sealed class UndoRedoManager : System.ComponentModel.INotifyPropertyChanged
     {
         public bool ActionIsExecuting { get => throw null; }
-        public bool CanUndo { get => throw null; }
         public bool CanRedo { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.UndoRedo.IUndoRedoAction> UndoableActions { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.UndoRedo.IUndoRedoAction> RedoableActions { get => throw null; }
-        public event System.EventHandler? CollectionChanged;
-        public System.Threading.Tasks.ValueTask RecordActionAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Action unexecute, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Action execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Action execute, System.Action unexecute, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask UndoAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask RedoAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public bool CanUndo { get => throw null; }
+        public int MaxHistoryDepth { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UndoRedo.IUndoRedoAction> RedoableActions { get => throw null; }
+        public int TransactionDepth { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UndoRedo.IUndoRedoAction> UndoableActions { get => throw null; }
+        public event System.EventHandler? HistoryChanged;
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        public UndoRedoManager(int maxHistoryDepth) { }
         public void Clear() { }
-        public Meziantou.Framework.UndoRedo.UndoRedoTransaction CreateTransaction(bool isDelayed = true) => throw null;
-        public System.Threading.Tasks.ValueTask CommitTransactionAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask RollbackTransactionAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public Meziantou.Framework.UndoRedo.UndoRedoTransaction CreateTransaction(Meziantou.Framework.UndoRedo.TransactionExecutionMode mode = Meziantou.Framework.UndoRedo.TransactionExecutionMode.Deferred) => throw null;
+        public System.Threading.Tasks.ValueTask RecordActionAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction action, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Action execute, System.Action unexecute, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Action execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Action unexecute, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask RecordActionAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask RedoAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask UndoAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class UndoRedoNotificationException : System.Exception
+    {
+        public UndoRedoNotificationException(string message) { }
+        public UndoRedoNotificationException(string message, System.Exception innerException) { }
     }
 
     public sealed class UndoRedoTransaction : Meziantou.Framework.UndoRedo.IUndoRedoAction, System.IAsyncDisposable
     {
         public bool AllowToMergeWithPrevious { get => throw null; set { } }
-        public System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public bool CanExecute() => throw null;
-        public bool CanUnExecute() => throw null;
-        public System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction) => throw null;
-        public System.Threading.Tasks.ValueTask CommitAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask RollbackAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public string? Description { get => throw null; set { } }
+        public bool IsCompleted { get => throw null; }
+        public Meziantou.Framework.UndoRedo.TransactionExecutionMode Mode { get => throw null; }
+        public System.Threading.Tasks.ValueTask CommitAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        System.Threading.Tasks.ValueTask Meziantou.Framework.UndoRedo.IUndoRedoAction.ExecuteAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask RollbackAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        System.Threading.Tasks.ValueTask<bool> Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction, System.Threading.CancellationToken cancellationToken) => throw null;
+        System.Threading.Tasks.ValueTask Meziantou.Framework.UndoRedo.IUndoRedoAction.UnExecuteAsync(System.Threading.CancellationToken cancellationToken) => throw null;
     }
 }

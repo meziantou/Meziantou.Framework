@@ -5,17 +5,34 @@ namespace Meziantou.Framework.Templating;
 
 /// <summary>Provides output writing capabilities for HTML email templates with support for HTML encoding, URL encoding, sections, and content identifiers.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Templating.Html.Tests/EmailTemplateTest.cs" ref:region="HtmlEmailOutput_Example" ref:dedent="true">
+/// using var template = new HtmlEmailTemplate();
+/// using var writer = new StringWriter();
 /// var output = new HtmlEmailOutput(template, writer);
-/// output.WriteHtmlEncode("&lt;b&gt;text&lt;/b&gt;"); // Outputs: &amp;lt;b&amp;gt;text&amp;lt;/b&amp;gt;
-/// output.WriteUrlEncode("value&amp;param"); // Outputs: value%26param
-/// output.WriteContentIdentifier("logo.png"); // Outputs: cid:logo.png
+///
+/// output.WriteHtmlEncode("&lt;b&gt;text&lt;/b&gt;");
+/// Assert.Equal("&amp;lt;b&amp;gt;text&amp;lt;/b&amp;gt;", writer.ToString());
+///
+/// writer.GetStringBuilder().Clear();
+/// output.WriteHtmlAttributeEncode("a b");
+/// Assert.Equal("a&amp;#x20;b", writer.ToString());
+///
+/// writer.GetStringBuilder().Clear();
+/// output.WriteUrlEncode("value&amp;param");
+/// Assert.Equal("value%26param", writer.ToString());
+///
+/// writer.GetStringBuilder().Clear();
+/// output.WriteContentIdentifier("logo.png");
+/// Assert.Equal("cid:logo.png", writer.ToString());
 /// </code>
 /// </example>
 public class HtmlEmailOutput(Template template, TextWriter writer) : Output(template, writer)
 {
     /// <summary>The name of the section used for the email title.</summary>
     public const string TitleSectionName = "title";
+
+    private static readonly HtmlEncoder HtmlAttributeEncoder = CreateHtmlAttributeEncoder();
+
     private readonly HtmlEncoder _htmlEncoder = HtmlEncoder.Default;
     private readonly UrlEncoder _urlEncoder = UrlEncoder.Default;
 
@@ -24,6 +41,26 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
 
     /// <summary>Gets the list of content identifiers (CIDs) referenced in the template.</summary>
     public IList<string> ContentIdentifiers { get; } = new List<string>();
+
+    public override void Write(string? value)
+    {
+        foreach (var currentSection in _currentSections)
+        {
+            currentSection.Writer.Write(value);
+        }
+
+        base.Write(value);
+    }
+
+    public override void Write(object? value)
+    {
+        foreach (var currentSection in _currentSections)
+        {
+            currentSection.Writer.Write(value);
+        }
+
+        base.Write(value);
+    }
 
     public override void Write(string format, params object?[] args)
     {
@@ -68,7 +105,17 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
     /// <summary>Writes a formatted HTML attribute-encoded string to the output.</summary>
     public virtual void WriteHtmlAttributeEncode(string format, params object?[] args)
     {
-        Write(_htmlEncoder.Encode(string.Format(provider: null, format, args)));
+        Write(HtmlAttributeEncoder.Encode(string.Format(provider: null, format, args)));
+    }
+
+    /// <summary>Creates an encoder that escapes every character outside <c>[0-9A-Za-z]</c>. Unlike <see cref="HtmlEncoder.Default"/>, it also escapes the characters that terminate an unquoted attribute value, such as the space, so the result is safe in quoted and unquoted HTML attributes alike.</summary>
+    private static HtmlEncoder CreateHtmlAttributeEncoder()
+    {
+        var settings = new TextEncoderSettings();
+        settings.AllowCodePoints(Enumerable.Range('0', count: 10));
+        settings.AllowCodePoints(Enumerable.Range('A', count: 26));
+        settings.AllowCodePoints(Enumerable.Range('a', count: 26));
+        return HtmlEncoder.Create(settings);
     }
 
     /// <summary>Writes a URL-encoded value to the output.</summary>
@@ -127,6 +174,17 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
             _sections[section.Name] = section.Writer.ToString();
             _currentSections.Remove(section);
         }
+    }
+
+    /// <summary>Throws when the template left a section open, which means an <c>end_section</c> directive is missing.</summary>
+    /// <exception cref="TemplateException">A section was started but never ended.</exception>
+    internal void ThrowIfSectionsAreOpen()
+    {
+        if (_currentSections.Count == 0)
+            return;
+
+        var sectionNames = string.Join(", ", _currentSections.Select(section => "'" + section.Name + "'"));
+        throw new TemplateException($"The template is invalid: no end_section directive for {sectionNames}.");
     }
 
     /// <summary>Retrieves the content of a previously captured section.</summary>

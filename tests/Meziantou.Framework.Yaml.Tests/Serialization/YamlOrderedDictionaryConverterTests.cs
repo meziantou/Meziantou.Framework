@@ -127,7 +127,7 @@ public sealed class YamlOrderedDictionaryConverterTests
         Assert.NotNull(result);
         Assert.NotNull(result.Primary);
         Assert.NotNull(result.Secondary);
-        Assert.True(ReferenceEquals(result.Primary, result.Secondary));
+        Assert.Same(result.Primary, result.Secondary);
 
         var keys = new List<string>(result.Primary.Keys);
         Assert.Equal(new[] { "zebra", "apple" }, keys);
@@ -159,7 +159,7 @@ public sealed class YamlOrderedDictionaryConverterTests
         Assert.NotNull(result);
         Assert.NotNull(result.Primary);
         Assert.NotNull(result.Secondary);
-        Assert.True(ReferenceEquals(result.Primary, result.Secondary));
+        Assert.Same(result.Primary, result.Secondary);
 
         var keys = new List<int>(result.Primary.Keys);
         Assert.Equal(new[] { 3, 1 }, keys);

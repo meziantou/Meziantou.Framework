@@ -33,6 +33,11 @@
     }
 
 .log-linenumber {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
     color: var(--color-linenumber);
     white-space: nowrap;
     overflow: hidden;
@@ -56,6 +61,11 @@
 }
 
 .log-toggle-details {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
     cursor: pointer;
     user-select: none;
     color: var(--color-log-information);

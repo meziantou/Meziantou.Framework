@@ -1,0 +1,2 @@
+title: Integrations
+description: Serialize, store and bind IDs with System.Text.Json, Newtonsoft.Json, MongoDB, TypeConverter, ASP.NET Core and Entity Framework Core.

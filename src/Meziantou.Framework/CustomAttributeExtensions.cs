@@ -155,7 +155,7 @@ public static class CustomAttributeExtensions
         where T : Attribute
     {
         ArgumentNullException.ThrowIfNull(member);
-        return member.IsDefined(typeof(T), inherit: false);
+        return Attribute.IsDefined(member, typeof(T), inherit: false);
     }
 
     /// <summary>Determines whether a custom attribute of the specified type is applied to the member.</summary>
@@ -167,7 +167,7 @@ public static class CustomAttributeExtensions
         where T : Attribute
     {
         ArgumentNullException.ThrowIfNull(member);
-        return member.IsDefined(typeof(T), inherit);
+        return Attribute.IsDefined(member, typeof(T), inherit);
     }
 
     /// <summary>Determines whether a custom attribute of the specified type is applied to the member.</summary>
@@ -178,7 +178,7 @@ public static class CustomAttributeExtensions
     {
         ArgumentNullException.ThrowIfNull(member);
         ArgumentNullException.ThrowIfNull(attributeType);
-        return member.IsDefined(attributeType, inherit: false);
+        return Attribute.IsDefined(member, attributeType, inherit: false);
     }
 
     /// <summary>Determines whether a custom attribute of the specified type is applied to the member.</summary>
@@ -190,7 +190,7 @@ public static class CustomAttributeExtensions
     {
         ArgumentNullException.ThrowIfNull(member);
         ArgumentNullException.ThrowIfNull(attributeType);
-        return member.IsDefined(attributeType, inherit);
+        return Attribute.IsDefined(member, attributeType, inherit);
     }
 
     // ParameterInfo extensions
@@ -202,7 +202,7 @@ public static class CustomAttributeExtensions
         where T : Attribute
     {
         ArgumentNullException.ThrowIfNull(parameter);
-        return parameter.IsDefined(typeof(T), inherit: false);
+        return Attribute.IsDefined(parameter, typeof(T), inherit: false);
     }
 
     /// <summary>Determines whether a custom attribute of the specified type is applied to the parameter.</summary>
@@ -214,7 +214,7 @@ public static class CustomAttributeExtensions
         where T : Attribute
     {
         ArgumentNullException.ThrowIfNull(parameter);
-        return parameter.IsDefined(typeof(T), inherit);
+        return Attribute.IsDefined(parameter, typeof(T), inherit);
     }
 
     /// <summary>Determines whether a custom attribute of the specified type is applied to the parameter.</summary>
@@ -225,7 +225,7 @@ public static class CustomAttributeExtensions
     {
         ArgumentNullException.ThrowIfNull(parameter);
         ArgumentNullException.ThrowIfNull(attributeType);
-        return parameter.IsDefined(attributeType, inherit: false);
+        return Attribute.IsDefined(parameter, attributeType, inherit: false);
     }
 
     /// <summary>Determines whether a custom attribute of the specified type is applied to the parameter.</summary>
@@ -237,6 +237,6 @@ public static class CustomAttributeExtensions
     {
         ArgumentNullException.ThrowIfNull(parameter);
         ArgumentNullException.ThrowIfNull(attributeType);
-        return parameter.IsDefined(attributeType, inherit);
+        return Attribute.IsDefined(parameter, attributeType, inherit);
     }
 }

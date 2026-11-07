@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	dictionary	1.2		TRUE	FALSE	FALSE				[FontCIDType0,FontCIDType2]	Table 119

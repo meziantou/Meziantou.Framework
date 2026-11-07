@@ -1,0 +1,15 @@
+{
+  "main": {
+    "eo": {
+      "identity": {
+        "language": "eo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

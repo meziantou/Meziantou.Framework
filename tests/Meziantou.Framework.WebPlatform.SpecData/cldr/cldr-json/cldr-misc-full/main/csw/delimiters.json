@@ -1,0 +1,15 @@
+{
+  "main": {
+    "csw": {
+      "identity": {
+        "language": "csw"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

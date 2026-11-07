@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ksf": {
+      "identity": {
+        "language": "ksf"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

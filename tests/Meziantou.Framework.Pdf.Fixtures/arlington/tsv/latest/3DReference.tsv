@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.6		FALSE	FALSE	FALSE		[3DRef]			Table 314
+3DD	stream	1.6		TRUE	TRUE	FALSE				[Stream]	

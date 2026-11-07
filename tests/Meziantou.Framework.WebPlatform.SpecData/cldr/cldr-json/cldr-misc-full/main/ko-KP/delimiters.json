@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ko-KP": {
+      "identity": {
+        "language": "ko",
+        "territory": "KP"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

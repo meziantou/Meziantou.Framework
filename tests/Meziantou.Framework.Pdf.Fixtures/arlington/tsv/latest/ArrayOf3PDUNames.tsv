@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE		[M,KM,FT,USFT,MI,NM,SQM,HA,SQKM,SQFT,A,SQMI,DEG,GRD]			Table 269, PDU cel
+1	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE		[M,KM,FT,USFT,MI,NM,SQM,HA,SQKM,SQFT,A,SQMI,DEG,GRD]			
+2	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE		[M,KM,FT,USFT,MI,NM,SQM,HA,SQKM,SQFT,A,SQMI,DEG,GRD]			

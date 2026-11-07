@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Dests	name-tree	1.2		FALSE	FALSE	FALSE				[ActionGoTo,fn:SinceVersion(1.6,ActionGoToE),ActionGoToR,DestDict,DestXYZArray,Dest0Array,Dest1Array,Dest4Array]	Table 32
+AP	name-tree	1.3		FALSE	FALSE	FALSE				[XObjectFormType1,XObjectFormPS,XObjectFormPSpassthrough]	
+JavaScript	name-tree	1.3		FALSE	FALSE	FALSE				[ActionECMAScript]	
+Pages	name-tree	1.3		FALSE	FALSE	FALSE				[PageObject]	
+Templates	name-tree	1.3		FALSE	FALSE	FALSE				[PageObject]	
+IDS	name-tree	1.3	2.0	FALSE	FALSE	FALSE				[WebCaptureImageSet,WebCapturePageSet]	https://github.com/pdf-association/pdf-issues/issues/672
+URLS	name-tree	1.3	2.0	FALSE	FALSE	FALSE				[WebCaptureImageSet,WebCapturePageSet]	https://github.com/pdf-association/pdf-issues/issues/672
+EmbeddedFiles	name-tree	1.4		FALSE	FALSE	FALSE				[FileSpecification]	
+AlternatePresentations	name-tree	1.4	2.0	FALSE	FALSE	FALSE				[SlideShow]	
+Renditions	name-tree	1.5		FALSE	FALSE	FALSE				[RenditionMedia,RenditionSelector]	
+XFAResources	name-tree	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE				[Stream]	Adobe Extension Level 3

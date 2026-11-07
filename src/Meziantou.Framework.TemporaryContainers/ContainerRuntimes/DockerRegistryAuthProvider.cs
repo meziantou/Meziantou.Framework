@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework;
@@ -7,6 +8,7 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 internal sealed class DockerRegistryAuthProvider
 {
     private const string DockerHubRegistry = "index.docker.io";
+    private const string TokenUsername = "<token>";
     private readonly Lazy<DockerApiModels.AuthConfigFile?> _configuration;
 
     internal DockerRegistryAuthProvider()
@@ -16,7 +18,9 @@ internal sealed class DockerRegistryAuthProvider
 
     internal DockerRegistryAuthProvider(DockerApiModels.AuthConfigFile? overrideConfiguration)
     {
-        _configuration = new Lazy<DockerApiModels.AuthConfigFile?>(() => overrideConfiguration ?? LoadConfiguration(), LazyThreadSafetyMode.ExecutionAndPublication);
+        // A failure to read the configuration is not kept: 'docker login' rewriting the file while it is read must not
+        // break every pull for the rest of the process.
+        _configuration = new Lazy<DockerApiModels.AuthConfigFile?>(() => overrideConfiguration ?? LoadConfiguration(), LazyThreadSafetyMode.PublicationOnly);
     }
 
     public async Task<string?> GetRegistryAuthHeaderValueAsync(string imageName, CancellationToken cancellationToken)
@@ -27,17 +31,52 @@ internal sealed class DockerRegistryAuthProvider
         if (configuration is null)
             return null;
 
-        var registry = GetRegistryFromImageName(imageName);
+        var credentials = await GetCredentialsAsync(configuration, GetRegistryFromImageName(imageName), cancellationToken).ConfigureAwait(false);
+        return credentials is null ? null : Encode(JsonSerializer.SerializeToUtf8Bytes(credentials, DockerApiJsonContext.Default.RegistryAuthHeader));
+    }
+
+    /// <summary>Builds the value of the <c>X-Registry-Config</c> header of a build: the credentials of every registry the images come from, keyed by registry.</summary>
+    /// <param name="imageNames">The images the build pulls, such as the ones of the <c>FROM</c> instructions of the Dockerfile.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The header value, or <see langword="null"/> when there are no credentials for any of these registries.</returns>
+    public async Task<string?> GetRegistryConfigHeaderValueAsync(IEnumerable<string> imageNames, CancellationToken cancellationToken)
+    {
+        var configuration = _configuration.Value;
+        if (configuration is null)
+            return null;
+
+        var registries = new Dictionary<string, DockerApiModels.RegistryAuthHeader>(StringComparer.OrdinalIgnoreCase);
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var imageName in imageNames)
+        {
+            var registry = GetRegistryFromImageName(imageName);
+            if (!visited.Add(registry))
+                continue;
+
+            // The daemon looks the credentials up by the address the docker CLI stores them under.
+            var credentials = await GetCredentialsAsync(configuration, registry, cancellationToken).ConfigureAwait(false);
+            if (credentials is not null)
+                registries[GetHelperServerAddress(registry)] = credentials;
+        }
+
+        if (registries.Count is 0)
+            return null;
+
+        return Encode(JsonSerializer.SerializeToUtf8Bytes(registries, DockerApiJsonContext.Default.DictionaryStringRegistryAuthHeader));
+    }
+
+    private static async Task<DockerApiModels.RegistryAuthHeader?> GetCredentialsAsync(DockerApiModels.AuthConfigFile configuration, string registry, CancellationToken cancellationToken)
+    {
         var helper = GetCredentialHelper(configuration, registry);
         if (!string.IsNullOrEmpty(helper))
         {
             var credentials = await ResolveCredentialsFromHelperAsync(registry, helper, cancellationToken).ConfigureAwait(false);
             if (credentials is not null)
-                return BuildRegistryAuthHeader(credentials);
+                return credentials;
         }
 
         if (TryGetCredentialsFromAuths(configuration, registry, out var authCredentials))
-            return BuildRegistryAuthHeader(authCredentials);
+            return authCredentials;
 
         return null;
     }
@@ -53,7 +92,7 @@ internal sealed class DockerRegistryAuthProvider
             firstSegment.Contains(':', StringComparison.Ordinal) ||
             string.Equals(firstSegment, "localhost", StringComparison.OrdinalIgnoreCase))
         {
-            return firstSegment;
+            return NormalizeDockerHub(firstSegment);
         }
 
         return DockerHubRegistry;
@@ -61,12 +100,20 @@ internal sealed class DockerRegistryAuthProvider
 
     private static DockerApiModels.AuthConfigFile? LoadConfiguration()
     {
-        var configPath = FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker" / "config.json";
+        var configPath = GetConfigurationDirectory(Environment.GetEnvironmentVariable("DOCKER_CONFIG")) / "config.json";
         if (!File.Exists(configPath))
             return null;
 
         using var stream = File.OpenRead(configPath);
         return JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.AuthConfigFile);
+    }
+
+    /// <summary>The directory the credentials are read from: <c>DOCKER_CONFIG</c> when it is set, <c>~/.docker</c> otherwise. CI systems that isolate credentials into a per-job directory rely on the environment variable.</summary>
+    internal static FullPath GetConfigurationDirectory(string? dockerConfigEnvironmentVariable)
+    {
+        return string.IsNullOrWhiteSpace(dockerConfigEnvironmentVariable)
+            ? FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker"
+            : FullPath.FromPath(dockerConfigEnvironmentVariable);
     }
 
     private static string? GetCredentialHelper(DockerApiModels.AuthConfigFile config, string registry)
@@ -96,20 +143,18 @@ internal sealed class DockerRegistryAuthProvider
             if (!string.Equals(NormalizeRegistry(registryKey), registry, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            if (!string.IsNullOrEmpty(authEntry.Auth))
+            // 'auth' holds the username and the password, encoded. An entry can also carry an identity token (a token
+            // login), which the daemon uses instead of the password, so it is always sent along.
+            if (TryDecodeAuth(authEntry.Auth, out var username, out var password))
             {
-                var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(authEntry.Auth));
-                var separator = decoded.IndexOf(':', StringComparison.Ordinal);
-                if (separator > 0)
+                credentials = new DockerApiModels.RegistryAuthHeader
                 {
-                    credentials = new DockerApiModels.RegistryAuthHeader
-                    {
-                        ServerAddress = GetHelperServerAddress(registry),
-                        Username = decoded[..separator],
-                        Password = decoded[(separator + 1)..],
-                    };
-                    return true;
-                }
+                    ServerAddress = GetHelperServerAddress(registry),
+                    Username = username,
+                    Password = password,
+                    IdentityToken = authEntry.IdentityToken,
+                };
+                return true;
             }
 
             if (!string.IsNullOrEmpty(authEntry.Username) || !string.IsNullOrEmpty(authEntry.IdentityToken))
@@ -145,30 +190,47 @@ internal sealed class DockerRegistryAuthProvider
 
             var output = string.Join('\n', result.Output.StandardOutput.Select(item => item.Text));
             var credentials = JsonSerializer.Deserialize(output, DockerApiJsonContext.Default.CredentialHelperGetResponse);
-            if (credentials?.Secret is null)
-                return null;
-
-            return new DockerApiModels.RegistryAuthHeader
-            {
-                ServerAddress = GetHelperServerAddress(registry),
-                Username = credentials.Username,
-                Password = credentials.Secret,
-            };
+            return credentials is null ? null : CreateHelperCredentials(registry, credentials);
         }
-        catch (FileNotFoundException)
+        catch (Exception ex) when (ex is Win32Exception or IOException or InvalidOperationException or JsonException)
         {
-            return null;
-        }
-        catch (DirectoryNotFoundException)
-        {
+            // The helper is an optimization: a config naming one that is not installed (a config copied between
+            // machines, or Docker Desktop uninstalled but its config left behind) must fall through to 'auths'
+            // rather than fail the pull. Starting a missing executable raises Win32Exception, not FileNotFoundException.
             return null;
         }
     }
 
-    private static string BuildRegistryAuthHeader(DockerApiModels.RegistryAuthHeader credentials)
+    /// <summary>Turns the answer of a credential helper into the credentials the daemon expects.</summary>
+    internal static DockerApiModels.RegistryAuthHeader? CreateHelperCredentials(string registry, DockerApiModels.CredentialHelperGetResponse credentials)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(credentials, DockerApiJsonContext.Default.RegistryAuthHeader);
-        return Convert.ToBase64String(bytes);
+        if (credentials.Secret is null)
+            return null;
+
+        // A helper answers a token login ('az acr login', for instance) with the username '<token>'. The secret is then an
+        // identity token, which the daemon rejects as a password.
+        if (string.Equals(credentials.Username, TokenUsername, StringComparison.Ordinal))
+        {
+            return new DockerApiModels.RegistryAuthHeader
+            {
+                ServerAddress = GetHelperServerAddress(registry),
+                IdentityToken = credentials.Secret,
+            };
+        }
+
+        return new DockerApiModels.RegistryAuthHeader
+        {
+            ServerAddress = GetHelperServerAddress(registry),
+            Username = credentials.Username,
+            Password = credentials.Secret,
+        };
+    }
+
+    private static string Encode(byte[] bytes)
+    {
+        // The daemon decodes X-Registry-Auth and X-Registry-Config with Go's padded base64url encoding: '+' and '/' from the standard alphabet
+        // are rejected, and so is a value without its '=' padding, whose last block the decoder drops.
+        return Convert.ToBase64String(bytes).Replace('+', '-').Replace('/', '_');
     }
 
     private static string NormalizeRegistry(string value)
@@ -186,7 +248,32 @@ internal sealed class DockerRegistryAuthProvider
         if (slashIndex >= 0)
             normalized = normalized[..slashIndex];
 
-        return string.IsNullOrEmpty(normalized) ? DockerHubRegistry : normalized;
+        return string.IsNullOrEmpty(normalized) ? DockerHubRegistry : NormalizeDockerHub(normalized);
+    }
+
+    /// <summary>Docker Hub answers to several names, and the docker CLI stores its credentials under 'https://index.docker.io/v1/' whichever one the image uses.</summary>
+    private static string NormalizeDockerHub(string registry)
+        => registry.ToUpperInvariant() is "DOCKER.IO" or "INDEX.DOCKER.IO" or "REGISTRY-1.DOCKER.IO" ? DockerHubRegistry : registry;
+
+    private static bool TryDecodeAuth(string? auth, out string username, out string password)
+    {
+        username = "";
+        password = "";
+        if (string.IsNullOrEmpty(auth))
+            return false;
+
+        var buffer = new byte[auth.Length];
+        if (!Convert.TryFromBase64String(auth, buffer, out var written))
+            return false;
+
+        var decoded = Encoding.UTF8.GetString(buffer, 0, written);
+        var separator = decoded.IndexOf(':', StringComparison.Ordinal);
+        if (separator <= 0)
+            return false;
+
+        username = decoded[..separator];
+        password = decoded[(separator + 1)..];
+        return true;
     }
 
     private static string GetHelperServerAddress(string registry)

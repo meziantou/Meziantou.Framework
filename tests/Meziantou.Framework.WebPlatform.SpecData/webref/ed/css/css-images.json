@@ -1,0 +1,373 @@
+{
+  "spec": {
+    "title": "CSS Images Module Level 3",
+    "url": "https://drafts.csswg.org/css-images-3/"
+  },
+  "properties": [
+    {
+      "name": "object-fit",
+      "href": "https://drafts.csswg.org/css-images-3/#propdef-object-fit",
+      "value": "fill | contain | cover | none | scale-down",
+      "initial": "fill",
+      "appliesTo": "replaced elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "fill",
+          "prose": "The replaced content is sized to fill the element’s content box: the object’s concrete object size is the element’s used width and height.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-object-fit-fill",
+          "type": "value",
+          "value": "fill"
+        },
+        {
+          "name": "contain",
+          "prose": "The replaced content is sized to maintain its natural aspect ratio while fitting within the element’s content box: its concrete object size is resolved as a contain constraint against the element’s used width and height.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-object-fit-contain",
+          "type": "value",
+          "value": "contain"
+        },
+        {
+          "name": "cover",
+          "prose": "The replaced content is sized to maintain its natural aspect ratio while filling the element’s entire content box: its concrete object size is resolved as a cover constraint against the element’s used width and height.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-object-fit-cover",
+          "type": "value",
+          "value": "cover"
+        },
+        {
+          "name": "none",
+          "prose": "The replaced content is not resized to fit inside the element’s content box: determine the object’s concrete object size using the default sizing algorithm with no specified size, and a default object size equal to the replaced element’s used width and height.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-object-fit-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "scale-down",
+          "prose": "Size the content as if none or contain were specified, whichever would result in a smaller concrete object size.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-object-fit-scale-down",
+          "type": "value",
+          "value": "scale-down"
+        }
+      ],
+      "styleDeclaration": [
+        "object-fit",
+        "objectFit"
+      ]
+    },
+    {
+      "name": "object-position",
+      "href": "https://drafts.csswg.org/css-images-3/#propdef-object-position",
+      "value": "<position>",
+      "initial": "50% 50%",
+      "appliesTo": "replaced elements",
+      "inherited": "no",
+      "percentages": "refer to width and height of element itself",
+      "computedValue": "as for background-position",
+      "canonicalOrder": "the horizontal component of the <position>, followed by the vertical component",
+      "animationType": "as for background-position",
+      "styleDeclaration": [
+        "object-position",
+        "objectPosition"
+      ]
+    },
+    {
+      "name": "image-orientation",
+      "href": "https://drafts.csswg.org/css-images-3/#propdef-image-orientation",
+      "value": "from-image | none | [ <angle> || flip ]",
+      "initial": "from-image",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the specified keyword, or an <angle>, rounded and normalized (see text), plus optionally a flip keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No additional rotation is applied: the image is oriented as encoded.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-orientation-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "from-image",
+          "prose": "If the image has an orientation specified in its metadata, such as EXIF, this value computes to the angle that the metadata specifies is necessary to correctly orient the image. If necessary, this angle is then rounded and normalized as described above for an <angle> value. If there is no orientation specified in its metadata, this value computes to none.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-orientation-from-image",
+          "type": "value",
+          "value": "from-image"
+        },
+        {
+          "name": "<angle>",
+          "prose": "Positive <angle> values cause the image to be rotated to the right (in a clockwise direction), while negative values cause a rotation to the left. If the <angle> is omitted, it defaults to 0deg. If flip is specified, after rotation the image is flipped horizontally. This value only applies to content images; decorative images continue to behave as from-image. This value is deprecated and is optional for implementations except those conforming to [CSS-PRINT]. The computed value of the property is calculated by rounding the <angle> to the nearest quarter turn, rounding towards positive infinity when that’s ambiguous, then moduloing the value by 1turn (so that it lies in the half-open range [0turn, 1turn)).",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-orientation-angle",
+          "type": "value",
+          "value": "<angle>"
+        }
+      ],
+      "styleDeclaration": [
+        "image-orientation",
+        "imageOrientation"
+      ]
+    },
+    {
+      "name": "image-rendering",
+      "href": "https://drafts.csswg.org/css-images-3/#propdef-image-rendering",
+      "value": "auto | smooth | high-quality | pixelated | crisp-edges",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The scaling algorithm is UA-dependent.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-rendering-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "smooth",
+          "prose": "The image should be scaled with an algorithm that maximizes the appearance of the image. In particular, scaling algorithms that \"smooth\" colors are acceptable, such as bilinear interpolation. This is intended for images such as photos.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-rendering-smooth",
+          "type": "value",
+          "value": "smooth"
+        },
+        {
+          "name": "high-quality",
+          "prose": "Identical to smooth, but with a preference for higher-quality scaling. If system resources are constrained, images with high-quality should be prioritized over those with any other value, when considering which images to degrade the quality of and to what degree.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-rendering-high-quality",
+          "type": "value",
+          "value": "high-quality"
+        },
+        {
+          "name": "pixelated",
+          "prose": "The image is scaled in a way that preserves the pixelation of the original as much as possible, but allows minor smoothing as necessary to avoid distorting the image when the target size is not a clean multiple of the original. For each axis independently, first determine the integer multiple of its natural size that puts it closest to the target size and is greater than zero. Scale it to this integer-multiple-size using nearest neighbor, then scale it the rest of the way to the target size as for smooth.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-rendering-pixelated",
+          "type": "value",
+          "value": "pixelated"
+        },
+        {
+          "name": "crisp-edges",
+          "prose": "The image is scaled in a way that preserves contrast and edges, and which avoids smoothing colors or introducing blur to the image in the process. This is intended for images such as line drawings. The image may be scaled using nearest neighbor or any other UA-chosen algorithm that does not blur edges or blend colors from the source image. It can, however, detect diagonal or curved lines and render them as such (rather than as jagged-looking “giant pixels”).",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-image-rendering-crisp-edges",
+          "type": "value",
+          "value": "crisp-edges"
+        }
+      ],
+      "styleDeclaration": [
+        "image-rendering",
+        "imageRendering"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<image>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-image",
+      "type": "type",
+      "value": "<url> | <gradient>"
+    },
+    {
+      "name": "<gradient>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-gradient",
+      "type": "type",
+      "value": "<linear-gradient()> | <repeating-linear-gradient()> | <radial-gradient()> | <repeating-radial-gradient()>"
+    },
+    {
+      "name": "linear-gradient()",
+      "prose": "The linear-gradient() notation specifies a linear gradient in CSS. Its syntax is as follows:",
+      "href": "https://drafts.csswg.org/css-images-3/#funcdef-linear-gradient",
+      "type": "function",
+      "value": "linear-gradient( [ <linear-gradient-syntax> ] )"
+    },
+    {
+      "name": "<linear-gradient-syntax>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-linear-gradient-syntax",
+      "type": "type",
+      "value": "[ <angle> | <zero> | to <side-or-corner> ]? , <color-stop-list>"
+    },
+    {
+      "name": "<side-or-corner>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-side-or-corner",
+      "type": "type",
+      "value": "[left | right] || [top | bottom]"
+    },
+    {
+      "name": "radial-gradient()",
+      "prose": "The radial-gradient() notation specifies a radial gradient by indicating the center of the gradient (where the 0% ellipse will be) and the size and shape of the ending shape (the 100% ellipse). Color stops are given as a list, just as for linear-gradient(). Starting from the gradient center and progressing towards (and potentially beyond) the ending shape, uniformly-scaled concentric ellipses are drawn and colored according to the specified color stops.",
+      "href": "https://drafts.csswg.org/css-images-3/#funcdef-radial-gradient",
+      "type": "function",
+      "value": "radial-gradient( [ <radial-gradient-syntax> ] )",
+      "values": [
+        {
+          "name": "<position>",
+          "prose": "Determines the center of the gradient. The <position> value type (which is also used for background-position) is defined in [CSS-VALUES-3], and is resolved using the center-point as the object area and the gradient box as the positioning area. If this argument is omitted, it defaults to center.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-gradient-position",
+          "type": "value",
+          "value": "<position>"
+        },
+        {
+          "name": "<radial-shape>",
+          "prose": "Can be either circle or ellipse; determines whether the gradient’s ending shape is a circle or an ellipse, respectively. If <radial-shape> is omitted, the ending shape defaults to a circle if the <radial-size> is a single <length>, and to an ellipse otherwise.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-gradient-radial-shape",
+          "type": "value",
+          "value": "<radial-shape>"
+        },
+        {
+          "name": "<radial-size>",
+          "prose": "Determines the size of the gradient’s ending shape. If omitted it defaults to farthest-corner. It can be given explicitly or by keyword. For the purpose of the keyword definitions, consider the gradient box edges as extending infinitely in both directions, rather than being finite line segments. If the ending-shape is an ellipse, its axises are aligned with the horizontal and vertical axises. Both circle and ellipse gradients accept the following <radial-extent> values: If <radial-shape> is specified as circle or is omitted, the <radial-size> may be given explicitly as: If <radial-shape> is specified as ellipse or is omitted, <radial-size> may instead be given explicitly as:",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-gradient-radial-size",
+          "type": "value",
+          "value": "<radial-size>"
+        }
+      ]
+    },
+    {
+      "name": "<radial-gradient-syntax>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-radial-gradient-syntax",
+      "type": "type",
+      "value": "[ <radial-shape> || <radial-size> ]? [ at <position> ]? , <color-stop-list>"
+    },
+    {
+      "name": "<radial-size>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-radial-size",
+      "type": "type",
+      "value": "<radial-extent> | <length [0,∞]> | <length-percentage [0,∞]>{2}",
+      "values": [
+        {
+          "name": "<length [0,∞]>",
+          "prose": "Gives the radius of the circle explicitly. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-size-length-0",
+          "type": "value",
+          "value": "<length [0,∞]>"
+        },
+        {
+          "name": "<length-percentage [0,∞]>{2}",
+          "prose": "Gives the size of the ellipse explicitly. The first value represents the horizontal radius, the second the vertical radius. Percentages values are relative to the corresponding dimension of the gradient box. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-size-length-percentage-0-2",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>{2}"
+        }
+      ]
+    },
+    {
+      "name": "<radial-extent>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-radial-extent",
+      "type": "type",
+      "value": "closest-corner | closest-side | farthest-corner | farthest-side",
+      "values": [
+        {
+          "name": "closest-side",
+          "prose": "The ending shape is sized so that it exactly meets the side of the gradient box closest to the gradient’s center. If the shape is an ellipse, it exactly meets the closest side in each dimension.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-extent-closest-side",
+          "type": "value",
+          "value": "closest-side"
+        },
+        {
+          "name": "farthest-side",
+          "prose": "Same as closest-side, except the ending shape is sized based on the farthest side(s).",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-extent-farthest-side",
+          "type": "value",
+          "value": "farthest-side"
+        },
+        {
+          "name": "closest-corner",
+          "prose": "The ending shape is sized so that it passes through the corner of the gradient box closest to the gradient’s center. If the shape is an ellipse, the ending shape is given the same aspect-ratio it would have if closest-side were specified.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-extent-closest-corner",
+          "type": "value",
+          "value": "closest-corner"
+        },
+        {
+          "name": "farthest-corner",
+          "prose": "Same as closest-corner, except the ending shape is sized based on the farthest corner. If the shape is an ellipse, the ending shape is given the same aspect ratio it would have if farthest-side were specified.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-extent-farthest-corner",
+          "type": "value",
+          "value": "farthest-corner"
+        }
+      ]
+    },
+    {
+      "name": "<radial-shape>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-radial-shape",
+      "type": "type",
+      "value": "circle | ellipse",
+      "values": [
+        {
+          "name": "circle",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-shape-circle",
+          "type": "value",
+          "value": "circle"
+        },
+        {
+          "name": "ellipse",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-shape-ellipse",
+          "type": "value",
+          "value": "ellipse"
+        }
+      ]
+    },
+    {
+      "name": "repeating-linear-gradient()",
+      "prose": "In addition to linear-gradient() and radial-gradient(), this specification defines repeating-linear-gradient() and repeating-radial-gradient() values. These notations take the same values and are interpreted the same as their respective non-repeating siblings defined previously.",
+      "href": "https://drafts.csswg.org/css-images-3/#funcdef-repeating-linear-gradient",
+      "type": "function",
+      "value": "repeating-linear-gradient( [ <linear-gradient-syntax> ] )"
+    },
+    {
+      "name": "repeating-radial-gradient()",
+      "prose": "In addition to linear-gradient() and radial-gradient(), this specification defines repeating-linear-gradient() and repeating-radial-gradient() values. These notations take the same values and are interpreted the same as their respective non-repeating siblings defined previously.",
+      "href": "https://drafts.csswg.org/css-images-3/#funcdef-repeating-radial-gradient",
+      "type": "function",
+      "value": "repeating-radial-gradient( [ <radial-gradient-syntax> ] )",
+      "values": [
+        {
+          "name": "<position>",
+          "prose": "Determines the center of the gradient. The <position> value type (which is also used for background-position) is defined in [CSS-VALUES-3], and is resolved using the center-point as the object area and the gradient box as the positioning area. If this argument is omitted, it defaults to center.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-gradient-position",
+          "type": "value",
+          "value": "<position>"
+        },
+        {
+          "name": "<radial-shape>",
+          "prose": "Can be either circle or ellipse; determines whether the gradient’s ending shape is a circle or an ellipse, respectively. If <radial-shape> is omitted, the ending shape defaults to a circle if the <radial-size> is a single <length>, and to an ellipse otherwise.",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-gradient-radial-shape",
+          "type": "value",
+          "value": "<radial-shape>"
+        },
+        {
+          "name": "<radial-size>",
+          "prose": "Determines the size of the gradient’s ending shape. If omitted it defaults to farthest-corner. It can be given explicitly or by keyword. For the purpose of the keyword definitions, consider the gradient box edges as extending infinitely in both directions, rather than being finite line segments. If the ending-shape is an ellipse, its axises are aligned with the horizontal and vertical axises. Both circle and ellipse gradients accept the following <radial-extent> values: If <radial-shape> is specified as circle or is omitted, the <radial-size> may be given explicitly as: If <radial-shape> is specified as ellipse or is omitted, <radial-size> may instead be given explicitly as:",
+          "href": "https://drafts.csswg.org/css-images-3/#valdef-radial-gradient-radial-size",
+          "type": "value",
+          "value": "<radial-size>"
+        }
+      ]
+    },
+    {
+      "name": "<color-stop-list>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-color-stop-list",
+      "type": "type",
+      "value": "<linear-color-stop> , [ <linear-color-hint>? , <linear-color-stop> ]#?"
+    },
+    {
+      "name": "<linear-color-stop>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-linear-color-stop",
+      "type": "type",
+      "value": "<color> <length-percentage>?"
+    },
+    {
+      "name": "<linear-color-hint>",
+      "href": "https://drafts.csswg.org/css-images-3/#typedef-linear-color-hint",
+      "type": "type",
+      "value": "<length-percentage>"
+    }
+  ]
+}

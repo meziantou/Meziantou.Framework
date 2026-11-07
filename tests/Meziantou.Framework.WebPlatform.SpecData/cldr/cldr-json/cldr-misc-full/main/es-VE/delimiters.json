@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-VE": {
+      "identity": {
+        "language": "es",
+        "territory": "VE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

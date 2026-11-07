@@ -7,10 +7,15 @@ namespace Meziantou.Framework.SyntaxHighlighting
     public sealed class HighlightOptions
     {
         public string ClassPrefix { get => throw null; init { } }
+        public bool IgnoreIllegals { get => throw null; init { } }
+        public System.TimeSpan MatchTimeout { get => throw null; init { } }
     }
 
     public static class SyntaxHighlighter
     {
+        public static System.Collections.Generic.IEnumerable<string> GetSupportedLanguages() => throw null;
         public static string Highlight(string text, string language, Meziantou.Framework.SyntaxHighlighting.HighlightOptions? options = null) => throw null;
+        public static bool IsSupported(string language) => throw null;
+        public static bool TryHighlight(string text, string language, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? html, Meziantou.Framework.SyntaxHighlighting.HighlightOptions? options = null) => throw null;
     }
 }

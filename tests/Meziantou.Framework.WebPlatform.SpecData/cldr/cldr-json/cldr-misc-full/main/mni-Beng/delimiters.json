@@ -1,0 +1,16 @@
+{
+  "main": {
+    "mni-Beng": {
+      "identity": {
+        "language": "mni",
+        "script": "Beng"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

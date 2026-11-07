@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="xunit" Version="2.9.0" />
+    <GlobalPackageReference Include="Meziantou.Analyzer" Version="2.0.1" />
+  </ItemGroup>
+</Project>

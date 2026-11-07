@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
-    <Version>2.0.2</Version>
+    <Version>2.0.9</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A log viewer component for Blazor</Description>
+    <PackageTags>aspnetcore, blazor, components, logging, log-viewer, ui</PackageTags>
 
     <!-- StaticWebAssets are duplicated when multitargeting -->
     <NoWarn>$(NoWarn);NU5118</NoWarn>
@@ -16,13 +17,13 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net11.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Components" Version="11.0.0-preview.7.26381.103" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-preview.7.26381.103" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="11.0.0-rc.3.26522.148" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.3.26522.148" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Components" Version="10.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.13" />
   </ItemGroup>
 
 

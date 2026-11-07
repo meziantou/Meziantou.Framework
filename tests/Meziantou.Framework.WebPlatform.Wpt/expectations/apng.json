@@ -1,0 +1,8 @@
+{
+  "apng/animated-png-timeout.html": {
+    "reftest": "PASS"
+  },
+  "apng/supported-in-source-type.html": {
+    "total": 1
+  }
+}

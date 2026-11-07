@@ -9,6 +9,8 @@ internal sealed class LastSegment : Segment
         _innerSegment = innerSegment;
     }
 
+    public Segment InnerSegment => _innerSegment;
+
     public override bool IsMatch(ref PathReader pathReader)
     {
         pathReader.ConsumeToLastSegment();
@@ -16,4 +18,19 @@ internal sealed class LastSegment : Segment
     }
 
     public override bool IsRecursiveMatchAll => true;
+
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
+    {
+        sb.Append("**/");
+        if (_innerSegment is LiteralSegment literal)
+        {
+            GlobPatternWriter.AppendPathSegmentLiteral(ref sb, literal.Value, dialect);
+        }
+        else
+        {
+            _innerSegment.AppendPattern(ref sb, dialect);
+        }
+    }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

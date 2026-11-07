@@ -1,0 +1,152 @@
+{
+  "spec": {
+    "title": "Media Playback Quality",
+    "url": "https://w3c.github.io/media-playback-quality/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "VideoPlaybackQuality"
+        ]
+      }
+    },
+    "idlNames": {
+      "VideoPlaybackQuality": {
+        "fragment": "[Exposed=Window]\ninterface VideoPlaybackQuality {\n  readonly attribute DOMHighResTimeStamp creationTime;\n  readonly attribute unsigned long droppedVideoFrames;\n  readonly attribute unsigned long totalVideoFrames;\n\n  // Deprecated!\n  readonly attribute unsigned long corruptedVideoFrames;\n};",
+        "type": "interface",
+        "name": "VideoPlaybackQuality",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "creationTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-creationtime"
+          },
+          {
+            "type": "attribute",
+            "name": "droppedVideoFrames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-droppedvideoframes"
+          },
+          {
+            "type": "attribute",
+            "name": "totalVideoFrames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-totalvideoframes"
+          },
+          {
+            "type": "attribute",
+            "name": "corruptedVideoFrames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-corruptedvideoframes"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLVideoElement": [
+        {
+          "fragment": "partial interface HTMLVideoElement {\n  VideoPlaybackQuality getVideoPlaybackQuality();\n};",
+          "type": "interface",
+          "name": "HTMLVideoElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getVideoPlaybackQuality",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "VideoPlaybackQuality"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/media-playback-quality/#dom-htmlvideoelement-getvideoplaybackquality"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "VideoPlaybackQuality"
+      ]
+    },
+    "dependencies": {
+      "HTMLVideoElement": [
+        "VideoPlaybackQuality"
+      ],
+      "VideoPlaybackQuality": [
+        "DOMHighResTimeStamp"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLVideoElement",
+      "DOMHighResTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

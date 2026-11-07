@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ie": {
+      "identity": {
+        "language": "ie"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

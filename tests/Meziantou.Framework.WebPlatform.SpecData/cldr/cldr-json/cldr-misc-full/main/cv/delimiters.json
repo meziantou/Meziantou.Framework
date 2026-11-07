@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cv": {
+      "identity": {
+        "language": "cv"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

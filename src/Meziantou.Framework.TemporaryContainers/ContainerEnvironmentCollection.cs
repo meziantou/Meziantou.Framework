@@ -1,4 +1,5 @@
 using System.Collections;
+using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 public sealed class ContainerEnvironmentCollection : IEnumerable<KeyValuePair<string, string>>
 {
     private readonly Dictionary<string, string> _variables;
+    private bool _isReadOnly;
 
     internal ContainerEnvironmentCollection()
     {
@@ -27,6 +29,7 @@ public sealed class ContainerEnvironmentCollection : IEnumerable<KeyValuePair<st
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         _variables[name] = value;
     }
 
@@ -36,6 +39,7 @@ public sealed class ContainerEnvironmentCollection : IEnumerable<KeyValuePair<st
     public bool Remove(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         return _variables.Remove(name);
     }
 
@@ -62,4 +66,9 @@ public sealed class ContainerEnvironmentCollection : IEnumerable<KeyValuePair<st
     public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => _variables.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    internal void MakeReadOnly() => _isReadOnly = true;
+
+    /// <summary>Replaces a value whatever the state of the collection: the library reads back the credentials a reused container was created with.</summary>
+    internal void SetValueCore(string name, string value) => _variables[name] = value;
 }

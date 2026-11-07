@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 
 namespace Meziantou.Framework.Threading;
@@ -8,16 +9,34 @@ public static class MixedConsumerProducer
     /// <summary>Processes items in parallel, where each processing action can enqueue additional items to be processed.</summary>
     /// <typeparam name="T">The type of items to process.</typeparam>
     /// <param name="initialItems">The initial collection of items to process.</param>
-    /// <param name="options">Options that configure the parallel processing.</param>
+    /// <param name="options">Options that configure the parallel processing. <see cref="ParallelOptions.MaxDegreeOfParallelism"/>, <see cref="ParallelOptions.CancellationToken"/>, and <see cref="ParallelOptions.TaskScheduler"/> are honored. Pass a <see cref="MixedConsumerProducerOptions"/> to also limit the number of pending items with <see cref="MixedConsumerProducerOptions.MaxPendingItems"/>.</param>
     /// <param name="action">The action to perform on each item. The action receives a context to enqueue new items, the current item, and a cancellation token.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="AggregateException">One or more invocations of <paramref name="action"/> threw an exception. Remaining items are still processed, and all exceptions are reported once processing completes.</exception>
+    /// <exception cref="OperationCanceledException"><see cref="ParallelOptions.CancellationToken"/> was canceled.</exception>
+    /// <exception cref="TaskSchedulerException"><see cref="ParallelOptions.TaskScheduler"/> rejected a consumer. The consumers that did start are completed before the exception is thrown.</exception>
     /// <example>
-    /// <code><![CDATA[
-    /// var initialUrls = new[] { "https://example.com" };
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/MixedConsumerProducerTests.cs" ref:region="MixedConsumerProducer_Process" ref:dedent="true">
+    /// // A fake website where each page links to other pages
+    /// var website = new Dictionary&lt;string, string[]&gt;(StringComparer.Ordinal)
+    /// {
+    ///     ["https://example.com/"] = ["https://example.com/a", "https://example.com/b"],
+    ///     ["https://example.com/a"] = ["https://example.com/a/1"],
+    /// };
+    /// var crawledPages = new ConcurrentBag&lt;string&gt;();
+    ///
+    /// async Task&lt;string[]&gt; CrawlPageAsync(string url, CancellationToken cancellationToken)
+    /// {
+    ///     await Task.Delay(1, cancellationToken);
+    ///     crawledPages.Add(url);
+    ///     return website.GetValueOrDefault(url, []);
+    /// }
+    ///
+    /// var initialUrls = new[] { "https://example.com/" };
     /// await MixedConsumerProducer.Process(
     ///     initialUrls,
     ///     new ParallelOptions { MaxDegreeOfParallelism = 4 },
-    ///     async (context, url, ct) =>
+    ///     async (context, url, ct) =&gt;
     ///     {
     ///         var links = await CrawlPageAsync(url, ct);
     ///         foreach (var link in links)
@@ -25,12 +44,25 @@ public static class MixedConsumerProducer
     ///             context.Enqueue(link);
     ///         }
     ///     });
-    /// ]]></code>
+    ///
+    /// Assert.Equal(["https://example.com/", "https://example.com/a", "https://example.com/a/1", "https://example.com/b"], crawledPages.Order(StringComparer.Ordinal));
+    /// </code>
     /// </example>
     public static async Task Process<T>(IEnumerable<T> initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
     {
+        ArgumentNullException.ThrowIfNull(initialItems);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(action);
+
+        var cancellationToken = options.CancellationToken;
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (Enumerable.TryGetNonEnumeratedCount(initialItems, out var count) && count == 0)
             return;
+
+        // ParallelOptions treats a null scheduler as "the current one", so mirror that behavior.
+        var scheduler = options.TaskScheduler ?? TaskScheduler.Current;
+        var isDefaultScheduler = scheduler == TaskScheduler.Default;
 
         var degreeOfParallelism = options.MaxDegreeOfParallelism;
         if (degreeOfParallelism <= 0)
@@ -38,93 +70,138 @@ public static class MixedConsumerProducer
             degreeOfParallelism = Environment.ProcessorCount;
         }
 
-        var pendingItems = Channel.CreateUnbounded<T>();
-        var hasItem = false;
-        foreach (var item in initialItems)
+        // Extra consumers cannot buy any parallelism when the scheduler itself caps how many tasks it
+        // runs at a time, so combine both limits the way ParallelOptions does.
+        var maximumConcurrencyLevel = scheduler.MaximumConcurrencyLevel;
+        if (maximumConcurrencyLevel > 0 && maximumConcurrencyLevel < degreeOfParallelism)
         {
-            _ = pendingItems.Writer.TryWrite(item);
-            hasItem = true;
+            degreeOfParallelism = maximumConcurrencyLevel;
         }
 
-        if (!hasItem)
-            return;
+        var maxPendingItems = options is MixedConsumerProducerOptions { MaxPendingItems: > 0 } producerOptions ? producerOptions.MaxPendingItems : -1;
+        var pendingItems = maxPendingItems > 0
+            ? Channel.CreateBounded<T>(new BoundedChannelOptions(maxPendingItems) { FullMode = BoundedChannelFullMode.Wait })
+            : Channel.CreateUnbounded<T>();
 
-        var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
-        var tasks = new List<Task>(degreeOfParallelism);
-        var remainingConcurrency = degreeOfParallelism;
+        var exceptionsLock = new Lock();
         List<Exception>? exceptions = null;
-        while (await pendingItems.Reader.WaitToReadAsync(options.CancellationToken).ConfigureAwait(false))
+        var context = new MixedConsumerProducerContext<T>(pendingItems, isBounded: maxPendingItems > 0, ProcessItemAsync, cancellationToken);
+
+        // The initial items are streamed to the consumers while they run, so the enumeration itself
+        // is a producer and must be accounted for until it completes.
+        context.ReserveProducer();
+
+        // Consumers are long-lived: each one drains the channel until it is completed, which happens
+        // once no item is pending. This bounds the concurrency to degreeOfParallelism without having
+        // to throttle the loop that dispatches the items.
+        var consume = ConsumeAsync;
+        var consumers = new Task[degreeOfParallelism];
+        var startedConsumers = 0;
+        try
         {
-            while (TryGetItem(out var item))
+            for (; startedConsumers < consumers.Length; startedConsumers++)
             {
-                // If we reach the maximum number of concurrent tasks, wait for one to finish
-                while (Volatile.Read(ref remainingConcurrency) < 0)
-                {
-                    // The tasks collection can change while Task.WhenAny enumerates the collection
-                    // so, we need to clone the collection to avoid issues
-                    Task[]? clone = null;
-                    lock (tasks)
-                    {
-                        if (tasks.Count > 0)
-                            clone = tasks.ToArray();
-                    }
-
-                    if (clone is not null)
-                        await Task.WhenAny(clone).ConfigureAwait(false);
-                }
-
-                var task = Task.Run(async () => await action(context, item, options.CancellationToken).ConfigureAwait(false), options.CancellationToken);
-
-                lock (tasks)
-                {
-                    tasks.Add(task);
-                    _ = task.ContinueWith(task => OnTaskCompleted(task), options.CancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
-                }
-            }
-
-            bool TryGetItem([MaybeNullWhen(false)] out T result)
-            {
-                lock (tasks)
-                {
-                    if (pendingItems.Reader.TryRead(out var item))
-                    {
-                        remainingConcurrency--;
-                        result = item;
-                        return true;
-                    }
-
-                    result = default;
-                    return false;
-                }
-            }
-
-            void OnTaskCompleted(Task completedTask)
-            {
-                lock (tasks)
-                {
-                    if (!tasks.Remove(completedTask))
-                        throw new InvalidOperationException("An unexpected error occurred");
-
-                    // Observe the task's exception so it doesn't resurface as an UnobservedTaskException,
-                    // and record it so it can be reported to the caller once processing completes.
-                    if (completedTask.Exception is { } exception)
-                    {
-                        exceptions ??= [];
-                        exceptions.AddRange(exception.InnerExceptions);
-                    }
-
-                    remainingConcurrency++;
-
-                    // There is no active tasks, so we are sure we are at the end
-                    if (degreeOfParallelism == remainingConcurrency && !pendingItems.Reader.TryPeek(out _))
-                        pendingItems.Writer.Complete();
-                }
+                consumers[startedConsumers] = Task.Factory.StartNew(consume, cancellationToken, TaskCreationOptions.DenyChildAttach, scheduler).Unwrap();
             }
         }
+        catch (Exception ex)
+        {
+            // The scheduler rejected a consumer. Nothing is enqueued yet, so releasing the reservation
+            // completes the channel and lets the consumers that did start stop. Wait for them so they
+            // do not outlive the call, then report the scheduling failure.
+            var schedulingFailure = ExceptionDispatchInfo.Capture(ex);
+            context.ReleaseProducer();
+            await Task.WhenAll(consumers.AsSpan(0, startedConsumers)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            schedulingFailure.Throw();
+        }
 
-        // All work has completed (the writer is only completed once no task is running and the
-        // channel is empty), so no continuation can still be mutating the list at this point.
+        context.ConsumerCount = consumers.Length;
+
+        ExceptionDispatchInfo? enumerationFailure = null;
+        try
+        {
+            foreach (var item in initialItems)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await context.EnqueueFromProducerAsync(item).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            enumerationFailure = ExceptionDispatchInfo.Capture(ex);
+        }
+        finally
+        {
+            // Must run even when the enumeration fails, otherwise the channel is never completed and
+            // the consumers never stop.
+            context.ReleaseProducer();
+        }
+
+        try
+        {
+            await Task.WhenAll(consumers).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (enumerationFailure is not null)
+        {
+            // The enumeration failed first, so report that failure instead of the cancellation it caused.
+        }
+
+        // A failure while enumerating the initial items cuts the processing short, so it takes
+        // precedence over the exceptions thrown by the actions that did run.
+        enumerationFailure?.Throw();
+
+        // All consumers have completed, so nothing can be mutating the list anymore.
         if (exceptions is not null)
             throw new AggregateException(exceptions);
+
+        async Task ConsumeAsync()
+        {
+            var reader = pendingItems.Reader;
+            while (await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                while (!cancellationToken.IsCancellationRequested && reader.TryRead(out var item))
+                {
+                    await ProcessItemAsync(context, item).ConfigureAwait(false);
+                }
+            }
+        }
+
+        async ValueTask ProcessItemAsync(MixedConsumerProducerContext<T> context, T item)
+        {
+            try
+            {
+                await InvokeAsync(context, item).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Record the exception and keep processing the remaining items. Letting it
+                // escape would take a consumer down and leave the item accounted for as
+                // pending, which would prevent the channel from ever being completed.
+                lock (exceptionsLock)
+                {
+                    exceptions ??= [];
+                    exceptions.Add(ex);
+                }
+            }
+            finally
+            {
+                context.OnItemProcessed();
+            }
+        }
+
+        // The consumer loop awaits with ConfigureAwait(false), so it resumes on the default scheduler as
+        // soon as it actually suspends, be it on an empty channel or on the action itself. Starting every
+        // action explicitly keeps the requested scheduler honored for all the items, and not only for the
+        // ones processed before the first suspension.
+        ValueTask InvokeAsync(MixedConsumerProducerContext<T> context, T item)
+        {
+            if (isDefaultScheduler)
+                return action(context, item, cancellationToken);
+
+            // The token is deliberately not passed to StartNew: a token canceled between the check made by
+            // the loop and this call would make the task transition to Canceled, and the loop would record
+            // the resulting exception instead of letting the cancellation surface as such.
+            return new ValueTask(Task.Factory.StartNew(() => action(context, item, cancellationToken).AsTask(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, scheduler).Unwrap());
+        }
     }
 }

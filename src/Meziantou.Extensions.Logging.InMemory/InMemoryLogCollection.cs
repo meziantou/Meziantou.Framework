@@ -1,63 +1,57 @@
 using System.Collections;
-using System.Diagnostics;
+using Meziantou.Framework.Collections;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
 /// <summary>Represents a thread-safe collection of log entries captured by in-memory loggers.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs" ref:region="InMemoryLogCollection_Example" ref:dedent="true">
 /// var logger = InMemoryLogger.CreateLogger("sample");
-/// 
+/// logger.LogInformation("Application started");
+/// logger.LogError("Error while processing the request");
+///
 /// // Filter by log level
 /// var errors = logger.Logs.Errors;
 /// var infos = logger.Logs.Informations;
-/// 
+/// Assert.Single(errors);
+/// Assert.Single(infos);
+///
 /// // Search for specific entries
-/// var entry = logger.Logs.Find(log => log.Message.Contains("Error"));
+/// var entry = logger.Logs.Find(log =&gt; log.Message.StartsWith("Error", StringComparison.Ordinal));
+/// Assert.NotNull(entry);
+/// Assert.Equal(LogLevel.Error, entry.LogLevel);
 /// </code>
 /// </example>
 public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 {
-    private const int MaxChunkSize = 8000;
+    // Clear replaces the collection instead of emptying it, so the field is volatile: an Add that
+    // starts after Clear returned reads the new collection. An Add that overlaps a Clear may still
+    // append to the discarded one, which is indistinguishable from the entry being added just
+    // before the Clear.
+    private volatile AppendOnlyCollection<InMemoryLogEntry> _entries = new();
 
-    private readonly Lock _lock = new();
-    private Chunk<InMemoryLogEntry>? _firstChunk;
-    private Chunk<InMemoryLogEntry>? _lastChunk;
+    /// <summary>Gets the number of log entries in the collection.</summary>
+    /// <remarks>
+    /// The count is incremented only after the entry is reachable, so a concurrent reader never sees
+    /// a count that promises more entries than an enumeration would yield.
+    /// </remarks>
+    public int Count => _entries.Count;
 
-    internal void Add(InMemoryLogEntry entry)
-    {
-        lock (_lock)
-        {
-            if (_lastChunk is null)
-            {
-                _firstChunk = _lastChunk = new Chunk<InMemoryLogEntry>(16);
-            }
-            else if (_lastChunk.Count == _lastChunk.Items.Length)
-            {
-                var newCapacity = Math.Min(MaxChunkSize, _lastChunk.Count * 2);
-                var newChunk = new Chunk<InMemoryLogEntry>(newCapacity);
-                _lastChunk.Next = newChunk;
-                _lastChunk = newChunk;
-            }
+    internal void Add(InMemoryLogEntry entry) => _entries.Add(entry);
 
-            _lastChunk.Items[_lastChunk.Count] = entry;
-            _lastChunk.Count++;
-        }
-    }
+    /// <summary>Removes all log entries from the collection.</summary>
+    /// <remarks>
+    /// An enumeration already in progress keeps walking the entries it started on; it is not invalidated.
+    /// </remarks>
+    public void Clear() => _entries = new AppendOnlyCollection<InMemoryLogEntry>();
 
     public override string ToString()
     {
         var sb = new StringBuilder();
-        var chunk = _firstChunk;
-        while (chunk is not null)
+        foreach (var entry in _entries)
         {
-            for (var i = 0; i < chunk.Count; i++)
-            {
-                sb.Append(chunk.Items[i]).AppendLine();
-            }
-
-            chunk = chunk.Next;
+            sb.Append(entry).AppendLine();
         }
 
         return sb.ToString();
@@ -88,85 +82,37 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     /// <summary>Determines whether the collection contains any log entry that matches the specified predicate.</summary>
     /// <param name="predicate">The function to test each log entry for a condition.</param>
     /// <returns><see langword="true"/> if any log entry matches the predicate; otherwise, <see langword="false"/>.</returns>
-    public bool Contains(Func<InMemoryLogEntry, bool> predicate)
-    {
-        return Find(predicate) is not null;
-    }
+    public bool Contains(Func<InMemoryLogEntry, bool> predicate) => _entries.Contains(predicate);
 
     /// <summary>Searches for the first log entry that matches the specified predicate.</summary>
     /// <param name="predicate">The function to test each log entry for a condition.</param>
     /// <returns>The first log entry that matches the predicate, or <see langword="null"/> if no match is found.</returns>
-    public InMemoryLogEntry? Find(Func<InMemoryLogEntry, bool> predicate)
-    {
-        var chunk = _firstChunk;
-        while (chunk is not null)
-        {
-            for (var i = 0; i < chunk.Count; i++)
-            {
-                var entry = chunk.Items[i];
-                if (predicate(entry))
-                    return entry;
-            }
-
-            chunk = chunk.Next;
-        }
-
-        return null;
-    }
+    public InMemoryLogEntry? Find(Func<InMemoryLogEntry, bool> predicate) => _entries.Find(predicate);
 
     private IEnumerable<InMemoryLogEntry> GetByLogLevel(LogLevel logLevel)
     {
-        var chunk = _firstChunk;
-        while (chunk is not null)
+        foreach (var entry in _entries)
         {
-            for (var i = 0; i < chunk.Count; i++)
-            {
-                var entry = chunk.Items[i];
-                if (entry.LogLevel == logLevel)
-                    yield return entry;
-            }
-
-            chunk = chunk.Next;
+            if (entry.LogLevel == logLevel)
+                yield return entry;
         }
     }
 
     /// <summary>Enumerates the elements of a <see cref="InMemoryLogCollection"/>.</summary>
     public struct Enumerator : IEnumerator<InMemoryLogEntry>
     {
-        private Chunk<InMemoryLogEntry>? _chunk;
-        private int _index = -1;
+        private AppendOnlyCollection<InMemoryLogEntry>.Enumerator _enumerator;
 
         public Enumerator(InMemoryLogCollection collection)
         {
-            _chunk = collection._firstChunk;
+            _enumerator = collection._entries.GetEnumerator();
         }
 
-        public readonly InMemoryLogEntry Current
-        {
-            get
-            {
-                Debug.Assert(_chunk is not null);
-                return _chunk.Items[_index];
-            }
-        }
+        public readonly InMemoryLogEntry Current => _enumerator.Current;
 
         readonly object IEnumerator.Current => Current;
 
-        public bool MoveNext()
-        {
-            if (_chunk is null)
-                return false;
-
-            _index++;
-            if (_index >= _chunk.Count)
-            {
-                _chunk = _chunk.Next;
-                _index = 0;
-                return _chunk is not null;
-            }
-
-            return true;
-        }
+        public bool MoveNext() => _enumerator.MoveNext();
 
         public readonly void Dispose()
         {

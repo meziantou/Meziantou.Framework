@@ -46,6 +46,7 @@ Options:
   --excluded-rule-ids <excluded-rule-ids>  List of rule ids to exclude from analysis
   --github-token <github-token>            GitHub token to authenticate requests
   --only-report-errors                     Only report errors on the output
+  --max-parallelism <max-parallelism>      Maximum number of packages to validate concurrently (default: number of processors)
   -?, -h, --help                           Show help and usage information
   --version                                Show version information
 ```

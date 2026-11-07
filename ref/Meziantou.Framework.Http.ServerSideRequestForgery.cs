@@ -14,6 +14,13 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery
         protected internal abstract System.Threading.Tasks.ValueTask<System.Net.IPAddress> ResolveAsync(System.Collections.Generic.IReadOnlyList<System.Net.IPAddress> addresses, Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions options, System.Threading.CancellationToken cancellationToken);
     }
 
+    public sealed class ServerSideRequestForgeryClientHandler : System.Net.Http.DelegatingHandler
+    {
+        public ServerSideRequestForgeryClientHandler(System.Net.Http.SocketsHttpHandler innerHandler, Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions options) { }
+        protected override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
+        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
+    }
+
     public sealed class ServerSideRequestForgeryException : System.Exception
     {
         public ServerSideRequestForgeryException(string message) { }
@@ -22,12 +29,12 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery
 
     public sealed class ServerSideRequestForgeryOptions
     {
-        public System.Collections.Generic.ICollection<string> SafeSchemes { get => throw null; }
-        public System.Collections.Generic.ICollection<System.Net.IPNetwork> UnsafeIpNetworks { get => throw null; }
-        public System.Collections.Generic.ICollection<System.Net.IPNetwork> SafeIpNetworks { get => throw null; }
-        public Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy ResolutionStrategy { get => throw null; set { } }
         public bool DisallowMixedSafeAndUnsafeIpAddresses { get => throw null; set { } }
         public Microsoft.Extensions.Logging.ILogger Logger { get => throw null; set { } }
+        public Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy ResolutionStrategy { get => throw null; set { } }
+        public System.Collections.Generic.ICollection<System.Net.IPNetwork> SafeIpNetworks { get => throw null; }
+        public System.Collections.Generic.ICollection<string> SafeSchemes { get => throw null; }
+        public System.Collections.Generic.ICollection<System.Net.IPNetwork> UnsafeIpNetworks { get => throw null; }
     }
 
     public static class SocketHttpHandlerServerSideRequestForgeryExtensions

@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2		FALSE	FALSE	FALSE		[Halftone]			Table 132
+HalftoneType	integer	1.2		TRUE	FALSE	FALSE		[5]			
+HalftoneName	string-byte	1.2		FALSE	FALSE	FALSE					
+Default	dictionary;stream	1.2		TRUE	[FALSE];[TRUE]	FALSE				[HalftoneType1];[HalftoneType6,HalftoneType10,fn:SinceVersion(1.3,HalftoneType16)]	
+*	dictionary;stream	1.2		FALSE	[FALSE];[TRUE]	FALSE			[fn:KeyNameIsColorant()];[fn:KeyNameIsColorant()]	[HalftoneType1];[HalftoneType6,HalftoneType10,fn:SinceVersion(1.3,HalftoneType16)]	

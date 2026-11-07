@@ -15,6 +15,27 @@ public sealed class SynchronizationContextExtensionsTests
     }
 
     [Fact]
+    public async Task SynchronizationContext_AwaitExample()
+    {
+        using var synchronizationContext = new DedicatedThreadSynchronizationContext();
+
+        #region SynchronizationContext_Await
+        async Task<int> ComputeAsync(SynchronizationContext uiContext)
+        {
+            // Do the work on the thread pool
+            var result = await Task.Run(() => 6 * 7).ConfigureAwait(false);
+
+            // Resume on the context, for instance the UI thread, before updating the controls
+            await uiContext;
+            return result;
+        }
+        #endregion
+
+        Assert.Equal(42, await ComputeAsync(synchronizationContext).WaitAsync(Timeout));
+        Assert.Equal(1, synchronizationContext.PostCount);
+    }
+
+    [Fact]
     public async Task GetAwaiter_PostsContinuationToSynchronizationContext()
     {
         using var synchronizationContext = new DedicatedThreadSynchronizationContext();
@@ -64,6 +85,32 @@ public sealed class SynchronizationContextExtensionsTests
         Assert.Equal(0, result.PostCount);
     }
 
+    [Fact]
+    public async Task GetAwaiter_PassesTheContinuationAsTheCallbackState()
+    {
+        // The continuation is passed as state rather than captured, so the posted callback allocates no closure.
+        using var synchronizationContext = new DedicatedThreadSynchronizationContext();
+
+        await Task.Run(async () => await synchronizationContext).WaitAsync(Timeout);
+
+        Assert.Equal(1, synchronizationContext.PostCount);
+        Assert.IsType<Action>(synchronizationContext.LastPostedState);
+    }
+
+    [Fact]
+    public async Task GetAwaiter_UnsafeOnCompleted_PostsContinuationToSynchronizationContext()
+    {
+        // The compiler calls UnsafeOnCompleted rather than OnCompleted when the awaiter implements ICriticalNotifyCompletion.
+        using var synchronizationContext = new DedicatedThreadSynchronizationContext();
+        var resumedOn = new TaskCompletionSource<SynchronizationContext?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var awaiter = synchronizationContext.GetAwaiter();
+        awaiter.UnsafeOnCompleted(() => resumedOn.SetResult(SynchronizationContext.Current));
+
+        Assert.Same(synchronizationContext, await resumedOn.Task.WaitAsync(Timeout));
+        Assert.Equal(1, synchronizationContext.PostCount);
+    }
+
     private readonly record struct AwaitResult(int BeforeAwaitThreadId, int AfterAwaitThreadId, SynchronizationContext? CurrentSynchronizationContext, int PostCount);
 
     private sealed class DedicatedThreadSynchronizationContext : SynchronizationContext, IDisposable
@@ -72,6 +119,7 @@ public sealed class SynchronizationContextExtensionsTests
         private readonly Thread _thread;
         private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _postCount;
+        private object? _lastPostedState;
 
         public DedicatedThreadSynchronizationContext()
         {
@@ -89,11 +137,14 @@ public sealed class SynchronizationContextExtensionsTests
 
         public int PostCount => Volatile.Read(ref _postCount);
 
+        public object? LastPostedState => Volatile.Read(ref _lastPostedState);
+
         public override void Post(SendOrPostCallback d, object? state)
         {
             ArgumentNullException.ThrowIfNull(d);
 
             Interlocked.Increment(ref _postCount);
+            Volatile.Write(ref _lastPostedState, state);
             _workItems.Add(new WorkItem(d, state));
         }
 

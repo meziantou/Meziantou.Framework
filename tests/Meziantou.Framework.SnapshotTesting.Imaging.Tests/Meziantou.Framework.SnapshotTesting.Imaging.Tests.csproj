@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="TestAssets/*.*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The readme examples (SampleTests, ReadmeExample_*) read their files from the current directory -->
+    <None Include="TestAssets/sample.png;TestAssets/sample.jpg" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TestAssets/serializer-two-frame.gif" Link="animation.gif" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TestAssets/serializer-multi-entry.ico" Link="favicon.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

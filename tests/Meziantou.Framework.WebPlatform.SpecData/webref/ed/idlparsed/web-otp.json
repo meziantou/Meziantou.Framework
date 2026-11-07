@@ -1,0 +1,166 @@
+{
+  "spec": {
+    "title": "WebOTP API",
+    "url": "https://wicg.github.io/web-otp/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "OTPCredential"
+        ]
+      }
+    },
+    "idlNames": {
+      "OTPCredential": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface OTPCredential : Credential {\n    readonly attribute DOMString code;\n};",
+        "type": "interface",
+        "name": "OTPCredential",
+        "inheritance": "Credential",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "code",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/web-otp/#dom-otpcredential-code"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/web-otp/#otpcredential"
+      },
+      "OTPCredentialRequestOptions": {
+        "fragment": "dictionary OTPCredentialRequestOptions {\n  sequence<OTPCredentialTransportType> transport = [];\n};",
+        "type": "dictionary",
+        "name": "OTPCredentialRequestOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "transport",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "OTPCredentialTransportType"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://wicg.github.io/web-otp/#dom-otpcredentialrequestoptions-transport"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/web-otp/#dictdef-otpcredentialrequestoptions"
+      },
+      "OTPCredentialTransportType": {
+        "fragment": "enum OTPCredentialTransportType {\n    \"sms\",\n};",
+        "type": "enum",
+        "name": "OTPCredentialTransportType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "sms",
+            "href": "https://wicg.github.io/web-otp/#dom-otpcredentialtransporttype-sms"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/web-otp/#enumdef-otpcredentialtransporttype"
+      }
+    },
+    "idlExtendedNames": {
+      "CredentialRequestOptions": [
+        {
+          "fragment": "partial dictionary CredentialRequestOptions {\n    OTPCredentialRequestOptions otp;\n};",
+          "type": "dictionary",
+          "name": "CredentialRequestOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "otp",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "OTPCredentialRequestOptions"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://wicg.github.io/web-otp/#dom-credentialrequestoptions-otp"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "OTPCredential"
+      ]
+    },
+    "dependencies": {
+      "OTPCredential": [
+        "Credential"
+      ],
+      "CredentialRequestOptions": [
+        "OTPCredentialRequestOptions"
+      ],
+      "OTPCredentialRequestOptions": [
+        "OTPCredentialTransportType"
+      ]
+    },
+    "externalDependencies": [
+      "Credential",
+      "CredentialRequestOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

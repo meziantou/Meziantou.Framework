@@ -1,0 +1,15 @@
+{
+  "main": {
+    "de": {
+      "identity": {
+        "language": "de"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

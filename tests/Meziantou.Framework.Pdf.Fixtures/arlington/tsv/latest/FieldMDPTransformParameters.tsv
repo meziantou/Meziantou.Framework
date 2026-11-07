@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[TransformParams]			Table 259
+Action	name	1.5		FALSE	FALSE	FALSE		[All,Include,Exclude]			
+Fields	array	1.5		fn:IsRequired((@Action==Include) || (@Action==Exclude))	FALSE	FALSE				[ArrayOfStringsText]	
+V	name	1.5		TRUE	FALSE	FALSE	1.2	[1.2]			

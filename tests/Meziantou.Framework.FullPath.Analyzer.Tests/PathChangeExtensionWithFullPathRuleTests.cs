@@ -34,7 +34,7 @@ public sealed class PathChangeExtensionWithFullPathRuleTests : FullPathAnalyzerT
                 {
                     public static string M(FullPath fullPath, string extension)
                     {
-                        return fullPath.ChangeExtension(extension);
+                        return fullPath.WithExtension(extension);
                     }
                 }
             }

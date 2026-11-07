@@ -21,6 +21,14 @@ public sealed class TdsQueryContext
     /// <summary>Gets the decoded RPC parameters.</summary>
     public IReadOnlyList<TdsQueryParameter> Parameters { get; init; } = [];
 
+    /// <summary>
+    /// Gets a value indicating whether every parameter sent by the client was decoded.
+    /// This is <see langword="false"/> when <see cref="Parameters"/> is truncated because the client sent a
+    /// parameter whose type the server cannot decode, or because the payload was malformed. Requests with
+    /// incomplete parameters should be rejected rather than acted on, because the missing values are silent.
+    /// </summary>
+    public bool HasCompleteParameters { get; init; } = true;
+
     /// <summary>Gets the authenticated user context associated with this query request.</summary>
     public ClaimsPrincipal? UserContext { get; init; }
 }

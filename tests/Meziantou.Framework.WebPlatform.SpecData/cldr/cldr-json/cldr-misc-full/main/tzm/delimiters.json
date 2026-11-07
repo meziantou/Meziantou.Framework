@@ -1,0 +1,15 @@
+{
+  "main": {
+    "tzm": {
+      "identity": {
+        "language": "tzm"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

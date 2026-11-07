@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+1.3	dictionary	1.2	2.0	FALSE	FALSE	FALSE				[OPIVersion13Dict]	Table 405

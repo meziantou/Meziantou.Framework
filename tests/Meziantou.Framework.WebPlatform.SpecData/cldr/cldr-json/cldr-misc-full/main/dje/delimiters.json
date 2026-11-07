@@ -1,0 +1,15 @@
+{
+  "main": {
+    "dje": {
+      "identity": {
+        "language": "dje"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

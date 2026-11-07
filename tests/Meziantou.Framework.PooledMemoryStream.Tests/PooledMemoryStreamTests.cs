@@ -30,6 +30,145 @@ public sealed class PooledMemoryStreamTests
         BufferSizes = [16, 64, 256],
     };
 
+    [Fact]
+    public void ReadmeExample_BasicUsage()
+    {
+        #region PooledMemoryStream_BasicUsage
+        using var stream = new PooledMemoryStream();
+        stream.Write("Hello, "u8);
+        stream.Write("World!"u8);
+
+        stream.Position = 0;
+        using var reader = new StreamReader(stream);
+        Assert.Equal("Hello, World!", reader.ReadToEnd());
+
+        // The pooled buffers are returned to the shared pool when the stream is disposed.
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_BufferWriter()
+    {
+        #region PooledMemoryStream_BufferWriter
+        using var stream = new PooledMemoryStream();
+
+        // PooledMemoryStream implements IBufferWriter<byte> (explicit), so it can be passed where one is expected.
+        IBufferWriter<byte> writer = stream;
+        await using (var json = new Utf8JsonWriter(writer))
+        {
+            json.WriteStartObject();
+            json.WriteString("message", "hello");
+            json.WriteEndObject();
+        }
+
+        var bytes = stream.ToArray();
+        Assert.Equal("""{"message":"hello"}"""u8.ToArray(), bytes);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Options()
+    {
+        #region PooledMemoryStream_Options
+        var options = new PooledMemoryStreamOptions
+        {
+            // Any number of strictly ascending tiers (bytes). Small streams use the smallest size and
+            // grow through the larger ones; buffers bigger than the largest tier round up to a multiple of it.
+            BufferSizes = [4 * 1024, 128 * 1024, 1024 * 1024, 10 * 1024 * 1024], // 4 KiB / 128 KiB / 1 MiB / 10 MiB
+            MaxRetainedBytesPerBucket = 64L * 1024 * 1024,
+            ClearOnReturn = false,
+        };
+
+        using var stream = new PooledMemoryStream(options);
+        #endregion
+
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
+    public void Documentation_CopyContents()
+    {
+        #region PooledMemoryStream_CopyContents
+        using var stream = new PooledMemoryStream(initialCapacity: 64 * 1024); // reserves the capacity up front
+        stream.Write("Hello, World!"u8);
+
+        // WriteTo copies the whole stream, whatever the position
+        using var file = new MemoryStream();
+        stream.WriteTo(file);
+        Assert.Equal("Hello, World!"u8.ToArray(), file.ToArray());
+
+        // CopyTo copies from the current position, like with any stream
+        stream.Position = 7;
+        using var rest = new MemoryStream();
+        stream.CopyTo(rest);
+        Assert.Equal("World!"u8.ToArray(), rest.ToArray());
+
+        // ToArray returns a new array of Length bytes, which you can keep after the stream is disposed
+        byte[] copy = stream.ToArray();
+        Assert.HasCount(13, copy);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BufferWriterAppends()
+    {
+        #region PooledMemoryStream_BufferWriterAppends
+        using var stream = new PooledMemoryStream();
+        stream.Write("Hello"u8);
+        stream.Position = 0;
+
+        // The IBufferWriter<byte> members always write at the end of the stream, whatever the position
+        IBufferWriter<byte> writer = stream;
+        var span = writer.GetSpan(sizeHint: 7);
+        ", World"u8.CopyTo(span);
+        writer.Advance(7);
+
+        Assert.Equal("Hello, World"u8.ToArray(), stream.ToArray());
+        Assert.Equal(12, stream.Position); // Advance moves the position to the new end
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_SharedOptions()
+    {
+        #region PooledMemoryStream_SharedOptions
+        // Create the options once, and share them between the streams
+        var options = new PooledMemoryStreamOptions
+        {
+            BufferSizes = [16 * 1024, 256 * 1024],
+            ClearOnReturn = true, // zero the buffers before another stream can rent them
+        };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write("secret"u8);
+        }
+
+        using var second = new PooledMemoryStream(options);
+
+        // Creating a stream froze the options: they cannot change any more
+        Assert.True(options.IsFrozen);
+        Assert.Throws<InvalidOperationException>(() => options.ClearOnReturn = false);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GetBuffer()
+    {
+        #region PooledMemoryStream_GetBuffer
+        using var stream = new PooledMemoryStream();
+        stream.Write("Hello"u8);
+
+        // The contents as one array, without a copy when they fit in one pooled block
+        Assert.True(stream.TryGetBuffer(out var buffer));
+        Assert.Equal("Hello"u8.ToArray(), buffer.ToArray()); // the segment is limited to Length
+
+        // GetBuffer returns the whole array: only the first Length bytes are the contents
+        byte[] array = stream.GetBuffer();
+        Assert.Equal("Hello"u8.ToArray(), array.AsSpan(0, (int)stream.Length).ToArray());
+        #endregion
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -125,6 +264,69 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void Position_AboveArrayMaxLength_IsAllowed()
+    {
+        // The storage is a chain of blocks, so the stream is not bounded by the length of a single array.
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = -1);
+
+        stream.Position = (long)Array.MaxLength + 1;
+        Assert.Equal((long)Array.MaxLength + 1, stream.Position);
+
+        stream.Position = long.MaxValue;
+        Assert.Equal(long.MaxValue, stream.Position);
+    }
+
+    [Fact]
+    public void Seek_AboveArrayMaxLength_IsAllowed()
+    {
+        using var stream = new PooledMemoryStream();
+        stream.Write(CreateData(100));
+
+        Assert.Equal(long.MaxValue, stream.Seek(long.MaxValue, SeekOrigin.Begin));
+        Assert.Equal((long)Array.MaxLength + 1, stream.Seek((long)Array.MaxLength + 1, SeekOrigin.Begin));
+        Assert.Equal(Array.MaxLength + 100L, stream.Seek(Array.MaxLength, SeekOrigin.End));
+    }
+
+    [Fact]
+    public void Seek_PastInt64MaxValue_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+        stream.Write(CreateData(100));
+
+        stream.Position = long.MaxValue - 10;
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(11, SeekOrigin.Current));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(long.MaxValue, SeekOrigin.End));
+        Assert.Equal(long.MaxValue - 10, stream.Position);
+    }
+
+    [Fact]
+    public void SetLength_AboveArrayMaxLength_IsNotRejected()
+    {
+        // The length is only validated against the range of Int64; the actual allocation is what bounds the stream.
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.SetLength(-1));
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
+    public void WriteAtFarPosition_Throws_InsteadOfAllocatingForever()
+    {
+        // Regression: WriteCore guarded with "_position + count > limit", which overflows to a negative value near
+        // long.MaxValue. The guard passed and the write fell into an unbounded zero-fill loop that never returned.
+        using var stream = new PooledMemoryStream();
+
+        stream.Position = long.MaxValue;
+        Assert.Throws<IOException>(() => stream.WriteByte(1));
+        Assert.Throws<IOException>(() => stream.Write(CreateData(10)));
+
+        stream.Position = long.MaxValue - 5;
+        Assert.Throws<IOException>(() => stream.Write(CreateData(10)));
+    }
+
+    [Fact]
     public void Overwrite_InTheMiddle()
     {
         using var stream = new PooledMemoryStream(SmallTiers());
@@ -194,10 +396,104 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void Capacity_ReservedBlocksAreFilledBeforeRentingMore()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4, 16] };
+        using var stream = new PooledMemoryStream(options, initialCapacity: 20);
+        Assert.Equal(20, stream.Capacity);
+
+        // The reservation is a 16-byte block followed by a 4-byte one. Appends used to target the last block only,
+        // so these 20 bytes filled the 4-byte block and then rented another 16 instead of using the reserved one.
+        var data = CreateData(20, seed: 20);
+        stream.Write(data);
+
+        Assert.Equal(20, stream.Capacity);
+        Assert.Equal(20, stream.Length);
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public void Capacity_ReservedOnAnExistingStream_IsUsedByLaterWrites()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 64] };
+        using var stream = new PooledMemoryStream(options);
+        var first = CreateData(10, seed: 21);
+        stream.Write(first);
+
+        stream.Capacity = 200;
+        var capacity = stream.Capacity;
+
+        var second = CreateData(capacity - first.Length, seed: 22);
+        stream.Write(second);
+
+        Assert.Equal(capacity, stream.Capacity);
+        Assert.Equal(capacity, stream.Length);
+        Assert.Equal([.. first, .. second], stream.ToArray());
+    }
+
+    [Fact]
+    public void IBufferWriter_FillsReservedBlocksBeforeRentingMore()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 64] };
+        using var stream = new PooledMemoryStream(options, initialCapacity: 128);
+        var capacity = stream.Capacity;
+        IBufferWriter<byte> writer = stream;
+
+        for (var i = 0; i < capacity / 16; i++)
+        {
+            writer.GetSpan(16)[..16].Fill((byte)i);
+            writer.Advance(16);
+        }
+
+        Assert.Equal(capacity, stream.Capacity);
+        Assert.Equal(capacity, stream.Length);
+
+        var result = stream.ToArray();
+        for (var i = 0; i < result.Length; i++)
+            Assert.Equal((byte)(i / 16), result[i]);
+    }
+
+    [Fact]
+    public void IBufferWriter_LargeRequest_DoesNotStrandReservedBlocks()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 64] };
+        using var stream = new PooledMemoryStream(options, initialCapacity: 128);
+        IBufferWriter<byte> writer = stream;
+
+        // Larger than any reserved block, so a new one is rented; the reserved blocks must stay usable behind it.
+        writer.GetSpan(200)[..200].Fill(1);
+        writer.Advance(200);
+        var capacity = stream.Capacity;
+
+        stream.Write(CreateData(128, seed: 23));
+
+        Assert.Equal(capacity, stream.Capacity);
+        Assert.Equal(328, stream.Length);
+    }
+
+    [Fact]
     public void Constructor_WithInitialCapacity()
     {
         using var stream = new PooledMemoryStream(1234);
         Assert.True(stream.Capacity >= 1234);
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(4097)]
+    [InlineData(5000)]
+    [InlineData(70_000)]
+    [InlineData(1024 * 1024)]
+    public void Constructor_WithInitialCapacity_ComposesTiersInsteadOfRoundingUp(int initialCapacity)
+    {
+        using var stream = new PooledMemoryStream(initialCapacity);
+
+        // The reservation is built from configured tiers, so the excess stays below the smallest tier (4 KiB by
+        // default). It used to round the whole request up to the next tier: 70_000 reserved 1 MiB.
+        Assert.True(stream.Capacity >= initialCapacity);
+        Assert.True(stream.Capacity - initialCapacity < 4096);
         Assert.Equal(0, stream.Length);
     }
 
@@ -224,6 +520,166 @@ public sealed class PooledMemoryStreamTests
         using var target = new MemoryStream();
         stream.WriteTo(target);
         Assert.Equal(data, target.ToArray());
+    }
+
+    [Fact]
+    public void GetBuffer_DoesNotExposeBytesLeftByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket and deterministically rents the same array back.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4111] };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write(CreateData(4111, seed: 77));
+        }
+
+        using var second = new PooledMemoryStream(options);
+        var data = CreateData(10, seed: 1);
+        second.Write(data);
+
+        var buffer = second.GetBuffer();
+        Assert.Equal(data, buffer.AsSpan(0, data.Length).ToArray());
+        Assert.Equal(new byte[buffer.Length - data.Length], buffer.AsSpan(data.Length).ToArray());
+    }
+
+    [Fact]
+    public void GetBuffer_AfterConsolidatingSegments_DoesNotExposeBytesLeftByAnotherStream()
+    {
+        // Both streams consolidate into the same 4139-byte bucket, so the second one rents the first one's array.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 4139] };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write(CreateData(300, seed: 55));
+            first.GetBuffer();
+        }
+
+        using var second = new PooledMemoryStream(options);
+        var data = CreateData(20, seed: 2);
+        second.Write(data);
+
+        var buffer = second.GetBuffer();
+        Assert.Equal(data, buffer.AsSpan(0, data.Length).ToArray());
+        Assert.Equal(new byte[buffer.Length - data.Length], buffer.AsSpan(data.Length).ToArray());
+    }
+
+    [Fact]
+    public void GetBuffer_ThenShrink_HeldBufferIsNotRentedByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket: before the fix, the other stream rented the held array.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4127] };
+        var data = CreateData(100, seed: 3);
+
+        var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        var held = stream.GetBuffer();
+
+        stream.SetLength(0);
+        stream.Capacity = 0;
+
+        using var other = new PooledMemoryStream(options);
+        other.Write(CreateData(100, seed: 4));
+        Assert.NotSame(held, other.GetBuffer());
+        Assert.Equal(data, held.AsSpan(0, data.Length).ToArray());
+
+        // The shrunk stream keeps working, and disposing it returns the held array to the pool.
+        var newData = CreateData(50, seed: 5);
+        stream.Write(newData);
+        Assert.Equal(newData, stream.ToArray());
+        stream.Dispose();
+
+        using var third = new PooledMemoryStream(options);
+        third.Write(CreateData(10));
+        Assert.Same(held, third.GetBuffer());
+    }
+
+    [Fact]
+    public void GetBuffer_ThenGrowAndConsolidate_HeldBufferIsNotRentedByAnotherStream()
+    {
+        // The first GetBuffer exposes a 23-byte block; growing past it and calling TryGetBuffer consolidates into a
+        // 4153-byte array. Unique tier sizes so this test owns its pool buckets.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [23, 4153] };
+        var first = CreateData(10, seed: 6);
+        var second = CreateData(20, seed: 7);
+
+        using var stream = new PooledMemoryStream(options);
+        stream.Write(first);
+        var held = stream.GetBuffer();
+        Assert.HasCount(23, held);
+
+        stream.Write(second);
+        Assert.True(stream.TryGetBuffer(out var consolidated));
+        Assert.NotSame(held, consolidated.Array);
+        Assert.Equal([.. first, .. second], consolidated.ToArray());
+
+        for (var i = 0; i < 2; i++)
+        {
+            using var other = new PooledMemoryStream(options);
+            other.Write(CreateData(10, seed: 8 + i));
+            Assert.NotSame(held, other.GetBuffer());
+        }
+
+        Assert.Equal(first, held.AsSpan(0, first.Length).ToArray());
+    }
+
+    [Fact]
+    public void IBufferWriter_ReservedRegion_ThenShrinkCapacity_IsNotRentedByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket: before the fix, the empty block holding the region went
+        // back to the pool and the other stream rented it.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4159] };
+        var data = CreateData(100, seed: 11);
+
+        using var stream = new PooledMemoryStream(options);
+        IBufferWriter<byte> writer = stream;
+        var memory = writer.GetMemory(data.Length);
+        stream.Capacity = 0;
+
+        using var other = new PooledMemoryStream(options);
+        IBufferWriter<byte> otherWriter = other;
+        Assert.False(memory.Span.Overlaps(otherWriter.GetSpan(1)));
+
+        data.CopyTo(memory);
+        writer.Advance(data.Length);
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public void IBufferWriter_ReservedRegion_ThenSetLength_IsNotRentedByAnotherStream()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4177] };
+
+        using var stream = new PooledMemoryStream(options);
+        stream.Write(CreateData(4177, seed: 12));
+        IBufferWriter<byte> writer = stream;
+        var memory = writer.GetMemory(10);
+        stream.SetLength(10);
+
+        using var other = new PooledMemoryStream(options);
+        IBufferWriter<byte> otherWriter = other;
+        Assert.False(memory.Span.Overlaps(otherWriter.GetSpan(1)));
+    }
+
+    [Fact]
+    public void IBufferWriter_ReservedRegion_ThenGetBuffer_IsNotRentedByAnotherStream()
+    {
+        // The data fills a 29-byte block and the region needs more, so it is a second 4201-byte block, which GetBuffer
+        // consolidates away.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [29, 4201] };
+        var data = CreateData(29, seed: 13);
+
+        using var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        IBufferWriter<byte> writer = stream;
+        var memory = writer.GetMemory(100);
+        Assert.HasCount(4201, (ReadOnlySpan<byte>)memory.Span);
+        Assert.Equal(data, stream.GetBuffer().AsSpan(0, data.Length).ToArray());
+
+        using var other = new PooledMemoryStream(options);
+        IBufferWriter<byte> otherWriter = other;
+        var otherSpan = otherWriter.GetSpan(30);
+        Assert.HasCount(4201, (ReadOnlySpan<byte>)otherSpan);
+        Assert.False(memory.Span.Overlaps(otherSpan));
     }
 
     [Fact]
@@ -273,13 +729,43 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public async Task ReadAsync_ReusesTheTaskWhenTheCountRepeats()
+    {
+        using var stream = new PooledMemoryStream(SmallTiers());
+        stream.Write(CreateData(200, seed: 6));
+        stream.Position = 0;
+
+        var buffer = new byte[10];
+        var first = stream.ReadAsync(buffer, 0, buffer.Length);
+        var second = stream.ReadAsync(buffer, 0, buffer.Length);
+
+        Assert.Equal(10, await first);
+        Assert.Equal(10, await second);
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public void CopyToAsync_ValidatesArgumentsSynchronously()
+    {
+        using var stream = new PooledMemoryStream(SmallTiers());
+        stream.Write(CreateData(50, seed: 7));
+
+        // Block-bodied lambdas so these bind to Assert.Throws(Action): the point is that the exception is raised
+        // before any task exists, which a faulted-task assertion could not tell apart.
+        Task? task = null;
+        Assert.Throws<ArgumentNullException>(() => { task = stream.CopyToAsync(destination: null!); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { task = stream.CopyToAsync(new MemoryStream(), bufferSize: 0); });
+        Assert.Null(task);
+    }
+
+    [Fact]
     public void IBufferWriter_GetSpan_ReturnsAtLeastSizeHint_AndWritesAcrossBoundary()
     {
         using var stream = new PooledMemoryStream(SmallTiers());
         IBufferWriter<byte> writer = stream;
 
         var span = writer.GetSpan(20);
-        Assert.True(span.Length >= 20);
+        Assert.HasCountGreaterThanOrEqual(20, span);
         for (var i = 0; i < 20; i++)
             span[i] = (byte)i;
         writer.Advance(20);
@@ -288,7 +774,7 @@ public sealed class PooledMemoryStreamTests
         Assert.Equal(20, stream.Position);
 
         var span2 = writer.GetSpan(10);
-        Assert.True(span2.Length >= 10);
+        Assert.HasCountGreaterThanOrEqual(10, span2);
         for (var i = 0; i < 10; i++)
             span2[i] = (byte)(100 + i);
         writer.Advance(10);
@@ -413,6 +899,44 @@ public sealed class PooledMemoryStreamTests
         Assert.Throws<ArgumentOutOfRangeException>(() => options.BufferSizes = [.. sizes]);
     }
 
+    [Theory]
+    // Just past the point where "minimumSize + largest - 1" wraps int: used to return int.MinValue.
+    [InlineData(2_146_435_073)]
+    // Array.MaxLength itself: used to return -2146435072.
+    [InlineData(2_147_483_591)]
+    public void GetContiguousBlockSize_NearArrayMaxLength_StaysPositiveAndAtLeastTheRequest(int minimumSize)
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4096, 65536, 1024 * 1024] };
+
+        var size = options.GetContiguousBlockSize(minimumSize);
+
+        Assert.True(size >= minimumSize);
+        Assert.True(size <= Array.MaxLength);
+    }
+
+    [Fact]
+    public void GetContiguousBlockSize_AboveArrayMaxLength_Throws()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4096, 65536, 1024 * 1024] };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.GetContiguousBlockSize(int.MaxValue));
+    }
+
+    [Theory]
+    [InlineData(1_000_000_000)]
+    [InlineData(2_000_000_000)]
+    public void GetContiguousBlockSize_WithAHugeSingleTier_DoesNotReturnZero(int tier)
+    {
+        // The overflow path only runs when minimumSize exceeds the largest tier, so reaching it needs a tier above
+        // ~1 GiB. Exercised through the options object so the test costs no allocation.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [tier] };
+
+        var size = options.GetContiguousBlockSize(tier + 1);
+
+        Assert.True(size >= tier + 1);
+        Assert.True(size <= Array.MaxLength);
+    }
+
     [Fact]
     public void Options_Default_IsFrozen()
     {
@@ -494,6 +1018,71 @@ public sealed class PooledMemoryStreamTests
 
             Assert.Equal(reference.Length, pooled.Length);
             Assert.Equal(reference.Position, pooled.Position);
+        }
+
+        Assert.Equal(reference.ToArray(), pooled.ToArray());
+    }
+
+    [Fact]
+    public void ParityWithMemoryStream_RandomCapacityAndBufferWriterOperations()
+    {
+        var state = 987u;
+        using var pooled = new PooledMemoryStream(SmallTiers());
+        IBufferWriter<byte> writer = pooled;
+        using var reference = new MemoryStream();
+
+        for (var i = 0; i < 2000; i++)
+        {
+            switch (NextRandom(ref state, 7))
+            {
+                case 0: // write
+                    var data = CreateData(NextRandom(ref state, 100), seed: (int)NextRandom(ref state));
+                    pooled.Write(data);
+                    reference.Write(data);
+                    break;
+                case 1: // seek
+                    var pos = NextRandom(ref state, (int)reference.Length + 50);
+                    pooled.Position = pos;
+                    reference.Position = pos;
+                    break;
+                case 2: // set length
+                    var len = NextRandom(ref state, (int)reference.Length + 100);
+                    pooled.SetLength(len);
+                    reference.SetLength(len);
+                    break;
+                case 3: // read
+                    var count = NextRandom(ref state, 50);
+                    var bufA = new byte[count];
+                    var bufB = new byte[count];
+                    Assert.Equal(reference.Read(bufB, 0, count), pooled.Read(bufA, 0, count));
+                    Assert.Equal(bufB, bufA);
+                    break;
+                case 4: // reserve capacity ahead of the writes
+                    pooled.Capacity = (int)pooled.Length + NextRandom(ref state, 500);
+                    break;
+                case 5: // release the unused capacity
+                    pooled.Capacity = (int)pooled.Length;
+                    break;
+                case 6: // append through IBufferWriter
+                    var hint = NextRandom(ref state, 200);
+                    var span = writer.GetSpan(hint);
+                    Assert.HasCountGreaterThanOrEqual(Math.Max(hint, 1), span);
+
+                    var advance = NextRandom(ref state, span.Length) + 1;
+                    reference.Position = reference.Length;
+                    for (var j = 0; j < advance; j++)
+                    {
+                        span[j] = (byte)(j + i);
+                        reference.WriteByte((byte)(j + i));
+                    }
+
+                    writer.Advance(advance);
+                    break;
+            }
+
+            Assert.Equal(reference.Length, pooled.Length);
+            Assert.Equal(reference.Position, pooled.Position);
+            Assert.True(pooled.Capacity >= pooled.Length);
         }
 
         Assert.Equal(reference.ToArray(), pooled.ToArray());

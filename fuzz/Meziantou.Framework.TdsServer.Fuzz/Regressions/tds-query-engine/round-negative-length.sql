@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE ROUND(1.26, -11) = 1.3 AND Id = 1

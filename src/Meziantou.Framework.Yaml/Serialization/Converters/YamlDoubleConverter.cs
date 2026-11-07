@@ -22,24 +22,6 @@ internal sealed class YamlDoubleConverter : YamlConverter<double>
 
     public override void Write(YamlWriter writer, double value)
     {
-        if (double.IsPositiveInfinity(value))
-        {
-            writer.WriteScalar(".inf");
-            return;
-        }
-
-        if (double.IsNegativeInfinity(value))
-        {
-            writer.WriteScalar("-.inf");
-            return;
-        }
-
-        if (double.IsNaN(value))
-        {
-            writer.WriteScalar(".nan");
-            return;
-        }
-
-        writer.WriteScalar(value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

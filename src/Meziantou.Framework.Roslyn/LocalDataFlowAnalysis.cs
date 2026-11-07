@@ -1,0 +1,472 @@
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS
+#pragma warning disable
+#endif
+#nullable enable
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Threading;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
+
+namespace Meziantou.Framework.Roslyn;
+
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
+internal static partial class LocalDataFlowAnalysis
+{
+    public static ITypeSymbol? GetActualType(this IOperation operation, CancellationToken cancellationToken)
+    {
+        return operation.GetActualType(useDataFlowAnalysis: true, cancellationToken);
+    }
+
+    public static ITypeSymbol? GetActualType(this IOperation operation, bool useDataFlowAnalysis, CancellationToken cancellationToken)
+    {
+        operation = operation.UnwrapImplicitConversions();
+        if (!useDataFlowAnalysis)
+            return operation.Type;
+
+        HashSet<ISymbol>? visitedSymbols = null;
+        while (true)
+        {
+            var value = GetFlowValue(operation, ref visitedSymbols, cancellationToken);
+            if (value is null || value == operation)
+                return operation.Type;
+
+            // Some values have no type, such as the null literal of "Type type = null;". The type of the
+            // current operation is more accurate than no type at all.
+            var unwrappedValue = value.UnwrapImplicitConversions();
+            if (unwrappedValue.Type is null)
+                return operation.Type;
+
+            operation = unwrappedValue;
+        }
+    }
+
+    public static bool TryGetConstantValue(this IOperation operation, out object? value, CancellationToken cancellationToken)
+    {
+        return operation.TryGetConstantValue(useDataFlowAnalysis: true, out value, cancellationToken);
+    }
+
+    public static bool TryGetConstantValue(this IOperation operation, bool useDataFlowAnalysis, out object? value, CancellationToken cancellationToken)
+    {
+        HashSet<ISymbol>? visitedSymbols = null;
+        while (true)
+        {
+            operation = operation.UnwrapImplicitConversions();
+            if (operation.ConstantValue.HasValue)
+            {
+                value = operation.ConstantValue.Value;
+                return true;
+            }
+
+            if (!useDataFlowAnalysis)
+                break;
+
+            var flowValue = GetFlowValue(operation, ref visitedSymbols, cancellationToken);
+            if (flowValue is null || flowValue == operation)
+                break;
+
+            operation = flowValue;
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static IOperation? GetFlowValue(IOperation operation, ref HashSet<ISymbol>? visitedSymbols, CancellationToken cancellationToken)
+    {
+        return operation switch
+        {
+            ILocalReferenceOperation localReference => GetLocalValue(localReference, cancellationToken),
+            IFieldReferenceOperation fieldReference => TryVisit(ref visitedSymbols, fieldReference.Field) ? GetFieldValue(fieldReference, cancellationToken) : null,
+            IPropertyReferenceOperation propertyReference => TryVisit(ref visitedSymbols, propertyReference.Property) ? GetPropertyValue(propertyReference, cancellationToken) : null,
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Records a member already resolved by the current data flow walk. Members can reference each other
+    /// (<c>private static readonly int a = b;</c> and <c>private static readonly int b = a;</c>), so walking
+    /// a member twice means the chain is cyclic and must be abandoned.
+    /// </summary>
+    private static bool TryVisit(ref HashSet<ISymbol>? visitedSymbols, ISymbol symbol)
+    {
+        visitedSymbols ??= new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+        return visitedSymbols.Add(symbol);
+    }
+
+    private static IOperation? GetLocalValue(ILocalReferenceOperation operation, CancellationToken cancellationToken)
+    {
+        if (operation.SemanticModel is null)
+            return null;
+
+        var local = operation.Local;
+        if (IsCaptured(operation.SemanticModel, local, operation.Syntax))
+            return null;
+
+        var value = GetLastLocalAssignment(operation, local, cancellationToken);
+        if (value is not null)
+            return value;
+
+        if (GetLocalInitializer(operation.SemanticModel, local, cancellationToken) is not { } initializer)
+            return null;
+
+        return HasWriteBetween(operation.SemanticModel, local, initializer.Syntax, operation.Syntax) ? null : initializer;
+    }
+
+    private static IOperation? GetLastLocalAssignment(IOperation operation, ILocalSymbol local, CancellationToken cancellationToken)
+    {
+        var semanticModel = operation.SemanticModel;
+        if (semanticModel is null)
+            return null;
+
+        IOperation? result = null;
+        foreach (var assignmentSyntax in GetLocalScope(local, operation.Syntax, cancellationToken).DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (assignmentSyntax.Span.End > operation.Syntax.SpanStart)
+                continue;
+
+            if (IsInNestedFunction(assignmentSyntax))
+                continue;
+
+            if (semanticModel.GetOperation(assignmentSyntax, cancellationToken) is not ISimpleAssignmentOperation assignment)
+                continue;
+
+            if (assignment.Target.UnwrapImplicitConversions() is not ILocalReferenceOperation localReference || !SymbolEquals(localReference.Local, local))
+                continue;
+
+            if (result is null || assignment.Syntax.SpanStart > result.Syntax.SpanStart)
+            {
+                result = assignment.Value;
+            }
+        }
+
+        if (result is null)
+            return null;
+
+        return HasWriteBetween(semanticModel, local, result.Syntax, operation.Syntax) ? null : result;
+    }
+
+    private static IOperation? GetLocalInitializer(SemanticModel semanticModel, ILocalSymbol local, CancellationToken cancellationToken)
+    {
+        foreach (var syntaxReference in local.DeclaringSyntaxReferences)
+        {
+            if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax { Initializer.Value: { } value })
+            {
+                if (!TryGetSemanticModel(semanticModel, value, out var initializerSemanticModel))
+                    return null;
+
+                return initializerSemanticModel.GetOperation(value, cancellationToken);
+            }
+        }
+
+        return null;
+    }
+
+    private static IOperation? GetFieldValue(IFieldReferenceOperation operation, CancellationToken cancellationToken)
+    {
+        var semanticModel = operation.SemanticModel;
+        if (semanticModel is null)
+            return null;
+
+        var field = operation.Field;
+        if (!field.IsReadOnly || field.DeclaredAccessibility is not Accessibility.Private)
+            return null;
+
+        foreach (var syntaxReference in field.DeclaringSyntaxReferences)
+        {
+            if (syntaxReference.GetSyntax(cancellationToken) is not VariableDeclaratorSyntax { Initializer.Value: { } value })
+                continue;
+
+            if (HasAssignmentOutsideInitializer(semanticModel, field, value, cancellationToken))
+                return null;
+
+            if (!TryGetSemanticModel(semanticModel, value, out var initializerSemanticModel))
+                return null;
+
+            return initializerSemanticModel.GetOperation(value, cancellationToken);
+        }
+
+        return null;
+    }
+
+    private static IOperation? GetPropertyValue(IPropertyReferenceOperation operation, CancellationToken cancellationToken)
+    {
+        var semanticModel = operation.SemanticModel;
+        if (semanticModel is null)
+            return null;
+
+        var property = operation.Property;
+        if (property.SetMethod is not null || property.DeclaredAccessibility is not Accessibility.Private)
+            return null;
+
+        foreach (var syntaxReference in property.DeclaringSyntaxReferences)
+        {
+            if (syntaxReference.GetSyntax(cancellationToken) is not PropertyDeclarationSyntax { Initializer.Value: { } value })
+                continue;
+
+            if (HasAssignmentOutsideInitializer(semanticModel, property, value, cancellationToken))
+                return null;
+
+            if (!TryGetSemanticModel(semanticModel, value, out var initializerSemanticModel))
+                return null;
+
+            return initializerSemanticModel.GetOperation(value, cancellationToken);
+        }
+
+        return null;
+    }
+
+    private static bool HasAssignmentOutsideInitializer(SemanticModel semanticModel, ISymbol symbol, ExpressionSyntax initializer, CancellationToken cancellationToken)
+    {
+        foreach (var syntaxReference in symbol.ContainingType.DeclaringSyntaxReferences)
+        {
+            if (syntaxReference.GetSyntax(cancellationToken) is not TypeDeclarationSyntax typeDeclaration)
+                continue;
+
+            foreach (var node in typeDeclaration.DescendantNodes())
+            {
+                if (GetWriteTarget(node) is not { } target)
+                    continue;
+
+                if (target.SyntaxTree == initializer.SyntaxTree && initializer.Span.Contains(target.Span))
+                    continue;
+
+                if (!TryGetSemanticModel(semanticModel, target, out var targetSemanticModel))
+                    return true;
+
+                var targetSymbol = targetSemanticModel.GetSymbolInfo(target, cancellationToken).Symbol;
+                if (SymbolEquals(targetSymbol, symbol))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsCaptured(SemanticModel semanticModel, ISymbol local, SyntaxNode syntax)
+    {
+        var statement = syntax.FirstAncestorOrSelf<StatementSyntax>();
+        if (statement is null)
+            return false;
+
+        var dataFlow = semanticModel.AnalyzeDataFlow(statement);
+        if (dataFlow?.Succeeded != true)
+            return true;
+
+        return ContainsSymbol(dataFlow.Captured, local);
+    }
+
+    private static bool HasWriteBetween(SemanticModel semanticModel, ISymbol symbol, SyntaxNode source, SyntaxNode destination)
+    {
+        if (source.SyntaxTree != destination.SyntaxTree)
+            return true;
+
+        // The range between the two nodes is computed in source order, so a write that is textually after the read but
+        // reachable before it through a jump would be missed. Give up as soon as the enclosing scope contains a label.
+        if (ContainsJumpStatement(source) || ContainsJumpStatement(destination))
+            return true;
+
+        if (!TryGetStatementRange(source, destination, out var firstStatement, out var lastStatement))
+            return true;
+
+        if (firstStatement is null || lastStatement is null)
+            return false;
+
+        var dataFlow = semanticModel.AnalyzeDataFlow(firstStatement, lastStatement);
+        if (dataFlow?.Succeeded != true)
+            return true;
+
+        return ContainsSymbol(dataFlow.WrittenInside, symbol) ||
+            ContainsSymbol(dataFlow.UnsafeAddressTaken, symbol) ||
+            ContainsSymbol(dataFlow.Captured, symbol);
+    }
+
+    private static ExpressionSyntax? GetWriteTarget(SyntaxNode node)
+    {
+        return node switch
+        {
+            AssignmentExpressionSyntax assignmentExpression => assignmentExpression.Left,
+            PrefixUnaryExpressionSyntax prefixUnaryExpression
+                when prefixUnaryExpression.IsKind(SyntaxKind.PreIncrementExpression) || prefixUnaryExpression.IsKind(SyntaxKind.PreDecrementExpression) => prefixUnaryExpression.Operand,
+            PostfixUnaryExpressionSyntax postfixUnaryExpression
+                when postfixUnaryExpression.IsKind(SyntaxKind.PostIncrementExpression) || postfixUnaryExpression.IsKind(SyntaxKind.PostDecrementExpression) => postfixUnaryExpression.Operand,
+            ArgumentSyntax argument when !argument.RefKindKeyword.IsKind(SyntaxKind.None) => argument.Expression,
+            RefExpressionSyntax refExpression => refExpression.Expression,
+            _ => null,
+        };
+    }
+
+    private static bool TryGetSemanticModel(SemanticModel semanticModel, SyntaxNode syntax, [NotNullWhen(true)] out SemanticModel? result)
+    {
+        if (semanticModel.SyntaxTree == syntax.SyntaxTree)
+        {
+            result = semanticModel;
+            return true;
+        }
+
+        if (!semanticModel.Compilation.ContainsSyntaxTree(syntax.SyntaxTree))
+        {
+            result = null;
+            return false;
+        }
+
+        result = semanticModel.Compilation.GetSemanticModel(syntax.SyntaxTree);
+        return true;
+    }
+
+    private static bool TryGetStatementRange(SyntaxNode source, SyntaxNode destination, out StatementSyntax? firstStatement, out StatementSyntax? lastStatement)
+    {
+        firstStatement = null;
+        lastStatement = null;
+
+        var sourceStatement = source.FirstAncestorOrSelf<StatementSyntax>();
+        var destinationStatement = destination.FirstAncestorOrSelf<StatementSyntax>();
+        if (sourceStatement is null || destinationStatement is null)
+            return false;
+
+        if (sourceStatement == destinationStatement)
+            return true;
+
+        if (sourceStatement.Parent is not BlockSyntax sourceBlock || destinationStatement.Parent is not BlockSyntax destinationBlock || sourceBlock != destinationBlock)
+        {
+            return TryGetGlobalStatementRange(sourceStatement, destinationStatement, out firstStatement, out lastStatement);
+        }
+
+        var sourceIndex = sourceBlock.Statements.IndexOf(sourceStatement);
+        var destinationIndex = sourceBlock.Statements.IndexOf(destinationStatement);
+        if (sourceIndex < 0 || destinationIndex < 0 || sourceIndex > destinationIndex)
+            return false;
+
+        if (sourceIndex + 1 >= destinationIndex)
+            return true;
+
+        firstStatement = sourceBlock.Statements[sourceIndex + 1];
+        lastStatement = sourceBlock.Statements[destinationIndex - 1];
+        return true;
+    }
+
+    private static bool TryGetGlobalStatementRange(StatementSyntax sourceStatement, StatementSyntax destinationStatement, out StatementSyntax? firstStatement, out StatementSyntax? lastStatement)
+    {
+        firstStatement = null;
+        lastStatement = null;
+
+        if (sourceStatement.Parent is not GlobalStatementSyntax sourceGlobalStatement ||
+            destinationStatement.Parent is not GlobalStatementSyntax destinationGlobalStatement ||
+            sourceGlobalStatement.Parent is not CompilationUnitSyntax sourceCompilationUnit ||
+            destinationGlobalStatement.Parent is not CompilationUnitSyntax destinationCompilationUnit ||
+            sourceCompilationUnit != destinationCompilationUnit)
+        {
+            return false;
+        }
+
+        var sourceIndex = sourceCompilationUnit.Members.IndexOf(sourceGlobalStatement);
+        var destinationIndex = sourceCompilationUnit.Members.IndexOf(destinationGlobalStatement);
+        if (sourceIndex < 0 || destinationIndex < 0 || sourceIndex > destinationIndex)
+            return false;
+
+        if (sourceIndex + 1 >= destinationIndex)
+            return true;
+
+        for (var index = sourceIndex + 1; index < destinationIndex; index++)
+        {
+            if (sourceCompilationUnit.Members[index] is not GlobalStatementSyntax globalStatement)
+            {
+                firstStatement = null;
+                lastStatement = null;
+                return false;
+            }
+
+            firstStatement ??= globalStatement.Statement;
+            lastStatement = globalStatement.Statement;
+        }
+
+        return true;
+    }
+
+    private static SyntaxNode GetLocalScope(ILocalSymbol local, SyntaxNode reference, CancellationToken cancellationToken)
+    {
+        foreach (var syntaxReference in local.DeclaringSyntaxReferences)
+        {
+            var declaration = syntaxReference.GetSyntax(cancellationToken);
+            if (declaration.SyntaxTree == reference.SyntaxTree)
+                return GetDeclaringMember(declaration);
+        }
+
+        return GetDeclaringMember(reference);
+    }
+
+    /// <summary>
+    /// Returns the member that can contain the assignments of a local. Unlike <see cref="GetEnclosingScope"/>, it walks
+    /// past lambdas and local functions: a local declared in a method can be assigned anywhere in that method.
+    /// </summary>
+    private static SyntaxNode GetDeclaringMember(SyntaxNode syntax)
+    {
+        var current = syntax;
+        while (true)
+        {
+            // Top-level statements are spread over multiple members of the compilation unit
+            if (current is GlobalStatementSyntax { Parent: { } compilationUnit })
+                return compilationUnit;
+
+            if (current is MemberDeclarationSyntax)
+                return current;
+
+            if (current.Parent is null)
+                return current;
+
+            current = current.Parent;
+        }
+    }
+
+    private static bool ContainsJumpStatement(SyntaxNode syntax)
+    {
+        var scope = GetEnclosingScope(syntax);
+        if (scope is null)
+            return false;
+
+        return scope.DescendantNodes().Any(node => node is LabeledStatementSyntax or GotoStatementSyntax);
+    }
+
+    private static SyntaxNode? GetEnclosingScope(SyntaxNode syntax)
+    {
+        for (var current = syntax; current is not null; current = current.Parent)
+        {
+            if (current is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or CompilationUnitSyntax)
+                return current;
+
+            if (current is MemberDeclarationSyntax and not GlobalStatementSyntax)
+                return current;
+        }
+
+        return null;
+    }
+
+    private static bool IsInNestedFunction(SyntaxNode syntax)
+    {
+        return syntax.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() is not null ||
+            syntax.FirstAncestorOrSelf<LocalFunctionStatementSyntax>() is not null;
+    }
+
+    private static bool ContainsSymbol(IEnumerable<ISymbol> symbols, ISymbol symbol)
+    {
+        foreach (var candidate in symbols)
+        {
+            if (SymbolEquals(candidate, symbol))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool SymbolEquals(ISymbol? symbol, ISymbol? expectedSymbol)
+    {
+        return symbol is not null && expectedSymbol is not null && SymbolEqualityComparer.Default.Equals(symbol, expectedSymbol);
+    }
+}

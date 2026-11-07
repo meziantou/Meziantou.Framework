@@ -1,0 +1,1004 @@
+{
+  "spec": {
+    "title": "Identity for WebRTC 1.0",
+    "url": "https://w3c.github.io/webrtc-identity/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "RTCIdentityAssertion"
+        ]
+      },
+      "functions": {
+        "RTCIdentityProvider": [
+          "RTCIdentityProviderGlobalScope",
+          "RTCIdentityProviderRegistrar"
+        ]
+      }
+    },
+    "idlNames": {
+      "RTCIdentityProviderGlobalScope": {
+        "fragment": "[Global=(Worker,RTCIdentityProvider), Exposed=RTCIdentityProvider]\ninterface RTCIdentityProviderGlobalScope : WorkerGlobalScope {\n    readonly        attribute RTCIdentityProviderRegistrar rtcIdentityProvider;\n};",
+        "type": "interface",
+        "name": "RTCIdentityProviderGlobalScope",
+        "inheritance": "WorkerGlobalScope",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "rtcIdentityProvider",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIdentityProviderRegistrar"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityproviderglobalscope-rtcidentityprovider"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Global",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "RTCIdentityProvider"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "RTCIdentityProvider"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityproviderglobalscope"
+      },
+      "RTCIdentityProviderRegistrar": {
+        "fragment": "[Exposed=RTCIdentityProvider]\ninterface RTCIdentityProviderRegistrar {\n    undefined register (RTCIdentityProvider idp);\n};",
+        "type": "interface",
+        "name": "RTCIdentityProviderRegistrar",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "register",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "idp",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RTCIdentityProvider"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityproviderregistrar-register"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "RTCIdentityProvider"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityproviderregistrar"
+      },
+      "RTCIdentityProvider": {
+        "fragment": "dictionary RTCIdentityProvider {\n    required GenerateAssertionCallback generateAssertion;\n    required ValidateAssertionCallback validateAssertion;\n};",
+        "type": "dictionary",
+        "name": "RTCIdentityProvider",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "generateAssertion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GenerateAssertionCallback"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityprovider-generateassertion"
+          },
+          {
+            "type": "field",
+            "name": "validateAssertion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ValidateAssertionCallback"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityprovider-validateassertion"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityprovider"
+      },
+      "GenerateAssertionCallback": {
+        "fragment": "callback GenerateAssertionCallback = Promise<RTCIdentityAssertionResult>\n(DOMString contents, DOMString origin, optional RTCIdentityProviderOptions options = {});",
+        "type": "callback",
+        "name": "GenerateAssertionCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIdentityAssertionResult"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "contents",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "origin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "options",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIdentityProviderOptions"
+            },
+            "default": {
+              "type": "dictionary"
+            },
+            "optional": true,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-identity/#dom-generateassertioncallback"
+      },
+      "ValidateAssertionCallback": {
+        "fragment": "callback ValidateAssertionCallback = Promise<RTCIdentityValidationResult>\n(DOMString assertion, DOMString origin);",
+        "type": "callback",
+        "name": "ValidateAssertionCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIdentityValidationResult"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "assertion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "origin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-identity/#dom-validateassertioncallback"
+      },
+      "RTCIdentityAssertionResult": {
+        "fragment": "dictionary RTCIdentityAssertionResult {\n    required RTCIdentityProviderDetails idp;\n    required DOMString                  assertion;\n};",
+        "type": "dictionary",
+        "name": "RTCIdentityAssertionResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "idp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIdentityProviderDetails"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityassertionresult-idp"
+          },
+          {
+            "type": "field",
+            "name": "assertion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityassertionresult-assertion"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityassertionresult"
+      },
+      "RTCIdentityProviderDetails": {
+        "fragment": "dictionary RTCIdentityProviderDetails {\n    required DOMString domain;\n             DOMString protocol = \"default\";\n};",
+        "type": "dictionary",
+        "name": "RTCIdentityProviderDetails",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "domain",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityproviderdetails-domain"
+          },
+          {
+            "type": "field",
+            "name": "protocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "default"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityproviderdetails-protocol"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityproviderdetails"
+      },
+      "RTCIdentityValidationResult": {
+        "fragment": "dictionary RTCIdentityValidationResult {\n    required DOMString identity;\n    required DOMString contents;\n};",
+        "type": "dictionary",
+        "name": "RTCIdentityValidationResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "identity",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityvalidationresult-identity"
+          },
+          {
+            "type": "field",
+            "name": "contents",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityvalidationresult-contents"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityvalidationresult"
+      },
+      "RTCIdentityProviderOptions": {
+        "fragment": "dictionary RTCIdentityProviderOptions {\n    DOMString protocol = \"default\";\n    DOMString usernameHint;\n    DOMString peerIdentity;\n};",
+        "type": "dictionary",
+        "name": "RTCIdentityProviderOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "protocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "default"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityprovideroptions-protocol"
+          },
+          {
+            "type": "field",
+            "name": "usernameHint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityprovideroptions-usernamehint"
+          },
+          {
+            "type": "field",
+            "name": "peerIdentity",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityprovideroptions-peeridentity"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityprovideroptions"
+      },
+      "RTCIdentityAssertion": {
+        "fragment": "[Exposed=Window]\ninterface RTCIdentityAssertion {\n    constructor(DOMString idp, DOMString name);\n    attribute DOMString idp;\n    attribute DOMString name;\n};",
+        "type": "interface",
+        "name": "RTCIdentityAssertion",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "idp",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityassertion-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "idp",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityassertion-idp"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityassertion-name"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcidentityassertion"
+      },
+      "RTCErrorDetailTypeIdp": {
+        "fragment": "// This is an extension of RTCErrorDetailType from [[WEBRTC-PC]]\n// Unfortunately, WebIDL does not support partial enums (yet).\n//\n// partial enum RTCErrorDetailType {\nenum RTCErrorDetailTypeIdp {\n  \"idp-bad-script-failure\",\n  \"idp-execution-failure\",\n  \"idp-load-failure\",\n  \"idp-need-login\",\n  \"idp-timeout\",\n  \"idp-tls-failure\",\n  \"idp-token-expired\",\n  \"idp-token-invalid\",\n};",
+        "type": "enum",
+        "name": "RTCErrorDetailTypeIdp",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "idp-bad-script-failure",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-bad-script-failure"
+          },
+          {
+            "type": "enum-value",
+            "value": "idp-execution-failure",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-execution-failure"
+          },
+          {
+            "type": "enum-value",
+            "value": "idp-load-failure",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-load-failure"
+          },
+          {
+            "type": "enum-value",
+            "value": "idp-need-login",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-need-login"
+          },
+          {
+            "type": "enum-value",
+            "value": "idp-timeout",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-timeout"
+          },
+          {
+            "type": "enum-value",
+            "value": "idp-tls-failure",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-tls-failure"
+          },
+          {
+            "type": "enum-value",
+            "value": "idp-token-expired",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-token-expired"
+          },
+          {
+            "type": "enum-value",
+            "value": "idp-token-invalid",
+            "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp-idp-token-invalid"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrordetailtypeidp"
+      }
+    },
+    "idlExtendedNames": {
+      "RTCPeerConnection": [
+        {
+          "fragment": "partial interface RTCPeerConnection {\n    undefined               setIdentityProvider (DOMString provider, optional RTCIdentityProviderOptions options = {});\n    Promise<DOMString> getIdentityAssertion ();\n    readonly        attribute Promise<RTCIdentityAssertion> peerIdentity;\n    readonly        attribute DOMString?                    idpLoginUrl;\n    readonly        attribute DOMString?                    idpErrorInfo;\n};",
+          "type": "interface",
+          "name": "RTCPeerConnection",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "setIdentityProvider",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "provider",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIdentityProviderOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcpeerconnection-setidentityprovider"
+            },
+            {
+              "type": "operation",
+              "name": "getIdentityAssertion",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcpeerconnection-getidentityassertion"
+            },
+            {
+              "type": "attribute",
+              "name": "peerIdentity",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "attribute-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIdentityAssertion"
+                  }
+                ]
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcpeerconnection-peeridentity"
+            },
+            {
+              "type": "attribute",
+              "name": "idpLoginUrl",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcpeerconnection-idploginurl"
+            },
+            {
+              "type": "attribute",
+              "name": "idpErrorInfo",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcpeerconnection-idperrorinfo"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCConfiguration": [
+        {
+          "fragment": "partial dictionary RTCConfiguration {\n  DOMString peerIdentity;\n};",
+          "type": "dictionary",
+          "name": "RTCConfiguration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "peerIdentity",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcconfiguration-peeridentity"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCError": [
+        {
+          "fragment": "partial interface RTCError {\n  readonly attribute long? httpRequestStatusCode;\n};",
+          "type": "interface",
+          "name": "RTCError",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "httpRequestStatusCode",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "long"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerror-httprequeststatuscode"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCErrorInit": [
+        {
+          "fragment": "partial dictionary RTCErrorInit {\n  long httpRequestStatusCode;\n};",
+          "type": "dictionary",
+          "name": "RTCErrorInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "httpRequestStatusCode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "long"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-rtcerrorinit-httprequeststatuscode"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaStreamConstraints": [
+        {
+          "fragment": "partial dictionary MediaStreamConstraints {\n             DOMString peerIdentity;\n};",
+          "type": "dictionary",
+          "name": "MediaStreamConstraints",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "peerIdentity",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-mediastreamconstraints-peeridentity"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaStreamTrack": [
+        {
+          "fragment": "partial interface MediaStreamTrack {\n    readonly        attribute boolean      isolated;\n                    attribute EventHandler onisolationchange;\n};",
+          "type": "interface",
+          "name": "MediaStreamTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "isolated",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-mediastreamtrack-isolated"
+            },
+            {
+              "type": "attribute",
+              "name": "onisolationchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-identity/#dom-mediastreamtrack-onisolationchange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {
+      "Worker": [
+        "RTCIdentityProviderGlobalScope"
+      ],
+      "RTCIdentityProvider": [
+        "RTCIdentityProviderGlobalScope"
+      ]
+    },
+    "exposed": {
+      "RTCIdentityProvider": [
+        "RTCIdentityProviderGlobalScope",
+        "RTCIdentityProviderRegistrar"
+      ],
+      "Window": [
+        "RTCIdentityAssertion"
+      ]
+    },
+    "dependencies": {
+      "RTCIdentityProviderGlobalScope": [
+        "WorkerGlobalScope",
+        "RTCIdentityProviderRegistrar"
+      ],
+      "RTCIdentityProviderRegistrar": [
+        "RTCIdentityProvider"
+      ],
+      "RTCIdentityProvider": [
+        "GenerateAssertionCallback",
+        "ValidateAssertionCallback"
+      ],
+      "RTCIdentityAssertionResult": [
+        "RTCIdentityProviderDetails"
+      ],
+      "RTCIdentityProviderDetails": [],
+      "RTCIdentityValidationResult": [],
+      "RTCPeerConnection": [
+        "RTCIdentityProviderOptions",
+        "RTCIdentityAssertion"
+      ],
+      "RTCConfiguration": [],
+      "RTCIdentityProviderOptions": [],
+      "RTCIdentityAssertion": [],
+      "RTCError": [],
+      "RTCErrorInit": [],
+      "MediaStreamConstraints": [],
+      "MediaStreamTrack": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "WorkerGlobalScope",
+      "RTCPeerConnection",
+      "RTCConfiguration",
+      "RTCError",
+      "RTCErrorInit",
+      "MediaStreamConstraints",
+      "MediaStreamTrack",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

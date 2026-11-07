@@ -1,0 +1,190 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
+
+namespace Meziantou.Framework.Markdown.Parsers;
+
+/// <summary>
+/// A block parser for a <see cref="QuoteBlock"/>.
+/// </summary>
+/// <seealso cref="BlockParser" />
+public class QuoteBlockParser : BlockParser
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QuoteBlockParser"/> class.
+    /// </summary>
+    public QuoteBlockParser()
+    {
+        OpeningCharacters = ['>'];
+    }
+
+    /// <summary>
+    /// Attempts to open a block at the current parser position.
+    /// </summary>
+    public override BlockState TryOpen(BlockProcessor processor)
+    {
+        if (processor.IsCodeIndent)
+        {
+            return BlockState.None;
+        }
+
+        var sourcePosition = processor.Start;
+
+        // 5.1 Block quotes
+        // A block quote marker consists of 0-3 spaces of initial indent, plus (a) the character > together with a following space, or (b) a single character > not followed by a space.
+        var quoteChar = processor.CurrentChar;
+        var column = processor.Column;
+        var c = processor.NextChar();
+        var afterQuoteChar = processor.Start;
+
+        var quoteBlock = new QuoteBlock(this)
+        {
+            QuoteChar = quoteChar,
+            Column = column,
+            Span = new SourceSpan(sourcePosition, processor.Line.End),
+        };
+
+        if (processor.TrackTrivia)
+        {
+            quoteBlock.LinesBefore = processor.TakeLinesBefore();
+        }
+
+        bool hasSpaceAfterQuoteChar = false;
+        if (c == ' ')
+        {
+            processor.NextColumn();
+            hasSpaceAfterQuoteChar = true;
+            processor.SkipFirstUnwindSpace = true;
+        }
+        else if (c == '\t')
+        {
+            processor.NextColumn();
+        }
+
+        if (processor.TrackTrivia)
+        {
+            var triviaBefore = processor.UseTrivia(sourcePosition - 1);
+            var triviaAfter = GetConsumedTab(processor, c, afterQuoteChar);
+            bool wasEmptyLine = false;
+            if (processor.Line.IsEmptyOrWhitespace())
+            {
+                processor.TriviaStart = afterQuoteChar + (hasSpaceAfterQuoteChar ? 1 : 0);
+                triviaAfter = processor.UseTrivia(processor.Line.End);
+                wasEmptyLine = true;
+            }
+
+            if (!wasEmptyLine)
+            {
+                processor.TriviaStart = processor.Start;
+            }
+
+            quoteBlock.QuoteLines.Add(new QuoteBlockLine
+            {
+                TriviaBefore = triviaBefore,
+                TriviaAfter = triviaAfter,
+                QuoteChar = true,
+                HasSpaceAfterQuoteChar = hasSpaceAfterQuoteChar,
+                NewLine = processor.Line.NewLine,
+            });
+        }
+
+        processor.NewBlocks.Push(quoteBlock);
+        return BlockState.Continue;
+    }
+
+    /// <summary>
+    /// Attempts to continue parsing the specified block.
+    /// </summary>
+    public override BlockState TryContinue(BlockProcessor processor, Block block)
+    {
+        if (processor.IsCodeIndent)
+        {
+            return BlockState.None;
+        }
+
+        var quote = (QuoteBlock) block;
+        var sourcePosition = processor.Start;
+
+        // 5.1 Block quotes
+        // A block quote marker consists of 0-3 spaces of initial indent, plus (a) the character > together with a following space, or (b) a single character > not followed by a space.
+        var c = processor.CurrentChar;
+        if (c != quote.QuoteChar)
+        {
+            if (processor.IsBlankLine)
+            {
+                return BlockState.BreakDiscard;
+            }
+            else
+            {
+                if (processor.TrackTrivia)
+                {
+                    quote.QuoteLines.Add(new QuoteBlockLine
+                    {
+                        QuoteChar = false,
+                        NewLine = processor.Line.NewLine,
+                    });
+                }
+                return BlockState.None;
+            }
+        }
+
+        bool hasSpaceAfterQuoteChar = false;
+        c = processor.NextChar(); // Skip quote marker char
+        var afterQuoteChar = processor.Start;
+        if (c == ' ')
+        {
+            processor.NextColumn();
+            hasSpaceAfterQuoteChar = true;
+            processor.SkipFirstUnwindSpace = true;
+        }
+        else if (c == '\t')
+        {
+            processor.NextColumn();
+        }
+
+        if (processor.TrackTrivia)
+        {
+            var triviaSpaceBefore = processor.UseTrivia(sourcePosition - 1);
+            var triviaAfter = GetConsumedTab(processor, c, afterQuoteChar);
+            bool wasEmptyLine = false;
+            if (processor.Line.IsEmptyOrWhitespace())
+            {
+                processor.TriviaStart = afterQuoteChar + (hasSpaceAfterQuoteChar ? 1 : 0);
+                triviaAfter = processor.UseTrivia(processor.Line.End);
+                wasEmptyLine = true;
+            }
+            quote.QuoteLines.Add(new QuoteBlockLine
+            {
+                QuoteChar = true,
+                HasSpaceAfterQuoteChar = hasSpaceAfterQuoteChar,
+                TriviaBefore = triviaSpaceBefore,
+                TriviaAfter = triviaAfter,
+                NewLine = processor.Line.NewLine,
+            });
+
+            if (!wasEmptyLine)
+            {
+                processor.TriviaStart = processor.Start;
+            }
+        }
+
+        block.UpdateSpanEnd(processor.Line.End);
+        return BlockState.Continue;
+    }
+
+    // A tab after the quote char can be consumed entirely by the marker (it ends at the next tab stop):
+    // it is then not part of the content, so it is kept with the quote line, like the space after the quote char
+    private static StringSlice GetConsumedTab(BlockProcessor processor, char c, int afterQuoteChar)
+    {
+        if (c != '\t' || processor.Start == afterQuoteChar)
+        {
+            return StringSlice.Empty;
+        }
+
+        processor.SkipFirstUnwindSpace = true;
+        return new StringSlice(processor.Line.Text, afterQuoteChar, processor.Start - 1);
+    }
+}

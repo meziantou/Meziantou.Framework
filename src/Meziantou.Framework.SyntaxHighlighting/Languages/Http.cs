@@ -6,6 +6,10 @@ internal static class Http
 {
     public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode());
 
+    // A blank line. On a run of whitespace, only the first blank line of the run may start a match:
+    // the later ones would see the same content after the run, so they can never be the leftmost match.
+    private const string BodyStartRe = @"(?=\n\n)(?:\G|(?<!\n(?!\G)\n(?:(?!\G)\s)*?))\n\n";
+
     private static Mode CreateMode()
     {
         var root = new Mode { Illegal = "\\S" };
@@ -19,9 +23,9 @@ internal static class Http
         var headerValue = new Mode { End = "$" };
         var genericBody = new Mode { Begin = "\\n\\n" };
         var genericBodyContent = new Mode { EndsWithParent = true };
-        var jsonBodyStart = new Mode { Begin = "\\n\\n(?=\\s*[{\\[])" };
+        var jsonBodyStart = new Mode { Begin = BodyStartRe + "(?=\\s*[{\\[])" };
         var jsonBodyContent = new Mode { SubLanguage = "json", EndsWithParent = true };
-        var xmlBodyStart = new Mode { Begin = "\\n\\n(?=\\s*<)" };
+        var xmlBodyStart = new Mode { Begin = BodyStartRe + "(?=\\s*<)" };
         var xmlBodyContent = new Mode { SubLanguage = "xml", EndsWithParent = true };
         var formBodyStart = new Mode { Begin = "\\n\\n(?=[A-Za-z0-9_%][A-Za-z0-9_%.+-]*=)" };
         var formBodyContent = new Mode { SubLanguage = "urlencoded", EndsWithParent = true };

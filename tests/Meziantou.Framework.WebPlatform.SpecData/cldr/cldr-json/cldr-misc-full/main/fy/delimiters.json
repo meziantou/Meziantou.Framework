@@ -1,0 +1,15 @@
+{
+  "main": {
+    "fy": {
+      "identity": {
+        "language": "fy"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

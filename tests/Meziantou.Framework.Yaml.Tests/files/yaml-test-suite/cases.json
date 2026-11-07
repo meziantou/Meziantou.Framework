@@ -1,0 +1,2816 @@
+[
+  {
+    "id": "229Q",
+    "name": "Spec Example 2.4. Sequence of Mappings",
+    "yaml": "-\n  name: Mark McGwire\n  hr:   65\n  avg:  0.278\n-\n  name: Sammy Sosa\n  hr:   63\n  avg:  0.288\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :name\n=VAL :Mark McGwire\n=VAL :hr\n=VAL :65\n=VAL :avg\n=VAL :0.278\n-MAP\n+MAP\n=VAL :name\n=VAL :Sammy Sosa\n=VAL :hr\n=VAL :63\n=VAL :avg\n=VAL :0.288\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "236B",
+    "name": "Invalid value after mapping",
+    "yaml": "foo:\n  bar\ninvalid\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :bar",
+    "error": true
+  },
+  {
+    "id": "26DV",
+    "name": "Whitespace around colon in mappings",
+    "yaml": "\"top1\" : \n  \"key1\" : &alias1 scalar1\n'top2' : \n  'key2' : &alias2 scalar2\ntop3: &node3 \n  *alias1 : scalar3\ntop4: \n  *alias2 : scalar4\ntop5   :    \n  scalar5\ntop6: \n  &anchor6 'key6' : scalar6\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL \"top1\n+MAP\n=VAL \"key1\n=VAL &alias1 :scalar1\n-MAP\n=VAL 'top2\n+MAP\n=VAL 'key2\n=VAL &alias2 :scalar2\n-MAP\n=VAL :top3\n+MAP &node3\n=ALI *alias1\n=VAL :scalar3\n-MAP\n=VAL :top4\n+MAP\n=ALI *alias2\n=VAL :scalar4\n-MAP\n=VAL :top5\n=VAL :scalar5\n=VAL :top6\n+MAP\n=VAL &anchor6 'key6\n=VAL :scalar6\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "27NA",
+    "name": "Spec Example 5.9. Directive Indicator",
+    "yaml": "%YAML 1.2\n--- text\n",
+    "events": "+STR\n+DOC ---\n=VAL :text\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2AUY",
+    "name": "Tags in Block Sequence",
+    "yaml": " - !!str a\n - b\n - !!int 42\n - d\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL <tag:yaml.org,2002:str> :a\n=VAL :b\n=VAL <tag:yaml.org,2002:int> :42\n=VAL :d\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2CMS",
+    "name": "Invalid mapping in plain multiline",
+    "yaml": "this\n is\n  invalid: x\n",
+    "events": "+STR\n+DOC",
+    "error": true
+  },
+  {
+    "id": "2EBW",
+    "name": "Allowed characters in keys",
+    "yaml": "a!\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~: safe\n?foo: safe question mark\n:foo: safe colon\n-foo: safe dash\nthis is#not: a comment\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a!\"#$%&'()*+,-./09:;<=>?@AZ[\\\\]^_`az{|}~\n=VAL :safe\n=VAL :?foo\n=VAL :safe question mark\n=VAL ::foo\n=VAL :safe colon\n=VAL :-foo\n=VAL :safe dash\n=VAL :this is#not\n=VAL :a comment\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2G84/00",
+    "name": "Literal modifers",
+    "yaml": "--- |0\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "2G84/01",
+    "name": "Literal modifers",
+    "yaml": "--- |10\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "2G84/02",
+    "name": "Literal modifers",
+    "yaml": "--- |1-",
+    "events": "+STR\n+DOC ---\n=VAL |\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2G84/03",
+    "name": "Literal modifers",
+    "yaml": "--- |1+",
+    "events": "+STR\n+DOC ---\n=VAL |\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2JQS",
+    "name": "Block Mapping with Missing Keys",
+    "yaml": ": a\n: b\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :\n=VAL :a\n=VAL :\n=VAL :b\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2LFX",
+    "name": "Spec Example 6.13. Reserved Directives [1.3]",
+    "yaml": "%FOO  bar baz # Should be ignored\n              # with a warning.\n---\n\"foo\"\n",
+    "events": "+STR\n+DOC ---\n=VAL \"foo\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2SXE",
+    "name": "Anchors With Colon in Name",
+    "yaml": "&a: key: &a value\nfoo:\n  *a:\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL &a: :key\n=VAL &a :value\n=VAL :foo\n=ALI *a:\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "2XXW",
+    "name": "Spec Example 2.25. Unordered Sets",
+    "yaml": "# Sets are represented as a\n# Mapping where each key is\n# associated with a null value\n--- !!set\n? Mark McGwire\n? Sammy Sosa\n? Ken Griff\n",
+    "events": "+STR\n+DOC ---\n+MAP <tag:yaml.org,2002:set>\n=VAL :Mark McGwire\n=VAL :\n=VAL :Sammy Sosa\n=VAL :\n=VAL :Ken Griff\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "33X3",
+    "name": "Three explicit integers in a block sequence",
+    "yaml": "---\n- !!int 1\n- !!int -2\n- !!int 33\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n=VAL <tag:yaml.org,2002:int> :1\n=VAL <tag:yaml.org,2002:int> :-2\n=VAL <tag:yaml.org,2002:int> :33\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "35KP",
+    "name": "Tags for Root Objects",
+    "yaml": "--- !!map\n? a\n: b\n--- !!seq\n- !!str c\n--- !!str\nd\ne\n",
+    "events": "+STR\n+DOC ---\n+MAP <tag:yaml.org,2002:map>\n=VAL :a\n=VAL :b\n-MAP\n-DOC\n+DOC ---\n+SEQ <tag:yaml.org,2002:seq>\n=VAL <tag:yaml.org,2002:str> :c\n-SEQ\n-DOC\n+DOC ---\n=VAL <tag:yaml.org,2002:str> :d e\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "36F6",
+    "name": "Multiline plain scalar with empty line",
+    "yaml": "---\nplain: a\n b\n\n c\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :plain\n=VAL :a b\\nc\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3ALJ",
+    "name": "Block Sequence in Block Sequence",
+    "yaml": "- - s1_i1\n  - s1_i2\n- s2\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ\n=VAL :s1_i1\n=VAL :s1_i2\n-SEQ\n=VAL :s2\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3GZX",
+    "name": "Spec Example 7.1. Alias Nodes",
+    "yaml": "First occurrence: &anchor Foo\nSecond occurrence: *anchor\nOverride anchor: &anchor Bar\nReuse anchor: *anchor\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :First occurrence\n=VAL &anchor :Foo\n=VAL :Second occurrence\n=ALI *anchor\n=VAL :Override anchor\n=VAL &anchor :Bar\n=VAL :Reuse anchor\n=ALI *anchor\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3HFZ",
+    "name": "Invalid content after document end marker",
+    "yaml": "---\nkey: value\n... invalid\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-DOC ...",
+    "error": true
+  },
+  {
+    "id": "3MYT",
+    "name": "Plain Scalar looking like key, comment, anchor and tag",
+    "yaml": "---\nk:#foo\n &a !t s\n",
+    "events": "+STR\n+DOC ---\n=VAL :k:#foo &a !t s\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3R3P",
+    "name": "Single block sequence with anchor",
+    "yaml": "&sequence\n- a\n",
+    "events": "+STR\n+DOC\n+SEQ &sequence\n=VAL :a\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3RLN/00",
+    "name": "Leading tabs in double quoted",
+    "yaml": "\"1 leading\n    \\ttab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"1 leading \\ttab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3RLN/01",
+    "name": "Leading tabs in double quoted",
+    "yaml": "\"2 leading\n    \\\ttab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"2 leading \\ttab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3RLN/02",
+    "name": "Leading tabs in double quoted",
+    "yaml": "\"3 leading\n    \ttab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"3 leading tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3RLN/03",
+    "name": "Leading tabs in double quoted",
+    "yaml": "\"4 leading\n    \\t  tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"4 leading \\t  tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3RLN/04",
+    "name": "Leading tabs in double quoted",
+    "yaml": "\"5 leading\n    \\\t  tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"5 leading \\t  tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3RLN/05",
+    "name": "Leading tabs in double quoted",
+    "yaml": "\"6 leading\n    \t  tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"6 leading tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "3UYS",
+    "name": "Escaped slash in double quotes",
+    "yaml": "escaped slash: \"a\\/b\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :escaped slash\n=VAL \"a/b\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4ABK",
+    "name": "Flow Mapping Separate Values",
+    "yaml": "{\nunquoted : \"separate\",\nhttp://foo.com,\nomitted value:,\n}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :unquoted\n=VAL \"separate\n=VAL :http://foo.com\n=VAL :\n=VAL :omitted value\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4CQQ",
+    "name": "Spec Example 2.18. Multi-line Flow Scalars",
+    "yaml": "plain:\n  This unquoted scalar\n  spans many lines.\n\nquoted: \"So does this\n  quoted scalar.\\n\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :plain\n=VAL :This unquoted scalar spans many lines.\n=VAL :quoted\n=VAL \"So does this quoted scalar.\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4EJS",
+    "name": "Invalid tabs as indendation in a mapping",
+    "yaml": "---\na:\n\tb:\n\t\tc: value\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :a",
+    "error": true
+  },
+  {
+    "id": "4FJ6",
+    "name": "Nested implicit complex keys",
+    "yaml": "---\n[\n  [ a, [ [[b,c]]: d, e]]: 23\n]\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n+MAP {}\n+SEQ []\n=VAL :a\n+SEQ []\n+MAP {}\n+SEQ []\n+SEQ []\n=VAL :b\n=VAL :c\n-SEQ\n-SEQ\n=VAL :d\n-MAP\n=VAL :e\n-SEQ\n-SEQ\n=VAL :23\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4GC6",
+    "name": "Spec Example 7.7. Single Quoted Characters",
+    "yaml": "'here''s to \"quotes\"'\n",
+    "events": "+STR\n+DOC\n=VAL 'here's to \"quotes\"\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4H7K",
+    "name": "Flow sequence with invalid extra closing bracket",
+    "yaml": "---\n[ a, b, c ] ]\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n=VAL :a\n=VAL :b\n=VAL :c\n-SEQ\n-DOC",
+    "error": true
+  },
+  {
+    "id": "4HVU",
+    "name": "Wrong indendation in Sequence",
+    "yaml": "key:\n   - ok\n   - also ok\n  - wrong\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n+SEQ\n=VAL :ok\n=VAL :also ok\n-SEQ",
+    "error": true
+  },
+  {
+    "id": "4JVG",
+    "name": "Scalar value with two anchors",
+    "yaml": "top1: &node1\n  &k1 key1: val1\ntop2: &node2\n  &v2 val2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :top1\n+MAP &node1\n=VAL &k1 :key1\n=VAL :val1\n-MAP\n=VAL :top2",
+    "error": true
+  },
+  {
+    "id": "4MUZ/00",
+    "name": "Flow mapping colon on line after key",
+    "yaml": "{\"foo\"\n: \"bar\"}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL \"foo\n=VAL \"bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4MUZ/01",
+    "name": "Flow mapping colon on line after key",
+    "yaml": "{\"foo\"\n: bar}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL \"foo\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4MUZ/02",
+    "name": "Flow mapping colon on line after key",
+    "yaml": "{foo\n: bar}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :foo\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4Q9F",
+    "name": "Folded Block Scalar [1.3]",
+    "yaml": "--- >\n ab\n cd\n \n ef\n\n\n gh\n",
+    "events": "+STR\n+DOC ---\n=VAL >ab cd\\nef\\n\\ngh\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4QFQ",
+    "name": "Spec Example 8.2. Block Indentation Indicator [1.3]",
+    "yaml": "- |\n detected\n- >\n \n  \n  # detected\n- |1\n  explicit\n- >\n detected\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |detected\\n\n=VAL >\\n\\n# detected\\n\n=VAL | explicit\\n\n=VAL >detected\\n\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4RWC",
+    "name": "Trailing spaces after flow collection",
+    "yaml": "  [1, 2, 3]  \n  ",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL :1\n=VAL :2\n=VAL :3\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4UYU",
+    "name": "Colon in Double Quoted String",
+    "yaml": "\"foo: bar\\\": baz\"\n",
+    "events": "+STR\n+DOC\n=VAL \"foo: bar\": baz\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4V8U",
+    "name": "Plain scalar with backslashes",
+    "yaml": "---\nplain\\value\\with\\backslashes\n",
+    "events": "+STR\n+DOC ---\n=VAL :plain\\\\value\\\\with\\\\backslashes\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4WA9",
+    "name": "Literal scalars",
+    "yaml": "- aaa: |2\n    xxx\n  bbb: |\n    xxx\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :aaa\n=VAL |xxx\\n\n=VAL :bbb\n=VAL |xxx\\n\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "4ZYM",
+    "name": "Spec Example 6.4. Line Prefixes",
+    "yaml": "plain: text\n  lines\nquoted: \"text\n  \tlines\"\nblock: |\n  text\n   \tlines\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :plain\n=VAL :text lines\n=VAL :quoted\n=VAL \"text lines\n=VAL :block\n=VAL |text\\n \\tlines\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "52DL",
+    "name": "Explicit Non-Specific Tag [1.3]",
+    "yaml": "---\n! a\n",
+    "events": "+STR\n+DOC ---\n=VAL <!> :a\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "54T7",
+    "name": "Flow Mapping",
+    "yaml": "{foo: you, bar: far}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :foo\n=VAL :you\n=VAL :bar\n=VAL :far\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "55WF",
+    "name": "Invalid escape in double quoted string",
+    "yaml": "---\n\"\\.\"\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "565N",
+    "name": "Construct Binary",
+    "yaml": "canonical: !!binary \"\\\n R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5\\\n OTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/+\\\n +f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLC\\\n AgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\"\ngeneric: !!binary |\n R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5\n OTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/+\n +f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLC\n AgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\ndescription:\n The binary value above is a tiny arrow encoded as a gif image.\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :canonical\n=VAL <tag:yaml.org,2002:binary> \"R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5OTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLCAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\n=VAL :generic\n=VAL <tag:yaml.org,2002:binary> |R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5\\nOTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/+\\n+f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLC\\nAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\\n\n=VAL :description\n=VAL :The binary value above is a tiny arrow encoded as a gif image.\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "57H4",
+    "name": "Spec Example 8.22. Block Collection Nodes",
+    "yaml": "sequence: !!seq\n- entry\n- !!seq\n - nested\nmapping: !!map\n foo: bar\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :sequence\n+SEQ <tag:yaml.org,2002:seq>\n=VAL :entry\n+SEQ <tag:yaml.org,2002:seq>\n=VAL :nested\n-SEQ\n-SEQ\n=VAL :mapping\n+MAP <tag:yaml.org,2002:map>\n=VAL :foo\n=VAL :bar\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "58MP",
+    "name": "Flow mapping edge cases",
+    "yaml": "{x: :x}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :x\n=VAL ::x\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5BVJ",
+    "name": "Spec Example 5.7. Block Scalar Indicators",
+    "yaml": "literal: |\n  some\n  text\nfolded: >\n  some\n  text\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :literal\n=VAL |some\\ntext\\n\n=VAL :folded\n=VAL >some text\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5C5M",
+    "name": "Spec Example 7.15. Flow Mappings",
+    "yaml": "- { one : two , three: four , }\n- {five: six,seven : eight}\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP {}\n=VAL :one\n=VAL :two\n=VAL :three\n=VAL :four\n-MAP\n+MAP {}\n=VAL :five\n=VAL :six\n=VAL :seven\n=VAL :eight\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5GBF",
+    "name": "Spec Example 6.5. Empty Lines",
+    "yaml": "Folding:\n  \"Empty line\n   \t\n  as a line feed\"\nChomping: |\n  Clipped empty lines\n \n\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :Folding\n=VAL \"Empty line\\nas a line feed\n=VAL :Chomping\n=VAL |Clipped empty lines\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5KJE",
+    "name": "Spec Example 7.13. Flow Sequence",
+    "yaml": "- [ one, two, ]\n- [three ,four]\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []\n=VAL :one\n=VAL :two\n-SEQ\n+SEQ []\n=VAL :three\n=VAL :four\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5LLU",
+    "name": "Block scalar with wrong indented line after spaces only",
+    "yaml": "block scalar: >\n \n  \n   \n invalid\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :block scalar",
+    "error": true
+  },
+  {
+    "id": "5MUD",
+    "name": "Colon and adjacent value on next line",
+    "yaml": "---\n{ \"foo\"\n  :bar }\n",
+    "events": "+STR\n+DOC ---\n+MAP {}\n=VAL \"foo\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5NYZ",
+    "name": "Spec Example 6.9. Separated Comment",
+    "yaml": "key:    # Comment\n  value\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5T43",
+    "name": "Colon at the beginning of adjacent flow scalar",
+    "yaml": "- { \"key\":value }\n- { \"key\"::value }\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP {}\n=VAL \"key\n=VAL :value\n-MAP\n+MAP {}\n=VAL \"key\n=VAL ::value\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5TRB",
+    "name": "Invalid document-start marker in doublequoted tring",
+    "yaml": "---\n\"\n---\n\"\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "5TYM",
+    "name": "Spec Example 6.21. Local Tag Prefix",
+    "yaml": "%TAG !m! !my-\n--- # Bulb here\n!m!light fluorescent\n...\n%TAG !m! !my-\n--- # Color here\n!m!light green\n",
+    "events": "+STR\n+DOC ---\n=VAL <!my-light> :fluorescent\n-DOC ...\n+DOC ---\n=VAL <!my-light> :green\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "5U3A",
+    "name": "Sequence on same Line as Mapping Key",
+    "yaml": "key: - a\n     - b\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key",
+    "error": true
+  },
+  {
+    "id": "5WE3",
+    "name": "Spec Example 8.17. Explicit Block Mapping Entries",
+    "yaml": "? explicit key # Empty value\n? |\n  block key\n: - one # Explicit compact\n  - two # block value\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :explicit key\n=VAL :\n=VAL |block key\\n\n+SEQ\n=VAL :one\n=VAL :two\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "62EZ",
+    "name": "Invalid block mapping key on same line as previous key",
+    "yaml": "---\nx: { y: z }in: valid\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :x\n+MAP {}\n=VAL :y\n=VAL :z\n-MAP",
+    "error": true
+  },
+  {
+    "id": "652Z",
+    "name": "Question mark at start of flow key",
+    "yaml": "{ ?foo: bar,\nbar: 42\n}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :?foo\n=VAL :bar\n=VAL :bar\n=VAL :42\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "65WH",
+    "name": "Single Entry Block Sequence",
+    "yaml": "- foo\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :foo\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6BCT",
+    "name": "Spec Example 6.3. Separation Spaces",
+    "yaml": "- foo:\t bar\n- - baz\n  -\tbaz\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :foo\n=VAL :bar\n-MAP\n+SEQ\n=VAL :baz\n=VAL :baz\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6BFJ",
+    "name": "Mapping, key and flow sequence item anchors",
+    "yaml": "---\n&mapping\n&key [ &item a, b, c ]: value\n",
+    "events": "+STR\n+DOC ---\n+MAP &mapping\n+SEQ [] &key\n=VAL &item :a\n=VAL :b\n=VAL :c\n-SEQ\n=VAL :value\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6CA3",
+    "name": "Tab indented top flow",
+    "yaml": "\t[\n\t]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6CK3",
+    "name": "Spec Example 6.26. Tag Shorthands",
+    "yaml": "%TAG !e! tag:example.com,2000:app/\n---\n- !local foo\n- !!str bar\n- !e!tag%21 baz\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n=VAL <!local> :foo\n=VAL <tag:yaml.org,2002:str> :bar\n=VAL <tag:example.com,2000:app/tag!> :baz\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6FWR",
+    "name": "Block Scalar Keep",
+    "yaml": "--- |+\n ab\n \n  \n...\n",
+    "events": "+STR\n+DOC ---\n=VAL |ab\\n\\n \\n\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "6H3V",
+    "name": "Backslashes in singlequotes",
+    "yaml": "'foo: bar\\': baz'\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL 'foo: bar\\\\\n=VAL :baz'\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6HB6",
+    "name": "Spec Example 6.1. Indentation Spaces",
+    "yaml": "  # Leading comment line spaces are\n   # neither content nor indentation.\n    \nNot indented:\n By one space: |\n    By four\n      spaces\n Flow style: [    # Leading spaces\n   By two,        # in flow style\n  Also by two,    # are neither\n  \tStill by two   # content nor\n    ]             # indentation.\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :Not indented\n+MAP\n=VAL :By one space\n=VAL |By four\\n  spaces\\n\n=VAL :Flow style\n+SEQ []\n=VAL :By two\n=VAL :Also by two\n=VAL :Still by two\n-SEQ\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6JQW",
+    "name": "Spec Example 2.13. In literals, newlines are preserved",
+    "yaml": "# ASCII Art\n--- |\n  \\//||\\/||\n  // ||  ||__\n",
+    "events": "+STR\n+DOC ---\n=VAL |\\\\//||\\\\/||\\n// ||  ||__\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6JTT",
+    "name": "Flow sequence without closing bracket",
+    "yaml": "---\n[ [ a, b, c ]\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n+SEQ []\n=VAL :a\n=VAL :b\n=VAL :c\n-SEQ",
+    "error": true
+  },
+  {
+    "id": "6JWB",
+    "name": "Tags for Block Objects",
+    "yaml": "foo: !!seq\n  - !!str a\n  - !!map\n    key: !!str value\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n+SEQ <tag:yaml.org,2002:seq>\n=VAL <tag:yaml.org,2002:str> :a\n+MAP <tag:yaml.org,2002:map>\n=VAL :key\n=VAL <tag:yaml.org,2002:str> :value\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6KGN",
+    "name": "Anchor for empty node",
+    "yaml": "---\na: &anchor\nb: *anchor\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :a\n=VAL &anchor :\n=VAL :b\n=ALI *anchor\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6LVF",
+    "name": "Spec Example 6.13. Reserved Directives",
+    "yaml": "%FOO  bar baz # Should be ignored\n              # with a warning.\n--- \"foo\"\n",
+    "events": "+STR\n+DOC ---\n=VAL \"foo\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6M2F",
+    "name": "Aliases in Explicit Block Mapping",
+    "yaml": "? &a a\n: &b b\n: *a\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL &a :a\n=VAL &b :b\n=VAL :\n=ALI *a\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6PBE",
+    "name": "Zero-indented sequences in explicit mapping keys",
+    "yaml": "---\n?\n- a\n- b\n:\n- c\n- d\n",
+    "events": "+STR\n+DOC ---\n+MAP\n+SEQ\n=VAL :a\n=VAL :b\n-SEQ\n+SEQ\n=VAL :c\n=VAL :d\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6S55",
+    "name": "Invalid scalar at the end of sequence",
+    "yaml": "key:\n - bar\n - baz\n invalid\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n+SEQ\n=VAL :bar\n=VAL :baz",
+    "error": true
+  },
+  {
+    "id": "6SLA",
+    "name": "Allowed characters in quoted mapping key",
+    "yaml": "\"foo\\nbar:baz\\tx \\\\$%^&*()x\": 23\n'x\\ny:z\\tx $%^&*()x': 24\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL \"foo\\nbar:baz\\tx \\\\$%^&*()x\n=VAL :23\n=VAL 'x\\\\ny:z\\\\tx $%^&*()x\n=VAL :24\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6VJK",
+    "name": "Spec Example 2.15. Folded newlines are preserved for \"more indented\" and blank lines",
+    "yaml": ">\n Sammy Sosa completed another\n fine season with great stats.\n\n   63 Home Runs\n   0.288 Batting Average\n\n What a year!\n",
+    "events": "+STR\n+DOC\n=VAL >Sammy Sosa completed another fine season with great stats.\\n\\n  63 Home Runs\\n  0.288 Batting Average\\n\\nWhat a year!\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6WLZ",
+    "name": "Spec Example 6.18. Primary Tag Handle [1.3]",
+    "yaml": "# Private\n---\n!foo \"bar\"\n...\n# Global\n%TAG ! tag:example.com,2000:app/\n---\n!foo \"bar\"\n",
+    "events": "+STR\n+DOC ---\n=VAL <!foo> \"bar\n-DOC ...\n+DOC ---\n=VAL <tag:example.com,2000:app/foo> \"bar\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6WPF",
+    "name": "Spec Example 6.8. Flow Folding [1.3]",
+    "yaml": "---\n\"\n  foo \n \n    bar\n\n  baz\n\"\n",
+    "events": "+STR\n+DOC ---\n=VAL \" foo\\nbar\\nbaz \n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6XDY",
+    "name": "Two document start markers",
+    "yaml": "---\n---\n",
+    "events": "+STR\n+DOC ---\n=VAL :\n-DOC\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "6ZKB",
+    "name": "Spec Example 9.6. Stream",
+    "yaml": "Document\n---\n# Empty\n...\n%YAML 1.2\n---\nmatches %: 20\n",
+    "events": "+STR\n+DOC\n=VAL :Document\n-DOC\n+DOC ---\n=VAL :\n-DOC ...\n+DOC ---\n+MAP\n=VAL :matches %\n=VAL :20\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "735Y",
+    "name": "Spec Example 8.20. Block Node Types",
+    "yaml": "-\n  \"flow in block\"\n- >\n Block scalar\n- !!map # Block collection\n  foo : bar\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL \"flow in block\n=VAL >Block scalar\\n\n+MAP <tag:yaml.org,2002:map>\n=VAL :foo\n=VAL :bar\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "74H7",
+    "name": "Tags in Implicit Mapping",
+    "yaml": "!!str a: b\nc: !!int 42\ne: !!str f\ng: h\n!!str 23: !!bool false\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL <tag:yaml.org,2002:str> :a\n=VAL :b\n=VAL :c\n=VAL <tag:yaml.org,2002:int> :42\n=VAL :e\n=VAL <tag:yaml.org,2002:str> :f\n=VAL :g\n=VAL :h\n=VAL <tag:yaml.org,2002:str> :23\n=VAL <tag:yaml.org,2002:bool> :false\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "753E",
+    "name": "Block Scalar Strip [1.3]",
+    "yaml": "--- |-\n ab\n \n \n...\n",
+    "events": "+STR\n+DOC ---\n=VAL |ab\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "7A4E",
+    "name": "Spec Example 7.6. Double Quoted Lines",
+    "yaml": "\" 1st non-empty\n\n 2nd non-empty \n\t3rd non-empty \"\n",
+    "events": "+STR\n+DOC\n=VAL \" 1st non-empty\\n2nd non-empty 3rd non-empty \n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7BMT",
+    "name": "Node and Mapping Key Anchors [1.3]",
+    "yaml": "---\ntop1: &node1\n  &k1 key1: one\ntop2: &node2 # comment\n  key2: two\ntop3:\n  &k3 key3: three\ntop4: &node4\n  &k4 key4: four\ntop5: &node5\n  key5: five\ntop6: &val6\n  six\ntop7:\n  &val7 seven\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :top1\n+MAP &node1\n=VAL &k1 :key1\n=VAL :one\n-MAP\n=VAL :top2\n+MAP &node2\n=VAL :key2\n=VAL :two\n-MAP\n=VAL :top3\n+MAP\n=VAL &k3 :key3\n=VAL :three\n-MAP\n=VAL :top4\n+MAP &node4\n=VAL &k4 :key4\n=VAL :four\n-MAP\n=VAL :top5\n+MAP &node5\n=VAL :key5\n=VAL :five\n-MAP\n=VAL :top6\n=VAL &val6 :six\n=VAL :top7\n=VAL &val7 :seven\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7BUB",
+    "name": "Spec Example 2.10. Node for \u201cSammy Sosa\u201d appears twice in this document",
+    "yaml": "---\nhr:\n  - Mark McGwire\n  # Following node labeled SS\n  - &SS Sammy Sosa\nrbi:\n  - *SS # Subsequent occurrence\n  - Ken Griffey\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :hr\n+SEQ\n=VAL :Mark McGwire\n=VAL &SS :Sammy Sosa\n-SEQ\n=VAL :rbi\n+SEQ\n=ALI *SS\n=VAL :Ken Griffey\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7FWL",
+    "name": "Spec Example 6.24. Verbatim Tags",
+    "yaml": "!<tag:yaml.org,2002:str> foo :\n  !<!bar> baz\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL <tag:yaml.org,2002:str> :foo\n=VAL <!bar> :baz\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7LBH",
+    "name": "Multiline double quoted implicit keys",
+    "yaml": "\"a\\nb\": 1\n\"c\n d\": 1\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL \"a\\nb\n=VAL :1",
+    "error": true
+  },
+  {
+    "id": "7MNF",
+    "name": "Missing colon",
+    "yaml": "top1:\n  key1: val1\ntop2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :top1\n+MAP\n=VAL :key1\n=VAL :val1\n-MAP",
+    "error": true
+  },
+  {
+    "id": "7T8X",
+    "name": "Spec Example 8.10. Folded Lines - 8.13. Final Empty Lines",
+    "yaml": ">\n\n folded\n line\n\n next\n line\n   * bullet\n\n   * list\n   * lines\n\n last\n line\n\n# Comment\n",
+    "events": "+STR\n+DOC\n=VAL >\\nfolded line\\nnext line\\n  * bullet\\n\\n  * list\\n  * lines\\n\\nlast line\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7TMG",
+    "name": "Comment in flow sequence before comma",
+    "yaml": "---\n[ word1\n# comment\n, word2]\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n=VAL :word1\n=VAL :word2\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7W2P",
+    "name": "Block Mapping with Missing Values",
+    "yaml": "? a\n? b\nc:\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL :\n=VAL :b\n=VAL :\n=VAL :c\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7Z25",
+    "name": "Bare document after document end marker",
+    "yaml": "---\nscalar1\n...\nkey: value\n",
+    "events": "+STR\n+DOC ---\n=VAL :scalar1\n-DOC ...\n+DOC\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "7ZZ5",
+    "name": "Empty flow collections",
+    "yaml": "---\nnested sequences:\n- - - []\n- - - {}\nkey1: []\nkey2: {}\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :nested sequences\n+SEQ\n+SEQ\n+SEQ\n+SEQ []\n-SEQ\n-SEQ\n-SEQ\n+SEQ\n+SEQ\n+MAP {}\n-MAP\n-SEQ\n-SEQ\n-SEQ\n=VAL :key1\n+SEQ []\n-SEQ\n=VAL :key2\n+MAP {}\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "82AN",
+    "name": "Three dashes and content without space",
+    "yaml": "---word1\nword2\n",
+    "events": "+STR\n+DOC\n=VAL :---word1 word2\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "87E4",
+    "name": "Spec Example 7.8. Single Quoted Implicit Keys",
+    "yaml": "'implicit block key' : [\n  'implicit flow key' : value,\n ]\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL 'implicit block key\n+SEQ []\n+MAP {}\n=VAL 'implicit flow key\n=VAL :value\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "8CWC",
+    "name": "Plain mapping key ending with colon",
+    "yaml": "---\nkey ends with two colons::: value\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :key ends with two colons::\n=VAL :value\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "8G76",
+    "name": "Spec Example 6.10. Comment Lines",
+    "yaml": "  # Comment\n   \n\n\n",
+    "events": "+STR\n-STR",
+    "error": false
+  },
+  {
+    "id": "8KB6",
+    "name": "Multiline plain flow mapping key without value",
+    "yaml": "---\n- { single line, a: b}\n- { multi\n  line, a: b}\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n+MAP {}\n=VAL :single line\n=VAL :\n=VAL :a\n=VAL :b\n-MAP\n+MAP {}\n=VAL :multi line\n=VAL :\n=VAL :a\n=VAL :b\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "8MK2",
+    "name": "Explicit Non-Specific Tag",
+    "yaml": "! a\n",
+    "events": "+STR\n+DOC\n=VAL <!> :a\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "8QBE",
+    "name": "Block Sequence in Block Mapping",
+    "yaml": "key:\n - item1\n - item2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n+SEQ\n=VAL :item1\n=VAL :item2\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "8UDB",
+    "name": "Spec Example 7.14. Flow Sequence Entries",
+    "yaml": "[\n\"double\n quoted\", 'single\n           quoted',\nplain\n text, [ nested ],\nsingle: pair,\n]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL \"double quoted\n=VAL 'single quoted\n=VAL :plain text\n+SEQ []\n=VAL :nested\n-SEQ\n+MAP {}\n=VAL :single\n=VAL :pair\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "8XDJ",
+    "name": "Comment in plain multiline value",
+    "yaml": "key: word1\n#  xxx\n  word2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL :word1",
+    "error": true
+  },
+  {
+    "id": "8XYN",
+    "name": "Anchor with unicode character",
+    "yaml": "---\n- &\ud83d\ude01 unicode anchor\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n=VAL &\ud83d\ude01 :unicode anchor\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "93JH",
+    "name": "Block Mappings in Block Sequence",
+    "yaml": " - key: value\n   key2: value2\n -\n   key3: value3\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :key\n=VAL :value\n=VAL :key2\n=VAL :value2\n-MAP\n+MAP\n=VAL :key3\n=VAL :value3\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "93WF",
+    "name": "Spec Example 6.6. Line Folding [1.3]",
+    "yaml": "--- >-\n  trimmed\n  \n \n\n  as\n  space\n",
+    "events": "+STR\n+DOC ---\n=VAL >trimmed\\n\\n\\nas space\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "96L6",
+    "name": "Spec Example 2.14. In the folded scalars, newlines become spaces",
+    "yaml": "--- >\n  Mark McGwire's\n  year was crippled\n  by a knee injury.\n",
+    "events": "+STR\n+DOC ---\n=VAL >Mark McGwire's year was crippled by a knee injury.\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "96NN/00",
+    "name": "Leading tab content in literals",
+    "yaml": "foo: |-\n \tbar\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL |\\tbar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "96NN/01",
+    "name": "Leading tab content in literals",
+    "yaml": "foo: |-\n \tbar",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL |\\tbar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "98YD",
+    "name": "Spec Example 5.5. Comment Indicator",
+    "yaml": "# Comment only.\n",
+    "events": "+STR\n-STR",
+    "error": false
+  },
+  {
+    "id": "9BXH",
+    "name": "Multiline doublequoted flow mapping key without value",
+    "yaml": "---\n- { \"single line\", a: b}\n- { \"multi\n  line\", a: b}\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n+MAP {}\n=VAL \"single line\n=VAL :\n=VAL :a\n=VAL :b\n-MAP\n+MAP {}\n=VAL \"multi line\n=VAL :\n=VAL :a\n=VAL :b\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9C9N",
+    "name": "Wrong indented flow sequence",
+    "yaml": "---\nflow: [a,\nb,\nc]\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :flow\n+SEQ []\n=VAL :a",
+    "error": true
+  },
+  {
+    "id": "9CWY",
+    "name": "Invalid scalar at the end of mapping",
+    "yaml": "key:\n - item1\n - item2\ninvalid\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n+SEQ\n=VAL :item1\n=VAL :item2\n-SEQ",
+    "error": true
+  },
+  {
+    "id": "9DXL",
+    "name": "Spec Example 9.6. Stream [1.3]",
+    "yaml": "Mapping: Document\n---\n# Empty\n...\n%YAML 1.2\n---\nmatches %: 20\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :Mapping\n=VAL :Document\n-MAP\n-DOC\n+DOC ---\n=VAL :\n-DOC ...\n+DOC ---\n+MAP\n=VAL :matches %\n=VAL :20\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9FMG",
+    "name": "Multi-level Mapping Indent",
+    "yaml": "a:\n  b:\n    c: d\n  e:\n    f: g\nh: i\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n+MAP\n=VAL :b\n+MAP\n=VAL :c\n=VAL :d\n-MAP\n=VAL :e\n+MAP\n=VAL :f\n=VAL :g\n-MAP\n-MAP\n=VAL :h\n=VAL :i\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9HCY",
+    "name": "Need document footer before directives",
+    "yaml": "!foo \"bar\"\n%TAG ! tag:example.com,2000:app/\n---\n!foo \"bar\"\n",
+    "events": "+STR\n+DOC\n=VAL <!foo> \"bar",
+    "error": true
+  },
+  {
+    "id": "9J7A",
+    "name": "Simple Mapping Indent",
+    "yaml": "foo:\n  bar: baz\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n+MAP\n=VAL :bar\n=VAL :baz\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9JBA",
+    "name": "Invalid comment after end of flow sequence",
+    "yaml": "---\n[ a, b, c, ]#invalid\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n=VAL :a\n=VAL :b\n=VAL :c\n-SEQ",
+    "error": true
+  },
+  {
+    "id": "9KAX",
+    "name": "Various combinations of tags and anchors",
+    "yaml": "---\n&a1\n!!str\nscalar1\n---\n!!str\n&a2\nscalar2\n---\n&a3\n!!str scalar3\n---\n&a4 !!map\n&a5 !!str key5: value4\n---\na6: 1\n&anchor6 b6: 2\n---\n!!map\n&a8 !!str key8: value7\n---\n!!map\n!!str &a10 key10: value9\n---\n!!str &a11\nvalue11\n",
+    "events": "+STR\n+DOC ---\n=VAL &a1 <tag:yaml.org,2002:str> :scalar1\n-DOC\n+DOC ---\n=VAL &a2 <tag:yaml.org,2002:str> :scalar2\n-DOC\n+DOC ---\n=VAL &a3 <tag:yaml.org,2002:str> :scalar3\n-DOC\n+DOC ---\n+MAP &a4 <tag:yaml.org,2002:map>\n=VAL &a5 <tag:yaml.org,2002:str> :key5\n=VAL :value4\n-MAP\n-DOC\n+DOC ---\n+MAP\n=VAL :a6\n=VAL :1\n=VAL &anchor6 :b6\n=VAL :2\n-MAP\n-DOC\n+DOC ---\n+MAP <tag:yaml.org,2002:map>\n=VAL &a8 <tag:yaml.org,2002:str> :key8\n=VAL :value7\n-MAP\n-DOC\n+DOC ---\n+MAP <tag:yaml.org,2002:map>\n=VAL &a10 <tag:yaml.org,2002:str> :key10\n=VAL :value9\n-MAP\n-DOC\n+DOC ---\n=VAL &a11 <tag:yaml.org,2002:str> :value11\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9KBC",
+    "name": "Mapping starting at --- line",
+    "yaml": "--- key1: value1\n    key2: value2\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "9MAG",
+    "name": "Flow sequence with invalid comma at the beginning",
+    "yaml": "---\n[ , a, b, c ]\n",
+    "events": "+STR\n+DOC ---\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "9MMA",
+    "name": "Directive by itself with no document",
+    "yaml": "%YAML 1.2\n",
+    "events": "+STR",
+    "error": true
+  },
+  {
+    "id": "9MMW",
+    "name": "Single Pair Implicit Entries",
+    "yaml": "- [ YAML : separate ]\n- [ \"JSON like\":adjacent ]\n- [ {JSON: like}:adjacent ]\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []\n+MAP {}\n=VAL :YAML\n=VAL :separate\n-MAP\n-SEQ\n+SEQ []\n+MAP {}\n=VAL \"JSON like\n=VAL :adjacent\n-MAP\n-SEQ\n+SEQ []\n+MAP {}\n+MAP {}\n=VAL :JSON\n=VAL :like\n-MAP\n=VAL :adjacent\n-MAP\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9MQT/00",
+    "name": "Scalar doc with '...' in content",
+    "yaml": "--- \"a\n...x\nb\"\n",
+    "events": "+STR\n+DOC ---\n=VAL \"a ...x b\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9MQT/01",
+    "name": "Scalar doc with '...' in content",
+    "yaml": "--- \"a\n... x\nb\"\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "9SA2",
+    "name": "Multiline double quoted flow mapping key",
+    "yaml": "---\n- { \"single line\": value}\n- { \"multi\n  line\": value}\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n+MAP {}\n=VAL \"single line\n=VAL :value\n-MAP\n+MAP {}\n=VAL \"multi line\n=VAL :value\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9SHH",
+    "name": "Spec Example 5.8. Quoted Scalar Indicators",
+    "yaml": "single: 'text'\ndouble: \"text\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :single\n=VAL 'text\n=VAL :double\n=VAL \"text\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9TFX",
+    "name": "Spec Example 7.6. Double Quoted Lines [1.3]",
+    "yaml": "---\n\" 1st non-empty\n\n 2nd non-empty \n 3rd non-empty \"\n",
+    "events": "+STR\n+DOC ---\n=VAL \" 1st non-empty\\n2nd non-empty 3rd non-empty \n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9U5K",
+    "name": "Spec Example 2.12. Compact Nested Mapping",
+    "yaml": "---\n# Products purchased\n- item    : Super Hoop\n  quantity: 1\n- item    : Basketball\n  quantity: 4\n- item    : Big Shoes\n  quantity: 1\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n+MAP\n=VAL :item\n=VAL :Super Hoop\n=VAL :quantity\n=VAL :1\n-MAP\n+MAP\n=VAL :item\n=VAL :Basketball\n=VAL :quantity\n=VAL :4\n-MAP\n+MAP\n=VAL :item\n=VAL :Big Shoes\n=VAL :quantity\n=VAL :1\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9WXW",
+    "name": "Spec Example 6.18. Primary Tag Handle",
+    "yaml": "# Private\n!foo \"bar\"\n...\n# Global\n%TAG ! tag:example.com,2000:app/\n---\n!foo \"bar\"\n",
+    "events": "+STR\n+DOC\n=VAL <!foo> \"bar\n-DOC ...\n+DOC ---\n=VAL <tag:example.com,2000:app/foo> \"bar\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "9YRD",
+    "name": "Multiline Scalar at Top Level",
+    "yaml": "a\nb  \n  c\nd\n\ne\n",
+    "events": "+STR\n+DOC\n=VAL :a b c d\\ne\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "A2M4",
+    "name": "Spec Example 6.2. Indentation Indicators",
+    "yaml": "? a\n: -\tb\n  -  -\tc\n     - d\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n+SEQ\n=VAL :b\n+SEQ\n=VAL :c\n=VAL :d\n-SEQ\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "A6F9",
+    "name": "Spec Example 8.4. Chomping Final Line Break",
+    "yaml": "strip: |-\n  text\nclip: |\n  text\nkeep: |+\n  text\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :strip\n=VAL |text\n=VAL :clip\n=VAL |text\\n\n=VAL :keep\n=VAL |text\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "A984",
+    "name": "Multiline Scalar in Mapping",
+    "yaml": "a: b\n c\nd:\n e\n  f\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL :b c\n=VAL :d\n=VAL :e f\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "AB8U",
+    "name": "Sequence entry that looks like two with wrong indentation",
+    "yaml": "- single multiline\n - sequence entry\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :single multiline - sequence entry\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "AVM7",
+    "name": "Empty Stream",
+    "yaml": "",
+    "events": "+STR\n-STR",
+    "error": false
+  },
+  {
+    "id": "AZ63",
+    "name": "Sequence With Same Indentation as Parent Mapping",
+    "yaml": "one:\n- 2\n- 3\nfour: 5\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :one\n+SEQ\n=VAL :2\n=VAL :3\n-SEQ\n=VAL :four\n=VAL :5\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "AZW3",
+    "name": "Lookahead test cases",
+    "yaml": "- bla\"keks: foo\n- bla]keks: foo\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :bla\"keks\n=VAL :foo\n-MAP\n+MAP\n=VAL :bla]keks\n=VAL :foo\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "B3HG",
+    "name": "Spec Example 8.9. Folded Scalar [1.3]",
+    "yaml": "--- >\n folded\n text\n\n\n",
+    "events": "+STR\n+DOC ---\n=VAL >folded text\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "B63P",
+    "name": "Directive without document",
+    "yaml": "%YAML 1.2\n...\n",
+    "events": "+STR",
+    "error": true
+  },
+  {
+    "id": "BD7L",
+    "name": "Invalid mapping after sequence",
+    "yaml": "- item1\n- item2\ninvalid: x\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :item1\n=VAL :item2",
+    "error": true
+  },
+  {
+    "id": "BEC7",
+    "name": "Spec Example 6.14. \u201cYAML\u201d directive",
+    "yaml": "%YAML 1.3 # Attempt parsing\n          # with a warning\n---\n\"foo\"\n",
+    "events": "+STR\n+DOC ---\n=VAL \"foo\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "BF9H",
+    "name": "Trailing comment in multiline plain scalar",
+    "yaml": "---\nplain: a\n       b # end of scalar\n       c\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :plain\n=VAL :a b",
+    "error": true
+  },
+  {
+    "id": "BS4K",
+    "name": "Comment between plain scalar lines",
+    "yaml": "word1  # comment\nword2\n",
+    "events": "+STR\n+DOC\n=VAL :word1\n-DOC",
+    "error": true
+  },
+  {
+    "id": "BU8L",
+    "name": "Node Anchor and Tag on Seperate Lines",
+    "yaml": "key: &anchor\n !!map\n  a: b\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n+MAP &anchor <tag:yaml.org,2002:map>\n=VAL :a\n=VAL :b\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "C2DT",
+    "name": "Spec Example 7.18. Flow Mapping Adjacent Values",
+    "yaml": "{\n\"adjacent\":value,\n\"readable\": value,\n\"empty\":\n}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL \"adjacent\n=VAL :value\n=VAL \"readable\n=VAL :value\n=VAL \"empty\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "C2SP",
+    "name": "Flow Mapping Key on two lines",
+    "yaml": "[23\n]: 42\n",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL :23",
+    "error": true
+  },
+  {
+    "id": "C4HZ",
+    "name": "Spec Example 2.24. Global Tags",
+    "yaml": "%TAG ! tag:clarkevans.com,2002:\n--- !shape\n  # Use the ! handle for presenting\n  # tag:clarkevans.com,2002:circle\n- !circle\n  center: &ORIGIN {x: 73, y: 129}\n  radius: 7\n- !line\n  start: *ORIGIN\n  finish: { x: 89, y: 102 }\n- !label\n  start: *ORIGIN\n  color: 0xFFEEBB\n  text: Pretty vector drawing.\n",
+    "events": "+STR\n+DOC ---\n+SEQ <tag:clarkevans.com,2002:shape>\n+MAP <tag:clarkevans.com,2002:circle>\n=VAL :center\n+MAP {} &ORIGIN\n=VAL :x\n=VAL :73\n=VAL :y\n=VAL :129\n-MAP\n=VAL :radius\n=VAL :7\n-MAP\n+MAP <tag:clarkevans.com,2002:line>\n=VAL :start\n=ALI *ORIGIN\n=VAL :finish\n+MAP {}\n=VAL :x\n=VAL :89\n=VAL :y\n=VAL :102\n-MAP\n-MAP\n+MAP <tag:clarkevans.com,2002:label>\n=VAL :start\n=ALI *ORIGIN\n=VAL :color\n=VAL :0xFFEEBB\n=VAL :text\n=VAL :Pretty vector drawing.\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "CC74",
+    "name": "Spec Example 6.20. Tag Handles",
+    "yaml": "%TAG !e! tag:example.com,2000:app/\n---\n!e!foo \"bar\"\n",
+    "events": "+STR\n+DOC ---\n=VAL <tag:example.com,2000:app/foo> \"bar\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "CFD4",
+    "name": "Empty implicit key in single pair flow sequences",
+    "yaml": "- [ : empty key ]\n- [: another empty key]\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []\n+MAP {}\n=VAL :\n=VAL :empty key\n-MAP\n-SEQ\n+SEQ []\n+MAP {}\n=VAL :\n=VAL :another empty key\n-MAP\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "CML9",
+    "name": "Missing comma in flow",
+    "yaml": "key: [ word1\n#  xxx\n  word2 ]\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n+SEQ []\n=VAL :word1",
+    "error": true
+  },
+  {
+    "id": "CN3R",
+    "name": "Various location of anchors in flow sequence",
+    "yaml": "&flowseq [\n a: b,\n &c c: d,\n { &e e: f },\n &g { g: h }\n]\n",
+    "events": "+STR\n+DOC\n+SEQ [] &flowseq\n+MAP {}\n=VAL :a\n=VAL :b\n-MAP\n+MAP {}\n=VAL &c :c\n=VAL :d\n-MAP\n+MAP {}\n=VAL &e :e\n=VAL :f\n-MAP\n+MAP {} &g\n=VAL :g\n=VAL :h\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "CPZ3",
+    "name": "Doublequoted scalar starting with a tab",
+    "yaml": "---\ntab: \"\\tstring\"\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :tab\n=VAL \"\\tstring\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "CQ3W",
+    "name": "Double quoted string without closing quote",
+    "yaml": "---\nkey: \"missing closing quote\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :key",
+    "error": true
+  },
+  {
+    "id": "CT4Q",
+    "name": "Spec Example 7.20. Single Pair Explicit Entry",
+    "yaml": "[\n? foo\n bar : baz\n]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n+MAP {}\n=VAL :foo bar\n=VAL :baz\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "CTN5",
+    "name": "Flow sequence with invalid extra comma",
+    "yaml": "---\n[ a, b, c, , ]\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n=VAL :a\n=VAL :b\n=VAL :c",
+    "error": true
+  },
+  {
+    "id": "CUP7",
+    "name": "Spec Example 5.6. Node Property Indicators",
+    "yaml": "anchored: !local &anchor value\nalias: *anchor\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :anchored\n=VAL &anchor <!local> :value\n=VAL :alias\n=ALI *anchor\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "CVW2",
+    "name": "Invalid comment after comma",
+    "yaml": "---\n[ a, b, c,#invalid\n]\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n=VAL :a\n=VAL :b\n=VAL :c",
+    "error": true
+  },
+  {
+    "id": "CXX2",
+    "name": "Mapping with anchor on document start line",
+    "yaml": "--- &anchor a: b\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "D49Q",
+    "name": "Multiline single quoted implicit keys",
+    "yaml": "'a\\nb': 1\n'c\n d': 1\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL 'a\\\\nb\n=VAL :1",
+    "error": true
+  },
+  {
+    "id": "D83L",
+    "name": "Block scalar indicator order",
+    "yaml": "- |2-\n  explicit indent and chomp\n- |-2\n  chomp and explicit indent\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |explicit indent and chomp\n=VAL |chomp and explicit indent\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "D88J",
+    "name": "Flow Sequence in Block Mapping",
+    "yaml": "a: [b, c]\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n+SEQ []\n=VAL :b\n=VAL :c\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "D9TU",
+    "name": "Single Pair Block Mapping",
+    "yaml": "foo: bar\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DBG4",
+    "name": "Spec Example 7.10. Plain Characters",
+    "yaml": "# Outside flow collection:\n- ::vector\n- \": - ()\"\n- Up, up, and away!\n- -123\n- http://example.com/foo#bar\n# Inside flow collection:\n- [ ::vector,\n  \": - ()\",\n  \"Up, up and away!\",\n  -123,\n  http://example.com/foo#bar ]\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :::vector\n=VAL \": - ()\n=VAL :Up, up, and away!\n=VAL :-123\n=VAL :http://example.com/foo#bar\n+SEQ []\n=VAL :::vector\n=VAL \": - ()\n=VAL \"Up, up and away!\n=VAL :-123\n=VAL :http://example.com/foo#bar\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DC7X",
+    "name": "Various trailing tabs",
+    "yaml": "a: b\t\nseq:\t\n - a\t\nc: d\t#X\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL :b\n=VAL :seq\n+SEQ\n=VAL :a\n-SEQ\n=VAL :c\n=VAL :d\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DE56/00",
+    "name": "Trailing tabs in double quoted",
+    "yaml": "\"1 trailing\\t\n    tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"1 trailing\\t tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DE56/01",
+    "name": "Trailing tabs in double quoted",
+    "yaml": "\"2 trailing\\t  \n    tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"2 trailing\\t tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DE56/02",
+    "name": "Trailing tabs in double quoted",
+    "yaml": "\"3 trailing\\\t\n    tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"3 trailing\\t tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DE56/03",
+    "name": "Trailing tabs in double quoted",
+    "yaml": "\"4 trailing\\\t  \n    tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"4 trailing\\t tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DE56/04",
+    "name": "Trailing tabs in double quoted",
+    "yaml": "\"5 trailing\t\n    tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"5 trailing tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DE56/05",
+    "name": "Trailing tabs in double quoted",
+    "yaml": "\"6 trailing\t  \n    tab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"6 trailing tab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DFF7",
+    "name": "Spec Example 7.16. Flow Mapping Entries",
+    "yaml": "{\n? explicit: entry,\nimplicit: entry,\n?\n}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :explicit\n=VAL :entry\n=VAL :implicit\n=VAL :entry\n=VAL :\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DHP8",
+    "name": "Flow Sequence",
+    "yaml": "[foo, bar, 42]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL :foo\n=VAL :bar\n=VAL :42\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK3J",
+    "name": "Zero indented block scalar with line that looks like a comment",
+    "yaml": "--- >\nline1\n# no comment\nline3\n",
+    "events": "+STR\n+DOC ---\n=VAL >line1 # no comment line3\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK4H",
+    "name": "Implicit key followed by newline",
+    "yaml": "---\n[ key\n  : value ]\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n=VAL :key",
+    "error": true
+  },
+  {
+    "id": "DK95/00",
+    "name": "Tabs that look like indentation",
+    "yaml": "foo:\n \tbar\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK95/01",
+    "name": "Tabs that look like indentation",
+    "yaml": "foo: \"bar\n\tbaz\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo",
+    "error": true
+  },
+  {
+    "id": "DK95/02",
+    "name": "Tabs that look like indentation",
+    "yaml": "foo: \"bar\n  \tbaz\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL \"bar baz\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK95/03",
+    "name": "Tabs that look like indentation",
+    "yaml": " \t\nfoo: 1\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :1\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK95/04",
+    "name": "Tabs that look like indentation",
+    "yaml": "foo: 1\n\t\nbar: 2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :1\n=VAL :bar\n=VAL :2\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK95/05",
+    "name": "Tabs that look like indentation",
+    "yaml": "foo: 1\n \t\nbar: 2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :1\n=VAL :bar\n=VAL :2\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK95/06",
+    "name": "Tabs that look like indentation",
+    "yaml": "foo:\n  a: 1\n  \tb: 2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n+MAP\n=VAL :a\n=VAL :1",
+    "error": true
+  },
+  {
+    "id": "DK95/07",
+    "name": "Tabs that look like indentation",
+    "yaml": "%YAML 1.2\n\t\n---\n",
+    "events": "+STR\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DK95/08",
+    "name": "Tabs that look like indentation",
+    "yaml": "foo: \"bar\n \t \t baz \t \t \"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL \"bar baz \\t \\t \n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "DMG6",
+    "name": "Wrong indendation in Map",
+    "yaml": "key:\n  ok: 1\n wrong: 2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n+MAP\n=VAL :ok\n=VAL :1\n-MAP",
+    "error": true
+  },
+  {
+    "id": "DWX9",
+    "name": "Spec Example 8.8. Literal Content",
+    "yaml": "|\n \n  \n  literal\n   \n  \n  text\n\n # Comment\n",
+    "events": "+STR\n+DOC\n=VAL |\\n\\nliteral\\n \\n\\ntext\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "E76Z",
+    "name": "Aliases in Implicit Block Mapping",
+    "yaml": "&a a: &b b\n*b : *a\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL &a :a\n=VAL &b :b\n=ALI *b\n=ALI *a\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "EB22",
+    "name": "Missing document-end marker before directive",
+    "yaml": "---\nscalar1 # comment\n%YAML 1.2\n---\nscalar2\n",
+    "events": "+STR\n+DOC ---\n=VAL :scalar1\n-DOC",
+    "error": true
+  },
+  {
+    "id": "EHF6",
+    "name": "Tags for Flow Objects",
+    "yaml": "!!map {\n  k: !!seq\n  [ a, !!str b]\n}\n",
+    "events": "+STR\n+DOC\n+MAP {} <tag:yaml.org,2002:map>\n=VAL :k\n+SEQ [] <tag:yaml.org,2002:seq>\n=VAL :a\n=VAL <tag:yaml.org,2002:str> :b\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "EW3V",
+    "name": "Wrong indendation in mapping",
+    "yaml": "k1: v1\n k2: v2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :k1",
+    "error": true
+  },
+  {
+    "id": "EX5H",
+    "name": "Multiline Scalar at Top Level [1.3]",
+    "yaml": "---\na\nb  \n  c\nd\n\ne\n",
+    "events": "+STR\n+DOC ---\n=VAL :a b c d\\ne\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "EXG3",
+    "name": "Three dashes and content without space [1.3]",
+    "yaml": "---\n---word1\nword2\n",
+    "events": "+STR\n+DOC ---\n=VAL :---word1 word2\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "F2C7",
+    "name": "Anchors and Tags",
+    "yaml": " - &a !!str a\n - !!int 2\n - !!int &c 4\n - &d d\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL &a <tag:yaml.org,2002:str> :a\n=VAL <tag:yaml.org,2002:int> :2\n=VAL &c <tag:yaml.org,2002:int> :4\n=VAL &d :d\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "F3CP",
+    "name": "Nested flow collections on one line",
+    "yaml": "---\n{ a: [b, c, { d: [e, f] } ] }\n",
+    "events": "+STR\n+DOC ---\n+MAP {}\n=VAL :a\n+SEQ []\n=VAL :b\n=VAL :c\n+MAP {}\n=VAL :d\n+SEQ []\n=VAL :e\n=VAL :f\n-SEQ\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "F6MC",
+    "name": "More indented lines at the beginning of folded block scalars",
+    "yaml": "---\na: >2\n   more indented\n  regular\nb: >2\n\n\n   more indented\n  regular\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :a\n=VAL > more indented\\nregular\\n\n=VAL :b\n=VAL >\\n\\n more indented\\nregular\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "F8F9",
+    "name": "Spec Example 8.5. Chomping Trailing Lines",
+    "yaml": " # Strip\n  # Comments:\nstrip: |-\n  # text\n  \n # Clip\n  # comments:\n\nclip: |\n  # text\n \n # Keep\n  # comments:\n\nkeep: |+\n  # text\n\n # Trail\n  # comments.\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :strip\n=VAL |# text\n=VAL :clip\n=VAL |# text\\n\n=VAL :keep\n=VAL |# text\\n\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "FBC9",
+    "name": "Allowed characters in plain scalars",
+    "yaml": "safe: a!\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\n     !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\nsafe question mark: ?foo\nsafe colon: :foo\nsafe dash: -foo\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :safe\n=VAL :a!\"#$%&'()*+,-./09:;<=>?@AZ[\\\\]^_`az{|}~ !\"#$%&'()*+,-./09:;<=>?@AZ[\\\\]^_`az{|}~\n=VAL :safe question mark\n=VAL :?foo\n=VAL :safe colon\n=VAL ::foo\n=VAL :safe dash\n=VAL :-foo\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "FH7J",
+    "name": "Tags on Empty Scalars",
+    "yaml": "- !!str\n-\n  !!null : a\n  b: !!str\n- !!str : !!null\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL <tag:yaml.org,2002:str> :\n+MAP\n=VAL <tag:yaml.org,2002:null> :\n=VAL :a\n=VAL :b\n=VAL <tag:yaml.org,2002:str> :\n-MAP\n+MAP\n=VAL <tag:yaml.org,2002:str> :\n=VAL <tag:yaml.org,2002:null> :\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "FP8R",
+    "name": "Zero indented block scalar",
+    "yaml": "--- >\nline1\nline2\nline3\n",
+    "events": "+STR\n+DOC ---\n=VAL >line1 line2 line3\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "FQ7F",
+    "name": "Spec Example 2.1. Sequence of Scalars",
+    "yaml": "- Mark McGwire\n- Sammy Sosa\n- Ken Griffey\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :Mark McGwire\n=VAL :Sammy Sosa\n=VAL :Ken Griffey\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "FRK4",
+    "name": "Spec Example 7.3. Completely Empty Flow Nodes",
+    "yaml": "{\n  ? foo :,\n  : bar,\n}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :foo\n=VAL :\n=VAL :\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "FTA2",
+    "name": "Single block sequence with anchor and explicit document start",
+    "yaml": "--- &sequence\n- a\n",
+    "events": "+STR\n+DOC ---\n+SEQ &sequence\n=VAL :a\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "FUP4",
+    "name": "Flow Sequence in Flow Sequence",
+    "yaml": "[a, [b, c]]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL :a\n+SEQ []\n=VAL :b\n=VAL :c\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "G4RS",
+    "name": "Spec Example 2.17. Quoted Scalars",
+    "yaml": "unicode: \"Sosa did fine.\\u263A\"\ncontrol: \"\\b1998\\t1999\\t2000\\n\"\nhex esc: \"\\x0d\\x0a is \\r\\n\"\n\nsingle: '\"Howdy!\" he cried.'\nquoted: ' # Not a ''comment''.'\ntie-fighter: '|\\-*-/|'\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :unicode\n=VAL \"Sosa did fine.\u263a\n=VAL :control\n=VAL \"\\b1998\\t1999\\t2000\\n\n=VAL :hex esc\n=VAL \"\\r\\n is \\r\\n\n=VAL :single\n=VAL '\"Howdy!\" he cried.\n=VAL :quoted\n=VAL ' # Not a 'comment'.\n=VAL :tie-fighter\n=VAL '|\\\\-*-/|\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "G5U8",
+    "name": "Plain dashes in flow sequence",
+    "yaml": "---\n- [-, -]\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "G7JE",
+    "name": "Multiline implicit keys",
+    "yaml": "a\\nb: 1\nc\n d: 1\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\\\\nb\n=VAL :1",
+    "error": true
+  },
+  {
+    "id": "G992",
+    "name": "Spec Example 8.9. Folded Scalar",
+    "yaml": ">\n folded\n text\n\n\n",
+    "events": "+STR\n+DOC\n=VAL >folded text\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "G9HC",
+    "name": "Invalid anchor in zero indented sequence",
+    "yaml": "---\nseq:\n&anchor\n- a\n- b\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :seq",
+    "error": true
+  },
+  {
+    "id": "GDY7",
+    "name": "Comment that looks like a mapping key",
+    "yaml": "key: value\nthis is #not a: key\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL :value",
+    "error": true
+  },
+  {
+    "id": "GH63",
+    "name": "Mixed Block Mapping (explicit to implicit)",
+    "yaml": "? a\n: 1.3\nfifteen: d\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL :1.3\n=VAL :fifteen\n=VAL :d\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "GT5M",
+    "name": "Node anchor in sequence",
+    "yaml": "- item1\n&node\n- item2\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :item1",
+    "error": true
+  },
+  {
+    "id": "H2RW",
+    "name": "Blank lines",
+    "yaml": "foo: 1\n\nbar: 2\n    \ntext: |\n  a\n    \n  b\n\n  c\n \n  d\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :1\n=VAL :bar\n=VAL :2\n=VAL :text\n=VAL |a\\n  \\nb\\n\\nc\\n\\nd\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "H3Z8",
+    "name": "Literal unicode",
+    "yaml": "---\nwanted: love \u2665 and peace \u262e\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :wanted\n=VAL :love \u2665 and peace \u262e\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "H7J7",
+    "name": "Node anchor not indented",
+    "yaml": "key: &x\n!!map\n  a: b\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL &x :",
+    "error": true
+  },
+  {
+    "id": "H7TQ",
+    "name": "Extra words on %YAML directive",
+    "yaml": "%YAML 1.2 foo\n---\n",
+    "events": "+STR",
+    "error": true
+  },
+  {
+    "id": "HM87/00",
+    "name": "Scalars in flow start with syntax char",
+    "yaml": "[:x]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL ::x\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "HM87/01",
+    "name": "Scalars in flow start with syntax char",
+    "yaml": "[?x]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL :?x\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "HMK4",
+    "name": "Spec Example 2.16. Indentation determines scope",
+    "yaml": "name: Mark McGwire\naccomplishment: >\n  Mark set a major league\n  home run record in 1998.\nstats: |\n  65 Home Runs\n  0.278 Batting Average\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :name\n=VAL :Mark McGwire\n=VAL :accomplishment\n=VAL >Mark set a major league home run record in 1998.\\n\n=VAL :stats\n=VAL |65 Home Runs\\n0.278 Batting Average\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "HMQ5",
+    "name": "Spec Example 6.23. Node Properties",
+    "yaml": "!!str &a1 \"foo\":\n  !!str bar\n&a2 baz : *a1\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL &a1 <tag:yaml.org,2002:str> \"foo\n=VAL <tag:yaml.org,2002:str> :bar\n=VAL &a2 :baz\n=ALI *a1\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "HRE5",
+    "name": "Double quoted scalar with escaped single quote",
+    "yaml": "---\ndouble: \"quoted \\' scalar\"\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :double",
+    "error": true
+  },
+  {
+    "id": "HS5T",
+    "name": "Spec Example 7.12. Plain Lines",
+    "yaml": "1st non-empty\n\n 2nd non-empty \n\t3rd non-empty\n",
+    "events": "+STR\n+DOC\n=VAL :1st non-empty\\n2nd non-empty 3rd non-empty\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "HU3P",
+    "name": "Invalid Mapping in plain scalar",
+    "yaml": "key:\n  word1 word2\n  no: key\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key",
+    "error": true
+  },
+  {
+    "id": "HWV9",
+    "name": "Document-end marker",
+    "yaml": "...\n",
+    "events": "+STR\n-STR",
+    "error": false
+  },
+  {
+    "id": "J3BT",
+    "name": "Spec Example 5.12. Tabs and Spaces",
+    "yaml": "# Tabs and spaces\nquoted: \"Quoted \t\"\nblock:\t|\n  void main() {\n  \tprintf(\"Hello, world!\\n\");\n  }\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :quoted\n=VAL \"Quoted \\t\n=VAL :block\n=VAL |void main() {\\n\\tprintf(\"Hello, world!\\\\n\");\\n}\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "J5UC",
+    "name": "Multiple Pair Block Mapping",
+    "yaml": "foo: blue\nbar: arrr\nbaz: jazz\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL :blue\n=VAL :bar\n=VAL :arrr\n=VAL :baz\n=VAL :jazz\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "J7PZ",
+    "name": "Spec Example 2.26. Ordered Mappings",
+    "yaml": "# The !!omap tag is one of the optional types\n# introduced for YAML 1.1. In 1.2, it is not\n# part of the standard tags and should not be\n# enabled by default.\n# Ordered maps are represented as\n# A sequence of mappings, with\n# each mapping having one key\n--- !!omap\n- Mark McGwire: 65\n- Sammy Sosa: 63\n- Ken Griffy: 58\n",
+    "events": "+STR\n+DOC ---\n+SEQ <tag:yaml.org,2002:omap>\n+MAP\n=VAL :Mark McGwire\n=VAL :65\n-MAP\n+MAP\n=VAL :Sammy Sosa\n=VAL :63\n-MAP\n+MAP\n=VAL :Ken Griffy\n=VAL :58\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "J7VC",
+    "name": "Empty Lines Between Mapping Elements",
+    "yaml": "one: 2\n\n\nthree: 4\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :one\n=VAL :2\n=VAL :three\n=VAL :4\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "J9HZ",
+    "name": "Spec Example 2.9. Single Document with Two Comments",
+    "yaml": "---\nhr: # 1998 hr ranking\n  - Mark McGwire\n  - Sammy Sosa\nrbi:\n  # 1998 rbi ranking\n  - Sammy Sosa\n  - Ken Griffey\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :hr\n+SEQ\n=VAL :Mark McGwire\n=VAL :Sammy Sosa\n-SEQ\n=VAL :rbi\n+SEQ\n=VAL :Sammy Sosa\n=VAL :Ken Griffey\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JEF9/00",
+    "name": "Trailing whitespace in streams",
+    "yaml": "- |+\n\n\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |\\n\\n\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JEF9/01",
+    "name": "Trailing whitespace in streams",
+    "yaml": "- |+\n   \n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |\\n\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JEF9/02",
+    "name": "Trailing whitespace in streams",
+    "yaml": "- |+\n   ",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |\\n\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JHB9",
+    "name": "Spec Example 2.7. Two Documents in a Stream",
+    "yaml": "# Ranking of 1998 home runs\n---\n- Mark McGwire\n- Sammy Sosa\n- Ken Griffey\n\n# Team ranking\n---\n- Chicago Cubs\n- St Louis Cardinals\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n=VAL :Mark McGwire\n=VAL :Sammy Sosa\n=VAL :Ken Griffey\n-SEQ\n-DOC\n+DOC ---\n+SEQ\n=VAL :Chicago Cubs\n=VAL :St Louis Cardinals\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JKF3",
+    "name": "Multiline unidented double quoted block key",
+    "yaml": "- - \"bar\nbar\": x\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ",
+    "error": true
+  },
+  {
+    "id": "JQ4R",
+    "name": "Spec Example 8.14. Block Sequence",
+    "yaml": "block sequence:\n  - one\n  - two : three\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :block sequence\n+SEQ\n=VAL :one\n+MAP\n=VAL :two\n=VAL :three\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JR7V",
+    "name": "Question marks in scalars",
+    "yaml": "- a?string\n- another ? string\n- key: value?\n- [a?string]\n- [another ? string]\n- {key: value? }\n- {key: value?}\n- {key?: value }\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :a?string\n=VAL :another ? string\n+MAP\n=VAL :key\n=VAL :value?\n-MAP\n+SEQ []\n=VAL :a?string\n-SEQ\n+SEQ []\n=VAL :another ? string\n-SEQ\n+MAP {}\n=VAL :key\n=VAL :value?\n-MAP\n+MAP {}\n=VAL :key\n=VAL :value?\n-MAP\n+MAP {}\n=VAL :key?\n=VAL :value\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JS2J",
+    "name": "Spec Example 6.29. Node Anchors",
+    "yaml": "First occurrence: &anchor Value\nSecond occurrence: *anchor\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :First occurrence\n=VAL &anchor :Value\n=VAL :Second occurrence\n=ALI *anchor\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JTV5",
+    "name": "Block Mapping with Multiline Scalars",
+    "yaml": "? a\n  true\n: null\n  d\n? e\n  42\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a true\n=VAL :null d\n=VAL :e 42\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "JY7Z",
+    "name": "Trailing content that looks like a mapping",
+    "yaml": "key1: \"quoted1\"\nkey2: \"quoted2\" no key: nor value\nkey3: \"quoted3\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key1\n=VAL \"quoted1\n=VAL :key2\n=VAL \"quoted2",
+    "error": true
+  },
+  {
+    "id": "K3WX",
+    "name": "Colon and adjacent value after comment on next line",
+    "yaml": "---\n{ \"foo\" # comment\n  :bar }\n",
+    "events": "+STR\n+DOC ---\n+MAP {}\n=VAL \"foo\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "K4SU",
+    "name": "Multiple Entry Block Sequence",
+    "yaml": "- foo\n- bar\n- 42\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :foo\n=VAL :bar\n=VAL :42\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "K527",
+    "name": "Spec Example 6.6. Line Folding",
+    "yaml": ">-\n  trimmed\n  \n \n\n  as\n  space\n",
+    "events": "+STR\n+DOC\n=VAL >trimmed\\n\\n\\nas space\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "K54U",
+    "name": "Tab after document header",
+    "yaml": "---\tscalar\n",
+    "events": "+STR\n+DOC ---\n=VAL :scalar\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "K858",
+    "name": "Spec Example 8.6. Empty Scalar Chomping",
+    "yaml": "strip: >-\n\nclip: >\n\nkeep: |+\n\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :strip\n=VAL >\n=VAL :clip\n=VAL >\n=VAL :keep\n=VAL |\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "KH5V/00",
+    "name": "Inline tabs in double quoted",
+    "yaml": "\"1 inline\\ttab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"1 inline\\ttab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "KH5V/01",
+    "name": "Inline tabs in double quoted",
+    "yaml": "\"2 inline\\\ttab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"2 inline\\ttab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "KH5V/02",
+    "name": "Inline tabs in double quoted",
+    "yaml": "\"3 inline\ttab\"\n",
+    "events": "+STR\n+DOC\n=VAL \"3 inline\\ttab\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "KK5P",
+    "name": "Various combinations of explicit block mappings",
+    "yaml": "complex1:\n  ? - a\ncomplex2:\n  ? - a\n  : b\ncomplex3:\n  ? - a\n  : >\n    b\ncomplex4:\n  ? >\n    a\n  :\ncomplex5:\n  ? - a\n  : - b\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :complex1\n+MAP\n+SEQ\n=VAL :a\n-SEQ\n=VAL :\n-MAP\n=VAL :complex2\n+MAP\n+SEQ\n=VAL :a\n-SEQ\n=VAL :b\n-MAP\n=VAL :complex3\n+MAP\n+SEQ\n=VAL :a\n-SEQ\n=VAL >b\\n\n-MAP\n=VAL :complex4\n+MAP\n=VAL >a\\n\n=VAL :\n-MAP\n=VAL :complex5\n+MAP\n+SEQ\n=VAL :a\n-SEQ\n+SEQ\n=VAL :b\n-SEQ\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "KMK3",
+    "name": "Block Submapping",
+    "yaml": "foo:\n  bar: 1\nbaz: 2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n+MAP\n=VAL :bar\n=VAL :1\n-MAP\n=VAL :baz\n=VAL :2\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "KS4U",
+    "name": "Invalid item after end of flow sequence",
+    "yaml": "---\n[\nsequence item\n]\ninvalid item\n",
+    "events": "+STR\n+DOC ---\n+SEQ []\n=VAL :sequence item\n-SEQ",
+    "error": true
+  },
+  {
+    "id": "KSS4",
+    "name": "Scalars on --- line",
+    "yaml": "--- \"quoted\nstring\"\n--- &node foo\n",
+    "events": "+STR\n+DOC ---\n=VAL \"quoted string\n-DOC\n+DOC ---\n=VAL &node :foo\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "L24T/00",
+    "name": "Trailing line of spaces",
+    "yaml": "foo: |\n  x\n   \n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL |x\\n \\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "L24T/01",
+    "name": "Trailing line of spaces",
+    "yaml": "foo: |\n  x\n   ",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL |x\\n \\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "L383",
+    "name": "Two scalar docs with trailing comments",
+    "yaml": "--- foo  # comment\n--- foo  # comment\n",
+    "events": "+STR\n+DOC ---\n=VAL :foo\n-DOC\n+DOC ---\n=VAL :foo\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "L94M",
+    "name": "Tags in Explicit Mapping",
+    "yaml": "? !!str a\n: !!int 47\n? c\n: !!str d\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL <tag:yaml.org,2002:str> :a\n=VAL <tag:yaml.org,2002:int> :47\n=VAL :c\n=VAL <tag:yaml.org,2002:str> :d\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "L9U5",
+    "name": "Spec Example 7.11. Plain Implicit Keys",
+    "yaml": "implicit block key : [\n  implicit flow key : value,\n ]\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :implicit block key\n+SEQ []\n+MAP {}\n=VAL :implicit flow key\n=VAL :value\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "LE5A",
+    "name": "Spec Example 7.24. Flow Nodes",
+    "yaml": "- !!str \"a\"\n- 'b'\n- &anchor \"c\"\n- *anchor\n- !!str\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL <tag:yaml.org,2002:str> \"a\n=VAL 'b\n=VAL &anchor \"c\n=ALI *anchor\n=VAL <tag:yaml.org,2002:str> :\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "LHL4",
+    "name": "Invalid tag",
+    "yaml": "---\n!invalid{}tag scalar\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "LP6E",
+    "name": "Whitespace After Scalars in Flow",
+    "yaml": "- [a, b , c ]\n- { \"a\"  : b\n   , c : 'd' ,\n   e   : \"f\"\n  }\n- [      ]\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []\n=VAL :a\n=VAL :b\n=VAL :c\n-SEQ\n+MAP {}\n=VAL \"a\n=VAL :b\n=VAL :c\n=VAL 'd\n=VAL :e\n=VAL \"f\n-MAP\n+SEQ []\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "LQZ7",
+    "name": "Spec Example 7.4. Double Quoted Implicit Keys",
+    "yaml": "\"implicit block key\" : [\n  \"implicit flow key\" : value,\n ]\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL \"implicit block key\n+SEQ []\n+MAP {}\n=VAL \"implicit flow key\n=VAL :value\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "LX3P",
+    "name": "Implicit Flow Mapping Key on one line",
+    "yaml": "[flow]: block\n",
+    "events": "+STR\n+DOC\n+MAP\n+SEQ []\n=VAL :flow\n-SEQ\n=VAL :block\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M29M",
+    "name": "Literal Block Scalar",
+    "yaml": "a: |\n ab\n \n cd\n ef\n \n\n...\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL |ab\\n\\ncd\\nef\\n\n-MAP\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "M2N8/00",
+    "name": "Question mark edge cases",
+    "yaml": "- ? : x\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n+MAP\n=VAL :\n=VAL :x\n-MAP\n=VAL :\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M2N8/01",
+    "name": "Question mark edge cases",
+    "yaml": "? []: x\n",
+    "events": "+STR\n+DOC\n+MAP\n+MAP\n+SEQ []\n-SEQ\n=VAL :x\n-MAP\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M5C3",
+    "name": "Spec Example 8.21. Block Scalar Nodes",
+    "yaml": "literal: |2\n  value\nfolded:\n   !foo\n  >1\n value\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :literal\n=VAL |value\\n\n=VAL :folded\n=VAL <!foo> >value\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M5DY",
+    "name": "Spec Example 2.11. Mapping between Sequences",
+    "yaml": "? - Detroit Tigers\n  - Chicago cubs\n:\n  - 2001-07-23\n\n? [ New York Yankees,\n    Atlanta Braves ]\n: [ 2001-07-02, 2001-08-12,\n    2001-08-14 ]\n",
+    "events": "+STR\n+DOC\n+MAP\n+SEQ\n=VAL :Detroit Tigers\n=VAL :Chicago cubs\n-SEQ\n+SEQ\n=VAL :2001-07-23\n-SEQ\n+SEQ []\n=VAL :New York Yankees\n=VAL :Atlanta Braves\n-SEQ\n+SEQ []\n=VAL :2001-07-02\n=VAL :2001-08-12\n=VAL :2001-08-14\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M6YH",
+    "name": "Block sequence indentation",
+    "yaml": "- |\n x\n-\n foo: bar\n-\n - 42\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |x\\n\n+MAP\n=VAL :foo\n=VAL :bar\n-MAP\n+SEQ\n=VAL :42\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M7A3",
+    "name": "Spec Example 9.3. Bare Documents",
+    "yaml": "Bare\ndocument\n...\n# No document\n...\n|\n%!PS-Adobe-2.0 # Not the first line\n",
+    "events": "+STR\n+DOC\n=VAL :Bare document\n-DOC ...\n+DOC\n=VAL |%!PS-Adobe-2.0 # Not the first line\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M7NX",
+    "name": "Nested flow collections",
+    "yaml": "---\n{\n a: [\n  b, c, {\n   d: [e, f]\n  }\n ]\n}\n",
+    "events": "+STR\n+DOC ---\n+MAP {}\n=VAL :a\n+SEQ []\n=VAL :b\n=VAL :c\n+MAP {}\n=VAL :d\n+SEQ []\n=VAL :e\n=VAL :f\n-SEQ\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "M9B4",
+    "name": "Spec Example 8.7. Literal Scalar",
+    "yaml": "|\n literal\n \ttext\n\n\n",
+    "events": "+STR\n+DOC\n=VAL |literal\\n\\ttext\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MJS9",
+    "name": "Spec Example 6.7. Block Folding",
+    "yaml": ">\n  foo \n \n  \t bar\n\n  baz\n",
+    "events": "+STR\n+DOC\n=VAL >foo \\n\\n\\t bar\\n\\nbaz\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MUS6/00",
+    "name": "Directive variants",
+    "yaml": "%YAML 1.1#...\n---\n",
+    "events": "+STR",
+    "error": true
+  },
+  {
+    "id": "MUS6/01",
+    "name": "Directive variants",
+    "yaml": "%YAML 1.2\n---\n%YAML 1.2\n---\n",
+    "events": "+STR",
+    "error": true
+  },
+  {
+    "id": "MUS6/02",
+    "name": "Directive variants",
+    "yaml": "%YAML  1.1\n---\n",
+    "events": "+STR\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MUS6/03",
+    "name": "Directive variants",
+    "yaml": "%YAML \t 1.1\n---\n",
+    "events": "+STR\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MUS6/04",
+    "name": "Directive variants",
+    "yaml": "%YAML 1.1  # comment\n---\n",
+    "events": "+STR\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MUS6/05",
+    "name": "Directive variants",
+    "yaml": "%YAM 1.1\n---\n",
+    "events": "+STR\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MUS6/06",
+    "name": "Directive variants",
+    "yaml": "%YAMLL 1.1\n---\n",
+    "events": "+STR\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MXS3",
+    "name": "Flow Mapping in Block Sequence",
+    "yaml": "- {a: b}\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP {}\n=VAL :a\n=VAL :b\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "MYW6",
+    "name": "Block Scalar Strip",
+    "yaml": "|-\n ab\n \n \n...\n",
+    "events": "+STR\n+DOC\n=VAL |ab\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "MZX3",
+    "name": "Non-Specific Tags on Scalars",
+    "yaml": "- plain\n- \"double quoted\"\n- 'single quoted'\n- >\n  block\n- plain again\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :plain\n=VAL \"double quoted\n=VAL 'single quoted\n=VAL >block\\n\n=VAL :plain again\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "N4JP",
+    "name": "Bad indentation in mapping",
+    "yaml": "map:\n  key1: \"quoted1\"\n key2: \"bad indentation\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :map\n+MAP\n=VAL :key1\n=VAL \"quoted1\n-MAP",
+    "error": true
+  },
+  {
+    "id": "N782",
+    "name": "Invalid document markers in flow style",
+    "yaml": "[\n--- ,\n...\n]\n",
+    "events": "+STR\n+DOC\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "NAT4",
+    "name": "Various empty or newline only quoted strings",
+    "yaml": "---\na: '\n  '\nb: '  \n  '\nc: \"\n  \"\nd: \"  \n  \"\ne: '\n\n  '\nf: \"\n\n  \"\ng: '\n\n\n  '\nh: \"\n\n\n  \"\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :a\n=VAL ' \n=VAL :b\n=VAL ' \n=VAL :c\n=VAL \" \n=VAL :d\n=VAL \" \n=VAL :e\n=VAL '\\n\n=VAL :f\n=VAL \"\\n\n=VAL :g\n=VAL '\\n\\n\n=VAL :h\n=VAL \"\\n\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "NB6Z",
+    "name": "Multiline plain value with tabs on empty lines",
+    "yaml": "key:\n  value\n  with\n  \t\n  tabs\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL :value with\\ntabs\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "NHX8",
+    "name": "Empty Lines at End of Document",
+    "yaml": ":\n\n\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "NJ66",
+    "name": "Multiline plain flow mapping key",
+    "yaml": "---\n- { single line: value}\n- { multi\n  line: value}\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n+MAP {}\n=VAL :single line\n=VAL :value\n-MAP\n+MAP {}\n=VAL :multi line\n=VAL :value\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "NKF9",
+    "name": "Empty keys in block and flow mapping",
+    "yaml": "---\nkey: value\n: empty key\n---\n{\n key: value, : empty key\n}\n---\n# empty key and value\n:\n---\n# empty key and value\n{ : }\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :key\n=VAL :value\n=VAL :\n=VAL :empty key\n-MAP\n-DOC\n+DOC ---\n+MAP {}\n=VAL :key\n=VAL :value\n=VAL :\n=VAL :empty key\n-MAP\n-DOC\n+DOC ---\n+MAP\n=VAL :\n=VAL :\n-MAP\n-DOC\n+DOC ---\n+MAP {}\n=VAL :\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "NP9H",
+    "name": "Spec Example 7.5. Double Quoted Line Breaks",
+    "yaml": "\"folded \nto a space,\t\n \nto a line feed, or \t\\\n \\ \tnon-content\"\n",
+    "events": "+STR\n+DOC\n=VAL \"folded to a space,\\nto a line feed, or \\t \\tnon-content\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "P2AD",
+    "name": "Spec Example 8.1. Block Scalar Header",
+    "yaml": "- | # Empty header\u2193\n literal\n- >1 # Indentation indicator\u2193\n  folded\n- |+ # Chomping indicator\u2193\n keep\n\n- >1- # Both indicators\u2193\n  strip\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |literal\\n\n=VAL > folded\\n\n=VAL |keep\\n\\n\n=VAL > strip\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "P2EQ",
+    "name": "Invalid sequene item on same line as previous item",
+    "yaml": "---\n- { y: z }- invalid\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n+MAP {}\n=VAL :y\n=VAL :z\n-MAP",
+    "error": true
+  },
+  {
+    "id": "P76L",
+    "name": "Spec Example 6.19. Secondary Tag Handle",
+    "yaml": "%TAG !! tag:example.com,2000:app/\n---\n!!int 1 - 3 # Interval, not integer\n",
+    "events": "+STR\n+DOC ---\n=VAL <tag:example.com,2000:app/int> :1 - 3\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "P94K",
+    "name": "Spec Example 6.11. Multi-Line Comments",
+    "yaml": "key:    # Comment\n        # lines\n  value\n\n\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "PBJ2",
+    "name": "Spec Example 2.3. Mapping Scalars to Sequences",
+    "yaml": "american:\n  - Boston Red Sox\n  - Detroit Tigers\n  - New York Yankees\nnational:\n  - New York Mets\n  - Chicago Cubs\n  - Atlanta Braves\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :american\n+SEQ\n=VAL :Boston Red Sox\n=VAL :Detroit Tigers\n=VAL :New York Yankees\n-SEQ\n=VAL :national\n+SEQ\n=VAL :New York Mets\n=VAL :Chicago Cubs\n=VAL :Atlanta Braves\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "PRH3",
+    "name": "Spec Example 7.9. Single Quoted Lines",
+    "yaml": "' 1st non-empty\n\n 2nd non-empty \n\t3rd non-empty '\n",
+    "events": "+STR\n+DOC\n=VAL ' 1st non-empty\\n2nd non-empty 3rd non-empty \n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "PUW8",
+    "name": "Document start on last line",
+    "yaml": "---\na: b\n---\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :a\n=VAL :b\n-MAP\n-DOC\n+DOC ---\n=VAL :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "PW8X",
+    "name": "Anchors on Empty Scalars",
+    "yaml": "- &a\n- a\n-\n  &a : a\n  b: &b\n-\n  &c : &a\n-\n  ? &d\n-\n  ? &e\n  : &a\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL &a :\n=VAL :a\n+MAP\n=VAL &a :\n=VAL :a\n=VAL :b\n=VAL &b :\n-MAP\n+MAP\n=VAL &c :\n=VAL &a :\n-MAP\n+MAP\n=VAL &d :\n=VAL :\n-MAP\n+MAP\n=VAL &e :\n=VAL &a :\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Q4CL",
+    "name": "Trailing content after quoted value",
+    "yaml": "key1: \"quoted1\"\nkey2: \"quoted2\" trailing content\nkey3: \"quoted3\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key1\n=VAL \"quoted1\n=VAL :key2\n=VAL \"quoted2",
+    "error": true
+  },
+  {
+    "id": "Q5MG",
+    "name": "Tab at beginning of line followed by a flow mapping",
+    "yaml": "\t{}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Q88A",
+    "name": "Spec Example 7.23. Flow Content",
+    "yaml": "- [ a, b ]\n- { a: b }\n- \"a\"\n- 'b'\n- c\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []\n=VAL :a\n=VAL :b\n-SEQ\n+MAP {}\n=VAL :a\n=VAL :b\n-MAP\n=VAL \"a\n=VAL 'b\n=VAL :c\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Q8AD",
+    "name": "Spec Example 7.5. Double Quoted Line Breaks [1.3]",
+    "yaml": "---\n\"folded \nto a space,\n \nto a line feed, or \t\\\n \\ \tnon-content\"\n",
+    "events": "+STR\n+DOC ---\n=VAL \"folded to a space,\\nto a line feed, or \\t \\tnon-content\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Q9WF",
+    "name": "Spec Example 6.12. Separation Spaces",
+    "yaml": "{ first: Sammy, last: Sosa }:\n# Statistics:\n  hr:  # Home runs\n     65\n  avg: # Average\n   0.278\n",
+    "events": "+STR\n+DOC\n+MAP\n+MAP {}\n=VAL :first\n=VAL :Sammy\n=VAL :last\n=VAL :Sosa\n-MAP\n+MAP\n=VAL :hr\n=VAL :65\n=VAL :avg\n=VAL :0.278\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "QB6E",
+    "name": "Wrong indented multiline quoted scalar",
+    "yaml": "---\nquoted: \"a\nb\nc\"\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :quoted",
+    "error": true
+  },
+  {
+    "id": "QF4Y",
+    "name": "Spec Example 7.19. Single Pair Flow Mappings",
+    "yaml": "[\nfoo: bar\n]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n+MAP {}\n=VAL :foo\n=VAL :bar\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "QLJ7",
+    "name": "Tag shorthand used in documents but only defined in the first",
+    "yaml": "%TAG !prefix! tag:example.com,2011:\n--- !prefix!A\na: b\n--- !prefix!B\nc: d\n--- !prefix!C\ne: f\n",
+    "events": "+STR\n+DOC ---\n+MAP <tag:example.com,2011:A>\n=VAL :a\n=VAL :b\n-MAP\n-DOC\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "QT73",
+    "name": "Comment and document-end marker",
+    "yaml": "# comment\n...\n",
+    "events": "+STR\n-STR",
+    "error": false
+  },
+  {
+    "id": "R4YG",
+    "name": "Spec Example 8.2. Block Indentation Indicator",
+    "yaml": "- |\n detected\n- >\n \n  \n  # detected\n- |1\n  explicit\n- >\n \t\n detected\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL |detected\\n\n=VAL >\\n\\n# detected\\n\n=VAL | explicit\\n\n=VAL >\\t\\ndetected\\n\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "R52L",
+    "name": "Nested flow mapping sequence and mappings",
+    "yaml": "---\n{ top1: [item1, {key2: value2}, item3], top2: value2 }\n",
+    "events": "+STR\n+DOC ---\n+MAP {}\n=VAL :top1\n+SEQ []\n=VAL :item1\n+MAP {}\n=VAL :key2\n=VAL :value2\n-MAP\n=VAL :item3\n-SEQ\n=VAL :top2\n=VAL :value2\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "RHX7",
+    "name": "YAML directive without document end marker",
+    "yaml": "---\nkey: value\n%YAML 1.2\n---\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :key\n=VAL :value",
+    "error": true
+  },
+  {
+    "id": "RLU9",
+    "name": "Sequence Indent",
+    "yaml": "foo:\n- 42\nbar:\n  - 44\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n+SEQ\n=VAL :42\n-SEQ\n=VAL :bar\n+SEQ\n=VAL :44\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "RR7F",
+    "name": "Mixed Block Mapping (implicit to explicit)",
+    "yaml": "a: 4.2\n? d\n: 23\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL :4.2\n=VAL :d\n=VAL :23\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "RTP8",
+    "name": "Spec Example 9.2. Document Markers",
+    "yaml": "%YAML 1.2\n---\nDocument\n... # Suffix\n",
+    "events": "+STR\n+DOC ---\n=VAL :Document\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "RXY3",
+    "name": "Invalid document-end marker in single quoted string",
+    "yaml": "---\n'\n...\n'\n",
+    "events": "+STR\n+DOC ---",
+    "error": true
+  },
+  {
+    "id": "RZP5",
+    "name": "Various Trailing Comments [1.3]",
+    "yaml": "a: \"double\n  quotes\" # lala\nb: plain\n value  # lala\nc  : #lala\n  d\n? # lala\n - seq1\n: # lala\n - #lala\n  seq2\ne: &node # lala\n - x: y\nblock: > # lala\n  abcde\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL \"double quotes\n=VAL :b\n=VAL :plain value\n=VAL :c\n=VAL :d\n+SEQ\n=VAL :seq1\n-SEQ\n+SEQ\n=VAL :seq2\n-SEQ\n=VAL :e\n+SEQ &node\n+MAP\n=VAL :x\n=VAL :y\n-MAP\n-SEQ\n=VAL :block\n=VAL >abcde\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "RZT7",
+    "name": "Spec Example 2.28. Log File",
+    "yaml": "---\nTime: 2001-11-23 15:01:42 -5\nUser: ed\nWarning:\n  This is an error message\n  for the log file\n---\nTime: 2001-11-23 15:02:31 -5\nUser: ed\nWarning:\n  A slightly different error\n  message.\n---\nDate: 2001-11-23 15:03:17 -5\nUser: ed\nFatal:\n  Unknown variable \"bar\"\nStack:\n  - file: TopClass.py\n    line: 23\n    code: |\n      x = MoreObject(\"345\\n\")\n  - file: MoreClass.py\n    line: 58\n    code: |-\n      foo = bar\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :Time\n=VAL :2001-11-23 15:01:42 -5\n=VAL :User\n=VAL :ed\n=VAL :Warning\n=VAL :This is an error message for the log file\n-MAP\n-DOC\n+DOC ---\n+MAP\n=VAL :Time\n=VAL :2001-11-23 15:02:31 -5\n=VAL :User\n=VAL :ed\n=VAL :Warning\n=VAL :A slightly different error message.\n-MAP\n-DOC\n+DOC ---\n+MAP\n=VAL :Date\n=VAL :2001-11-23 15:03:17 -5\n=VAL :User\n=VAL :ed\n=VAL :Fatal\n=VAL :Unknown variable \"bar\"\n=VAL :Stack\n+SEQ\n+MAP\n=VAL :file\n=VAL :TopClass.py\n=VAL :line\n=VAL :23\n=VAL :code\n=VAL |x = MoreObject(\"345\\\\n\")\\n\n-MAP\n+MAP\n=VAL :file\n=VAL :MoreClass.py\n=VAL :line\n=VAL :58\n=VAL :code\n=VAL |foo = bar\n-MAP\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "S3PD",
+    "name": "Spec Example 8.18. Implicit Block Mapping Entries",
+    "yaml": "plain key: in-line value\n: # Both empty\n\"quoted key\":\n- entry\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :plain key\n=VAL :in-line value\n=VAL :\n=VAL :\n=VAL \"quoted key\n+SEQ\n=VAL :entry\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "S4GJ",
+    "name": "Invalid text after block scalar indicator",
+    "yaml": "---\nfolded: > first line\n  second line\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :folded",
+    "error": true
+  },
+  {
+    "id": "S4JQ",
+    "name": "Spec Example 6.28. Non-Specific Tags",
+    "yaml": "# Assuming conventional resolution:\n- \"12\"\n- 12\n- ! 12\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL \"12\n=VAL :12\n=VAL <!> :12\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "S4T7",
+    "name": "Document with footer",
+    "yaml": "aaa: bbb\n...\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :aaa\n=VAL :bbb\n-MAP\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "S7BG",
+    "name": "Colon followed by comma",
+    "yaml": "---\n- :,\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n=VAL ::,\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "S98Z",
+    "name": "Block scalar with more spaces than first content line",
+    "yaml": "empty block scalar: >\n \n  \n   \n # comment\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :empty block scalar",
+    "error": true
+  },
+  {
+    "id": "S9E8",
+    "name": "Spec Example 5.3. Block Structure Indicators",
+    "yaml": "sequence:\n- one\n- two\nmapping:\n  ? sky\n  : blue\n  sea : green\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :sequence\n+SEQ\n=VAL :one\n=VAL :two\n-SEQ\n=VAL :mapping\n+MAP\n=VAL :sky\n=VAL :blue\n=VAL :sea\n=VAL :green\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "SBG9",
+    "name": "Flow Sequence in Flow Mapping",
+    "yaml": "{a: [b, c], [d, e]: f}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :a\n+SEQ []\n=VAL :b\n=VAL :c\n-SEQ\n+SEQ []\n=VAL :d\n=VAL :e\n-SEQ\n=VAL :f\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "SF5V",
+    "name": "Duplicate YAML directive",
+    "yaml": "%YAML 1.2\n%YAML 1.2\n---\n",
+    "events": "+STR",
+    "error": true
+  },
+  {
+    "id": "SKE5",
+    "name": "Anchor before zero indented sequence",
+    "yaml": "---\nseq:\n &anchor\n- a\n- b\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :seq\n+SEQ &anchor\n=VAL :a\n=VAL :b\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "SM9W/00",
+    "name": "Single character streams",
+    "yaml": "-",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "SM9W/01",
+    "name": "Single character streams",
+    "yaml": ":",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "SR86",
+    "name": "Anchor plus Alias",
+    "yaml": "key1: &a value\nkey2: &b *a\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key1\n=VAL &a :value\n=VAL :key2",
+    "error": true
+  },
+  {
+    "id": "SSW6",
+    "name": "Spec Example 7.7. Single Quoted Characters [1.3]",
+    "yaml": "---\n'here''s to \"quotes\"'\n",
+    "events": "+STR\n+DOC ---\n=VAL 'here's to \"quotes\"\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "SU5Z",
+    "name": "Comment without whitespace after doublequoted scalar",
+    "yaml": "key: \"value\"# invalid comment\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL \"value",
+    "error": true
+  },
+  {
+    "id": "SU74",
+    "name": "Anchor and alias as mapping key",
+    "yaml": "key1: &alias value1\n&b *alias : value2\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :key1\n=VAL &alias :value1",
+    "error": true
+  },
+  {
+    "id": "SY6V",
+    "name": "Anchor before sequence entry on same line",
+    "yaml": "&anchor - sequence entry\n",
+    "events": "+STR",
+    "error": true
+  },
+  {
+    "id": "SYW4",
+    "name": "Spec Example 2.2. Mapping Scalars to Scalars",
+    "yaml": "hr:  65    # Home runs\navg: 0.278 # Batting average\nrbi: 147   # Runs Batted In\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :hr\n=VAL :65\n=VAL :avg\n=VAL :0.278\n=VAL :rbi\n=VAL :147\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "T26H",
+    "name": "Spec Example 8.8. Literal Content [1.3]",
+    "yaml": "--- |\n \n  \n  literal\n   \n  \n  text\n\n # Comment\n",
+    "events": "+STR\n+DOC ---\n=VAL |\\n\\nliteral\\n \\n\\ntext\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "T4YY",
+    "name": "Spec Example 7.9. Single Quoted Lines [1.3]",
+    "yaml": "---\n' 1st non-empty\n\n 2nd non-empty \n 3rd non-empty '\n",
+    "events": "+STR\n+DOC ---\n=VAL ' 1st non-empty\\n2nd non-empty 3rd non-empty \n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "T5N4",
+    "name": "Spec Example 8.7. Literal Scalar [1.3]",
+    "yaml": "--- |\n literal\n \ttext\n\n\n",
+    "events": "+STR\n+DOC ---\n=VAL |literal\\n\\ttext\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "T833",
+    "name": "Flow mapping missing a separating comma",
+    "yaml": "---\n{\n foo: 1\n bar: 2 }\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :foo",
+    "error": true
+  },
+  {
+    "id": "TD5N",
+    "name": "Invalid scalar after sequence",
+    "yaml": "- item1\n- item2\ninvalid\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :item1\n=VAL :item2",
+    "error": true
+  },
+  {
+    "id": "TE2A",
+    "name": "Spec Example 8.16. Block Mappings",
+    "yaml": "block mapping:\n key: value\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :block mapping\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "TL85",
+    "name": "Spec Example 6.8. Flow Folding",
+    "yaml": "\"\n  foo \n \n  \t bar\n\n  baz\n\"\n",
+    "events": "+STR\n+DOC\n=VAL \" foo\\nbar\\nbaz \n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "TS54",
+    "name": "Folded Block Scalar",
+    "yaml": ">\n ab\n cd\n \n ef\n\n\n gh\n",
+    "events": "+STR\n+DOC\n=VAL >ab cd\\nef\\n\\ngh\\n\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "U3C3",
+    "name": "Spec Example 6.16. \u201cTAG\u201d directive",
+    "yaml": "%TAG !yaml! tag:yaml.org,2002:\n---\n!yaml!str \"foo\"\n",
+    "events": "+STR\n+DOC ---\n=VAL <tag:yaml.org,2002:str> \"foo\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "U3XV",
+    "name": "Node and Mapping Key Anchors",
+    "yaml": "---\ntop1: &node1\n  &k1 key1: one\ntop2: &node2 # comment\n  key2: two\ntop3:\n  &k3 key3: three\ntop4:\n  &node4\n  &k4 key4: four\ntop5:\n  &node5\n  key5: five\ntop6: &val6\n  six\ntop7:\n  &val7 seven\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :top1\n+MAP &node1\n=VAL &k1 :key1\n=VAL :one\n-MAP\n=VAL :top2\n+MAP &node2\n=VAL :key2\n=VAL :two\n-MAP\n=VAL :top3\n+MAP\n=VAL &k3 :key3\n=VAL :three\n-MAP\n=VAL :top4\n+MAP &node4\n=VAL &k4 :key4\n=VAL :four\n-MAP\n=VAL :top5\n+MAP &node5\n=VAL :key5\n=VAL :five\n-MAP\n=VAL :top6\n=VAL &val6 :six\n=VAL :top7\n=VAL &val7 :seven\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "U44R",
+    "name": "Bad indentation in mapping (2)",
+    "yaml": "map:\n  key1: \"quoted1\"\n   key2: \"bad indentation\"\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :map\n+MAP\n=VAL :key1\n=VAL \"quoted1",
+    "error": true
+  },
+  {
+    "id": "U99R",
+    "name": "Invalid comma in tag",
+    "yaml": "- !!str, xxx\n",
+    "events": "+STR\n+DOC\n+SEQ",
+    "error": true
+  },
+  {
+    "id": "U9NS",
+    "name": "Spec Example 2.8. Play by Play Feed from a Game",
+    "yaml": "---\ntime: 20:03:20\nplayer: Sammy Sosa\naction: strike (miss)\n...\n---\ntime: 20:03:47\nplayer: Sammy Sosa\naction: grand slam\n...\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :time\n=VAL :20:03:20\n=VAL :player\n=VAL :Sammy Sosa\n=VAL :action\n=VAL :strike (miss)\n-MAP\n-DOC ...\n+DOC ---\n+MAP\n=VAL :time\n=VAL :20:03:47\n=VAL :player\n=VAL :Sammy Sosa\n=VAL :action\n=VAL :grand slam\n-MAP\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "UDM2",
+    "name": "Plain URL in flow mapping",
+    "yaml": "- { url: http://example.org }\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP {}\n=VAL :url\n=VAL :http://example.org\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "UDR7",
+    "name": "Spec Example 5.4. Flow Collection Indicators",
+    "yaml": "sequence: [ one, two, ]\nmapping: { sky: blue, sea: green }\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :sequence\n+SEQ []\n=VAL :one\n=VAL :two\n-SEQ\n=VAL :mapping\n+MAP {}\n=VAL :sky\n=VAL :blue\n=VAL :sea\n=VAL :green\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "UGM3",
+    "name": "Spec Example 2.27. Invoice",
+    "yaml": "--- !<tag:clarkevans.com,2002:invoice>\ninvoice: 34843\ndate   : 2001-01-23\nbill-to: &id001\n    given  : Chris\n    family : Dumars\n    address:\n        lines: |\n            458 Walkman Dr.\n            Suite #292\n        city    : Royal Oak\n        state   : MI\n        postal  : 48046\nship-to: *id001\nproduct:\n    - sku         : BL394D\n      quantity    : 4\n      description : Basketball\n      price       : 450.00\n    - sku         : BL4438H\n      quantity    : 1\n      description : Super Hoop\n      price       : 2392.00\ntax  : 251.42\ntotal: 4443.52\ncomments:\n    Late afternoon is best.\n    Backup contact is Nancy\n    Billsmer @ 338-4338.\n",
+    "events": "+STR\n+DOC ---\n+MAP <tag:clarkevans.com,2002:invoice>\n=VAL :invoice\n=VAL :34843\n=VAL :date\n=VAL :2001-01-23\n=VAL :bill-to\n+MAP &id001\n=VAL :given\n=VAL :Chris\n=VAL :family\n=VAL :Dumars\n=VAL :address\n+MAP\n=VAL :lines\n=VAL |458 Walkman Dr.\\nSuite #292\\n\n=VAL :city\n=VAL :Royal Oak\n=VAL :state\n=VAL :MI\n=VAL :postal\n=VAL :48046\n-MAP\n-MAP\n=VAL :ship-to\n=ALI *id001\n=VAL :product\n+SEQ\n+MAP\n=VAL :sku\n=VAL :BL394D\n=VAL :quantity\n=VAL :4\n=VAL :description\n=VAL :Basketball\n=VAL :price\n=VAL :450.00\n-MAP\n+MAP\n=VAL :sku\n=VAL :BL4438H\n=VAL :quantity\n=VAL :1\n=VAL :description\n=VAL :Super Hoop\n=VAL :price\n=VAL :2392.00\n-MAP\n-SEQ\n=VAL :tax\n=VAL :251.42\n=VAL :total\n=VAL :4443.52\n=VAL :comments\n=VAL :Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "UKK6/00",
+    "name": "Syntax character edge cases",
+    "yaml": "- :\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :\n=VAL :\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "UKK6/01",
+    "name": "Syntax character edge cases",
+    "yaml": "::\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL ::\n=VAL :\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "UKK6/02",
+    "name": "Syntax character edge cases",
+    "yaml": "!\n",
+    "events": "+STR\n+DOC\n=VAL <!> :\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "UT92",
+    "name": "Spec Example 9.4. Explicit Documents",
+    "yaml": "---\n{ matches\n% : 20 }\n...\n---\n# Empty\n...\n",
+    "events": "+STR\n+DOC ---\n+MAP {}\n=VAL :matches %\n=VAL :20\n-MAP\n-DOC ...\n+DOC ---\n=VAL :\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "UV7Q",
+    "name": "Legal tab after indentation",
+    "yaml": "x:\n - x\n  \tx\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :x\n+SEQ\n=VAL :x x\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "V55R",
+    "name": "Aliases in Block Sequence",
+    "yaml": "- &a a\n- &b b\n- *a\n- *b\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL &a :a\n=VAL &b :b\n=ALI *a\n=ALI *b\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "V9D5",
+    "name": "Spec Example 8.19. Compact Block Mappings",
+    "yaml": "- sun: yellow\n- ? earth: blue\n  : moon: white\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :sun\n=VAL :yellow\n-MAP\n+MAP\n+MAP\n=VAL :earth\n=VAL :blue\n-MAP\n+MAP\n=VAL :moon\n=VAL :white\n-MAP\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "VJP3/00",
+    "name": "Flow collections over many lines",
+    "yaml": "k: {\nk\n:\nv\n}\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :k\n+MAP {}",
+    "error": true
+  },
+  {
+    "id": "VJP3/01",
+    "name": "Flow collections over many lines",
+    "yaml": "k: {\n k\n :\n v\n }\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :k\n+MAP {}\n=VAL :k\n=VAL :v\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "W42U",
+    "name": "Spec Example 8.15. Block Sequence Entry Types",
+    "yaml": "- # Empty\n- |\n block node\n- - one # Compact\n  - two # sequence\n- one: two # Compact mapping\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :\n=VAL |block node\\n\n+SEQ\n=VAL :one\n=VAL :two\n-SEQ\n+MAP\n=VAL :one\n=VAL :two\n-MAP\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "W4TN",
+    "name": "Spec Example 9.5. Directives Documents",
+    "yaml": "%YAML 1.2\n--- |\n%!PS-Adobe-2.0\n...\n%YAML 1.2\n---\n# Empty\n...\n",
+    "events": "+STR\n+DOC ---\n=VAL |%!PS-Adobe-2.0\\n\n-DOC ...\n+DOC ---\n=VAL :\n-DOC ...\n-STR",
+    "error": false
+  },
+  {
+    "id": "W5VH",
+    "name": "Allowed characters in alias",
+    "yaml": "a: &:@*!$\"<foo>: scalar a\nb: *:@*!$\"<foo>:\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL &:@*!$\"<foo>: :scalar a\n=VAL :b\n=ALI *:@*!$\"<foo>:\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "W9L4",
+    "name": "Literal block scalar with more spaces in first line",
+    "yaml": "---\nblock scalar: |\n     \n  more spaces at the beginning\n  are invalid\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :block scalar",
+    "error": true
+  },
+  {
+    "id": "WZ62",
+    "name": "Spec Example 7.2. Empty Content",
+    "yaml": "{\n  foo : !!str,\n  !!str : bar,\n}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :foo\n=VAL <tag:yaml.org,2002:str> :\n=VAL <tag:yaml.org,2002:str> :\n=VAL :bar\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "X38W",
+    "name": "Aliases in Flow Objects",
+    "yaml": "{ &a [a, &b b]: *b, *a : [c, *b, d]}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n+SEQ [] &a\n=VAL :a\n=VAL &b :b\n-SEQ\n=ALI *b\n=ALI *a\n+SEQ []\n=VAL :c\n=ALI *b\n=VAL :d\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "X4QW",
+    "name": "Comment without whitespace after block scalar indicator",
+    "yaml": "block: ># comment\n  scalar\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :block",
+    "error": true
+  },
+  {
+    "id": "X8DW",
+    "name": "Explicit key and value seperated by comment",
+    "yaml": "---\n? key\n# comment\n: value\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "XLQ9",
+    "name": "Multiline scalar that looks like a YAML directive",
+    "yaml": "---\nscalar\n%YAML 1.2\n",
+    "events": "+STR\n+DOC ---\n=VAL :scalar %YAML 1.2\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "XV9V",
+    "name": "Spec Example 6.5. Empty Lines [1.3]",
+    "yaml": "Folding:\n  \"Empty line\n\n  as a line feed\"\nChomping: |\n  Clipped empty lines\n \n\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :Folding\n=VAL \"Empty line\\nas a line feed\n=VAL :Chomping\n=VAL |Clipped empty lines\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "XW4D",
+    "name": "Various Trailing Comments",
+    "yaml": "a: \"double\n  quotes\" # lala\nb: plain\n value  # lala\nc  : #lala\n  d\n? # lala\n - seq1\n: # lala\n - #lala\n  seq2\ne:\n &node # lala\n - x: y\nblock: > # lala\n  abcde\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL \"double quotes\n=VAL :b\n=VAL :plain value\n=VAL :c\n=VAL :d\n+SEQ\n=VAL :seq1\n-SEQ\n+SEQ\n=VAL :seq2\n-SEQ\n=VAL :e\n+SEQ &node\n+MAP\n=VAL :x\n=VAL :y\n-MAP\n-SEQ\n=VAL :block\n=VAL >abcde\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Y2GN",
+    "name": "Anchor with colon in the middle",
+    "yaml": "---\nkey: &an:chor value\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :key\n=VAL &an:chor :value\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Y79Y/000",
+    "name": "Tabs in various contexts",
+    "yaml": "foo: |\n\t\nbar: 1\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo",
+    "error": true
+  },
+  {
+    "id": "Y79Y/001",
+    "name": "Tabs in various contexts",
+    "yaml": "foo: |\n \t\nbar: 1\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :foo\n=VAL |\\t\\n\n=VAL :bar\n=VAL :1\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Y79Y/002",
+    "name": "Tabs in various contexts",
+    "yaml": "- [\n\t\n foo\n ]\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []\n=VAL :foo\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Y79Y/003",
+    "name": "Tabs in various contexts",
+    "yaml": "- [\n\tfoo,\n foo\n ]\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Y79Y/004",
+    "name": "Tabs in various contexts",
+    "yaml": "-\t-\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Y79Y/005",
+    "name": "Tabs in various contexts",
+    "yaml": "- \t-\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Y79Y/006",
+    "name": "Tabs in various contexts",
+    "yaml": "?\t-\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Y79Y/007",
+    "name": "Tabs in various contexts",
+    "yaml": "? -\n:\t-\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Y79Y/008",
+    "name": "Tabs in various contexts",
+    "yaml": "?\tkey:\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Y79Y/009",
+    "name": "Tabs in various contexts",
+    "yaml": "? key:\n:\tkey:\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Y79Y/010",
+    "name": "Tabs in various contexts",
+    "yaml": "-\t-1\n",
+    "events": "+STR\n+DOC\n+SEQ\n=VAL :-1\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "YD5X",
+    "name": "Spec Example 2.5. Sequence of Sequences",
+    "yaml": "- [name        , hr, avg  ]\n- [Mark McGwire, 65, 0.278]\n- [Sammy Sosa  , 63, 0.288]\n",
+    "events": "+STR\n+DOC\n+SEQ\n+SEQ []\n=VAL :name\n=VAL :hr\n=VAL :avg\n-SEQ\n+SEQ []\n=VAL :Mark McGwire\n=VAL :65\n=VAL :0.278\n-SEQ\n+SEQ []\n=VAL :Sammy Sosa\n=VAL :63\n=VAL :0.288\n-SEQ\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "YJV2",
+    "name": "Dash in flow sequence",
+    "yaml": "[-]\n",
+    "events": "+STR\n+DOC\n+SEQ []",
+    "error": true
+  },
+  {
+    "id": "Z67P",
+    "name": "Spec Example 8.21. Block Scalar Nodes [1.3]",
+    "yaml": "literal: |2\n  value\nfolded: !foo >1\n value\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :literal\n=VAL |value\\n\n=VAL :folded\n=VAL <!foo> >value\\n\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "Z9M4",
+    "name": "Spec Example 6.22. Global Tag Prefix",
+    "yaml": "%TAG !e! tag:example.com,2000:app/\n---\n- !e!foo \"bar\"\n",
+    "events": "+STR\n+DOC ---\n+SEQ\n=VAL <tag:example.com,2000:app/foo> \"bar\n-SEQ\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "ZCZ6",
+    "name": "Invalid mapping in plain single line value",
+    "yaml": "a: b: c: d\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :a",
+    "error": true
+  },
+  {
+    "id": "ZF4X",
+    "name": "Spec Example 2.6. Mapping of Mappings",
+    "yaml": "Mark McGwire: {hr: 65, avg: 0.278}\nSammy Sosa: {\n    hr: 63,\n    avg: 0.288\n  }\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL :Mark McGwire\n+MAP {}\n=VAL :hr\n=VAL :65\n=VAL :avg\n=VAL :0.278\n-MAP\n=VAL :Sammy Sosa\n+MAP {}\n=VAL :hr\n=VAL :63\n=VAL :avg\n=VAL :0.288\n-MAP\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "ZH7C",
+    "name": "Anchors in Mapping",
+    "yaml": "&a a: b\nc: &d d\n",
+    "events": "+STR\n+DOC\n+MAP\n=VAL &a :a\n=VAL :b\n=VAL :c\n=VAL &d :d\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "ZK9H",
+    "name": "Nested top level flow mapping",
+    "yaml": "{ key: [[[\n  value\n ]]]\n}\n",
+    "events": "+STR\n+DOC\n+MAP {}\n=VAL :key\n+SEQ []\n+SEQ []\n+SEQ []\n=VAL :value\n-SEQ\n-SEQ\n-SEQ\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "ZL4Z",
+    "name": "Invalid nested mapping",
+    "yaml": "---\na: 'b': c\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :a\n=VAL 'b",
+    "error": true
+  },
+  {
+    "id": "ZVH3",
+    "name": "Wrong indented sequence item",
+    "yaml": "- key: value\n - item1\n",
+    "events": "+STR\n+DOC\n+SEQ\n+MAP\n=VAL :key\n=VAL :value\n-MAP",
+    "error": true
+  },
+  {
+    "id": "ZWK4",
+    "name": "Key with anchor after missing explicit mapping value",
+    "yaml": "---\na: 1\n? b\n&anchor c: 3\n",
+    "events": "+STR\n+DOC ---\n+MAP\n=VAL :a\n=VAL :1\n=VAL :b\n=VAL :\n=VAL &anchor :c\n=VAL :3\n-MAP\n-DOC\n-STR",
+    "error": false
+  },
+  {
+    "id": "ZXT5",
+    "name": "Implicit key followed by newline and adjacent value",
+    "yaml": "[ \"key\"\n  :value ]\n",
+    "events": "+STR\n+DOC\n+SEQ []\n=VAL \"key",
+    "error": true
+  }
+]

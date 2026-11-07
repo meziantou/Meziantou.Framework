@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -5,13 +6,14 @@ namespace Meziantou.Extensions.Logging.InMemory;
 
 /// <summary>Represents a log entry captured by an in-memory logger.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs" ref:region="InMemoryLogEntry_Example" ref:dedent="true">
 /// var logger = InMemoryLogger.CreateLogger("sample");
 /// logger.LogInformation("User {UserId} logged in", 123);
-/// 
+///
 /// var log = logger.Logs.Informations.Single();
-/// Console.WriteLine(log.Message); // "User 123 logged in"
-/// log.TryGetParameterValue("UserId", out var userId); // userId = 123
+/// Assert.Equal("User 123 logged in", log.Message);
+/// Assert.True(log.TryGetParameterValue("UserId", out var userId));
+/// Assert.Equal(123, userId);
 /// </code>
 /// </example>
 public sealed class InMemoryLogEntry
@@ -79,15 +81,41 @@ public sealed class InMemoryLogEntry
 
         if (State is not null)
         {
-            sb.Append("\n  => ").Append(JsonSerializer.Serialize(State));
+            sb.Append("\n  => ").Append(Serialize(State));
         }
 
         foreach (var scope in Scopes)
         {
-            sb.Append("\n  => ").Append(JsonSerializer.Serialize(scope));
+            sb.Append("\n  => ").Append(Serialize(scope));
         }
 
         return sb.ToString();
+    }
+
+    // ToString is the diagnostic surface of this type: it ends up in assertion messages and in the
+    // debugger, so it must never throw. JsonSerializer rejects plenty of values that are perfectly
+    // ordinary to log (Type, delegates, reference cycles), hence the fallback to the value's own
+    // representation instead of letting the exception escape.
+    private static string Serialize(object? value)
+    {
+        if (value is null)
+            return "null";
+
+        try
+        {
+            return JsonSerializer.Serialize(value);
+        }
+        catch (Exception)
+        {
+            try
+            {
+                return value.ToString() ?? value.GetType().ToString();
+            }
+            catch (Exception)
+            {
+                return value.GetType().ToString();
+            }
+        }
     }
 
     /// <summary>Tries to retrieve the first parameter value with the specified name from the state or scopes.</summary>
@@ -132,7 +160,20 @@ public sealed class InMemoryLogEntry
             return false;
         }
 
-        if (owner is IEnumerable<KeyValuePair<string, object?>> stateDictionary)
+        // Most states and scopes (such as FormattedLogValues) are indexable, so avoid allocating an enumerator
+        if (owner is IReadOnlyList<KeyValuePair<string, object?>> stateList)
+        {
+            for (var i = 0; i < stateList.Count; i++)
+            {
+                var item = stateList[i];
+                if (string.Equals(name, item.Key, StringComparison.Ordinal))
+                {
+                    result = item.Value;
+                    return true;
+                }
+            }
+        }
+        else if (owner is IEnumerable<KeyValuePair<string, object?>> stateDictionary)
         {
             foreach (var item in stateDictionary)
             {
@@ -144,7 +185,7 @@ public sealed class InMemoryLogEntry
             }
         }
 
-        var property = owner.GetType().GetProperty(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+        var property = owner.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
         if (property is not null)
         {
             result = property.GetValue(owner);

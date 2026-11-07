@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Matching;
+using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.Framework.Internals;
 
@@ -34,7 +35,7 @@ internal sealed class QueryStringMatcherPolicy : MatcherPolicy, IEndpointSelecto
         for (var i = 0; i < candidates.Count; i++)
         {
             var metadata = candidates[i].Endpoint?.Metadata.GetMetadata<QueryStringMetadata>();
-            if (metadata == null || metadata.QueryString is null)
+            if (metadata?.QueryString is null)
                 continue;
 
             if (!candidates.IsValidCandidate(i))
@@ -65,13 +66,24 @@ internal sealed class QueryStringMatcherPolicy : MatcherPolicy, IEndpointSelecto
             if (values.Count != kvp.Value.Count)
                 return false;
 
-            foreach (var value in kvp.Value)
-            {
-                if (!values.Contains(value, StringComparer.Ordinal))
-                    return false;
-            }
+            if (!SameValues(kvp.Value, values))
+                return false;
         }
 
         return true;
+    }
+
+    // Values of a repeated key are compared without taking their order into account, but a value expected twice
+    // must also be present twice
+    private static bool SameValues(StringValues expected, StringValues actual)
+    {
+        if (expected.Count == 1)
+            return string.Equals(expected[0], actual[0], StringComparison.Ordinal);
+
+        var expectedValues = expected.ToArray();
+        var actualValues = actual.ToArray();
+        Array.Sort(expectedValues, StringComparer.Ordinal);
+        Array.Sort(actualValues, StringComparer.Ordinal);
+        return expectedValues.AsSpan().SequenceEqual(actualValues);
     }
 }

@@ -9,18 +9,20 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Represents a security identifier (SID) that uniquely identifies a user, group, or other security principal.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs" ref:region="SecurityIdentifier_Usage" ref:dedent="true">
 /// // Get a well-known SID
 /// var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
-/// Console.WriteLine($"Administrators SID: {adminSid.Sid}");
-/// Console.WriteLine($"Full Name: {adminSid.FullName}");
+/// Assert.Equal("S-1-5-32-544", adminSid.Sid);
+///
+/// // The account name is localized: "BUILTIN\Administrators" on an English version of Windows
+/// Assert.NotEmpty(adminSid.FullName);
 ///
 /// // Compare SIDs
 /// using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
 /// var ownerSid = token.GetOwner();
 /// if (ownerSid == adminSid)
 /// {
-///     Console.WriteLine("Owner is administrator");
+///     // The owner is the Administrators group, which is the case of an elevated process
 /// }
 /// </code>
 /// </example>
@@ -34,24 +36,47 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     private const byte MaxSubAuthorities = 15;
     private const int MaxBinaryLength = 1 + 1 + 6 + (MaxSubAuthorities * 4); // 4 bytes for each subauth
 
-    internal SecurityIdentifier(PSID sid)
+    private readonly byte[] _sid;
+    private (string? Domain, string? Name)? _account;
+
+    internal unsafe SecurityIdentifier(PSID sid)
     {
         if (sid == default)
             throw new ArgumentNullException(nameof(sid));
 
-        LookupName(sid, out var domain, out var name);
-        Domain = domain;
-        Name = name;
+        // The SID is only valid for the lifetime of the caller's buffer, so keep a copy for the deferred lookup
+        _sid = new Span<byte>(sid.Value, (int)PInvoke.GetLengthSid(sid)).ToArray();
         Sid = ConvertSidToStringSid(sid);
     }
 
     /// <summary>Gets the domain name associated with the SID.</summary>
     /// <value>The domain name, or <see langword="null"/> if the SID could not be resolved.</value>
-    public string? Domain { get; }
+    /// <remarks>Resolved on first access, which may query the local security authority or a domain controller.</remarks>
+    /// <exception cref="Win32Exception">The account lookup failed.</exception>
+    public string? Domain => Account.Domain;
 
     /// <summary>Gets the account name associated with the SID.</summary>
     /// <value>The account name, or <see langword="null"/> if the SID could not be resolved.</value>
-    public string? Name { get; }
+    /// <remarks>Resolved on first access, which may query the local security authority or a domain controller.</remarks>
+    /// <exception cref="Win32Exception">The account lookup failed.</exception>
+    public string? Name => Account.Name;
+
+    private unsafe (string? Domain, string? Name) Account
+    {
+        get
+        {
+            if (_account is null)
+            {
+                fixed (byte* pointer = _sid)
+                {
+                    LookupName(new PSID(pointer), out var domain, out var name);
+                    _account = (domain, name);
+                }
+            }
+
+            return _account.Value;
+        }
+    }
 
     /// <summary>Gets the string representation of the SID (e.g., "S-1-5-21-...").</summary>
     public string Sid { get; }
@@ -74,9 +99,11 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     /// <returns>A <see cref="SecurityIdentifier"/> representing the well-known SID.</returns>
     /// <exception cref="Win32Exception">The SID could not be created.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs" ref:region="SecurityIdentifier_FromWellKnown" ref:dedent="true">
     /// var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
     /// var systemSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLocalSystemSid);
+    /// Assert.Equal("S-1-5-32-544", adminSid.Sid);
+    /// Assert.Equal("S-1-5-18", systemSid.Sid);
     /// </code>
     /// </example>
     public static unsafe SecurityIdentifier FromWellKnown(WellKnownSidType type)
@@ -103,10 +130,18 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     private static unsafe string ConvertSidToStringSid(PSID sid)
     {
         PWSTR result = default;
-        if (PInvoke.ConvertSidToStringSid(sid, &result))
-            return result.ToString();
+        if (!PInvoke.ConvertSidToStringSid(sid, &result))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        throw new Win32Exception(Marshal.GetLastWin32Error());
+        try
+        {
+            return result.ToString();
+        }
+        finally
+        {
+            // ConvertSidToStringSid allocates the buffer with LocalAlloc
+            PInvoke.LocalFree((HLOCAL)result.Value);
+        }
     }
 
     private static unsafe void LookupName(PSID sid, out string? domain, out string? name)
@@ -114,26 +149,31 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         var userNameLen = 256u;
         var domainNameLen = 256u;
 
-        fixed (char* userName = new char[userNameLen])
-        fixed (char* domainName = new char[domainNameLen])
+        // LookupAccountSid reports the required sizes when a buffer is too small, so retry once with them
+        for (var attempt = 0; ; attempt++)
         {
-            SID_NAME_USE sidType;
-            if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, &userNameLen, domainName, &domainNameLen, &sidType) != 0)
+            fixed (char* userName = new char[userNameLen])
+            fixed (char* domainName = new char[domainNameLen])
             {
-                name = new string(userName, 0, (int)userNameLen);
-                domain = new string(domainName, 0, (int)domainNameLen);
-                return;
-            }
+                SID_NAME_USE sidType;
+                if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, &userNameLen, domainName, &domainNameLen, &sidType) != 0)
+                {
+                    name = new string(userName, 0, (int)userNameLen);
+                    domain = new string(domainName, 0, (int)domainNameLen);
+                    return;
+                }
 
-            var error = Marshal.GetLastWin32Error();
-            if (error == (int)WIN32_ERROR.ERROR_NONE_MAPPED)
-            {
-                domain = default;
-                name = default;
-                return;
-            }
+                var error = Marshal.GetLastWin32Error();
+                if (error == (int)WIN32_ERROR.ERROR_NONE_MAPPED)
+                {
+                    domain = default;
+                    name = default;
+                    return;
+                }
 
-            throw new Win32Exception(error);
+                if (error != (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER || attempt > 0)
+                    throw new Win32Exception(error);
+            }
         }
     }
 

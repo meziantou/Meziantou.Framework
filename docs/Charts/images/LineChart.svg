@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Monthly temperature in Paris</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="49.33" y1="369.83" x2="628.22" y2="369.83" stroke="#e3e6ea"/>
+<line x1="49.33" y1="327.7" x2="628.22" y2="327.7" stroke="#e3e6ea"/>
+<line x1="49.33" y1="285.57" x2="628.22" y2="285.57" stroke="#e3e6ea"/>
+<line x1="49.33" y1="243.44" x2="628.22" y2="243.44" stroke="#e3e6ea"/>
+<line x1="49.33" y1="201.31" x2="628.22" y2="201.31" stroke="#e3e6ea"/>
+<line x1="49.33" y1="159.18" x2="628.22" y2="159.18" stroke="#e3e6ea"/>
+<line x1="49.33" y1="117.06" x2="628.22" y2="117.06" stroke="#e3e6ea"/>
+<line x1="49.33" y1="74.93" x2="628.22" y2="74.93" stroke="#e3e6ea"/>
+<line x1="49.33" y1="32.8" x2="628.22" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M49.33,39.12 L102.9,39.12 L153.01,81.25 L206.58,157.08 L258.42,245.55 L311.99,321.38 L363.83,363.51 L417.4,363.51 L470.97,321.38 L522.81,245.55 L576.38,157.08 L628.22,81.25" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="49.33" cy="39.12" r="3" fill="#4269d0"/>
+<circle cx="102.9" cy="39.12" r="3" fill="#4269d0"/>
+<circle cx="153.01" cy="81.25" r="3" fill="#4269d0"/>
+<circle cx="206.58" cy="157.08" r="3" fill="#4269d0"/>
+<circle cx="258.42" cy="245.55" r="3" fill="#4269d0"/>
+<circle cx="311.99" cy="321.38" r="3" fill="#4269d0"/>
+<circle cx="363.83" cy="363.51" r="3" fill="#4269d0"/>
+<circle cx="417.4" cy="363.51" r="3" fill="#4269d0"/>
+<circle cx="470.97" cy="321.38" r="3" fill="#4269d0"/>
+<circle cx="522.81" cy="245.55" r="3" fill="#4269d0"/>
+<circle cx="576.38" cy="157.08" r="3" fill="#4269d0"/>
+<circle cx="628.22" cy="81.25" r="3" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="44.33" y1="369.83" x2="49.33" y2="369.83" stroke="#8c959f"/>
+<text x="41.33" y="372.64" text-anchor="end" font-size="11" fill="#59636e">4</text>
+<line x1="44.33" y1="327.7" x2="49.33" y2="327.7" stroke="#8c959f"/>
+<text x="41.33" y="330.51" text-anchor="end" font-size="11" fill="#59636e">6</text>
+<line x1="44.33" y1="285.57" x2="49.33" y2="285.57" stroke="#8c959f"/>
+<text x="41.33" y="288.38" text-anchor="end" font-size="11" fill="#59636e">8</text>
+<line x1="44.33" y1="243.44" x2="49.33" y2="243.44" stroke="#8c959f"/>
+<text x="41.33" y="246.25" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="44.33" y1="201.31" x2="49.33" y2="201.31" stroke="#8c959f"/>
+<text x="41.33" y="204.12" text-anchor="end" font-size="11" fill="#59636e">12</text>
+<line x1="44.33" y1="159.18" x2="49.33" y2="159.18" stroke="#8c959f"/>
+<text x="41.33" y="161.99" text-anchor="end" font-size="11" fill="#59636e">14</text>
+<line x1="44.33" y1="117.06" x2="49.33" y2="117.06" stroke="#8c959f"/>
+<text x="41.33" y="119.87" text-anchor="end" font-size="11" fill="#59636e">16</text>
+<line x1="44.33" y1="74.93" x2="49.33" y2="74.93" stroke="#8c959f"/>
+<text x="41.33" y="77.74" text-anchor="end" font-size="11" fill="#59636e">18</text>
+<line x1="44.33" y1="32.8" x2="49.33" y2="32.8" stroke="#8c959f"/>
+<text x="41.33" y="35.61" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<text x="18.62" y="201.31" text-anchor="middle" font-size="12" fill="#1f2328" transform="rotate(-90 18.62 201.31)">°C</text>
+<line x1="49.33" y1="369.83" x2="49.33" y2="374.83" stroke="#8c959f"/>
+<text x="49.33" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2024</text>
+<line x1="102.9" y1="369.83" x2="102.9" y2="374.83" stroke="#8c959f"/>
+<text x="102.9" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Feb</text>
+<line x1="153.01" y1="369.83" x2="153.01" y2="374.83" stroke="#8c959f"/>
+<text x="153.01" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar</text>
+<line x1="206.58" y1="369.83" x2="206.58" y2="374.83" stroke="#8c959f"/>
+<text x="206.58" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Apr</text>
+<line x1="258.42" y1="369.83" x2="258.42" y2="374.83" stroke="#8c959f"/>
+<text x="258.42" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">May</text>
+<line x1="311.99" y1="369.83" x2="311.99" y2="374.83" stroke="#8c959f"/>
+<text x="311.99" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jun</text>
+<line x1="363.83" y1="369.83" x2="363.83" y2="374.83" stroke="#8c959f"/>
+<text x="363.83" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jul</text>
+<line x1="417.4" y1="369.83" x2="417.4" y2="374.83" stroke="#8c959f"/>
+<text x="417.4" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Aug</text>
+<line x1="470.97" y1="369.83" x2="470.97" y2="374.83" stroke="#8c959f"/>
+<text x="470.97" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Sep</text>
+<line x1="522.81" y1="369.83" x2="522.81" y2="374.83" stroke="#8c959f"/>
+<text x="522.81" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Oct</text>
+<line x1="576.38" y1="369.83" x2="576.38" y2="374.83" stroke="#8c959f"/>
+<text x="576.38" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Nov</text>
+<line x1="628.22" y1="369.83" x2="628.22" y2="374.83" stroke="#8c959f"/>
+<text x="628.22" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Dec</text>
+<line x1="49.33" y1="369.83" x2="628.22" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Monthly temperature in Paris</text>
+</svg>

@@ -7,7 +7,36 @@ internal static class ResponseSerializer
 {
     public static async Task<byte[]> SerializeAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        var content = response.Content is null ? null : await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        var serialized = await SerializeAsync(response, maximumSize: null, cancellationToken).ConfigureAwait(false);
+        return serialized!;
+    }
+
+    /// <summary>Serializes the response, or returns <see langword="null"/> when it exceeds <paramref name="maximumSize"/>.</summary>
+    /// <remarks>
+    /// The body is read through <see cref="BoundedContentReader"/> so that a response which announces no
+    /// <c>Content-Length</c> cannot push an unbounded number of bytes into memory before being rejected. It
+    /// is checked before it is serialized: JSON encoding only grows the payload, since the body is
+    /// Base64-encoded and the headers are added, so a body already over the limit can never fit and the
+    /// serialization is skipped entirely.
+    /// </remarks>
+    public static async Task<byte[]?> SerializeAsync(HttpResponseMessage response, long? maximumSize, CancellationToken cancellationToken)
+    {
+        byte[]? content;
+        if (response.Content is null)
+        {
+            content = null;
+        }
+        else if (maximumSize is null)
+        {
+            content = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            content = await BoundedContentReader.ReadAsync(response, maximumSize.GetValueOrDefault(), cancellationToken).ConfigureAwait(false);
+            if (content is null)
+                return null;
+        }
+
         var serialized = new SerializedResponseMessage
         {
             HttpStatusCode = response.StatusCode,
@@ -18,14 +47,32 @@ internal static class ResponseSerializer
             Content = content,
         };
 
-        return JsonSerializer.SerializeToUtf8Bytes(serialized, SerializationContext.Default.SerializedResponseMessage);
+        var payload = JsonSerializer.SerializeToUtf8Bytes(serialized, SerializationContext.Default.SerializedResponseMessage);
+        if (maximumSize is not null && payload.Length > maximumSize.GetValueOrDefault())
+            return null;
+
+        return payload;
+    }
+
+    /// <summary>Throws a <see cref="JsonException"/> when the payload cannot be turned back into a response.</summary>
+    /// <remarks>
+    /// Entries come from an external store and can be truncated or corrupted. Validating on read keeps the
+    /// failure inside the cache lookup, where it is turned into a cache miss, instead of letting it escape
+    /// from the message handler once the response is being built. Well-formed JSON is not enough: a corrupted
+    /// byte can leave the payload well-formed while making the body invalid Base64 or the status code out of
+    /// range, which only fails once the response is built.
+    /// </remarks>
+    public static void EnsureValid(ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
+            throw new JsonException("The serialized response is empty");
+
+        _ = DeserializeMessage(data);
     }
 
     public static HttpResponseMessage Deserialize(byte[] data)
     {
-        var serialized = JsonSerializer.Deserialize(data, SerializationContext.Default.SerializedResponseMessage);
-        if (serialized is null)
-            throw new ArgumentException("Invalid serialized response data", nameof(data));
+        var serialized = DeserializeMessage(data);
 
         var response = new HttpResponseMessage(serialized.HttpStatusCode)
         {
@@ -62,6 +109,27 @@ internal static class ResponseSerializer
         }
 
         return response;
+    }
+
+    /// <summary>Deserializes the payload, or throws a <see cref="JsonException"/> when it does not describe a response <see cref="Deserialize"/> can build.</summary>
+    private static SerializedResponseMessage DeserializeMessage(ReadOnlySpan<byte> data)
+    {
+        var serialized = JsonSerializer.Deserialize(data, SerializationContext.Default.SerializedResponseMessage)
+            ?? throw new JsonException("The serialized response is null");
+
+        // The checks of the HttpResponseMessage constructor and of the ReasonPhrase setter
+        if ((int)serialized.HttpStatusCode is < 0 or > 999)
+            throw new JsonException("The serialized status code is out of range");
+
+        if (serialized.ReasonPhrase is not null && serialized.ReasonPhrase.AsSpan().IndexOfAny('\r', '\n', '\0') >= 0)
+            throw new JsonException("The serialized reason phrase contains a new-line or NUL character");
+
+        if (HasHeaderWithoutValues(serialized.Headers) || HasHeaderWithoutValues(serialized.ContentHeaders) || HasHeaderWithoutValues(serialized.TrailingHeaders))
+            throw new JsonException("A serialized header has no values");
+
+        return serialized;
+
+        static bool HasHeaderWithoutValues(IEnumerable<KeyValuePair<string, string[]>>? headers) => headers is not null && headers.Any(header => header.Value is null);
     }
 
     [return: NotNullIfNotNull(nameof(headers))]

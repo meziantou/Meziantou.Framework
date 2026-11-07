@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sr-Latn": {
+      "identity": {
+        "language": "sr",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.6		FALSE	FALSE	FALSE		[Action]			Table 196 and Table 220
+S	name	1.6		TRUE	FALSE	FALSE		[GoTo3DView]			
+Next	array;dictionary	1.6		FALSE	FALSE	FALSE				[ArrayOfActions];[ActionGoTo,ActionGoToR,ActionGoToE,fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData,ActionSetOCGState,ActionRendition,ActionTransition,ActionGoTo3DView,ActionECMAScript,fn:SinceVersion(2.0,ActionRichMediaExecute)]	
+TA	dictionary	1.6		TRUE	FALSE	FALSE				[Annot3D,fn:SinceVersion(2.0,AnnotRichMedia)]	
+V	dictionary;integer;name;string-text	1.6		TRUE	FALSE	FALSE				[3DView];[];[];[]	

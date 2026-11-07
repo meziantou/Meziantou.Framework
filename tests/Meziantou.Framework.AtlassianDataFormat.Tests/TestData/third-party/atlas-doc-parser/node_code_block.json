@@ -1,0 +1,1 @@
+{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":"python","localId":"74a0f271-419b-4c5d-bd6a-398ae38e4215"},"content":[{"text":"def add_two(a, b):\n    return a + b","type":"text"}]},{"type":"paragraph","attrs":{"localId":"ee825637-1db2-4d29-a279-b07ef6c0a9dc"}}],"version":1}

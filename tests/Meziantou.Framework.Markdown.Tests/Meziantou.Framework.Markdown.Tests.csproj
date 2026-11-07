@@ -1,0 +1,17 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <!-- Tests Meziantou.Framework.Markdown, which depends on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Specs/GfmPipeTableDifferential.json" LogicalName="Meziantou.Framework.Markdown.Tests.Specs.GfmPipeTableDifferential.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
+    <Compile Include="../../common/ThreadCpuStopwatch.cs" Link="ThreadCpuStopwatch.cs" />
+  </ItemGroup>
+</Project>

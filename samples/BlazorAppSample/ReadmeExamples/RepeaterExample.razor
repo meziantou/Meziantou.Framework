@@ -1,0 +1,12 @@
+<Repeater Items="items">
+    <ItemTemplate Context="item">
+        <span>@item</span>
+    </ItemTemplate>
+    <ItemSeparatorTemplate>, </ItemSeparatorTemplate>
+    <EmptyTemplate><em>No item</em></EmptyTemplate>
+    <LoadingTemplate><em>Loading...</em></LoadingTemplate>
+</Repeater>
+
+@code {
+    private List<string>? items = new() { "A", "B", "C" };
+}

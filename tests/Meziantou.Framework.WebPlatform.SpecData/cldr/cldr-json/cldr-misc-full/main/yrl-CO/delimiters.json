@@ -1,0 +1,16 @@
+{
+  "main": {
+    "yrl-CO": {
+      "identity": {
+        "language": "yrl",
+        "territory": "CO"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

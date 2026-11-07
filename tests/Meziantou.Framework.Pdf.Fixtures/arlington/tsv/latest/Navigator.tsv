@@ -1,0 +1,16 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	2.0		FALSE	FALSE	FALSE		[Navigator]			Table 160
+Layout	array;name	2.0		TRUE	FALSE	FALSE		[];[D,T,H,FilmStrip,FreeForm,Linear,Tree,*]		[ArrayOfNavigatorLayoutNames];[]	
+SWF	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE					Adobe Extension Level 3 only
+Name	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					Adobe Extension Level 3 only
+Desc	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					Adobe Extension Level 3 only
+Category	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					Adobe Extension Level 3 only
+ID	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE					Adobe Extension Level 3 only
+Version	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					Adobe Extension Level 3 only
+APIVersion	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE					Adobe Extension Level 3 only
+LoadType	name	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE	Default	[Module,Default]			Adobe Extension Level 3 only
+Icon	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					Adobe Extension Level 3 only
+Locale	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					Adobe Extension Level 3 only
+Strings	name-tree	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					Adobe Extension Level 3 only
+InitialFields	dictionary	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE				[CollectionSchema]	Adobe Extension Level 3 only
+Resources	name-tree	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE				[Stream]	Adobe Extension Level 3 only

@@ -17,6 +17,13 @@ public closed record ImageSource
     /// <param name="dockerfilePath">The path to the Dockerfile.</param>
     /// <param name="contextDirectory">The build context directory.</param>
     public static ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory = null)
+        => FromDockerfile(dockerfilePath, contextDirectory, options: null);
+
+    /// <summary>Creates an image source from a Dockerfile, a build context directory, and build options.</summary>
+    /// <param name="dockerfilePath">The path to the Dockerfile.</param>
+    /// <param name="contextDirectory">The build context directory. When <see langword="null"/>, the directory of the Dockerfile.</param>
+    /// <param name="options">The build options, copied by this method. When <see langword="null"/>, the default options.</param>
+    public static ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory, DockerfileBuildOptions? options)
     {
         var fullPath = Path.GetFullPath(dockerfilePath);
         if (contextDirectory is null)
@@ -28,7 +35,7 @@ public closed record ImageSource
             contextDirectory = Path.GetFullPath(contextDirectory);
         }
 
-        return new DockerfileImage(fullPath, contextDirectory);
+        return new DockerfileImage(fullPath, contextDirectory, options is null ? DockerfileBuildSettings.Default : new DockerfileBuildSettings(options));
     }
 
     /// <summary>Creates an image source from a Docker image archive produced by <c>docker save</c>.</summary>

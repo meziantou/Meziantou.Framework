@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform.JavaScript</RootNamespace>
+    <Version>1.0.5</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>Runs the scripts of the documents of Meziantou.Framework.WebPlatform with Meziantou.Framework.JavaScriptEngine (a ScriptEngine with the WebIDL bindings of the DOM).</Description>
+    <PackageTags>html;dom;javascript;ecmascript</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Benchmarks" />
+  </ItemGroup>
+</Project>

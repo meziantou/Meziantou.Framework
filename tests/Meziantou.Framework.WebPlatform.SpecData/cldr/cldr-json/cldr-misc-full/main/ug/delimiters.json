@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ug": {
+      "identity": {
+        "language": "ug"
+      },
+      "delimiters": {
+        "quotationStart": "»",
+        "quotationEnd": "«",
+        "alternateQuotationStart": "›",
+        "alternateQuotationEnd": "‹"
+      }
+    }
+  }
+}

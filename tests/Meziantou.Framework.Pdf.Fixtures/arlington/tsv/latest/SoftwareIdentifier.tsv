@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[SoftwareIdentifier]			Table 303
+U	string-ascii	1.5		TRUE	FALSE	FALSE					
+L	array	1.5		FALSE	FALSE	FALSE	[0]			[ArrayOfSoftwareVersions]	
+LI	boolean	1.5		FALSE	FALSE	FALSE	true				
+H	array	1.5		FALSE	FALSE	FALSE	[]			[ArrayOfSoftwareVersions]	
+HI	boolean	1.5		FALSE	FALSE	FALSE	true				
+OS	array	1.5		FALSE	FALSE	FALSE	[]			[ArrayOfStringsByte]	

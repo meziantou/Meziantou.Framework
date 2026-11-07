@@ -1,0 +1,1231 @@
+{
+  "spec": {
+    "title": "Presentation API",
+    "url": "https://w3c.github.io/presentation-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "PresentationRequest",
+          "PresentationConnectionAvailableEvent",
+          "PresentationConnectionCloseEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Presentation",
+          "PresentationAvailability",
+          "PresentationConnection",
+          "PresentationReceiver",
+          "PresentationConnectionList"
+        ]
+      }
+    },
+    "idlNames": {
+      "Presentation": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface Presentation {\n};",
+        "type": "interface",
+        "name": "Presentation",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentation"
+      },
+      "PresentationRequest": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface PresentationRequest : EventTarget {\n  constructor(USVString url);\n  constructor(sequence<USVString> urls);\n  Promise<PresentationConnection> start();\n  Promise<PresentationConnection> reconnect(USVString presentationId);\n  Promise<PresentationAvailability> getAvailability();\n\n  attribute EventHandler onconnectionavailable;\n};",
+        "type": "interface",
+        "name": "PresentationRequest",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationrequest-constructor"
+          },
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "urls",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USVString"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationrequest-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "start",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PresentationConnection"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationrequest-start"
+          },
+          {
+            "type": "operation",
+            "name": "reconnect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PresentationConnection"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "presentationId",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationrequest-reconnect"
+          },
+          {
+            "type": "operation",
+            "name": "getAvailability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PresentationAvailability"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationrequest-getavailability"
+          },
+          {
+            "type": "attribute",
+            "name": "onconnectionavailable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationrequest-onconnectionavailable"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationrequest"
+      },
+      "PresentationAvailability": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface PresentationAvailability : EventTarget {\n  readonly attribute boolean value;\n\n  attribute EventHandler onchange;\n};",
+        "type": "interface",
+        "name": "PresentationAvailability",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationavailability-value"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationavailability-onchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationavailability"
+      },
+      "PresentationConnectionAvailableEvent": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface PresentationConnectionAvailableEvent : Event {\n  constructor(DOMString type, PresentationConnectionAvailableEventInit eventInitDict);\n  [SameObject] readonly attribute PresentationConnection connection;\n};",
+        "type": "interface",
+        "name": "PresentationConnectionAvailableEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PresentationConnectionAvailableEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionavailableevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "connection",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PresentationConnection"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionavailableevent-connection"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionavailableevent"
+      },
+      "PresentationConnectionAvailableEventInit": {
+        "fragment": "dictionary PresentationConnectionAvailableEventInit : EventInit {\n  required PresentationConnection connection;\n};",
+        "type": "dictionary",
+        "name": "PresentationConnectionAvailableEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "connection",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PresentationConnection"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionavailableeventinit-connection"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionavailableeventinit"
+      },
+      "PresentationConnectionState": {
+        "fragment": "enum PresentationConnectionState { \"connecting\", \"connected\", \"closed\", \"terminated\" };",
+        "type": "enum",
+        "name": "PresentationConnectionState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "connecting",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionstate-connecting"
+          },
+          {
+            "type": "enum-value",
+            "value": "connected",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionstate-connected"
+          },
+          {
+            "type": "enum-value",
+            "value": "closed",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionstate-closed"
+          },
+          {
+            "type": "enum-value",
+            "value": "terminated",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionstate-terminated"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionstate"
+      },
+      "PresentationConnection": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface PresentationConnection : EventTarget {\n  readonly attribute USVString id;\n  readonly attribute USVString url;\n  readonly attribute PresentationConnectionState state;\n  undefined close();\n  undefined terminate();\n  attribute EventHandler onconnect;\n  attribute EventHandler onclose;\n  attribute EventHandler onterminate;\n\n  // Communication\n  attribute BinaryType binaryType;\n  attribute EventHandler onmessage;\n  undefined send (DOMString message);\n  undefined send (Blob data);\n  undefined send (ArrayBuffer data);\n  undefined send (ArrayBufferView data);\n};",
+        "type": "interface",
+        "name": "PresentationConnection",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-id"
+          },
+          {
+            "type": "attribute",
+            "name": "url",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-url"
+          },
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PresentationConnectionState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-state"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-close"
+          },
+          {
+            "type": "operation",
+            "name": "terminate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-terminate"
+          },
+          {
+            "type": "attribute",
+            "name": "onconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-onconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "onclose",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-onclose"
+          },
+          {
+            "type": "attribute",
+            "name": "onterminate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-onterminate"
+          },
+          {
+            "type": "attribute",
+            "name": "binaryType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BinaryType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-binarytype"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-onmessage"
+          },
+          {
+            "type": "operation",
+            "name": "send",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-send"
+          },
+          {
+            "type": "operation",
+            "name": "send",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-send"
+          },
+          {
+            "type": "operation",
+            "name": "send",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-send"
+          },
+          {
+            "type": "operation",
+            "name": "send",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBufferView"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection-send"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnection"
+      },
+      "PresentationConnectionCloseReason": {
+        "fragment": "enum PresentationConnectionCloseReason { \"error\", \"closed\", \"wentaway\" };",
+        "type": "enum",
+        "name": "PresentationConnectionCloseReason",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "error",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionclosereason-error"
+          },
+          {
+            "type": "enum-value",
+            "value": "closed",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionclosereason-closed"
+          },
+          {
+            "type": "enum-value",
+            "value": "wentaway",
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionclosereason-wentaway"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionclosereason"
+      },
+      "PresentationConnectionCloseEvent": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface PresentationConnectionCloseEvent : Event {\n  constructor(DOMString type, PresentationConnectionCloseEventInit eventInitDict);\n  readonly attribute PresentationConnectionCloseReason reason;\n  readonly attribute DOMString message;\n};",
+        "type": "interface",
+        "name": "PresentationConnectionCloseEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PresentationConnectionCloseEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectioncloseevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "reason",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PresentationConnectionCloseReason"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectioncloseevent-reason"
+          },
+          {
+            "type": "attribute",
+            "name": "message",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectioncloseevent-message"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectioncloseevent"
+      },
+      "PresentationConnectionCloseEventInit": {
+        "fragment": "dictionary PresentationConnectionCloseEventInit : EventInit {\n  required PresentationConnectionCloseReason reason;\n  DOMString message = \"\";\n};",
+        "type": "dictionary",
+        "name": "PresentationConnectionCloseEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "reason",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PresentationConnectionCloseReason"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectioncloseeventinit-reason"
+          },
+          {
+            "type": "field",
+            "name": "message",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectioncloseeventinit-message"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectioncloseeventinit"
+      },
+      "PresentationReceiver": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface PresentationReceiver {\n  readonly attribute Promise<PresentationConnectionList> connectionList;\n};",
+        "type": "interface",
+        "name": "PresentationReceiver",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "connectionList",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PresentationConnectionList"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationreceiver-connectionlist"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationreceiver"
+      },
+      "PresentationConnectionList": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface PresentationConnectionList : EventTarget {\n  readonly attribute FrozenArray<PresentationConnection> connections;\n  attribute EventHandler onconnectionavailable;\n};",
+        "type": "interface",
+        "name": "PresentationConnectionList",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "connections",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PresentationConnection"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionlist-connections"
+          },
+          {
+            "type": "attribute",
+            "name": "onconnectionavailable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionlist-onconnectionavailable"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/presentation-api/#dom-presentationconnectionlist"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext, SameObject] readonly attribute Presentation presentation;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "presentation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Presentation"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/presentation-api/#dom-navigator-presentation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Presentation": [
+        {
+          "fragment": "partial interface Presentation {\n  attribute PresentationRequest? defaultRequest;\n};",
+          "type": "interface",
+          "name": "Presentation",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "defaultRequest",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "PresentationRequest"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/presentation-api/#dom-presentation-defaultrequest"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface Presentation {\n  readonly attribute PresentationReceiver? receiver;\n};",
+          "type": "interface",
+          "name": "Presentation",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "receiver",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "PresentationReceiver"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/presentation-api/#dom-presentation-receiver"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Presentation",
+        "PresentationRequest",
+        "PresentationAvailability",
+        "PresentationConnectionAvailableEvent",
+        "PresentationConnection",
+        "PresentationConnectionCloseEvent",
+        "PresentationReceiver",
+        "PresentationConnectionList"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "Presentation"
+      ],
+      "Presentation": [
+        "PresentationRequest",
+        "PresentationReceiver"
+      ],
+      "PresentationRequest": [
+        "EventTarget",
+        "PresentationConnection",
+        "PresentationAvailability",
+        "EventHandler"
+      ],
+      "PresentationAvailability": [
+        "EventTarget",
+        "EventHandler"
+      ],
+      "PresentationConnectionAvailableEvent": [
+        "Event",
+        "PresentationConnectionAvailableEventInit",
+        "PresentationConnection"
+      ],
+      "PresentationConnectionAvailableEventInit": [
+        "EventInit",
+        "PresentationConnection"
+      ],
+      "PresentationConnection": [
+        "EventTarget",
+        "PresentationConnectionState",
+        "EventHandler",
+        "BinaryType",
+        "Blob",
+        "ArrayBuffer",
+        "ArrayBufferView"
+      ],
+      "PresentationConnectionCloseEvent": [
+        "Event",
+        "PresentationConnectionCloseEventInit",
+        "PresentationConnectionCloseReason"
+      ],
+      "PresentationConnectionCloseEventInit": [
+        "EventInit",
+        "PresentationConnectionCloseReason"
+      ],
+      "PresentationReceiver": [
+        "PresentationConnectionList"
+      ],
+      "PresentationConnectionList": [
+        "EventTarget",
+        "PresentationConnection",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EventTarget",
+      "EventHandler",
+      "Event",
+      "EventInit",
+      "BinaryType",
+      "Blob",
+      "ArrayBuffer",
+      "ArrayBufferView"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

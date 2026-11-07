@@ -1,0 +1,154 @@
+{
+  "spec": {
+    "title": "WebGL EXT_polygon_offset_clamp Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_polygon_offset_clamp/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_polygon_offset_clamp"
+        ],
+        "Worker": [
+          "EXT_polygon_offset_clamp"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_polygon_offset_clamp": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_polygon_offset_clamp {\n    const GLenum POLYGON_OFFSET_CLAMP_EXT = 0x8E1B;\n\n    undefined polygonOffsetClampEXT(GLfloat factor, GLfloat units, GLfloat clamp);\n};",
+        "type": "interface",
+        "name": "EXT_polygon_offset_clamp",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "POLYGON_OFFSET_CLAMP_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8E1B"
+            }
+          },
+          {
+            "type": "operation",
+            "name": "polygonOffsetClampEXT",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "factor",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLfloat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "units",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLfloat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "clamp",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLfloat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_polygon_offset_clamp"
+      ],
+      "Worker": [
+        "EXT_polygon_offset_clamp"
+      ]
+    },
+    "dependencies": {
+      "EXT_polygon_offset_clamp": [
+        "GLfloat"
+      ]
+    },
+    "externalDependencies": [
+      "GLfloat"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

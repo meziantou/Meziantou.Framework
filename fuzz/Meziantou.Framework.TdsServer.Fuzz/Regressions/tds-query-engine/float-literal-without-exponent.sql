@@ -1,0 +1,1 @@
+SELECT Id + 1e AS X FROM customers

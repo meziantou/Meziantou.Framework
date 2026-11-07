@@ -1,0 +1,17 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2		TRUE	FALSE	FALSE		[FontDescriptor]			Clause 9.8.3.3
+FontName	name	1.2		TRUE	FALSE	FALSE					
+Flags	bitmask	1.2		TRUE	FALSE	FALSE			[fn:Eval(fn:BitClear(5) && fn:BitsClear(8,16) && fn:BitsClear(20,32))]		Table 121
+FontBBox	rectangle	1.2		TRUE	FALSE	FALSE					
+ItalicAngle	number	1.2		TRUE	FALSE	FALSE					
+Ascent	number	1.2		TRUE	FALSE	FALSE					
+Descent	number	1.2		TRUE	FALSE	FALSE		[fn:Eval(@Descent<=0)]			https://github.com/pdf-association/pdf-issues/issues/190
+Leading	number	1.2		FALSE	FALSE	FALSE	0				
+CapHeight	number	1.2		FALSE	FALSE	FALSE					
+XHeight	number	1.2		FALSE	FALSE	FALSE	0				
+StemV	number	1.2		TRUE	FALSE	FALSE					
+StemH	number	1.2		FALSE	FALSE	FALSE	0				
+AvgWidth	number	1.2		FALSE	FALSE	FALSE	0				
+MaxWidth	number	1.2		FALSE	FALSE	FALSE	0				
+MissingWidth	number	1.2		FALSE	FALSE	FALSE	0				
+CharSet	string	1.2	2.0	FALSE	FALSE	FALSE					

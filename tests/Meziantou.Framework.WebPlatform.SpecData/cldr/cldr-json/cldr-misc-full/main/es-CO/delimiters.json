@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-CO": {
+      "identity": {
+        "language": "es",
+        "territory": "CO"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

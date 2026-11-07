@@ -2,6 +2,97 @@ namespace Meziantou.Framework.Versioning.Tests;
 
 public class SemanticVersionRangeTests
 {
+    [Fact]
+    public void Documentation_NuGet()
+    {
+        #region SemanticVersionRange_NuGet
+        var range = SemanticVersionRange.ParseNuGet("[1.0.0, 2.0.0)");
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.0.0")));
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.9.3")));
+        Assert.False(range.Satisfies(SemanticVersion.Parse("2.0.0")));
+
+        // A version alone is a minimum version
+        Assert.Equal("[1.0.0, )", SemanticVersionRange.ParseNuGet("1.0.0").ToString());
+
+        Assert.Equal("[1.0.0]", SemanticVersionRange.ParseNuGet("[1.0.0]").ToString());
+        Assert.Equal("(, 2.0.0]", SemanticVersionRange.ParseNuGet("(,2.0.0]").ToString());
+        Assert.False(SemanticVersionRange.TryParseNuGet("[1.0.0, 2.0.0", out _));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Npm()
+    {
+        #region SemanticVersionRange_Npm
+        var caret = SemanticVersionRange.ParseNpm("^1.2.3");
+        Assert.Equal("[1.2.3, 2.0.0)", caret.ToString());
+        Assert.True(caret.Satisfies(SemanticVersion.Parse("1.9.0")));
+        Assert.False(caret.Satisfies(SemanticVersion.Parse("2.0.0")));
+
+        Assert.Equal("[0.2.3, 0.3.0)", SemanticVersionRange.ParseNpm("^0.2.3").ToString());
+        Assert.Equal("[1.2.3, 1.3.0)", SemanticVersionRange.ParseNpm("~1.2.3").ToString());
+        Assert.Equal("[1.2.0, 1.3.0)", SemanticVersionRange.ParseNpm("1.2.x").ToString());
+        Assert.Equal("[1.0.0, 2.0.0]", SemanticVersionRange.ParseNpm("1.0.0 - 2.0.0").ToString());
+        Assert.Equal("[1.0.0, 2.0.0)", SemanticVersionRange.ParseNpm(">=1.0.0 <2.0.0").ToString());
+        Assert.Equal("[1.0.0]", SemanticVersionRange.ParseNpm("1.0.0").ToString());
+        Assert.Equal("*", SemanticVersionRange.ParseNpm("*").ToString());
+
+        // A range is a single interval, so a union of ranges is rejected
+        Assert.False(SemanticVersionRange.TryParseNpm("^1.0.0 || ^2.0.0", out _));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Create()
+    {
+        #region SemanticVersionRange_Create
+        var v1 = SemanticVersion.Parse("1.0.0");
+        var v2 = SemanticVersion.Parse("2.0.0");
+
+        var range = new SemanticVersionRange(v1, v2, isMinInclusive: true, isMaxInclusive: false);
+        Assert.Equal(SemanticVersionRange.ParseNuGet("[1.0.0, 2.0.0)"), range);
+
+        Assert.Equal("(1.0.0, )", SemanticVersionRange.GreaterThan(v1).ToString());
+        Assert.Equal("(, 2.0.0)", SemanticVersionRange.LessThan(v2).ToString());
+        Assert.True(SemanticVersionRange.All.Satisfies(SemanticVersion.Parse("0.0.1-alpha")));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Prerelease()
+    {
+        #region SemanticVersionRange_Prerelease
+        // Bounds are compared with the Semantic Versioning precedence, so a prerelease
+        // of the upper bound is lower than the upper bound
+        var range = SemanticVersionRange.ParseNpm("^1.2.3");
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.5.0-beta")));
+        Assert.True(range.Satisfies(SemanticVersion.Parse("2.0.0-beta")));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample()
+    {
+        #region SemanticVersionRange_Example
+        // NuGet format examples
+        var range1 = SemanticVersionRange.ParseNuGet("[1.0.0, 2.0.0)"); // >=1.0.0 and <2.0.0
+        var range2 = SemanticVersionRange.ParseNuGet("1.0.0");          // >=1.0.0
+        var range3 = SemanticVersionRange.ParseNuGet("[1.0.0]");        // ==1.0.0
+        Assert.Equal(SemanticVersionRange.GreaterThanOrEqual(SemanticVersion.Parse("1.0.0")), range2);
+        Assert.Equal(SemanticVersionRange.Exact(SemanticVersion.Parse("1.0.0")), range3);
+
+        // npm format examples
+        var range4 = SemanticVersionRange.ParseNpm(">=1.0.0 <2.0.0");  // >=1.0.0 and <2.0.0
+        var range5 = SemanticVersionRange.ParseNpm("<=2.0.0");         // <=2.0.0
+        Assert.Equal(range1, range4);
+        Assert.Equal(SemanticVersionRange.LessThanOrEqual(SemanticVersion.Parse("2.0.0")), range5);
+
+        // Check if a version satisfies the range
+        var version = SemanticVersion.Parse("1.5.0");
+        Assert.True(range1.Satisfies(version));
+        #endregion
+    }
+
     [Theory]
     [InlineData("1.0.0", true)]
     [InlineData("1.5.0", true)]
@@ -136,9 +227,130 @@ public class SemanticVersionRangeTests
     [InlineData("[1.0.0")]
     [InlineData("1.0.0]")]
     [InlineData("[invalid]")]
+    [InlineData("[1.0.0)")] // A single version needs two inclusive bounds
+    [InlineData("(1.0.0]")]
+    [InlineData("(1.0.0)")]
+    [InlineData("[2.0.0,1.0.0]")] // Inverted bounds
+    [InlineData("(2.0.0,1.0.0)")]
+    [InlineData("[1.0.1,1.0.0]")]
+    [InlineData("[1.0.0,1.0.0)")] // One inclusive and one exclusive bound on a single version
+    [InlineData("(1.0.0,1.0.0]")]
     public void ParseNuGet_InvalidFormats_ThrowsFormatException(string input)
     {
         Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNuGet(input));
+    }
+
+    // The strings below are fed to both this library and NuGet's own range parser. NuGet.Versioning
+    // is the reference implementation of this syntax, so any disagreement is either a bug here or a
+    // deliberate difference that belongs in ParseNuGet_KnownDivergencesFromNuGetVersioning.
+    public static TheoryData<string> NuGetRangeSyntax()
+    {
+        return
+        [
+            // Valid forms
+            "1.0.0",
+            "[1.0.0]",
+            "[1.0.0,)",
+            "(1.0.0,)",
+            "(,1.0.0]",
+            "(,1.0.0)",
+            "[1.0.0,2.0.0]",
+            "[1.0.0,2.0.0)",
+            "(1.0.0,2.0.0)",
+            "(1.0.0,2.0.0]",
+            "[1.0.0-alpha,2.0.0)",
+            "[1.0.0+build]",
+            "[1.0.0,1.0.0]",
+            "(1.0.0,1.0.0)",
+            // A single version cannot carry one inclusive and one exclusive bound
+            "[1.0.0)",
+            "(1.0.0]",
+            "(1.0.0)",
+            "[1.0.0,1.0.0)",
+            "(1.0.0,1.0.0]",
+            // Inverted bounds
+            "[2.0.0,1.0.0]",
+            "(2.0.0,1.0.0)",
+            "[1.0.1,1.0.0]",
+            // Malformed
+            "",
+            "[",
+            "]",
+            "[1.0.0",
+            "1.0.0]",
+            "[invalid]",
+            "[1.0.0,2.0.0",
+        ];
+    }
+
+    [Theory]
+    [MemberData(nameof(NuGetRangeSyntax))]
+    public void ParseNuGet_AcceptsTheSameStringsAsNuGetVersioning(string input)
+    {
+        var mine = SemanticVersionRange.TryParseNuGet(input, out _);
+        var reference = NuGet.Versioning.VersionRange.TryParse(input, out _);
+
+        Assert.Equal(reference, mine);
+    }
+
+    [Theory]
+    [MemberData(nameof(NuGetRangeSyntax))]
+    public void ParseNuGet_ProducesTheSameBoundsAsNuGetVersioning(string input)
+    {
+        if (!NuGet.Versioning.VersionRange.TryParse(input, out var reference))
+        {
+            return;
+        }
+
+        var range = SemanticVersionRange.ParseNuGet(input);
+
+        Assert.Equal(reference.MinVersion?.ToFullString(), range.MinVersion?.ToString());
+        Assert.Equal(reference.MaxVersion?.ToFullString(), range.MaxVersion?.ToString());
+        Assert.Equal(reference.IsMinInclusive, range.IsMinInclusive);
+        Assert.Equal(reference.IsMaxInclusive, range.IsMaxInclusive);
+    }
+
+    [Theory]
+    [MemberData(nameof(NuGetRangeSyntax))]
+    public void ParseNuGet_SatisfiesTheSameVersionsAsNuGetVersioning(string input)
+    {
+        if (!NuGet.Versioning.VersionRange.TryParse(input, out var reference))
+        {
+            return;
+        }
+
+        var range = SemanticVersionRange.ParseNuGet(input);
+        string[] versions =
+        [
+            "0.9.0", "1.0.0", "1.0.0-alpha", "1.0.0-beta.2", "1.0.0+build",
+            "1.0.1", "1.5.0", "1.9.9", "2.0.0-rc.1", "2.0.0", "2.0.1", "10.0.0",
+        ];
+
+        // Comparing the two sets of matched versions rather than asserting one version at a time
+        // means a failure names every version the two parsers disagree about.
+        var expected = versions.Where(version => reference.Satisfies(NuGet.Versioning.NuGetVersion.Parse(version))).ToArray();
+        var actual = versions.Where(version => range.Satisfies(SemanticVersion.Parse(version))).ToArray();
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    // NuGet accepts version formats that are not Semantic Versioning 2.0.0. This library parses
+    // semantic versions only, so it rejects them by design.
+    [InlineData("1.0.0.0")] // Four-part version
+    [InlineData("[1.0.0.0,)")]
+    [InlineData("[1.0,)")] // Two-part version
+    [InlineData("*")] // Floating version
+    [InlineData("1.*")]
+    // NuGet's parser wants whitespace around an omitted bound; this one does not care.
+    [InlineData("(,)")]
+    [InlineData("(,]")]
+    public void ParseNuGet_KnownDivergencesFromNuGetVersioning(string input)
+    {
+        var mine = SemanticVersionRange.TryParseNuGet(input, out _);
+        var reference = NuGet.Versioning.VersionRange.TryParse(input, out _);
+
+        Assert.NotEqual(reference, mine);
     }
 
     [Fact]
@@ -343,10 +555,124 @@ public class SemanticVersionRangeTests
     }
 
     [Theory]
+    // A prerelease or metadata label may contain 'x', 'X' or '*' without being a wildcard
+    [InlineData(">=1.0.0-exp", "[1.0.0-exp, )")]
+    [InlineData(">=1.0.0-max", "[1.0.0-max, )")]
+    [InlineData(">=1.0.0-rc.x", "[1.0.0-rc.x, )")]
+    [InlineData("<2.0.0-beta.x", "(, 2.0.0-beta.x)")]
+    [InlineData(">=1.0.0-alpha+x", "[1.0.0-alpha+x, )")]
+    [InlineData(">=1.0.0-x.7.z.92", "[1.0.0-x.7.z.92, )")]
+    // Tilde, caret and hyphen ranges keep the prerelease on their lower bound
+    [InlineData("^1.2.3-beta", "[1.2.3-beta, 2.0.0)")]
+    [InlineData("~1.2.3-beta", "[1.2.3-beta, 1.3.0)")]
+    [InlineData("^1.2.3+meta", "[1.2.3+meta, 2.0.0)")]
+    [InlineData("1.0.0-alpha - 2.0.0", "[1.0.0-alpha, 2.0.0]")]
+    [InlineData("1.0.0 - 2.0.0-rc.1", "[1.0.0, 2.0.0-rc.1]")]
+    // A literal zero major is not a wildcard major
+    [InlineData("0.x", "[0.0.0, 1.0.0)")]
+    [InlineData("0.*", "[0.0.0, 1.0.0)")]
+    [InlineData("0.X", "[0.0.0, 1.0.0)")]
+    [InlineData("0.0.x", "[0.0.0, 0.1.0)")]
+    [InlineData("^0.x", "[0.0.0, 1.0.0)")]
+    // Components after a wildcard are wildcards too: npm reads "1.x.2" as "1.x"
+    [InlineData("1.x.2", "[1.0.0, 2.0.0)")]
+    public void ParseNpm_ProducesRange(string input, string expected)
+    {
+        Assert.Equal(expected, SemanticVersionRange.ParseNpm(input).ToString());
+    }
+
+    [Theory]
+    // Space-separated constraints are ANDed, so the order they are written in cannot matter
+    [InlineData(">=1.0.0 >=1.5.0", ">=1.5.0 >=1.0.0")]
+    [InlineData("<1.5.0 <2.0.0", "<2.0.0 <1.5.0")]
+    [InlineData(">1.0.0 >=1.0.0", ">=1.0.0 >1.0.0")]
+    [InlineData("<2.0.0 <=2.0.0", "<=2.0.0 <2.0.0")]
+    [InlineData(">=1.5.0 ^1.0.0", "^1.0.0 >=1.5.0")]
+    [InlineData(">=1.2.0 1.x", "1.x >=1.2.0")]
+    [InlineData(">=2.0.0 x.x", "x.x >=2.0.0")]
+    public void ParseNpm_ConstraintOrder_DoesNotChangeTheRange(string one, string other)
+    {
+        Assert.Equal(SemanticVersionRange.ParseNpm(one), SemanticVersionRange.ParseNpm(other));
+    }
+
+    [Theory]
+    [InlineData(">=1.5.0 >=1.0.0", "[1.5.0, )")] // The tighter lower bound wins
+    [InlineData("<1.5.0 <2.0.0", "(, 1.5.0)")] // The tighter upper bound wins
+    [InlineData(">1.0.0 >=1.0.0", "(1.0.0, )")] // Equal bounds keep the exclusive one
+    [InlineData("<2.0.0 <=2.0.0", "(, 2.0.0)")]
+    [InlineData(">=2.0.0 x.x", "[2.0.0, )")] // A match-everything constraint narrows nothing
+    [InlineData(">=1.0.0 <2.0.0", "[1.0.0, 2.0.0)")]
+    public void ParseNpm_MultipleConstraints_AreIntersected(string input, string expected)
+    {
+        Assert.Equal(expected, SemanticVersionRange.ParseNpm(input).ToString());
+    }
+
+    [Fact]
+    public void ParseNpm_LooserConstraintLast_DoesNotWidenTheRange()
+    {
+        var range = SemanticVersionRange.ParseNpm(">=1.5.0 >=1.0.0");
+
+        Assert.False(range.Satisfies(SemanticVersion.Parse("1.2.0")));
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.5.0")));
+    }
+
+    [Fact]
+    public void ParseNpm_Union_ReportsThatUnionsAreUnsupported()
+    {
+        var exception = Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNpm("^1.0.0 || ^2.0.0"));
+
+        Assert.Contains("||", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("x.x")]
+    [InlineData("*.*")]
+    [InlineData("x")]
+    [InlineData("*")]
+    public void ParseNpm_WildcardMajor_MatchesEveryVersion(string input)
+    {
+        Assert.Equal(SemanticVersionRange.All, SemanticVersionRange.ParseNpm(input));
+    }
+
+    [Fact]
+    public void ParseNpm_CaretWithPrerelease_IncludesThatPrerelease()
+    {
+        var range = SemanticVersionRange.ParseNpm("^1.2.3-beta");
+
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.2.3-beta")));
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.2.3")));
+        Assert.False(range.Satisfies(SemanticVersion.Parse("1.2.3-alpha")));
+    }
+
+    [Fact]
+    public void ParseNpm_ZeroMajorXRange_DoesNotMatchEveryVersion()
+    {
+        var range = SemanticVersionRange.ParseNpm("0.x");
+
+        Assert.True(range.Satisfies(SemanticVersion.Parse("0.9.9")));
+        Assert.False(range.Satisfies(SemanticVersion.Parse("5.0.0")));
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("invalid")]
     [InlineData(">")]
     [InlineData(">=")]
+    [InlineData("~1.2.3.4")] // A version has at most three components
+    [InlineData("~1.2.3.junk")]
+    [InlineData("^1.2.3.4")]
+    [InlineData("1.2.3.4")]
+    [InlineData("~1.2.")] // Every component must be present
+    [InlineData("~1..2")]
+    [InlineData("1.2-beta")] // A label needs a complete major.minor.patch
+    [InlineData("^1.x-beta")]
+    [InlineData(">=1.x")] // A wildcard carries no meaning next to a comparison operator
+    // An upper bound of "component + 1" would overflow into a negative version
+    [InlineData("^2147483647.0.0")]
+    [InlineData("~2147483647.0.0")]
+    [InlineData("2147483647.x")]
+    [InlineData("^0.0.2147483647")]
+    [InlineData("1.0.0 - 2147483647")]
     public void ParseNpm_InvalidFormats_ThrowsFormatException(string input)
     {
         Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNpm(input));
@@ -391,6 +717,31 @@ public class SemanticVersionRangeTests
         Assert.True(range1 == range2);
         Assert.False(range1 != range2);
         Assert.Equal(range1.GetHashCode(), range2.GetHashCode());
+    }
+
+    [Theory]
+    [InlineData("(,)")]
+    [InlineData("[,]")]
+    [InlineData("[,)")]
+    [InlineData("(,]")]
+    public void UnboundedRanges_AreEqualToAll(string input)
+    {
+        var range = SemanticVersionRange.ParseNuGet(input);
+
+        Assert.Equal(SemanticVersionRange.All, range);
+        Assert.Equal(SemanticVersionRange.All.GetHashCode(), range.GetHashCode());
+        Assert.False(range.IsMinInclusive);
+        Assert.False(range.IsMaxInclusive);
+    }
+
+    [Fact]
+    public void MissingUpperBound_IsNotInclusive()
+    {
+        var range = SemanticVersionRange.ParseNuGet("[1.0.0,]");
+
+        Assert.Equal(SemanticVersionRange.GreaterThanOrEqual(SemanticVersion.Parse("1.0.0")), range);
+        Assert.True(range.IsMinInclusive);
+        Assert.False(range.IsMaxInclusive);
     }
 
     [Fact]

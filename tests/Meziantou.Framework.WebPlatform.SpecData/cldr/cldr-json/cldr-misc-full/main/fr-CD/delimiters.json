@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-CD": {
+      "identity": {
+        "language": "fr",
+        "territory": "CD"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

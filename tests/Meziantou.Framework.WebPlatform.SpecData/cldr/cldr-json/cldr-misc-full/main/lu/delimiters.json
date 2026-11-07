@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lu": {
+      "identity": {
+        "language": "lu"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

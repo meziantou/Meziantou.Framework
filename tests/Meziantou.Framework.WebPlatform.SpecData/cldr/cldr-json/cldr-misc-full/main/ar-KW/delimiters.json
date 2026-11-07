@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-KW": {
+      "identity": {
+        "language": "ar",
+        "territory": "KW"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

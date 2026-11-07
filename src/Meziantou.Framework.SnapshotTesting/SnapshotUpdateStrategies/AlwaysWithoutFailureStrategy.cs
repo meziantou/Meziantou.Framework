@@ -10,6 +10,8 @@ internal sealed class AlwaysWithoutFailureStrategy : SnapshotUpdateStrategy
 
     public override void UpdateFile(SnapshotSettings settings, string currentFilePath, string newFilePath)
     {
-        MoveFile(newFilePath, currentFilePath);
+        PromoteFile(newFilePath, currentFilePath);
     }
+
+    public override string ToString() => nameof(OverwriteWithoutFailure);
 }

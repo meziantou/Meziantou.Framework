@@ -1,0 +1,16 @@
+<LogViewer Entries="@entries"
+           TimestampDisplayFormat="TimestampDisplayFormat.RelativeTimeStartingAtZero"
+           TimeSpanStringFormat="mm\:ss\.fff"
+           ShowLineNumbers="false"
+           LogHighlighters="@(Array.Empty<ILogHighlighter>())" />
+
+@code {
+    private static readonly DateTimeOffset Start = new(2025, 1, 1, 8, 0, 0, TimeSpan.Zero);
+
+    private readonly List<LogEntry> entries =
+    [
+        new LogEntry { Timestamp = Start, LogLevel = LogLevel.Information, Message = "Build started" },
+        new LogEntry { Timestamp = Start.AddSeconds(12.5), LogLevel = LogLevel.Warning, Message = "Package 'Contoso.Core' is deprecated" },
+        new LogEntry { Timestamp = Start.AddSeconds(40), LogLevel = LogLevel.Information, Message = "Build succeeded" },
+    ];
+}

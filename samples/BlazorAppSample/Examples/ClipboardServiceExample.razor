@@ -1,0 +1,10 @@
+@inject ClipboardService ClipboardService
+
+<button @onclick="CopyToClipboard">Copy</button>
+
+@code {
+    private async Task CopyToClipboard()
+    {
+        await ClipboardService.WriteTextAsync("Hello, World!");
+    }
+}

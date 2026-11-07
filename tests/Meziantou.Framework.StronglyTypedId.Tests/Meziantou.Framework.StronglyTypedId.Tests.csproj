@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <IncludeSharedHttpClient>true</IncludeSharedHttpClient>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,12 +11,12 @@
     <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Compile Include="../../common/NuGetHelpers.cs" Link="NuGetHelpers.cs" />
-    <Compile Include="../../common/SharedHttpClient.cs" Link="SharedHttpClient.cs" />
     <Compile Include="../../common/TargetFrameworkHelper.cs" Link="TargetFrameworkHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="5.6.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="5.9.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
 </Project>

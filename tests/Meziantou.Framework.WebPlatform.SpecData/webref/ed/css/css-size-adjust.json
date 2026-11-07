@@ -1,0 +1,50 @@
+{
+  "spec": {
+    "title": "CSS Mobile Text Size Adjustment Module Level 1",
+    "url": "https://drafts.csswg.org/css-size-adjust-1/"
+  },
+  "properties": [
+    {
+      "name": "text-size-adjust",
+      "href": "https://drafts.csswg.org/css-size-adjust-1/#propdef-text-size-adjust",
+      "value": "auto | none | <percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "see below",
+      "computedValue": "specified keyword or percentage",
+      "canonicalOrder": "N/A",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Renderers must use the default size adjustment when displaying on a small device.",
+          "href": "https://drafts.csswg.org/css-size-adjust-1/#valdef-text-size-adjust-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "Renderers must not do size adjustment when displaying on a small device.",
+          "href": "https://drafts.csswg.org/css-size-adjust-1/#valdef-text-size-adjust-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<percentage [0,∞]>",
+          "prose": "When displaying on a small device, renderers must not do size adjustment but instead the computed value of font-size must be multiplied by this percentage. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-size-adjust-1/#valdef-text-size-adjust-percentage-0",
+          "type": "value",
+          "value": "<percentage [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "text-size-adjust",
+        "textSizeAdjust"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

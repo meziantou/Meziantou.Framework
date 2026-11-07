@@ -1,0 +1,16 @@
+{
+  "main": {
+    "so-KE": {
+      "identity": {
+        "language": "so",
+        "territory": "KE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2		FALSE	FALSE	FALSE		[Halftone]			Table 128
+HalftoneType	integer	1.2		TRUE	FALSE	FALSE		[1]			
+HalftoneName	string-byte	1.2		FALSE	FALSE	FALSE					
+Frequency	number	1.2		TRUE	FALSE	FALSE		[fn:Eval(@Frequency>=0)]			
+Angle	number	1.2		TRUE	FALSE	FALSE					
+SpotFunction	array;fn:SinceVersion(1.3,dictionary);name;stream	1.2		TRUE	[FALSE];[FALSE];[FALSE];[TRUE]	FALSE		[];[];[SimpleDot,InvertedSimpleDot,DoubleDot,InvertedDoubleDot,CosineDot,Double,InvertedDouble,Line,LineX,LineY,Round,Ellipse,EllipseA,InvertedEllipseA,EllipseB,EllipseC,InvertedEllipseC,Square,Cross,Rhomboid,Diamond];[]		[ArrayOfFunctions];[fn:SinceVersion(1.3,FunctionType2),fn:SinceVersion(1.3,FunctionType3)];[];[FunctionType0,fn:SinceVersion(1.3,FunctionType4)]	
+AccurateScreens	boolean	1.2		FALSE	FALSE	FALSE	false				
+TransferFunction	fn:SinceVersion(1.3,dictionary);name;stream	1.2		fn:IsRequired(parent::@HalftoneType==5)	[FALSE];[FALSE];[TRUE]	FALSE		[];[Identity];[]		[fn:SinceVersion(1.3,FunctionType2),fn:SinceVersion(1.3,FunctionType3)];[];[FunctionType0,fn:SinceVersion(1.3,FunctionType4)]	

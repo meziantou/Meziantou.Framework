@@ -1,0 +1,29 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		FALSE	FALSE	FALSE		[XObject]			Table 5 and Table 87
+Subtype	name	1.3		TRUE	FALSE	FALSE		[Image]			
+Width	integer	1.3		TRUE	FALSE	FALSE					
+Height	integer	1.3		TRUE	FALSE	FALSE					
+BitsPerComponent	integer	1.3		FALSE	FALSE	FALSE		[1]			
+Intent	name	1.3		FALSE	FALSE	FALSE			[fn:Ignore(@ImageMask==true)]		
+ImageMask	boolean	1.3		TRUE	FALSE	FALSE	true		[fn:Eval(((@ImageMask==true) && (@BitsPerComponent==1) && fn:Not(fn:IsPresent(ColorSpace)) && fn:Not(fn:IsPresent(Mask))) || (@ImageMask==false))]		
+Decode	array	1.3		FALSE	FALSE	FALSE	[0 1]	[[0 1],[1 0]]		[ArrayOfNumbersGeneral]	
+Interpolate	boolean	1.3		FALSE	FALSE	FALSE	false				
+Alternates	array	1.3		FALSE	FALSE	FALSE				[ArrayOfImageAlternates]	
+SMask	stream	1.4		FALSE	TRUE	FALSE				[XObjectImageSoftMask]	
+SMaskInData	integer	1.5		FALSE	FALSE	FALSE					
+Name	name	1.3	2.0	FALSE	FALSE	FALSE					
+StructParent	integer	1.3		fn:IsRequired(fn:ImageIsStructContentItem())	FALSE	FALSE					Table 359
+ID	string-byte	1.3	2.0	FALSE	FALSE	FALSE					https://github.com/pdf-association/pdf-issues/issues/619
+OPI	dictionary	1.3	2.0	FALSE	FALSE	FALSE			[fn:Ignore()]	[OPIVersion13,OPIVersion20]	
+Metadata	stream	1.4		FALSE	TRUE	FALSE				[Metadata]	
+OC	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+Measure	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[MeasureRL,MeasureGEO]	
+PtData	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[PointData]	
+Length	integer	1.3		TRUE	FALSE	FALSE					
+Filter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,CCITTFaxDecode,fn:SinceVersion(1.4,JBIG2Decode),DCTDecode,fn:SinceVersion(1.5,JPXDecode),fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfFilterNames];[]	
+DecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCCITTFaxDecode,fn:SinceVersion(1.4,FilterJBIG2Decode),FilterDCTDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+F	dictionary;string	1.3		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,CCITTFaxDecode,fn:SinceVersion(1.4,JBIG2Decode),DCTDecode,fn:SinceVersion(1.5,JPXDecode),fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfFilterNames];[]	
+FDecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCCITTFaxDecode,fn:SinceVersion(1.4,FilterJBIG2Decode),FilterDCTDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+DL	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DL>=0)]		

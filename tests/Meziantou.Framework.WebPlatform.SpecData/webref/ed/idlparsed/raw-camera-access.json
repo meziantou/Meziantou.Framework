@@ -1,0 +1,181 @@
+{
+  "spec": {
+    "title": "WebXR Raw Camera Access Module",
+    "url": "https://immersive-web.github.io/raw-camera-access/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "XRCamera"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRCamera": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRCamera {\n  readonly attribute unsigned long width;\n  readonly attribute unsigned long height;\n};",
+        "type": "interface",
+        "name": "XRCamera",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/raw-camera-access/#dom-xrcamera-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/raw-camera-access/#dom-xrcamera-height"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/raw-camera-access/#xrcamera"
+      }
+    },
+    "idlExtendedNames": {
+      "XRView": [
+        {
+          "fragment": "partial interface XRView {\n  [SameObject] readonly attribute XRCamera? camera;\n};",
+          "type": "interface",
+          "name": "XRView",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "camera",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRCamera"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/raw-camera-access/#dom-xrview-camera"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRWebGLBinding": [
+        {
+          "fragment": "partial interface XRWebGLBinding {\n  WebGLTexture? getCameraImage(XRCamera camera);\n};",
+          "type": "interface",
+          "name": "XRWebGLBinding",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getCameraImage",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "WebGLTexture"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "camera",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRCamera"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/raw-camera-access/#dom-xrwebglbinding-getcameraimage"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRCamera"
+      ]
+    },
+    "dependencies": {
+      "XRView": [
+        "XRCamera"
+      ],
+      "XRCamera": [],
+      "XRWebGLBinding": [
+        "WebGLTexture",
+        "XRCamera"
+      ]
+    },
+    "externalDependencies": [
+      "XRView",
+      "XRWebGLBinding",
+      "WebGLTexture"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

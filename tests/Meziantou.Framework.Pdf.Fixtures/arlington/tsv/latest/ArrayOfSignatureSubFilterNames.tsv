@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	name	1.5		FALSE	FALSE	FALSE		[adbe.pkcs7.detached,fn:Deprecated(2.0,adbe.pkcs7.sha1),adbe.x509.rsa_sha1,fn:SinceVersion(2.0,ETSI.CAdES.detached),fn:SinceVersion(2.0,ETSI.RFC3161)]			Table 260 and Table 237, SubFilter cell and https://github.com/pdf-association/pdf-issues/issues/219

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kk-KZ": {
+      "identity": {
+        "language": "kk",
+        "territory": "KZ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

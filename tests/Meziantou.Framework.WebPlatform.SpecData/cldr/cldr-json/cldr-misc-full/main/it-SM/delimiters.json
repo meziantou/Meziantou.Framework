@@ -1,0 +1,16 @@
+{
+  "main": {
+    "it-SM": {
+      "identity": {
+        "language": "it",
+        "territory": "SM"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

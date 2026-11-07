@@ -1,0 +1,656 @@
+{
+  "spec": {
+    "title": "Encoding Standard",
+    "url": "https://encoding.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "*": [
+          "TextDecoder",
+          "TextEncoder",
+          "TextDecoderStream",
+          "TextEncoderStream"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "TextDecoderCommon": {
+        "fragment": "interface mixin TextDecoderCommon {\n  readonly attribute DOMString encoding;\n  readonly attribute boolean fatal;\n  readonly attribute boolean ignoreBOM;\n};",
+        "type": "interface mixin",
+        "name": "TextDecoderCommon",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "encoding",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoder-encoding"
+          },
+          {
+            "type": "attribute",
+            "name": "fatal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoder-fatal"
+          },
+          {
+            "type": "attribute",
+            "name": "ignoreBOM",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoder-ignorebom"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textdecodercommon"
+      },
+      "TextDecoderOptions": {
+        "fragment": "dictionary TextDecoderOptions {\n  boolean fatal = false;\n  boolean ignoreBOM = false;\n};",
+        "type": "dictionary",
+        "name": "TextDecoderOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "fatal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoderoptions-fatal"
+          },
+          {
+            "type": "field",
+            "name": "ignoreBOM",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoderoptions-ignorebom"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textdecoderoptions"
+      },
+      "TextDecodeOptions": {
+        "fragment": "dictionary TextDecodeOptions {\n  boolean stream = false;\n};",
+        "type": "dictionary",
+        "name": "TextDecodeOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "stream",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecodeoptions-stream"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textdecodeoptions"
+      },
+      "TextDecoder": {
+        "fragment": "[Exposed=*]\ninterface TextDecoder {\n  constructor(optional DOMString label = \"utf-8\", optional TextDecoderOptions options = {});\n\n  USVString decode(optional AllowSharedBufferSource input, optional TextDecodeOptions options = {});\n};",
+        "type": "interface",
+        "name": "TextDecoder",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "label",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "utf-8"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextDecoderOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoder"
+          },
+          {
+            "type": "operation",
+            "name": "decode",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AllowSharedBufferSource"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextDecodeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoder-decode"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textdecoder"
+      },
+      "TextEncoderCommon": {
+        "fragment": "interface mixin TextEncoderCommon {\n  readonly attribute DOMString encoding;\n};",
+        "type": "interface mixin",
+        "name": "TextEncoderCommon",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "encoding",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://encoding.spec.whatwg.org/#dom-textencoder-encoding"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textencodercommon"
+      },
+      "TextEncoderEncodeIntoResult": {
+        "fragment": "dictionary TextEncoderEncodeIntoResult {\n  unsigned long long read;\n  unsigned long long written;\n};",
+        "type": "dictionary",
+        "name": "TextEncoderEncodeIntoResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "read",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://encoding.spec.whatwg.org/#dom-textencoderencodeintoresult-read"
+          },
+          {
+            "type": "field",
+            "name": "written",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://encoding.spec.whatwg.org/#dom-textencoderencodeintoresult-written"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#dictdef-textencoderencodeintoresult"
+      },
+      "TextEncoder": {
+        "fragment": "[Exposed=*]\ninterface TextEncoder {\n  constructor();\n\n  [NewObject] Uint8Array encode(optional USVString input = \"\");\n  TextEncoderEncodeIntoResult encodeInto(USVString source, [AllowShared] Uint8Array destination);\n};",
+        "type": "interface",
+        "name": "TextEncoder",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://encoding.spec.whatwg.org/#dom-textencoder"
+          },
+          {
+            "type": "operation",
+            "name": "encode",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint8Array"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://encoding.spec.whatwg.org/#dom-textencoder-encode"
+          },
+          {
+            "type": "operation",
+            "name": "encodeInto",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TextEncoderEncodeIntoResult"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "source",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "destination",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "AllowShared",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Uint8Array"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://encoding.spec.whatwg.org/#dom-textencoder-encodeinto"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textencoder"
+      },
+      "TextDecoderStream": {
+        "fragment": "[Exposed=*]\ninterface TextDecoderStream {\n  constructor(optional DOMString label = \"utf-8\", optional TextDecoderOptions options = {});\n};",
+        "type": "interface",
+        "name": "TextDecoderStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "label",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "utf-8"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextDecoderOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://encoding.spec.whatwg.org/#dom-textdecoderstream"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textdecoderstream"
+      },
+      "TextEncoderStream": {
+        "fragment": "[Exposed=*]\ninterface TextEncoderStream {\n  constructor();\n};",
+        "type": "interface",
+        "name": "TextEncoderStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://encoding.spec.whatwg.org/#dom-textencoderstream"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://encoding.spec.whatwg.org/#textencoderstream"
+      }
+    },
+    "idlExtendedNames": {
+      "TextDecoder": [
+        {
+          "fragment": "TextDecoder includes TextDecoderCommon;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "TextDecoder",
+          "includes": "TextDecoderCommon"
+        }
+      ],
+      "TextEncoder": [
+        {
+          "fragment": "TextEncoder includes TextEncoderCommon;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "TextEncoder",
+          "includes": "TextEncoderCommon"
+        }
+      ],
+      "TextDecoderStream": [
+        {
+          "fragment": "TextDecoderStream includes TextDecoderCommon;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "TextDecoderStream",
+          "includes": "TextDecoderCommon"
+        },
+        {
+          "fragment": "TextDecoderStream includes GenericTransformStream;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "TextDecoderStream",
+          "includes": "GenericTransformStream"
+        }
+      ],
+      "TextEncoderStream": [
+        {
+          "fragment": "TextEncoderStream includes TextEncoderCommon;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "TextEncoderStream",
+          "includes": "TextEncoderCommon"
+        },
+        {
+          "fragment": "TextEncoderStream includes GenericTransformStream;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "TextEncoderStream",
+          "includes": "GenericTransformStream"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "*": [
+        "TextDecoder",
+        "TextEncoder",
+        "TextDecoderStream",
+        "TextEncoderStream"
+      ]
+    },
+    "dependencies": {
+      "TextDecoderCommon": [],
+      "TextDecoderOptions": [],
+      "TextDecodeOptions": [],
+      "TextDecoder": [
+        "TextDecoderOptions",
+        "AllowSharedBufferSource",
+        "TextDecodeOptions",
+        "TextDecoderCommon"
+      ],
+      "TextEncoderCommon": [],
+      "TextEncoderEncodeIntoResult": [],
+      "TextEncoder": [
+        "Uint8Array",
+        "TextEncoderEncodeIntoResult",
+        "TextEncoderCommon"
+      ],
+      "TextDecoderStream": [
+        "TextDecoderOptions",
+        "TextDecoderCommon",
+        "GenericTransformStream"
+      ],
+      "TextEncoderStream": [
+        "TextEncoderCommon",
+        "GenericTransformStream"
+      ]
+    },
+    "externalDependencies": [
+      "AllowSharedBufferSource",
+      "Uint8Array"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

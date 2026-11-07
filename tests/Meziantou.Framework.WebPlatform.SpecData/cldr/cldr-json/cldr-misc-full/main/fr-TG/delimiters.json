@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-TG": {
+      "identity": {
+        "language": "fr",
+        "territory": "TG"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

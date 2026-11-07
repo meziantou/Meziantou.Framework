@@ -1,0 +1,282 @@
+# Meziantou.Framework.Language.Toml
+
+An immutable TOML syntax tree that keeps every character of the text it was parsed from (comments, whitespace,
+quoting style) and lets you edit it without reformatting anything you did not touch. It reads TOML 1.1, the current
+version of the specification, and TOML 1.0 on request, and passes the whole
+[toml-test](https://github.com/toml-lang/toml-test) conformance suite for both.
+
+It is modelled on Roslyn. If you have used `Microsoft.CodeAnalysis`, everything here will look familiar: a
+`SyntaxTree` over a `SourceText`, nodes and tokens with spans, trivia, `SyntaxKind`, visitors, rewriters, and
+annotations.
+
+Parsing never throws and never gives up. Whatever the text says, the tree reproduces it exactly, and anything wrong
+with it is reported through `GetDiagnostics()`: a missing bracket as much as a key defined twice. The types are in
+the `Meziantou.Framework.Language` and `Meziantou.Framework.Language.Toml` namespaces.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Parse;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = TomlSyntaxTree.ParseText("""
+    # The server
+    [server]
+    host = "localhost"
+    ports = [ 8000, 8001 ]
+    """);
+
+Assert.Empty(tree.GetDiagnostics());
+
+var server = tree.GetRoot().Tables.Single();
+var ports = (TomlArraySyntax)server.Properties[1].Value;
+Assert.Equal(8000L, ((TomlIntegerSyntax)ports.Elements[0]).Value);
+```
+<!-- endref -->
+
+## The shape of a tree
+
+```
+TomlDocumentSyntax
+├── Entries : SyntaxList<TomlEntrySyntax>     (flat, in source order)
+│   ├── TomlTableSyntax        →  OpenBracketToken, Key, CloseBracketToken     [server], or [[products]]
+│   ├── TomlPropertySyntax     →  Key, EqualsToken, Value                      host = "localhost"
+│   └── TomlSkippedTextSyntax  →  Tokens                                       a line that could not be read
+└── EndOfFileToken
+```
+
+The entries are flat, as they are in the text: a table header is followed by the key/value pairs under it rather than
+being their parent. `TomlTableSyntax.Properties` gathers the pairs under a header, `TomlDocumentSyntax.RootProperties`
+the ones before the first header, and `TomlTableSyntax.IsArrayOfTables` tells `[a]` from `[[a]]`.
+
+A key is a `TomlKeySyntax`: the parts of a dotted key and the dots between them. `Names` has the name of each part with
+its quotes removed and its escape sequences resolved, so `site."google.com"` has the names `site` and `google.com`.
+
+A value is one of:
+
+| Node | Example | `Value` |
+| --- | --- | --- |
+| `TomlStringSyntax` | `"basic"`, `'literal'`, `"""multi-line"""`, `'''multi-line'''` | `string` |
+| `TomlIntegerSyntax` | `42`, `-17`, `1_000`, `0xDEADBEEF`, `0o755`, `0b1101` | `long` |
+| `TomlFloatSyntax` | `3.14`, `6.626e-34`, `inf`, `nan` | `double` |
+| `TomlBooleanSyntax` | `true`, `false` | `bool` |
+| `TomlDateTimeSyntax` | `1979-05-27T07:32:00Z` | `DateTimeOffset` |
+| | `1979-05-27T07:32:00` | `DateTime` |
+| | `1979-05-27` | `DateOnly` |
+| | `07:32:00` | `TimeOnly` |
+| `TomlArraySyntax` | `[1, 2, 3]` | `Elements`, a separated list of values |
+| `TomlInlineTableSyntax` | `{ x = 1, y = 2 }` | `Properties`, a separated list of key/value pairs |
+| `TomlSkippedValueSyntax` | a value that could not be read, or that is missing | `Tokens` |
+
+The commas of an array or an inline table belong to the list, not to what they follow: `Count` counts elements and
+`SeparatorCount` counts commas, so a trailing comma is simply a list where the two are equal.
+
+Whitespace and comments are trivia. Up to and including the end of a line they belong to the token that ends that
+line, and everything after belongs to the token that follows, so a comment on its own line attaches to the entry it
+describes.
+
+## Reading values by key
+
+A table can be written with a header, with dotted keys, or as an inline table, and the three can be mixed.
+`GetKeyValues()` reads every key/value pair of a document with the full key it defines, whichever way it is written, and
+`GetValue` finds the value of one key:
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_ReadValuesByKey;format=md-fenced-code-block;dedent=true -->
+```csharp
+var root = TomlSyntaxTree.ParseText("""
+    [dependencies]
+    serde = { version = "1.0" }
+
+    [dependencies.tokio]
+    version = "1.2"
+    """).GetRoot();
+
+var tokio = (TomlStringSyntax)root.GetValue("dependencies", "tokio", "version")!;
+Assert.Equal("1.2", tokio.Value);
+
+var keys = new List<string>();
+foreach (var pair in root.GetKeyValues())
+{
+    keys.Add(string.Join('.', pair.Names));
+}
+
+Assert.Equal(["dependencies.serde", "dependencies.serde.version", "dependencies.tokio.version"], keys);
+```
+<!-- endref -->
+
+A pair whose value is an inline table comes before the pairs of that table. `Parts` gives the token that writes each
+name, and `Table` the header the pair is under, which tells apart the tables of an array of tables. Values in arrays
+are not visited, as they have no key of their own.
+
+## Editing without reformatting
+
+Nodes are immutable: every change returns a new node, and everything you did not change keeps its text.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Edit;format=md-fenced-code-block;dedent=true -->
+```csharp
+var root = TomlSyntaxTree.ParseText("port = 8080 # the port\n").GetRoot();
+var port = (TomlIntegerSyntax)root.RootProperties[0].Value;
+
+var updated = root.ReplaceNode(port, port.WithValue(9090));
+Assert.Equal("port = 9090 # the port\n", updated.ToFullString());
+```
+<!-- endref -->
+
+`SyntaxFactory` builds new nodes. The methods that take .NET values write them the way TOML requires: keys are quoted
+when they cannot be bare, strings are escaped, and floats always read back as floats.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_SyntaxFactory;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = SyntaxFactory.TomlDocument(
+    SyntaxFactory.TomlTable("server"),
+    SyntaxFactory.TomlProperty("host name", SyntaxFactory.TomlString("localhost")),
+    SyntaxFactory.TomlProperty(SyntaxFactory.Key("limits", "max"), SyntaxFactory.TomlFloat(1)));
+
+Assert.Equal("""
+    [server]
+    "host name" = "localhost"
+    limits.max = 1.0
+
+    """, document.ToFullString());
+```
+<!-- endref -->
+
+Every entry of a document has to end its line, so `TomlDocument` and `AddEntries` add a line feed to an entry that does
+not already end with one. So does any edit that puts an entry in front of another: `ReplaceNode`, `InsertNodesAfter`,
+`InsertNodesBefore`, or a rewriter. A comment in front of an entry gets a line break after it too, or it would hide the
+entry. `AddElements` and `AddProperties` lay new items out the way the array or inline table already is, on its line
+or one per line.
+
+`SyntaxFactory.ParseValue` reads a single value, which is the easiest way to get one written exactly as you want, such
+as a literal or multi-line string. The comments and blank lines after it are kept as its trailing trivia. A key defined
+twice in an inline table is not a grammar mistake, so `ParseValue` does not report it; the tree the value ends up in
+does.
+
+The factory methods refuse what TOML cannot hold rather than writing a document that does not read back: a string with
+a lone surrogate, whitespace other than spaces and tabs, a line break other than `\n` and `\r\n`, a comment with a
+control character, `Token` for a kind whose text is not fixed, such as a key or a number, or a key/value pair whose
+value starts with a line break or a comment.
+
+## Diagnostics
+
+Nothing is thrown for bad input; it is reported instead, with a location you can turn into line and character
+positions.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Diagnostics;format=md-fenced-code-block;dedent=true -->
+```csharp
+var messages = new List<string>();
+foreach (var diagnostic in TomlSyntaxTree.ParseText("a = 1\na = 2\n").GetDiagnostics())
+{
+    var line = diagnostic.Location.GetLineSpan().Start;
+    messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+}
+
+Assert.Equal(["TOML0020 (1,0): The key 'a' is already defined."], messages);
+```
+<!-- endref -->
+
+| Id | Reported for |
+| --- | --- |
+| `TOML0001` | A missing key |
+| `TOML0002` | A missing `]`, `]]`, `}`, `=`, or `,`, or a `]` where `]]` was expected |
+| `TOML0003` | A missing value |
+| `TOML0004` | Something after an entry on its line, where only a comment may follow |
+| `TOML0005` | A token that cannot start an entry or a value |
+| `TOML0006` | A malformed value: a number, date, or time that breaks the grammar, an integer that does not fit in 64 bits, a float too large for a `double`, a word that is not a value |
+| `TOML0007` | A bare key with a character it cannot hold, or a multi-line string used as a key |
+| `TOML0008` | An unterminated string |
+| `TOML0009` | An invalid escape sequence, or one that is not a Unicode scalar value |
+| `TOML0010` | A control character, or whitespace TOML does not allow, such as a non-breaking space |
+| `TOML0011` | A carriage return not followed by a line feed |
+| `TOML0012` | Arrays and inline tables nested deeper than `TomlParseOptions.MaxDepth` (128 by default) |
+| `TOML0013` | A TOML 1.1 feature when parsing as TOML 1.0 |
+| `TOML0020` | A key defined twice |
+| `TOML0021` | A table defined twice |
+| `TOML0022` | An addition to an inline table or an array, which cannot be extended after the fact |
+| `TOML0023` | A table header or a dotted key that goes through a value |
+| `TOML0024` | A dotted key that adds to a table a header already defined |
+
+The first group is the grammar, and each diagnostic is carried by the node it is about: `ContainsDiagnostics` says
+whether a node has any. The second group, from `TOML0020`, depends on the whole document rather than on one node, so
+the tree works it out from its root when it is first asked. `TomlSyntaxTree.GetDiagnostics()` reports both, and so
+does `GetDiagnostics()` on a node that is part of a tree.
+
+A tree made from a root, with `WithRoot` or `Create`, reports the diagnostics of its text: it parses the text again,
+with its own options, the first time it is asked. So a duplicate removed by an edit is no longer reported, one the edit
+added is, and so is an edit that built nodes that do not read back as themselves, such as a comment that hides the
+bracket after it. The nodes are kept as they are, and the root becomes the root of the tree when it was part of none,
+so the nodes you hold report the diagnostics of the tree too.
+
+Messages name the key they are about. A very long key is shortened in the middle, with `…`, so that a document
+repeating one cannot make its diagnostics take more memory than the text.
+
+### Versions
+
+`TomlParseOptions.Version` chooses the version of the specification. TOML 1.1, the default, adds line breaks and a
+trailing comma in inline tables, the `\e` and `\xHH` escape sequences, and times written without seconds. Parsing as
+TOML 1.0 reports each of them as `TOML0013` and otherwise reads them the same way.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Version;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A time without seconds is a TOML 1.1 feature
+var text = "start = 07:32\n";
+
+var tree = TomlSyntaxTree.ParseText(text, new TomlParseOptions { Version = TomlVersion.V1_0 });
+Assert.Equal("TOML0013", tree.GetDiagnostics().Single().Id);
+```
+<!-- endref -->
+
+### Recovering from mistakes
+
+TOML is line-oriented, and so is recovery: a key/value pair or a table header that goes wrong never takes the next
+line with it. A string without its closing quote ends with its line. Arrays, and inline tables in TOML 1.1, may span
+lines, so they cannot stop at the end of one; they stop at their closing bracket, and also at a line that can only be
+the start of the next entry, a table header or `key =`, where a comma or a closing bracket was expected. A missing `]`
+is reported once, rather than turning the rest of the document into one array.
+
+A table header is recognized by its whole line, `[key]` or `[[key]]` and nothing after it but a comment, so a line
+such as `[3, 4]` in an array is an element whose comma is missing. In an inline table that opens a line of its own,
+an indented `key =` is its next key/value pair whose comma is missing, where one at the start of a line ends it.
+
+An array or an inline table nested deeper than `MaxDepth` is kept whole as skipped text, up to its own closing bracket,
+and reported once; the arrays and inline tables around it still close where they should. Nesting deeper than the stack
+of the thread doing the parsing can hold is reported the same way, whatever `MaxDepth` says, so raising it can never
+make a document overflow the stack.
+
+A key/value pair without its `=` defines nothing, so the line that defines the same key correctly is not reported too.
+
+### What .NET cannot hold
+
+Values are read into .NET types, which cannot hold a few valid TOML values. The year 0 and a leap second (`:60`) are
+reported as `TOML0006`. An offset further from UTC than ±14:00 is read as the same instant in UTC. A fraction of a
+second is truncated to the seven digits .NET keeps, as the specification asks. Line breaks in multi-line strings are
+read as line feeds, whatever the text uses. A float too large for a `double` is reported as `TOML0006`, but one too
+close to zero, such as `1e-400`, is read as the nearest `double`, which is zero with its sign.
+
+The `Value` of a string in error is a best guess, such as the text up to the end of the line for a string without its
+closing quote: check `ContainsDiagnostics` before relying on it.
+
+## Walking a tree
+
+`TomlSyntaxWalker` visits every node, and with `SyntaxWalkerDepth.Token` or `SyntaxWalkerDepth.Trivia` every token
+and trivium too. `TomlSyntaxRewriter` builds a new tree from the nodes you return; a node whose parts all come back
+unchanged is returned as it was.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxRewriter_DoubleIntegers;format=md-fenced-code-block;dedent=true -->
+```csharp
+private sealed class DoubleIntegers : TomlSyntaxRewriter
+{
+    public override SyntaxNode? VisitTomlInteger(TomlIntegerSyntax node) => node.WithValue(node.Value * 2);
+}
+```
+<!-- endref -->
+
+## Coming from version 1
+
+Version 1 kept every value and key as raw text. Version 2 parses them:
+
+- `TomlPropertySyntax.Key` is a `TomlKeySyntax` and `Value` a `TomlValueSyntax`, where they were strings.
+  `KeyToken`, `SeparatorToken`, and `ValueNode` are replaced by `Key`, `EqualsToken`, and `Value`.
+- `TomlTableSyntax.Key` replaces `NameToken` and `Name`. An array-of-tables header has the kind
+  `SyntaxKind.TomlArrayOfTables`, and `[[` and `]]` are the tokens `OpenBracketOpenBracketToken` and
+  `CloseBracketCloseBracketToken`.
+- `SyntaxKind.KeyToken` and `SyntaxKind.ValueToken` are replaced by a kind per key and value token, and
+  `TomlArraySyntax.Contents` by `Elements`.
+- `SyntaxFactory.TomlProperty(string, string)` is `TomlProperty(string, TomlValueSyntax)`, and `Key(string)` and
+  `Value(string)` are replaced by `Key(params string[])`, `KeyPart`, `Literal`, and `ParseValue`.

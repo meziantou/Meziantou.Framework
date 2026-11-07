@@ -1,0 +1,193 @@
+#pragma warning disable MA0004 // Use Task.ConfigureAwait
+using System.Buffers.Binary;
+using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using Meziantou.Framework;
+using UnicodeDictionariesGenerator;
+
+// Generates the word lists embedded in Meziantou.Framework.Unicode.Dictionaries (Data/*.dict) from the ICU data release
+// pinned in data-versions.json, and IcuWordDictionary.g.cs (the version of ICU).
+// Exit code: 0 when the files are up to date, 1 when they were updated, any other value on failure.
+var update = false;
+foreach (var arg in args)
+{
+    if (arg is not "--update")
+    {
+        await Console.Error.WriteLineAsync("Unexpected argument: " + arg);
+        await Console.Error.WriteLineAsync("Usage: Meziantou.Framework.Unicode.Dictionaries.Generator [--update]");
+        return 2;
+    }
+
+    update = true;
+}
+
+if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
+    throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
+
+var pinsPath = root / "tools" / "Meziantou.Framework.Unicode.Dictionaries.Generator" / "data-versions.json";
+var downloadCache = root / "artifacts" / "unicode-dictionaries";
+var projectPath = root / "src" / "Meziantou.Framework.Unicode.Dictionaries";
+
+var pins = JsonNode.Parse(await File.ReadAllTextAsync(pinsPath))!.AsObject();
+var updated = false;
+if (update)
+{
+    // --update moves the pin to the latest release of ICU
+    var pin = pins["icu"]!.AsObject();
+    var latestVersion = await GetLatestIcuVersionAsync();
+    if ((string)pin["version"]! != latestVersion)
+    {
+        Console.WriteLine($"Moving ICU from {pin["version"]} to {latestVersion}");
+        var content = await Downloads.DownloadAsync(GetIcuDataUrl(latestVersion), expectedSha256: null);
+        pin["version"] = latestVersion;
+        pin["sha256"] = Convert.ToHexStringLower(SHA256.HashData(content));
+        await File.WriteAllTextAsync(pinsPath, pins.ToJsonString(new JsonSerializerOptions { WriteIndented = true, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }).ReplaceLineEndings("\n") + "\n");
+        updated = true;
+    }
+}
+
+var version = (string)pins["icu"]!["version"]!;
+Console.WriteLine($"ICU {version}");
+var archive = await Downloads.DownloadCachedAsync(GetIcuDataUrl(version), (string)pins["icu"]!["sha256"]!, downloadCache);
+
+var errors = 0;
+using (var zip = new ZipArchive(new MemoryStream(archive), ZipArchiveMode.Read))
+{
+    foreach (var kind in Enum.GetValues<IcuWordDictionaryKind>())
+    {
+        var fileName = IcuWordDictionary.GetFileName(kind);
+        var file = fileName + ".txt";
+        var entry = zip.GetEntry("data/brkitr/dictionaries/" + file) ?? throw new InvalidDataException("Missing file in the ICU data: " + file);
+        string text;
+        using (var stream = entry.Open())
+        using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+        {
+            text = await reader.ReadToEndAsync();
+        }
+
+        var words = DictionaryCompiler.ReadWords(file, text, out var hasValues);
+        var content = DictionaryCompiler.Compile(file, words, DictionaryCompiler.GetCodePointBase(kind), hasValues);
+        var compressed = Compress(content);
+
+        // The runtime must find every word with its value
+        var dictionary = IcuWordDictionary.LoadCompressed(kind, new MemoryStream(compressed));
+        if (dictionary.WordCount != words.Count)
+        {
+            Console.WriteLine($"{file}: {dictionary.WordCount} words read back, expected {words.Count}");
+            errors++;
+        }
+
+        foreach (var (word, value) in words)
+        {
+            if (!dictionary.TryGetValue(word, out var actual) || actual != value)
+            {
+                Console.WriteLine($"{file}: the word '{word}' is not read back");
+                errors++;
+            }
+        }
+
+        if (!dictionary.EnumerateWords().SequenceEqual(words.Keys, StringComparer.Ordinal))
+        {
+            Console.WriteLine($"{file}: the words are not enumerated back");
+            errors++;
+        }
+
+        Console.WriteLine($"{kind}: {words.Count} words, {content.Length} bytes uncompressed, {compressed.Length} bytes compressed");
+
+        // The compressed bytes depend on the version of Brotli: the file is only written when its content changes
+        var path = projectPath / "Data" / (fileName + ".dict");
+        if (!IsSameContent(path, content))
+        {
+            Directory.CreateDirectory(path.Parent);
+            await File.WriteAllBytesAsync(path, compressed);
+            Console.WriteLine($"Updated {path}");
+            updated = true;
+        }
+    }
+}
+
+Console.WriteLine($"Verification: {errors} errors");
+if (errors > 0)
+    return 3;
+
+var versionFile = $$"""
+    // <auto-generated/>
+    // Generated by tools/Meziantou.Framework.Unicode.Dictionaries.Generator from data-versions.json
+    namespace Meziantou.Framework;
+
+    public sealed partial class IcuWordDictionary
+    {
+        /// <summary>The release of ICU whose word lists are embedded in this package.</summary>
+        private const string EmbeddedIcuVersion = "{{version}}";
+    }
+
+    """;
+updated |= await WriteIfChangedAsync(projectPath / "IcuWordDictionary.g.cs", versionFile);
+
+// The version of the data in the third-party notices
+var noticesPath = projectPath / "THIRD-PARTY-NOTICES.md";
+var notices = await File.ReadAllTextAsync(noticesPath);
+updated |= await WriteIfChangedAsync(noticesPath, VersionLineRegex().Replace(notices, $"- Version: {version} (the data release `icu4c-{version}-data.zip`)"));
+return updated ? 1 : 0;
+
+static string GetIcuDataUrl(string version) => $"https://github.com/unicode-org/icu/releases/download/release-{version}/icu4c-{version}-data.zip";
+
+static async Task<string> GetLatestIcuVersionAsync()
+{
+    var json = await SharedHttpClient.InstanceWithAutoRedirect.GetStringAsync("https://api.github.com/repos/unicode-org/icu/releases/latest");
+    var tag = (string)JsonNode.Parse(json)!["tag_name"]!;
+    if (!tag.StartsWith("release-", StringComparison.Ordinal))
+        throw new InvalidDataException("Unexpected tag of the latest ICU release: " + tag);
+
+    return tag["release-".Length..];
+}
+
+// The format of IcuWordDictionary.LoadCompressed: the length of the content, then the content compressed with Brotli
+static byte[] Compress(byte[] content)
+{
+    var compressed = new byte[4 + BrotliEncoder.GetMaxCompressedLength(content.Length)];
+    BinaryPrimitives.WriteInt32LittleEndian(compressed, content.Length);
+    if (!BrotliEncoder.TryCompress(content, compressed.AsSpan(4), out var written, quality: 11, window: 24))
+        throw new InvalidOperationException("Cannot compress a word list");
+
+    return compressed.AsSpan(0, 4 + written).ToArray();
+}
+
+static bool IsSameContent(FullPath path, byte[] content)
+{
+    if (!File.Exists(path))
+        return false;
+
+    try
+    {
+        using var stream = File.OpenRead(path);
+        return IcuWordDictionary.Decompress(stream).AsSpan().SequenceEqual(content);
+    }
+    catch (InvalidDataException)
+    {
+        return false;
+    }
+    catch (EndOfStreamException)
+    {
+        return false;
+    }
+}
+
+static async Task<bool> WriteIfChangedAsync(FullPath path, string content)
+{
+    if (File.Exists(path) && (await File.ReadAllTextAsync(path)).ReplaceLineEndings("\n") == content)
+        return false;
+
+    await File.WriteAllTextAsync(path, content);
+    Console.WriteLine($"Updated {path}");
+    return true;
+}
+
+internal static partial class Program
+{
+    [GeneratedRegex(@"^- Version: .*$", RegexOptions.Multiline | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex VersionLineRegex();
+}

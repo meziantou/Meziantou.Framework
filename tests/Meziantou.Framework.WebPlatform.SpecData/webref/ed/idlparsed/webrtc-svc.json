@@ -1,0 +1,52 @@
+{
+  "spec": {
+    "title": "Scalable Video Coding (SVC) Extension for WebRTC",
+    "url": "https://w3c.github.io/webrtc-svc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "RTCRtpEncodingParameters": [
+        {
+          "fragment": "partial dictionary RTCRtpEncodingParameters {\n             DOMString scalabilityMode;\n};",
+          "type": "dictionary",
+          "name": "RTCRtpEncodingParameters",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "scalabilityMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-svc/#dom-rtcrtpencodingparameters-scalabilitymode"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "RTCRtpEncodingParameters": []
+    },
+    "externalDependencies": [
+      "RTCRtpEncodingParameters"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

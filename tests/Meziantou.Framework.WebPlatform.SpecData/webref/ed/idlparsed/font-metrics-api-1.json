@@ -1,0 +1,521 @@
+{
+  "spec": {
+    "title": "Font Metrics API Level 1",
+    "url": "https://drafts.css-houdini.org/font-metrics-api-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "FontMetrics",
+          "Baseline",
+          "Font"
+        ]
+      }
+    },
+    "idlNames": {
+      "FontMetrics": {
+        "fragment": "[Exposed=Window]\ninterface FontMetrics {\n  readonly attribute double width;\n  readonly attribute FrozenArray<double> advances;\n\n  readonly attribute double boundingBoxLeft;\n  readonly attribute double boundingBoxRight;\n\n  readonly attribute double height;\n  readonly attribute double emHeightAscent;\n  readonly attribute double emHeightDescent;\n  readonly attribute double boundingBoxAscent;\n  readonly attribute double boundingBoxDescent;\n  readonly attribute double fontBoundingBoxAscent;\n  readonly attribute double fontBoundingBoxDescent;\n\n  readonly attribute Baseline dominantBaseline;\n  readonly attribute FrozenArray<Baseline> baselines;\n  readonly attribute FrozenArray<Font> fonts;\n};",
+        "type": "interface",
+        "name": "FontMetrics",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-width"
+          },
+          {
+            "type": "attribute",
+            "name": "advances",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-advances"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingBoxLeft",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-boundingboxleft"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingBoxRight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-boundingboxright"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-height"
+          },
+          {
+            "type": "attribute",
+            "name": "emHeightAscent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-emheightascent"
+          },
+          {
+            "type": "attribute",
+            "name": "emHeightDescent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-emheightdescent"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingBoxAscent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-boundingboxascent"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingBoxDescent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-boundingboxdescent"
+          },
+          {
+            "type": "attribute",
+            "name": "fontBoundingBoxAscent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-fontboundingboxascent"
+          },
+          {
+            "type": "attribute",
+            "name": "fontBoundingBoxDescent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-fontboundingboxdescent"
+          },
+          {
+            "type": "attribute",
+            "name": "dominantBaseline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Baseline"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-dominantbaseline"
+          },
+          {
+            "type": "attribute",
+            "name": "baselines",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Baseline"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-baselines"
+          },
+          {
+            "type": "attribute",
+            "name": "fonts",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Font"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-fontmetrics-fonts"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/font-metrics-api-1/#fontmetrics"
+      },
+      "Baseline": {
+        "fragment": "[Exposed=Window]\ninterface Baseline {\n  readonly attribute DOMString name;\n  readonly attribute double value;\n};",
+        "type": "interface",
+        "name": "Baseline",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-baseline-name"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-baseline-value"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/font-metrics-api-1/#baseline"
+      },
+      "Font": {
+        "fragment": "[Exposed=Window]\ninterface Font {\n  readonly attribute DOMString name;\n  readonly attribute unsigned long glyphsRendered;\n};",
+        "type": "interface",
+        "name": "Font",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-font-name"
+          },
+          {
+            "type": "attribute",
+            "name": "glyphsRendered",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-font-glyphsrendered"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/font-metrics-api-1/#font"
+      }
+    },
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n    FontMetrics measureElement(Element element);\n    FontMetrics measureText(DOMString text, StylePropertyMapReadOnly styleMap);\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "measureElement",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontMetrics"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "element",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Element"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-document-measureelement"
+            },
+            {
+              "type": "operation",
+              "name": "measureText",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontMetrics"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "text",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "styleMap",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "StylePropertyMapReadOnly"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.css-houdini.org/font-metrics-api-1/#dom-document-measuretext"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "FontMetrics",
+        "Baseline",
+        "Font"
+      ]
+    },
+    "dependencies": {
+      "Document": [
+        "FontMetrics",
+        "Element",
+        "StylePropertyMapReadOnly"
+      ],
+      "FontMetrics": [
+        "Baseline",
+        "Font"
+      ],
+      "Baseline": [],
+      "Font": []
+    },
+    "externalDependencies": [
+      "Document",
+      "Element",
+      "StylePropertyMapReadOnly"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

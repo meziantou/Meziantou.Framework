@@ -4,18 +4,25 @@ namespace Meziantou.Extensions.Logging.InMemory;
 
 /// <summary>Provides an in-memory logger implementation that captures log entries for testing purposes.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs" ref:region="InMemoryLogger_Example" ref:dedent="true">
 /// // Create a logger directly
 /// var logger = InMemoryLogger.CreateLogger("MyCategory");
 /// logger.LogInformation("Test message");
-/// 
+///
 /// // Access captured logs
 /// Assert.Single(logger.Logs.Informations);
-/// Assert.Contains(logger.Logs, log => log.Message == "Test message");
+/// Assert.Contains(logger.Logs, log =&gt; log.Message == "Test message");
 /// </code>
 /// </example>
 public class InMemoryLogger : IInMemoryLogger
 {
+    // Beyond this capacity, the thread-local buffer is dropped instead of being reused,
+    // so an unusually deep scope stack doesn't keep a large array alive on the thread forever.
+    private const int MaxScopeBufferCapacity = 64;
+
+    [ThreadStatic]
+    private static List<object?>? s_scopeBuffer;
+
     private readonly string? _category;
     private readonly IExternalScopeProvider _scopeProvider;
     private readonly TimeProvider _timeProvider;
@@ -64,13 +71,35 @@ public class InMemoryLogger : IInMemoryLogger
         return _scopeProvider.Push(state);
     }
 
-    public bool IsEnabled(LogLevel logLevel) => true;
+    public bool IsEnabled(LogLevel logLevel) => logLevel is not LogLevel.None;
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         var now = _timeProvider.GetUtcNow();
-        var scopes = new List<object?>();
-        _scopeProvider.ForEachScope((current, scopes) => scopes.Add(current), scopes);
+        var scopes = GetScopes();
         Logs.Add(new InMemoryLogEntry(now, _category, logLevel, eventId, scopes, state, exception, formatter(state, exception)));
+    }
+
+    private object?[] GetScopes()
+    {
+        // Collect the scopes in a thread-local buffer, so no allocation occurs when there is no scope,
+        // and a single right-sized array is allocated otherwise.
+        var buffer = s_scopeBuffer ??= [];
+        try
+        {
+            _scopeProvider.ForEachScope((current, scopes) => scopes.Add(current), buffer);
+            return buffer.Count is 0 ? [] : buffer.ToArray();
+        }
+        finally
+        {
+            if (buffer.Capacity > MaxScopeBufferCapacity)
+            {
+                s_scopeBuffer = null;
+            }
+            else
+            {
+                buffer.Clear();
+            }
+        }
     }
 }

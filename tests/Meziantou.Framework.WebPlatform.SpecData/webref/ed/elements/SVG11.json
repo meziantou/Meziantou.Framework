@@ -1,0 +1,318 @@
+{
+  "spec": {
+    "title": "Scalable Vector Graphics (SVG) 1.1 (Second Edition)",
+    "url": "https://www.w3.org/TR/SVG11/"
+  },
+  "elements": [
+    {
+      "name": "svg",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#SVGElement",
+      "interface": "SVGSVGElement"
+    },
+    {
+      "name": "g",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#GElement",
+      "interface": "SVGGElement"
+    },
+    {
+      "name": "defs",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#DefsElement",
+      "interface": "SVGDefsElement"
+    },
+    {
+      "name": "desc",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#DescElement",
+      "interface": "SVGDescElement"
+    },
+    {
+      "name": "title",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#TitleElement",
+      "interface": "SVGTitleElement"
+    },
+    {
+      "name": "symbol",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#SymbolElement",
+      "interface": "SVGSymbolElement"
+    },
+    {
+      "name": "use",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#UseElement",
+      "interface": "SVGUseElement"
+    },
+    {
+      "name": "image",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#ImageElement",
+      "interface": "SVGImageElement"
+    },
+    {
+      "name": "switch",
+      "href": "https://www.w3.org/TR/SVG11/struct.html#SwitchElement",
+      "interface": "SVGSwitchElement"
+    },
+    {
+      "name": "style",
+      "href": "https://www.w3.org/TR/SVG11/styling.html#StyleElement",
+      "interface": "SVGStyleElement"
+    },
+    {
+      "name": "path",
+      "href": "https://www.w3.org/TR/SVG11/paths.html#PathElement",
+      "interface": "SVGPathElement"
+    },
+    {
+      "name": "rect",
+      "href": "https://www.w3.org/TR/SVG11/shapes.html#RectElement",
+      "interface": "SVGRectElement"
+    },
+    {
+      "name": "circle",
+      "href": "https://www.w3.org/TR/SVG11/shapes.html#CircleElement",
+      "interface": "SVGCircleElement"
+    },
+    {
+      "name": "ellipse",
+      "href": "https://www.w3.org/TR/SVG11/shapes.html#EllipseElement",
+      "interface": "SVGEllipseElement"
+    },
+    {
+      "name": "line",
+      "href": "https://www.w3.org/TR/SVG11/shapes.html#LineElement",
+      "interface": "SVGLineElement"
+    },
+    {
+      "name": "polyline",
+      "href": "https://www.w3.org/TR/SVG11/shapes.html#PolylineElement",
+      "interface": "SVGPolylineElement"
+    },
+    {
+      "name": "polygon",
+      "href": "https://www.w3.org/TR/SVG11/shapes.html#PolygonElement",
+      "interface": "SVGPolygonElement"
+    },
+    {
+      "name": "text",
+      "href": "https://www.w3.org/TR/SVG11/text.html#TextElement",
+      "interface": "SVGTextElement"
+    },
+    {
+      "name": "tspan",
+      "href": "https://www.w3.org/TR/SVG11/text.html#TSpanElement",
+      "interface": "SVGTSpanElement"
+    },
+    {
+      "name": "textPath",
+      "href": "https://www.w3.org/TR/SVG11/text.html#TextPathElement",
+      "interface": "SVGTextPathElement"
+    },
+    {
+      "name": "marker",
+      "href": "https://www.w3.org/TR/SVG11/painting.html#MarkerElement",
+      "interface": "SVGMarkerElement"
+    },
+    {
+      "name": "linearGradient",
+      "href": "https://www.w3.org/TR/SVG11/pservers.html#LinearGradients",
+      "interface": "SVGLinearGradientElement"
+    },
+    {
+      "name": "radialGradient",
+      "href": "https://www.w3.org/TR/SVG11/pservers.html#RadialGradients",
+      "interface": "SVGRadialGradientElement"
+    },
+    {
+      "name": "stop",
+      "href": "https://www.w3.org/TR/SVG11/pservers.html#GradientStops",
+      "interface": "SVGStopElement"
+    },
+    {
+      "name": "pattern",
+      "href": "https://www.w3.org/TR/SVG11/pservers.html#Patterns",
+      "interface": "SVGPatternElement"
+    },
+    {
+      "name": "clipPath",
+      "href": "https://www.w3.org/TR/SVG11/masking.html#EstablishingANewClippingPath",
+      "interface": "SVGClipPathElement"
+    },
+    {
+      "name": "mask",
+      "href": "https://www.w3.org/TR/SVG11/masking.html#Masking",
+      "interface": "SVGMaskElement"
+    },
+    {
+      "name": "filter",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#FilterElement",
+      "interface": "SVGFilterElement"
+    },
+    {
+      "name": "feDistantLight",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feDistantLightElement",
+      "interface": "SVGFEDistantLightElement"
+    },
+    {
+      "name": "fePointLight",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#fePointLightElement",
+      "interface": "SVGFEPointLightElement"
+    },
+    {
+      "name": "feSpotLight",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feSpotLightElement",
+      "interface": "SVGFESpotLightElement"
+    },
+    {
+      "name": "feBlend",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feBlendElement",
+      "interface": "SVGFEBlendElement"
+    },
+    {
+      "name": "feColorMatrix",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feColorMatrixElement",
+      "interface": "SVGFEColorMatrixElement"
+    },
+    {
+      "name": "feComponentTransfer",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feComponentTransferElement",
+      "interface": "SVGFEComponentTransferElement"
+    },
+    {
+      "name": "feFuncR",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feFuncRElement",
+      "interface": "SVGFEFuncRElement"
+    },
+    {
+      "name": "feFuncG",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feFuncGElement",
+      "interface": "SVGFEFuncGElement"
+    },
+    {
+      "name": "feFuncB",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feFuncBElement",
+      "interface": "SVGFEFuncBElement"
+    },
+    {
+      "name": "feFuncA",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feFuncAElement",
+      "interface": "SVGFEFuncAElement"
+    },
+    {
+      "name": "feComposite",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feCompositeElement",
+      "interface": "SVGFECompositeElement"
+    },
+    {
+      "name": "feConvolveMatrix",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feConvolveMatrixElement",
+      "interface": "SVGFEConvolveMatrixElement"
+    },
+    {
+      "name": "feDiffuseLighting",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feDiffuseLightingElement",
+      "interface": "SVGFEDiffuseLightingElement"
+    },
+    {
+      "name": "feDisplacementMap",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feDisplacementMapElement",
+      "interface": "SVGFEDisplacementMapElement"
+    },
+    {
+      "name": "feFlood",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feFloodElement",
+      "interface": "SVGFEFloodElement"
+    },
+    {
+      "name": "feGaussianBlur",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feGaussianBlurElement",
+      "interface": "SVGFEGaussianBlurElement"
+    },
+    {
+      "name": "feImage",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feImageElement",
+      "interface": "SVGFEImageElement"
+    },
+    {
+      "name": "feMerge",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feMergeElement",
+      "interface": "SVGFEMergeElement"
+    },
+    {
+      "name": "feMergeNode",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feMergeNodeElement",
+      "interface": "SVGFEMergeNodeElement"
+    },
+    {
+      "name": "feMorphology",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feMorphologyElement",
+      "interface": "SVGFEMorphologyElement"
+    },
+    {
+      "name": "feOffset",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feOffsetElement",
+      "interface": "SVGFEOffsetElement"
+    },
+    {
+      "name": "feSpecularLighting",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feSpecularLightingElement",
+      "interface": "SVGFESpecularLightingElement"
+    },
+    {
+      "name": "feTile",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feTileElement",
+      "interface": "SVGFETileElement"
+    },
+    {
+      "name": "feTurbulence",
+      "href": "https://www.w3.org/TR/SVG11/filters.html#feTurbulenceElement",
+      "interface": "SVGFETurbulenceElement"
+    },
+    {
+      "name": "a",
+      "href": "https://www.w3.org/TR/SVG11/linking.html#AElement",
+      "interface": "SVGAElement"
+    },
+    {
+      "name": "view",
+      "href": "https://www.w3.org/TR/SVG11/linking.html#ViewElement",
+      "interface": "SVGViewElement"
+    },
+    {
+      "name": "script",
+      "href": "https://www.w3.org/TR/SVG11/script.html#ScriptElement",
+      "interface": "SVGScriptElement"
+    },
+    {
+      "name": "animate",
+      "href": "https://www.w3.org/TR/SVG11/animate.html#AnimateElement",
+      "interface": "SVGAnimateElement"
+    },
+    {
+      "name": "set",
+      "href": "https://www.w3.org/TR/SVG11/animate.html#SetElement",
+      "interface": "SVGSetElement"
+    },
+    {
+      "name": "animateMotion",
+      "href": "https://www.w3.org/TR/SVG11/animate.html#AnimateMotionElement",
+      "interface": "SVGAnimateMotionElement"
+    },
+    {
+      "name": "mpath",
+      "href": "https://www.w3.org/TR/SVG11/animate.html#MPathElement",
+      "interface": "SVGMPathElement"
+    },
+    {
+      "name": "animateTransform",
+      "href": "https://www.w3.org/TR/SVG11/animate.html#AnimateTransformElement",
+      "interface": "SVGAnimateTransformElement"
+    },
+    {
+      "name": "metadata",
+      "href": "https://www.w3.org/TR/SVG11/metadata.html#MetadataElement",
+      "interface": "SVGMetadataElement"
+    },
+    {
+      "name": "foreignObject",
+      "href": "https://www.w3.org/TR/SVG11/extend.html#ForeignObjectElement",
+      "interface": "SVGForeignObjectElement"
+    }
+  ]
+}

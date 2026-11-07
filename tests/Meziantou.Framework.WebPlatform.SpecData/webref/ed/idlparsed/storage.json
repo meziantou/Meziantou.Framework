@@ -1,0 +1,270 @@
+{
+  "spec": {
+    "title": "Storage Standard",
+    "url": "https://storage.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "StorageManager"
+        ],
+        "Worker": [
+          "StorageManager"
+        ]
+      }
+    },
+    "idlNames": {
+      "NavigatorStorage": {
+        "fragment": "[SecureContext]\ninterface mixin NavigatorStorage {\n  [SameObject] readonly attribute StorageManager storage;\n};",
+        "type": "interface mixin",
+        "name": "NavigatorStorage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "storage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "StorageManager"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://storage.spec.whatwg.org/#dom-navigatorstorage-storage"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://storage.spec.whatwg.org/#navigatorstorage"
+      },
+      "StorageManager": {
+        "fragment": "[SecureContext,\n Exposed=(Window,Worker)]\ninterface StorageManager {\n  Promise<boolean> persisted();\n  [Exposed=Window] Promise<boolean> persist();\n\n  Promise<StorageEstimate> estimate();\n};",
+        "type": "interface",
+        "name": "StorageManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "persisted",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://storage.spec.whatwg.org/#dom-storagemanager-persisted"
+          },
+          {
+            "type": "operation",
+            "name": "persist",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://storage.spec.whatwg.org/#dom-storagemanager-persist"
+          },
+          {
+            "type": "operation",
+            "name": "estimate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StorageEstimate"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://storage.spec.whatwg.org/#dom-storagemanager-estimate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://storage.spec.whatwg.org/#storagemanager"
+      },
+      "StorageEstimate": {
+        "fragment": "dictionary StorageEstimate {\n  unsigned long long usage;\n  unsigned long long quota;\n};",
+        "type": "dictionary",
+        "name": "StorageEstimate",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "usage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://storage.spec.whatwg.org/#dom-storageestimate-usage"
+          },
+          {
+            "type": "field",
+            "name": "quota",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://storage.spec.whatwg.org/#dom-storageestimate-quota"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://storage.spec.whatwg.org/#dictdef-storageestimate"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes NavigatorStorage;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "NavigatorStorage"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes NavigatorStorage;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "NavigatorStorage"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "StorageManager"
+      ],
+      "Worker": [
+        "StorageManager"
+      ]
+    },
+    "dependencies": {
+      "NavigatorStorage": [
+        "StorageManager"
+      ],
+      "Navigator": [
+        "NavigatorStorage"
+      ],
+      "WorkerNavigator": [
+        "NavigatorStorage"
+      ],
+      "StorageManager": [
+        "StorageEstimate"
+      ],
+      "StorageEstimate": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

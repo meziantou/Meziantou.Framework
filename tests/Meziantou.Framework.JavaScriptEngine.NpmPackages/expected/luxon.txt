@@ -1,0 +1,121 @@
+{
+ "iso": "2024-03-10T01:30:00.000-05:00",
+ "plusHour": "2024-03-10T03:30:00.000-04:00",
+ "offsets": [
+  [
+   "America/New_York",
+   "2024-07-01 08:00 -04:00",
+   "EDT",
+   true
+  ],
+  [
+   "Europe/Paris",
+   "2024-07-01 14:00 +02:00",
+   "GMT+2",
+   true
+  ],
+  [
+   "Asia/Kolkata",
+   "2024-07-01 17:30 +05:30",
+   "GMT+5:30",
+   false
+  ],
+  [
+   "Australia/Lord_Howe",
+   "2024-07-01 22:30 +10:30",
+   "GMT+10:30",
+   false
+  ],
+  [
+   "Pacific/Chatham",
+   "2024-07-02 00:45 +12:45",
+   "GMT+12:45",
+   false
+  ],
+  [
+   "America/St_Johns",
+   "2024-07-01 09:30 -02:30",
+   "GMT-2:30",
+   true
+  ],
+  [
+   "Asia/Kathmandu",
+   "2024-07-01 17:45 +05:45",
+   "GMT+5:45",
+   false
+  ]
+ ],
+ "formats": [
+  "January 15, 2024 at 9:05 AM UTC",
+  "15 janvier 2024 à 09:05 UTC",
+  "15. Januar 2024 um 09:05 UTC",
+  "2024年1月15日 9:05 UTC",
+  "١٥ يناير ٢٠٢٤ في ٩:٠٥ ص UTC",
+  "15 de enero de 2024 a las 9:05 UTC"
+ ],
+ "tokens": "Thursday, February 29, 2024 week 09 day 060, 11:59:59.123 PM, 2024-W09-4, 1",
+ "parsed": [
+  "2024-01-15T14:30:00.000Z",
+  "2024-01-15",
+  "2016-11-01T06:53:12.000Z",
+  "1994-11-06T08:49:37.000Z",
+  "2017-05-15T09:24:15.000Z",
+  "unit out of range"
+ ],
+ "duration": {
+  "days": 2,
+  "hours": 2,
+  "minutes": 10
+ },
+ "durationHuman": "1 year, 2 months, 3 days, 4 hours, 5 minutes, and 6 seconds",
+ "interval": [
+  "2024-01-01/2024-01-29",
+  "2024-01-29/2024-02-26",
+  "2024-02-26/2024-03-15"
+ ],
+ "diff": {
+  "years": 1,
+  "months": 2,
+  "days": 14
+ },
+ "relative": [
+  "1 day ago",
+  "dentro de 1 mes",
+  "today"
+ ],
+ "info": [
+  [
+   "Jan",
+   "Feb",
+   "Mär",
+   "Apr",
+   "Mai",
+   "Jun",
+   "Jul",
+   "Aug",
+   "Sep",
+   "Okt",
+   "Nov",
+   "Dez"
+  ],
+  [
+   "M",
+   "T",
+   "W",
+   "T",
+   "F",
+   "S",
+   "S"
+  ],
+  false,
+  {
+   "relative": true,
+   "localeWeek": true
+  }
+ ],
+ "startOf": [
+  "2024-03-04T00:00:00.000-05:00",
+  "2024-03-31T23:59:59.999-04:00",
+  "2024-01-01T00:00:00.000-05:00"
+ ]
+}

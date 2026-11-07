@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-IQ": {
+      "identity": {
+        "language": "ar",
+        "territory": "IQ"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

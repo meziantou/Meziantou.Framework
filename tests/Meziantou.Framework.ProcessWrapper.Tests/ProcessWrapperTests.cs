@@ -1,9 +1,207 @@
 using System.Diagnostics;
+using Meziantou.Framework.Diagnostics;
 
 namespace Meziantou.Framework.Tests;
 
 public class ProcessWrapperTests
 {
+    [Fact]
+    public async Task ReadmeExample_BasicUsage()
+    {
+        #region ProcessWrapper_BasicUsage
+        // Execute and wait for exit (throws if exit code is non-zero by default)
+        var result = await ProcessWrapper.Create("dotnet")
+            .WithArguments("--version")
+            .ExecuteAsync();
+
+        Assert.True(result.ExitCode.IsSuccess);
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_BufferedExecution()
+    {
+        #region ProcessWrapper_BufferedExecution
+        // Capture all output
+        var result = await ProcessWrapper.Create("dotnet")
+            .WithArguments("--info")
+            .ExecuteBufferedAsync();
+
+        int exitCode = result.ExitCode;
+        Assert.Equal(0, exitCode);
+
+        // Access output after awaiting
+        Assert.Contains(result.Output.StandardOutput, line => line.Text.StartsWith(".NET SDK", StringComparison.Ordinal));
+        #endregion
+    }
+
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ReadmeExample_DefaultProcessFactory()
+    {
+        #region ProcessWrapper_DefaultProcessFactory
+        var previousFactory = ProcessWrapper.DefaultProcessFactory;
+        ProcessWrapper.DefaultProcessFactory = new FakeProcessFactory(startInfo =>
+        {
+            return FakeProcess.Create(
+                exitCode: 0,
+                outputText: "simulated output",
+                errorText: "");
+        });
+
+        try
+        {
+            var result = await ProcessWrapper.Create("my-command")
+                .WithArguments("--version")
+                .ExecuteBufferedAsync();
+
+            Assert.Equal("simulated output", result.Output.StandardOutput.Single().Text);
+        }
+        finally
+        {
+            ProcessWrapper.DefaultProcessFactory = previousFactory;
+        }
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ProcessFactory()
+    {
+        #region ProcessWrapper_ProcessFactory
+        var result = await ProcessWrapper.Create("my-command")
+            .WithProcessFactory(new FakeProcessFactory(_ => FakeProcess.Create(0, "instance output", "")))
+            .ExecuteBufferedAsync();
+
+        Assert.Equal("instance output", result.Output.StandardOutput.Single().Text);
+        #endregion
+    }
+
+    // Registers process-wide interceptors, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ReadmeExample_Interceptors()
+    {
+        #region ProcessWrapper_Interceptors
+        using var globalWrapperRegistration = ProcessWrapper.AddInterceptor(new SampleProcessWrapperInterceptor());
+        using var globalStartInfoRegistration = ProcessWrapper.AddInterceptor(new SampleProcessStartInfoInterceptor());
+
+        var result = await ProcessWrapper.Create("dotnet")
+            .WithArguments("--version")
+            .WithInterceptor(new SampleProcessWrapperInterceptor())
+            .WithInterceptor(new SampleProcessStartInfoInterceptor())
+            .ExecuteBufferedAsync();
+        #endregion
+
+        Assert.True(result.ExitCode.IsSuccess);
+    }
+
+    [Fact]
+    public async Task Documentation_ExitCodes()
+    {
+        #region ProcessWrapper_ExitCodes
+        var result = await ProcessWrapper.Create("my-command")
+            .WithProcessFactory(new FakeProcessFactory(FakeProcess.Create(exitCode: 3)))
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteAsync();
+
+        Assert.False(result.ExitCode.IsSuccess);
+        Assert.True(result.ExitCode.IsAnyOf(2, 3));
+
+        // ProcessExitCode converts implicitly to int
+        int exitCode = result.ExitCode;
+        Assert.Equal(3, exitCode);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ExecutionException()
+    {
+        #region ProcessWrapper_ExecutionException
+        var command = ProcessWrapper.Create("my-command")
+            .WithProcessFactory(new FakeProcessFactory(FakeProcess.Create(exitCode: 1)));
+
+        var exception = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await command.ExecuteAsync());
+        Assert.Equal(1, exception.ExitCode.Value);
+        Assert.StartsWith("Process exited with code 1.", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_AssertArguments()
+    {
+        #region ProcessWrapper_AssertArguments
+        var startInfos = new List<ProcessStartInfo>();
+        var factory = new FakeProcessFactory(startInfo =>
+        {
+            startInfos.Add(startInfo);
+            return FakeProcess.Create(exitCode: 0);
+        });
+
+        await ProcessWrapper.Create("git")
+            .WithArguments("commit", "--message", "Fix \"quoted\" text")
+            .WithProcessFactory(factory)
+            .ExecuteAsync();
+
+        // Each argument reaches the process as is: no quoting or escaping is needed
+        var startInfo = Assert.Single(startInfos);
+        Assert.Equal(["commit", "--message", "Fix \"quoted\" text"], startInfo.ArgumentList);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_PendingFakeProcess()
+    {
+        #region ProcessWrapper_PendingFakeProcess
+        // A pending fake process runs until Complete is called
+        var fakeProcess = FakeProcess.CreatePending(exitCode: 0, outputText: "processed", errorText: "");
+
+        var instance = ProcessWrapper.Create("my-command")
+            .WithInputStream(InputSource.FromText("input data"))
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .ExecuteBufferedAsync();
+
+        // The code under test can observe the running process here, then the test lets it exit
+        fakeProcess.Complete();
+        var result = await instance;
+
+        Assert.Equal("processed", result.Output.StandardOutput.Single().Text);
+        Assert.Equal("input data", fakeProcess.ReadInputAsText());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Telemetry()
+    {
+        #region ProcessWrapper_Telemetry
+        // Collect the activities of the current test only (ScopedActivityListener is in Meziantou.Framework)
+        using var listener = new ScopedActivityListener(new ScopedActivityListenerOptions
+        {
+            SourceNames = ["Meziantou.Framework.ProcessWrapper"],
+            SamplingResult = ActivitySamplingResult.AllDataAndRecorded,
+        });
+
+        await ProcessWrapper.Create("dotnet")
+            .WithArguments("--version")
+            .ExecuteAsync();
+
+        var activity = Assert.Single(listener.Activities);
+        Assert.Equal("process.execute", activity.OperationName);
+        Assert.Equal(0, activity.GetTagItem("process.exit.code"));
+        Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ToString()
+    {
+        #region ProcessWrapper_ToString
+        var command = ProcessWrapper.Create("dotnet")
+            .WithArguments("build", "My Project.csproj");
+
+        // The command line, with the arguments quoted when needed
+        Assert.Equal(@"dotnet build ""My Project.csproj""", command.ToString());
+        #endregion
+    }
+
     [Fact]
     public void ProcessExitCode_IsSuccess_TrueForZero()
     {
@@ -27,9 +225,11 @@ public class ProcessWrapperTests
         var exitCodeB = new ProcessExitCode(42);
         var exitCodeC = new ProcessExitCode(1);
 
+#pragma warning disable MFAS0033, MFAS0034 // Preserve the Equals overload validation
         Assert.True(exitCodeA.Equals(exitCodeB));
         Assert.True(exitCodeA.Equals((object)exitCodeB));
         Assert.False(exitCodeA.Equals(exitCodeC));
+#pragma warning restore MFAS0033, MFAS0034
         Assert.True(exitCodeA == exitCodeB);
         Assert.True(exitCodeA != exitCodeC);
         Assert.Equal(exitCodeA.GetHashCode(), exitCodeB.GetHashCode());
@@ -130,23 +330,46 @@ public class ProcessWrapperTests
         Assert.True(processResult.StartDate <= processResult.ExitDate);
     }
 
-    [Fact]
+    // Listens to the ProcessWrapper ActivitySource, which reports the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteAsync_EmitsActivity_WithProcessPathAndExitCode()
     {
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateProcessWrapperActivityListener();
 
         var processResult = await CreateEchoCommand("test")
             .ExecuteAsync();
 
-        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var activity = Assert.Single(listener.Activities);
 
         Assert.Equal(0, processResult.ExitCode);
         Assert.Equal("process.execute", activity.OperationName);
         Assert.Equal(0, activity.GetTagItem("process.exit.code"));
         var processPath = Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
         Assert.False(string.IsNullOrWhiteSpace(processPath));
+    }
+
+    // Listens to the ProcessWrapper ActivitySource, which reports the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ExecuteAsync_DoesNotChangeTheAmbientActivityOfTheCaller()
+    {
+        using var listener = CreateProcessWrapperActivityListener();
+
+        using var ambientSource = new ActivitySource("Meziantou.Framework.ProcessWrapper.Tests.Ambient");
+        using var ambientListener = new ScopedActivityListener(new ScopedActivityListenerOptions
+        {
+            ShouldListenTo = source => source == ambientSource,
+            SamplingResult = ActivitySamplingResult.AllDataAndRecorded,
+        });
+
+        using var ambientActivity = ambientSource.StartActivity("ambient");
+        Assert.NotNull(ambientActivity);
+
+        await CreateEchoCommand("test").ExecuteAsync();
+
+        // The process activity is emitted, but it must not replace the caller's ambient activity.
+        var processActivity = Assert.Single(listener.Activities);
+        Assert.Equal("process.execute", processActivity.OperationName);
+        Assert.Same(ambientActivity, Activity.Current);
     }
 
     [Fact]
@@ -224,6 +447,38 @@ public class ProcessWrapperTests
         await process;
 
         Assert.Equal("test", sb.ToString());
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WhenMultiByteCharacterIsSplitAcrossReads_DecodesTheWholeCharacter()
+    {
+        // Each byte of "\u00e9" is delivered by a separate read, so the first read holds nothing but the
+        // start of the character. Those bytes must stay buffered in the decoder instead of being dropped.
+        var bytes = Encoding.UTF8.GetBytes("\u00e9\n");
+        using var outputStream = CreateSingleByteReadStream(bytes);
+        using var fakeProcess = FakeProcess.Create(0, outputStream, Stream.Null);
+
+        var processResult = await ProcessWrapper.Create("dummy")
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .ExecuteBufferedAsync();
+
+        Assert.Equal("\u00e9", processResult.Output.StandardOutput.Single().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputStream_StringBuilder_WhenMultiByteCharacterIsSplitAcrossReads_DecodesTheWholeCharacter()
+    {
+        var bytes = Encoding.UTF8.GetBytes("\u00e9");
+        using var outputStream = CreateSingleByteReadStream(bytes);
+        using var fakeProcess = FakeProcess.Create(0, outputStream, Stream.Null);
+        var stringBuilder = new StringBuilder();
+
+        await ProcessWrapper.Create("dummy")
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .WithOutputStream(stringBuilder)
+            .ExecuteAsync();
+
+        Assert.Equal("\u00e9", stringBuilder.ToString());
     }
 
     [Fact]
@@ -425,7 +680,8 @@ public class ProcessWrapperTests
         Assert.Equal("\"my tool\" arg \"with spaces\" \"C:\\path with spaces\\\\\" \"with\\\"quote\" \"\"", command.ToString());
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ProcessResult_ToString_ReturnsCommandAndExitCode()
     {
         using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
@@ -448,7 +704,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ProcessResult_ToString_WithIncludeArguments_IncludesArguments()
     {
         using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
@@ -509,16 +766,45 @@ public class ProcessWrapperTests
             File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
-        var result = ProcessWrapper.Create(executableName)
+        var processResult = await ExecuteRetryingOnTextFileBusyAsync(async () => await ProcessWrapper.Create(executableName)
             .WithWorkingDirectory(temporaryDirectoryPath)
-            .ExecuteBufferedAsync();
-
-        var processResult = await result;
+            .WithSearchWorkingDirectory()
+            .ExecuteBufferedAsync());
 
         Assert.Equal("test-from-working-directory", processResult.Output.StandardOutput.First().Text.Trim());
     }
 
     [Fact]
+    public async Task WithWorkingDirectory_DoesNotFindExecutableInWorkingDirectoryByDefault()
+    {
+        // Without the opt-in, an executable sitting in the working directory must not be picked up: it would
+        // otherwise shadow the command that PATH resolves for the same bare name.
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var temporaryDirectoryPath = temporaryDirectory.FullPath.Value;
+
+        string executableName;
+        if (OperatingSystem.IsWindows())
+        {
+            executableName = $"run{Guid.NewGuid():N}";
+            temporaryDirectory.CreateTextFile(executableName + ".bat", "@echo off\r\necho test-from-working-directory\r\n");
+        }
+        else
+        {
+            executableName = $"run{Guid.NewGuid():N}.sh";
+            var scriptPath = temporaryDirectory.CreateTextFile(executableName, "#!/bin/sh\necho test-from-working-directory\n");
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        await Assert.ThrowsAsync<System.ComponentModel.Win32Exception>(async () =>
+        {
+            _ = await ProcessWrapper.Create(executableName)
+                .WithWorkingDirectory(temporaryDirectoryPath)
+                .ExecuteBufferedAsync();
+        });
+    }
+
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithCredentials_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows())
@@ -545,7 +831,8 @@ public class ProcessWrapperTests
         Assert.Equal("test-password", capturedStartInfo.PasswordInClearText);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithCredentialsAndNetworkOnly_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows())
@@ -571,7 +858,8 @@ public class ProcessWrapperTests
         Assert.True(capturedStartInfo.UseCredentialsForNetworkingOnly);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithSecureStringCredentials_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows())
@@ -701,7 +989,8 @@ public class ProcessWrapperTests
         Assert.Equal(1, ex.ExitCode);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_DefaultLogVerbosity_IncludesProcessPathWithoutArguments()
     {
         using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
@@ -724,7 +1013,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_WithLogVerbosityIncludeArguments_IncludesArguments()
     {
         using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
@@ -741,7 +1031,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_WithDefaultLogVerbosityIncludeArguments_IncludesArguments()
     {
         using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
@@ -760,12 +1051,11 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Listens to the ProcessWrapper ActivitySource, which reports the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_SetsActivityStatusToError()
     {
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateProcessWrapperActivityListener();
 
         ProcessWrapper command;
         if (OperatingSystem.IsWindows())
@@ -783,7 +1073,7 @@ public class ProcessWrapperTests
 
         await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
 
-        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var activity = Assert.Single(listener.Activities);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
         var processPath = Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
         Assert.NotNull(activity.StatusDescription);
@@ -892,6 +1182,24 @@ public class ProcessWrapperTests
         var capturedText = Encoding.UTF8.GetString(stream.ToArray());
         Assert.Contains("out1", capturedText);
         Assert.Contains("err1", capturedText);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithSharedStringBuilderOutputTarget_DoesNotLoseOutput()
+    {
+        // Both pumps append to the same StringBuilder concurrently. StringBuilder is not thread-safe,
+        // so without a shared lock this silently loses output or throws from inside Append.
+        const int Iterations = 2000;
+        const int ChunkLength = 10;
+
+        var stringBuilder = new StringBuilder();
+        await CreateInterleavedChunkCommand(Iterations, new string('o', ChunkLength), new string('e', ChunkLength))
+            .WithValidation(ProcessValidationMode.None)
+            .WithOutputStream(stringBuilder)
+            .WithErrorStream(stringBuilder)
+            .ExecuteAsync();
+
+        Assert.Equal(Iterations * ChunkLength * 2, stringBuilder.Length);
     }
 
     [Fact]
@@ -1084,6 +1392,42 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task InputSource_ReadAsync_ReadsEverySourceToItsEnd()
+    {
+        var filePath = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(filePath, "content", XunitCancellationToken);
+            using var reader = new StringReader("content");
+            await using var stream = new MemoryStream(Encoding.UTF8.GetBytes("content"));
+
+            InputSource[] sources =
+            [
+                InputSource.FromText("content"),
+                InputSource.FromBytes(Encoding.UTF8.GetBytes("content")),
+                InputSource.FromTextReader(reader),
+                InputSource.FromStream(stream),
+                InputSource.FromFile(filePath),
+            ];
+
+            foreach (var source in sources)
+            {
+                var result = new MemoryStream();
+                var buffer = new byte[3];
+                int read;
+                while ((read = await source.ReadAsync(buffer, XunitCancellationToken)) > 0)
+                    result.Write(buffer, 0, read);
+
+                Assert.Equal("content", Encoding.UTF8.GetString(result.ToArray()));
+            }
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public async Task WithInputStream_ProcessPipe()
     {
         var pipe = new ProcessPipe();
@@ -1100,6 +1444,18 @@ public class ProcessWrapperTests
         var processResult = await destinationProcess;
 
         Assert.Contains("hello from pipe", processResult.Output.StandardOutput.First().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInputStream_WhenProcessExitsWithoutReadingItsInput_ReturnsResult()
+    {
+        // The process closes its standard input immediately, so the remaining writes hit a broken pipe.
+        // That is expected for commands that stop reading early and must not fail the execution.
+        var result = await CreateExitImmediatelyCommand()
+            .WithInputStream(InputSource.FromText(new string('a', 10 * 1024 * 1024)))
+            .ExecuteAsync();
+
+        Assert.True(result.ExitCode.IsSuccess);
     }
 
     [Fact]
@@ -1140,6 +1496,25 @@ public class ProcessWrapperTests
             _ = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand().WithInputStream("overridden"))
                 .ExecuteBufferedAsync();
         });
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_WhenDownstreamExitsWithoutReadingItsInput_DoesNotHang()
+    {
+        // The upstream command writes far more than the pipe's pause threshold while the downstream
+        // command exits without draining it, which used to deadlock the pipe's writer against DisposeReader.
+        var pipeline = CreateLargeOutputCommand(1024 * 1024)
+            | CreateExitImmediatelyCommand().WithValidation(ProcessValidationMode.None);
+
+        // The budget only exists to turn a deadlock into a failure instead of a run that never ends, so it has
+        // to be far larger than the pipeline ever legitimately takes: every test in this class spawns processes
+        // in parallel, and starting the upstream powershell.exe on a saturated CI agent has already taken more
+        // than 30 seconds.
+        var execution = pipeline.ExecuteBufferedAsync();
+        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromMinutes(2)));
+
+        Assert.Same(execution, completed);
+        await execution;
     }
 
     [Fact]
@@ -1214,7 +1589,191 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithLimits(limits => limits.CpuPercentage = 50));
         Assert.Same(command, command.WithWindowsJobObject(_ => { }));
         Assert.Same(command, command.WithLinuxControlGroup(_ => { }));
+#if NET11_0_OR_GREATER
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
+        {
+            Assert.Same(command, command.WithKillOnParentExit());
+        }
+
+        Assert.Same(command, command.WithStartDetached());
+
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        {
+            Assert.Same(command, command.WithStartSuspended());
+        }
+#endif
     }
+
+#if NET11_0_OR_GREATER
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ExecuteBufferedAsync_WithKillOnParentExit_PropagatesToProcessStartInfo()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid())
+            return;
+
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await ProcessWrapper.Create("dotnet")
+                .WithKillOnParentExit()
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.True(capturedStartInfo.KillOnParentExit);
+    }
+
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ExecuteBufferedAsync_WithStartDetached_PropagatesToProcessStartInfo()
+    {
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await ProcessWrapper.Create("dotnet")
+                .WithStartDetached()
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.True(capturedStartInfo.StartDetached);
+    }
+
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ExecuteBufferedAsync_WithStartSuspended_PropagatesToProcessStartInfo()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            return;
+
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await ProcessWrapper.Create("dotnet")
+                .WithStartSuspended()
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.True(capturedStartInfo.StartSuspended);
+    }
+
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_PreservesNet11StartInfoOptions()
+    {
+        var capturedStartInfos = new List<ProcessStartInfo>();
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfos.Add(startInfo);
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await (ProcessWrapper.Create("first").WithStartDetached() | ProcessWrapper.Create("second").WithStartDetached())
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.Collection(
+            capturedStartInfos,
+            startInfo => Assert.True(startInfo.StartDetached),
+            startInfo => Assert.True(startInfo.StartDetached));
+    }
+
+    // Registers process-wide interceptors, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task StartAndForget_AppliesConfigurationAndInterceptors()
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var temporaryDirectoryPath = temporaryDirectory.FullPath.Value;
+        var outputPath = Path.Combine(temporaryDirectoryPath, "start-and-forget-output.txt");
+
+        string executableName;
+        if (OperatingSystem.IsWindows())
+        {
+            executableName = "start-and-forget.cmd";
+            _ = temporaryDirectory.CreateTextFile(executableName, "@echo off\r\necho %TEST_VAR_52% %TEST_VAR_53% %1>\"%OUTPUT_FILE%\"\r\n");
+        }
+        else
+        {
+            executableName = "start-and-forget.sh";
+            var scriptPath = temporaryDirectory.CreateTextFile(executableName, "#!/bin/sh\nprintf '%s %s %s' \"$TEST_VAR_52\" \"$TEST_VAR_53\" \"$1\" > \"$OUTPUT_FILE\"\n");
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        using var processWrapperInterceptorRegistration = ProcessWrapper.AddInterceptor(new WrapperEnvironmentVariableInterceptor("TEST_VAR_52", "wrapper"));
+        using var processStartInfoInterceptorRegistration = ProcessWrapper.AddInterceptor(new StartInfoEnvironmentVariableInterceptor("TEST_VAR_53", "start-info"));
+
+        var processId = ProcessWrapper.Create(executableName)
+            .WithWorkingDirectory(temporaryDirectoryPath)
+            .WithSearchWorkingDirectory()
+            .WithArguments("argument")
+            .WithEnvironmentVariables(env => env.Set("OUTPUT_FILE", outputPath))
+            .StartAndForget();
+
+        Assert.True(processId > 0);
+
+        var output = await WaitForFileTextAsync(outputPath);
+        Assert.Equal("wrapper start-info argument", output.Trim());
+    }
+
+    // Registers a process-wide interceptor that turns validation on for every wrapper created while it is
+    // alive, which makes StartAndForget throw in any test running beside it
+    [Fact(DisableParallelization = true)]
+    public void StartAndForget_WithUnsupportedConfiguration_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithOutputStream(OutputTarget.ToTextDelegate(_ => { })).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithErrorStream(OutputTarget.ToTextDelegate(_ => { })).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithInputStream("stdin").StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithLimits(new ProcessLimits()).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithWindowsJobObject(_ => { }).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithLinuxControlGroup(_ => { }).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithValidation(ProcessValidationMode.FailIfNonZeroExitCode).StartAndForget());
+
+        using var processWrapperInterceptorRegistration = ProcessWrapper.AddInterceptor(new ValidationProcessWrapperInterceptor(ProcessValidationMode.FailIfStdError));
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").StartAndForget());
+    }
+
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ProcessInstance_Signal_WhenSafeHandleIsUnavailable_Throws()
+    {
+        var fakeProcess = FakeProcess.CreatePending(0);
+        var fakeFactory = new FakeProcessFactory(fakeProcess);
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            var process = ProcessWrapper.Create("dotnet")
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteAsync();
+
+            _ = Assert.Throws<InvalidOperationException>(() => process.Signal(System.Runtime.InteropServices.PosixSignal.SIGTERM));
+
+            fakeProcess.Complete();
+            _ = await process;
+        });
+    }
+#endif
 
     [Fact]
     public void ProcessPipe_WithInvalidMaxBufferSize_Throws()
@@ -1405,7 +1964,8 @@ public class ProcessWrapperTests
         _ = Assert.Throws<ArgumentNullException>(() => command.WithInterceptor((IProcessStartInfoInterceptor)null!));
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_UsesCustomProcessFactory()
     {
         using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
@@ -1429,7 +1989,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteAsync_WithCustomProcessFactory_CancellationKillsProcess()
     {
         var fakeProcess = FakeProcess.CreatePending(0);
@@ -1448,7 +2009,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithPipeOperator_UsesCustomProcessFactory()
     {
         var downstreamProcess = FakeProcess.Create(0, outputText: "final output\n", errorText: "");
@@ -1465,7 +2027,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithInstanceProcessFactory_OverridesGlobalFactory()
     {
         var globalProcess = FakeProcess.Create(0, outputText: "global output\n", errorText: "");
@@ -1483,7 +2046,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithGlobalProcessWrapperInterceptor_Applies()
     {
         await RunWithGlobalInterceptorsAsync(
@@ -1507,7 +2071,8 @@ public class ProcessWrapperTests
         Assert.Equal("instance-wrapper", processResult.Output.StandardOutput.First().Text);
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithGlobalProcessStartInfoInterceptor_Applies()
     {
         await RunWithGlobalInterceptorsAsync(
@@ -1531,7 +2096,8 @@ public class ProcessWrapperTests
         Assert.Equal("instance-startinfo", processResult.Output.StandardOutput.First().Text);
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_Interceptors_RunInExpectedOrder()
     {
         var events = new List<string>();
@@ -1550,7 +2116,8 @@ public class ProcessWrapperTests
         Assert.Equal(["global-wrapper", "instance-wrapper", "global-startinfo", "instance-startinfo"], events);
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithPipeOperator_AppliesGlobalProcessStartInfoInterceptorsToEachStage()
     {
         var interceptor = new CountingProcessStartInfoInterceptor();
@@ -1628,16 +2195,13 @@ public class ProcessWrapperTests
         }
     }
 
-    private static ActivityListener CreateProcessWrapperActivityListener(Action<Activity> activityStopped)
-    {
-        return new ActivityListener
+    // The scope only reports the activities started by the current test
+    private static ScopedActivityListener CreateProcessWrapperActivityListener()
+        => new(new ScopedActivityListenerOptions
         {
-            ShouldListenTo = static source => source.Name == "Meziantou.Framework.ProcessWrapper",
-            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = activityStopped,
-        };
-    }
+            SourceNames = ["Meziantou.Framework.ProcessWrapper"],
+            SamplingResult = ActivitySamplingResult.AllDataAndRecorded,
+        });
 
     private static ProcessWrapper CreateEchoBase()
     {
@@ -1710,6 +2274,49 @@ public class ProcessWrapperTests
             .WithArguments("-c", $"echo ${variableName}");
     }
 
+    private static ProcessWrapper CreateLargeOutputCommand(int byteCount)
+    {
+        var count = byteCount.ToString(CultureInfo.InvariantCulture);
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("powershell.exe")
+                .WithArguments(
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    $"[Console]::Out.Write('a' * {count})");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"yes aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | head -c {count}");
+    }
+
+    private static ProcessWrapper CreateExitImmediatelyCommand()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "exit /b 0");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", "exit 0");
+    }
+
+    /// <summary>Returns a stream that yields a single byte per read, so multi-byte characters are split across reads.</summary>
+    private static RestrictedStream CreateSingleByteReadStream(byte[] bytes)
+    {
+        return new RestrictedStream(new MemoryStream(bytes), new RestrictedStreamOptions
+        {
+            AllowReading = true,
+            AllowSynchronousCalls = true,
+            AllowAsynchronousCalls = true,
+            MaxReadLength = 1,
+        });
+    }
+
     private static ProcessWrapper CreateSingleByteOutputCommand(byte value, bool standardError = false)
     {
         if (OperatingSystem.IsWindows())
@@ -1731,6 +2338,25 @@ public class ProcessWrapperTests
             .WithArguments("-c", $"printf '\\{octalValue}'{redirection}");
     }
 
+    private static ProcessWrapper CreateInterleavedChunkCommand(int iterations, string outputChunk, string errorChunk)
+    {
+        var count = iterations.ToString(CultureInfo.InvariantCulture);
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("powershell.exe")
+                .WithArguments(
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    $"for ($i = 0; $i -lt {count}; $i++) {{ [Console]::Out.Write('{outputChunk}'); [Console]::Error.Write('{errorChunk}') }}");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"i=0; while [ $i -lt {count} ]; do printf '{outputChunk}'; printf '{errorChunk}' >&2; i=$((i+1)); done");
+    }
+
     private static string[] GetEchoArguments(string text)
     {
         if (OperatingSystem.IsWindows())
@@ -1739,6 +2365,29 @@ public class ProcessWrapperTests
         }
 
         return [text];
+    }
+
+    // Executing a file right after writing it races with every process started in parallel: a child forked while the
+    // file is still open for writing inherits that handle until it execs its own image, and execve refuses to run a
+    // file any process holds open for writing (ETXTBSY, "Text file busy"). Waiting for those children to exec is the
+    // only way to close the window, so retry while the file is busy. Any other failure, such as the executable not
+    // being found at all, is reported immediately.
+    private static async Task<T> ExecuteRetryingOnTextFileBusyAsync<T>(Func<Task<T>> execute)
+    {
+        const int TextFileBusy = 26;
+
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                return await execute();
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (!OperatingSystem.IsWindows() && ex.NativeErrorCode is TextFileBusy && stopwatch.Elapsed <= TimeSpan.FromSeconds(30))
+            {
+                await Task.Delay(50);
+            }
+        }
     }
 
     private static string NormalizeWorkingDirectoryPath(string path)
@@ -1750,6 +2399,31 @@ public class ProcessWrapperTests
 
         return path;
     }
+
+#if NET11_0_OR_GREATER
+    private static async Task<string> WaitForFileTextAsync(string path)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        while (stopwatch.Elapsed <= TimeSpan.FromSeconds(10))
+        {
+            try
+            {
+                // The shell creates the file when it opens the redirection, before the command writes to it
+                if (File.Exists(path) && await File.ReadAllTextAsync(path) is { Length: > 0 } text)
+                {
+                    return text;
+                }
+            }
+            catch (IOException)
+            {
+            }
+
+            await Task.Delay(50);
+        }
+
+        throw new TimeoutException($"The file '{path}' was not written.");
+    }
+#endif
 
     private sealed class WrapperEnvironmentVariableInterceptor(string variableName, string variableValue) : IProcessWrapperInterceptor
     {
@@ -1779,6 +2453,17 @@ public class ProcessWrapperTests
         }
     }
 
+#if NET11_0_OR_GREATER
+    private sealed class ValidationProcessWrapperInterceptor(ProcessValidationMode validationMode) : IProcessWrapperInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper)
+        {
+            ArgumentNullException.ThrowIfNull(processWrapper);
+            processWrapper.WithValidation(validationMode);
+        }
+    }
+#endif
+
     private sealed class RecordingProcessStartInfoInterceptor(List<string> events, string eventName) : IProcessStartInfoInterceptor
     {
         public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
@@ -1802,4 +2487,24 @@ public class ProcessWrapperTests
     }
 
     private sealed record CreatedProcessInfo(string FileName, string WorkingDirectory, IReadOnlyList<string> Arguments);
+
+    #region ProcessWrapper_InterceptorTypes
+    public sealed class SampleProcessWrapperInterceptor : IProcessWrapperInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper)
+        {
+            // You can inspect/mutate the wrapper instance
+            processWrapper.WithEnvironmentVariables(env => env.Set("TRACE_ID", Guid.NewGuid().ToString("N")));
+        }
+    }
+
+    public sealed class SampleProcessStartInfoInterceptor : IProcessStartInfoInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
+        {
+            // You can inspect/mutate ProcessStartInfo right before process creation
+            Console.WriteLine($"Executing: {processStartInfo.FileName}");
+        }
+    }
+    #endregion
 }

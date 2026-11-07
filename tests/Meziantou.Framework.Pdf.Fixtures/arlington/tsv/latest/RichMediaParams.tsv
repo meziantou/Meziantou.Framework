@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE		[RichMediaParams]			Adobe Extension Level 3, Table 9.51c
+FlashVars	stream;string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	
+Binding	name	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE	None	[None,Foreground,Background,Material]			
+BindingMaterial	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	fn:IsRequired(@Binding==Material)	FALSE	FALSE					
+CuePoints	array	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE				[ArrayOfRichMediaCuePoints]	
+Settings	stream;string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	

@@ -1,0 +1,11 @@
+@model FormModel
+
+@* Show content only if user is authenticated *@
+<div show-if="@(User.Identity?.IsAuthenticated == true)">
+    Welcome back, @User.Identity?.Name!
+</div>
+
+@* Show error message conditionally *@
+<div class="alert alert-danger" show-if="@Model.HasErrors">
+    Please correct the errors below.
+</div>

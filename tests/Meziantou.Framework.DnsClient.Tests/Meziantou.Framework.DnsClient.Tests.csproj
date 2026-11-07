@@ -1,11 +1,16 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Tests Meziantou.Framework.DnsClient, which depends on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
+    <!-- The documentation examples query a DNS server running on the loopback interface -->
+    <ProjectReference Include="../../src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
   </ItemGroup>
 
 </Project>

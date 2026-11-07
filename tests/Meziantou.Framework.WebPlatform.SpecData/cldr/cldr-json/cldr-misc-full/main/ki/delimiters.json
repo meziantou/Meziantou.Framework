@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ki": {
+      "identity": {
+        "language": "ki"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

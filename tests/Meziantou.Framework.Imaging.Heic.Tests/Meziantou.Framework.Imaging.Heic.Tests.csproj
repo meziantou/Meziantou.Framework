@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!-- HEIC container and decoding; the HEVC bitstream has its own project (Meziantou.Framework.Imaging.Hevc.Tests) -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+    <ImagingTestFixtureFormats>heic</ImagingTestFixtureFormats>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Barcodes and Meziantou.Framework.Imaging.Barcodes. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- Module matrices are rectangular, as in the library -->
+    <NoWarn>$(NoWarn);CA1814</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Barcodes\Meziantou.Framework.Barcodes.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Barcodes\Meziantou.Framework.Imaging.Barcodes.csproj" />
+  </ItemGroup>
+</Project>

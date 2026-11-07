@@ -1,9 +1,67 @@
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
 public class RequestValidationTests
 {
+    [Fact]
+    public async Task ReadmeExample_ForceRevalidation()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=3600"), ("ETag", "\"v1\""));
+        context.AddNotModifiedResponse([("If-None-Match", "\"v1\"")], ("Cache-Control", "max-age=3600"), ("ETag", "\"v1\""));
+        var httpClient = context.HttpClient;
+        using var initialResponse = await httpClient.GetAsync("https://api.example.com/data");
+
+        #region HttpCachingDelegateHandler_ForceRevalidation
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
+        request.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true };
+        using var response = await httpClient.SendAsync(request);
+        // Note: If the response has Cache-Control: immutable and is fresh, it will still be served from cache
+        #endregion
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("content", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ReadmeExample_AcceptStaleResponses()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=60"));
+        var httpClient = context.HttpClient;
+        using var initialResponse = await httpClient.GetAsync("https://api.example.com/data");
+        context.TimeProvider.Advance(TimeSpan.FromMinutes(3)); // The cached response is stale for 2 minutes
+
+        #region HttpCachingDelegateHandler_AcceptStaleResponses
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
+        request.Headers.CacheControl = new CacheControlHeaderValue
+        {
+            MaxStale = true,
+            MaxStaleLimit = TimeSpan.FromMinutes(5), // Accept up to 5 minutes stale
+        };
+        using var response = await httpClient.SendAsync(request);
+        #endregion
+
+        Assert.NotNull(response.Headers.Age);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_OnlyIfCached()
+    {
+        await using var context = new HttpTestContext();
+        var httpClient = context.HttpClient;
+
+        #region HttpCachingDelegateHandler_OnlyIfCached
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
+        request.Headers.CacheControl = new CacheControlHeaderValue { OnlyIfCached = true };
+        using var response = await httpClient.SendAsync(request);
+        // Returns cached response or 504 Gateway Timeout
+        Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
+        #endregion
+    }
+
     [Fact]
     public async Task WhenMinFreshRequirementNotMetThenRevalidate()
     {
@@ -199,6 +257,35 @@ public class RequestValidationTests
                 Content-Length: 6
                 Content-Type: text/plain; charset=utf-8
               Value: cached
+            """);
+    }
+
+    [Fact]
+    public async Task WhenOnlyIfCachedResponseRequiresValidationThen504()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=600, no-cache"), ("ETag", "\"v1\""));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: no-cache, max-age=600
+              ETag: "v1"
+            Content:
+              Headers:
+                Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
+              Value: cached
+            """);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { OnlyIfCached = true };
+        await context.SnapshotResponse(request, """
+            StatusCode: 504 (GatewayTimeout)
+            Content:
+              Headers:
+                Content-Length: 0
+              Value:
             """);
     }
 

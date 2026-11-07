@@ -18,6 +18,51 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
     }
 
     [Fact]
+    public async Task MonoThreadedTaskScheduler_Example()
+    {
+        #region MonoThreadedTaskScheduler_Usage
+        using var scheduler = new MonoThreadedTaskScheduler("MyWorkerThread");
+        var threadName = await Task.Factory.StartNew(
+            () => Thread.CurrentThread.Name,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+        Assert.Equal("MyWorkerThread", threadName);
+        #endregion
+    }
+
+    [Fact]
+    public async Task MonoThreadedTaskScheduler_MultipleTasksExample()
+    {
+        #region MonoThreadedTaskScheduler_MultipleTasks
+        using var scheduler = new MonoThreadedTaskScheduler("MyWorkerThread")
+        {
+            // Run the tasks already queued when the scheduler is disposed
+            DequeueOnDispose = true,
+        };
+
+        // Every task queued to the scheduler runs on the same dedicated thread, one at a time
+        Task<int> GetThreadIdAsync() => Task.Factory.StartNew(
+            () => Environment.CurrentManagedThreadId,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        var threadIds = await Task.WhenAll(GetThreadIdAsync(), GetThreadIdAsync());
+
+        Assert.Equal(threadIds[0], threadIds[1]);
+        #endregion
+    }
+
+    [Fact]
+    public void MaximumConcurrencyLevel_IsOne()
+    {
+        // The TPL reads this to size partitions; the base TaskScheduler value is int.MaxValue, which is the
+        // wrong answer for a scheduler that runs everything on a single thread.
+        Assert.Equal(1, _taskScheduler.MaximumConcurrencyLevel);
+    }
+
+    [Fact]
     public async Task SequentialEnqueue()
     {
         const int Count = 1000;
@@ -119,6 +164,392 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         scheduler.Dispose();
 
         Assert.Equal(5, executed);
+    }
+
+    [Fact]
+    public async Task Dispose_DoesNotRunTasksOnTheDisposingThread()
+    {
+        // The join below times out while the first task is still running. Draining on the disposing thread
+        // would then execute the queued tasks concurrently with the still-live worker.
+        using var started = new ManualResetEventSlim(initialState: false);
+        var threadIds = new System.Collections.Concurrent.ConcurrentBag<int>();
+
+        var scheduler = new MonoThreadedTaskScheduler("shutdown")
+        {
+            DequeueOnDispose = true,
+            DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(50),
+        };
+
+        _ = Task.Factory.StartNew(
+            () =>
+            {
+                started.Set();
+                Thread.Sleep(500);
+                threadIds.Add(Environment.CurrentManagedThreadId);
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        started.Wait();
+
+        var queued = new Task[5];
+        for (var i = 0; i < queued.Length; i++)
+        {
+            queued[i] = Task.Factory.StartNew(
+                () => threadIds.Add(Environment.CurrentManagedThreadId),
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                scheduler);
+        }
+
+        // Captured here rather than after the await: the worker thread is dead by then, and the CLR recycles the
+        // managed thread id of a dead thread, so the continuation can run on a pool thread reporting the worker's
+        // old id. This thread is alive while the tasks run, so the worker cannot be holding its id.
+        var disposingThreadId = Environment.CurrentManagedThreadId;
+
+        scheduler.Dispose();
+
+        await Task.WhenAll(queued).WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.HasCount(6, threadIds);
+        Assert.Single(threadIds.Distinct());
+        Assert.DoesNotContain(disposingThreadId, threadIds);
+    }
+
+    [Fact]
+    public void DequeueOnDispose_False_DoesNotRunQueuedTasks()
+    {
+        // The worker is inside Dequeue when the shutdown is requested. Whether a drain happened to be in progress
+        // must not decide the fate of the queued tasks: DequeueOnDispose does.
+        using var started = new ManualResetEventSlim(initialState: false);
+        using var release = new ManualResetEventSlim(initialState: false);
+        using var executed = new ManualResetEventSlim(initialState: false);
+
+        var scheduler = new MonoThreadedTaskScheduler("no-dequeue")
+        {
+            DequeueOnDispose = false,
+            DisposeThreadJoinTimeout = TimeSpan.Zero,
+        };
+
+        _ = Task.Factory.StartNew(
+            () =>
+            {
+                started.Set();
+                release.Wait();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        started.Wait();
+
+        _ = Task.Factory.StartNew(
+            executed.Set,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        scheduler.Dispose();
+        release.Set();
+
+        Assert.False(executed.Wait(TimeSpan.FromSeconds(2)));
+        Assert.Equal(1, scheduler.QueueCount);
+    }
+
+    [Fact]
+    public async Task Dispose_FromSchedulerThread_DoesNotJoinItself()
+    {
+        // An infinite join would never complete if the worker waited for itself, and any finite one would stall
+        // for nothing.
+        // The task below disposes the scheduler; the using is only there to cover the paths that do not reach it.
+        using var scheduler = new MonoThreadedTaskScheduler("self-dispose")
+        {
+            DequeueOnDispose = true,
+            DisposeThreadJoinTimeout = Timeout.InfiniteTimeSpan,
+        };
+
+        var executed = 0;
+        Task? queued = null;
+
+        var disposing = Task.Factory.StartNew(
+            () =>
+            {
+                // Accepted before the shutdown is requested, so the final drain must still run it.
+                queued = Task.Factory.StartNew(
+                    () => Interlocked.Increment(ref executed),
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    scheduler);
+
+                scheduler.Dispose();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        await disposing.WaitAsync(TimeSpan.FromSeconds(30));
+        await queued!.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(1, executed);
+    }
+
+    [Fact]
+    public async Task QueueTask_RacingWithDispose_NeverOrphansAnAcceptedTask()
+    {
+        // A task the scheduler accepted must always reach completion: it can never slip past the disposed check
+        // and end up queued behind a worker that has already drained for the last time.
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var scheduler = new MonoThreadedTaskScheduler("race") { DequeueOnDispose = true };
+            using var producing = new ManualResetEventSlim(initialState: false);
+            var accepted = new List<Task>();
+
+            var producer = new Thread(() =>
+            {
+                producing.Set();
+                for (var i = 0; i < 200; i++)
+                {
+                    try
+                    {
+                        accepted.Add(Task.Factory.StartNew(
+                            () => { },
+                            CancellationToken.None,
+                            TaskCreationOptions.None,
+                            scheduler));
+                    }
+                    catch (TaskSchedulerException exception) when (exception.InnerException is ObjectDisposedException)
+                    {
+                        return;
+                    }
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "race-producer",
+            };
+
+            producer.Start();
+            producing.Wait();
+            scheduler.Dispose();
+
+            // The join publishes the list built by the producer thread.
+            producer.Join();
+
+            await Task.WhenAll(accepted).WaitAsync(TimeSpan.FromSeconds(30));
+        }
+    }
+
+    [Fact]
+    public void QueueTask_AfterDispose_Throws()
+    {
+        var scheduler = new MonoThreadedTaskScheduler("disposed");
+        scheduler.Dispose();
+
+        var exception = Assert.Throws<TaskSchedulerException>(() =>
+        {
+            _ = Task.Factory.StartNew(
+                () => { },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                scheduler);
+        });
+
+        Assert.IsType<ObjectDisposedException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void WaitTimeout_DefaultsToInfinite()
+    {
+        // Both the queue and the stop signal wake the worker thread, so polling only costs wake-ups.
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.WaitTimeout);
+    }
+
+    // Ticks are used so the values are exact: TimeSpan.FromMilliseconds rounds fractional milliseconds.
+    public static TheoryData<long> InvalidTimeoutTicks =>
+    [
+        -1,
+        -TimeSpan.TicksPerMillisecond / 2,
+        -TimeSpan.TicksPerMillisecond + 1,
+        -TimeSpan.TicksPerMillisecond - 1,
+        -2 * TimeSpan.TicksPerMillisecond,
+        (int.MaxValue * TimeSpan.TicksPerMillisecond) + 1,
+        (int.MaxValue * TimeSpan.TicksPerMillisecond) + (TimeSpan.TicksPerMillisecond / 2),
+        ((long)int.MaxValue + 1) * TimeSpan.TicksPerMillisecond,
+        TimeSpan.MaxValue.Ticks,
+        TimeSpan.MinValue.Ticks,
+    ];
+
+    public static TheoryData<long, long> ValidTimeoutTicks => new()
+    {
+        { Timeout.InfiniteTimeSpan.Ticks, Timeout.InfiniteTimeSpan.Ticks },
+        { 0, 0 },
+        { 1, 0 },
+        { TimeSpan.TicksPerMillisecond / 2, 0 },
+        { (2 * TimeSpan.TicksPerMillisecond) + (TimeSpan.TicksPerMillisecond / 2), 2 * TimeSpan.TicksPerMillisecond },
+        { int.MaxValue * TimeSpan.TicksPerMillisecond, int.MaxValue * TimeSpan.TicksPerMillisecond },
+    };
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData((double)int.MaxValue + 1)]
+    public void WaitTimeout_InvalidValue_Throws(double milliseconds)
+    {
+        // An invalid value used to reach WaitHandle.WaitAny and kill the worker thread.
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(milliseconds));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidTimeoutTicks))]
+    public void WaitTimeout_InvalidTicks_ThrowsAndKeepsThePreviousValue(long ticks)
+    {
+        _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(250);
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.WaitTimeout = TimeSpan.FromTicks(ticks));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(TimeSpan.FromMilliseconds(250), _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(ValidTimeoutTicks))]
+    public void WaitTimeout_ValidTicks_AreAccepted(long ticks, long expectedTicks)
+    {
+        _taskScheduler.WaitTimeout = TimeSpan.FromTicks(ticks);
+
+        Assert.Equal(TimeSpan.FromTicks(expectedTicks), _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData((double)int.MaxValue + 1)]
+    public void DisposeThreadJoinTimeout_InvalidValue_Throws(double milliseconds)
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(milliseconds));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(TimeSpan.FromSeconds(1), _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidTimeoutTicks))]
+    public void DisposeThreadJoinTimeout_InvalidTicks_ThrowsAndKeepsThePreviousValue(long ticks)
+    {
+        _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(250);
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromTicks(ticks));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(TimeSpan.FromMilliseconds(250), _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(ValidTimeoutTicks))]
+    public void DisposeThreadJoinTimeout_ValidTicks_AreAccepted(long ticks, long expectedTicks)
+    {
+        _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromTicks(ticks);
+
+        Assert.Equal(TimeSpan.FromTicks(expectedTicks), _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Fact]
+    public void Timeouts_RoundTrip()
+    {
+        _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(250);
+        _taskScheduler.DisposeThreadJoinTimeout = Timeout.InfiniteTimeSpan;
+
+        Assert.Equal(TimeSpan.FromMilliseconds(250), _taskScheduler.WaitTimeout);
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Fact]
+    public async Task WaitTimeout_SetOnAnIdleScheduler_StillRunsTasks()
+    {
+        // The worker thread is blocked on an infinite wait when the timeout changes; it must not stay stuck
+        // on the previous wait, and it must keep executing tasks afterwards.
+        using var scheduler = new MonoThreadedTaskScheduler("timeout") { WaitTimeout = TimeSpan.FromMilliseconds(50) };
+
+        var task = Task.Factory.StartNew(
+            () => Thread.CurrentThread.Name,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        Assert.Equal("timeout", await task.WaitAsync(TimeSpan.FromSeconds(30)));
+    }
+
+    [Fact]
+    public void WorkerException_IsNullWhileTheWorkerRuns()
+    {
+        Assert.Null(_taskScheduler.WorkerException);
+    }
+
+    [Fact]
+    public async Task WaitOnTheWorkerThread_RunsTheWaitedTaskInline()
+    {
+        // The worker is the only thread allowed to run the inner task, so waiting for it there used to block forever.
+        using var scheduler = new MonoThreadedTaskScheduler("inline");
+        var executed = 0;
+
+        var outer = Task.Factory.StartNew(
+            () =>
+            {
+                var inner = Task.Factory.StartNew(
+                    () =>
+                    {
+                        Interlocked.Increment(ref executed);
+                        return Environment.CurrentManagedThreadId;
+                    },
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    scheduler);
+
+                return (OuterThreadId: Environment.CurrentManagedThreadId, InnerThreadId: inner.Result);
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        var (outerThreadId, innerThreadId) = await outer.WaitAsync(TimeSpan.FromMinutes(1));
+
+        // The inlined task is still queued. Once the worker dequeues it, it must be skipped rather than run again.
+        await Task.Factory.StartNew(() => { }, CancellationToken.None, TaskCreationOptions.None, scheduler).WaitAsync(TimeSpan.FromMinutes(1));
+
+        Assert.Equal(outerThreadId, innerThreadId);
+        Assert.Equal(1, executed);
+    }
+
+    [Fact]
+    public async Task WaitOnAnotherThread_DoesNotRunTheTaskInline()
+    {
+        using var started = new ManualResetEventSlim(initialState: false);
+        using var release = new ManualResetEventSlim(initialState: false);
+        using var scheduler = new MonoThreadedTaskScheduler("no-inline");
+
+        // Occupy the worker thread so the task below stays queued while this thread waits for it.
+        _ = Task.Factory.StartNew(
+            () =>
+            {
+                started.Set();
+                release.Wait();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        started.Wait();
+
+        var task = Task.Factory.StartNew(
+            () => Thread.CurrentThread.Name,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        // Task.Wait tries to run the task inline before blocking.
+        var completedDuringWait = await Task.Run(() => task.Wait(TimeSpan.FromMilliseconds(100))).WaitAsync(TimeSpan.FromMinutes(1));
+
+        release.Set();
+        Assert.False(completedDuringWait);
+        Assert.Equal("no-inline", await task.WaitAsync(TimeSpan.FromMinutes(1)));
     }
 
     private Task EnqueueTask()

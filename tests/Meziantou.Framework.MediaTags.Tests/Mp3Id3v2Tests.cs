@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using Meziantou.Framework.MediaTags.Formats.Id3v2;
+
 namespace Meziantou.Framework.MediaTags.Tests;
 
 public sealed class Mp3Id3v2Tests
@@ -50,6 +53,11 @@ public sealed class Mp3Id3v2Tests
         Assert.Equal("Electronic", tags.Genre);
         Assert.Equal(2023, tags.Year);
         Assert.Equal(5, tags.TrackNumber);
+        Assert.Equal(12, tags.TrackTotal);
+        Assert.Equal("All Fields Album Artist", tags.AlbumArtist);
+        Assert.Equal(2, tags.DiscNumber);
+        Assert.Equal(3, tags.DiscTotal);
+        Assert.Equal("All Fields Composer", tags.Composer);
         Assert.Equal("All Fields Comment", tags.Comment);
     }
 
@@ -73,7 +81,7 @@ public sealed class Mp3Id3v2Tests
 
         var tags = result.Value;
         Assert.NotNull(tags.Title);
-        Assert.True(tags.Title.Length > 100); // Should be very long
+        Assert.HasCountGreaterThan(100, tags.Title); // Should be very long
     }
 
     [Fact]
@@ -235,6 +243,39 @@ public sealed class Mp3Id3v2Tests
         Assert.Equal(TimeSpan.FromMilliseconds(123456), result.Value.Duration.Value);
     }
 
+    [Fact]
+    public void ReadTags_Id3v2TlenZero_IsUnknown()
+    {
+        // The writer does not write a zero duration, so reading one would change the duration on a read-modify-write
+        var bytes = CreateId3v24WithTextFrame("TLEN", "0");
+
+        var tags = ReadMp3(bytes);
+        Assert.Null(tags.Duration);
+        Assert.Null(ReadMp3(WriteMp3(bytes, tags)).Duration);
+    }
+
+    [Fact]
+    public void ReadTags_Id3v1MagicInsideTheId3v2Tag_IsNotAnId3v1Tag()
+    {
+        // "TAG" starts 128 bytes before the end of the file, but inside the text of the ID3v2 tag
+        var artist = "TAG" + new string('x', 120);
+        byte[] audio = [1, 2, 3, 4, 5];
+        byte[] bytes = [.. CreateId3v24WithTextFrame("TPE1", artist), .. audio];
+        Assert.Equal("TAG"u8.ToArray(), bytes[^128..^125]);
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal(artist, tags.Artist);
+        Assert.Null(tags.Title);
+
+        var written = WriteMp3(bytes, tags);
+        Assert.Equal(artist, ReadMp3(written).Artist);
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+        Assert.Equal(audio, output.ToArray());
+    }
+
     private static byte[] CreateSyntheticMp3(int frameCount, bool includeId3v2Tag)
     {
         const int Mpeg1Layer3FrameLength = 417;
@@ -304,5 +345,580 @@ public sealed class Mp3Id3v2Tests
         destination[1] = (byte)((value >> 14) & 0x7F);
         destination[2] = (byte)((value >> 7) & 0x7F);
         destination[3] = (byte)(value & 0x7F);
+    }
+
+    [Fact]
+    public void ReadTags_TagSizeBeyondEndOfStream_DoesNotAllocateTheDeclaredSize()
+    {
+        // An ID3v2 header and nothing else, declaring the largest tag a synchsafe integer can express (256 MB)
+        var header = new byte[10];
+        header[0] = (byte)'I';
+        header[1] = (byte)'D';
+        header[2] = (byte)'3';
+        header[3] = 4;
+        WriteSynchsafeInteger(header.AsSpan(6, 4), 0x0FFF_FFFF);
+
+        using var stream = new MemoryStream(header);
+
+        // Read once so the measured read is not paying for JIT and first-use initialization
+        MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        // Thread-scoped, because GC.GetTotalAllocatedBytes also counts what the other threads of the process allocate
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+        Assert.True(allocated < 1024 * 1024, $"Reading a {stream.Length} byte file allocated {allocated} bytes.");
+    }
+
+    [Fact]
+    public void ReadTags_TagSizeMatchingTheStream_IsStillParsed()
+    {
+        var mp3 = CreateId3v24WithTextFrame("TIT2", "Bounded Title");
+
+        using var stream = new MemoryStream(mp3);
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Bounded Title", result.Value.Title);
+    }
+
+    [Fact]
+    public void ReadTags_Utf16TextWithoutABom_KeepsTheFirstCharacter()
+    {
+        // The spec requires a BOM for encoding 0x01, but taggers do omit it. Skipping two bytes regardless
+        // eats the first character of every title, artist and album in such a file.
+        byte[] utf16LittleEndian = [0x48, 0x00, 0x65, 0x00, 0x6C, 0x00, 0x6C, 0x00, 0x6F, 0x00];
+        var frame = new byte[1 + utf16LittleEndian.Length];
+        frame[0] = 0x01;
+        utf16LittleEndian.CopyTo(frame, 1);
+
+        using var stream = new MemoryStream(BuildId3v24Tag(("TIT2", frame)));
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Hello", result.Value.Title);
+    }
+
+    [Fact]
+    public void ReadTags_Utf16TextWithABom_IsUnchanged()
+    {
+        byte[] withBom = [0xFF, 0xFE, 0x48, 0x00, 0x69, 0x00];
+        var frame = new byte[1 + withBom.Length];
+        frame[0] = 0x01;
+        withBom.CopyTo(frame, 1);
+
+        using var stream = new MemoryStream(BuildId3v24Tag(("TIT2", frame)));
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Hi", result.Value.Title);
+    }
+
+    [Fact]
+    public void ReadTags_Id3v22PictureFrame_ReadsThePicture()
+    {
+        // A v2.2 PIC frame stores a fixed 3-character image format, not the null-terminated MIME type of APIC.
+        byte[] pictureData = [1, 2, 3, 4, 5, 6, 7, 8];
+        var frame = new List<byte> { 0x00 };
+        frame.AddRange("PNG"u8.ToArray());
+        frame.Add((byte)MediaPictureType.FrontCover);
+        frame.AddRange("desc"u8.ToArray());
+        frame.Add(0x00);
+        frame.AddRange(pictureData);
+
+        using var stream = new MemoryStream(BuildId3v22Tag(("PIC", frame.ToArray())));
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        Assert.True(result.IsSuccess);
+        var picture = Assert.Single(result.Value.Pictures);
+        Assert.Equal("image/png", picture.MimeType);
+        Assert.Equal("desc", picture.Description);
+        Assert.Equal(MediaPictureType.FrontCover, picture.PictureType);
+        Assert.Equal(pictureData, picture.Data);
+    }
+
+    [Fact]
+    public void WriteTags_TotalsWithoutNumbers_AreKept()
+    {
+        // The number and the total share one frame; writing the frame only when the number is set loses a
+        // total that was supplied on its own.
+        var tempFile = Path.GetTempFileName() + ".mp3";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.mp3"), tempFile, overwrite: true);
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title", TrackTotal = 12, DiscTotal = 3 }).IsSuccess);
+
+            var tags = MediaFile.ReadTags(tempFile).Value;
+            Assert.Null(tags.TrackNumber);
+            Assert.Equal(12, tags.TrackTotal);
+            Assert.Null(tags.DiscNumber);
+            Assert.Equal(3, tags.DiscTotal);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ReadTags_UnknownPositionThenPositionWithoutTotal_KeepsThePositionUnknown()
+    {
+        // The first frame gives the total and an unknown position, so the second one is read for the position. A 0
+        // there is still an unknown position for the total of the first frame: the writer writes it as "0/12",
+        // which reads back as no position.
+        var bytes = BuildId3v24Tag(
+            ("TRCK", TextBody("0/12")),
+            ("TRCK", TextBody("0")),
+            ("TPOS", TextBody("0/3")),
+            ("TPOS", TextBody("0")));
+
+        var tags = ReadMp3(bytes);
+        Assert.Null(tags.TrackNumber);
+        Assert.Equal(12, tags.TrackTotal);
+        Assert.Null(tags.DiscNumber);
+        Assert.Equal(3, tags.DiscTotal);
+
+        var readBack = ReadMp3(WriteMp3(bytes, tags));
+        Assert.Null(readBack.TrackNumber);
+        Assert.Equal(12, readBack.TrackTotal);
+        Assert.Null(readBack.DiscNumber);
+        Assert.Equal(3, readBack.DiscTotal);
+    }
+
+    [Fact]
+    public void RemoveTags_StackedId3v2Tags_RemovesThemAll()
+    {
+        // Some taggers prepend a new tag without removing the old one. Only the first is read, so removing it
+        // alone would bring back the tags of the second.
+        var source = File.ReadAllBytes(GetTestFilePath("basic.mp3"));
+        Assert.Equal("Test Title", MediaFile.ReadTags(new MemoryStream(source), MediaFormat.Mp3).Value.Title);
+        byte[] bytes = [.. "ID3"u8, 4, 0, 0, 0, 0, 0, 0, .. source];
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+
+        var written = output.ToArray();
+        Assert.False(written.AsSpan().StartsWith("ID3"u8));
+        Assert.Null(MediaFile.ReadTags(new MemoryStream(written), MediaFormat.Mp3).Value.Title);
+    }
+
+    [Fact]
+    public void WriteTags_Duration_IsStoredInTheTag()
+    {
+        // Id3v2Reader parses TLEN, so not writing it drops an explicit duration on a read-modify-write.
+        var tempFile = Path.GetTempFileName() + ".mp3";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.mp3"), tempFile, overwrite: true);
+
+            var duration = TimeSpan.FromMilliseconds(123456);
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title", Duration = duration }).IsSuccess);
+
+            Assert.Equal(duration, MediaFile.ReadTags(tempFile).Value.Duration);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_ReplayGainAndMusicBrainzAndCustomFields_RoundTrip()
+    {
+        var tempFile = Path.GetTempFileName() + ".mp3";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.mp3"), tempFile, overwrite: true);
+
+            var tags = new MediaTagInfo
+            {
+                Title = "Title",
+                ReplayGain = new ReplayGainInfo { TrackGain = -3.21, TrackPeak = 0.5, AlbumGain = -2.5, AlbumPeak = 0.75 },
+                MusicBrainzTrackId = "track-id",
+                MusicBrainzArtistId = "artist-id",
+                MusicBrainzAlbumId = "album-id",
+                MusicBrainzReleaseGroupId = "release-group-id",
+            };
+            tags.CustomFields["MY FIELD"] = "my value";
+
+            Assert.True(MediaFile.WriteTags(tempFile, tags).IsSuccess);
+
+            var read = MediaFile.ReadTags(tempFile).Value;
+            Assert.Equal(-3.21, read.ReplayGain?.TrackGain);
+            Assert.Equal(0.5, read.ReplayGain?.TrackPeak);
+            Assert.Equal(-2.5, read.ReplayGain?.AlbumGain);
+            Assert.Equal(0.75, read.ReplayGain?.AlbumPeak);
+            Assert.Equal("track-id", read.MusicBrainzTrackId);
+            Assert.Equal("artist-id", read.MusicBrainzArtistId);
+            Assert.Equal("album-id", read.MusicBrainzAlbumId);
+            Assert.Equal("release-group-id", read.MusicBrainzReleaseGroupId);
+            Assert.Equal("my value", read.CustomFields["MY FIELD"]);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ReadTags_ReplayGainWithACommaDecimalSeparator_IsParsed()
+    {
+        // Taggers running under a European locale write the value with a comma.
+        var description = "REPLAYGAIN_TRACK_GAIN"u8.ToArray();
+        var value = "-3,21 dB"u8.ToArray();
+        var frame = new byte[1 + description.Length + 1 + value.Length];
+        frame[0] = 0x03; // UTF-8
+        description.CopyTo(frame, 1);
+        frame[1 + description.Length] = 0;
+        value.CopyTo(frame, 1 + description.Length + 1);
+
+        using var stream = new MemoryStream(BuildId3v24Tag(("TXXX", frame)));
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(-3.21, result.Value.ReplayGain?.TrackGain);
+    }
+
+    [Fact]
+    public void ReadTags_WithArt_MatchesTheCoverFile()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("with_art.mp3"));
+        Assert.True(result.IsSuccess);
+
+        var picture = Assert.Single(result.Value.Pictures);
+        Assert.Equal("image/png", picture.MimeType);
+        Assert.Equal(File.ReadAllBytes(GetTestFilePath("cover.png")), picture.Data);
+    }
+
+    private static byte[] BuildId3v24Tag(params (string FrameId, byte[] Body)[] frames)
+    {
+        var frameBytes = new List<byte>();
+        foreach (var (frameId, body) in frames)
+        {
+            frameBytes.AddRange(Encoding.ASCII.GetBytes(frameId));
+            frameBytes.AddRange(EncodeSynchsafe(body.Length));
+            frameBytes.AddRange([0, 0]);
+            frameBytes.AddRange(body);
+        }
+
+        var tag = new List<byte> { (byte)'I', (byte)'D', (byte)'3', 4, 0, 0 };
+        tag.AddRange(EncodeSynchsafe(frameBytes.Count));
+        tag.AddRange(frameBytes);
+        tag.AddRange([0xFF, 0xFB, 0x90, 0x00]); // A frame header so the file looks like MP3 audio
+        return tag.ToArray();
+    }
+
+    private static byte[] BuildId3v22Tag(params (string FrameId, byte[] Body)[] frames)
+    {
+        var frameBytes = new List<byte>();
+        foreach (var (frameId, body) in frames)
+        {
+            frameBytes.AddRange(Encoding.ASCII.GetBytes(frameId));
+            frameBytes.AddRange([(byte)((body.Length >> 16) & 0xFF), (byte)((body.Length >> 8) & 0xFF), (byte)(body.Length & 0xFF)]);
+            frameBytes.AddRange(body);
+        }
+
+        var tag = new List<byte> { (byte)'I', (byte)'D', (byte)'3', 2, 0, 0 };
+        tag.AddRange(EncodeSynchsafe(frameBytes.Count));
+        tag.AddRange(frameBytes);
+        tag.AddRange([0xFF, 0xFB, 0x90, 0x00]);
+        return tag.ToArray();
+    }
+
+    private static byte[] EncodeSynchsafe(int value)
+        => [(byte)((value >> 21) & 0x7F), (byte)((value >> 14) & 0x7F), (byte)((value >> 7) & 0x7F), (byte)(value & 0x7F)];
+
+    [Fact]
+    public void ReadTags_ItunesCommentFramesBeforeTheComment_AreNotTheComment()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("COMM", 0, CommentBody("iTunNORM", " 00000A2B 00000B3C")),
+            ("COMM", 0, CommentBody("", "The comment")));
+
+        Assert.Equal("The comment", ReadMp3(bytes).Comment);
+    }
+
+    [Fact]
+    public void ReadTags_OnlyItunesCommentFrames_HasNoComment()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("COMM", 0, CommentBody("iTunNORM", " 00000A2B 00000B3C")),
+            ("COMM", 0, CommentBody("iTunSMPB", " 00000000 00000210")));
+
+        Assert.Null(ReadMp3(bytes).Comment);
+    }
+
+    [Fact]
+    public void ReadTags_V24FrameWithADataLengthIndicator_IsDecoded()
+    {
+        var text = TextBody("Title");
+        var bytes = BuildId3Tag(4, 0, ("TIT2", 0x0001, [.. EncodeSynchsafe(text.Length), .. text]));
+
+        Assert.Equal("Title", ReadMp3(bytes).Title);
+    }
+
+    [Fact]
+    public void ReadTags_V24CompressedFrame_IsDecompressed()
+    {
+        var text = TextBody("Compressed title");
+        var bytes = BuildId3Tag(4, 0, ("TIT2", 0x0009, [.. EncodeSynchsafe(text.Length), .. Compress(text)]));
+
+        Assert.Equal("Compressed title", ReadMp3(bytes).Title);
+    }
+
+    [Fact]
+    public void ReadTags_V23CompressedAndGroupedFrame_IsDecompressed()
+    {
+        var text = TextBody("Compressed title");
+        byte[] decompressedSize = [(byte)(text.Length >> 24), (byte)(text.Length >> 16), (byte)(text.Length >> 8), (byte)text.Length];
+        var bytes = BuildId3Tag(3, 0, ("TIT2", 0x00A0, [.. decompressedSize, 1, .. Compress(text)]));
+
+        Assert.Equal("Compressed title", ReadMp3(bytes).Title);
+    }
+
+    [Fact]
+    public void ReadTags_EncryptedFrame_IsIgnored()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("TIT2", 0x0004, [0x80, .. "not decryptable"u8]),
+            ("TPE1", 0, TextBody("Artist")));
+
+        var tags = ReadMp3(bytes);
+        Assert.Null(tags.Title);
+        Assert.Equal("Artist", tags.Artist);
+    }
+
+    [Fact]
+    public void ReadTags_V24UnsynchronisedTag_ReadsTheFramesAfterAnFFByte()
+    {
+        // In ID3v2.4 the frame size counts the unsynchronised bytes. Undoing the unsynchronisation over the
+        // whole tag first shortens the frame and misplaces every frame after it.
+        var bytes = BuildId3Tag(4, 0x80,
+            ("TIT2", 0x0002, [0, 0xFF, 0x00, (byte)'A']), // Latin-1 "ÿA", unsynchronised
+            ("TPE1", 0x0002, TextBody("Artist")));
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal("ÿA", tags.Title);
+        Assert.Equal("Artist", tags.Artist);
+    }
+
+    [Fact]
+    public void WriteTags_KeepsTheFramesItDoesNotRead()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("TIT2", 0, TextBody("Title")),
+            ("TPUB", 0, TextBody("Label")),
+            ("PRIV", 0, [.. "owner"u8, 0, 1, 2, 3]),
+            ("COMM", 0, CommentBody("iTunNORM", " 00000A2B")),
+            ("COMM", 0, CommentBody("", "The comment")));
+
+        var tags = ReadMp3(bytes);
+        tags.Title = "New title";
+        var written = WriteMp3(bytes, tags);
+
+        var frames = ReadFrameIds(written);
+        Assert.Contains("TPUB", frames);
+        Assert.Contains("PRIV", frames);
+        Assert.Equal(2, frames.Count(id => id == "COMM"));
+
+        var reread = ReadMp3(written);
+        Assert.Equal("New title", reread.Title);
+        Assert.Equal("The comment", reread.Comment);
+        Assert.True(written.AsSpan().IndexOf("iTunNORM"u8) >= 0);
+    }
+
+    [Fact]
+    public void WriteTags_V23Tag_ConvertsTheFramesItKeeps()
+    {
+        var bytes = BuildId3Tag(3, 0,
+            ("TYER", 0, TextBody("2020")),
+            ("TORY", 0, TextBody("1999")),
+            ("TPUB", 0, TextBody("Label")),
+            ("TENC", 0x8000, TextBody("Encoder"))); // Tag alter preservation: discard when the tag changes
+
+        var written = WriteMp3(bytes, ReadMp3(bytes));
+
+        var frames = ReadFrameIds(written);
+        Assert.Contains("TDRC", frames);
+        Assert.Contains("TDOR", frames);
+        Assert.Contains("TPUB", frames);
+        Assert.DoesNotContain("TYER", frames);
+        Assert.DoesNotContain("TORY", frames);
+        Assert.DoesNotContain("TENC", frames);
+        Assert.Equal(2020, ReadMp3(written).Year);
+    }
+
+    [Fact]
+    public void RemoveTags_AlsoRemovesTheFramesItDoesNotRead()
+    {
+        var bytes = BuildId3Tag(4, 0, ("TPUB", 0, TextBody("Label")));
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+
+        Assert.False(output.ToArray().AsSpan().StartsWith("ID3"u8));
+    }
+
+    [Fact]
+    public void WriteTags_DurationComputedFromTheAudio_IsNotStoredInTheTag()
+    {
+        // The duration of an MP3 without TLEN is estimated from the audio. Stored as TLEN, the estimate would
+        // take precedence over the audio on every later read.
+        var bytes = CreateSyntheticMp3(100, includeId3v2Tag: true);
+        var tags = ReadMp3(bytes);
+        Assert.NotNull(tags.Duration);
+
+        var written = WriteMp3(bytes, tags);
+
+        Assert.DoesNotContain("TLEN", ReadFrameIds(written));
+        Assert.Equal(tags.Duration, ReadMp3(written).Duration);
+    }
+
+    [Fact]
+    public void ReadTags_StackedId3v2Tags_ComputesTheDurationFromTheAudioAfterThem()
+    {
+        // The second tag holds bytes that look like a 32 kbps frame header. A write removes both tags, so the audio
+        // starts after them when reading too.
+        var audio = CreateSyntheticMp3(100, includeId3v2Tag: false);
+        var expected = ReadMp3(audio).Duration;
+        Assert.NotNull(expected);
+        var secondTag = BuildId3Tag(4, 0, ("PRIV", 0, [0, 0xFF, 0xFB, 0x10, 0x00]))[..^4];
+        byte[] bytes = [.. "ID3"u8, 4, 0, 0, 0, 0, 0, 0, .. secondTag, .. audio];
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal(expected, tags.Duration);
+        Assert.Equal(expected, ReadMp3(WriteMp3(bytes, tags)).Duration);
+    }
+
+    [Fact]
+    public void RemoveTags_StackedId3v1Tags_RemovesThemAll()
+    {
+        // Some taggers append a new ID3v1 tag without removing the old one. Only the last is read, so removing it
+        // alone would bring back the tags of the previous one, and shorten the audio by the size of a tag.
+        var audio = CreateSyntheticMp3(100, includeId3v2Tag: false);
+        var expected = ReadMp3(audio).Duration;
+        Assert.NotNull(expected);
+        byte[] bytes = [.. audio, .. Formats.Id3v1.Id3v1Writer.BuildTag(new MediaTagInfo { Title = "Old" }), .. Formats.Id3v1.Id3v1Writer.BuildTag(new MediaTagInfo { Title = "New" })];
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal("New", tags.Title);
+        Assert.Equal(expected, tags.Duration);
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+
+        var written = output.ToArray();
+        Assert.Equal(audio, written);
+        Assert.Null(ReadMp3(written).Title);
+        Assert.Equal(expected, ReadMp3(written).Duration);
+    }
+
+    private static MediaTagInfo ReadMp3(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes);
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        return result.Value;
+    }
+
+    private static byte[] WriteMp3(byte[] bytes, MediaTagInfo tags)
+    {
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, tags, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        return output.ToArray();
+    }
+
+    internal static List<string> ReadFrameIds(byte[] tag)
+    {
+        using var stream = new MemoryStream(tag);
+        Assert.True(Id3v2Reader.TryReadFrames(stream, out _, out var frames));
+        return frames.ConvertAll(frame => frame.Id);
+    }
+
+    /// <summary>Builds an ID3v2.3 or ID3v2.4 tag whose frames carry the given flags, followed by an MP3 frame header.</summary>
+    internal static byte[] BuildId3Tag(byte version, byte tagFlags, params (string FrameId, ushort Flags, byte[] Body)[] frames)
+    {
+        var frameBytes = new List<byte>();
+        foreach (var (frameId, flags, body) in frames)
+        {
+            frameBytes.AddRange(Encoding.ASCII.GetBytes(frameId));
+            frameBytes.AddRange(version == 4
+                ? EncodeSynchsafe(body.Length)
+                : [(byte)(body.Length >> 24), (byte)(body.Length >> 16), (byte)(body.Length >> 8), (byte)body.Length]);
+            frameBytes.AddRange([(byte)(flags >> 8), (byte)flags]);
+            frameBytes.AddRange(body);
+        }
+
+        var tag = new List<byte> { (byte)'I', (byte)'D', (byte)'3', version, 0, tagFlags };
+        tag.AddRange(EncodeSynchsafe(frameBytes.Count));
+        tag.AddRange(frameBytes);
+        tag.AddRange([0xFF, 0xFB, 0x90, 0x00]); // A frame header so the file looks like MP3 audio
+        return tag.ToArray();
+    }
+
+    internal static byte[] TextBody(string value) => [3, .. Encoding.UTF8.GetBytes(value)];
+
+    private static byte[] CommentBody(string description, string text)
+        => [3, (byte)'e', (byte)'n', (byte)'g', .. Encoding.UTF8.GetBytes(description), 0, .. Encoding.UTF8.GetBytes(text)];
+
+    private static byte[] Compress(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var zlib = new ZLibStream(output, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            zlib.Write(data);
+        }
+
+        return output.ToArray();
+    }
+
+    [Theory]
+    [InlineData("(12)")]
+    [InlineData("(12)Rock")]
+    [InlineData("((12)")]
+    [InlineData("(")]
+    public void WriteTags_GenreStartingWithParenthesis_RoundTrips(string genre)
+    {
+        // "(12)" is how ID3v2 references the ID3v1 genre 12, so a genre text that starts with a parenthesis is escaped
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.mp3")), writable: false), output, new MediaTagInfo { Genre = genre }, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess);
+
+        output.Position = 0;
+        Assert.Equal(genre, MediaFile.ReadTags(output, MediaFormat.Mp3).Value.Genre);
+    }
+
+    [Fact]
+    public void ReadTags_GenreWithEscapedParenthesis()
+    {
+        byte[] frame = [Id3v2TextEncoding.Latin1, .. "((12)"u8];
+        using var stream = new MemoryStream(BuildId3v24Tag(("TCON", frame)));
+
+        Assert.Equal("(12)", MediaFile.ReadTags(stream, MediaFormat.Mp3).Value.Genre);
+    }
+
+    [Theory]
+    [InlineData("image/\0png", "Description")]
+    [InlineData("image/png", "Desc\0ription")]
+    public void WriteTags_PictureWithNullInMimeTypeOrDescription_IsRefused(string mimeType, string description)
+    {
+        // Both end at a null character, so one inside them would shift the rest of the frame into the picture data
+        var tags = new MediaTagInfo();
+        tags.Pictures.Add(new MediaPicture { PictureType = MediaPictureType.FrontCover, MimeType = mimeType, Description = description, Data = [1, 2, 3] });
+
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.mp3")), writable: false), output, tags, MediaFormat.Mp3);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.InvalidTagData, result.Error);
     }
 }

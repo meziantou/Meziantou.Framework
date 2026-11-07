@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Diagnostics.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Diagnostics.MemoryDump/Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+  </ItemGroup>
+
+  <!--
+    On macOS, createdump can only attach to a process signed with the com.apple.security.get-task-allow entitlement.
+    The SDK signs the app host ad hoc without entitlements, so the tests could not dump the test process.
+  -->
+  <Target Name="SignAppHostWithGetTaskAllow" AfterTargets="Build" Condition="$([MSBuild]::IsOSPlatform('OSX')) AND Exists('$(TargetDir)$(AssemblyName)')">
+    <Exec Command="codesign --force --sign - --entitlements &quot;$(MSBuildThisFileDirectory)apphost.entitlements&quot; &quot;$(TargetDir)$(AssemblyName)&quot;" />
+  </Target>
+
+</Project>

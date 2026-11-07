@@ -127,7 +127,58 @@ public class EmitterTests : YamlTest
             emitter.Emit(new DocumentEnd(true));
         }
         var result = encoding.GetString(stream.ToArray()).Trim();
-        Assert.Equal("\"Test\\xD802\\xDD05Yo♥\"", result);
+        Assert.Equal("\"Test\\U00010905Yo♥\"", result);
+    }
+
+    [Theory]
+    [InlineData("\U0001F600")]
+    [InlineData("\U00020000")]
+    [InlineData("\U00010905")]
+    [InlineData("a\U0001F600b")]
+    [InlineData("\U0001F600\U0001F601")]
+    [InlineData("♥\U00010905中")]
+    public void EmitNonBmpCharacters_RoundTrips(string input)
+    {
+        var yaml = EmitDoubleQuotedScalar(input);
+
+        Assert.Equal(input, ParseSingleScalarValue(yaml));
+    }
+
+    [Fact]
+    public void EmitNonBmpCharacter_UsesEightDigitEscape()
+    {
+        Assert.Equal("\"\\U0001F600\"", EmitDoubleQuotedScalar("\U0001F600").Trim());
+    }
+
+    [Fact]
+    public void EmitBmpCharacterAboveShortMaxValue_UsesFourDigitEscape()
+    {
+        // U+FFFE is above short.MaxValue and is not printable, so it must use the 4-digit escape.
+        Assert.Equal("\"\\uFFFE\"", EmitDoubleQuotedScalar("\uFFFE").Trim());
+    }
+
+    private static string EmitDoubleQuotedScalar(string value)
+    {
+        using var output = new StringWriter();
+        var emitter = new Emitter(output);
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart(null, null, true));
+        emitter.Emit(new Scalar(value, ScalarStyle.DoubleQuoted));
+        emitter.Emit(new DocumentEnd(true));
+        emitter.Emit(new StreamEnd());
+        return output.ToString();
+    }
+
+    private static string? ParseSingleScalarValue(string yaml)
+    {
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        while (parser.MoveNext())
+        {
+            if (parser.Current is Scalar scalar)
+                return scalar.Value;
+        }
+
+        return null;
     }
 
     private static void ParseAndEmit(string name)
@@ -289,5 +340,155 @@ public class EmitterTests : YamlTest
 
         // This should pass - the content should be preserved
         Assert.Equal(input, scalar.Value, "Folded scalar content should be preserved during round-trip");
+    }
+
+    [Fact]
+    public void WriteTo_TagWithoutMatchingDirective_IsWrittenVerbatim()
+    {
+        var yaml = SaveAndReload("--- !<tag:example.com,2000:app/invoice> x\n", out var reloaded);
+
+        Assert.Equal("--- !<tag:example.com,2000:app/invoice> x\n...\n", yaml);
+        Assert.Equal("tag:example.com,2000:app/invoice", ((YamlValue)reloaded[0].Contents!).Tag);
+    }
+
+    [Fact]
+    public void WriteTo_NonSpecificTag_IsKept()
+    {
+        var yaml = SaveAndReload("- ! 12\n- 12\n", out var reloaded);
+
+        Assert.Equal("- ! 12\n- 12\n", yaml);
+        Assert.Equal("!", ((YamlValue)((YamlSequence)reloaded[0].Contents!)[0]).Tag);
+    }
+
+    [Theory]
+    [InlineData("!%21", "--- !%21 \n...\n", "!!")]
+    [InlineData("!<!!>", "--- !%21 \n...\n", "!!")]
+    [InlineData("!<!!> fr", "!%21 fr\n...\n", "!!")]
+    [InlineData("--- !<!a!b> x\n", "--- !a%21b x\n...\n", "!a!b")]
+    [InlineData("--- !<!a,[b]> x\n", "--- !a%2C%5Bb%5D x\n...\n", "!a,[b]")]
+    [InlineData("--- !<tag:yaml.org,2002:> x\n", "--- !<tag:yaml.org,2002:> x\n...\n", "tag:yaml.org,2002:")]
+    [InlineData("%TAG !e! tag:example.com,2000:\n--- !<!e!> x\n", "%TAG !e! tag:example.com,2000:\n--- !e%21 x\n...\n", "!e!")]
+    [InlineData("%TAG ! tag:example.com,2000:\n--- ! x\n", "%TAG ! tag:example.com,2000:\n--- ! x\n...\n", "!")]
+    [InlineData("%TAG ! tag:example.com,2000:\n--- !<tag:example.com,2000:> x\n", "%TAG ! tag:example.com,2000:\n--- !<tag:example.com,2000:> x\n...\n", "tag:example.com,2000:")]
+    [InlineData("%TAG ! tag:example.com,2000:\n--- !<!foo> x\n", "%TAG ! tag:example.com,2000:\n--- !<!foo> x\n...\n", "!foo")]
+    [InlineData("!foo \"bar\"\n...\n%TAG ! tag:example.lue\n--- !\n", "!foo \"bar\"\n...\n%TAG ! tag:example.lue\n--- ! \n...\n", "!")]
+    public void WriteTo_TagWithoutValidShorthand_RoundTrips(string input, string expected, string expectedTag)
+    {
+        var yaml = SaveAndReload(input, out var reloaded);
+
+        Assert.Equal(expected, yaml);
+        Assert.Equal(expectedTag, ((YamlElement)reloaded[^1].Contents!).Tag);
+        Assert.Equal(yaml, Save(reloaded));
+    }
+
+    [Theory]
+    [InlineData("%TAG !m! !m!!booly-\n--- !m!light green\n", "%TAG !m! !m!!booly-\n--- !m!light green\n...\n", "!m!!booly-light")]
+    [InlineData("%TAG !m! !m!!booly-\n--- !<!m!light> green\n", "%TAG !m! !m!!booly-\n--- !m%21light green\n...\n", "!m!light")]
+    [InlineData("%TAG !! !!booly-\n--- !!light green\n", "%TAG !! !!booly-\n--- !!light green\n...\n", "!!booly-light")]
+    [InlineData("%TAG !m! !other-\n--- !m!light green\n", "%TAG !m! !other-\n--- !m!light green\n...\n", "!other-light")]
+    [InlineData("%TAG ! !!booly-\n--- !light green\n", "%TAG ! !!booly-\n--- !light green\n...\n", "!!booly-light")]
+    public void WriteTo_TagDirectiveWithLocalPrefixStartingWithHandle_RoundTrips(string input, string expected, string expectedTag)
+    {
+        var yaml = SaveAndReload(input, out var reloaded);
+
+        Assert.Equal(expected, yaml);
+        Assert.Equal(expectedTag, ((YamlElement)reloaded[^1].Contents!).Tag);
+        Assert.Equal(yaml, Save(reloaded));
+    }
+
+    [Fact]
+    public void WriteTo_DefaultTagDirectives_AreNotWritten()
+    {
+        var yaml = SaveAndReload("a: 1\n", out _);
+
+        Assert.Equal("a: 1\n", yaml);
+    }
+
+    [Theory]
+    [InlineData("a: 1\n---\nb: 2\n", "a: 1\n---\nb: 2\n")]
+    [InlineData("a: 1\n...\n%TAG !e! tag:example.com,2000:\n--- !e!x b\n", "a: 1\n...\n%TAG !e! tag:example.com,2000:\n--- !e!x b\n...\n")]
+    [InlineData("a\n...\n%YAML 1.2\n---\nb\n", "a\n...\n%YAML 1.2\n--- b\n...\n")]
+    public void WriteTo_MultipleDocuments_RoundTrips(string input, string expected)
+    {
+        var yaml = SaveAndReload(input, out var reloaded);
+
+        Assert.Equal(expected, yaml);
+        Assert.HasCount(2, reloaded);
+    }
+
+    [Fact]
+    public void WriteTo_SingleQuotedScalarEndingWithLineBreak_IndentsClosingQuote()
+    {
+        SaveAndReload("a: '\n\n  '\nb: 'x\n\n  '\n", out var reloaded);
+
+        var mapping = (YamlMapping)reloaded[0].Contents!;
+        Assert.Equal("\n", ((YamlValue)mapping["a"]!).Value);
+        Assert.Equal("x\n", ((YamlValue)mapping["b"]!).Value);
+    }
+
+    [Fact]
+    public void WriteTo_EmptyStream_WritesNothing()
+    {
+        Assert.Equal(string.Empty, Save(new YamlStream()));
+        Assert.Equal(string.Empty, new YamlStream().ToString());
+    }
+
+    [Fact]
+    public void WriteTo_DocumentWithoutContents_WritesEmptyDocument()
+    {
+        var stream = new YamlStream { new YamlDocument() };
+
+        var reloaded = YamlStream.Load(new StringReader(Save(stream)));
+        Assert.HasCount(1, reloaded);
+        Assert.Equal(string.Empty, ((YamlValue)reloaded[0].Contents!).Value);
+    }
+
+    [Fact]
+    public void WriteTo_SuppressDocumentTags_DoesNotRemoveDirectivesFromTheModel()
+    {
+        var stream = YamlStream.Load(new StringReader("%TAG !e! tag:example.com,2000:\n--- !e!foo bar\n"));
+
+        Assert.Equal("--- !<tag:example.com,2000:foo> bar\n...", stream.ToString().ReplaceLineEndings("\n"));
+        Assert.Contains(stream[0].DocumentStart.Tags!, tag => tag.Handle == "!e!");
+        Assert.Equal("%TAG !e! tag:example.com,2000:\n--- !e!foo bar\n...\n", Save(stream));
+    }
+
+    private static string Save(YamlNode node)
+    {
+        using var writer = new StringWriter { NewLine = "\n" };
+        node.WriteTo(writer);
+        return writer.ToString();
+    }
+
+    private static string SaveAndReload(string yaml, out YamlStream reloaded)
+    {
+        var output = Save(YamlStream.Load(new StringReader(yaml)));
+        reloaded = YamlStream.Load(new StringReader(output));
+        return output;
+    }
+
+    [Fact]
+    public void Documentation_EmitEvents()
+    {
+        #region Emitter_Usage
+        using var writer = new StringWriter { NewLine = "\n" };
+        var emitter = new Emitter(writer);
+
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart());
+        emitter.Emit(new MappingStart());
+        emitter.Emit(new Scalar("name"));
+        emitter.Emit(new Scalar("api"));
+        emitter.Emit(new Scalar("ports"));
+        emitter.Emit(new SequenceStart(anchor: null, tag: null, isImplicit: true, YamlStyle.Flow));
+        emitter.Emit(new Scalar("80"));
+        emitter.Emit(new Scalar("443"));
+        emitter.Emit(new SequenceEnd());
+        emitter.Emit(new MappingEnd());
+        emitter.Emit(new DocumentEnd(isImplicit: true));
+        emitter.Emit(new StreamEnd());
+
+        Assert.Equal("name: api\nports: [80, 443]\n", writer.ToString());
+        #endregion
     }
 }

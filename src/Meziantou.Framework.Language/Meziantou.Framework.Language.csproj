@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Language</RootNamespace>
+    <Description>The syntax tree Meziantou.Framework.Language.* is built on: immutable green nodes, the nodes and tokens projected from them, source text, spans, locations, and diagnostics.</Description>
+    <PackageTags>syntax-tree, cst, parser, diagnostics, source-text</PackageTags>
+    <Version>1.1.5</Version>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Css" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Ini" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Json" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Toml" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Regex" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Shell" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Xml" />
+  </ItemGroup>
+
+</Project>

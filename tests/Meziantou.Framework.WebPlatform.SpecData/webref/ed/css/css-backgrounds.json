@@ -1,0 +1,423 @@
+{
+  "spec": {
+    "title": "CSS Backgrounds and Borders Module Level 3",
+    "url": "https://drafts.csswg.org/css-backgrounds-3/"
+  },
+  "properties": [
+    {
+      "name": "background-color",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-color",
+      "value": "<color>",
+      "initial": "transparent",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "background-color",
+        "backgroundColor"
+      ]
+    },
+    {
+      "name": "background-image",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-image",
+      "value": "<bg-image>#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item either an <image> or the keyword none",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "A value of none counts as a background image layer but draws nothing. An image that is empty (zero width or zero height), that fails to download, or that cannot be displayed (e.g., because it is not in a supported image format) likewise counts as a layer but draws nothing.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-image-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "background-image",
+        "backgroundImage"
+      ]
+    },
+    {
+      "name": "background-repeat",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-repeat",
+      "value": "<repeat-style>#",
+      "initial": "repeat",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a pair of keywords, one per dimension",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "repeat-x",
+          "prose": "Computes to repeat no-repeat.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-repeat-repeat-x",
+          "type": "value",
+          "value": "repeat-x"
+        },
+        {
+          "name": "repeat-y",
+          "prose": "Computes to no-repeat repeat.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-repeat-repeat-y",
+          "type": "value",
+          "value": "repeat-y"
+        },
+        {
+          "name": "repeat",
+          "prose": "The image is repeated in this direction as often as needed to cover the background painting area.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-repeat-repeat",
+          "type": "value",
+          "value": "repeat"
+        },
+        {
+          "name": "space",
+          "prose": "The image is repeated as often as will fit within the background positioning area without being clipped, and then the images are spaced out to fill the area. The first and last images touch the edges of the area. If the background painting area is larger than the background positioning area, then the pattern repeats to fill the background painting area. The value of background-position for this direction is ignored unless there is not enough space for two copies of the image in this axis, in which case only one image is placed, and background-position determines its position in this axis.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-repeat-space",
+          "type": "value",
+          "value": "space"
+        },
+        {
+          "name": "round",
+          "prose": "The image is repeated as often as will fit within the background positioning area. If it doesn’t fit a whole number of times, it is rescaled so that it does. See the formula under background-size. If the background painting area is larger than the background positioning area, then the pattern repeats to fill the background painting area.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-repeat-round",
+          "type": "value",
+          "value": "round"
+        },
+        {
+          "name": "no-repeat",
+          "prose": "The image is placed once and not repeated in this direction.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-repeat-no-repeat",
+          "type": "value",
+          "value": "no-repeat"
+        }
+      ],
+      "styleDeclaration": [
+        "background-repeat",
+        "backgroundRepeat"
+      ]
+    },
+    {
+      "name": "background-attachment",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-attachment",
+      "value": "<attachment>#",
+      "initial": "scroll",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item the keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "fixed",
+          "prose": "The background is fixed with regard to the viewport. In paged media where there is no viewport, a fixed background is fixed with respect to the page box and therefore replicated on every page.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-attachment-fixed",
+          "type": "value",
+          "value": "fixed"
+        },
+        {
+          "name": "local",
+          "prose": "The background is fixed with regard to the box’s contents: if the box has a scrolling mechanism, the background scrolls with the box’s contents, and the background painting area and background positioning area are relative to the scrollable overflow area of the box rather than to the border framing them. Because the scrollable overflow area does not include the border area, for scroll containers the border-box value of background-clip may be treated the same as padding-box.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-attachment-local",
+          "type": "value",
+          "value": "local"
+        },
+        {
+          "name": "scroll",
+          "prose": "The background is fixed with regard to the box itself and does not scroll with its contents. (It is effectively attached to the box’s border.)",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-attachment-scroll",
+          "type": "value",
+          "value": "scroll"
+        }
+      ],
+      "styleDeclaration": [
+        "background-attachment",
+        "backgroundAttachment"
+      ]
+    },
+    {
+      "name": "background-position",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-position",
+      "value": "<bg-position>#",
+      "initial": "0% 0%",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to size of background positioning area minus size of background image; see text",
+      "computedValue": "list, each item a pair of offsets (horizontal and vertical) from the top left origin each given as a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "values": [
+        {
+          "name": "<percentage>",
+          "prose": "A percentage for the horizontal offset is relative to (width of background positioning area - width of background image). A percentage for the vertical offset is relative to (height of background positioning area - height of background image), where the size of the image is the size given by background-size. For example, with a value pair of 0% 0%, the upper left corner of the image is aligned with the upper left corner of, usually, the box’s padding edge. A value pair of 100% 100% places the lower right corner of the image in the lower right corner of the area. With a value pair of 75% 50%, the point 75% across and 50% down the image is to be placed at the point 75% across and 50% down the area. Diagram of the meaning of background-position: 75% 50%.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-position-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        },
+        {
+          "name": "<length>",
+          "prose": "A length value gives a fixed length as the offset. For example, with a value pair of 2cm 1cm, the upper left corner of the image is placed 2cm to the right and 1cm below the upper left corner of the background positioning area.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-position-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "top",
+          "prose": "Computes to 0% for the vertical position if one or two values are given, otherwise specifies the top edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-position-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "right",
+          "prose": "Computes to 100% for the horizontal position if one or two values are given, otherwise specifies the right edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-position-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "bottom",
+          "prose": "Computes to 100% for the vertical position if one or two values are given, otherwise specifies the bottom edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-position-bottom",
+          "type": "value",
+          "value": "bottom"
+        },
+        {
+          "name": "left",
+          "prose": "Computes to 0% for the horizontal position if one or two values are given, otherwise specifies the left edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-position-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "center",
+          "prose": "Computes to 50% (left 50%) for the horizontal position if the horizontal position is not otherwise specified, or 50% (top 50%) for the vertical position if it is.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-position-center",
+          "type": "value",
+          "value": "center"
+        }
+      ],
+      "styleDeclaration": [
+        "background-position",
+        "backgroundPosition"
+      ],
+      "longhands": [
+        "background-position-x",
+        "background-position-y"
+      ]
+    },
+    {
+      "name": "background-clip",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-clip",
+      "value": "<visual-box>#",
+      "initial": "border-box",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "values": [
+        {
+          "name": "border-box",
+          "prose": "The background is painted within (clipped to) the border box.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-clip-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "The background is painted within (clipped to) the padding box.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-clip-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "content-box",
+          "prose": "The background is painted within (clipped to) the content box.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-clip-content-box",
+          "type": "value",
+          "value": "content-box"
+        }
+      ],
+      "styleDeclaration": [
+        "background-clip",
+        "backgroundClip"
+      ]
+    },
+    {
+      "name": "background-origin",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-origin",
+      "value": "<visual-box>#",
+      "initial": "padding-box",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "values": [
+        {
+          "name": "padding-box",
+          "prose": "The position is relative to the padding box. (For single boxes 0 0 is the upper left corner of the padding edge, 100% 100% is the lower right corner.)",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-origin-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "The position is relative to the border box.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-origin-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "content-box",
+          "prose": "The position is relative to the content box.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-origin-content-box",
+          "type": "value",
+          "value": "content-box"
+        }
+      ],
+      "styleDeclaration": [
+        "background-origin",
+        "backgroundOrigin"
+      ]
+    },
+    {
+      "name": "background-size",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background-size",
+      "value": "<bg-size>#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "see text",
+      "computedValue": "list, each item a pair of sizes (one per axis) each represented as either a keyword or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "values": [
+        {
+          "name": "contain",
+          "prose": "Scale the image, while preserving its natural aspect ratio (if any), to the largest size such that both its width and its height can fit inside the background positioning area.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-size-contain",
+          "type": "value",
+          "value": "contain"
+        },
+        {
+          "name": "cover",
+          "prose": "Scale the image, while preserving its natural aspect ratio (if any), to the smallest size such that both its width and its height can completely cover the background positioning area.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-size-cover",
+          "type": "value",
+          "value": "cover"
+        },
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "The first value gives the width of the corresponding image, the second value its height. If only one value is given the second is assumed to be auto. A <percentage> is relative to the background positioning area. An auto value for one dimension is resolved by using the image’s natural aspect ratio and the size of the other dimension, or failing that, using the image’s natural size, or failing that, treating it as 100%. If both values are auto then the natural width and/or height of the image should be used, if any, the missing dimension (if any) behaving as auto as described above. If the image has neither natural size, its size is determined as for contain. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-size-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "The first value gives the width of the corresponding image, the second value its height. If only one value is given the second is assumed to be auto. A <percentage> is relative to the background positioning area. An auto value for one dimension is resolved by using the image’s natural aspect ratio and the size of the other dimension, or failing that, using the image’s natural size, or failing that, treating it as 100%. If both values are auto then the natural width and/or height of the image should be used, if any, the missing dimension (if any) behaving as auto as described above. If the image has neither natural size, its size is determined as for contain. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-backgrounds-3/#valdef-background-size-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "background-size",
+        "backgroundSize"
+      ]
+    },
+    {
+      "name": "background",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#propdef-background",
+      "value": "<bg-layer>#? , <final-bg-layer>",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "background"
+      ],
+      "longhands": [
+        "background-image",
+        "background-position",
+        "background-size",
+        "background-repeat",
+        "background-attachment",
+        "background-origin",
+        "background-clip",
+        "background-color"
+      ],
+      "resetLonghands": [
+        "background-blend-mode"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<bg-image>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-bg-image",
+      "type": "type",
+      "value": "<image> | none"
+    },
+    {
+      "name": "<repeat-style>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-repeat-style",
+      "type": "type",
+      "value": "repeat-x | repeat-y | [repeat | space | round | no-repeat]{1,2}"
+    },
+    {
+      "name": "<attachment>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-attachment",
+      "type": "type",
+      "value": "scroll | fixed | local"
+    },
+    {
+      "name": "<bg-position>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-bg-position",
+      "type": "type",
+      "value": "[ [ left | center | right | top | bottom | <length-percentage> ] | [ left | center | right | <length-percentage> ] [ top | center | bottom | <length-percentage> ] | [ center | [ left | right ] <length-percentage>? ] && [ center | [ top | bottom ] <length-percentage>? ] ]"
+    },
+    {
+      "name": "<bg-size>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-bg-size",
+      "type": "type",
+      "value": "[ <length-percentage [0,∞]> | auto ]{1,2} | cover | contain"
+    },
+    {
+      "name": "<bg-layer>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-bg-layer",
+      "type": "type",
+      "value": "<bg-image> || <bg-position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <visual-box> || <visual-box>"
+    },
+    {
+      "name": "<final-bg-layer>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-final-bg-layer",
+      "type": "type",
+      "value": "<bg-image> || <bg-position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <visual-box> || <visual-box> || <'background-color'>"
+    },
+    {
+      "name": "<shadow>",
+      "href": "https://drafts.csswg.org/css-backgrounds-3/#typedef-shadow",
+      "type": "type",
+      "value": "<color>? && [ <length>{2} [ <length [0,∞]> <length>? ]? ] && inset?"
+    }
+  ]
+}

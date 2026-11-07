@@ -3,13 +3,13 @@
 @* You can specify it manually by using <Repeater T=Person /> *@
 @typeparam T
 
-@if (Items == null)
+@if (materializedItems == null)
 {
     @LoadingTemplate
 }
 else
 {
-    if (EmptyTemplate != null && !Items.Any())
+    if (EmptyTemplate != null && materializedItems.Count == 0)
     {
         @EmptyTemplate
     }
@@ -18,7 +18,7 @@ else
         @RepeaterContainerTemplate(
             @: @{
                 var first = true;
-                foreach (var item in Items)
+                foreach (var item in materializedItems)
                 {
                     if (!first && ItemSeparatorTemplate != null)
                     {
@@ -37,7 +37,9 @@ else
 }
 
 @code {
-    private static RenderFragment<RenderFragment> s_defaultContainerTemplate = new RenderFragment<RenderFragment>(fragment => fragment);
+    private static readonly RenderFragment<RenderFragment> s_defaultContainerTemplate = new RenderFragment<RenderFragment>(fragment => fragment);
+
+    private IReadOnlyCollection<T>? materializedItems;
 
     /// <summary>Gets or sets the collection of items to render. When <see langword="null"/>, the <see cref="LoadingTemplate"/> is displayed.</summary>
     [Parameter]
@@ -67,5 +69,14 @@ else
     {
         // Create empty template in case the user doesn't provide it
         RepeaterContainerTemplate ??= s_defaultContainerTemplate;
+
+        // Items is enumerated once for the emptiness check and once for rendering. For a lazy sequence such as a
+        // LINQ query that means the underlying work runs twice per render, so materialize it here.
+        materializedItems = Items switch
+        {
+            null => null,
+            IReadOnlyCollection<T> collection => collection,
+            _ => Items.ToList(),
+        };
     }
 }

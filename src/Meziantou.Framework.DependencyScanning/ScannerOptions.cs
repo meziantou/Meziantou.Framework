@@ -6,12 +6,12 @@ namespace Meziantou.Framework.DependencyScanning;
 /// <summary>
 /// Provides configuration options for dependency scanning operations.
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/DependencyScannerSample/DocumentationExamples.cs" ref:region="ScannerOptions_Example" ref:dedent="true">
 /// var options = new ScannerOptions
 /// {
 ///     DegreeOfParallelism = 8,
 ///     RecurseSubdirectories = true,
-///     IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm].ToImmutableHashSet()
+///     IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm],
 /// };
 /// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
 /// </code>
@@ -21,22 +21,42 @@ public sealed class ScannerOptions
 {
     private static readonly ImmutableArray<DependencyScanner> DefaultScanners =
     [
+        new AgentPluginDependencyScanner(),
         new AzureDevOpsScanner(),
+        new CargoDependencyScanner(),
+        new CargoLockFileDependencyScanner(),
+        new DockerComposeDependencyScanner(),
         new DockerfileDependencyScanner(),
         new DotNetFileBasedAppDependencyScanner(),
         new DotNetGlobalJsonDependencyScanner(),
         new DotNetToolManifestDependencyScanner(),
+        new GitHubActionsLockFileDependencyScanner(),
         new GitHubActionsScanner(),
         new GitSubmoduleDependencyScanner(),
+        new GoModuleDependencyScanner(),
+        new GoSumDependencyScanner(),
         new HelmChartDependencyScanner(),
+        new HelmChartLockFileDependencyScanner(),
+        new JavaDependencyScanner(),
+        new KubernetesDependencyScanner(),
         new MsBuildReferencesDependencyScanner(),
         new NpmPackageJsonDependencyScanner(),
+        new NpmLockFileDependencyScanner(),
+        new NuGetLockFileDependencyScanner(),
         new NuSpecDependencyScanner(),
         new PackagesConfigDependencyScanner(),
+        new ProjectAssetsDependencyScanner(),
         new ProjectJsonDependencyScanner(),
+        new ComposerDependencyScanner(),
+        new ComposerLockFileDependencyScanner(),
         new PythonRequirementsDependencyScanner(),
+        new PythonProjectDependencyScanner(),
+        new PythonLockFileDependencyScanner(),
         new RenovateExtendsDependencyScanner(),
+        new RubyGemDependencyScanner(),
+        new RubyGemLockFileDependencyScanner(),
         new SwiftPackageDependencyScanner(),
+        new SwiftPackageLockFileDependencyScanner(),
     ];
 
     internal static ScannerOptions Default { get; } = new ScannerOptions();
@@ -56,16 +76,53 @@ public sealed class ScannerOptions
     public bool RecurseSubdirectories { get; set; } = true;
 
     /// <summary>Gets or sets a predicate to filter which subdirectories to recurse into.</summary>
+    /// <remarks>
+    /// Symbolic links and other reparse points to directories are never followed, whatever the predicate returns.
+    /// The predicate is only supported with the default <see cref="FileSystem"/>: a directory scan with a custom file
+    /// system throws a <see cref="NotSupportedException"/> when it is set.
+    /// </remarks>
     public FileSystemEntryPredicate? ShouldRecursePredicate { get; set; }
 
     /// <summary>Gets or sets a predicate to filter which files to scan.</summary>
+    /// <remarks>
+    /// The predicate is only supported with the default <see cref="FileSystem"/>: a directory scan with a custom file
+    /// system throws a <see cref="NotSupportedException"/> when it is set.
+    /// </remarks>
     public FileSystemEntryPredicate? ShouldScanFilePredicate { get; set; }
 
-    /// <summary>Gets or sets the maximum number of parallel scanning tasks. Default is 16.</summary>
-    public int DegreeOfParallelism { get; set; } = 16;
+    /// <summary>Gets or sets the callback invoked when a file cannot be scanned. Default is <see langword="null"/>: the file is silently skipped.</summary>
+    /// <remarks>
+    /// A file that cannot be opened or read, or that a scanner fails to scan, is skipped and the scan continues with
+    /// the next file. The callback receives the path of the file and the exception. It can be invoked concurrently,
+    /// and an exception it throws stops the scan. Cancellation is not a failure: the scan methods throw an
+    /// <see cref="OperationCanceledException"/> when their cancellation token is canceled.
+    /// </remarks>
+    public FileScanFailed? OnFileScanFailed { get; set; }
+
+    /// <summary>Gets or sets the maximum number of parallel scanning tasks, or <c>-1</c> to use <see cref="Environment.ProcessorCount"/>. Default is 16.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is <c>0</c> or less than <c>-1</c>.</exception>
+    public int DegreeOfParallelism
+    {
+        get => field;
+        set
+        {
+            if (value is 0 or < -1)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The degree of parallelism must be greater than 0, or -1 to use the number of processors.");
+
+            field = value;
+        }
+    } = 16;
+
+    internal int EffectiveDegreeOfParallelism => DegreeOfParallelism is -1 ? Environment.ProcessorCount : DegreeOfParallelism;
 
     /// <summary>Gets or sets the file system implementation to use for file access.</summary>
+    /// <remarks>
+    /// With a custom file system, a directory scan lists the files with <see cref="IFileSystem.GetFiles"/> using the
+    /// <c>*</c> pattern, and does not support <see cref="ShouldScanFilePredicate"/> and <see cref="ShouldRecursePredicate"/>.
+    /// </remarks>
     public IFileSystem FileSystem { get; set; } = Internals.FileSystem.Instance;
+
+    internal bool UsesDefaultFileSystem => ReferenceEquals(FileSystem, Internals.FileSystem.Instance);
 
     /// <summary>Gets or sets the set of dependency types to include. When set, only these types will be scanned. Default is empty (all types included).</summary>
     public ImmutableHashSet<DependencyType> IncludedDependencyTypes

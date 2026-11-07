@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.SyntaxHighlighting/Meziantou.Framework.SyntaxHighlighting.csproj" />
+    <Compile Include="../../common/ThreadCpuStopwatch.cs" Link="ThreadCpuStopwatch.cs" />
   </ItemGroup>
 
 </Project>

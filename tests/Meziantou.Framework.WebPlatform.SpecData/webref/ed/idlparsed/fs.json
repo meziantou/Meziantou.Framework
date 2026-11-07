@@ -1,0 +1,1421 @@
+{
+  "spec": {
+    "title": "File System Standard",
+    "url": "https://fs.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "FileSystemHandle",
+          "FileSystemFileHandle",
+          "FileSystemDirectoryHandle",
+          "FileSystemWritableFileStream"
+        ],
+        "Worker": [
+          "FileSystemHandle",
+          "FileSystemFileHandle",
+          "FileSystemDirectoryHandle",
+          "FileSystemWritableFileStream"
+        ],
+        "DedicatedWorker": [
+          "FileSystemSyncAccessHandle"
+        ]
+      }
+    },
+    "idlNames": {
+      "FileSystemHandleKind": {
+        "fragment": "enum FileSystemHandleKind {\n  \"file\",\n  \"directory\",\n};",
+        "type": "enum",
+        "name": "FileSystemHandleKind",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "file",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemhandlekind-file"
+          },
+          {
+            "type": "enum-value",
+            "value": "directory",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemhandlekind-directory"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fs.spec.whatwg.org/#enumdef-filesystemhandlekind"
+      },
+      "FileSystemHandle": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext, Serializable]\ninterface FileSystemHandle {\n  readonly attribute FileSystemHandleKind kind;\n  readonly attribute USVString name;\n\n  Promise<boolean> isSameEntry(FileSystemHandle other);\n};",
+        "type": "interface",
+        "name": "FileSystemHandle",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "kind",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemHandleKind"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemhandle-kind"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemhandle-name"
+          },
+          {
+            "type": "operation",
+            "name": "isSameEntry",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemHandle"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemhandle-issameentry"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#filesystemhandle"
+      },
+      "FileSystemCreateWritableOptions": {
+        "fragment": "dictionary FileSystemCreateWritableOptions {\n  boolean keepExistingData = false;\n};",
+        "type": "dictionary",
+        "name": "FileSystemCreateWritableOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "keepExistingData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemcreatewritableoptions-keepexistingdata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#dictdef-filesystemcreatewritableoptions"
+      },
+      "FileSystemFileHandle": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext, Serializable]\ninterface FileSystemFileHandle : FileSystemHandle {\n  Promise<File> getFile();\n  Promise<FileSystemWritableFileStream> createWritable(optional FileSystemCreateWritableOptions options = {});\n  [Exposed=DedicatedWorker]\n  Promise<FileSystemSyncAccessHandle> createSyncAccessHandle();\n};",
+        "type": "interface",
+        "name": "FileSystemFileHandle",
+        "inheritance": "FileSystemHandle",
+        "members": [
+          {
+            "type": "operation",
+            "name": "getFile",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "File"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemfilehandle-getfile"
+          },
+          {
+            "type": "operation",
+            "name": "createWritable",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemWritableFileStream"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemCreateWritableOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemfilehandle-createwritable"
+          },
+          {
+            "type": "operation",
+            "name": "createSyncAccessHandle",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemSyncAccessHandle"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "DedicatedWorker"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemfilehandle-createsyncaccesshandle"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#filesystemfilehandle"
+      },
+      "FileSystemGetFileOptions": {
+        "fragment": "dictionary FileSystemGetFileOptions {\n  boolean create = false;\n};",
+        "type": "dictionary",
+        "name": "FileSystemGetFileOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "create",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemgetfileoptions-create"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#dictdef-filesystemgetfileoptions"
+      },
+      "FileSystemGetDirectoryOptions": {
+        "fragment": "dictionary FileSystemGetDirectoryOptions {\n  boolean create = false;\n};",
+        "type": "dictionary",
+        "name": "FileSystemGetDirectoryOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "create",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemgetdirectoryoptions-create"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#dictdef-filesystemgetdirectoryoptions"
+      },
+      "FileSystemRemoveOptions": {
+        "fragment": "dictionary FileSystemRemoveOptions {\n  boolean recursive = false;\n};",
+        "type": "dictionary",
+        "name": "FileSystemRemoveOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "recursive",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemremoveoptions-recursive"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#dictdef-filesystemremoveoptions"
+      },
+      "FileSystemDirectoryHandle": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext, Serializable]\ninterface FileSystemDirectoryHandle : FileSystemHandle {\n  async_iterable<USVString, FileSystemHandle>;\n\n  Promise<FileSystemFileHandle> getFileHandle(USVString name, optional FileSystemGetFileOptions options = {});\n  Promise<FileSystemDirectoryHandle> getDirectoryHandle(USVString name, optional FileSystemGetDirectoryOptions options = {});\n\n  Promise<undefined> removeEntry(USVString name, optional FileSystemRemoveOptions options = {});\n\n  Promise<sequence<USVString>?> resolve(FileSystemHandle possibleDescendant);\n};",
+        "type": "interface",
+        "name": "FileSystemDirectoryHandle",
+        "inheritance": "FileSystemHandle",
+        "members": [
+          {
+            "type": "async_iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "USVString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FileSystemHandle"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "operation",
+            "name": "getFileHandle",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemFileHandle"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemGetFileOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-getfilehandle"
+          },
+          {
+            "type": "operation",
+            "name": "getDirectoryHandle",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemDirectoryHandle"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemGetDirectoryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-getdirectoryhandle"
+          },
+          {
+            "type": "operation",
+            "name": "removeEntry",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemRemoveOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-removeentry"
+          },
+          {
+            "type": "operation",
+            "name": "resolve",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USVString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "possibleDescendant",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemHandle"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-resolve"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#filesystemdirectoryhandle"
+      },
+      "WriteCommandType": {
+        "fragment": "enum WriteCommandType {\n  \"write\",\n  \"seek\",\n  \"truncate\",\n};",
+        "type": "enum",
+        "name": "WriteCommandType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "write",
+            "href": "https://fs.spec.whatwg.org/#dom-writecommandtype-write"
+          },
+          {
+            "type": "enum-value",
+            "value": "seek",
+            "href": "https://fs.spec.whatwg.org/#dom-writecommandtype-seek"
+          },
+          {
+            "type": "enum-value",
+            "value": "truncate",
+            "href": "https://fs.spec.whatwg.org/#dom-writecommandtype-truncate"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fs.spec.whatwg.org/#enumdef-writecommandtype"
+      },
+      "WriteParams": {
+        "fragment": "dictionary WriteParams {\n  required WriteCommandType type;\n  unsigned long long? size;\n  unsigned long long? position;\n  (BufferSource or Blob or USVString)? data;\n};",
+        "type": "dictionary",
+        "name": "WriteParams",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriteCommandType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://fs.spec.whatwg.org/#dom-writeparams-type"
+          },
+          {
+            "type": "field",
+            "name": "size",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-writeparams-size"
+          },
+          {
+            "type": "field",
+            "name": "position",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-writeparams-position"
+          },
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-writeparams-data"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#dictdef-writeparams"
+      },
+      "FileSystemWriteChunkType": {
+        "fragment": "typedef (BufferSource or Blob or USVString or WriteParams) FileSystemWriteChunkType;",
+        "type": "typedef",
+        "name": "FileSystemWriteChunkType",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Blob"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriteParams"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://fs.spec.whatwg.org/#typedefdef-filesystemwritechunktype"
+      },
+      "FileSystemWritableFileStream": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface FileSystemWritableFileStream : WritableStream {\n  Promise<undefined> write(FileSystemWriteChunkType data);\n  Promise<undefined> seek(unsigned long long position);\n  Promise<undefined> truncate(unsigned long long size);\n};",
+        "type": "interface",
+        "name": "FileSystemWritableFileStream",
+        "inheritance": "WritableStream",
+        "members": [
+          {
+            "type": "operation",
+            "name": "write",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemWriteChunkType"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemwritablefilestream-write"
+          },
+          {
+            "type": "operation",
+            "name": "seek",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "position",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemwritablefilestream-seek"
+          },
+          {
+            "type": "operation",
+            "name": "truncate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "size",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemwritablefilestream-truncate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#filesystemwritablefilestream"
+      },
+      "FileSystemReadWriteOptions": {
+        "fragment": "dictionary FileSystemReadWriteOptions {\n  [EnforceRange] unsigned long long at;\n};",
+        "type": "dictionary",
+        "name": "FileSystemReadWriteOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "at",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemreadwriteoptions-at"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#dictdef-filesystemreadwriteoptions"
+      },
+      "FileSystemSyncAccessHandle": {
+        "fragment": "[Exposed=DedicatedWorker, SecureContext]\ninterface FileSystemSyncAccessHandle {\n  unsigned long long read(AllowSharedBufferSource buffer,\n                          optional FileSystemReadWriteOptions options = {});\n  unsigned long long write(AllowSharedBufferSource buffer,\n                           optional FileSystemReadWriteOptions options = {});\n\n  undefined truncate([EnforceRange] unsigned long long newSize);\n  unsigned long long getSize();\n  undefined flush();\n  undefined close();\n};",
+        "type": "interface",
+        "name": "FileSystemSyncAccessHandle",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "read",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "buffer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AllowSharedBufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemReadWriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-read"
+          },
+          {
+            "type": "operation",
+            "name": "write",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "buffer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AllowSharedBufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemReadWriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-write"
+          },
+          {
+            "type": "operation",
+            "name": "truncate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "newSize",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "EnforceRange",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-truncate"
+          },
+          {
+            "type": "operation",
+            "name": "getSize",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-getsize"
+          },
+          {
+            "type": "operation",
+            "name": "flush",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-flush"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-close"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "DedicatedWorker"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fs.spec.whatwg.org/#filesystemsyncaccesshandle"
+      }
+    },
+    "idlExtendedNames": {
+      "StorageManager": [
+        {
+          "fragment": "[SecureContext]\npartial interface StorageManager {\n  Promise<FileSystemDirectoryHandle> getDirectory();\n};",
+          "type": "interface",
+          "name": "StorageManager",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getDirectory",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FileSystemDirectoryHandle"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://fs.spec.whatwg.org/#dom-storagemanager-getdirectory"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "FileSystemHandle",
+        "FileSystemFileHandle",
+        "FileSystemDirectoryHandle",
+        "FileSystemWritableFileStream"
+      ],
+      "Worker": [
+        "FileSystemHandle",
+        "FileSystemFileHandle",
+        "FileSystemDirectoryHandle",
+        "FileSystemWritableFileStream"
+      ],
+      "DedicatedWorker": [
+        "FileSystemSyncAccessHandle"
+      ]
+    },
+    "dependencies": {
+      "FileSystemHandle": [
+        "FileSystemHandleKind",
+        "FileSystemHandle"
+      ],
+      "FileSystemCreateWritableOptions": [],
+      "FileSystemFileHandle": [
+        "FileSystemHandle",
+        "File",
+        "FileSystemWritableFileStream",
+        "FileSystemCreateWritableOptions",
+        "FileSystemSyncAccessHandle"
+      ],
+      "FileSystemGetFileOptions": [],
+      "FileSystemGetDirectoryOptions": [],
+      "FileSystemRemoveOptions": [],
+      "FileSystemDirectoryHandle": [
+        "FileSystemHandle",
+        "FileSystemFileHandle",
+        "FileSystemGetFileOptions",
+        "FileSystemDirectoryHandle",
+        "FileSystemGetDirectoryOptions",
+        "FileSystemRemoveOptions"
+      ],
+      "WriteParams": [
+        "WriteCommandType",
+        "BufferSource",
+        "Blob"
+      ],
+      "FileSystemWritableFileStream": [
+        "WritableStream",
+        "FileSystemWriteChunkType"
+      ],
+      "FileSystemReadWriteOptions": [],
+      "FileSystemSyncAccessHandle": [
+        "AllowSharedBufferSource",
+        "FileSystemReadWriteOptions"
+      ],
+      "StorageManager": [
+        "FileSystemDirectoryHandle"
+      ]
+    },
+    "externalDependencies": [
+      "File",
+      "BufferSource",
+      "Blob",
+      "WritableStream",
+      "AllowSharedBufferSource",
+      "StorageManager"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

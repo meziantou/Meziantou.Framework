@@ -1,17 +1,21 @@
 # Meziantou.Framework.StronglyTypedId
 
-The source generator generates constructors, properties, equality members, common interfaces, converters for multiple serializers
+The source generator generates constructors, properties, equality members, common interfaces, converters for multiple serializers. The attributes are in the `Meziantou.Framework.Annotations` namespace.
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Declaration;format=md-fenced-code-block;dedent=true -->
+```csharp
 [StronglyTypedId<int>]
 public partial struct ProjectId { }
-````
+```
+<!-- endref -->
 
 or using `typeof` if you're not using a version of C# that supports [generic attributes](https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-11#generic-attributes)
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_DeclarationTypeof;format=md-fenced-code-block;dedent=true -->
+```csharp
 [StronglyTypedId(typeof(int))]
-public partial struct ProjectId { }
-````
+public partial struct CustomerId { }
+```
+<!-- endref -->
 
 `StronglyTypedId` generates the following code:
 
@@ -21,14 +25,18 @@ public partial struct ProjectId { }
 [System.ComponentModel.TypeConverterAttribute(typeof(ProjectIdTypeConverter))]
 [System.Text.Json.Serialization.JsonConverterAttribute(typeof(ProjectIdJsonConverter))]
 [Newtonsoft.Json.JsonConverterAttribute(typeof(ProjectIdNewtonsoftJsonConverter))]
-[MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdMongoDBBsonSerializer))]
+[MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdBsonConverter))]
 public partial struct ProjectId :
     System.IEquatable<ProjectId>,
-    System.IParsable<ProjectId>,        // .NET 7+
-    System.ISpanParsable<ProjectId>,    // .NET 7+
-    IStronglyTypedId,                   // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
-    IStronglyTypedId<ProjectId>,        // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
-    IComparable, IComparable<ProjectId> // When at least one of the interface is explicitly defined by the user
+    System.IParsable<ProjectId>,         // .NET 7+
+    System.ISpanParsable<ProjectId>,     // .NET 7+
+    System.IUtf8SpanParsable<ProjectId>, // .NET 8+
+    System.IFormattable,
+    System.ISpanFormattable,             // .NET 6+
+    System.IUtf8SpanFormattable,         // .NET 8+
+    IStronglyTypedId,                    // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
+    IStronglyTypedId<int>,               // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
+    IComparable, IComparable<ProjectId>  // When at least one of the interface is explicitly defined by the user
 {
     public int Value { get; }
     public string ValueAsString { get; } // Value formatted using InvariantCulture
@@ -47,7 +55,7 @@ public partial struct ProjectId :
     public static bool operator !=(ProjectId a, ProjectId b);
     public override string ToString();
 
-    private partial class CustomerIdTypeConverter : System.ComponentModel.TypeConverter
+    private partial class ProjectIdTypeConverter : System.ComponentModel.TypeConverter
     {
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Type sourceType);
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value);
@@ -56,14 +64,14 @@ public partial struct ProjectId :
     }
 
     // Generated only when System.Text.Json is accessible
-    private partial class CustomerIdJsonConverter : System.Text.Json.Serialization.JsonConverter<ProjectId>
+    private partial class ProjectIdJsonConverter : System.Text.Json.Serialization.JsonConverter<ProjectId>
     {
         public override void Write(System.Text.Json.Utf8JsonWriter writer, ProjectId value, System.Text.Json.JsonSerializerOptions options);
         public override ProjectId Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
     }
 
     // Generated only when Newtonsoft.Json is accessible
-    private partial class CustomerIdNewtonsoftJsonConverter : Newtonsoft.Json.JsonConverter
+    private partial class ProjectIdNewtonsoftJsonConverter : Newtonsoft.Json.JsonConverter
     {
         public override bool CanRead { get; }
         public override bool CanWrite { get; }
@@ -73,7 +81,7 @@ public partial struct ProjectId :
     }
 
     // Generated only when MongoDB.Bson.Serialization.Serializers.SerializerBase is accessible
-    private partial class ProjectIdMongoDBBsonSerializer : MongoDB.Bson.Serialization.Serializers.SerializerBase<ProjectId>
+    private partial class ProjectIdBsonConverter : MongoDB.Bson.Serialization.Serializers.SerializerBase<ProjectId>
     {
         public override ProjectId Deserialize(MongoDB.Bson.Serialization.BsonDeserializationContext context, MongoDB.Bson.Serialization.BsonDeserializationArgs args);
         public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, ProjectId value);
@@ -82,6 +90,23 @@ public partial struct ProjectId :
 ````
 
 <!-- generated code -->
+
+Parsing and formatting are culture-invariant: the `IFormatProvider` arguments of the interface members are ignored and `CultureInfo.InvariantCulture` is always used. `IUtf8SpanParsable<T>`, `IFormattable`, `ISpanFormattable` and `IUtf8SpanFormattable` are implemented explicitly, so the type doesn't expose overloads with an `IFormatProvider` parameter.
+
+`IUtf8SpanParsable<T>` decodes the UTF-8 text and uses `TryParse(ReadOnlySpan<char>)` (or `TryParse(string)`), so both representations accept the same values.
+
+`IFormattable`, `ISpanFormattable` and `IUtf8SpanFormattable` use the following rules:
+
+- Without a format, the result is the same as `ToString()`. So, `$"{id}"` and `id.ToString()` return the same value.
+- With a format, the format is applied to `Value` using the invariant culture. For instance, `$"{id:N}"` returns the `Guid` without the hyphens. The format is ignored when the underlying type isn't formattable (`string`, `bool`, `ObjectId`).
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Format;format=md-fenced-code-block;dedent=true -->
+```csharp
+var id = ProjectId.FromInt32(42);
+Assert.Equal("ProjectId { Value = 42 }", $"{id}");
+Assert.Equal("00042", $"{id:D5}");
+```
+<!-- endref -->
 
 If the `Meziantou.Framework.StronglyTypedId.Interfaces` NuGet package is present, the generator will implements `IStronglyTypedId` and `IStronglyTypedId<T>`.
 
@@ -119,7 +144,8 @@ If the `Meziantou.Framework.StronglyTypedId.Interfaces` NuGet package is present
 
 You can configure the code generation using the `[StronglyTypedIdAttribute]` attribute:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Configuration;format=md-fenced-code-block;dedent=true -->
+```csharp
 [StronglyTypedId(idType: typeof(long),
                  generateSystemTextJsonConverter: true,
                  generateNewtonsoftJsonConverter: true,
@@ -127,26 +153,80 @@ You can configure the code generation using the `[StronglyTypedIdAttribute]` att
                  generateMongoDBBsonSerialization: true,
                  addCodeGeneratedAttribute: true
                  )]
-public partial struct ProjectId { }
-````
+public partial struct ShipmentId { }
+```
+<!-- endref -->
+
+When the underlying type is `System.Guid`, you can choose how the generated `New()` method creates the value. The default is `Version4` (`Guid.NewGuid()`). `Version7` (`Guid.CreateVersion7()`) requires .NET 9 or later, otherwise the `MFSTID0002` diagnostic is reported. `None` doesn't generate the `New()` method. The option only applies to `System.Guid`; using it with another underlying type reports the `MFSTID0003` diagnostic:
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_GuidVersion7;format=md-fenced-code-block;dedent=true -->
+```csharp
+[StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.Version7)]
+public partial struct InvoiceId { }
+```
+<!-- endref -->
+
+The generated `New()` method creates a version 7 `Guid`:
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_GuidVersion7Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var id = InvoiceId.New(); // Uses Guid.CreateVersion7()
+Assert.Equal(7, id.Value.Version);
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_GuidNone;format=md-fenced-code-block;dedent=true -->
+```csharp
+[StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.None)]
+public partial struct ExternalId { } // No New() method is generated
+```
+<!-- endref -->
+
+You can configure the default value of the options for all the types of an assembly using the `[assembly: StronglyTypedIdDefaults]` attribute. Options set on `[StronglyTypedId]` take precedence over the assembly-level defaults:
+
+<!-- ref:../../samples/Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples/AssemblyDefaults.cs;region=StronglyTypedId_AssemblyDefaults;format=md-fenced-code-block;dedent=true -->
+```csharp
+[assembly: StronglyTypedIdDefaults(GuidGenerationStrategy = GuidGenerationStrategy.Version7,
+                                   GenerateNewtonsoftJsonConverter = false,
+                                   GenerateMongoDBBsonSerialization = false,
+                                   GenerateSystemComponentModelTypeConverter = false,
+                                   GenerateSystemTextJsonConverter = true,
+                                   AddCodeGeneratedAttribute = true,
+                                   StringComparison = StringComparison.Ordinal,
+                                   GenerateToStringAsRecord = true)]
+
+namespace Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples;
+
+[StronglyTypedId<Guid>]
+public partial struct ProjectId { } // New() uses Guid.CreateVersion7()
+
+[StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.Version4)]
+public partial struct CustomerId { } // New() uses Guid.NewGuid()
+```
+<!-- endref -->
 
 You can generate `IComparable`, `IComparable<T>` and comparison operators by adding one interface:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Comparable;format=md-fenced-code-block;dedent=true -->
+```csharp
 [StronglyTypedId<int>]
-public partial struct ProjectId : IComparable { }
+public partial struct Priority : IComparable { }
+```
+<!-- endref -->
 
-// Generated by the source generator
-public partial struct ProjectId : IComparable<ProjectId>
-{
-	public int CompareTo(object? other);
-	public int CompareTo(ProjectId? other);
-	public static bool operator <(ProjectId? left, ProjectId? right);
-	public static bool operator <=(IdInt32Comparable? left, IdInt32Comparable? right);
-	public static bool operator >(IdInt32Comparable? left, IdInt32Comparable? right);
-	public static bool operator >=(IdInt32Comparable? left, IdInt32Comparable? right);
-}
-````
+The generator adds `IComparable<Priority>`, `CompareTo` and the `<`, `<=`, `>`, `>=` operators:
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_ComparableUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var low = Priority.FromInt32(1);
+var high = Priority.FromInt32(2);
+
+// IComparable<Priority> and the comparison operators are generated
+Assert.True(low < high);
+Assert.True(high >= low);
+Assert.Equal(-1, low.CompareTo(high));
+```
+<!-- endref -->
 
 <!-- configuration -->
 
@@ -160,4 +240,7 @@ public partial struct ProjectId : IComparable<ProjectId>
 | Id | Category | Description | Severity | Enabled |
 | -- | -- | -- | :--: | :--: |
 | `MFSTID0001` | StronglyTypedId | Not supported type | Error | ✔️ |
+| `MFSTID0002` | StronglyTypedId | Guid generation strategy is not supported by the target framework | Error | ✔️ |
+| `MFSTID0003` | StronglyTypedId | Guid generation strategy is only applicable to Guid | Warning | ✔️ |
+| `MFSTID0004` | StronglyTypedId | Generic types are not supported | Error | ✔️ |
 <!-- analyzer-rules -->

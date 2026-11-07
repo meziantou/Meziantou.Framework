@@ -11,10 +11,23 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 [JsonSerializable(typeof(DockerApiModels.ExecInspectResponse))]
 [JsonSerializable(typeof(DockerInspectResult))]
 [JsonSerializable(typeof(DockerApiModels.CreateContainerRequest))]
+[JsonSerializable(typeof(DockerApiModels.VolumeCreateRequest))]
+[JsonSerializable(typeof(DockerApiModels.VolumeListResponse))]
 [JsonSerializable(typeof(DockerApiModels.ExecCreateRequest))]
 [JsonSerializable(typeof(DockerApiModels.ExecStartRequest))]
 [JsonSerializable(typeof(DockerApiModels.AuthConfigFile))]
 [JsonSerializable(typeof(DockerApiModels.CredentialHelperGetResponse))]
 [JsonSerializable(typeof(DockerApiModels.RegistryAuthHeader))]
-[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(DockerApiModels.ContainerPathStat))]
+[JsonSerializable(typeof(DockerApiModels.VolumeInspectResponse))]
+[JsonSerializable(typeof(DockerApiModels.NetworkCreateRequest))]
+[JsonSerializable(typeof(DockerApiModels.NetworkConnectRequest))]
+[JsonSerializable(typeof(DockerApiModels.NetworkSummary))]
+[JsonSerializable(typeof(DockerApiModels.NetworkSummary[]))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(Dictionary<string, DockerApiModels.RegistryAuthHeader>))]
+[JsonSourceGenerationOptions(
+    PropertyNameCaseInsensitive = true,
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true)]
 internal sealed partial class DockerApiJsonContext : JsonSerializerContext;

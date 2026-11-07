@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections;
 using System.Runtime.CompilerServices;
 
@@ -48,7 +49,19 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     public int Count { get; private set; }
 
-    public T this[int index] => _items[index];
+    public T this[int index]
+    {
+        get
+        {
+            // Bounds are checked against Count: _items is the backing array and its tail is uninitialized
+            if ((uint)index >= (uint)Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+            }
+
+            return _items[index];
+        }
+    }
 
     public int Capacity
     {
@@ -98,6 +111,91 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         _items[index] = item;
         Count++;
         _version++;
+    }
+
+    /// <summary>
+    /// Adds the items of a collection to the list.
+    /// </summary>
+    /// <param name="items">The items to add.</param>
+    /// <remarks>
+    /// The new items are sorted, then merged with the existing items. This is faster than calling <see cref="Add(T)"/> for each item when adding many items.
+    /// </remarks>
+    public void AddRange(IEnumerable<T> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        T[] buffer;
+        int count;
+        if (items is ICollection<T> collection)
+        {
+            count = collection.Count;
+            if (count is 0)
+                return;
+
+            buffer = ArrayPool<T>.Shared.Rent(count);
+            collection.CopyTo(buffer, 0);
+        }
+        else
+        {
+            buffer = ArrayPool<T>.Shared.Rent(16);
+            count = 0;
+            foreach (var item in items)
+            {
+                if (count == buffer.Length)
+                {
+                    var newBuffer = ArrayPool<T>.Shared.Rent(buffer.Length * 2);
+                    Array.Copy(buffer, newBuffer, count);
+                    ReturnBuffer(buffer);
+                    buffer = newBuffer;
+                }
+
+                buffer[count] = item;
+                count++;
+            }
+        }
+
+        try
+        {
+            if (count is 0)
+                return;
+
+            Array.Sort(buffer, 0, count, _comparer);
+
+            var totalCount = Count + count;
+            if (totalCount > _items.Length)
+            {
+                EnsureCapacity(totalCount);
+            }
+
+            // Merge from the end, so items are moved only once
+            var existingIndex = Count - 1;
+            var newIndex = count - 1;
+            var destinationIndex = totalCount - 1;
+            while (newIndex >= 0)
+            {
+                if (existingIndex >= 0 && _comparer.Compare(_items[existingIndex], buffer[newIndex]) > 0)
+                {
+                    _items[destinationIndex] = _items[existingIndex];
+                    existingIndex--;
+                }
+                else
+                {
+                    _items[destinationIndex] = buffer[newIndex];
+                    newIndex--;
+                }
+
+                destinationIndex--;
+            }
+
+            Count = totalCount;
+            _version++;
+        }
+        finally
+        {
+            ReturnBuffer(buffer);
+        }
+
+        static void ReturnBuffer(T[] buffer) => ArrayPool<T>.Shared.Return(buffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
     }
 
     public bool Remove(T item)
@@ -152,8 +250,8 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
     }
 
     public void CopyTo(T[] array) => CopyTo(array, 0);
-    public void CopyTo(Span<T> array) => _items.CopyTo(array);
-    public void CopyTo(Memory<T> array) => _items.CopyTo(array);
+    public void CopyTo(Span<T> array) => _items.AsSpan(0, Count).CopyTo(array);
+    public void CopyTo(Memory<T> array) => _items.AsMemory(0, Count).CopyTo(array);
 
     void ICollection.CopyTo(Array array, int arrayIndex)
     {
@@ -165,9 +263,9 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
             // Array.Copy will check for NULL.
             Array.Copy(_items, 0, array!, arrayIndex, Count);
         }
-        catch (ArrayTypeMismatchException)
+        catch (ArrayTypeMismatchException ex)
         {
-            throw new ArgumentException("Target array type is not compatible with the type of items in the collection.", nameof(array));
+            throw new ArgumentException("Target array type is not compatible with the type of items in the collection.", nameof(array), ex);
         }
     }
 
@@ -183,12 +281,21 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     public void CopyTo(int index, Span<T> array, int count)
     {
+        ValidateRange(index, count);
         _items.AsSpan(index, count).CopyTo(array);
     }
 
     public void CopyTo(int index, Memory<T> array, int count)
     {
+        ValidateRange(index, count);
         _items.AsMemory(index, count).CopyTo(array);
+    }
+
+    private void ValidateRange(int index, int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Count - index);
     }
 
     public void CopyTo(T[] array, int arrayIndex)

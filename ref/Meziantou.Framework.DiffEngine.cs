@@ -30,22 +30,22 @@ namespace Meziantou.Framework.DiffEngine
         SublimeMerge = 21,
         VisualStudioCode = 22,
         VisualStudio = 23,
-        Cursor = 24
+        Cursor = 24,
     }
 
     public static class DiffTools
     {
-        public static bool TryFindByName(Meziantou.Framework.DiffEngine.DiffTool tool, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.DiffEngine.ResolvedTool? resolvedTool) => throw null;
         public static bool TryFindByExtension(string extension, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.DiffEngine.ResolvedTool? resolvedTool) => throw null;
+        public static bool TryFindByName(Meziantou.Framework.DiffEngine.DiffTool tool, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.DiffEngine.ResolvedTool? resolvedTool) => throw null;
     }
 
     public sealed class ResolvedTool
     {
-        public string Name { get => throw null; }
-        public Meziantou.Framework.DiffEngine.DiffTool Tool { get => throw null; }
-        public string ExePath { get => throw null; }
-        public bool SupportsText { get => throw null; }
         public System.Collections.Generic.IReadOnlyCollection<string> BinaryExtensions { get => throw null; }
+        public string ExePath { get => throw null; }
+        public string Name { get => throw null; }
+        public bool SupportsText { get => throw null; }
+        public Meziantou.Framework.DiffEngine.DiffTool Tool { get => throw null; }
         public string GetArguments(string tempFile, string targetFile) => throw null;
     }
 }

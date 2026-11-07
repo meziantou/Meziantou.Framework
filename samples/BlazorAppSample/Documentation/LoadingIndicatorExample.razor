@@ -1,0 +1,18 @@
+<LoadingIndicator IsLoading="@(forecasts is null)">
+    <LoadingTemplate>
+        <p><em>Loading the forecasts...</em></p>
+    </LoadingTemplate>
+    <ChildContent>
+        <p>@forecasts!.Count forecasts</p>
+    </ChildContent>
+</LoadingIndicator>
+
+@code {
+    private List<string>? forecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(500); // Simulate a call to an API
+        forecasts = ["Sunny", "Cloudy"];
+    }
+}

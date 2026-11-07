@@ -1,0 +1,201 @@
+{
+  "navigation-timing/buffered-flag.window.js": {
+    "total": 1
+  },
+  "navigation-timing/content-encoding.https.html?pipe=gzip": {
+    "total": 1
+  },
+  "navigation-timing/dom-interactive-image-document.html": {
+    "total": 1
+  },
+  "navigation-timing/dom-interactive-media-document.html": {
+    "total": 1
+  },
+  "navigation-timing/idlharness.window.js": {
+    "total": 161,
+    "failures": {
+      "PerformanceNavigationTiming interface: attribute confidence": "FAIL",
+      "PerformanceNavigationTiming interface: attribute notRestoredReasons": "FAIL",
+      "PerformanceNavigationTiming interface: default toJSON operation on performance.getEntriesByType(\"navigation\")[0]": "FAIL",
+      "PerformanceNavigationTiming interface: performance.getEntriesByType(\"navigation\")[0] must inherit property \"confidence\" with the proper type": "FAIL",
+      "PerformanceNavigationTiming interface: performance.getEntriesByType(\"navigation\")[0] must inherit property \"notRestoredReasons\" with the proper type": "FAIL",
+      "PerformanceTimingConfidence interface object length": "FAIL",
+      "PerformanceTimingConfidence interface object name": "FAIL",
+      "PerformanceTimingConfidence interface: attribute randomizedTriggerRate": "FAIL",
+      "PerformanceTimingConfidence interface: attribute value": "FAIL",
+      "PerformanceTimingConfidence interface: existence and properties of interface object": "FAIL",
+      "PerformanceTimingConfidence interface: existence and properties of interface prototype object": "FAIL",
+      "PerformanceTimingConfidence interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PerformanceTimingConfidence interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PerformanceTimingConfidence interface: operation toJSON()": "FAIL"
+    }
+  },
+  "navigation-timing/nav2-test-attributes-exist.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-attributes-values.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-document-open.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-document-replaced.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-frame-removed.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-instance-accessible-from-the-start.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-instance-accessors.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-navigate-iframe.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-navigate-within-document.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-navigation-type-backforward.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-navigation-type-navigate.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-navigation-type-reload.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-redirect-chain-xserver-final-original-origin.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-redirect-chain-xserver-partial-opt-in.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-redirect-none.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-redirect-server.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-redirect-xserver.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-response-end-and-duration-before-during-and-after-load-event.html": {
+    "total": 1
+  },
+  "navigation-timing/nav2-test-timing-persistent.html": {
+    "total": 2
+  },
+  "navigation-timing/nav2-test-unique-nav-instances.html": {
+    "total": 1
+  },
+  "navigation-timing/navigation-type-post-backforward.html": {
+    "total": 1
+  },
+  "navigation-timing/nested-unload-timing.html": {
+    "total": 1
+  },
+  "navigation-timing/po-navigation.html": {
+    "total": 1
+  },
+  "navigation-timing/prefetch-transfer-size-executor.html": {
+    "total": 1,
+    "failures": {
+      "Navigation timing transfer size for a prefetched navigation should be 0.": "FAIL"
+    }
+  },
+  "navigation-timing/prefetch-transfer-size-iframe.html": {
+    "total": 1,
+    "failures": {
+      "Navigation timing transfer size for a prefetched navigation should be 0.": "FAIL"
+    }
+  },
+  "navigation-timing/redirect-tao.html": {
+    "total": 6
+  },
+  "navigation-timing/response-start-after-coop-bcg-switch.https.html": {
+    "total": 1,
+    "failures": {
+      "Navigation responseStart is not clamped to zero after a cross-origin COOP browsing context group switch": "FAIL"
+    }
+  },
+  "navigation-timing/secure-connection-start-non-zero.https.html": {
+    "total": 1
+  },
+  "navigation-timing/secure-connection-start-reuse.https.html": {
+    "total": 1
+  },
+  "navigation-timing/supported-navigation-type.window.js": {
+    "total": 2
+  },
+  "navigation-timing/test-document-onload.html": {
+    "total": 3
+  },
+  "navigation-timing/test-document-open.html": {
+    "total": 21
+  },
+  "navigation-timing/test-document-readiness-exist.html": {
+    "total": 3
+  },
+  "navigation-timing/test-navigate-within-document.html": {
+    "total": 22
+  },
+  "navigation-timing/test-navigation-attributes-exist.html": {
+    "total": 4
+  },
+  "navigation-timing/test-navigation-redirectCount-none.html": {
+    "total": 5
+  },
+  "navigation-timing/test-navigation-type-backforward.html": {
+    "total": 5
+  },
+  "navigation-timing/test-navigation-type-enums.html": {
+    "total": 10
+  },
+  "navigation-timing/test-navigation-type-reload.html": {
+    "total": 23
+  },
+  "navigation-timing/test-no-previous-document.html": {
+    "total": 5
+  },
+  "navigation-timing/test-performance-attributes-exist-in-object.html": {
+    "total": 3
+  },
+  "navigation-timing/test-performance-attributes-exist.html": {
+    "total": 3
+  },
+  "navigation-timing/test-performance-attributes.sub.html": {
+    "total": 1
+  },
+  "navigation-timing/test-readwrite.html": {
+    "total": 3
+  },
+  "navigation-timing/test-timing-attributes-dependent-on-document-load.html": {
+    "total": 1
+  },
+  "navigation-timing/test-timing-attributes-exist.html": {
+    "total": 22
+  },
+  "navigation-timing/test-timing-attributes-order.html": {
+    "total": 58
+  },
+  "navigation-timing/test-timing-client-redirect.html": {
+    "total": 7
+  },
+  "navigation-timing/test-timing-reload.html": {
+    "total": 19
+  },
+  "navigation-timing/test-timing-server-redirect.html": {
+    "total": 17
+  },
+  "navigation-timing/test-timing-xserver-redirect.html": {
+    "total": 7
+  },
+  "navigation-timing/test-unique-performance-objects.html": {
+    "total": 3
+  },
+  "navigation-timing/unload-event-same-origin-check.html": {
+    "total": 12
+  }
+}

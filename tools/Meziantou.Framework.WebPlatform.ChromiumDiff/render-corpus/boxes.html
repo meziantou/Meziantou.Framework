@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<title>Boxes</title>
+<style>
+  body { margin: 16px }
+  .row { display: flex; gap: 16px; margin-bottom: 16px }
+  .row > div { width: 120px; height: 80px; background: #4a90d9 }
+  .solid { border: 6px solid #222 }
+  .dashed { border: 6px dashed #c33 }
+  .dotted { border: 6px dotted #393 }
+  .double { border: 9px double #339 }
+  .groove { border: 8px groove #999 }
+  .ridge { border: 8px ridge #999 }
+  .inset { border: 8px inset #999 }
+  .outset { border: 8px outset #999 }
+  .radius { border-radius: 24px; border: 4px solid #222 }
+  .ellipse { border-radius: 50% / 30%; }
+  .mixed { border-width: 2px 8px 14px 4px; border-style: solid; border-color: red green blue orange; border-radius: 10px 30px }
+  .shadow { box-shadow: 6px 6px 10px rgba(0, 0, 0, .5) }
+  .inset-shadow { box-shadow: inset 0 0 16px 4px #013 }
+  .spread { box-shadow: 0 0 0 8px #fc0, 0 0 0 16px #f60 }
+  .outline { outline: 4px dashed #c0c; outline-offset: 4px }
+  .opacity { opacity: .5 }
+  .rotate { transform: rotate(8deg) }
+</style>
+<div class="row"><div class="solid"></div><div class="dashed"></div><div class="dotted"></div><div class="double"></div></div>
+<div class="row"><div class="groove"></div><div class="ridge"></div><div class="inset"></div><div class="outset"></div></div>
+<div class="row"><div class="radius"></div><div class="ellipse"></div><div class="mixed"></div><div class="outline"></div></div>
+<div class="row"><div class="shadow"></div><div class="inset-shadow"></div><div class="spread"></div><div class="opacity"></div><div class="rotate"></div></div>

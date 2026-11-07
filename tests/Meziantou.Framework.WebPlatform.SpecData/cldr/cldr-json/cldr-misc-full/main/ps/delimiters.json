@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ps": {
+      "identity": {
+        "language": "ps"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

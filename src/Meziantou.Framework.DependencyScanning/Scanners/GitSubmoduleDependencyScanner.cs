@@ -1,16 +1,19 @@
-using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Diagnostics;
+using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans Git .gitmodules files for submodule references.</summary>
+/// <summary>
+/// Scans Git .gitmodules files for submodule references. The dependency name is the <c>url</c> as written in .gitmodules, and the version is the
+/// commit recorded in the git index, or <see langword="null"/> when the index cannot be read. The submodule <c>name</c>, <c>path</c> and <c>branch</c>,
+/// and the <c>url</c> resolved against <c>remote.origin.url</c> when it is relative, are available in <see cref="Dependency.Metadata"/>.
+/// </summary>
 public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 {
-    private const uint GitLinkMode = 0xE000;
-    private const ushort ExtendedFlagsMask = 0x4000;
     private const string GitDirectoryPrefix = "gitdir:";
+    private static readonly char[] DirectorySeparators = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
 
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.GitReference];
 
@@ -19,357 +22,200 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         return context.HasFileName(".gitmodules", ignoreCase: false);
     }
 
-    public override ValueTask ScanAsync(ScanFileContext context)
+    public override async ValueTask ScanAsync(ScanFileContext context)
     {
         var repositoryDirectory = Path.GetDirectoryName(context.FullPath);
         if (string.IsNullOrEmpty(repositoryDirectory))
-        {
-            return ValueTask.CompletedTask;
-        }
+            return;
 
-        var submodules = ParseGitModules(context);
+        var submodules = await ParseGitModulesAsync(context).ConfigureAwait(false);
         if (submodules.Count is 0)
-        {
-            return ValueTask.CompletedTask;
-        }
+            return;
 
-        if (!TryGetGitDirectory(repositoryDirectory, out var gitDirectory))
-        {
-            return ValueTask.CompletedTask;
-        }
+        var (gitDirectory, gitLinks) = await ReadRepositoryGitLinksAsync(context.FileSystem, repositoryDirectory, context.CancellationToken).ConfigureAwait(false);
 
-        if (!TryReadGitLinks(gitDirectory, out var gitLinks))
+        string? remoteUrl = null;
+        if (submodules.Exists(submodule => IsRelativeUrl(submodule.Url)))
         {
-            return ValueTask.CompletedTask;
+            remoteUrl = await GetOriginUrlAsync(context.FileSystem, gitDirectory, context.CancellationToken).ConfigureAwait(false);
         }
 
         foreach (var submodule in submodules)
         {
-            if (!gitLinks.TryGetValue(submodule.Path, out var sha))
+            // Without a readable index (a source archive, a clone made with --no-checkout), the commit is unknown
+            string? sha = null;
+            if (gitLinks is not null && !gitLinks.TryGetValue(submodule.Path, out sha))
                 continue;
 
+            var url = IsRelativeUrl(submodule.Url) ? ResolveRelativeUrl(remoteUrl, submodule.Url) : submodule.Url;
             context.ReportDependency(this, submodule.Url, sha, DependencyType.GitReference,
                 nameLocation: new NonUpdatableLocation(context),
-                versionLocation: new GitSubmoduleVersionLocation(context.FileSystem, context.FullPath, repositoryDirectory, gitDirectory, submodule.Path));
+                versionLocation: sha is null ? null : new GitSubmoduleVersionLocation(context.FileSystem, context.FullPath, repositoryDirectory, gitDirectory, submodule.Path),
+                tags: [],
+                metadata: [
+                    KeyValuePair.Create<string, object?>("name", submodule.Name),
+                    KeyValuePair.Create<string, object?>("path", submodule.Path),
+                    KeyValuePair.Create<string, object?>("branch", submodule.Branch),
+                    KeyValuePair.Create<string, object?>("url", url),
+                ]);
         }
-
-        return ValueTask.CompletedTask;
     }
 
-    private static List<SubmoduleEntry> ParseGitModules(ScanFileContext context)
+    private static async ValueTask<List<SubmoduleEntry>> ParseGitModulesAsync(ScanFileContext context)
     {
-        var result = new List<SubmoduleEntry>();
+        using var reader = new StreamReader(context.Content, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+        var text = await reader.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
 
-        using var reader = new StreamReader(context.Content, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        string? path = null;
-        string? url = null;
-        var inSubmoduleSection = false;
-
-        while (reader.ReadLine() is { } line)
+        // Entries are grouped by submodule name, as git does, so a submodule can be split across several sections
+        var submodules = new List<(string Name, string? Path, string? Url, string? Branch)>();
+        foreach (var entry in GitConfigParser.Parse(text))
         {
-            var trimmedLine = line.Trim();
-            if (trimmedLine.Length is 0 || trimmedLine[0] is '#' or ';')
+            if (entry is not { Section: "submodule", Subsection: { } name, Value: { } value })
                 continue;
 
-            if (TryGetSection(trimmedLine, out var isSubmoduleSection))
+            var index = submodules.FindIndex(item => item.Name == name);
+            if (index < 0)
             {
-                AddCurrentEntryIfValid(result, inSubmoduleSection, path, url);
-                inSubmoduleSection = isSubmoduleSection;
-                path = null;
-                url = null;
-                continue;
+                index = submodules.Count;
+                submodules.Add((name, null, null, null));
             }
 
-            if (!inSubmoduleSection || !TryParseAssignment(trimmedLine, out var key, out var value))
-                continue;
+            submodules[index] = entry.Key switch
+            {
+                "path" => submodules[index] with { Path = GitIndexReader.NormalizeGitPath(value) },
+                "url" => submodules[index] with { Url = value },
+                "branch" => submodules[index] with { Branch = value },
+                _ => submodules[index],
+            };
+        }
 
-            if (key.Equals("path", StringComparison.OrdinalIgnoreCase))
+        var result = new List<SubmoduleEntry>(submodules.Count);
+        foreach (var submodule in submodules)
+        {
+            if (!string.IsNullOrEmpty(submodule.Path) && !string.IsNullOrEmpty(submodule.Url))
             {
-                path = NormalizeGitPath(Unquote(value));
-            }
-            else if (key.Equals("url", StringComparison.OrdinalIgnoreCase))
-            {
-                url = Unquote(value);
+                result.Add(new SubmoduleEntry(submodule.Name, submodule.Path, submodule.Url, submodule.Branch));
             }
         }
 
-        AddCurrentEntryIfValid(result, inSubmoduleSection, path, url);
         return result;
     }
 
-    private static void AddCurrentEntryIfValid(List<SubmoduleEntry> submodules, bool inSubmoduleSection, string? path, string? url)
+    private static async ValueTask<(string GitDirectory, Dictionary<string, string>? GitLinks)> ReadRepositoryGitLinksAsync(IFileSystem fileSystem, string repositoryDirectory, CancellationToken cancellationToken)
     {
-        if (!inSubmoduleSection || string.IsNullOrEmpty(path) || string.IsNullOrEmpty(url))
-            return;
-
-        submodules.Add(new SubmoduleEntry(path, url));
-    }
-
-    private static bool TryGetSection(string line, out bool isSubmoduleSection)
-    {
-        isSubmoduleSection = false;
-        if (!line.StartsWith('[', StringComparison.Ordinal) || !line.EndsWith(']', StringComparison.Ordinal))
-            return false;
-
-        var section = line[1..^1].Trim();
-        if (section.Length is 0)
-            return true;
-
-        var separatorIndex = section.IndexOfAny([' ', '"']);
-        var sectionName = separatorIndex < 0 ? section : section[..separatorIndex];
-        isSubmoduleSection = sectionName.Equals("submodule", StringComparison.OrdinalIgnoreCase);
-        return true;
-    }
-
-    private static bool TryParseAssignment(string line, out string key, out string value)
-    {
-        var equalIndex = line.IndexOf('=', StringComparison.Ordinal);
-        if (equalIndex < 0)
-        {
-            key = "";
-            value = "";
-            return false;
-        }
-
-        key = line[..equalIndex].Trim();
-        value = line[(equalIndex + 1)..].Trim();
-        return key.Length > 0;
-    }
-
-    private static string Unquote(string value)
-    {
-        string unquotedValue;
-        if (value.Length >= 2 && value[0] is '"' && value[^1] is '"')
-        {
-            unquotedValue = value[1..^1];
-        }
-        else
-        {
-            unquotedValue = value;
-        }
-
-        return UnescapeGitConfigValue(unquotedValue);
-    }
-
-    private static string UnescapeGitConfigValue(string value)
-    {
-        if (value.AsSpan().IndexOf('\\') < 0)
-            return value;
-
-        var builder = new System.Text.StringBuilder(value.Length);
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (value[i] is not '\\' || i == value.Length - 1)
-            {
-                builder.Append(value[i]);
-                continue;
-            }
-
-            i++;
-            switch (value[i])
-            {
-                case '\\':
-                    builder.Append('\\');
-                    break;
-                case '"':
-                    builder.Append('"');
-                    break;
-                case 'n':
-                    builder.Append('\n');
-                    break;
-                case 't':
-                    builder.Append('\t');
-                    break;
-                case 'b':
-                    builder.Append('\b');
-                    break;
-                default:
-                    builder.Append('\\');
-                    builder.Append(value[i]);
-                    break;
-            }
-        }
-
-        return builder.ToString();
-    }
-
-    private static string NormalizeGitPath(string path)
-    {
-        var normalizedPath = path.Replace('\\', '/');
-        while (normalizedPath.StartsWith("./", StringComparison.Ordinal))
-        {
-            normalizedPath = normalizedPath[2..];
-        }
-
-        return normalizedPath.TrimEnd('/');
-    }
-
-    private static bool TryGetGitDirectory(string repositoryDirectory, out string gitDirectory)
-    {
+        // IFileSystem cannot tell whether .git is a directory, so try it as a directory first (the index is inside),
+        // then as a file containing "gitdir: <path>" (worktrees and submodules)
         var dotGitPath = Path.Combine(repositoryDirectory, ".git");
-        if (Directory.Exists(dotGitPath))
-        {
-            gitDirectory = Path.GetFullPath(dotGitPath);
-            return true;
-        }
+        var gitLinks = await GitIndexReader.ReadGitLinksAsync(fileSystem, dotGitPath, cancellationToken).ConfigureAwait(false);
+        if (gitLinks is not null)
+            return (dotGitPath, gitLinks);
 
-        return TryGetGitDirectoryFromFile(dotGitPath, out gitDirectory);
+        var gitDirectory = await GetGitDirectoryFromFileAsync(fileSystem, dotGitPath, cancellationToken).ConfigureAwait(false);
+        if (gitDirectory is null)
+            return (dotGitPath, null);
+
+        gitLinks = await GitIndexReader.ReadGitLinksAsync(fileSystem, gitDirectory, cancellationToken).ConfigureAwait(false);
+        return (gitDirectory, gitLinks);
     }
 
-    private static bool TryGetGitDirectoryFromFile(string dotGitPath, out string gitDirectory)
+    private static async ValueTask<string?> GetOriginUrlAsync(IFileSystem fileSystem, string gitDirectory, CancellationToken cancellationToken)
     {
-        if (!File.Exists(dotGitPath))
-        {
-            gitDirectory = "";
-            return false;
-        }
+        var commonDirectory = await GitFileSystemUtilities.GetCommonDirectoryAsync(fileSystem, gitDirectory, cancellationToken).ConfigureAwait(false);
+        if (commonDirectory is null)
+            return null;
 
-        try
+        var config = await GitFileSystemUtilities.TryReadAllTextAsync(fileSystem, Path.Combine(commonDirectory, "config"), cancellationToken).ConfigureAwait(false);
+        if (config is null)
+            return null;
+
+        string? result = null;
+        foreach (var entry in GitConfigParser.Parse(config))
         {
-            using var reader = File.OpenText(dotGitPath);
-            var dotGitContent = reader.ReadLine()?.TrimStart('\uFEFF').Trim();
-            if (string.IsNullOrEmpty(dotGitContent) || !dotGitContent.StartsWith(GitDirectoryPrefix, StringComparison.OrdinalIgnoreCase))
+            if (entry is { Section: "remote", Subsection: "origin", Key: "url", Value: { Length: > 0 } url })
             {
-                gitDirectory = "";
-                return false;
+                // git uses the first url of a remote to fetch
+                result ??= url;
             }
+        }
 
-            var relativeGitDirectory = dotGitContent[GitDirectoryPrefix.Length..].Trim();
-            var dotGitDirectory = Path.GetDirectoryName(dotGitPath);
-            if (string.IsNullOrEmpty(relativeGitDirectory) || string.IsNullOrEmpty(dotGitDirectory))
-            {
-                gitDirectory = "";
-                return false;
-            }
-
-            gitDirectory = Path.IsPathRooted(relativeGitDirectory)
-                ? Path.GetFullPath(relativeGitDirectory)
-                : Path.GetFullPath(Path.Combine(dotGitDirectory, relativeGitDirectory));
-            return Directory.Exists(gitDirectory);
-        }
-        catch (IOException)
-        {
-            gitDirectory = "";
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            gitDirectory = "";
-            return false;
-        }
+        return result;
     }
 
-    private static bool TryReadGitLinks(string gitDirectory, out Dictionary<string, string> result)
+    private static bool IsRelativeUrl(string url) => url.StartsWith("./", StringComparison.Ordinal) || url.StartsWith("../", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Resolves a url relative to the url of the superproject, following git's <c>relative_url</c>: each <c>../</c> removes
+    /// the last path component of the remote url, or its <c>host:</c> path for a scp-like url.
+    /// Returns <see langword="null"/> when there is no remote url, or when it is itself a relative path.
+    /// </summary>
+    private static string? ResolveRelativeUrl(string? remoteUrl, string url)
     {
-        var indexPath = Path.Combine(gitDirectory, "index");
-        if (!File.Exists(indexPath))
+        if (string.IsNullOrEmpty(remoteUrl))
+            return null;
+
+        remoteUrl = remoteUrl.TrimEnd('/');
+        if (!remoteUrl.Contains("://", StringComparison.Ordinal) && !Path.IsPathRooted(remoteUrl) && !IsScpLikeUrl(remoteUrl))
+            return null;
+
+        var useColonSeparator = false;
+        while (true)
         {
-            result = [];
-            return false;
+            if (url.StartsWith("../", StringComparison.Ordinal))
+            {
+                url = url[3..];
+                var slashIndex = remoteUrl.LastIndexOfAny(DirectorySeparators);
+                var schemeIndex = remoteUrl.IndexOf("://", StringComparison.Ordinal);
+                if (slashIndex >= 0 && (schemeIndex < 0 || slashIndex > schemeIndex + 2))
+                {
+                    remoteUrl = remoteUrl[..slashIndex];
+                }
+                else if (!useColonSeparator && remoteUrl.LastIndexOf(':', StringComparison.Ordinal) is var colonIndex and >= 0 && schemeIndex < 0)
+                {
+                    remoteUrl = remoteUrl[..colonIndex];
+                    useColonSeparator = true;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else if (url.StartsWith("./", StringComparison.Ordinal))
+            {
+                url = url[2..];
+            }
+            else
+            {
+                break;
+            }
         }
 
-        try
+        return remoteUrl + (useColonSeparator ? ":" : "/") + url.TrimEnd('/');
+
+        // [user@]host:path
+        static bool IsScpLikeUrl(string url)
         {
-            using var stream = File.OpenRead(indexPath);
-
-            Span<byte> header = stackalloc byte[12];
-            if (!TryReadExactly(stream, header))
-            {
-                result = [];
-                return false;
-            }
-
-            if (!header[..4].SequenceEqual("DIRC"u8))
-            {
-                result = [];
-                return false;
-            }
-
-            var version = BinaryPrimitives.ReadUInt32BigEndian(header[4..8]);
-            if (version is not 2 and not 3)
-            {
-                result = [];
-                return false;
-            }
-
-            var entryCount = BinaryPrimitives.ReadUInt32BigEndian(header[8..12]);
-            result = new Dictionary<string, string>(StringComparer.Ordinal);
-
-            Span<byte> entryHeader = stackalloc byte[62];
-            Span<byte> extendedFlagsBuffer = stackalloc byte[2];
-            Span<byte> paddingBuffer = stackalloc byte[8];
-            for (uint i = 0; i < entryCount; i++)
-            {
-                var entryStart = stream.Position;
-                if (!TryReadExactly(stream, entryHeader))
-                {
-                    result = [];
-                    return false;
-                }
-
-                var mode = BinaryPrimitives.ReadUInt32BigEndian(entryHeader[24..28]);
-                var flags = BinaryPrimitives.ReadUInt16BigEndian(entryHeader[60..62]);
-                if ((flags & ExtendedFlagsMask) != 0)
-                {
-                    if (!TryReadExactly(stream, extendedFlagsBuffer))
-                    {
-                        result = [];
-                        return false;
-                    }
-                }
-
-                var pathBytes = new List<byte>(64);
-                while (true)
-                {
-                    var value = stream.ReadByte();
-                    if (value < 0)
-                    {
-                        result = [];
-                        return false;
-                    }
-
-                    if (value is 0)
-                        break;
-
-                    pathBytes.Add((byte)value);
-                }
-
-                var consumedBytes = checked((int)(stream.Position - entryStart));
-                var paddingByteCount = (8 - (consumedBytes % 8)) % 8;
-                if (paddingByteCount > 0)
-                {
-                    if (!TryReadExactly(stream, paddingBuffer[..paddingByteCount]))
-                    {
-                        result = [];
-                        return false;
-                    }
-                }
-
-                if (mode != GitLinkMode)
-                    continue;
-
-                var path = NormalizeGitPath(System.Text.Encoding.UTF8.GetString(pathBytes.ToArray()));
-                var sha = Convert.ToHexString(entryHeader[40..60]).ToLowerInvariant();
-                result[path] = sha;
-            }
-
-            return true;
-        }
-        catch (IOException)
-        {
-            result = [];
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            result = [];
-            return false;
+            var colonIndex = url.IndexOf(':', StringComparison.Ordinal);
+            return colonIndex > 1 && url.IndexOf('/', StringComparison.Ordinal) is var slashIndex && (slashIndex < 0 || slashIndex > colonIndex);
         }
     }
 
-    private static bool TryReadExactly(Stream stream, Span<byte> buffer)
+    private static async ValueTask<string?> GetGitDirectoryFromFileAsync(IFileSystem fileSystem, string dotGitPath, CancellationToken cancellationToken)
     {
-        return stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false) == buffer.Length;
+        var content = await GitFileSystemUtilities.TryReadAllTextAsync(fileSystem, dotGitPath, cancellationToken).ConfigureAwait(false);
+        if (content is null)
+            return null;
+
+        var newLineIndex = content.AsSpan().IndexOfAny('\r', '\n');
+        var dotGitContent = (newLineIndex < 0 ? content : content[..newLineIndex]).Trim();
+        if (!dotGitContent.StartsWith(GitDirectoryPrefix, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var relativeGitDirectory = dotGitContent[GitDirectoryPrefix.Length..].Trim();
+        var dotGitDirectory = Path.GetDirectoryName(dotGitPath);
+        if (string.IsNullOrEmpty(relativeGitDirectory) || string.IsNullOrEmpty(dotGitDirectory))
+            return null;
+
+        return GitFileSystemUtilities.TryResolvePath(dotGitDirectory, relativeGitDirectory, out var gitDirectory) ? gitDirectory : null;
     }
 
     private sealed class GitSubmoduleVersionLocation : Location
@@ -395,7 +241,8 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
             if (oldValue is not null)
             {
-                if (!TryReadGitLinks(_gitDirectory, out var gitLinks) || !gitLinks.TryGetValue(_submodulePath, out var currentValue))
+                var gitLinks = await GitIndexReader.ReadGitLinksAsync(FileSystem, _gitDirectory, cancellationToken).ConfigureAwait(false);
+                if (gitLinks is null || !gitLinks.TryGetValue(_submodulePath, out var currentValue))
                     throw new DependencyScannerException($"Submodule '{_submodulePath}' was not found in the git index.");
 
                 if (!string.Equals(currentValue, oldValue, StringComparison.OrdinalIgnoreCase))
@@ -427,19 +274,15 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
     {
         try
         {
-            var startInfo = new ProcessStartInfo(processName)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-            startInfo.ArgumentList.Add("--version");
-
-            using var process = Process.Start(startInfo);
+            using var process = StartGitProcess(processName, workingDirectory: null, ["--version"]);
             if (process is null)
                 return false;
 
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            var standardOutputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var errorOutputTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            await WaitForExitOrKillAsync(process, cancellationToken).ConfigureAwait(false);
+            await standardOutputTask.ConfigureAwait(false);
+            await errorOutputTask.ConfigureAwait(false);
             return process.ExitCode == 0;
         }
         catch (Win32Exception)
@@ -450,24 +293,11 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
     private static async Task RunGitCommandAsync(string processName, string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
-        var startInfo = new ProcessStartInfo(processName)
-        {
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
-
-        using var process = Process.Start(startInfo) ?? throw new DependencyScannerException($"Cannot start process '{processName}'.");
+        using var process = StartGitProcess(processName, workingDirectory, arguments) ?? throw new DependencyScannerException($"Cannot start process '{processName}'.");
 
         var standardOutputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var errorOutputTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        await WaitForExitOrKillAsync(process, cancellationToken).ConfigureAwait(false);
         await standardOutputTask.ConfigureAwait(false);
         var errorOutput = await errorOutputTask.ConfigureAwait(false);
 
@@ -477,5 +307,60 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         }
     }
 
-    private readonly record struct SubmoduleEntry(string Path, string Url);
+    private static Process? StartGitProcess(string processName, string? workingDirectory, IReadOnlyList<string> arguments)
+    {
+        var startInfo = new ProcessStartInfo(processName)
+        {
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+
+        if (workingDirectory is not null)
+        {
+            startInfo.WorkingDirectory = workingDirectory;
+        }
+
+        // Never wait for credentials: there is nobody to answer the prompt
+        startInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        startInfo.Environment["GCM_INTERACTIVE"] = "never";
+
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        var process = Process.Start(startInfo);
+        process?.StandardInput.Close();
+        return process;
+    }
+
+    private static async Task WaitForExitOrKillAsync(Process process, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Otherwise the orphaned git process keeps running and may hold index.lock
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch (InvalidOperationException)
+            {
+                // The process has already exited
+            }
+            catch (Win32Exception)
+            {
+                // The process is exiting or cannot be terminated
+            }
+
+            throw;
+        }
+    }
+
+    private readonly record struct SubmoduleEntry(string Name, string Path, string Url, string? Branch);
 }

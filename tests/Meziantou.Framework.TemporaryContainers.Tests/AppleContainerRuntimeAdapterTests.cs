@@ -18,7 +18,8 @@ public sealed class AppleContainerRuntimeAdapterTests
         Assert.Equal("delete --force abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
         Assert.Equal("copy src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
         Assert.Equal("copy abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
-        Assert.Equal("logs --follow abc", string.Join(' ', runtime.BuildLogsArguments("abc")));
+        Assert.Equal("logs --follow abc", string.Join(' ', runtime.BuildLogsArguments("abc", new ContainerLogsOptions())));
+        Assert.Equal("ls -q", string.Join(' ', runtime.BuildProbeArguments()));
     }
 
     [Fact]
@@ -33,9 +34,52 @@ public sealed class AppleContainerRuntimeAdapterTests
 
         Assert.Equal("create", args[0]);
         Assert.Contains("--publish", args);
-        Assert.Contains("9090:8080", args);
+
+        // The runtime publishes on every interface unless it is told otherwise.
+        Assert.Contains("127.0.0.1:9090:8080", args);
         Assert.Contains("A=1", args);
         Assert.Contains("nginx", args);
+    }
+
+    [Fact]
+    public void BuildCreateMapsMountsAndResources()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Resources.ReadOnlyRootFilesystem = true;
+        definition.Network.Network = "my-network";
+        definition.Mounts.AddBindMount("/host", "/container", readOnly: true);
+        definition.Mounts.AddVolume("data", "/var/lib/data");
+        definition.Mounts.AddVolume("config", "/etc/app", readOnly: true);
+        definition.Mounts.AddTmpfs("/scratch");
+
+        var args = runtime.BuildCreateArguments(definition, "nginx");
+
+        Assert.Contains("--read-only", args);
+        Assert.Contains("--network", args);
+        Assert.Contains("my-network", args);
+        Assert.Contains("type=bind,source=/host,target=/container,readonly", args);
+        Assert.Contains("type=volume,source=data,target=/var/lib/data", args);
+        Assert.Contains("type=volume,source=config,target=/etc/app,readonly", args);
+        Assert.Contains("--tmpfs", args);
+        Assert.Contains("/scratch", args);
+    }
+
+    [Fact]
+    public void BuildsVolumeArguments()
+    {
+        var runtime = CreateRuntime();
+        var definition = new VolumeDefinition();
+        definition.Labels.Add("owner", "meziantou");
+        definition.DriverOptions.Add("size", "10m");
+
+        // The library also stamps the labels that identify the run, whose values change from one run to the next.
+        var createArguments = string.Join(' ', runtime.BuildCreateVolumeArguments(definition, "my-volume"));
+        Assert.StartsWith("volume create --label owner=meziantou --label ", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Managed}=1", createArguments);
+        Assert.EndsWith("--opt size=10m my-volume", createArguments);
+        Assert.Equal("volume delete my-volume", string.Join(' ', runtime.BuildDeleteVolumeArguments("my-volume")));
+        Assert.Equal("volume inspect my-volume", string.Join(' ', runtime.BuildVolumeExistsArguments("my-volume")));
     }
 
     [Fact]
@@ -43,20 +87,125 @@ public sealed class AppleContainerRuntimeAdapterTests
     {
         var runtime = CreateRuntime();
 
-        var readOnly = new ContainerDefinition(new RegistryImage("nginx"));
-        readOnly.Resources.ReadOnlyRootFilesystem = true;
-        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(readOnly, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { Privileged = true }, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { Healthcheck = ContainerHealthcheck.Disabled }, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { StopTimeout = TimeSpan.FromSeconds(1) }, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { StopSignal = "SIGINT" }, "nginx"));
+
+        var extraHost = new ContainerDefinition(new RegistryImage("nginx"));
+        extraHost.ExtraHosts.Add(ContainerExtraHost.ForHostGateway());
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(extraHost, "nginx"));
+
+        var exposed = new ContainerDefinition(new RegistryImage("nginx"));
+        exposed.ExposedPorts.Add(new ContainerExposedPort(80));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(exposed, "nginx"));
 
         var tmpfs = new ContainerDefinition(new RegistryImage("nginx"));
-        tmpfs.Mounts.AddTmpfs("/tmp");
+        tmpfs.Mounts.AddTmpfs("/scratch", size: 1024);
         Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(tmpfs, "nginx"));
 
+        // Apple's parser splits the mount descriptor on ',' without honouring quotes.
+        var comma = new ContainerDefinition(new RegistryImage("nginx"));
+        comma.Mounts.AddBindMount("/host/a,b", "/container");
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(comma, "nginx"));
+
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateVolumeArguments(new VolumeDefinition { Driver = "local" }, "my-volume"));
         Assert.Throws<NotSupportedException>(() => runtime.BuildPauseArguments("abc"));
         Assert.Throws<NotSupportedException>(() => runtime.BuildRestartArguments("abc"));
+
+        // The runtime names the container after its id and has no hostname option: ignoring it would give the service a
+        // different hostname than on the other runtimes.
+        var hostname = new ContainerDefinition(new RegistryImage("nginx")) { Hostname = "db" };
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(hostname, "nginx"));
     }
 
     [Fact]
-    public void ResolvesPortMapFromDefinition()
+    public void BuildCreateUsesTheNameBeforeTheReuseIdentifier()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx")) { Name = "my-name", ReuseId = "my-reuse-id" };
+
+        var args = runtime.BuildCreateArguments(definition, "nginx");
+
+        Assert.Equal("my-name", args[args.ToList().IndexOf("--name") + 1]);
+    }
+
+    [Fact]
+    public void BuildCreatePublishesTheAllocatedHostPorts()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Ports.Add(8080);
+        definition.Ports.Add(15432, 5432);
+
+        runtime.PrepareDefinitionForCreate(definition);
+        var args = runtime.BuildCreateArguments(definition, "nginx");
+
+        // The random port is picked by the library, and the definition keeps asking for a random one.
+        var allocated = definition.AllocatedHostPorts[8080];
+        Assert.Contains($"127.0.0.1:{allocated}:8080", args);
+        Assert.Contains("127.0.0.1:15432:5432", args);
+        Assert.Null(definition.Ports.First(port => port.Port == 8080).HostPort);
+        Assert.Equal(allocated, runtime.ResolvePortMap(new ContainerInfo { Id = "id", Name = "id" }, definition)[8080]);
+    }
+
+    [Fact]
+    public void BuildLogsArgumentsCanStopAtTheCurrentEnd()
+    {
+        Assert.Equal("logs abc", string.Join(' ', CreateRuntime().BuildLogsArguments("abc", new ContainerLogsOptions { Follow = false })));
+    }
+
+    [Fact]
+    public void BuildLogsArgumentsMapsTheTail()
+    {
+        Assert.Equal("logs --follow -n 5 abc", string.Join(' ', CreateRuntime().BuildLogsArguments("abc", new ContainerLogsOptions { Tail = 5 })));
+    }
+
+    [Fact]
+    public async Task GetLogsAsyncRefusesATimeRange()
+    {
+        // The CLI records no timestamps, so returning the whole log would silently ignore the range.
+        var runtime = CreateRuntime();
+
+        await Assert.ThrowsAsync<NotSupportedException>(async () =>
+        {
+            await foreach (var entry in runtime.GetLogsAsync("abc", new ContainerLogsOptions { Since = DateTimeOffset.UnixEpoch }, XunitCancellationToken))
+                _ = entry;
+        });
+    }
+
+    [Fact]
+    public void ParseInspectReadsTheEnvironment()
+    {
+        var info = CreateRuntime().ParseInspect("""
+            [{
+              "id": "meziantou-tc-app",
+              "status": { "state": "running" },
+              "configuration": { "id": "meziantou-tc-app", "initProcess": { "environment": ["PATH=/bin", "PASSWORD=a=b"] } }
+            }]
+            """);
+
+        Assert.Equal("a=b", info.Environment["PASSWORD"]);
+    }
+
+    [Fact]
+    public void ParseManagedImagesOnlyReportsTheImagesThisLibraryBuilt()
+    {
+        var output = """
+            [
+              {"configuration":{"name":"docker.io/library/busybox:1.37"},"id":"1","variants":[{"config":{"config":{"Cmd":["sh"]}}}]},
+              {"configuration":{"name":"meziantou-tc/abc:latest"},"id":"2","variants":[{"config":{"config":{"Labels":{"meziantou.tc.managed":"1","meziantou.tc.session":"s"}}}}]}
+            ]
+            """;
+
+        var image = Assert.Single(AppleContainerRuntime.ParseManagedImages(output));
+
+        Assert.Equal("meziantou-tc/abc:latest", image.Id);
+        Assert.Equal("s", image.Labels[ResourceLabels.SessionId]);
+    }
+
+    [Fact]
+    public void ResolvesPortMapFromDefinitionWhenTheRuntimeReportsNoBinding()
     {
         var runtime = CreateRuntime();
         var definition = new ContainerDefinition(new RegistryImage("nginx"));
@@ -68,5 +217,87 @@ public sealed class AppleContainerRuntimeAdapterTests
 
         Assert.Equal(8080, map[8080]);
         Assert.Equal(15432, map[5432]);
+    }
+
+    [Fact]
+    public void ResolvesPortMapFromInspectWhenAvailable()
+    {
+        var runtime = CreateRuntime();
+
+        // A container adopted through ReuseId: the definition asks for one mapping, the runtime reports another.
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Ports.Add(53437, 8080);
+
+        var info = runtime.ParseInspect("""
+            [{
+              "id": "meziantou-tc-app",
+              "status": { "state": "running" },
+              "configuration": {
+                "id": "meziantou-tc-app",
+                "labels": { "meziantou.tc.reuse": "app" },
+                "publishedPorts": [
+                  { "containerPort": 8080, "hostPort": 53432, "proto": "tcp" }
+                ]
+              }
+            }]
+            """);
+
+        Assert.Equal(53432, info.Ports[8080]);
+        Assert.Equal("app", info.Labels["meziantou.tc.reuse"]);
+        Assert.Equal(53432, runtime.ResolvePortMap(info, definition)[8080]);
+    }
+
+    [Fact]
+    public void BuildsTheExecOptions()
+    {
+        var runtime = CreateRuntime();
+        var options = new ExecOptions { Tty = true, Detach = true };
+        options.Command.Add("ls");
+
+        Assert.Equal("exec -t -d abc ls", string.Join(' ', runtime.BuildExecArguments("abc", options)));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildExecArguments("abc", new ExecOptions { Privileged = true }));
+    }
+
+    [Fact]
+    public void BuildCreatePassesTheSupportedCreationOptions()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Resources.SharedMemorySize = 64 * 1024 * 1024;
+        definition.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1024, 2048));
+        definition.CapAdd.Add("CAP_NET_RAW");
+        definition.CapDrop.Add("ALL");
+        definition.Ports.Add(new ContainerPort(5353, 53) { Protocol = ContainerPortProtocol.Udp });
+        definition.Network.Alias = "web";
+        definition.Network.Add("second", "a", "b");
+        definition.AdditionalCreateArguments.Add("--init");
+
+        var args = string.Join(' ', runtime.BuildCreateArguments(definition, "nginx"));
+
+        Assert.Contains(" --network default,alias=web --network second,alias=a,alias=b ", args);
+        Assert.Contains(" --shm-size 64M ", args);
+        Assert.Contains(" --ulimit nofile=1024:2048 ", args);
+        Assert.Contains(" --cap-add CAP_NET_RAW --cap-drop ALL ", args);
+        Assert.Contains(" --publish 127.0.0.1:5353:53/udp ", args);
+        Assert.EndsWith(" --init nginx", args);
+        Assert.Empty(runtime.GetNetworksToConnectAfterCreate(definition));
+    }
+
+    [Fact]
+    public void BuildsNetworkArguments()
+    {
+        var runtime = CreateRuntime();
+
+        var createArguments = string.Join(' ', runtime.BuildCreateNetworkArguments(new NetworkDefinition { Internal = true }, "my-network", "instance"));
+        Assert.StartsWith("network create --internal --label ", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Instance}=instance", createArguments);
+        Assert.EndsWith(" my-network", createArguments);
+        Assert.Equal("network delete my-network", string.Join(' ', runtime.BuildDeleteNetworkArguments("my-network")));
+        Assert.Equal("network inspect my-network", string.Join(' ', runtime.BuildNetworkInspectArguments("my-network")));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateNetworkArguments(new NetworkDefinition { Driver = "bridge" }, "my-network"));
+
+        const string Output = """[{"configuration":{"labels":{"meziantou.tc.managed":"1"},"name":"my-network"},"id":"my-network","status":{}}]""";
+        Assert.Equal("1", runtime.ParseNetworkLabels(Output)![ResourceLabels.Managed]);
+        Assert.Equal("my-network", Assert.Single(AppleContainerRuntime.ParseManagedResources(Output)).Id);
     }
 }

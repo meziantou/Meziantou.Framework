@@ -1,14 +1,191 @@
 # Meziantou.Extensions.Logging.FileLogger
 
-```c#
-using Microsoft.Extensions.Logging;
+An `ILogger` implementation that writes to a file. The messages are queued and written by a background thread, so logging doesn't block the application.
 
-var logsDirectory = Path.Combine(Path.GetTempPath(), "logs");
-using var provider = new FileLoggerProvider(logsDirectory);
+## Usage
+
+The types are in the `Meziantou.Extensions.Logging` namespace, and `LoggerFactory` is in `Microsoft.Extensions.Logging`.
+
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var logsDirectory = Directory.CreateTempSubdirectory("logs").FullName;
+await using var provider = new FileLoggerProvider(logsDirectory);
 
 using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(provider));
 var logger = loggerFactory.CreateLogger("Sample");
 
 logger.LogInformation("Hello from file logger");
-Console.WriteLine($"Log file: {provider.LogFilePath}");
+
+// Wait for the background thread to write the pending messages
+await provider.FlushAsync();
+
+var logFilePath = provider.LogFilePath;
+Assert.NotNull(logFilePath);
+Assert.StartsWith(logsDirectory, logFilePath);
 ```
+<!-- endref -->
+
+## Dependency Injection
+
+`AddFile` registers the provider on the `ILoggingBuilder` of a host (`Host` is in the `Microsoft.Extensions.Hosting`
+namespace):
+
+<!-- ref:../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/ReadmeExamples.cs;region=FileLogger_AddFileWithOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+builder.Logging.AddFile(options =>
+{
+    options.Directory = "logs";
+    options.RollInterval = RollInterval.Daily;
+    options.MaxRetainedFiles = 7;
+    options.Compression = LogFileCompression.GZip;
+    options.CompressionMode = LogFileCompressionMode.OnRoll;
+    options.IncludeScopes = true;
+});
+```
+<!-- endref -->
+
+The options can also be set from the configuration, using the `File` provider alias:
+
+```json
+{
+  "Logging": {
+    "File": {
+      "Directory": "logs",
+      "RollInterval": "Daily",
+      "MaxFileSizeInBytes": 10485760,
+      "MaxRetainedFiles": 7,
+      "FormatterName": "json",
+      "LogLevel": {
+        "Default": "Information"
+      }
+    }
+  }
+}
+```
+
+<!-- ref:../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/ReadmeExamples.cs;region=FileLogger_AddFileFromConfiguration;format=md-fenced-code-block;dedent=true -->
+```csharp
+builder.Logging.AddFile();
+```
+<!-- endref -->
+
+Note that the options related to the log file itself (`Directory`, file name, `Append`, rolling, `MaxQueueLength`, `QueueFullMode`) are read when the provider is created. The other options are re-read when the configuration changes.
+
+## Rolling and retention
+
+| Option | Description |
+| --- | --- |
+| `RollInterval` | Creates a new file every hour / day / month |
+| `MaxFileSizeInBytes` | Creates a new file when the current one reaches the size limit |
+| `MaxRetainedFiles` | Deletes the oldest files when a new file is created |
+| `Compression` | Compresses the log files using gzip, Brotli, or Zstandard (.NET 11+) |
+| `Append` | Reuses an existing file instead of creating a new one at startup. See the note below |
+
+The log files are named `{FileNamePrefix}{timestamp}-{processId}{FileNameExtension}`, so they are ordered chronologically by name. When the name is already used, a suffix is added (`_001`, `_002`, …).
+
+`Append` reuses a file only when its name matches the name computed at startup, so it needs a stable file name:
+
+- `RollInterval` must be set. `RollInterval.None` includes the seconds in the name, so the name changes on every start.
+- `IncludeProcessIdInFileName` must be `false` to reuse a file across restarts, as the identifier of the process changes.
+
+With the default values of these two options, a new file is created on every start even when `Append` is `true`.
+In the snippets below, `options` is the `FileLoggerOptions` instance passed to the `AddFile` callback.
+
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_Append;format=md-fenced-code-block;dedent=true -->
+```csharp
+options.Append = true;
+options.RollInterval = RollInterval.Daily;
+options.IncludeProcessIdInFileName = false; // Required to reuse the file after a restart
+```
+<!-- endref -->
+
+## Compression
+
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_Compression;format=md-fenced-code-block;dedent=true -->
+```csharp
+options.Compression = LogFileCompression.GZip;      // GZip, Brotli, or Zstandard (.NET 11+)
+options.CompressionLevel = CompressionLevel.SmallestSize;
+options.CompressionMode = LogFileCompressionMode.Continuous;
+```
+<!-- endref -->
+
+| `CompressionMode` | Description |
+| --- | --- |
+| `Continuous` (default) | The messages are compressed as they are written, so the file is never written uncompressed. The extension of the compression algorithm is part of the file name (`2024-01-02-1234.log.gz`). |
+| `OnRoll` | The current log file is a plain text file, and it is compressed once it is rolled. |
+
+`Continuous` doesn't need any extra disk space and doesn't pause the logging to compress a big file, but the compressed stream is only finalized when the file is rolled or when the provider is disposed, so the current log file may not be readable by all the tools while the application is running. Use `OnRoll` when you need to read the current log file with the usual text tools.
+
+`Append` is ignored when the messages are compressed continuously, as appending to a compressed file would produce a file that most tools cannot read entirely.
+
+`MaxFileSizeInBytes` is compared to the size of the file on disk, so it accounts for the compression. As the compressed size is only known once the data is flushed, the file may be rolled slightly before the limit.
+
+## Permissions
+
+On Unix, the log files are created with the default mode of the platform, which usually makes them readable by every local user. Set `UnixCreateMode` when the messages can contain sensitive data:
+
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_UnixCreateMode;format=md-fenced-code-block;dedent=true -->
+```csharp
+options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+```
+<!-- endref -->
+
+The value is ignored on Windows, and it is still filtered by the umask of the process. The mode of the directory is not changed, so create the directory yourself when it must be private too.
+
+## Formatters
+
+`SimpleFileFormatter` (default) writes one human-readable line per entry:
+
+```
+[2024-01-02 03:04:05.006] [INFO] [Sample.Program] => Scope1 Hello world
+```
+
+`JsonFileFormatter` writes one JSON object per entry, including the message template and its named parameters:
+
+<!-- ref:../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/ReadmeExamples.cs;region=FileLogger_JsonFormatter;format=md-fenced-code-block;dedent=true -->
+```csharp
+builder.Logging.AddFile("logs", options => options.FormatterName = FileFormatterNames.Json);
+```
+<!-- endref -->
+
+```json
+{"Timestamp":"2024-01-02 03:04:05.006","LogLevel":"INFO","Category":"Sample.Program","Message":"Hello world","State":{"Name":"world","{OriginalFormat}":"Hello {Name}"},"Scopes":["Scope1"]}
+```
+
+You can also write a custom formatter by inheriting from `FileFormatter` and setting `FileLoggerOptions.Formatter`.
+
+## Content of the messages
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `MinLevel` | `Trace` | Minimum level of the messages written to the file |
+| `TimestampFormat` | `yyyy-MM-dd HH:mm:ss.fff` | Format of the timestamp, `null` to omit it |
+| `UseUtcTimestamp` | `true` | Use UTC instead of the local time |
+| `IncludeLogLevel` | `true` | Write the log level |
+| `IncludeCategory` | `true` | Write the category |
+| `UseShortCategoryName` | `false` | Write only the last segment of the category |
+| `IncludeScopes` | `false` | Write the scopes |
+| `IncludeEventId` | `false` | Write the event id |
+| `IncludeThreadId` | `false` | Write the id of the thread that logged the message |
+| `IncludeActivityTracking` | `false` | Write the trace id and the span id of `Activity.Current` |
+| `EscapeControlCharacters` | `false` | Escape the control characters, so an entry always spans a single line |
+
+### Untrusted data in the messages
+
+`SimpleFileFormatter` writes the messages as-is, so a value containing a line break produces several lines. When the value comes from an untrusted source, it can forge entries that look exactly like real ones:
+
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_UntrustedData;format=md-fenced-code-block;dedent=true -->
+```csharp
+logger.LogInformation("User said: {Text}", "hello\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded");
+```
+<!-- endref -->
+
+Set `EscapeControlCharacters` to `true` to write `\n`, `\r`, `\t` and the other control characters as escape sequences, so an entry always spans a single line. The stack traces are then written on a single line, which is harder to read. `JsonFileFormatter` is not affected, as the JSON writer already escapes the control characters.
+
+## Reliability
+
+- The messages are queued in a bounded queue. When it is full, `QueueFullMode` determines if the caller waits for room (default), or if the message is dropped.
+- The pending messages are flushed as soon as the queue is empty, and at most every `FlushInterval` when the logger cannot keep up.
+- `FlushAsync` waits for the pending messages to be written.
+- When the log file cannot be created or written, a warning is written on the standard error stream and the application keeps running.

@@ -33,6 +33,9 @@ public partial class Emitter : IEmitter
 
     private bool _isOpenEnded;
 
+    // Whether the last document ended without a "..." marker, so a directive that follows would be read as its content.
+    private bool _isDocumentEndImplicit;
+
     private readonly MutableStringLookAheadBuffer _buffer = new MutableStringLookAheadBuffer();
 
 
@@ -286,7 +289,9 @@ public partial class Emitter : IEmitter
 
             AnalyzeAnchor(nodeEvent.Anchor, false);
 
-            if (!string.IsNullOrEmpty(nodeEvent.Tag) && (_isCanonical || nodeEvent.IsCanonical))
+            // The non-specific tag "!" is implicit for the parser, but it still makes a plain scalar a string, so
+            // dropping it would change how the scalar resolves.
+            if (!string.IsNullOrEmpty(nodeEvent.Tag) && (_isCanonical || nodeEvent.IsCanonical || nodeEvent.Tag == "!"))
             {
                 AnalyzeTag(nodeEvent.Tag);
             }
@@ -356,7 +361,7 @@ public partial class Emitter : IEmitter
         {
             if (isFirst)
             {
-                if (_buffer.Check(@"#,[]{}&*!|>\""%@`"))
+                if (_buffer.Check(@"#,[]{}&*!|>\'""%@`"))
                 {
                     flow_indicators = true;
                     block_indicators = true;
@@ -400,7 +405,9 @@ public partial class Emitter : IEmitter
                 }
             }
 
-            if (!special_characters && !_buffer.IsPrintable())
+            // Line feeds are represented by block scalar line breaks. Other non-printable characters,
+            // carriage returns (which would be normalized), and content BOMs require a quoted escape.
+            if (!special_characters && ((!_buffer.IsPrintable() && !_buffer.Check('\n')) || _buffer.Check('\uFEFF')))
             {
                 special_characters = true;
             }
@@ -500,13 +507,7 @@ public partial class Emitter : IEmitter
             _scalarData.IsFlowPlainAllowed = false;
             _scalarData.IsBlockPlainAllowed = false;
             _scalarData.IsSingleQuotedAllowed = false;
-            // Don't disable block scalars for line breaks - they're the point of folded/literal scalars
-            // However, disable block scalars for single-character strings containing only special characters
-            // as they're better represented with quoted styles
-            if (!line_breaks || (line_breaks && value.Length == 1))
-            {
-                _scalarData.IsBlockAllowed = false;
-            }
+            _scalarData.IsBlockAllowed = false;
         }
 
         if (line_breaks)
@@ -529,16 +530,60 @@ public partial class Emitter : IEmitter
     /// <summary>Check if a tag is valid.</summary>
     private void AnalyzeTag(string tag)
     {
-        _tagData.Handle = tag;
+        // The non-specific tag is always written as "!", even when a %TAG directive redefines the primary handle. Its
+        // verbatim form "!<!>" is invalid.
+        if (tag == "!")
+        {
+            _tagData.Handle = tag;
+            _tagData.Suffix = null;
+            return;
+        }
+
+        // A tag can be given as a shorthand whose handle has a global prefix, such as "!!str" for
+        // "tag:yaml.org,2002:str". It is expanded, then shortened like a resolved tag. A handle whose prefix is a local
+        // tag is not expanded: the parser resolves "!m!b" with "%TAG !m! !m!!a-" to "!m!!a-b", which still starts with
+        // the handle, and expanding it again would not load back. Nor is a tag that a local prefix resolves to: with
+        // "%TAG ! !!a-", the parser resolves "!b" to "!!a-b", which is not the shorthand "!!a-b". A shorthand needs a
+        // non-empty suffix: "!!" alone is invalid.
+        if (tag is ['!', ..] && !IsResolvedFromLocalPrefix(tag))
+        {
+            foreach (var directive in _tagDirectives)
+            {
+                if (directive.Handle.Length > 1 && directive.Prefix is [not '!', ..] && tag.Length > directive.Handle.Length && tag.StartsWith(directive.Handle, StringComparison.Ordinal))
+                {
+                    tag = string.Concat(directive.Prefix, tag.AsSpan(directive.Handle.Length));
+                    break;
+                }
+            }
+        }
+
+        // A tag that no directive can shorten is written in the verbatim form "!<...>". Writing it as is would
+        // produce text such as "tag:example.com,2000:app/foo", which reads as a plain scalar.
+        _tagData.Handle = null;
+        _tagData.Suffix = tag;
+
+        // A shorthand needs a non-empty suffix: "!" alone is the non-specific tag.
         foreach (var tagDirective in _tagDirectives)
         {
-            if (tag.StartsWith(tagDirective.Prefix, StringComparison.Ordinal))
+            if (tag.Length > tagDirective.Prefix.Length && tag.StartsWith(tagDirective.Prefix, StringComparison.Ordinal))
             {
                 _tagData.Handle = tagDirective.Handle;
                 _tagData.Suffix = tag.Substring(tagDirective.Prefix.Length);
                 break;
             }
         }
+    }
+
+    /// <summary>Gets a value indicating whether a %TAG directive whose prefix is a local tag, other than the default "!", produces the tag.</summary>
+    private bool IsResolvedFromLocalPrefix(string tag)
+    {
+        foreach (var directive in _tagDirectives)
+        {
+            if (directive.Prefix is ['!', _, ..] && tag.Length > directive.Prefix.Length && tag.StartsWith(directive.Prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>State dispatcher.</summary>
@@ -647,7 +692,12 @@ public partial class Emitter : IEmitter
             bool isImplicit = documentStart.IsImplicit && isFirst && !_isCanonical;
 
 
-            if (documentStart.Version != null && _isOpenEnded)
+            // The default directives are always in effect, so only the other ones need to be written.
+            var explicitTags = documentStart.Tags?.Where(tag => !Constants.DefaultTagDirectives.Contains(tag)).ToList();
+            var hasDirectives = documentStart.Version != null || explicitTags is { Count: > 0 };
+
+            // A directive is only recognized after a document is explicitly ended.
+            if (hasDirectives && (_isOpenEnded || (!isFirst && _isDocumentEndImplicit)))
             {
                 WriteIndicator("...", true, false, false);
                 WriteIndent();
@@ -676,14 +726,14 @@ public partial class Emitter : IEmitter
                 AppendTagDirective(tagDirective, true);
             }
 
-            if (documentStart.Tags != null && documentStart.Tags.Count != 0)
+            if (explicitTags is { Count: > 0 })
             {
                 isImplicit = false;
-                foreach (var tagDirective in documentStart.Tags)
+                foreach (var tagDirective in explicitTags)
                 {
                     WriteIndicator("%TAG", true, false, false);
                     WriteTagHandle(tagDirective.Handle);
-                    WriteTagContent(tagDirective.Prefix, true);
+                    WriteTagContent(tagDirective.Prefix, true, allowFlowIndicators: true);
                     WriteIndent();
                 }
             }
@@ -754,30 +804,31 @@ public partial class Emitter : IEmitter
         _isIndentation = false;
     }
 
-    [GeneratedRegex(@"[^0-9A-Za-z_\-;?@=$~\\\)\]/:&+,\.\*\(\[!]", RegexOptions.Singleline, matchTimeoutMilliseconds: -1)]
+    [GeneratedRegex(@"[^0-9A-Za-z_\-;?@=$~)/:&+.*(']+", RegexOptions.Singleline, matchTimeoutMilliseconds: -1)]
     private static partial Regex UriReplacer { get; }
 
     private static string UrlEncode(string text)
     {
-        return UriReplacer.Replace(text, delegate (Match match)
-        {
-            var buffer = new StringBuilder();
-            foreach (var toEncode in Encoding.UTF8.GetBytes(match.Value))
-            {
-                buffer.AppendFormat("%{0:X02}", toEncode);
-            }
-            return buffer.ToString();
-        });
+        return UriReplacer.Replace(text, match => Uri.EscapeDataString(match.Value));
     }
 
-    private void WriteTagContent(string value, bool needsWhitespace)
+    private void WriteTagContent(string value, bool needsWhitespace, bool allowFlowIndicators = false)
     {
         if (needsWhitespace && !_isWhitespace)
         {
             Write(' ');
         }
 
-        Write(UrlEncode(value));
+        var encoded = UrlEncode(value);
+        if (allowFlowIndicators)
+        {
+            encoded = encoded.Replace("%2C", ",", StringComparison.Ordinal)
+                .Replace("%21", "!", StringComparison.Ordinal)
+                .Replace("%5B", "[", StringComparison.Ordinal)
+                .Replace("%5D", "]", StringComparison.Ordinal);
+        }
+
+        Write(encoded);
 
         _isWhitespace = false;
         _isIndentation = false;
@@ -944,7 +995,7 @@ public partial class Emitter : IEmitter
         {
             Debug.Assert(_tagData.Suffix is not null);
             WriteIndicator("!<", true, false, false);
-            WriteTagContent(_tagData.Suffix, false);
+            WriteTagContent(_tagData.Suffix, false, allowFlowIndicators: true);
             WriteIndicator(">", false, false, false);
         }
     }
@@ -1011,9 +1062,13 @@ public partial class Emitter : IEmitter
         }
     }
 
+    /// <remarks>
+    /// NEL (U+0085), LS (U+2028), and PS (U+2029) were line breaks in YAML 1.1 only. Writing one of them as a line
+    /// break would lose it, because a YAML 1.2 reader treats it as ordinary content.
+    /// </remarks>
     private static bool IsBreak(char character)
     {
-        return character == '\r' || character == '\n' || character == '\x85' || character == '\x2028' || character == '\x2029';
+        return character == '\r' || character == '\n';
     }
 
     private static bool IsBlank(char character)
@@ -1076,7 +1131,8 @@ public partial class Emitter : IEmitter
                     WriteIndent();
                     leading_spaces = IsBlank(character);
                 }
-                if (!previous_break && character == ' ' && i + 1 < value.Length && value[i + 1] != ' ' && _column > _bestWidth)
+                // Line breaks are not folded around a more-indented line, so a line starting with a blank cannot be wrapped.
+                if (!previous_break && !leading_spaces && character == ' ' && i + 1 < value.Length && value[i + 1] != ' ' && _column > _bestWidth)
                 {
                     WriteIndent();
                 }
@@ -1132,7 +1188,7 @@ public partial class Emitter : IEmitter
             char character = value[index];
 
 
-            if (!IsPrintable(character) || IsBreak(character) || character == '"' || character == '\\')
+            if (!IsPrintable(character) || IsBreak(character) || character is '"' or '\\' or '\uFEFF')
             {
                 Write('\\');
 
@@ -1199,7 +1255,7 @@ public partial class Emitter : IEmitter
                         break;
 
                     default:
-                        short code = (short)character;
+                        int code = character;
                         if (code <= 0xFF)
                         {
                             Write('x');
@@ -1221,6 +1277,11 @@ public partial class Emitter : IEmitter
                         }
                         else
                         {
+                            if (CharHelper.IsLowSurrogate(character))
+                            {
+                                throw new YamlException("A scalar contains an unpaired UTF-16 surrogate.");
+                            }
+
                             Write('u');
                             Write(code.ToString("X04", CultureInfo.InvariantCulture));
                         }
@@ -1305,6 +1366,13 @@ public partial class Emitter : IEmitter
                 previous_space = false;
                 previous_break = false;
             }
+        }
+
+        // A line break at the end of the value leaves the closing quote at the start of a line, where it must still
+        // be indented like any other continuation line.
+        if (previous_break)
+        {
+            WriteIndent();
         }
 
         WriteIndicator("'", false, false, false);
@@ -1467,6 +1535,14 @@ public partial class Emitter : IEmitter
     private void EmitAlias()
     {
         ProcessAnchor();
+
+        // ':' is a valid anchor character, so "*a:" would read as the alias "a:". An alias used as an implicit key
+        // needs a space before the value indicator.
+        if (_isSimpleKeyContext)
+        {
+            Write(' ');
+        }
+
         _state = _states.Pop();
     }
 
@@ -1499,6 +1575,8 @@ public partial class Emitter : IEmitter
                 WriteIndicator("...", true, false, false);
                 WriteIndent();
             }
+
+            _isDocumentEndImplicit = documentEnd.IsImplicit;
 
             _state = EmitterState.YAML_EMIT_DOCUMENT_START_STATE;
 
@@ -1763,7 +1841,7 @@ public partial class Emitter : IEmitter
         {
             chomp_hint = "-";
         }
-        else if (value.Length >= 2 && analyzer.IsBreak(value.Length - 2))
+        else if (value.Length == 1 || analyzer.IsBreak(value.Length - 2))
         {
             chomp_hint = "+";
             _isOpenEnded = true;

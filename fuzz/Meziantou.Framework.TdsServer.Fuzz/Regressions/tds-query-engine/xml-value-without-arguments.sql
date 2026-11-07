@@ -1,0 +1,1 @@
+SELECT Id .value() AS Value FROM customers WHERE Id = 4

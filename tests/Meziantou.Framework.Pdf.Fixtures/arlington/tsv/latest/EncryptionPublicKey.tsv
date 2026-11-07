@@ -1,0 +1,13 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Recipients	array	1.3		fn:IsRequired((@SubFilter==adbe.pkcs7.s3) || (@SubFilter==adbe.pkcs7.s4))	FALSE	FALSE				[ArrayOfStringsByte]	Clause 7.6.5, Table 20 and Table 23, https://github.com/pdf-association/pdf-issues/issues/16
+P	bitmask	1.3	2.0	FALSE	FALSE	FALSE	0		[fn:Eval(fn:BitsClear(13,32))]		Table 23 and Table 24 - removed from ISO 32000-2:2020
+Filter	name	1.1		TRUE	FALSE	FALSE		[Adobe.PubSec,AdobePPKLite]			Table 20
+SubFilter	name	1.3		FALSE	FALSE	FALSE		[adbe.pkcs7.s3,fn:SinceVersion(1.4,adbe.pkcs7.s4),fn:SinceVersion(1.5,adbe.pkcs7.s5)]			https://github.com/pdf-association/pdf-issues/issues/219
+V	integer	1.1		TRUE	FALSE	FALSE		[fn:Deprecated(1.1,0),fn:Deprecated(2.0,1),fn:Deprecated(2.0,fn:SinceVersion(1.4,2)),fn:Deprecated(2.0,fn:SinceVersion(1.4,3)),fn:Deprecated(2.0,fn:SinceVersion(1.5,4)),fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,5)),fn:SinceVersion(2.0,5),fn:SinceVersion(2.0,fn:Extension(ISO_TS_32003,6))]			
+Length	integer	1.4	2.0	FALSE	FALSE	FALSE	40	[fn:Eval((@Length>=40) && (@Length<=128) && ((@Length mod 8)==0))]			
+CF	dictionary	1.5		FALSE	FALSE	FALSE			[fn:IsMeaningful((@V==4) || ((@V==5) && fn:SinceVersion(2.0)))]	[CryptFilterMap,CryptFilterPublicKeyMap]	
+StmF	name	1.5		FALSE	FALSE	FALSE	Identity	[Identity,DefaultCryptFilter,DefEmbeddedFile]	[fn:IsMeaningful((@V==4) || ((@V==5) && (fn:Extension(ADBE_Extn3) || fn:SinceVersion(2.0))))]		
+StrF	name	1.5		FALSE	FALSE	FALSE	Identity	[Identity,DefaultCryptFilter]	[fn:IsMeaningful((@V==4) || ((@V==5) && (fn:Extension(ADBE_Extn3) || fn:SinceVersion(2.0))))]		
+EFF	name	1.6		FALSE	FALSE	FALSE		[Identity,DefaultCryptFilter,DefEmbeddedFile]	[fn:IsMeaningful((@V==4) || ((@V==5) && (fn:Extension(ADBE_Extn3) || fn:SinceVersion(2.0))))]		
+EncryptMetadata	boolean	1.5		FALSE	FALSE	FALSE	true				
+KDFSalt	string-byte	fn:Extension(ISO_TS_32004,2.0)		FALSE	fn:MustBeDirect()	FALSE			[fn:Eval(fn:AlwaysUnencrypted())]		ISO/TS 32004 integrity protection

@@ -132,6 +132,187 @@ public sealed class EmitterEdgeCaseTests
         Assert.Contains("b", folded);
     }
 
+    [Theory]
+    [InlineData(ScalarStyle.Any)]
+    [InlineData(ScalarStyle.Plain)]
+    [InlineData(ScalarStyle.SingleQuoted)]
+    [InlineData(ScalarStyle.DoubleQuoted)]
+    [InlineData(ScalarStyle.Literal)]
+    [InlineData(ScalarStyle.Folded)]
+    public void Emit_ScalarStyles_PreserveWhitespaceAndChomping(ScalarStyle style)
+    {
+        string[] values = ["", " ", "\t", "\n", "\n\n", "text", "text\n", "text\n\n", "text\n\n\n", "\ntext", "\n\ntext\n", " leading\ntext", "text\n indented\nlast", "text\n\nlast", "text \nlast", "text\n \nlast", "text\t\nlast", "\ttext\nlast", "text\n\tlast", "first\rsecond", "first\r\nsecond", "first\nsecond\r\n"];
+
+        foreach (var value in values)
+        {
+            var yaml = EmitDocument(new Scalar(null, null, value, style, true, true));
+            Assert.Equal(value, ParseScalarValues(yaml).Single());
+        }
+    }
+
+    [Theory]
+    [InlineData(ScalarStyle.Any)]
+    [InlineData(ScalarStyle.Plain)]
+    [InlineData(ScalarStyle.SingleQuoted)]
+    [InlineData(ScalarStyle.DoubleQuoted)]
+    [InlineData(ScalarStyle.Literal)]
+    [InlineData(ScalarStyle.Folded)]
+    public void Emit_ScalarStyles_EscapeNonPrintableContentEvenWithLineBreaks(ScalarStyle style)
+    {
+        string[] values = ["a\0b\nc", "a\u0001b\nc", "a\u0007b\nc", "a\u000Bb\nc", "a\u000Cb\nc", "a\u001Bb\nc", "a\u007Fb\nc", "a\u009Fb\nc", "a\uFFFEb\nc", "a\uFFFFb\nc", "\uFEFFtext", "a\uFEFFb\nc", "a\U0001F600b\nc"];
+
+        foreach (var value in values)
+        {
+            var yaml = EmitDocument(new Scalar(null, null, value, style, true, true));
+
+            Assert.DoesNotContain(value, yaml);
+            Assert.Equal(value, ParseScalarValues(yaml).Single());
+        }
+    }
+
+    [Theory]
+    [InlineData(YamlStyle.Block)]
+    [InlineData(YamlStyle.Flow)]
+    public void Emit_MappingKeysAndValues_PreserveIndicatorsAndUnicode(YamlStyle style)
+    {
+        string[] values = ["", "-", "?", ":", "---", "...", "--- text", "a: b", "a # b", "a:b", "a#b", "a,b", "a[b]", "a{b}", "a?b", "'quoted'", "\"quoted\"", "\uFEFFtext", "a\uFFFEb", "a\U0001F600b"];
+
+        foreach (var value in values)
+        {
+            var yaml = EmitDocument(
+                new MappingStart(null, null, isImplicit: true, style),
+                new Scalar(value),
+                new Scalar(value),
+                new Scalar("next"),
+                new Scalar("sentinel"),
+                new MappingEnd());
+
+            Assert.Equal([value, value, "next", "sentinel"], ParseScalarValues(yaml));
+        }
+    }
+
+    [Theory]
+    [InlineData(0xD800)]
+    [InlineData(0xDBFF)]
+    [InlineData(0xDC00)]
+    [InlineData(0xDFFF)]
+    public void Emit_UnpairedSurrogates_RejectsInvalidUnicode(int codePoint)
+    {
+        var character = ((char)codePoint).ToString();
+        foreach (var value in new[] { character, "before" + character + "after", character + "\n" })
+        {
+            foreach (var style in new[] { ScalarStyle.Any, ScalarStyle.Plain, ScalarStyle.SingleQuoted, ScalarStyle.DoubleQuoted, ScalarStyle.Literal, ScalarStyle.Folded })
+            {
+                Assert.Throws<YamlException>(() => EmitDocument(new Scalar(null, null, value, style, true, true)));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("!type[,]", "!type%5B%2C%5D")]
+    [InlineData("!type%name", "!type%25name")]
+    [InlineData("!\U0001F600", "!%F0%9F%98%80")]
+    public void Emit_LocalTags_EscapeSuffixAndPreserveDecodedTag(string tag, string expected)
+    {
+        var yaml = EmitDocument(new Scalar(null, tag, "value", ScalarStyle.Plain, false, false));
+        Assert.Contains(expected + " value", yaml);
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        var scalars = new List<Scalar>();
+        while (parser.MoveNext())
+        {
+            if (parser.Current is Scalar scalar)
+                scalars.Add(scalar);
+        }
+
+        var result = Assert.Single(scalars);
+        Assert.Equal(tag, result.Tag);
+        Assert.Equal("value", result.Value);
+    }
+
+    [Theory]
+    [InlineData("- &a x\n- *a : b\n")]
+    [InlineData("- &a x\n- {*a : b}\n")]
+    [InlineData("- &a x\n- [*a : b]\n")]
+    [InlineData("&a a: b\n*a : c\n")]
+    public void Emit_AliasAsImplicitKey_IsSeparatedFromTheValueIndicator(string yaml)
+    {
+        var expected = ReadEvents(yaml);
+
+        var emitted = EmitEvents(expected, bestWidth: int.MaxValue);
+
+        Assert.Contains("*a :", emitted, StringComparison.Ordinal);
+        Assert.Equal(expected.Select(e => e.ToString()), ReadEvents(emitted).Select(e => e.ToString()));
+    }
+
+    [Theory]
+    [InlineData("x\n aaaa bbbb cccc dddd")]
+    [InlineData(" aaaa bbbb cccc dddd")]
+    [InlineData("aaaa bbbb\n  cccc dddd eeee\nffff gggg hhhh")]
+    public void Emit_FoldedScalar_DoesNotWrapMoreIndentedLines(string value)
+    {
+        foreach (var style in new[] { ScalarStyle.Folded, ScalarStyle.Any })
+        {
+            var yaml = EmitEvents(
+                [
+                    new MappingStart(),
+                    new Scalar("k"),
+                    new Scalar(null, null, value, style, true, true),
+                    new MappingEnd(),
+                ],
+                bestWidth: 10);
+
+            Assert.Equal(["k", value], ParseScalarValues(yaml));
+        }
+    }
+
+    private static List<ParsingEvent> ReadEvents(string yaml)
+    {
+        var result = new List<ParsingEvent>();
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        while (parser.MoveNext())
+        {
+            if (parser.Current is not (StreamStart or StreamEnd or DocumentStart or DocumentEnd))
+            {
+                result.Add(parser.Current!);
+            }
+        }
+
+        return result;
+    }
+
+    private static string EmitEvents(IEnumerable<ParsingEvent> events, int bestWidth)
+    {
+        using var buffer = new StringWriter(CultureInfo.InvariantCulture);
+        var emitter = new Emitter(buffer, bestWidth: bestWidth);
+
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart(null, null, isImplicit: true));
+        foreach (var evt in events)
+        {
+            emitter.Emit(evt);
+        }
+
+        emitter.Emit(new DocumentEnd(isImplicit: true));
+        emitter.Emit(new StreamEnd());
+
+        return buffer.ToString();
+    }
+
+    private static List<string> ParseScalarValues(string yaml)
+    {
+        var result = new List<string>();
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        while (parser.MoveNext())
+        {
+            if (parser.Current is Scalar scalar)
+            {
+                result.Add(scalar.Value);
+            }
+        }
+
+        return result;
+    }
+
     private static string EmitDocument(params ParsingEvent[] events)
     {
         return EmitDocument(documentStart: null, events);

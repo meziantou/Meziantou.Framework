@@ -1,0 +1,15 @@
+{
+  "main": {
+    "wo": {
+      "identity": {
+        "language": "wo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

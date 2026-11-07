@@ -19,23 +19,24 @@ internal static class FlacPictureBlock
         var pictureType = (MediaPictureType)BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
         offset += 4;
 
-        // MIME type length + MIME type
-        var mimeLength = (int)BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
+        // MIME type length + MIME type. Lengths are unsigned 32-bit values, so they are compared as such: cast to
+        // int, a large one turns negative and passes the bounds check.
+        var mimeLength = BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
         offset += 4;
-        if (offset + mimeLength > data.Length)
+        if (mimeLength > (uint)(data.Length - offset))
             return false;
-        var mimeType = Encoding.ASCII.GetString(data.Slice(offset, mimeLength));
-        offset += mimeLength;
+        var mimeType = Encoding.ASCII.GetString(data.Slice(offset, (int)mimeLength));
+        offset += (int)mimeLength;
 
         // Description length + description
         if (offset + 4 > data.Length)
             return false;
-        var descLength = (int)BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
+        var descLength = BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
         offset += 4;
-        if (offset + descLength > data.Length)
+        if (descLength > (uint)(data.Length - offset))
             return false;
-        var description = Encoding.UTF8.GetString(data.Slice(offset, descLength));
-        offset += descLength;
+        var description = Encoding.UTF8.GetString(data.Slice(offset, (int)descLength));
+        offset += (int)descLength;
 
         // Width, height, color depth, colors used (4 * 4 bytes)
         if (offset + 16 > data.Length)
@@ -45,12 +46,12 @@ internal static class FlacPictureBlock
         // Picture data length + data
         if (offset + 4 > data.Length)
             return false;
-        var dataLength = (int)BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
+        var dataLength = BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
         offset += 4;
-        if (offset + dataLength > data.Length)
+        if (dataLength > (uint)(data.Length - offset))
             return false;
 
-        var pictureData = data.Slice(offset, dataLength).ToArray();
+        var pictureData = data.Slice(offset, (int)dataLength).ToArray();
 
         tags.Pictures.Add(new MediaPicture
         {

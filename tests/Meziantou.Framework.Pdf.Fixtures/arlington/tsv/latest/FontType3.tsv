@@ -1,0 +1,14 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.0		TRUE	FALSE	FALSE		[Font]			
+Subtype	name	1.0		TRUE	FALSE	FALSE		[Type3]			Table 110
+Name	name	1.0		fn:IsRequired(fn:IsPDFVersion(1.0))	FALSE	FALSE					
+FontBBox	rectangle	1.0		TRUE	FALSE	FALSE					
+FontMatrix	matrix	1.0		TRUE	FALSE	FALSE					
+CharProcs	dictionary	1.0		TRUE	FALSE	FALSE				[CharProcMap]	
+Encoding	dictionary	1.0		TRUE	FALSE	FALSE				[Encoding]	
+FirstChar	integer	1.0		TRUE	FALSE	FALSE					
+LastChar	integer	1.0		TRUE	FALSE	FALSE					
+Widths	array	1.0		TRUE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(Widths)==(1+(@LastChar - @FirstChar)))]	[ArrayOfNumbersGeneral]	
+FontDescriptor	dictionary	1.0		fn:IsRequired(fn:IsPDFTagged())	fn:MustBeIndirect(fn:BeforeVersion(2.0))	FALSE				[FontDescriptorType3]	https://github.com/pdf-association/pdf-issues/issues/106
+Resources	dictionary	1.2		FALSE	FALSE	FALSE				[Resource]	
+ToUnicode	stream	1.2		FALSE	TRUE	FALSE				[ToUnicodeCMapStream]	

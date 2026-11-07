@@ -1,0 +1,111 @@
+---
+title: Opening documents
+description: Open a document from a file, a stream or bytes, give the password of an encrypted document, set the read limits, and know when a file was repaired.
+---
+
+## Open a document
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_ReadDocument;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = PdfDocument.Open(file);
+var pageCount = document.Pages.Count;
+var text = document.Pages[0].ExtractText();
+```
+<!-- endref -->
+
+| Method | Reads |
+| --- | --- |
+| `PdfDocument.Open(path)`, `OpenAsync(path)` | A file, read in full: the file is not kept open |
+| `PdfDocument.Open(stream)`, `OpenAsync(stream)` | A stream, read to its end; it is not closed |
+| `PdfDocument.Open(byte[])`, `Open(ReadOnlyMemory<byte>)` | Bytes in memory, which the document keeps: they must not change while the document is used |
+| [PdfDocument.OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable) | A seekable stream, read when the objects are first used: the stream stays open while the document is used |
+
+Every method takes [PdfReadOptions](cref:Meziantou.Framework.Pdf.PdfReadOptions). A document supports one operation at a time: do not use it from several threads at
+once.
+
+## Large files
+
+[OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable) reads a document without copying the file to memory: the objects are read from the stream
+when they are first used, and the data of a stream when it is decoded. The memory then grows with what the application
+reads, not with the size of the file, and a file can be larger than 2 GB.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_OpenSeekable;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The objects are read from the stream when they are first used: it stays open while the document is used
+using var stream = File.OpenRead(path);
+var document = PdfDocument.OpenSeekable(stream);
+var text = document.Pages[0].ExtractText();
+```
+<!-- endref -->
+
+- The stream belongs to the application: the document does not close it. Keep it open and unchanged while the document
+  is used, and do not use it for anything else meanwhile, since the document moves its position.
+- The errors of the stream, such as `IOException` or `ObjectDisposedException`, are not caught: they can occur
+  whenever an object is first used.
+- `Open(stream)` and `OpenAsync(stream)` read the stream once, into an array of its length, and do not need it after.
+- The saves read the stream too: the data of the streams the application did not read, and the original file of an
+  incremental update, are copied from it in chunks, without being kept in memory. A file larger than 2 GB can then be
+  saved in full or incrementally, and the memory a save takes does not grow with the size of the file. Keep the stream
+  open until the save completes, including the asynchronous saves, which read it when they write.
+
+## Encrypted documents
+
+Give the password in the options. Either password opens the document: the user password with the permissions of the
+file, the owner password with every permission.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_Encryption;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+    .DrawText("Confidential", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+
+// AES-256 by default: the user password opens the document with the permissions, the owner password with all
+document.Encryption = new PdfEncryption("user password", "owner password")
+{
+    Permissions = PdfPermissions.Print | PdfPermissions.PrintHighQuality,
+};
+var file = document.ToByteArray();
+
+var read = PdfDocument.Open(file, new PdfReadOptions { Password = "user password" });
+var text = read.Pages[0].ExtractText();
+var canCopy = read.Permissions.HasFlag(PdfPermissions.CopyContent);
+```
+<!-- endref -->
+
+- Without a password, the empty password is tried: many encrypted documents have an empty user password, and open
+  without one.
+- A wrong password throws [PdfPasswordException](cref:Meziantou.Framework.Pdf.PdfPasswordException).
+- [IsEncrypted](cref:Meziantou.Framework.Pdf.PdfDocument.IsEncrypted) tells whether the file was encrypted, and [Permissions](cref:Meziantou.Framework.Pdf.PdfDocument.Permissions) what the password allows. The library does not
+  enforce the permissions: an application that shows or prints documents for users decides what it lets them do.
+
+See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwords.
+
+## Read options
+
+| Option | Default | Limits |
+| --- | --- | --- |
+| [Password](cref:Meziantou.Framework.Pdf.PdfReadOptions.Password) | The empty password | The user or the owner password of an encrypted document |
+| [MaxDecodedStreamLength](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxDecodedStreamLength) | 256 MiB | The length of the decoded data of one stream, checked as it is decoded |
+| [MaxNestingDepth](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxNestingDepth) | 256 | The depth of nested arrays and dictionaries |
+
+A file beyond a limit throws [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException). Lower the limits for the files of untrusted users: see
+[Errors and limits](06-ErrorsAndLimits.md).
+
+## Repaired files
+
+Many files in circulation are damaged: they were truncated, edited by hand, or written by a tool with bugs. The reader
+accepts what PDF viewers accept, and when the cross-reference information of a file is wrong, it rebuilds it by scanning
+the file. [IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) is then `true`.
+
+- A repaired document is read and saved in full like any other, but it cannot be saved incrementally.
+- A reference to an object that does not exist is the null object, as the specification says.
+- In a repaired file, a reference whose generation is not the generation of the object resolves to the object when
+  the file defines one generation of it only; when it defines several, the reference is the null object.
+- The bytes of a stream whose length is right, such as an uncompressed embedded PDF document, are not taken for objects
+  of the file.
+- The objects are not read while the file is repaired, except the object streams, the trailers and the catalogs: the
+  others are read when they are first used, as in a file that is not damaged.
+- A damaged compressed stream gives the data before the damage. A stream that cannot be decoded at all throws when its
+  data is read.
+
+A file that cannot be repaired throws [InvalidPdfContentException](cref:Meziantou.Framework.Pdf.InvalidPdfContentException).

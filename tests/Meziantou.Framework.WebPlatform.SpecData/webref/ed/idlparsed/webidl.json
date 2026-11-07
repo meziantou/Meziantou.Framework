@@ -1,0 +1,1017 @@
+{
+  "spec": {
+    "title": "Web IDL Standard",
+    "url": "https://webidl.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "*": [
+          "QuotaExceededError",
+          "DOMException"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "QuotaExceededError": {
+        "fragment": "[Exposed=*, Serializable]\ninterface QuotaExceededError : DOMException {\n  constructor(optional DOMString message = \"\", optional QuotaExceededErrorOptions options = {});\n\n  readonly attribute double? quota;\n  readonly attribute double? requested;\n};",
+        "type": "interface",
+        "name": "QuotaExceededError",
+        "inheritance": "DOMException",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "QuotaExceededErrorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror"
+          },
+          {
+            "type": "attribute",
+            "name": "quota",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quota"
+          },
+          {
+            "type": "attribute",
+            "name": "requested",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-requested"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webidl.spec.whatwg.org/#quotaexceedederror"
+      },
+      "QuotaExceededErrorOptions": {
+        "fragment": "dictionary QuotaExceededErrorOptions {\n  double quota;\n  double requested;\n};",
+        "type": "dictionary",
+        "name": "QuotaExceededErrorOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "quota",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webidl.spec.whatwg.org/#dom-quotaexceedederroroptions-quota"
+          },
+          {
+            "type": "field",
+            "name": "requested",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webidl.spec.whatwg.org/#dom-quotaexceedederroroptions-requested"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webidl.spec.whatwg.org/#dictdef-quotaexceedederroroptions"
+      },
+      "ArrayBufferView": {
+        "fragment": "typedef (Int8Array or Int16Array or Int32Array or\n         Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or\n         BigInt64Array or BigUint64Array or\n         Float16Array or Float32Array or Float64Array or DataView) ArrayBufferView;",
+        "type": "typedef",
+        "name": "ArrayBufferView",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Int8Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Int16Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Int32Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint8Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint16Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint32Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint8ClampedArray"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BigInt64Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BigUint64Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float16Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float64Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DataView"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://webidl.spec.whatwg.org/#ArrayBufferView"
+      },
+      "BufferSource": {
+        "fragment": "typedef (ArrayBuffer or ArrayBufferView) BufferSource;",
+        "type": "typedef",
+        "name": "BufferSource",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBufferView"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://webidl.spec.whatwg.org/#BufferSource"
+      },
+      "AllowSharedBufferSource": {
+        "fragment": "typedef (ArrayBuffer or SharedArrayBuffer or [AllowShared] ArrayBufferView) AllowSharedBufferSource;",
+        "type": "typedef",
+        "name": "AllowSharedBufferSource",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SharedArrayBuffer"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "AllowShared",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBufferView"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://webidl.spec.whatwg.org/#AllowSharedBufferSource"
+      },
+      "DOMException": {
+        "fragment": "[Exposed=*,\n Serializable]\ninterface DOMException { // but see below note about JavaScript binding\n  constructor(optional DOMString message = \"\", optional DOMString name = \"Error\");\n  readonly attribute DOMString name;\n  readonly attribute DOMString message;\n  readonly attribute unsigned short code;\n\n  const unsigned short INDEX_SIZE_ERR = 1;\n  const unsigned short DOMSTRING_SIZE_ERR = 2;\n  const unsigned short HIERARCHY_REQUEST_ERR = 3;\n  const unsigned short WRONG_DOCUMENT_ERR = 4;\n  const unsigned short INVALID_CHARACTER_ERR = 5;\n  const unsigned short NO_DATA_ALLOWED_ERR = 6;\n  const unsigned short NO_MODIFICATION_ALLOWED_ERR = 7;\n  const unsigned short NOT_FOUND_ERR = 8;\n  const unsigned short NOT_SUPPORTED_ERR = 9;\n  const unsigned short INUSE_ATTRIBUTE_ERR = 10;\n  const unsigned short INVALID_STATE_ERR = 11;\n  const unsigned short SYNTAX_ERR = 12;\n  const unsigned short INVALID_MODIFICATION_ERR = 13;\n  const unsigned short NAMESPACE_ERR = 14;\n  const unsigned short INVALID_ACCESS_ERR = 15;\n  const unsigned short VALIDATION_ERR = 16;\n  const unsigned short TYPE_MISMATCH_ERR = 17;\n  const unsigned short SECURITY_ERR = 18;\n  const unsigned short NETWORK_ERR = 19;\n  const unsigned short ABORT_ERR = 20;\n  const unsigned short URL_MISMATCH_ERR = 21;\n  const unsigned short QUOTA_EXCEEDED_ERR = 22;\n  const unsigned short TIMEOUT_ERR = 23;\n  const unsigned short INVALID_NODE_TYPE_ERR = 24;\n  const unsigned short DATA_CLONE_ERR = 25;\n};",
+        "type": "interface",
+        "name": "DOMException",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "Error"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-domexception"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-name"
+          },
+          {
+            "type": "attribute",
+            "name": "message",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-message"
+          },
+          {
+            "type": "attribute",
+            "name": "code",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-code"
+          },
+          {
+            "type": "const",
+            "name": "INDEX_SIZE_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-index_size_err"
+          },
+          {
+            "type": "const",
+            "name": "DOMSTRING_SIZE_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-domstring_size_err"
+          },
+          {
+            "type": "const",
+            "name": "HIERARCHY_REQUEST_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-hierarchy_request_err"
+          },
+          {
+            "type": "const",
+            "name": "WRONG_DOCUMENT_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-wrong_document_err"
+          },
+          {
+            "type": "const",
+            "name": "INVALID_CHARACTER_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "5"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-invalid_character_err"
+          },
+          {
+            "type": "const",
+            "name": "NO_DATA_ALLOWED_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "6"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-no_data_allowed_err"
+          },
+          {
+            "type": "const",
+            "name": "NO_MODIFICATION_ALLOWED_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "7"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-no_modification_allowed_err"
+          },
+          {
+            "type": "const",
+            "name": "NOT_FOUND_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "8"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-not_found_err"
+          },
+          {
+            "type": "const",
+            "name": "NOT_SUPPORTED_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "9"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-not_supported_err"
+          },
+          {
+            "type": "const",
+            "name": "INUSE_ATTRIBUTE_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "10"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-inuse_attribute_err"
+          },
+          {
+            "type": "const",
+            "name": "INVALID_STATE_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "11"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-invalid_state_err"
+          },
+          {
+            "type": "const",
+            "name": "SYNTAX_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "12"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-syntax_err"
+          },
+          {
+            "type": "const",
+            "name": "INVALID_MODIFICATION_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "13"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-invalid_modification_err"
+          },
+          {
+            "type": "const",
+            "name": "NAMESPACE_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "14"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-namespace_err"
+          },
+          {
+            "type": "const",
+            "name": "INVALID_ACCESS_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "15"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-invalid_access_err"
+          },
+          {
+            "type": "const",
+            "name": "VALIDATION_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "16"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-validation_err"
+          },
+          {
+            "type": "const",
+            "name": "TYPE_MISMATCH_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "17"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-type_mismatch_err"
+          },
+          {
+            "type": "const",
+            "name": "SECURITY_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "18"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-security_err"
+          },
+          {
+            "type": "const",
+            "name": "NETWORK_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "19"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-network_err"
+          },
+          {
+            "type": "const",
+            "name": "ABORT_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "20"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-abort_err"
+          },
+          {
+            "type": "const",
+            "name": "URL_MISMATCH_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "21"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-url_mismatch_err"
+          },
+          {
+            "type": "const",
+            "name": "QUOTA_EXCEEDED_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "22"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-quota_exceeded_err"
+          },
+          {
+            "type": "const",
+            "name": "TIMEOUT_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "23"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-timeout_err"
+          },
+          {
+            "type": "const",
+            "name": "INVALID_NODE_TYPE_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "24"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-invalid_node_type_err"
+          },
+          {
+            "type": "const",
+            "name": "DATA_CLONE_ERR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "25"
+            },
+            "href": "https://webidl.spec.whatwg.org/#dom-domexception-data_clone_err"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webidl.spec.whatwg.org/#idl-DOMException"
+      },
+      "Function": {
+        "fragment": "callback Function = any (any... arguments);",
+        "type": "callback",
+        "name": "Function",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "arguments",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": true
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webidl.spec.whatwg.org/#Function"
+      },
+      "VoidFunction": {
+        "fragment": "callback VoidFunction = undefined ();",
+        "type": "callback",
+        "name": "VoidFunction",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [],
+        "extAttrs": [],
+        "href": "https://webidl.spec.whatwg.org/#VoidFunction"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "*": [
+        "QuotaExceededError",
+        "DOMException"
+      ]
+    },
+    "dependencies": {
+      "QuotaExceededError": [
+        "DOMException",
+        "QuotaExceededErrorOptions"
+      ],
+      "QuotaExceededErrorOptions": [],
+      "DOMException": []
+    },
+    "externalDependencies": [
+      "Int8Array",
+      "Int16Array",
+      "Int32Array",
+      "Uint8Array",
+      "Uint16Array",
+      "Uint32Array",
+      "Uint8ClampedArray",
+      "BigInt64Array",
+      "BigUint64Array",
+      "Float16Array",
+      "Float32Array",
+      "Float64Array",
+      "DataView",
+      "ArrayBuffer",
+      "SharedArrayBuffer"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

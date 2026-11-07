@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<title>Print basic</title>
+<style>
+  body { margin: 0; color: #222 }
+  h1 { font-size: 28px; border-bottom: 2px solid #36c }
+  .screen-only { background: #c33; color: white; padding: 8px }
+  .print-only { display: none }
+  @media print {
+    .screen-only { display: none }
+    .print-only { display: block; border: 2px dashed #393; padding: 8px }
+  }
+  .bg { background: #fc0; padding: 12px; margin: 12px 0 }
+  .exact { background: #36c; color: white; padding: 12px; margin: 12px 0; print-color-adjust: exact; -webkit-print-color-adjust: exact }
+  .dark { background: #111; color: #fafafa; padding: 12px; margin: 12px 0 }
+  .image { height: 60px; background: url(resources/alpha.png) 0 0 / 30px 30px; margin: 12px 0 }
+  .break { break-before: page }
+  table { border-collapse: collapse; width: 100% }
+  td, th { border: 1px solid #999; padding: 4px 8px; text-align: left }
+  th { background: #ddd }
+</style>
+<h1>Print basic</h1>
+<div class="screen-only">Only on the screen</div>
+<div class="print-only">Only when printed</div>
+<div class="bg">A yellow background (dropped without printBackground)</div>
+<div class="exact">print-color-adjust: exact keeps this background</div>
+<div class="dark">Light text on a dark background</div>
+<div class="image"></div>
+<table><tr><th>Name</th><th>Value</th></tr><tr><td>One</td><td>1</td></tr><tr><td>Two</td><td>2</td></tr></table>
+<h1 class="break">Second page</h1>
+<p>This heading starts a new page.</p>

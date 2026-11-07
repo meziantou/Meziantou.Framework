@@ -40,4 +40,17 @@ public class ShortNameUtilitiesTests
         Assert.Equal("aab", shortNames["aab"]);
         Assert.Equal("oth", shortNames["other"]);
     }
+
+    [Fact]
+    public void ShortName_Create_Example()
+    {
+        #region ShortName_Create
+        // Create short names for a collection
+        var names = new[] { "CustomerName", "CustomerNumber", "CustomerAddress" };
+        var shortNames = ShortName.Create(names, maxLength: 5, StringComparer.OrdinalIgnoreCase);
+        Assert.Equal("Custo", shortNames["CustomerName"]);
+        Assert.Equal("Custm", shortNames["CustomerNumber"]);
+        Assert.Equal("Custe", shortNames["CustomerAddress"]);
+        #endregion
+    }
 }

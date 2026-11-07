@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	dictionary;name;string-byte	2.0		TRUE	FALSE	FALSE			[];[fn:InKeyMap(trailer::Catalog::Dests)];[fn:InNameTree(trailer::Catalog::Names::Dests)]	[StructElem];[];[]	Table 149
+1	name	2.0		TRUE	FALSE	FALSE		[FitH,FitV,FitBH,FitBV]			
+2	null;number	2.0		TRUE	FALSE	FALSE				[];[]	top or left

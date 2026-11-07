@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Security;
@@ -8,6 +9,8 @@ using System.Xml.XPath;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 using SqlParser = Microsoft.SqlServer.Management.SqlParser.Parser.Parser;
+using SqlParserException = Microsoft.SqlServer.Management.SqlParser.SqlParserException;
+using SqlParseResult = Microsoft.SqlServer.Management.SqlParser.Parser.ParseResult;
 using SqlParserParseOptions = Microsoft.SqlServer.Management.SqlParser.Parser.ParseOptions;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
@@ -34,13 +37,43 @@ internal sealed class TdsQueryEngineExecutor
         public IDictionary<string, IQueryable> ResolvedQueryRoots { get; }
     }
 
+    private static readonly XmlReaderSettings XmlReaderSettings = new()
+    {
+        DtdProcessing = DtdProcessing.Prohibit,
+        XmlResolver = null,
+    };
+
     private readonly TdsQueryEngineOptions _options;
+    private readonly FrozenDictionary<string, TdsQueryRoot> _queryRoots;
+    private readonly FrozenDictionary<string, Delegate> _storedProcedures;
+    private readonly FrozenDictionary<string, TdsQueryScalarFunction> _scalarFunctions;
+    private readonly FrozenDictionary<string, XmlSchemaSet> _xmlSchemaCollections;
 
     public TdsQueryEngineExecutor(TdsQueryEngineOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
         _options = options;
+
+        // The option collections are plain mutable dictionaries handed out through the public API, and they are
+        // read from every connection thread. Snapshot them once so a late registration cannot race an in-flight
+        // query, and so the query-root lookup is not rebuilt per request.
+        _queryRoots = BuildQueryRoots(options.QueryRoots);
+        _storedProcedures = options.StoredProcedures.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        _scalarFunctions = options.ScalarFunctions.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        _xmlSchemaCollections = options.XmlSchemaCollections.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static FrozenDictionary<string, TdsQueryRoot> BuildQueryRoots(IEnumerable<TdsQueryRoot> queryRoots)
+    {
+        var result = new Dictionary<string, TdsQueryRoot>(StringComparer.OrdinalIgnoreCase);
+        foreach (var queryRoot in queryRoots)
+        {
+            // First registration wins, matching the previous behaviour.
+            _ = result.TryAdd(queryRoot.Name, queryRoot);
+        }
+
+        return result.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     public async ValueTask<TdsQueryResult> ExecuteAsync(TdsQueryContext context, CancellationToken cancellationToken)
@@ -50,6 +83,11 @@ internal sealed class TdsQueryEngineExecutor
         var queryExecutionContext = CreateQueryExecutionContext(context);
         try
         {
+            if (!context.HasCompleteParameters)
+            {
+                throw new TdsQueryEngineException("The request contains a parameter whose type could not be decoded, so the parameter list is incomplete.");
+            }
+
             if (context.RequestType == TdsQueryRequestType.Rpc && !string.Equals(context.ProcedureName, "sp_executesql", StringComparison.OrdinalIgnoreCase))
             {
                 return await ExecuteStoredProcedureAsync(context, cancellationToken).ConfigureAwait(false);
@@ -62,14 +100,14 @@ internal sealed class TdsQueryEngineExecutor
         catch (TdsQueryAuthorizationException ex)
         {
             var error = _options.NotAuthorizedErrorFactory(context, ex.ResourceKind, ex.ResourceName)
-                ?? throw new InvalidOperationException("The not-authorized error factory returned null.");
+                ?? throw new InvalidOperationException("The not-authorized error factory returned null.", ex);
             return TdsQueryResult.FromError(error);
         }
         catch (TdsQueryEngineException ex)
         {
             return TdsQueryResult.FromError(new TdsQueryError
             {
-                Number = 50004,
+                Number = ex.ErrorNumber,
                 State = 1,
                 Class = 16,
                 Message = ex.Message,
@@ -79,18 +117,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private QueryExecutionContext CreateQueryExecutionContext(TdsQueryContext queryContext)
     {
-        var result = new Dictionary<string, TdsQueryRoot>(StringComparer.OrdinalIgnoreCase);
-        foreach (var queryRoot in _options.QueryRoots)
-        {
-            if (result.ContainsKey(queryRoot.Name))
-            {
-                continue;
-            }
-
-            result.Add(queryRoot.Name, queryRoot);
-        }
-
-        return new QueryExecutionContext(queryContext, result);
+        return new QueryExecutionContext(queryContext, _queryRoots);
     }
 
     private async ValueTask<TdsQueryResult> ExecuteStoredProcedureAsync(TdsQueryContext context, CancellationToken cancellationToken)
@@ -100,7 +127,7 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("The RPC request does not specify a stored procedure name.");
         }
 
-        if (!_options.StoredProcedures.TryGetValue(context.ProcedureName, out var storedProcedure))
+        if (!_storedProcedures.TryGetValue(context.ProcedureName, out var storedProcedure))
         {
             throw new TdsQueryEngineException($"Unknown stored procedure '{context.ProcedureName}'.");
         }
@@ -192,13 +219,55 @@ internal sealed class TdsQueryEngineExecutor
     private async ValueTask<TdsQueryResult> ExecuteTextQueryAsync(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext, CancellationToken cancellationToken)
     {
         var translatedQuery = TranslateQuery(commandText, parameters, queryExecutionContext);
-        var rows = await _options.MaterializeAsync(translatedQuery, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<object?> rows;
+        try
+        {
+            rows = await _options.MaterializeAsync(translatedQuery, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is ArithmeticException or FormatException or InvalidCastException or XPathException)
+        {
+            // Only running the query tells whether a value divides by zero, overflows, or cannot be converted
+            throw CreateEvaluationError(ex);
+        }
+
         return TdsQueryResultBuilder.FromRows(rows, translatedQuery.ElementType);
+    }
+
+    private static TdsQueryEngineException CreateEvaluationError(Exception exception)
+    {
+        // The numbers are the ones SQL Server reports for these errors
+        return exception switch
+        {
+            DivideByZeroException => new TdsQueryEngineException("Divide by zero error encountered.", errorNumber: 8134),
+            ArithmeticException => new TdsQueryEngineException("Arithmetic overflow error.", errorNumber: 8115),
+            XPathException => new TdsQueryEngineException($"The XQuery expression cannot be evaluated: {exception.Message}"),
+            _ => new TdsQueryEngineException($"Conversion failed: {exception.Message}"),
+        };
+    }
+
+    private static SqlParseResult ParseSql(string sql)
+    {
+        // Any parse error rejects the query, so the parser does not need to recover from it. Its error recovery is a
+        // best-first search that grows exponentially with the number of tokens after the error in some contexts, e.g.
+        // a CASE expression followed by 20 invalid characters takes seconds to parse.
+        var options = new SqlParserParseOptions { IsErrorRecoveryEnabled = false };
+        return SqlParser.Parse(sql, options, out _);
     }
 
     private IQueryable TranslateQuery(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
     {
-        var parseResult = SqlParser.Parse(commandText, new SqlParserParseOptions(), out _);
+        SqlParseResult parseResult;
+        try
+        {
+            parseResult = ParseSql(commandText);
+        }
+        catch (SqlParserException)
+        {
+            // The parser fails on some invalid statements instead of reporting a parse error, e.g. SqlParserInternalParserError
+            // wrapping a NullReferenceException for "SELECT ISJSON( FETCH NEXT x FROM t"
+            throw new TdsQueryEngineException("Invalid SQL query.");
+        }
+
         if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
         {
             throw new TdsQueryEngineException("Invalid SQL query.");
@@ -227,7 +296,8 @@ internal sealed class TdsQueryEngineExecutor
             query = TranslateQueryExpression(selectStatement.SelectSpecification.QueryExpression, parameters, cteRoots, queryExecutionContext);
             if (selectStatement.SelectSpecification.OrderByClause is not null)
             {
-                query = ApplyOrderBy(CreateProjectionSource(query), selectStatement.SelectSpecification.OrderByClause, parameters).Query;
+                query = ApplyOrderBy(CreateProjectionSource(query), selectStatement.SelectSpecification.OrderByClause, parameters, cteRoots, queryExecutionContext).Query;
+                query = ApplyOffsetFetch(query, selectStatement.SelectSpecification.OrderByClause, parameters);
             }
         }
 
@@ -258,7 +328,13 @@ internal sealed class TdsQueryEngineExecutor
                 query = ApplyColumnList(query, cte.ColumnList, scopeName: "CTE");
             }
 
-            result.Add(cteName, new TdsQueryRoot(cteName, query));
+            // The SQL parser only reports syntax errors, and a repeated CTE name is a semantic one, so the
+            // statement parses and lands here. Dictionary.Add would throw ArgumentException straight out of the
+            // engine, past the catch in ExecuteAsync.
+            if (!result.TryAdd(cteName, new TdsQueryRoot(cteName, query)))
+            {
+                throw new TdsQueryEngineException($"Duplicate common table expression name '{cteName}'.");
+            }
         }
 
         return result;
@@ -357,13 +433,13 @@ internal sealed class TdsQueryEngineExecutor
         var orderByClause = orderByOverride ?? querySpecification.OrderByClause;
         if (querySpecification.GroupByClause is not null)
         {
-            var groupedSource = ApplyGroupBy(source, querySpecification.GroupByClause);
+            var groupedSource = ApplyGroupBy(source, querySpecification.GroupByClause, parameters, cteRoots, queryExecutionContext);
             if (querySpecification.HavingClause?.Expression is not null)
             {
-                groupedSource = ApplyHaving(groupedSource, querySpecification.HavingClause.Expression, parameters);
+                groupedSource = ApplyHaving(groupedSource, querySpecification.HavingClause.Expression, parameters, cteRoots, queryExecutionContext);
             }
 
-            var groupedProjection = ApplyGroupSelect(groupedSource, querySpecification.SelectClause);
+            var groupedProjection = ApplyGroupSelect(groupedSource, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext);
             if (querySpecification.SelectClause.IsDistinct)
             {
                 groupedProjection = ApplyDistinct(groupedProjection);
@@ -371,8 +447,8 @@ internal sealed class TdsQueryEngineExecutor
 
             if (orderByClause is not null)
             {
-                var orderedGroupedSource = ApplyOrderBy(CreateProjectionSource(groupedProjection), orderByClause, parameters);
-                groupedProjection = orderedGroupedSource.Query;
+                var orderedGroupedSource = ApplyOrderBy(CreateProjectionSource(groupedProjection), orderByClause, parameters, cteRoots, queryExecutionContext);
+                groupedProjection = ApplyOffsetFetch(orderedGroupedSource.Query, orderByClause, parameters);
             }
 
             if (querySpecification.SelectClause.Top is not null)
@@ -390,13 +466,18 @@ internal sealed class TdsQueryEngineExecutor
 
         if (orderByClause is not null)
         {
-            source = ApplyOrderBy(source, orderByClause, parameters);
+            source = ApplyOrderBy(source, orderByClause, parameters, cteRoots, queryExecutionContext);
         }
 
-        var query = ApplySelect(source, querySpecification.SelectClause);
+        var query = ApplySelect(source, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext);
         if (querySpecification.SelectClause.IsDistinct)
         {
             query = ApplyDistinct(query);
+        }
+
+        if (orderByClause is not null)
+        {
+            query = ApplyOffsetFetch(query, orderByClause, parameters);
         }
 
         if (querySpecification.SelectClause.Top is not null)
@@ -529,6 +610,17 @@ internal sealed class TdsQueryEngineExecutor
 
         var left = BuildSource(joinExpression.Left, cteRoots, parameters, queryExecutionContext);
         var right = BuildSource(joinExpression.Right, cteRoots, parameters, queryExecutionContext);
+
+        // A repeated alias is a semantic error, so it parses, as a repeated CTE name does. Each alias becomes a
+        // property of the carrier type, which cannot hold two of them.
+        foreach (var alias in right.Aliases.Keys)
+        {
+            if (left.Aliases.ContainsKey(alias))
+            {
+                throw new TdsQueryEngineException($"Duplicate alias '{alias}'.");
+            }
+        }
+
         if (joinExpression.OnClause?.Expression is not SqlComparisonBooleanExpression { ComparisonOperator: SqlComparisonBooleanExpressionType.Equals } comparison)
         {
             var joinName = isLeftJoin ? "LEFT JOIN" : isRightJoin ? "RIGHT JOIN" : isFullJoin ? "FULL JOIN" : "INNER JOIN";
@@ -544,11 +636,11 @@ internal sealed class TdsQueryEngineExecutor
         var leftParameter = Expression.Parameter(left.RowType, "left");
         var rightParameter = Expression.Parameter(right.RowType, "right");
         var leftKey = ReferencesAliases(comparison.Left, left.Aliases)
-            ? BuildScalar(comparison.Left, left.Aliases, leftParameter, parameters: null)
-            : BuildScalar(comparison.Right, left.Aliases, leftParameter, parameters: null);
+            ? BuildScalar(comparison.Left, left.Aliases, leftParameter, parameters, cteRoots, queryExecutionContext)
+            : BuildScalar(comparison.Right, left.Aliases, leftParameter, parameters, cteRoots, queryExecutionContext);
         var rightKey = ReferencesAliases(comparison.Left, right.Aliases)
-            ? BuildScalar(comparison.Left, right.Aliases, rightParameter, parameters: null)
-            : BuildScalar(comparison.Right, right.Aliases, rightParameter, parameters: null);
+            ? BuildScalar(comparison.Left, right.Aliases, rightParameter, parameters, cteRoots, queryExecutionContext)
+            : BuildScalar(comparison.Right, right.Aliases, rightParameter, parameters, cteRoots, queryExecutionContext);
 
         if (leftKey.Type != rightKey.Type)
         {
@@ -666,7 +758,7 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("CROSS APPLY currently supports only xml.nodes(...) table-valued calls.");
         }
 
-        if (tableValuedFunction.Arguments.Count != 1)
+        if (tableValuedFunction.Arguments is not { Count: 1 })
         {
             throw new TdsQueryEngineException("xml.nodes requires exactly one XQuery argument.");
         }
@@ -692,7 +784,7 @@ internal sealed class TdsQueryEngineExecutor
 
         var leftParameter = Expression.Parameter(left.RowType, "left");
         var xmlExpression = BuildColumnByParts(receiverParts, left.Aliases, leftParameter);
-        var xqueryExpression = BuildScalar(tableValuedFunction.Arguments[0], left.Aliases, leftParameter, parameters, targetType: typeof(string));
+        var xqueryExpression = EnsureXQueryArgument(BuildScalar(tableValuedFunction.Arguments[0], left.Aliases, leftParameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(string)), "xml.nodes");
         var nodesCall = Expression.Call(
             typeof(TdsQueryEngineExecutor).GetMethod(nameof(XmlNodesCore), BindingFlags.NonPublic | BindingFlags.Static)!,
             Expression.Convert(xmlExpression, typeof(object)),
@@ -754,14 +846,14 @@ internal sealed class TdsQueryEngineExecutor
         return source with { Query = source.Query.Provider.CreateQuery(call) };
     }
 
-    private QuerySource ApplyOrderBy(QuerySource source, SqlOrderByClause orderByClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private QuerySource ApplyOrderBy(QuerySource source, SqlOrderByClause orderByClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         var query = source.Query;
         var first = true;
         foreach (var item in orderByClause.Items)
         {
             var parameter = Expression.Parameter(source.RowType, "row");
-            var key = BuildScalar(item.Expression, source.Aliases, parameter, parameters);
+            var key = BuildScalar(item.Expression, source.Aliases, parameter, parameters, cteRoots, queryExecutionContext);
             var methodName = (first, item.SortOrder) switch
             {
                 (true, SqlSortOrder.Descending) => nameof(Queryable.OrderByDescending),
@@ -781,31 +873,42 @@ internal sealed class TdsQueryEngineExecutor
             first = false;
         }
 
-        if (orderByClause.OffsetFetchClause is not null)
-        {
-            var offset = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Offset, parameters, "OFFSET");
-            var skipCall = Expression.Call(
-                typeof(Queryable),
-                nameof(Queryable.Skip),
-                [source.RowType],
-                query.Expression,
-                Expression.Constant(offset));
-            query = query.Provider.CreateQuery(skipCall);
+        return source with { Query = query };
+    }
 
-            if (orderByClause.OffsetFetchClause.Fetch is not null)
-            {
-                var fetch = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Fetch, parameters, "FETCH");
-                var takeCall = Expression.Call(
-                    typeof(Queryable),
-                    nameof(Queryable.Take),
-                    [source.RowType],
-                    query.Expression,
-                    Expression.Constant(fetch));
-                query = query.Provider.CreateQuery(takeCall);
-            }
+    /// <summary>
+    /// Applies the OFFSET/FETCH clause of <paramref name="orderByClause"/> to <paramref name="query"/>.
+    /// The clause paginates the final result, so it must be applied after the projection and DISTINCT.
+    /// </summary>
+    private static IQueryable ApplyOffsetFetch(IQueryable query, SqlOrderByClause orderByClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        if (orderByClause.OffsetFetchClause is null)
+        {
+            return query;
         }
 
-        return source with { Query = query };
+        var offset = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Offset, parameters, "OFFSET");
+        var skipCall = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Skip),
+            [query.ElementType],
+            query.Expression,
+            Expression.Constant(offset));
+        query = query.Provider.CreateQuery(skipCall);
+
+        if (orderByClause.OffsetFetchClause.Fetch is not null)
+        {
+            var fetch = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Fetch, parameters, "FETCH");
+            var takeCall = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Take),
+                [query.ElementType],
+                query.Expression,
+                Expression.Constant(fetch));
+            query = query.Provider.CreateQuery(takeCall);
+        }
+
+        return query;
     }
 
     private static QuerySource CreateProjectionSource(IQueryable query)
@@ -848,7 +951,7 @@ internal sealed class TdsQueryEngineExecutor
         return query.Provider.CreateQuery(call);
     }
 
-    private GroupedQuerySource ApplyGroupBy(QuerySource source, SqlGroupByClause groupByClause)
+    private GroupedQuerySource ApplyGroupBy(QuerySource source, SqlGroupByClause groupByClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (groupByClause.HasAll || groupByClause.Option != SqlGroupByOptionType.None || groupByClause.Items.Count == 0)
         {
@@ -866,9 +969,9 @@ internal sealed class TdsQueryEngineExecutor
                 throw new TdsQueryEngineException("Only simple GROUP BY expressions are supported.");
             }
 
-            var keyValue = BuildScalar(groupByItem.Expression, source.Aliases, parameter, parameters: null);
+            var keyValue = BuildScalar(groupByItem.Expression, source.Aliases, parameter, parameters, cteRoots, queryExecutionContext);
             var keyName = GetColumnName(groupByItem.Expression);
-            if (keyAliases.ContainsKey(keyName))
+            if (keyMembers.Exists(member => string.Equals(member.Name, keyName, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new TdsQueryEngineException($"Duplicate GROUP BY column '{keyName}'.");
             }
@@ -912,10 +1015,10 @@ internal sealed class TdsQueryEngineExecutor
             source.Aliases);
     }
 
-    private GroupedQuerySource ApplyHaving(GroupedQuerySource source, SqlBooleanExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private GroupedQuerySource ApplyHaving(GroupedQuerySource source, SqlBooleanExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         var parameter = Expression.Parameter(source.GroupType, "group");
-        var predicate = BuildGroupBoolean(expression, source, parameter, parameters);
+        var predicate = BuildGroupBoolean(expression, source, parameter, parameters, cteRoots, queryExecutionContext);
         var call = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Where),
@@ -926,7 +1029,7 @@ internal sealed class TdsQueryEngineExecutor
         return source with { Query = source.Query.Provider.CreateQuery(call) };
     }
 
-    private IQueryable ApplyGroupSelect(GroupedQuerySource source, SqlSelectClause selectClause)
+    private IQueryable ApplyGroupSelect(GroupedQuerySource source, SqlSelectClause selectClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         var parameter = Expression.Parameter(source.GroupType, "group");
         var members = new List<TdsProjectionMember>();
@@ -939,7 +1042,7 @@ internal sealed class TdsQueryEngineExecutor
                 throw new TdsQueryEngineException("Only scalar GROUP BY SELECT expressions are supported.");
             }
 
-            var value = BuildGroupScalar(scalarExpression.Expression, source, parameter, parameters: null);
+            var value = BuildGroupScalar(scalarExpression.Expression, source, parameter, parameters, cteRoots, queryExecutionContext);
             var name = scalarExpression.Alias?.Value ?? GetGroupColumnName(scalarExpression.Expression);
             if (!names.Add(name))
             {
@@ -963,7 +1066,7 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private IQueryable ApplySelect(QuerySource source, SqlSelectClause selectClause)
+    private IQueryable ApplySelect(QuerySource source, SqlSelectClause selectClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (selectClause.SelectExpressions.Count == 1 && selectClause.SelectExpressions[0] is SqlSelectStarExpression)
         {
@@ -986,7 +1089,7 @@ internal sealed class TdsQueryEngineExecutor
                 throw new TdsQueryEngineException("Only scalar column SELECT expressions are supported.");
             }
 
-            var value = BuildScalar(scalarExpression.Expression, source.Aliases, parameter, parameters: null);
+            var value = BuildScalar(scalarExpression.Expression, source.Aliases, parameter, parameters, cteRoots, queryExecutionContext);
             var name = scalarExpression.Alias?.Value ?? GetColumnName(scalarExpression.Expression);
             if (!names.Add(name))
             {
@@ -1010,113 +1113,268 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private Expression BuildBoolean(SqlBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    /// <summary>Builds a predicate that is true exactly when SQL would evaluate <paramref name="expression"/> to TRUE.</summary>
+    /// <param name="negated">When true, builds the predicate for <c>NOT expression</c>.</param>
+    /// <remarks>
+    /// SQL uses three-valued logic and a WHERE clause keeps a row only when the predicate is TRUE,
+    /// so UNKNOWN and FALSE can both be collapsed to <see langword="false"/> here. That collapse is
+    /// only valid if NOT never wraps an already-collapsed predicate, because <c>NOT UNKNOWN</c> is
+    /// UNKNOWN while <c>!false</c> is <see langword="true"/>. NOT is therefore pushed down into the
+    /// leaves instead: De Morgan for AND/OR (which holds in three-valued logic) and operator
+    /// negation for comparisons.
+    /// </remarks>
+    private Expression BuildBoolean(SqlBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated = false)
     {
         return expression switch
         {
-            SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters),
-            SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-            SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters),
-            SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-            SqlNotBooleanExpression notExpression => Expression.Not(BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext)),
-            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
-                BuildBoolean(binary.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-                BuildBoolean(binary.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext)),
-            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => Expression.OrElse(
-                BuildBoolean(orBinary.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-                BuildBoolean(orBinary.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext)),
+            SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlNotBooleanExpression notExpression => BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext, !negated),
+            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => BuildBinaryBoolean(binary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: true),
+            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => BuildBinaryBoolean(orBinary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: false),
             _ => throw new TdsQueryEngineException("Only comparison, IN, EXISTS, and IS NULL predicates combined with AND/OR/NOT are supported."),
         };
     }
 
-    private BinaryExpression BuildComparison(SqlComparisonBooleanExpression comparison, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private Expression BuildBinaryBoolean(SqlBinaryBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated, bool isAnd)
     {
-        var left = BuildScalar(comparison.Left, aliases, parameter, parameters);
-        var right = BuildScalar(comparison.Right, aliases, parameter, parameters, left.Type);
+        var left = BuildBoolean(expression.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated);
+        var right = BuildBoolean(expression.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated);
+        return isAnd ^ negated ? Expression.AndAlso(left, right) : Expression.OrElse(left, right);
+    }
+
+    private Expression BuildComparison(SqlComparisonBooleanExpression comparison, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)
+    {
+        var left = BuildScalar(comparison.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext);
+        var right = BuildScalar(comparison.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext, left.Type);
         if (left.Type != right.Type)
         {
             right = ConvertExpression(right, left.Type);
         }
 
-        return comparison.ComparisonOperator switch
+        var comparisonOperator = negated ? NegateComparisonOperator(comparison.ComparisonOperator) : comparison.ComparisonOperator;
+        return BuildComparisonCore(left, right, comparisonOperator, "Comparison operator");
+    }
+
+    private static Expression BuildComparisonCore(Expression left, Expression right, SqlComparisonBooleanExpressionType comparisonOperator, string operatorDescription)
+    {
+        // Any comparison with NULL is UNKNOWN in SQL, and never TRUE, whichever operator is used.
+        if (IsNullConstant(left) || IsNullConstant(right))
         {
-            SqlComparisonBooleanExpressionType.Equals => Expression.Equal(left, right),
-            SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual(left, right),
-            SqlComparisonBooleanExpressionType.LessOrGreaterThan => Expression.NotEqual(left, right),
-            SqlComparisonBooleanExpressionType.GreaterThan => Expression.GreaterThan(left, right),
-            SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
-            SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan(left, right),
-            SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
-            _ => throw new TdsQueryEngineException($"Comparison operator '{comparison.ComparisonOperator}' is not supported."),
+            return Expression.Constant(value: false, typeof(bool));
+        }
+
+        Func<Expression, Expression, BinaryExpression> factory = comparisonOperator switch
+        {
+            SqlComparisonBooleanExpressionType.Equals => Expression.Equal,
+            SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual,
+            SqlComparisonBooleanExpressionType.LessOrGreaterThan => Expression.NotEqual,
+            SqlComparisonBooleanExpressionType.GreaterThan => Expression.GreaterThan,
+            SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual,
+            SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan,
+            SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual,
+            _ => throw new TdsQueryEngineException($"{operatorDescription} '{comparisonOperator}' is not supported."),
+        };
+
+        Expression comparison;
+        try
+        {
+            comparison = factory(left, right);
+        }
+        catch (InvalidOperationException)
+        {
+            // System.Linq.Expressions reports operand types the operator is not defined for
+            throw new TdsQueryEngineException($"{operatorDescription} '{comparisonOperator}' is not supported between values of type '{left.Type.Name}' and '{right.Type.Name}'.");
+        }
+
+        // Ordering comparisons on Nullable<T> already yield false for a null operand, which matches
+        // SQL. Equality does not: null == null is true in .NET and null != x is true for any x.
+        var guardLeft = false;
+        var guardRight = false;
+        switch (comparisonOperator)
+        {
+            case SqlComparisonBooleanExpressionType.Equals:
+                // Only wrong when both sides are NULL, so guarding one side is enough.
+                guardLeft = CanBeNull(left) && CanBeNull(right);
+                break;
+
+            case SqlComparisonBooleanExpressionType.NotEqual:
+            case SqlComparisonBooleanExpressionType.LessOrGreaterThan:
+                guardLeft = CanBeNull(left);
+                guardRight = CanBeNull(right);
+                break;
+        }
+
+        if (guardRight)
+        {
+            comparison = Expression.AndAlso(BuildIsNotNull(right), comparison);
+        }
+
+        if (guardLeft)
+        {
+            comparison = Expression.AndAlso(BuildIsNotNull(left), comparison);
+        }
+
+        return comparison;
+    }
+
+    private static SqlComparisonBooleanExpressionType NegateComparisonOperator(SqlComparisonBooleanExpressionType comparisonOperator)
+    {
+        return comparisonOperator switch
+        {
+            SqlComparisonBooleanExpressionType.Equals => SqlComparisonBooleanExpressionType.NotEqual,
+            SqlComparisonBooleanExpressionType.NotEqual => SqlComparisonBooleanExpressionType.Equals,
+            SqlComparisonBooleanExpressionType.LessOrGreaterThan => SqlComparisonBooleanExpressionType.Equals,
+            SqlComparisonBooleanExpressionType.GreaterThan => SqlComparisonBooleanExpressionType.LessThanOrEqual,
+            SqlComparisonBooleanExpressionType.GreaterThanOrEqual => SqlComparisonBooleanExpressionType.LessThan,
+            SqlComparisonBooleanExpressionType.LessThan => SqlComparisonBooleanExpressionType.GreaterThanOrEqual,
+            SqlComparisonBooleanExpressionType.LessThanOrEqual => SqlComparisonBooleanExpressionType.GreaterThan,
+            // Unsupported operators are reported by the caller, which names the original operator.
+            _ => comparisonOperator,
         };
     }
 
-    private Expression BuildInBoolean(SqlInBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    /// <summary>Returns whether the expression can evaluate to NULL at run time.</summary>
+    /// <remarks>SQL parameters and literals are baked in as constants, so their nullness is known while translating.</remarks>
+    private static bool CanBeNull(Expression expression)
     {
-        var inExpression = BuildScalar(expression.InExpression, aliases, parameter, parameters);
-        Expression containsExpression = expression.ComparisonValue switch
+        if (expression.Type.IsValueType && Nullable.GetUnderlyingType(expression.Type) is null)
         {
-            SqlInBooleanExpressionCollectionValue collectionValue => BuildInCollectionExpression(collectionValue, inExpression, aliases, parameter, parameters),
-            SqlInBooleanExpressionQueryValue queryValue => BuildInSubqueryExpression(queryValue, inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext),
+            return false;
+        }
+
+        return expression is not ConstantExpression { Value: not null };
+    }
+
+    private static bool IsNullConstant(Expression expression)
+    {
+        return expression is ConstantExpression { Value: null };
+    }
+
+    private static Expression BuildIsNotNull(Expression expression)
+    {
+        return Expression.NotEqual(expression, Expression.Constant(null, expression.Type));
+    }
+
+    private Expression BuildInBoolean(SqlInBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)
+    {
+        var inExpression = BuildScalar(expression.InExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
+        var hasNot = expression.HasNot ^ negated;
+        return expression.ComparisonValue switch
+        {
+            SqlInBooleanExpressionCollectionValue collectionValue => BuildInCollectionBoolean(collectionValue, inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, hasNot),
+            SqlInBooleanExpressionQueryValue queryValue => BuildInSubqueryBoolean(queryValue, inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, hasNot),
             _ => throw new TdsQueryEngineException("Only IN collections and simple IN subqueries are supported."),
         };
-
-        return expression.HasNot ? Expression.Not(containsExpression) : containsExpression;
     }
 
-    private MethodCallExpression BuildInCollectionExpression(SqlInBooleanExpressionCollectionValue collectionValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private Expression BuildInCollectionBoolean(SqlInBooleanExpressionCollectionValue collectionValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool hasNot)
     {
         var values = collectionValue.Values
-            .Select(value => BuildScalar(value, aliases, parameter, parameters, inExpression.Type))
-            .Select(value => value.Type == inExpression.Type ? value : ConvertExpression(value, inExpression.Type));
+            .Select(value => BuildScalar(value, aliases, parameter, parameters, cteRoots, queryExecutionContext, inExpression.Type))
+            .Select(value => value.Type == inExpression.Type ? value : ConvertExpression(value, inExpression.Type))
+            .ToArray();
         var valuesArray = Expression.NewArrayInit(inExpression.Type, values);
-
-        return Expression.Call(
+        Expression contains = Expression.Call(
             typeof(Enumerable),
             nameof(Enumerable.Contains),
             [inExpression.Type],
             valuesArray,
             inExpression);
+
+        Expression? containsNull = null;
+        if (hasNot && Array.Exists(values, CanBeNull))
+        {
+            containsNull = Expression.Call(
+                typeof(Enumerable),
+                nameof(Enumerable.Contains),
+                [inExpression.Type],
+                valuesArray,
+                Expression.Constant(null, inExpression.Type));
+        }
+
+        return BuildInResult(contains, containsNull, inExpression, hasNot);
     }
 
-    private MethodCallExpression BuildInSubqueryExpression(SqlInBooleanExpressionQueryValue queryValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    private Expression BuildInSubqueryBoolean(SqlInBooleanExpressionQueryValue queryValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool hasNot)
     {
         var subquery = TranslateInSubquery(queryValue.Value, inExpression.Type, aliases, parameter, parameters, cteRoots, queryExecutionContext);
-        return Expression.Call(
+        Expression contains = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Contains),
             [inExpression.Type],
             subquery.Expression,
             inExpression);
+
+        Expression? containsNull = null;
+        if (hasNot && !(inExpression.Type.IsValueType && Nullable.GetUnderlyingType(inExpression.Type) is null))
+        {
+            containsNull = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Contains),
+                [inExpression.Type],
+                subquery.Expression,
+                Expression.Constant(null, inExpression.Type));
+        }
+
+        return BuildInResult(contains, containsNull, inExpression, hasNot);
     }
 
-    private MethodCallExpression BuildExistsBoolean(SqlExistsBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    /// <remarks>
+    /// <c>x IN (...)</c> is TRUE only when x is not NULL and matches a non-NULL element: a NULL in
+    /// the list makes a non-match UNKNOWN rather than FALSE, which excludes the row either way.
+    /// <c>x NOT IN (...)</c> additionally becomes UNKNOWN whenever the list contains a NULL, so no
+    /// row qualifies at all.
+    /// </remarks>
+    private static Expression BuildInResult(Expression contains, Expression? containsNull, Expression inExpression, bool hasNot)
+    {
+        var result = hasNot ? Expression.Not(contains) : contains;
+        if (containsNull is not null)
+        {
+            result = Expression.AndAlso(Expression.Not(containsNull), result);
+        }
+
+        if (CanBeNull(inExpression))
+        {
+            result = Expression.AndAlso(BuildIsNotNull(inExpression), result);
+        }
+
+        return result;
+    }
+
+    private Expression BuildExistsBoolean(SqlExistsBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)
     {
         var subquery = TranslateExistsSubquery(expression.QueryExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
-        return Expression.Call(
+        Expression any = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Any),
             [subquery.ElementType],
             subquery.Expression);
+
+        // EXISTS is never UNKNOWN, so it can be negated directly.
+        return negated ? Expression.Not(any) : any;
     }
 
-    private Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)
     {
-        var value = BuildScalar(expression.Expression, aliases, parameter, parameters);
+        var value = BuildScalar(expression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
+
+        // IS NULL is never UNKNOWN, so it can be negated directly.
+        var hasNot = expression.HasNot ^ negated;
         if (value.Type.IsValueType && Nullable.GetUnderlyingType(value.Type) is null)
         {
-            return Expression.Constant(expression.HasNot, typeof(bool));
+            return Expression.Constant(hasNot, typeof(bool));
         }
 
         var nullExpression = Expression.Constant(null, value.Type);
         var isNullExpression = Expression.Equal(value, nullExpression);
-        return expression.HasNot ? Expression.Not(isNullExpression) : isNullExpression;
+        return hasNot ? Expression.Not(isNullExpression) : isNullExpression;
     }
 
-    private IQueryable TranslateInSubquery(SqlQueryExpression queryExpression, Type targetType, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    private IQueryable TranslateInSubquery(SqlQueryExpression queryExpression, Type targetType, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
-        ArgumentNullException.ThrowIfNull(queryExecutionContext);
-
         if (queryExpression is not SqlQuerySpecification querySpecification)
         {
             throw new TdsQueryEngineException("Only simple query specifications are supported in IN subqueries.");
@@ -1156,7 +1414,7 @@ internal sealed class TdsQueryEngineExecutor
             source = source with { Query = source.Query.Provider.CreateQuery(whereCall) };
         }
 
-        var value = BuildScalar(selectExpression.Expression, scopedAliases, parameter, parameters, targetType);
+        var value = BuildScalar(selectExpression.Expression, scopedAliases, parameter, parameters, cteRoots, queryExecutionContext, targetType);
         if (value.Type != targetType)
         {
             value = ConvertExpression(value, targetType);
@@ -1172,10 +1430,8 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private IQueryable TranslateExistsSubquery(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    private IQueryable TranslateExistsSubquery(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
-        ArgumentNullException.ThrowIfNull(queryExecutionContext);
-
         if (queryExpression is not SqlQuerySpecification querySpecification)
         {
             throw new TdsQueryEngineException("Only simple query specifications are supported in EXISTS subqueries.");
@@ -1265,25 +1521,25 @@ internal sealed class TdsQueryEngineExecutor
         return name;
     }
 
-    private Expression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         return expression switch
         {
-            SqlComparisonBooleanExpression comparison => BuildGroupComparison(comparison, source, parameter, parameters),
-            SqlIsNullBooleanExpression isNullExpression => BuildGroupIsNullBoolean(isNullExpression, source, parameter, parameters),
+            SqlComparisonBooleanExpression comparison => BuildGroupComparison(comparison, source, parameter, parameters, cteRoots, queryExecutionContext),
+            SqlIsNullBooleanExpression isNullExpression => BuildGroupIsNullBoolean(isNullExpression, source, parameter, parameters, cteRoots, queryExecutionContext),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
-                BuildGroupBoolean(binary.Left, source, parameter, parameters),
-                BuildGroupBoolean(binary.Right, source, parameter, parameters)),
+                BuildGroupBoolean(binary.Left, source, parameter, parameters, cteRoots, queryExecutionContext),
+                BuildGroupBoolean(binary.Right, source, parameter, parameters, cteRoots, queryExecutionContext)),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => Expression.OrElse(
-                BuildGroupBoolean(orBinary.Left, source, parameter, parameters),
-                BuildGroupBoolean(orBinary.Right, source, parameter, parameters)),
+                BuildGroupBoolean(orBinary.Left, source, parameter, parameters, cteRoots, queryExecutionContext),
+                BuildGroupBoolean(orBinary.Right, source, parameter, parameters, cteRoots, queryExecutionContext)),
             _ => throw new TdsQueryEngineException("Only GROUP BY comparison and IS NULL predicates combined with AND/OR are supported."),
         };
     }
 
-    private Expression BuildGroupIsNullBoolean(SqlIsNullBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildGroupIsNullBoolean(SqlIsNullBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
-        var value = BuildGroupScalar(expression.Expression, source, parameter, parameters);
+        var value = BuildGroupScalar(expression.Expression, source, parameter, parameters, cteRoots, queryExecutionContext);
         if (value.Type.IsValueType && Nullable.GetUnderlyingType(value.Type) is null)
         {
             return Expression.Constant(expression.HasNot, typeof(bool));
@@ -1294,29 +1550,19 @@ internal sealed class TdsQueryEngineExecutor
         return expression.HasNot ? Expression.Not(isNullExpression) : isNullExpression;
     }
 
-    private BinaryExpression BuildGroupComparison(SqlComparisonBooleanExpression comparison, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildGroupComparison(SqlComparisonBooleanExpression comparison, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
-        var left = BuildGroupScalar(comparison.Left, source, parameter, parameters);
-        var right = BuildGroupScalar(comparison.Right, source, parameter, parameters, left.Type);
+        var left = BuildGroupScalar(comparison.Left, source, parameter, parameters, cteRoots, queryExecutionContext);
+        var right = BuildGroupScalar(comparison.Right, source, parameter, parameters, cteRoots, queryExecutionContext, left.Type);
         if (left.Type != right.Type)
         {
             right = ConvertExpression(right, left.Type);
         }
 
-        return comparison.ComparisonOperator switch
-        {
-            SqlComparisonBooleanExpressionType.Equals => Expression.Equal(left, right),
-            SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual(left, right),
-            SqlComparisonBooleanExpressionType.LessOrGreaterThan => Expression.NotEqual(left, right),
-            SqlComparisonBooleanExpressionType.GreaterThan => Expression.GreaterThan(left, right),
-            SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
-            SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan(left, right),
-            SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
-            _ => throw new TdsQueryEngineException($"HAVING comparison operator '{comparison.ComparisonOperator}' is not supported."),
-        };
+        return BuildComparisonCore(left, right, comparison.ComparisonOperator, "HAVING comparison operator");
     }
 
-    private Expression BuildGroupScalar(SqlScalarExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType = null)
+    private Expression BuildGroupScalar(SqlScalarExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Type? targetType = null)
     {
         switch (expression)
         {
@@ -1330,17 +1576,12 @@ internal sealed class TdsQueryEngineExecutor
                 return keyBinding.Access(Expression.Property(parameter, nameof(IGrouping<object, object>.Key)));
 
             case SqlAggregateFunctionCallExpression aggregateFunction:
-                return BuildAggregateFunction(aggregateFunction, source, parameter);
+                return BuildAggregateFunction(aggregateFunction, source, parameter, parameters, cteRoots, queryExecutionContext);
 
             case SqlLiteralExpression literal:
                 return BuildLiteralExpression(literal, targetType);
 
             case SqlScalarVariableRefExpression variable:
-                if (parameters is null)
-                {
-                    break;
-                }
-
                 if (!parameters.TryGetValue(NormalizeName(variable.VariableName), out var queryParameter))
                 {
                     throw new TdsQueryEngineException($"Missing SQL parameter '{variable.VariableName}'.");
@@ -1353,7 +1594,7 @@ internal sealed class TdsQueryEngineExecutor
         throw new TdsQueryEngineException("Only GROUP BY columns, aggregate functions, literals, and SQL parameters are supported in grouped expressions.");
     }
 
-    private MethodCallExpression BuildAggregateFunction(SqlAggregateFunctionCallExpression aggregateFunction, GroupedQuerySource source, ParameterExpression parameter)
+    private MethodCallExpression BuildAggregateFunction(SqlAggregateFunctionCallExpression aggregateFunction, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (string.Equals(aggregateFunction.FunctionName, "COUNT", StringComparison.OrdinalIgnoreCase))
         {
@@ -1371,15 +1612,15 @@ internal sealed class TdsQueryEngineExecutor
 
         return aggregateFunction.FunctionName.ToUpperInvariant() switch
         {
-            "SUM" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Sum)),
-            "MIN" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Min)),
-            "MAX" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Max)),
-            "AVG" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Average)),
+            "SUM" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, parameters, cteRoots, queryExecutionContext, nameof(Enumerable.Sum)),
+            "MIN" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, parameters, cteRoots, queryExecutionContext, nameof(Enumerable.Min)),
+            "MAX" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, parameters, cteRoots, queryExecutionContext, nameof(Enumerable.Max)),
+            "AVG" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, parameters, cteRoots, queryExecutionContext, nameof(Enumerable.Average)),
             _ => throw new TdsQueryEngineException($"Aggregate function '{aggregateFunction.FunctionName}' is not supported."),
         };
     }
 
-    private MethodCallExpression BuildAggregateFunctionWithSelector(SqlAggregateFunctionCallExpression aggregateFunction, GroupedQuerySource source, ParameterExpression parameter, string methodName)
+    private MethodCallExpression BuildAggregateFunctionWithSelector(SqlAggregateFunctionCallExpression aggregateFunction, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, string methodName)
     {
         if (aggregateFunction.IsStar || aggregateFunction.ArgCount != 1 || aggregateFunction.Arguments.SingleOrDefault() is not SqlScalarExpression argumentExpression)
         {
@@ -1387,7 +1628,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var rowParameter = Expression.Parameter(source.SourceRowType, "row");
-        var selectorBody = BuildScalar(argumentExpression, source.Aliases, rowParameter, parameters: null);
+        var selectorBody = BuildScalar(argumentExpression, source.Aliases, rowParameter, parameters, cteRoots, queryExecutionContext);
         var selector = Expression.Lambda(selectorBody, rowParameter);
         var aggregateMethod = ResolveEnumerableAggregateMethod(methodName, source.SourceRowType, selectorBody.Type);
 
@@ -1427,9 +1668,9 @@ internal sealed class TdsQueryEngineExecutor
         throw new TdsQueryEngineException($"Aggregate function '{methodName}' does not support values of type '{selectorType.Name}'.");
     }
 
-    private Expression BuildScalar(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType = null)
+    private Expression BuildScalar(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Type? targetType = null)
     {
-        if (TryBuildScalar(expression, aliases, parameter, parameters, out var result, targetType))
+        if (TryBuildScalar(expression, aliases, parameter, parameters, cteRoots, queryExecutionContext, out var result, targetType))
         {
             return result;
         }
@@ -1437,7 +1678,7 @@ internal sealed class TdsQueryEngineExecutor
         throw new TdsQueryEngineException("Only column references, literals, SQL parameters, scalar functions, and arithmetic expressions are supported in expressions.");
     }
 
-    private bool TryBuildScalar(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, out Expression result, Type? targetType = null)
+    private bool TryBuildScalar(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, out Expression result, Type? targetType = null)
     {
         switch (expression)
         {
@@ -1450,28 +1691,22 @@ internal sealed class TdsQueryEngineExecutor
                 return true;
 
             case SqlBinaryScalarExpression binary:
-                result = BuildBinaryScalar(binary, aliases, parameter, parameters, targetType);
+                result = BuildBinaryScalar(binary, aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType);
                 return true;
 
             case SqlUnaryScalarExpression unary:
-                result = BuildUnaryScalar(unary, aliases, parameter, parameters, targetType);
+                result = BuildUnaryScalar(unary, aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType);
                 return true;
 
             case SqlNullScalarExpression nullFunction:
-                result = BuildNullScalarFunction(nullFunction, aliases, parameter, parameters);
+                result = BuildNullScalarFunction(nullFunction, aliases, parameter, parameters, cteRoots, queryExecutionContext);
                 return true;
 
             case SqlScalarFunctionCallExpression scalarFunction:
-                result = BuildScalarFunction(scalarFunction, aliases, parameter, parameters, targetType);
+                result = BuildScalarFunction(scalarFunction, aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType);
                 return true;
 
             case SqlScalarVariableRefExpression variable:
-                if (parameters is null)
-                {
-                    result = default!;
-                    return false;
-                }
-
                 if (!parameters.TryGetValue(NormalizeName(variable.VariableName), out var queryParameter))
                 {
                     throw new TdsQueryEngineException($"Missing SQL parameter '{variable.VariableName}'.");
@@ -1487,10 +1722,10 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
-    private Expression BuildBinaryScalar(SqlBinaryScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType)
+    private Expression BuildBinaryScalar(SqlBinaryScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Type? targetType)
     {
-        var left = BuildScalar(expression.Left, aliases, parameter, parameters);
-        var right = BuildScalar(expression.Right, aliases, parameter, parameters);
+        var left = BuildScalar(expression.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext);
+        var right = BuildScalar(expression.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext);
         Expression result = expression.Operator switch
         {
             SqlBinaryScalarOperatorType.Add when IsStringType(left.Type) || IsStringType(right.Type) => BuildStringConcatenation(left, right),
@@ -1511,13 +1746,14 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private Expression BuildUnaryScalar(SqlUnaryScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType)
+    private Expression BuildUnaryScalar(SqlUnaryScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Type? targetType)
     {
-        var value = BuildScalar(expression.Expression, aliases, parameter, parameters);
+        var value = BuildScalar(expression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
         Expression result = expression.Operator switch
         {
             SqlUnaryScalarOperatorType.Positive => value,
-            SqlUnaryScalarOperatorType.Negative => Expression.Negate(value),
+            SqlUnaryScalarOperatorType.Negative when IsNumericType(GetNonNullableType(value.Type)) => Expression.Negate(value),
+            SqlUnaryScalarOperatorType.Negative => throw new TdsQueryEngineException("The unary minus operator requires a numeric operand."),
             _ => throw new TdsQueryEngineException($"Unary scalar operator '{expression.Operator}' is not supported."),
         };
 
@@ -1529,14 +1765,14 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private Expression BuildScalarFunction(SqlScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType)
+    private Expression BuildScalarFunction(SqlScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Type? targetType)
     {
         Expression result = function switch
         {
-            SqlConvertExpression convert => BuildConvertScalarFunction(convert, aliases, parameter, parameters),
-            SqlCastExpression cast => BuildCastScalarFunction(cast, aliases, parameter, parameters),
-            SqlBuiltinScalarFunctionCallExpression builtin => BuildBuiltinScalarFunction(builtin, aliases, parameter, parameters),
-            SqlUserDefinedScalarFunctionCallExpression userDefined => BuildUserDefinedScalarFunction(userDefined, aliases, parameter, parameters),
+            SqlConvertExpression convert => BuildConvertScalarFunction(convert, aliases, parameter, parameters, cteRoots, queryExecutionContext),
+            SqlCastExpression cast => BuildCastScalarFunction(cast, aliases, parameter, parameters, cteRoots, queryExecutionContext),
+            SqlBuiltinScalarFunctionCallExpression builtin => BuildBuiltinScalarFunction(builtin, aliases, parameter, parameters, cteRoots, queryExecutionContext),
+            SqlUserDefinedScalarFunctionCallExpression userDefined => BuildUserDefinedScalarFunction(userDefined, aliases, parameter, parameters, cteRoots, queryExecutionContext),
             _ => throw new TdsQueryEngineException($"Scalar function '{function.GetType().Name}' is not supported."),
         };
 
@@ -1548,7 +1784,7 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private Expression BuildUserDefinedScalarFunction(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildUserDefinedScalarFunction(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (!TryGetMethodInvocation(function.ObjectIdentifier, out var receiverParts, out var methodName))
         {
@@ -1558,35 +1794,35 @@ internal sealed class TdsQueryEngineExecutor
         var xmlExpression = BuildColumnByParts(receiverParts, aliases, parameter);
         return methodName.ToUpperInvariant() switch
         {
-            "QUERY" => BuildXmlQueryMethod(function, aliases, parameter, parameters, xmlExpression),
-            "VALUE" => BuildXmlValueMethod(function, aliases, parameter, parameters, xmlExpression),
-            "EXIST" => BuildXmlExistMethod(function, aliases, parameter, parameters, xmlExpression),
+            "QUERY" => BuildXmlQueryMethod(function, aliases, parameter, parameters, cteRoots, queryExecutionContext, xmlExpression),
+            "VALUE" => BuildXmlValueMethod(function, aliases, parameter, parameters, cteRoots, queryExecutionContext, xmlExpression),
+            "EXIST" => BuildXmlExistMethod(function, aliases, parameter, parameters, cteRoots, queryExecutionContext, xmlExpression),
             _ => throw new TdsQueryEngineException($"Scalar function '{function.ObjectIdentifier.Sql}' is not supported."),
         };
     }
 
-    private Expression BuildXmlQueryMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Expression xmlExpression)
+    private Expression BuildXmlQueryMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Expression xmlExpression)
     {
-        if (function.Arguments.Count != 1)
+        if (function.Arguments is not { Count: 1 })
         {
             throw new TdsQueryEngineException("xml.query requires exactly one XQuery argument.");
         }
 
-        var xqueryExpression = BuildScalar(function.Arguments[0], aliases, parameter, parameters, targetType: typeof(string));
+        var xqueryExpression = EnsureXQueryArgument(BuildScalar(function.Arguments[0], aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(string)), "xml.query");
         return Expression.Call(
             typeof(TdsQueryEngineExecutor).GetMethod(nameof(XmlQueryCore), BindingFlags.NonPublic | BindingFlags.Static)!,
             Expression.Convert(xmlExpression, typeof(object)),
             xqueryExpression);
     }
 
-    private Expression BuildXmlValueMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Expression xmlExpression)
+    private Expression BuildXmlValueMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Expression xmlExpression)
     {
-        if (function.Arguments.Count != 2)
+        if (function.Arguments is not { Count: 2 })
         {
             throw new TdsQueryEngineException("xml.value requires an XQuery argument and a SQL type argument.");
         }
 
-        var xqueryExpression = BuildScalar(function.Arguments[0], aliases, parameter, parameters, targetType: typeof(string));
+        var xqueryExpression = EnsureXQueryArgument(BuildScalar(function.Arguments[0], aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(string)), "xml.value");
         if (function.Arguments[1] is not SqlLiteralExpression { Type: LiteralValueType.String or LiteralValueType.UnicodeString } typeLiteral)
         {
             throw new TdsQueryEngineException("xml.value requires a string SQL type literal as second argument.");
@@ -1602,21 +1838,21 @@ internal sealed class TdsQueryEngineExecutor
         return targetType == typeof(SqlXmlValue) ? Expression.Convert(call, typeof(SqlXmlValue)) : Expression.Convert(call, targetType);
     }
 
-    private Expression BuildXmlExistMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Expression xmlExpression)
+    private Expression BuildXmlExistMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Expression xmlExpression)
     {
-        if (function.Arguments.Count != 1)
+        if (function.Arguments is not { Count: 1 })
         {
             throw new TdsQueryEngineException("xml.exist requires exactly one XQuery argument.");
         }
 
-        var xqueryExpression = BuildScalar(function.Arguments[0], aliases, parameter, parameters, targetType: typeof(string));
+        var xqueryExpression = EnsureXQueryArgument(BuildScalar(function.Arguments[0], aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(string)), "xml.exist");
         return Expression.Call(
             typeof(TdsQueryEngineExecutor).GetMethod(nameof(XmlExistCore), BindingFlags.NonPublic | BindingFlags.Static)!,
             Expression.Convert(xmlExpression, typeof(object)),
             xqueryExpression);
     }
 
-    private Expression BuildBuiltinScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildBuiltinScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (function.IsStar)
         {
@@ -1626,16 +1862,16 @@ internal sealed class TdsQueryEngineExecutor
         var functionName = function.FunctionName.ToUpperInvariant();
         if (functionName == "DATEADD")
         {
-            return BuildDateAddScalarFunction(function, aliases, parameter, parameters);
+            return BuildDateAddScalarFunction(function, aliases, parameter, parameters, cteRoots, queryExecutionContext);
         }
 
         if (functionName == "DATEDIFF")
         {
-            return BuildDateDiffScalarFunction(function, aliases, parameter, parameters);
+            return BuildDateDiffScalarFunction(function, aliases, parameter, parameters, cteRoots, queryExecutionContext);
         }
 
-        var arguments = function.Arguments?.Select(argument => BuildScalar(argument, aliases, parameter, parameters)).ToArray() ?? [];
-        if (!_options.ScalarFunctions.TryGetValue(function.FunctionName, out var mapping))
+        var arguments = function.Arguments?.Select(argument => BuildScalar(argument, aliases, parameter, parameters, cteRoots, queryExecutionContext)).ToArray() ?? [];
+        if (!_scalarFunctions.TryGetValue(function.FunctionName, out var mapping))
         {
             throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' is not supported.");
         }
@@ -1643,7 +1879,7 @@ internal sealed class TdsQueryEngineExecutor
         return mapping(arguments);
     }
 
-    private Expression BuildCastScalarFunction(SqlCastExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildCastScalarFunction(SqlCastExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         var functionName = function.FunctionName.ToUpperInvariant();
         if (functionName is not ("CAST" or "TRY_CAST"))
@@ -1656,7 +1892,7 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' requires exactly one argument.");
         }
 
-        var value = BuildScalar(valueExpression, aliases, parameter, parameters);
+        var value = BuildScalar(valueExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
         if (IsXmlDataType(function.DataTypeSpec))
         {
             var useTryConvertForXml = functionName == "TRY_CAST";
@@ -1668,14 +1904,14 @@ internal sealed class TdsQueryEngineExecutor
         return BuildTypeConversion(value, targetType, useTryConvert);
     }
 
-    private Expression BuildConvertScalarFunction(SqlConvertExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildConvertScalarFunction(SqlConvertExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (function.IsStar || function.ArgCount is < 1 or > 2 || function.Arguments.FirstOrDefault() is not SqlScalarExpression valueExpression)
         {
             throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' requires one value argument and an optional style argument.");
         }
 
-        var value = BuildScalar(valueExpression, aliases, parameter, parameters);
+        var value = BuildScalar(valueExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
         var useTryConvert = function.FunctionName.StartsWith("TRY_", StringComparison.OrdinalIgnoreCase);
         if (IsXmlDataType(function.DataTypeSpec))
         {
@@ -1686,9 +1922,12 @@ internal sealed class TdsQueryEngineExecutor
         return BuildTypeConversion(value, targetType, useTryConvert);
     }
 
-    private Expression BuildNullScalarFunction(SqlNullScalarExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildNullScalarFunction(SqlNullScalarExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
-        if (!TryGetFunctionCallText(function.Xml, out var functionName, out var argumentTexts))
+        // The parser does not model these functions (the node has no children), so the arguments are read from the SQL
+        // text of the node. Do not use SqlCodeObject.Xml: its XmlWriter rejects the characters XML does not allow (NUL,
+        // unpaired surrogates) and rewrites "--" in the text, while a string literal may contain them.
+        if (!TryGetFunctionCallText(function.Sql, out var functionName, out var argumentTexts))
         {
             throw new TdsQueryEngineException("Unsupported NULL/conditional scalar expression.");
         }
@@ -1696,21 +1935,21 @@ internal sealed class TdsQueryEngineExecutor
         var normalizedName = functionName.ToUpperInvariant();
         return normalizedName switch
         {
-            "COALESCE" => BuildCoalesceFunction(argumentTexts, aliases, parameter, parameters),
-            "NULLIF" => BuildNullIfFunction(argumentTexts, aliases, parameter, parameters),
-            "IIF" => BuildIifFunction(argumentTexts, aliases, parameter, parameters),
+            "COALESCE" => BuildCoalesceFunction(argumentTexts, aliases, parameter, parameters, cteRoots, queryExecutionContext),
+            "NULLIF" => BuildNullIfFunction(argumentTexts, aliases, parameter, parameters, cteRoots, queryExecutionContext),
+            "IIF" => BuildIifFunction(argumentTexts, aliases, parameter, parameters, cteRoots, queryExecutionContext),
             _ => throw new TdsQueryEngineException($"Scalar function '{functionName}' is not supported."),
         };
     }
 
-    private Expression BuildCoalesceFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildCoalesceFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (argumentTexts.Count == 0)
         {
             throw new TdsQueryEngineException("COALESCE requires at least one argument.");
         }
 
-        var expressions = argumentTexts.Select(argument => BuildScalar(ParseScalarExpression(argument), aliases, parameter, parameters)).ToArray();
+        var expressions = argumentTexts.Select(argument => BuildScalar(ParseScalarExpression(argument), aliases, parameter, parameters, cteRoots, queryExecutionContext)).ToArray();
         var result = EnsureNullableExpression(expressions[0]);
         for (var i = 1; i < expressions.Length; i++)
         {
@@ -1721,15 +1960,15 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private Expression BuildNullIfFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildNullIfFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (argumentTexts.Count != 2)
         {
             throw new TdsQueryEngineException("NULLIF requires exactly two arguments.");
         }
 
-        var left = BuildScalar(ParseScalarExpression(argumentTexts[0]), aliases, parameter, parameters);
-        var right = BuildScalar(ParseScalarExpression(argumentTexts[1]), aliases, parameter, parameters, left.Type);
+        var left = BuildScalar(ParseScalarExpression(argumentTexts[0]), aliases, parameter, parameters, cteRoots, queryExecutionContext);
+        var right = BuildScalar(ParseScalarExpression(argumentTexts[1]), aliases, parameter, parameters, cteRoots, queryExecutionContext, left.Type);
         if (left.Type != right.Type)
         {
             right = ConvertExpression(right, left.Type);
@@ -1744,23 +1983,24 @@ internal sealed class TdsQueryEngineExecutor
             nullableLeft);
     }
 
-    private Expression BuildIifFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildIifFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (argumentTexts.Count != 3)
         {
             throw new TdsQueryEngineException("IIF requires exactly three arguments.");
         }
 
-        var conditionExpression = ParseBooleanExpression(argumentTexts[0]);
+        // The condition is re-parsed here, detached from the statement being translated, so the CTE scope and
+        // the query execution context of the enclosing statement are forwarded to let it use a subquery.
         var condition = BuildBoolean(
-            conditionExpression,
+            ParseBooleanExpression(argumentTexts[0]),
             aliases,
             parameter,
-            parameters ?? new Dictionary<string, TdsQueryParameter>(StringComparer.OrdinalIgnoreCase),
-            cteRoots: new Dictionary<string, TdsQueryRoot>(StringComparer.OrdinalIgnoreCase),
-            queryExecutionContext: null);
-        var ifTrue = BuildScalar(ParseScalarExpression(argumentTexts[1]), aliases, parameter, parameters);
-        var ifFalse = BuildScalar(ParseScalarExpression(argumentTexts[2]), aliases, parameter, parameters, ifTrue.Type);
+            parameters,
+            cteRoots,
+            queryExecutionContext);
+        var ifTrue = BuildScalar(ParseScalarExpression(argumentTexts[1]), aliases, parameter, parameters, cteRoots, queryExecutionContext);
+        var ifFalse = BuildScalar(ParseScalarExpression(argumentTexts[2]), aliases, parameter, parameters, cteRoots, queryExecutionContext, ifTrue.Type);
         if (ifTrue.Type != ifFalse.Type)
         {
             ifFalse = ConvertExpression(ifFalse, ifTrue.Type);
@@ -1769,7 +2009,7 @@ internal sealed class TdsQueryEngineExecutor
         return Expression.Condition(condition, ifTrue, ifFalse);
     }
 
-    private Expression BuildDateAddScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildDateAddScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (function.ArgCount != 3)
         {
@@ -1777,8 +2017,8 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var datePart = Expression.Constant(ReadDatePartName(function.Arguments[0]), typeof(string));
-        var value = BuildScalar(function.Arguments[1], aliases, parameter, parameters, targetType: typeof(int));
-        var dateValue = BuildScalar(function.Arguments[2], aliases, parameter, parameters, targetType: typeof(DateTime));
+        var value = BuildScalar(function.Arguments[1], aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(int));
+        var dateValue = BuildScalar(function.Arguments[2], aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(DateTime));
         return Expression.Call(
             typeof(TdsQueryEngineExecutor).GetMethod(nameof(DateAddCore), BindingFlags.NonPublic | BindingFlags.Static)!,
             datePart,
@@ -1786,7 +2026,7 @@ internal sealed class TdsQueryEngineExecutor
             dateValue);
     }
 
-    private Expression BuildDateDiffScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildDateDiffScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         if (function.ArgCount != 3)
         {
@@ -1794,8 +2034,8 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var datePart = Expression.Constant(ReadDatePartName(function.Arguments[0]), typeof(string));
-        var startDate = BuildScalar(function.Arguments[1], aliases, parameter, parameters, targetType: typeof(DateTime));
-        var endDate = BuildScalar(function.Arguments[2], aliases, parameter, parameters, targetType: typeof(DateTime));
+        var startDate = BuildScalar(function.Arguments[1], aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(DateTime));
+        var endDate = BuildScalar(function.Arguments[2], aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType: typeof(DateTime));
         return Expression.Call(
             typeof(TdsQueryEngineExecutor).GetMethod(nameof(DateDiffCore), BindingFlags.NonPublic | BindingFlags.Static)!,
             datePart,
@@ -1812,7 +2052,14 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("Arithmetic operations require numeric operands.");
         }
 
+        // A NULL operand makes the result NULL: keep the operands nullable so the lifted operator propagates it, instead
+        // of unwrapping a null value
         var targetType = GetNumericPromotionType(leftType, rightType);
+        if (leftType != left.Type || rightType != right.Type)
+        {
+            targetType = typeof(Nullable<>).MakeGenericType(targetType);
+        }
+
         var convertedLeft = left.Type == targetType ? left : Expression.Convert(left, targetType);
         var convertedRight = right.Type == targetType ? right : Expression.Convert(right, targetType);
         return operation(convertedLeft, convertedRight);
@@ -1940,11 +2187,13 @@ internal sealed class TdsQueryEngineExecutor
         {
             var localBindings = aliases.Values.Where(candidate => !candidate.IsOuter).ToArray();
             var candidates = localBindings.Length == 0 ? aliases.Values : localBindings;
-            binding = candidates.SingleOrDefault(candidate => FindMember(candidate.Type, columnName) is not null);
-            if (binding is null)
+            var matches = candidates.Where(candidate => FindMember(candidate.Type, columnName) is not null).Take(2).ToArray();
+            if (matches.Length != 1)
             {
                 throw new TdsQueryEngineException($"Ambiguous or unknown column '{columnName}'.");
             }
+
+            binding = matches[0];
         }
 
         var member = FindMember(binding.Type, columnName) ?? throw new TdsQueryEngineException($"Unknown column '{columnName}'.");
@@ -2033,6 +2282,17 @@ internal sealed class TdsQueryEngineExecutor
         };
     }
 
+    private static Expression EnsureXQueryArgument(Expression expression, string methodName)
+    {
+        // A column keeps its own type whatever the target type, e.g. Id.exist(Score)
+        if (expression.Type != typeof(string))
+        {
+            throw new TdsQueryEngineException($"{methodName} requires a string XQuery argument.");
+        }
+
+        return expression;
+    }
+
     private static bool ReferencesAliases(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases)
     {
         if (expression is not SqlScalarRefExpression column)
@@ -2057,7 +2317,15 @@ internal sealed class TdsQueryEngineExecutor
             return expression;
         }
 
-        return Expression.Convert(expression, targetType);
+        try
+        {
+            return Expression.Convert(expression, targetType);
+        }
+        catch (InvalidOperationException)
+        {
+            // No coercion operator is defined between the types, e.g. comparing a datetime to an int
+            throw new TdsQueryEngineException($"Cannot implicitly convert a value of type '{GetNonNullableType(expression.Type).Name}' to '{GetNonNullableType(targetType).Name}'.");
+        }
     }
 
     private static Expression EnsureNullableExpression(Expression expression)
@@ -2082,7 +2350,7 @@ internal sealed class TdsQueryEngineExecutor
             ? null
             : NormalizeObjectIdentifier(dataTypeSpec.XmlSchemaCollection.Sql);
         XmlSchemaSet? schemaSet = null;
-        if (schemaCollectionName is not null && !_options.XmlSchemaCollections.TryGetValue(schemaCollectionName, out schemaSet))
+        if (schemaCollectionName is not null && !_xmlSchemaCollections.TryGetValue(schemaCollectionName, out schemaSet))
         {
             throw new TdsQueryEngineException($"Unknown XML schema collection '{schemaCollectionName}'.");
         }
@@ -2137,15 +2405,17 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlXmlValue ConvertToXmlCore(object? value, string? schemaCollectionName, XmlSchemaSet? schemaSet, SqlXmlDocumentConstraint documentConstraint)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             throw new TdsQueryEngineException("Cannot convert NULL to 'XML'.");
         }
 
-        EnsureXmlConstraint(xmlValue.Value, documentConstraint);
+        // DOCUMENT/CONTENT need no separate check: parsing the value already rejected anything without a
+        // single root element, which is what this engine enforces.
+        _ = documentConstraint;
         if (schemaSet is not null)
         {
-            ValidateXmlAgainstSchema(xmlValue.Value, schemaSet, schemaCollectionName);
+            ValidateXmlAgainstSchema(document, schemaSet, schemaCollectionName);
         }
 
         return schemaCollectionName is null ? xmlValue : xmlValue with { SchemaCollection = schemaCollectionName };
@@ -2167,13 +2437,13 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlXmlValue? XmlQueryCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return null;
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var navigator = CreateXmlContextNavigator(document);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
             var fragments = new List<string>();
@@ -2193,13 +2463,13 @@ internal sealed class TdsQueryEngineExecutor
 
     private static object XmlValueCore(object? value, string xquery, Type targetType)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             throw new TdsQueryEngineException("xml.value cannot be evaluated on NULL.");
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var navigator = CreateXmlContextNavigator(document);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
             if (!iterator.MoveNext())
@@ -2231,13 +2501,13 @@ internal sealed class TdsQueryEngineExecutor
 
     private static int? XmlExistCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return null;
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var navigator = CreateXmlContextNavigator(document);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
             return iterator.MoveNext() ? 1 : 0;
@@ -2253,13 +2523,13 @@ internal sealed class TdsQueryEngineExecutor
 
     private static IEnumerable<SqlXmlValue> XmlNodesCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return [];
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var navigator = CreateXmlContextNavigator(document);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is not XPathNodeIterator iterator)
         {
             return [];
@@ -2280,8 +2550,9 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private static bool TryConvertToSqlXmlValue(object? value, string? schemaCollectionName, out SqlXmlValue? xmlValue)
+    private static bool TryConvertToSqlXmlValue(object? value, string? schemaCollectionName, out SqlXmlValue? xmlValue, out XDocument? document)
     {
+        document = null;
         if (value is null or DBNull)
         {
             xmlValue = null;
@@ -2292,9 +2563,9 @@ internal sealed class TdsQueryEngineExecutor
         {
             SqlXmlValue typedXml => schemaCollectionName is null ? typedXml : typedXml with { SchemaCollection = schemaCollectionName },
             string text => new SqlXmlValue(text, schemaCollectionName),
-            XDocument document => new SqlXmlValue(document.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
+            XDocument xmlDocument => new SqlXmlValue(xmlDocument.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
             XElement element => new SqlXmlValue(element.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
-            XmlDocument document => new SqlXmlValue(document.OuterXml, schemaCollectionName),
+            XmlDocument xmlDocument => new SqlXmlValue(xmlDocument.OuterXml, schemaCollectionName),
             _ => null,
         };
 
@@ -2303,13 +2574,12 @@ internal sealed class TdsQueryEngineExecutor
             return false;
         }
 
-        _ = XDocument.Parse(xmlValue.Value, LoadOptions.PreserveWhitespace);
+        document = ParseXml(xmlValue.Value);
         return true;
     }
 
-    private static void ValidateXmlAgainstSchema(string xml, XmlSchemaSet schemaSet, string? schemaCollectionName)
+    private static void ValidateXmlAgainstSchema(XDocument document, XmlSchemaSet schemaSet, string? schemaCollectionName)
     {
-        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
         string? validationError = null;
         document.Validate(schemaSet, (_, args) =>
         {
@@ -2322,22 +2592,50 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
-    private static XPathNavigator CreateXmlContextNavigator(string xml)
+    /// <summary>Evaluates the argument of an XML method.</summary>
+    /// <remarks>
+    /// SQL Server's <c>.query()</c>, <c>.value()</c>, <c>.exist()</c> and <c>.nodes()</c> take XQuery; this
+    /// engine evaluates XPath 1.0, which covers the common path expressions but not FLWOR, <c>sql:variable()</c>
+    /// or the XQuery-only functions. Report what is unsupported rather than letting XPathException escape as a
+    /// generic handler failure.
+    /// </remarks>
+    private static object EvaluateXPath(XPathNavigator navigator, string xquery)
     {
-        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
-        return document.Root?.CreateNavigator()
-            ?? throw new TdsQueryEngineException("Cannot evaluate XML query on an empty document.");
+        try
+        {
+            return navigator.Evaluate(xquery);
+        }
+        catch (XPathException ex)
+        {
+            throw new TdsQueryEngineException($"The XML method expression '{xquery}' is not a supported XPath 1.0 expression: {ex.Message}");
+        }
     }
 
-    private static void EnsureXmlConstraint(string xml, SqlXmlDocumentConstraint documentConstraint)
+    /// <summary>Parses an XML value with DTD processing disabled.</summary>
+    /// <remarks>
+    /// <see cref="XDocument.Parse(string, LoadOptions)"/> defaults to <see cref="DtdProcessing.Parse"/> with a
+    /// ten-million-character entity budget, so a few hundred bytes of nested internal entities expand into
+    /// megabytes. XML values reach this engine from client SQL and are parsed once per row, which turns that
+    /// budget into an arbitrary amount of server CPU. External entities were never resolved, so this only
+    /// removes the expansion.
+    /// </remarks>
+    private static XDocument ParseXml(string xml)
     {
-        _ = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
-        if (documentConstraint == SqlXmlDocumentConstraint.None)
+        try
         {
-            return;
+            using var reader = XmlReader.Create(new StringReader(xml), XmlReaderSettings);
+            return XDocument.Load(reader, LoadOptions.PreserveWhitespace);
         }
+        catch (XmlException ex)
+        {
+            throw new TdsQueryEngineException($"The XML value could not be parsed: {ex.Message}");
+        }
+    }
 
-        // XDocument parsing already enforces a single root element, which matches DOCUMENT/CONTENT checks in this engine.
+    private static XPathNavigator CreateXmlContextNavigator(XDocument document)
+    {
+        return document.Root?.CreateNavigator()
+            ?? throw new TdsQueryEngineException("Cannot evaluate XML query on an empty document.");
     }
 
     private static Type GetClrType(SqlDataTypeSpecification dataTypeSpec)
@@ -2365,11 +2663,12 @@ internal sealed class TdsQueryEngineExecutor
         };
     }
 
-    private static bool TryGetFunctionCallText(string xml, out string functionName, out IReadOnlyList<string> argumentTexts)
+    private static bool TryGetFunctionCallText(string? sql, out string functionName, out IReadOnlyList<string> argumentTexts)
     {
         functionName = string.Empty;
         argumentTexts = [];
-        if (!TryExtractExpressionComment(xml, out var invocation))
+        var invocation = sql?.Trim();
+        if (string.IsNullOrEmpty(invocation))
         {
             return false;
         }
@@ -2384,28 +2683,6 @@ internal sealed class TdsQueryEngineExecutor
         functionName = invocation[..startIndex].Trim();
         argumentTexts = SplitTopLevelArguments(invocation[(startIndex + 1)..endIndex]);
         return !string.IsNullOrWhiteSpace(functionName);
-    }
-
-    private static bool TryExtractExpressionComment(string xml, out string expressionText)
-    {
-        expressionText = string.Empty;
-        const string StartMarker = "<!--";
-        const string EndMarker = "-->";
-        var start = xml.IndexOf(StartMarker, StringComparison.Ordinal);
-        if (start < 0)
-        {
-            return false;
-        }
-
-        start += StartMarker.Length;
-        var end = xml.IndexOf(EndMarker, start, StringComparison.Ordinal);
-        if (end < 0)
-        {
-            return false;
-        }
-
-        expressionText = xml[start..end].Trim();
-        return expressionText.Length > 0;
     }
 
     private static IReadOnlyList<string> SplitTopLevelArguments(string argumentsText)
@@ -2455,7 +2732,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlScalarExpression ParseScalarExpression(string expressionText)
     {
-        var parseResult = SqlParser.Parse("SELECT " + expressionText, new SqlParserParseOptions(), out _);
+        var parseResult = ParseSql("SELECT " + expressionText);
         if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
         {
             throw new TdsQueryEngineException($"Invalid scalar expression '{expressionText}'.");
@@ -2476,7 +2753,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlBooleanExpression ParseBooleanExpression(string expressionText)
     {
-        var parseResult = SqlParser.Parse("SELECT 1 WHERE " + expressionText, new SqlParserParseOptions(), out _);
+        var parseResult = ParseSql("SELECT 1 WHERE " + expressionText);
         if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
         {
             throw new TdsQueryEngineException($"Invalid boolean expression '{expressionText}'.");
@@ -2506,19 +2783,27 @@ internal sealed class TdsQueryEngineExecutor
 
     private static DateTime DateAddCore(string datePart, int value, DateTime dateValue)
     {
-        return datePart.ToUpperInvariant() switch
+        try
         {
-            "YEAR" or "YY" or "YYYY" => dateValue.AddYears(value),
-            "QUARTER" or "QQ" or "Q" => dateValue.AddMonths(value * 3),
-            "MONTH" or "MM" or "M" => dateValue.AddMonths(value),
-            "DAYOFYEAR" or "DY" or "Y" or "DAY" or "DD" or "D" => dateValue.AddDays(value),
-            "WEEK" or "WK" or "WW" => dateValue.AddDays(value * 7d),
-            "HOUR" or "HH" => dateValue.AddHours(value),
-            "MINUTE" or "MI" or "N" => dateValue.AddMinutes(value),
-            "SECOND" or "SS" or "S" => dateValue.AddSeconds(value),
-            "MILLISECOND" or "MS" => dateValue.AddMilliseconds(value),
-            _ => throw new TdsQueryEngineException($"DATEADD date part '{datePart}' is not supported."),
-        };
+            return datePart.ToUpperInvariant() switch
+            {
+                "YEAR" or "YY" or "YYYY" => dateValue.AddYears(value),
+                "QUARTER" or "QQ" or "Q" => dateValue.AddMonths(value * 3),
+                "MONTH" or "MM" or "M" => dateValue.AddMonths(value),
+                "DAYOFYEAR" or "DY" or "Y" or "DAY" or "DD" or "D" => dateValue.AddDays(value),
+                "WEEK" or "WK" or "WW" => dateValue.AddDays(value * 7d),
+                "HOUR" or "HH" => dateValue.AddHours(value),
+                "MINUTE" or "MI" or "N" => dateValue.AddMinutes(value),
+                "SECOND" or "SS" or "S" => dateValue.AddSeconds(value),
+                "MILLISECOND" or "MS" => dateValue.AddMilliseconds(value),
+                _ => throw new TdsQueryEngineException($"DATEADD date part '{datePart}' is not supported."),
+            };
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // The result is outside the range of DateTime. 517 is what SQL Server reports.
+            throw new TdsQueryEngineException("Adding a value to a 'datetime' column caused an overflow.", errorNumber: 517);
+        }
     }
 
     private static int DateDiffCore(string datePart, DateTime startDate, DateTime endDate)
@@ -2540,7 +2825,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private static Type ResolveSqlTypeFromText(string sqlTypeText)
     {
-        var parseResult = SqlParser.Parse("SELECT CAST(NULL AS " + sqlTypeText + ")", new SqlParserParseOptions(), out _);
+        var parseResult = ParseSql("SELECT CAST(NULL AS " + sqlTypeText + ")");
         if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
         {
             throw new TdsQueryEngineException($"xml.value SQL type '{sqlTypeText}' is invalid.");
@@ -2588,9 +2873,9 @@ internal sealed class TdsQueryEngineExecutor
         object? value = literal.Type switch
         {
             LiteralValueType.Null => null,
-            LiteralValueType.Integer => ConvertIntegerLiteral(literal.Value),
-            LiteralValueType.Numeric or LiteralValueType.Money => decimal.Parse(literal.Value, NumberStyles.Number, CultureInfo.InvariantCulture),
-            LiteralValueType.Real => double.Parse(literal.Value, NumberStyles.Float, CultureInfo.InvariantCulture),
+            LiteralValueType.Integer => ConvertIntegerLiteral(literal),
+            LiteralValueType.Numeric or LiteralValueType.Money => decimal.TryParse(literal.Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var decimalValue) ? decimalValue : throw InvalidNumericLiteral(literal),
+            LiteralValueType.Real => double.TryParse(literal.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue) ? doubleValue : throw InvalidNumericLiteral(literal),
             LiteralValueType.String or LiteralValueType.UnicodeString or LiteralValueType.Identifier => literal.Value,
             _ => throw new TdsQueryEngineException($"Literal type '{literal.Type}' is not supported."),
         };
@@ -2634,11 +2919,27 @@ internal sealed class TdsQueryEngineExecutor
         return count;
     }
 
-    private static object ConvertIntegerLiteral(string value)
+    private static TdsQueryEngineException InvalidNumericLiteral(SqlLiteralExpression literal)
     {
-        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue)
-            ? (object)intValue
-            : long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        // The parser accepts tokens such as "$" (money) or "1e" (float) that do not hold a number
+        return new TdsQueryEngineException($"Invalid numeric literal '{literal.Value}'.");
+    }
+
+    private static object ConvertIntegerLiteral(SqlLiteralExpression literal)
+    {
+        var value = literal.Value;
+        if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue))
+        {
+            return intValue;
+        }
+
+        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
+        {
+            return longValue;
+        }
+
+        // SQL Server types an integer literal beyond bigint as numeric
+        return decimal.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var decimalValue) ? decimalValue : throw InvalidNumericLiteral(literal);
     }
 
     private static object? ConvertValue(object? value, Type targetType)
@@ -2671,7 +2972,7 @@ internal sealed class TdsQueryEngineExecutor
 
         if (targetType == typeof(SqlXmlValue))
         {
-            if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var sqlXmlValue) || sqlXmlValue is null)
+            if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var sqlXmlValue, out _) || sqlXmlValue is null)
             {
                 throw new TdsQueryEngineException($"Cannot convert value of type '{value.GetType().Name}' to 'XML'.");
             }
@@ -2689,6 +2990,19 @@ internal sealed class TdsQueryEngineExecutor
             value = xmlValue.Value;
         }
 
+        try
+        {
+            return ConvertNonNullValue(value, targetType);
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException or ArgumentException)
+        {
+            // The value comes from a literal, a parameter, or a row (CAST, CONVERT), so it is the query that is invalid
+            throw new TdsQueryEngineException($"Conversion failed when converting the value '{Convert.ToString(value, CultureInfo.InvariantCulture)}' to data type '{targetType.Name}'.");
+        }
+    }
+
+    private static object ConvertNonNullValue(object value, Type targetType)
+    {
         if (targetType.IsEnum)
         {
             return value is string text ? Enum.Parse(targetType, text, ignoreCase: true) : Enum.ToObject(targetType, value);

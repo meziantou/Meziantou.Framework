@@ -4,9 +4,10 @@ namespace Meziantou.Framework.NuGetPackageValidation;
 
 /// <summary>Provides methods to validate NuGet packages against a set of rules to ensure they follow best practices and contain required metadata.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.NuGetPackageValidation.Samples/Examples.cs" ref:region="NuGetPackageValidator_Example" ref:dedent="true">
 /// // Validate a package with default rules
-/// var result = await NuGetPackageValidator.ValidateAsync("MyPackage.1.0.0.nupkg");
+/// var packagePath = FullPath.FromPath("MyPackage.1.0.0.nupkg");
+/// var result = await NuGetPackageValidator.ValidateAsync(packagePath);
 /// if (!result.IsValid)
 /// {
 ///     foreach (var error in result.Errors)
@@ -19,7 +20,7 @@ namespace Meziantou.Framework.NuGetPackageValidation;
 /// var options = new NuGetPackageValidationOptions();
 /// options.Rules.Add(NuGetPackageValidationRules.LicenseMustBeSet);
 /// options.Rules.Add(NuGetPackageValidationRules.AuthorMustBeSet);
-/// var customResult = await NuGetPackageValidator.ValidateAsync("MyPackage.1.0.0.nupkg", options);
+/// var customResult = await NuGetPackageValidator.ValidateAsync(packagePath, options);
 /// </code>
 /// </example>
 public static class NuGetPackageValidator
@@ -57,19 +58,38 @@ public static class NuGetPackageValidator
     public static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, NuGetPackageValidationOptions options, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(packagePath))
-        {
-            return new NuGetPackageValidationResult(
-            [
-                new (ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found", helpText: null),
-            ]);
-        }
+            return CreateResult(options, ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found");
 
-        using var context = new NuGetPackageValidationContext(packagePath, options, cancellationToken);
-        foreach (var rule in options.Rules)
+        NuGetPackageValidationContext? context = null;
+        try
         {
-            await rule.ExecuteAsync(context).ConfigureAwait(false);
-        }
+            try
+            {
+                context = new NuGetPackageValidationContext(packagePath, options, cancellationToken);
+            }
+            catch (InvalidDataException ex)
+            {
+                return CreateResult(options, ErrorCodes.InvalidPackage, $"NuGet package '{packagePath}' cannot be read: {ex.Message}");
+            }
 
-        return new NuGetPackageValidationResult(context.Errors);
+            foreach (var rule in options.Rules)
+            {
+                await rule.ExecuteAsync(context).ConfigureAwait(false);
+            }
+
+            return new NuGetPackageValidationResult(context.Errors);
+        }
+        finally
+        {
+            context?.Dispose();
+        }
+    }
+
+    private static NuGetPackageValidationResult CreateResult(NuGetPackageValidationOptions options, int errorCode, string message)
+    {
+        if (options.ExcludedRuleIds.Contains(errorCode))
+            return new NuGetPackageValidationResult([]);
+
+        return new NuGetPackageValidationResult([new NuGetPackageValidationError(errorCode, message, helpText: null)]);
     }
 }

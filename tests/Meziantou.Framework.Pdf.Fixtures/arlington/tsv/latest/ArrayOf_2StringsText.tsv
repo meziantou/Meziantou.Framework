@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	string-text	1.2		TRUE	FALSE	FALSE					
+1	string-text	1.2		TRUE	FALSE	FALSE					

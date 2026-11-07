@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0*	name	fn:Extension(OpenOffice)		TRUE	fn:MustBeDirect()	FALSE					OpenOffice / LibreOffice extension - MIME type as a name
+1*	stream	fn:Extension(OpenOffice)		TRUE	TRUE	FALSE				[Stream]	

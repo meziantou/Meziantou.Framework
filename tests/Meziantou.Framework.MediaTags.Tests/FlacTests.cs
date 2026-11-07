@@ -5,6 +5,101 @@ public sealed class FlacTests
     private static string GetTestFilePath(string fileName) => Path.Combine("TestFiles", fileName);
 
     [Fact]
+    public void ReadmeExample_ReadTags()
+    {
+        #region MediaFile_ReadTags
+        var result = MediaFile.ReadTags("TestFiles/basic.flac");
+        Assert.True(result.IsSuccess, $"{result.Error}: {result.ErrorMessage}");
+
+        var tags = result.Value;
+        Assert.Equal(MediaFormat.Flac, tags.Format);
+        Assert.True(tags.Duration > TimeSpan.Zero);
+        Assert.Equal("Test Title", tags.Title);
+        Assert.Equal("Test Artist", tags.Artist);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ReadErrors()
+    {
+        #region MediaFile_ReadErrors
+        var result = MediaFile.ReadTags("TestFiles/cover.png");
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
+        Assert.NotNull(result.ErrorMessage);
+
+        // Value throws when the operation failed
+        Assert.Throws<InvalidOperationException>(() => result.Value);
+
+        var missingFile = MediaFile.ReadTags("TestFiles/missing.mp3");
+        Assert.Equal(MediaTagError.IoError, missingFile.Error);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DetectFormat()
+    {
+        #region MediaFile_DetectFormat
+        Assert.Equal(MediaFormat.OggOpus, MediaFile.DetectFormat("TestFiles/basic.opus"));
+        Assert.Null(MediaFile.DetectFormat("TestFiles/cover.png"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ReadPictures()
+    {
+        #region MediaFile_ReadPictures
+        var tags = MediaFile.ReadTags("TestFiles/with_art.flac").Value;
+
+        // Prefer the front cover, and fall back to any picture
+        var cover = tags.Pictures.FirstOrDefault(picture => picture.PictureType == MediaPictureType.FrontCover)
+            ?? tags.Pictures.FirstOrDefault();
+        Assert.NotNull(cover);
+        Assert.Equal("image/png", cover.MimeType);
+        Assert.NotEmpty(cover.Data); // Save it with File.WriteAllBytes("cover.png", cover.Data)
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_WriteToStream()
+    {
+        #region MediaFile_WriteToStream
+        var tags = MediaFile.ReadTags("TestFiles/basic.flac").Value;
+        tags.Title = "New Title";
+        tags.CustomFields["MOOD"] = "Calm";
+        tags.ReplayGain = new ReplayGainInfo { TrackGain = -6.5, TrackPeak = 0.98 };
+
+        using var input = File.OpenRead("TestFiles/basic.flac");
+        using var output = new MemoryStream(); // Such as File.Create("copy.flac")
+        var result = MediaFile.WriteTags(input, output, tags, MediaFormat.Flac);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+
+        output.Position = 0;
+        var written = MediaFile.ReadTags(output).Value;
+        Assert.Equal("New Title", written.Title);
+        Assert.Equal("Test Artist", written.Artist); // Kept, because the tags were read first
+        Assert.Equal("Calm", written.CustomFields["MOOD"]);
+        Assert.Equal(-6.5, written.ReplayGain?.TrackGain);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_WriteReplacesTheTags()
+    {
+        #region MediaFile_WriteReplacesTheTags
+        using var input = File.OpenRead("TestFiles/basic.flac");
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Only a title" }, MediaFormat.Flac);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+
+        output.Position = 0;
+        var written = MediaFile.ReadTags(output).Value;
+        Assert.Equal("Only a title", written.Title);
+        Assert.Null(written.Artist); // The file had an artist: it is removed
+        #endregion
+    }
+
+    [Fact]
     public void ReadTags_BasicFlac()
     {
         var result = MediaFile.ReadTags(GetTestFilePath("basic.flac"));
@@ -102,7 +197,7 @@ public sealed class FlacTests
         var result = MediaFile.ReadTags(GetTestFilePath("long_values.flac"));
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value.Title);
-        Assert.True(result.Value.Title.Length > 100);
+        Assert.HasCountGreaterThan(100, result.Value.Title);
     }
 
     [Fact]
@@ -169,7 +264,7 @@ public sealed class FlacTests
             // The file should still be a valid FLAC (starts with fLaC)
             using var stream = File.OpenRead(tempFile);
             var magic = new byte[4];
-            stream.ReadAtLeast(magic, 4);
+            stream.ReadExactly(magic);
             Assert.Equal((byte)'f', magic[0]);
             Assert.Equal((byte)'L', magic[1]);
             Assert.Equal((byte)'a', magic[2]);
@@ -253,5 +348,202 @@ public sealed class FlacTests
         var result = MediaFile.ReadTags(stream, MediaFormat.Flac);
         Assert.False(result.IsSuccess);
         Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
+    }
+
+    [Fact]
+    public void WriteTags_FileWithLeadingId3Tag_KeepsTheAudioStream()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            var original = File.ReadAllBytes(GetTestFilePath("basic.flac"));
+            File.WriteAllBytes(tempFile, [.. CreateId3v2Tag(paddingSize: 100), .. original]);
+
+            Assert.Equal(MediaFormat.Flac, MediaFile.DetectFormat(tempFile));
+
+            var writeResult = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "New Title" });
+            Assert.True(writeResult.IsSuccess);
+
+            var written = File.ReadAllBytes(tempFile);
+
+            // The ID3v2 tag is preserved and the FLAC signature still follows it
+            const int TagLength = 110;
+            Assert.Equal("ID3"u8.ToArray(), written.AsSpan(0, 3).ToArray());
+            Assert.Equal("fLaC"u8.ToArray(), written.AsSpan(TagLength, 4).ToArray());
+
+            // The audio frames are byte-for-byte what they were
+            var originalAudio = original.AsSpan(FindAudioStart(original, streamStart: 0)).ToArray();
+            var writtenAudio = written.AsSpan(FindAudioStart(written, streamStart: TagLength)).ToArray();
+            Assert.Equal(originalAudio, writtenAudio);
+
+            var readResult = MediaFile.ReadTags(tempFile);
+            Assert.True(readResult.IsSuccess);
+            Assert.Equal("New Title", readResult.Value.Title);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_NotAFlacFile_ReturnsError()
+    {
+        using var input = new MemoryStream([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]);
+        using var output = new MemoryStream();
+
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.Flac);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+        Assert.Equal(0, output.Length);
+    }
+
+    private static byte[] CreateId3v2Tag(int paddingSize)
+    {
+        var tag = new byte[10 + paddingSize];
+        tag[0] = (byte)'I';
+        tag[1] = (byte)'D';
+        tag[2] = (byte)'3';
+        tag[3] = 4;
+        tag[9] = (byte)paddingSize; // Synchsafe size, small enough to fit in the last byte
+        return tag;
+    }
+
+    private static int FindAudioStart(byte[] flac, int streamStart)
+    {
+        // Walk the metadata blocks from just after the "fLaC" signature to the first audio frame
+        var offset = streamStart + 4;
+        while (true)
+        {
+            var isLast = (flac[offset] & 0x80) != 0;
+            var blockSize = (flac[offset + 1] << 16) | (flac[offset + 2] << 8) | flac[offset + 3];
+            offset += 4 + blockSize;
+            if (isLast)
+                return offset;
+        }
+    }
+
+    [Fact]
+    public void WriteTags_PictureTooLargeForAMetadataBlock_IsRefused()
+    {
+        // A metadata block header has 24 bits for the size. Truncating it produces a file whose block chain
+        // walks into the picture bytes, and every decoder then reads metadata as audio.
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.flac"), tempFile, overwrite: true);
+            var original = File.ReadAllBytes(tempFile);
+
+            var tags = new MediaTagInfo { Title = "Title" };
+            tags.Pictures.Add(new MediaPicture
+            {
+                PictureType = MediaPictureType.FrontCover,
+                MimeType = "image/jpeg",
+                Data = new byte[0x100_0000], // 16 MiB, one byte past what the header can express
+            });
+
+            var result = MediaFile.WriteTags(tempFile, tags);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(MediaTagError.InvalidTagData, result.Error);
+            Assert.Equal(original, File.ReadAllBytes(tempFile));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ReadTags_WithArt_MatchesTheCoverFile()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("with_art.flac"));
+        Assert.True(result.IsSuccess);
+
+        var picture = Assert.Single(result.Value.Pictures);
+        Assert.Equal("image/png", picture.MimeType);
+        Assert.Equal(File.ReadAllBytes(GetTestFilePath("cover.png")), picture.Data);
+    }
+
+    [Fact]
+    public void WriteTags_ReplayGainAndMusicBrainzAndCustomFields_RoundTrip()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.flac"), tempFile, overwrite: true);
+
+            var tags = new MediaTagInfo
+            {
+                Title = "Title",
+                ReplayGain = new ReplayGainInfo { TrackGain = -3.21, TrackPeak = 0.5, AlbumGain = -2.5, AlbumPeak = 0.75 },
+                MusicBrainzTrackId = "track-id",
+                MusicBrainzArtistId = "artist-id",
+                MusicBrainzAlbumId = "album-id",
+                MusicBrainzReleaseGroupId = "release-group-id",
+            };
+            tags.CustomFields["MY FIELD"] = "my value";
+
+            Assert.True(MediaFile.WriteTags(tempFile, tags).IsSuccess);
+
+            var read = MediaFile.ReadTags(tempFile).Value;
+            Assert.Equal(-3.21, read.ReplayGain?.TrackGain);
+            Assert.Equal(0.5, read.ReplayGain?.TrackPeak);
+            Assert.Equal(-2.5, read.ReplayGain?.AlbumGain);
+            Assert.Equal(0.75, read.ReplayGain?.AlbumPeak);
+            Assert.Equal("track-id", read.MusicBrainzTrackId);
+            Assert.Equal("artist-id", read.MusicBrainzArtistId);
+            Assert.Equal("album-id", read.MusicBrainzAlbumId);
+            Assert.Equal("release-group-id", read.MusicBrainzReleaseGroupId);
+            Assert.Equal("my value", read.CustomFields["MY FIELD"]);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_MetadataBlockRunningPastTheEndOfTheFile_IsRefused()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            var bytes = File.ReadAllBytes(GetTestFilePath("basic.flac"));
+
+            // Overstate the size of the first metadata block
+            bytes[5] = 0x7F;
+            bytes[6] = 0xFF;
+            bytes[7] = 0xFF;
+            File.WriteAllBytes(tempFile, bytes);
+
+            var result = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title" });
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(MediaTagError.CorruptFile, result.Error);
+            Assert.Equal(bytes, File.ReadAllBytes(tempFile));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Theory]
+    [InlineData("basic.flac", MediaFormat.Flac)]
+    [InlineData("basic.ogg", MediaFormat.OggVorbis)]
+    [InlineData("basic.opus", MediaFormat.OggOpus)]
+    public void WriteTags_CustomFieldNameWithEquals_IsRefused(string fileName, MediaFormat format)
+    {
+        // A Vorbis comment name ends at the first '=': "A=B" would read back as the field "A" with the value "B=C"
+        var tags = new MediaTagInfo();
+        tags.CustomFields["A=B"] = "C";
+
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath(fileName)), writable: false), output, tags, format);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.InvalidTagData, result.Error);
     }
 }

@@ -1,0 +1,310 @@
+// The testdriver vendor implementation of the runner (https://web-platform-tests.org/writing-tests/testdriver-extension-tutorial.html).
+// There is no WebDriver: the runner dispatches the events of the user interactions (see WptTestDriver.cs) from a task.
+// The runner also appends this script to /resources/testdriver.js (as wptrunner does with its own implementation), so that
+// the documents that do not load testdriver-vendor.js can use the test driver: it is only installed once.
+(function () {
+  const internal = window.test_driver_internal;
+  if (internal.in_automation) return;
+  internal.in_automation = true;
+
+  const queue = (action) => new Promise((resolve, reject) => {
+    setTimeout(() => {
+      try {
+        action();
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    }, 0);
+  });
+
+  // The click of WebDriver resolves after the browser rendered the result of the click: the promise resolves after the next
+  // rendering update (e.g. the focus fixup rule ran), or after a delay when there is no rendering opportunity
+  const afterRendering = () => new Promise(resolve => {
+    requestAnimationFrame(() => setTimeout(resolve, 0));
+    setTimeout(resolve, 100);
+  });
+
+  // The click is performed from a task of the event loop (the microtasks run after each event listener)
+  internal.click = function (element, coords) {
+    return new Promise((resolve, reject) => __wpt_click(element, coords.x, coords.y, resolve, (message) => reject(new Error(message)))).then(afterRendering);
+  };
+
+  // The command of WebDriver resolves after the tasks that the keys queued (e.g. the input and change events of a select element)
+  internal.send_keys = function (element, keys) {
+    return queue(() => __wpt_send_keys(element, String(keys))).then(() => new Promise(resolve => setTimeout(resolve, 0)));
+  };
+
+  // The permission store of the runner (BrowsingContextOptions.Permissions, and BrowsingContextOptions.ClipboardPermission
+  // for the clipboard permissions): the state is set for every origin, by a task (see __wpt_set_permission)
+  internal.set_permission = function (params, context) {
+    const name = params && params.descriptor && params.descriptor.name;
+    if (typeof name !== 'string') {
+      return Promise.reject(new Error('set_permission() needs the name of the permission'));
+    }
+
+    const state = String(params.state);
+    return new Promise(resolve => __wpt_set_permission(name, state, resolve));
+  };
+
+  // Global Privacy Control (https://w3c.github.io/gpc/#automation): the preference of the user of the runner
+  // (BrowsingContextOptions.GlobalPrivacyControl), set for the next requests and reads of navigator.globalPrivacyControl
+  internal.get_global_privacy_control = function () {
+    return new Promise(resolve => __wpt_global_privacy_control(undefined, resolve)).then(gpc => ({ gpc }));
+  };
+
+  internal.set_global_privacy_control = function (newValue) {
+    return new Promise(resolve => __wpt_global_privacy_control(!!newValue, resolve)).then(gpc => ({ gpc }));
+  };
+
+  // The window of the top-level browsing context (https://w3c.github.io/webdriver/#resizing-and-positioning-windows): the
+  // runner has no window, so Minimize Window hides the top-level browsing context (BrowsingContext.IsVisible of the library:
+  // the documents become hidden), and Set Window Rect restores it; the position and the size of the viewport do not change.
+  // As WebDriver, the commands return once the visibility state of the documents changed (the documents of the nested
+  // browsing contexts are updated by the tasks that follow the one of the top-level document).
+  const windowRect = (target) => ({ x: target.screenX, y: target.screenY, width: target.outerWidth, height: target.outerHeight });
+  const setWindowVisibility = (context, visible) => {
+    const target = (context === null || context === undefined ? window : context).top;
+    const rect = windowRect(target);
+    if ((target.document.visibilityState === 'visible') === visible) return Promise.resolve(rect);
+    return new Promise(resolve => {
+      target.document.addEventListener('visibilitychange', () => setTimeout(() => resolve(rect), 0), { once: true });
+      __wpt_set_window_visibility(target, visible);
+    });
+  };
+
+  internal.minimize_window = function (context) {
+    return setWindowVisibility(context, false);
+  };
+
+  internal.set_window_rect = function (rect, context) {
+    return setWindowVisibility(context, true);
+  };
+
+  // The Page Lifecycle of the top-level browsing context (BrowsingContext.IsFrozen of the library): the documents are frozen
+  // from a task, which fires their freeze events; the promise of the frozen document is resolved once it is resumed
+  internal.freeze = function (context) {
+    const target = (context === null || context === undefined ? window : context).top;
+    return new Promise(resolve => __wpt_freeze(target, resolve));
+  };
+
+  internal.get_window_rect = function (context) {
+    return Promise.resolve(windowRect((context === null || context === undefined ? window : context).top));
+  };
+
+  // The Generate Test Report WebDriver command (https://w3c.github.io/reporting/#generate-test-report-command): a "test"
+  // report for the "default" endpoint, generated by the window
+  internal.generate_test_report = function (message, context) {
+    return queue(() => __wpt_generate_test_report(String(message)));
+  };
+
+  // The cookies of the browser (the cookie jar of the runner): the associated cookies of the document of the window
+  internal.delete_all_cookies = function (context) {
+    __wpt_delete_all_cookies();
+    return Promise.resolve();
+  };
+
+  internal.get_all_cookies = function (context) {
+    return Promise.resolve(JSON.parse(__wpt_get_cookies()));
+  };
+
+  internal.get_named_cookie = function (name, context) {
+    const cookies = JSON.parse(__wpt_get_cookies(String(name)));
+    return Promise.resolve(cookies.length > 0 ? cookies[0] : null);
+  };
+
+  // The WebDriver BiDi log.entryAdded events (https://w3c.github.io/webdriver-bidi/#event-log-entryAdded) of the messages of
+  // the console namespace of the window (BrowsingContextOptions.ConsoleMessage of the runner). The events are emitted while
+  // there is a subscription, after the call that printed the message, as the events of a WebDriver BiDi connection.
+  const logListeners = new Set();
+  let logSubscriptions = 0;
+
+  // https://w3c.github.io/webdriver-bidi/#type-script-RemoteValue: the values of the arguments are serialized without their properties
+  const toRemoteValue = (value) => {
+    switch (typeof value) {
+      case 'undefined': return { type: 'undefined' };
+      case 'string': return { type: 'string', value };
+      case 'boolean': return { type: 'boolean', value };
+      case 'bigint': return { type: 'bigint', value: String(value) };
+      case 'symbol': return { type: 'symbol' };
+      case 'function': return { type: 'function' };
+      case 'number':
+        if (Number.isNaN(value)) return { type: 'number', value: 'NaN' };
+        if (Object.is(value, -0)) return { type: 'number', value: '-0' };
+        if (!Number.isFinite(value)) return { type: 'number', value: value > 0 ? 'Infinity' : '-Infinity' };
+        return { type: 'number', value };
+      default:
+        if (value === null) return { type: 'null' };
+        if (Array.isArray(value)) return { type: 'array' };
+        if (value instanceof Node) return { type: 'node' };
+        return { type: 'object' };
+    }
+  };
+
+  __wpt_bidi_log_dispatcher(function (method, level, text, args) {
+    if (logSubscriptions === 0 || logListeners.size === 0) return;
+    const entry = { type: 'console', method, level, text, args: args.map(toRemoteValue), timestamp: Date.now(), source: { context: window } };
+    setTimeout(() => {
+      for (const listener of [...logListeners]) listener(entry);
+    }, 0);
+  });
+
+  internal.bidi.log.entry_added.subscribe = async function (params) {
+    const contexts = params && params.contexts;
+    if (contexts && contexts.some(context => context !== window)) {
+      throw new Error('bidi.log.entry_added.subscribe() only supports the current browsing context');
+    }
+
+    logSubscriptions++;
+    let subscribed = true;
+    return async () => {
+      if (subscribed) {
+        subscribed = false;
+        logSubscriptions--;
+      }
+    };
+  };
+
+  internal.bidi.log.entry_added.on = function (callback) {
+    const listener = (entry) => callback(entry);
+    logListeners.add(listener);
+    return () => { logListeners.delete(listener); };
+  };
+
+  // permissions.setPermission (https://w3c.github.io/permissions/#webdriver-bidi-command-permissions-setPermission): as
+  // set_permission, the state is set for every origin
+  internal.bidi.permissions.set_permission = function (params) {
+    return internal.set_permission({ descriptor: params && params.descriptor, state: params && params.state });
+  };
+
+  // emulation.setGeolocationOverride (https://w3c.github.io/webdriver-bidi/#command-emulation-setGeolocationOverride): the
+  // position of the GeolocationProvider of the runner (an error makes it unavailable; no coordinates nor error restores it)
+  internal.bidi.emulation.set_geolocation_override = function (params) {
+    const coordinates = params && params.coordinates;
+    const optional = value => (value === null || value === undefined ? NaN : Number(value));
+    return new Promise(resolve => __wpt_set_geolocation_override(
+      !!coordinates,
+      coordinates ? Number(coordinates.latitude) : 0,
+      coordinates ? Number(coordinates.longitude) : 0,
+      coordinates && coordinates.accuracy !== undefined ? Number(coordinates.accuracy) : 1,
+      coordinates ? optional(coordinates.altitude) : NaN,
+      coordinates ? optional(coordinates.altitudeAccuracy) : NaN,
+      coordinates ? optional(coordinates.heading) : NaN,
+      coordinates ? optional(coordinates.speed) : NaN,
+      !!(params && params.error),
+      resolve));
+  };
+
+  // The virtual sensors (https://w3c.github.io/sensors/#automation) of the DeviceSensorProvider of the runner: the readings
+  // are JSON objects, parsed by the reading parsing algorithm of the sensor type
+  internal.create_virtual_sensor = function (sensor_type, sensor_params, context) {
+    const params = sensor_params || {};
+    const frequency = value => (value === undefined ? NaN : Number(value));
+    return new Promise((resolve, reject) => __wpt_create_virtual_sensor(
+      String(sensor_type),
+      params.connected === undefined ? true : !!params.connected,
+      frequency(params.minSamplingFrequency),
+      frequency(params.maxSamplingFrequency),
+      resolve,
+      (message) => reject(new Error(message))));
+  };
+
+  internal.update_virtual_sensor = function (sensor_type, reading, context) {
+    return new Promise((resolve, reject) => __wpt_update_virtual_sensor(String(sensor_type), JSON.stringify(reading), resolve, (message) => reject(new Error(message))));
+  };
+
+  internal.remove_virtual_sensor = function (sensor_type, context) {
+    return new Promise(resolve => __wpt_remove_virtual_sensor(String(sensor_type), resolve));
+  };
+
+  internal.get_virtual_sensor_information = function (sensor_type, context) {
+    return new Promise((resolve, reject) => __wpt_get_virtual_sensor_information(
+      String(sensor_type),
+      (requestedSamplingFrequency) => resolve({ requestedSamplingFrequency }),
+      (message) => reject(new Error(message))));
+  };
+
+  // The virtual pressure sources (https://w3c.github.io/compute-pressure/#automation): the samples of the
+  // PressureSourceProvider of the runner, set by a task (see __wpt_create_virtual_pressure_source)
+  const pressureCommand = (command, ...args) => new Promise((resolve, reject) => command(...args, resolve, (message) => reject(new Error(message))));
+
+  internal.create_virtual_pressure_source = function (source_type, metadata, context) {
+    const supported = !metadata || metadata.supported === undefined ? true : !!metadata.supported;
+    return pressureCommand(__wpt_create_virtual_pressure_source, String(source_type), supported);
+  };
+
+  internal.update_virtual_pressure_source = function (source_type, sample, own_contribution_estimate, context) {
+    const estimate = own_contribution_estimate === undefined || own_contribution_estimate === null ? NaN : Number(own_contribution_estimate);
+    return pressureCommand(__wpt_update_virtual_pressure_source, String(source_type), String(sample), estimate);
+  };
+
+  internal.remove_virtual_pressure_source = function (source_type, context) {
+    return pressureCommand(__wpt_remove_virtual_pressure_source, String(source_type));
+  };
+
+  // The posture override of the top-level traversable (https://w3c.github.io/device-posture/#automation): the posture of
+  // the DevicePostureProvider of the runner; clearing the override restores the posture of the device (continuous)
+  internal.set_device_posture = function (posture, context) {
+    return pressureCommand(__wpt_set_device_posture, String(posture));
+  };
+
+  internal.clear_device_posture = function (context) {
+    return pressureCommand(__wpt_set_device_posture, null);
+  };
+
+  // The display features of the screen (https://drafts.csswg.org/css-viewport/#set-display-features): the DisplayFeaturesProvider
+  // of the runner, which splits the viewport of the top-level documents in segments
+  internal.set_display_features = function (features, context) {
+    return new Promise((resolve, reject) => __wpt_set_display_features(JSON.stringify(features === undefined ? null : features), resolve, (message) => reject(new Error(message))));
+  };
+
+  internal.clear_display_features = function (context) {
+    return internal.set_display_features([], context);
+  };
+
+  // The properties of the contact of a pointer action (https://w3c.github.io/webdriver/#dfn-process-pointer-parameters)
+  const pointerProperties = ['width', 'height', 'pressure', 'tangentialPressure', 'tiltX', 'tiltY', 'twist', 'altitudeAngle', 'azimuthAngle'];
+
+  // The computed role and accessible name of the library (Element.ComputedRole and Element.ComputedName)
+  internal.get_computed_role = function (element) {
+    return Promise.resolve(__wpt_computed_role(element));
+  };
+
+  internal.get_computed_label = function (element) {
+    return Promise.resolve(__wpt_computed_label(element));
+  };
+
+  // https://w3c.github.io/webdriver/#perform-actions: the actions of each tick are dispatched in the order of the input
+  // sources, then the tick lasts its duration (the longest duration of its actions) on the clock of the runner. The runner
+  // performs the ticks from tasks of the event loop (see WptActionSequence in WptTestDriver.cs), so that the microtasks run
+  // after each event listener, as for the input of a user: the input is injected in the input devices of the top-level
+  // browsing context (BrowsingContext.Input of the library), which dispatches the events. As the click, the promise resolves
+  // after the browser rendered the result of the actions.
+  internal.action_sequence = function (actions, context) {
+    // The browsing context of the actions: the positions relative to the viewport are relative to its viewport
+    const target = context === null || context === undefined ? window : context;
+    return new Promise((resolve, reject) => {
+      const sequence = __wpt_actions_create(target);
+      const ticks = Math.max(0, ...actions.map(source => source.actions.length));
+      for (let tick = 0; tick < ticks; tick++) {
+        for (const source of actions) {
+          const action = source.actions[tick];
+          if (!action) continue;
+          if (action.duration > 0) __wpt_actions_pause(sequence, tick, Number(action.duration));
+          if (action.type === 'pause') continue;
+          const origin = action.origin === undefined ? 'viewport' : action.origin;
+          if (source.type === 'pointer') {
+            const pointerType = (source.parameters && source.parameters.pointerType) || 'mouse';
+            __wpt_actions_pointer(sequence, tick, String(source.id), pointerType, action.type, origin, action.x || 0, action.y || 0, action.button || 0, JSON.stringify(action, pointerProperties), action.type === 'pointerMove' ? Number(action.duration) || 0 : 0);
+          } else if (source.type === 'wheel') {
+            if (action.type === 'scroll') __wpt_actions_wheel(sequence, tick, origin, action.x || 0, action.y || 0, action.deltaX || 0, action.deltaY || 0);
+          } else if (source.type === 'key') {
+            if (action.type === 'keyDown' || action.type === 'keyUp') __wpt_actions_key(sequence, tick, action.type, String(action.value));
+          }
+        }
+      }
+
+      __wpt_actions_run(sequence, resolve, (message) => reject(new Error(message)));
+    }).then(afterRendering);
+  };
+})();

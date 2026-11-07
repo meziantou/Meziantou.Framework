@@ -14,17 +14,18 @@ namespace Meziantou.Framework.Win32
         Retry = 4,
         Ignore = 5,
         Yes = 6,
-        No = 7
+        No = 7,
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
     public sealed class OpenFolderDialog
     {
-        public string? Title { get => throw null; set { } }
-        public string? OkButtonLabel { get => throw null; set { } }
-        public string? InitialDirectory { get => throw null; set { } }
-        public string? SelectedPath { get => throw null; set { } }
         public bool ChangeCurrentDirectory { get => throw null; set { } }
+        public string? InitialDirectory { get => throw null; set { } }
+        public int LastHResult { get => throw null; }
+        public string? OkButtonLabel { get => throw null; set { } }
+        public string? SelectedPath { get => throw null; }
+        public string? Title { get => throw null; set { } }
         public Meziantou.Framework.Win32.DialogResult ShowDialog() => throw null;
         public Meziantou.Framework.Win32.DialogResult ShowDialog(nint owner) => throw null;
     }

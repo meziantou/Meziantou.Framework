@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -9,20 +10,22 @@ namespace Meziantou.Framework;
 
 /// <summary>Represents an absolute file or directory path with convenient path manipulation methods.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs" ref:region="FullPath_Example" ref:dedent="true">
 /// // Create FullPath
 /// FullPath rootPath = FullPath.FromPath("demo");
 /// FullPath filePath = rootPath / "temp" / "file.txt";
 ///
-/// // Compare paths (case-sensitive on Linux, case-insensitive on Windows)
-/// bool areEqual = filePath == rootPath;
+/// // Compare paths (case-insensitive on Windows, macOS, iOS and tvOS, case-sensitive elsewhere)
+/// Assert.False(filePath == rootPath);
+/// Assert.True(filePath.Parent.Parent == rootPath);
 ///
-/// // Get relative path
-/// string relativePath = filePath.MakePathRelativeTo(rootPath); // temp\file.txt
+/// // Get relative path (temp\file.txt on Windows, temp/file.txt elsewhere)
+/// string relativePath = filePath.MakePathRelativeTo(rootPath);
+/// Assert.Equal(Path.Combine("temp", "file.txt"), relativePath);
 /// </code>
 /// </example>
 [JsonConverter(typeof(FullPathJsonConverter))]
-public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
+public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>, IComparable
 {
     internal readonly string? _value;
 
@@ -45,7 +48,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Gets the string representation of the path, or an empty string if the path is empty.</summary>
     /// <remarks>
-    /// <para>If the path contains a reserved device name (CON, PRN, AUX, NUL, COM1-COM9, LPT1-LPT9),
+    /// <para>If the path contains a reserved device name (CON, PRN, AUX, NUL, COM0-COM9, COM¹-COM³, LPT0-LPT9, LPT¹-LPT³),
     /// the extended path format (<c>\\?\</c>) is returned to bypass Win32 namespace restrictions.</para>
     /// <para>Use <see cref="RawValue"/> if you need the unmodified path without device name protection.</para>
     /// </remarks>
@@ -120,6 +123,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                 !nameOnly[..3].Equals("LPT", StringComparison.OrdinalIgnoreCase))
                 return false;
 
+            // Windows documents COM1-COM9 and LPT1-LPT9, but COM0 and LPT0 are accepted here as well.
+            // Adding the extended prefix to a path that turns out not to be a device name is harmless,
+            // whereas omitting it for an actual device name is not.
             var lastChar = nameOnly[3];
             return lastChar is >= '0' and <= '9' or '\u00B9' or '\u00B2' or '\u00B3';
         }
@@ -171,6 +177,17 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Compares this path to another with optional case-insensitive comparison.</summary>
     public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);
 
+    int IComparable.CompareTo(object? obj)
+    {
+        if (obj is null)
+            return 1;
+
+        if (obj is FullPath other)
+            return CompareTo(other);
+
+        throw new ArgumentException($"Object must be of type {nameof(FullPath)}", nameof(obj));
+    }
+
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is FullPath path && Equals(path);
     public bool Equals(FullPath other) => FullPathComparer.Default.Equals(this, other);
 
@@ -186,7 +203,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Creates a relative path from this path to the specified root path.</summary>
     /// <param name="rootPath">The root path to make this path relative to.</param>
-    /// <returns>A relative path string.</returns>
+    /// <returns>A relative path string, or <c>"."</c> when both paths are equal.</returns>
     public string MakePathRelativeTo(FullPath rootPath)
     {
         if (IsEmpty)
@@ -195,56 +212,13 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             return _value;
 
-        if (rootPath == this)
-            return ".";
-
-        return PathDifference(rootPath._value, _value, compareCase: FullPathComparer.Default.IsCaseSensitive);
-    }
-
-    private static string PathDifference(string path1, string path2, bool compareCase)
-    {
-        var directorySeparator = Path.DirectorySeparatorChar;
-
-        int i;
-        var si = -1;
-        for (i = 0; (i <= path1.Length) && (i < path2.Length); ++i)
-        {
-            var c1 = i == path1.Length ? directorySeparator : path1[i];
-            var c2 = path2[i];
-
-            if ((c1 != c2) && (compareCase || (char.ToUpperInvariant(c1) != char.ToUpperInvariant(c2))))
-                break;
-
-            if (c1 == directorySeparator)
-            {
-                si = i;
-            }
-        }
-
-        if (i == 0)
-            return path2;
-
-        if ((i == path1.Length + 1) && (i == path2.Length))
-            return "";
-
-        var relPath = new StringBuilder();
-        // Walk down several dirs
-        for (; i <= path1.Length; ++i)
-        {
-            var c = i == path1.Length ? directorySeparator : path1[i];
-            if (c == directorySeparator)
-            {
-                relPath.Append("..");
-                relPath.Append(directorySeparator);
-            }
-        }
-
-        return relPath.Append(path2.AsSpan(si + 1)).ToString();
+        return Path.GetRelativePath(rootPath._value, _value);
     }
 
     /// <summary>Determines whether this path is a child of the specified root path.</summary>
     /// <param name="rootPath">The root path to check against.</param>
     /// <returns><see langword="true"/> if this path is a child of the root path; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>The comparison uses the same case sensitivity as <see cref="FullPathComparer.Default"/>.</remarks>
     public bool IsChildOf(FullPath rootPath)
     {
         if (IsEmpty)
@@ -252,20 +226,25 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             throw new ArgumentException("Root path is empty", nameof(rootPath));
 
-        if (_value.Length <= rootPath._value.Length)
+        var root = rootPath._value;
+        if (_value.Length <= root.Length)
             return false;
 
-        if (!_value.StartsWith(rootPath._value, StringComparison.Ordinal))
+        var comparison = FullPathComparer.Default.IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        if (!_value.StartsWith(root, comparison))
             return false;
+
+        // Root directories such as "/" or "C:\" keep their trailing separator, so the child does not have an extra one
+        // rootpath: /
+        // current:  /a    => true
+        if (root[^1] == Path.DirectorySeparatorChar)
+            return true;
 
         // rootpath: /a/b
         // current:  /a/b/c => true
         // current:  /a/b/  => false
         // current:  /a/bc  => false
-        if (_value[rootPath._value.Length] == Path.DirectorySeparatorChar && _value.Length > rootPath._value.Length + 1)
-            return true;
-
-        return false;
+        return _value[root.Length] == Path.DirectorySeparatorChar && _value.Length > root.Length + 1;
     }
 
     /// <summary>Creates the parent directory of this path if it doesn't exist.</summary>
@@ -292,11 +271,11 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        return new FullPath(Path.ChangeExtension(Value, extension));
+        return FromPath(Path.ChangeExtension(_value, extension));
     }
 
     /// <summary>Returns a new path with the specified file extension, optionally replacing all trailing extensions.</summary>
-    /// <param name="extension">The new extension (with or without the leading dot), or <see langword="null"/> to remove the extension.</param>
+    /// <param name="extension">The new extension (with or without the leading dot), or <see langword="null"/> to remove the extension. An empty string sets an empty extension, which leaves a trailing dot.</param>
     /// <param name="replaceAllTrailingExtensions"><see langword="true"/> to replace all trailing extensions; <see langword="false"/> to replace only the last extension.</param>
     /// <returns>A new <see cref="FullPath"/> instance with the specified extension changes.</returns>
     public FullPath WithExtension(string? extension, bool replaceAllTrailingExtensions)
@@ -305,9 +284,10 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     }
 
     /// <summary>Returns a new path with the specified file extension, replacing a specific number of trailing extensions.</summary>
-    /// <param name="extension">The new extension (with or without the leading dot), or <see langword="null"/> to remove the extension.</param>
+    /// <param name="extension">The new extension (with or without the leading dot), or <see langword="null"/> to remove the extension. An empty string sets an empty extension, which leaves a trailing dot.</param>
     /// <param name="extensionCount">The number of trailing extensions to replace. Must be greater than 0.</param>
     /// <returns>A new <see cref="FullPath"/> instance with the specified extension changes.</returns>
+    /// <remarks>Every removal follows <see cref="Path.ChangeExtension(string, string)"/>, so a trailing dot is an empty extension that costs one removal, and <paramref name="extensionCount"/> only changes how many of them are removed.</remarks>
     public FullPath WithExtension(string? extension, int extensionCount)
     {
         if (extensionCount <= 0)
@@ -319,28 +299,31 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var current = Value;
-        var extensionsRemoved = 0;
-        while (true)
+        var path = _value.AsSpan();
+
+        // Only the file name holds extensions, so the search must never reach into the directory
+        var fileNameStart = path.Length - Path.GetFileName(path).Length;
+        var end = path.Length;
+        for (var i = 0; i < extensionCount; i++)
         {
-            var ext = Path.GetExtension(current);
-            if (string.IsNullOrEmpty(ext))
+            // The dot is located directly rather than through Path.GetExtension, which reports an empty extension for a
+            // trailing dot and would stop the removal there
+            var dotIndex = path[fileNameStart..end].LastIndexOf('.');
+            if (dotIndex < 0)
                 break;
 
-            current = current[..^ext.Length];
-            extensionsRemoved++;
-
-            if (extensionsRemoved >= extensionCount)
-                break;
+            end = fileNameStart + dotIndex;
         }
 
-        if (string.IsNullOrEmpty(extension))
-            return new FullPath(current);
+        // A single allocation for the result, instead of one intermediate path per removed extension
+        var withoutExtensions = path[..end];
+        if (extension is null)
+            return FromPath(withoutExtensions.ToString());
 
-        if (!extension.StartsWith('.', StringComparison.Ordinal))
-            extension = "." + extension;
-
-        return new FullPath(current + extension);
+        // Like Path.ChangeExtension, an empty extension still gets the separating dot
+        return FromPath(extension.StartsWith('.', StringComparison.Ordinal)
+            ? string.Concat(withoutExtensions, extension)
+            : string.Concat(withoutExtensions, ".", extension));
     }
 
     /// <summary>Returns a new path with the specified name, keeping the same parent directory.</summary>
@@ -352,11 +335,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(Value);
-        if (parent is null)
-            return new FullPath(name);
-
-        return new FullPath(Path.Combine(parent, name));
+        // A null directory name means the path is already a root (such as "/" or @"C:\"), which is its own parent here
+        var parent = Path.GetDirectoryName(_value) ?? _value;
+        return FromPath(Path.Combine(parent, name));
     }
 
     /// <summary>Returns a new path with the specified name, keeping the same parent directory but without changing the extension.</summary>
@@ -368,13 +349,11 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(Value);
-        var extension = Path.GetExtension(Value);
+        // A null directory name means the path is already a root (such as "/" or @"C:\"), which is its own parent here
+        var parent = Path.GetDirectoryName(_value) ?? _value;
+        var extension = Path.GetExtension(_value);
         var newName = nameWithoutExtension + extension;
-        if (parent is null)
-            return new FullPath(newName);
-
-        return new FullPath(Path.Combine(parent, newName));
+        return FromPath(Path.Combine(parent, newName));
     }
 
     /// <summary>Gets the path of the system's temporary folder.</summary>
@@ -389,6 +368,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Creates a uniquely named, zero-byte temporary file and returns its full path.</summary>
     /// <param name="prefix">A prefix to prepend to the generated file name.</param>
     /// <param name="suffix">A suffix to append to the generated file name. Defaults to <c>.tmp</c>.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="prefix"/> or <paramref name="suffix"/> contains a character that is not valid in a file name, such as a directory separator.</exception>
     /// <exception cref="IOException">Thrown when a unique file could not be created after 10 attempts.</exception>
     public static FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => CreateTempFile(folder: null, prefix: prefix, suffix: suffix);
 
@@ -396,6 +376,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <param name="folder">The destination folder. If <see langword="null"/> or empty, the system temporary folder is used.</param>
     /// <param name="prefix">A prefix to prepend to the generated file name.</param>
     /// <param name="suffix">A suffix to append to the generated file name. Defaults to <c>.tmp</c>.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="prefix"/> or <paramref name="suffix"/> contains a character that is not valid in a file name, such as a directory separator.</exception>
     /// <exception cref="IOException">Thrown when a unique file could not be created after 10 attempts.</exception>
     public static FullPath CreateTempFile(FullPath? folder, string? prefix, string? suffix = ".tmp")
     {
@@ -405,10 +386,29 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             destinationFolder = GetTempPath();
         }
 
-        Directory.CreateDirectory(destinationFolder.Value);
-
         prefix ??= string.Empty;
         suffix ??= string.Empty;
+
+        // Validate before touching the file system, so a rejected affix cannot leave a directory behind
+        ThrowIfNotAFileNameFragment(prefix, nameof(prefix));
+        ThrowIfNotAFileNameFragment(suffix, nameof(suffix));
+
+        Directory.CreateDirectory(destinationFolder.Value);
+
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.ReadWrite,
+            Share = FileShare.None,
+        };
+
+        if (!OperatingSystem.IsWindows())
+        {
+            // FileStream would otherwise create the file with 0666 & ~umask, which leaves it readable by every local
+            // user when the temporary folder is shared (Path.GetTempPath is /tmp on most Linux systems).
+            // Path.GetTempFileName uses mkstemp and creates with 0600, so match that.
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
 
         IOException? lastException = null;
         for (var attempt = 0; attempt < 10; attempt++)
@@ -417,7 +417,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
             try
             {
-                using var stream = File.Open(filePath.Value, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                using var stream = File.Open(filePath.Value, options);
                 return filePath;
             }
             catch (IOException ex)
@@ -429,8 +429,25 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         throw new IOException("Could not create a unique temporary file after 10 attempts.", lastException);
     }
 
+    private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create(Path.GetInvalidFileNameChars());
+
+    private static void ThrowIfNotAFileNameFragment(string value, string paramName)
+    {
+        // The affix is concatenated with the random component and the result is interpreted as a path. A directory
+        // separator, or any other character a file name cannot hold, would move the file out of the destination folder
+        // ("../name") or cancel the random component that makes the name unique ("/../name").
+        if (value.AsSpan().ContainsAny(InvalidFileNameChars))
+            throw new ArgumentException("The value contains characters that are not valid in a file name.", paramName);
+    }
+
     /// <summary>Gets the path to the system special folder identified by the specified enumeration.</summary>
+    /// <param name="folder">The special folder to retrieve the path for.</param>
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));
+
+    /// <summary>Gets the path to the system special folder identified by the specified enumeration.</summary>
+    /// <param name="folder">The special folder to retrieve the path for.</param>
+    /// <param name="option">Specifies whether the folder must be verified or created.</param>
+    public static FullPath GetFolderPath(Environment.SpecialFolder folder, Environment.SpecialFolderOption option) => FromPath(Environment.GetFolderPath(folder, option));
 
     /// <summary>Gets the path to a Windows known folder.</summary>
     /// <param name="knownFolder">The known folder to retrieve the path for.</param>
@@ -438,40 +455,71 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public static unsafe FullPath GetKnownFolderPath(KnownFolder knownFolder)
     {
         var result = PInvoke.SHGetKnownFolderPath(knownFolder.FolderId, Windows.Win32.UI.Shell.KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT, hToken: null, out var path);
-        if (result.Succeeded)
+        using (path)
         {
-            var expandedValue = Environment.ExpandEnvironmentVariables(path.ToString());
-            Marshal.FreeCoTaskMem((nint)path.Value);
+            if (result.Failed)
+                throw new Win32Exception(result.Value, $"Failed to get shell folder path for {knownFolder}");
+
+            using var lease = path.Lease();
+            var expandedValue = Environment.ExpandEnvironmentVariables(lease.Value.ToString());
             return FromPath(expandedValue);
         }
-
-        Marshal.FreeCoTaskMem((nint)path.Value);
-        throw new Win32Exception(result.Value, $"Failed to get shell folder path for {knownFolder}");
     }
 
     /// <summary>Gets the current working directory.</summary>
     public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);
 
     /// <summary>Creates a <see cref="FullPath"/> from a string path by converting it to an absolute path.</summary>
-    /// <param name="path">The path to convert. Can be relative or absolute.</param>
+    /// <param name="path">The path to convert. Can be relative or absolute. An empty string returns <see cref="Empty"/>.</param>
     public static FullPath FromPath(string path)
     {
-        if (PathInternal.IsExtended(path))
+        // A path that resolves to nothing already returns Empty below; an empty input is the same case, and
+        // Path.GetFullPath would throw before reaching it. Environment.GetFolderPath returns "" for a folder
+        // that is not defined on the platform, which makes this a routine input rather than a caller error.
+        //
+        // Empty rather than CurrentDirectory: "" means "no path", not "the current directory". Resolving it against
+        // the current directory would turn an undefined special folder into a real, writable location. "." is the
+        // spelling for the current directory, and Path.GetFullPath("") throws rather than treating the two alike.
+        if (path is { Length: 0 })
+            return Empty;
+
+        // '\' is a regular file name character on Unix, so a path such as @"\\?\a" is a relative file name there, not a device path
+        // Both the Win32 spelling (@"\\?\") and the NT one (@"\??\") are extended paths, and the reparse point of a
+        // symbolic link stores its absolute target in the NT form, so both of them reach this method.
+        if (OperatingSystem.IsWindows() && PathInternal.IsExtended(path))
         {
-            path = path[4..];
+            // The extended form of a UNC path is @"\\?\UNC\server\share". Dropping the 4-character device prefix would
+            // leave the relative @"UNC\server\share", which Path.GetFullPath would then resolve against the current
+            // directory, so restore the @"\\" prefix instead. This is the inverse of PathInternal.EnsureExtendedPrefix.
+            if (path.StartsWith(PathInternal.UncExtendedPathPrefix, StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith(PathInternal.UncNTPathPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                path = string.Concat(PathInternal.UncPathPrefix, path.AsSpan(PathInternal.UncExtendedPathPrefix.Length));
+            }
+            else
+            {
+                var withoutPrefix = path.AsSpan(PathInternal.DevicePrefixLength);
+                if (!PathInternal.IsPartiallyQualified(withoutPrefix))
+                {
+                    // A drive-rooted path such as @"\\?\C:\dir" has an ordinary spelling
+                    path = withoutPrefix.ToString();
+                }
+                else if (path.StartsWith(PathInternal.NTPathPrefix, StringComparison.Ordinal))
+                {
+                    // Anything else names a device namespace, such as @"\\?\Volume{...}\dir", and has no ordinary
+                    // spelling: removing the prefix would leave a relative path. Only the NT form is rewritten, so the
+                    // value stays a path the Win32 file APIs accept.
+                    path = string.Concat(PathInternal.ExtendedDevicePathPrefix, withoutPrefix);
+                }
+            }
         }
 
         var fullPath = Path.GetFullPath(path);
-        var fullPathWithoutTrailingDirectorySeparator = TrimEndingDirectorySeparator(fullPath);
+        var fullPathWithoutTrailingDirectorySeparator = Path.TrimEndingDirectorySeparator(fullPath);
         if (string.IsNullOrEmpty(fullPathWithoutTrailingDirectorySeparator))
             return Empty;
 
         return new FullPath(fullPathWithoutTrailingDirectorySeparator);
-    }
-
-    private static string TrimEndingDirectorySeparator(string path)
-    {
-        return Path.TrimEndingDirectorySeparator(path);
     }
 
     /// <summary>Combines two path strings into a full path.</summary>
@@ -508,13 +556,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     }
 
     /// <summary>Combines a <see cref="FullPath"/> with multiple relative paths.</summary>
-    public static FullPath Combine(FullPath rootPath, params string[] paths)
-    {
-        if (rootPath.IsEmpty)
-            return FromPath(Path.Combine(paths));
-
-        return FromPath(Path.Combine(rootPath._value, Path.Combine(paths)));
-    }
+    public static FullPath Combine(FullPath rootPath, params string[] paths) => Combine(rootPath, (ReadOnlySpan<string>)paths);
 
     /// <summary>Combines a <see cref="FullPath"/> with a span of relative paths.</summary>
     public static FullPath Combine(FullPath rootPath, params ReadOnlySpan<string> paths)
@@ -522,7 +564,17 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             return FromPath(Path.Combine(paths));
 
-        return FromPath(Path.Combine([rootPath._value, .. paths]));
+        // A collection expression containing a spread has no compile-time length, so Roslyn cannot use an inline array
+        // and falls back to a heap string[] - the very allocation the span signature exists to avoid. Dispatching the
+        // common lengths to the fixed-arity Path.Combine overloads keeps them array-free.
+        return paths.Length switch
+        {
+            0 => rootPath,
+            1 => FromPath(Path.Combine(rootPath._value, paths[0])),
+            2 => FromPath(Path.Combine(rootPath._value, paths[0], paths[1])),
+            3 => FromPath(Path.Combine(rootPath._value, paths[0], paths[1], paths[2])),
+            _ => FromPath(Path.Combine([rootPath._value, .. paths])),
+        };
     }
 
     /// <summary>Combines a <see cref="FullPath"/> with three relative paths.</summary>
@@ -543,13 +595,22 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return FromPath(fsi.FullName);
     }
 
+    // Matches the number of levels the operating systems themselves are willing to follow (MAXSYMLINKS on Linux)
+    private const int MaxSymbolicLinkDepth = 40;
+
+    private static IOException CreateTooManyLevelsOfSymbolicLinksException()
+    {
+        return new IOException($"Too many levels of symbolic links (more than {MaxSymbolicLinkDepth.ToString(CultureInfo.InvariantCulture)})");
+    }
+
     /// <summary>Determines whether this path represents a symbolic link.</summary>
     public bool IsSymbolicLink()
     {
         if (IsEmpty)
             return false;
 
-        return Symlink.IsSymbolicLink(_value);
+        // Value, not _value: a real file named "NUL.txt" is only reachable through the extended path
+        return Symlink.IsSymbolicLink(Value);
     }
 
     /// <summary>Attempts to resolve this path to its canonical final existing path.</summary>
@@ -561,7 +622,8 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// </remarks>
     public bool TryGetCanonicalPath([NotNullWhen(true)] out FullPath? result)
     {
-        if (!IsEmpty && CanonicalPath.TryGetCanonicalPath(_value, out var path))
+        // Value, not _value: a real file named "NUL.txt" is only reachable through the extended path
+        if (!IsEmpty && CanonicalPath.TryGetCanonicalPath(Value, out var path))
         {
             result = FromPath(path);
             return true;
@@ -599,7 +661,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public bool TryFindGitRepositoryRoot(out FullPath result)
     {
         var start = this;
-        if (!start.IsEmpty && File.Exists(start._value))
+        if (!start.IsEmpty && File.Exists(start.Value))
         {
             start = start.Parent;
         }
@@ -643,6 +705,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <param name="resolutionMode">The mode to use when resolving symbolic links.</param>
     /// <param name="result">The target path if this is a symbolic link; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if this is a symbolic link; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="IOException">A symbolic link chain is too deep to resolve, which usually means the links form a cycle.</exception>
     public bool TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode resolutionMode, [NotNullWhen(true)] out FullPath? result)
     {
         if (!IsEmpty)
@@ -650,7 +713,8 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             switch (resolutionMode)
             {
                 case SymbolicLinkResolutionMode.Immediate:
-                    if (Symlink.TryGetSymLinkTarget(_value, out var path))
+                    // Value, not _value: a link named "NUL.txt" is only reachable through the extended path
+                    if (Symlink.TryGetSymLinkTarget(Value, out var path))
                     {
                         result = FromPath(path);
                         return true;
@@ -659,15 +723,19 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                     break;
 
                 case SymbolicLinkResolutionMode.FinalTarget:
-                    var value = _value;
-                    while (Symlink.TryGetSymLinkTarget(value, out path))
+                    var target = this;
+                    var depth = 0;
+                    while (Symlink.TryGetSymLinkTarget(target.Value, out path))
                     {
-                        value = path;
+                        if (++depth > MaxSymbolicLinkDepth)
+                            throw CreateTooManyLevelsOfSymbolicLinksException();
+
+                        target = FromPath(path);
                     }
 
-                    if (value != _value)
+                    if (depth > 0)
                     {
-                        result = FromPath(value);
+                        result = target;
                         return true;
                     }
 
@@ -677,16 +745,24 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                     string? resultPath = null;
                     var current = this;
                     var hasSymLink = false;
+
+                    // Counts every link resolved by this walk, not just consecutive ones. Resetting it per component
+                    // would let two links that reference each other through a directory alternate forever, because
+                    // each resolution is separated by a component that is not itself a link.
+                    var resolvedLinkCount = 0;
                     while (!current.IsEmpty)
                     {
-                        if (Symlink.TryGetSymLinkTarget(current._value, out path))
+                        if (Symlink.TryGetSymLinkTarget(current.Value, out path))
                         {
+                            if (++resolvedLinkCount > MaxSymbolicLinkDepth)
+                                throw CreateTooManyLevelsOfSymbolicLinksException();
+
                             current = FromPath(path);
                             hasSymLink = true;
                         }
                         else
                         {
-                            var name = current.Name is "" ? current._value : current.Name!;
+                            var name = current.Name is "" ? current._value : current.Name;
                             if (resultPath is null)
                             {
                                 resultPath = name;
@@ -760,9 +836,15 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <para>UNC paths are converted to <c>\\?\UNC\server\share</c> format.</para>
     /// <para>If the path already uses a device path syntax (<c>\\?\</c>, <c>\\.\</c>, or <c>\??\</c>), it is returned as-is.</para>
     /// </remarks>
+    /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows.</exception>
     [SupportedOSPlatform("windows")]
     public string ToWindowsExtendedPath()
     {
+        // EnsureExtendedPrefix treats any '/'-rooted path as partially qualified and returns it unchanged, so without
+        // this check the method would silently hand back something that is not an extended path.
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("Extended-length paths are only supported on Windows.");
+
         if (IsEmpty)
             return "";
 

@@ -97,7 +97,14 @@
         }
         finally
         {
-            _loadItemsCts = null;
+            // RefreshDataAsync may have cancelled this operation and started a new one. Clearing the field
+            // unconditionally would clobber the new operation's token source, which disables the re-entrancy guard
+            // above and lets the same page be loaded and appended twice.
+            if (ReferenceEquals(_loadItemsCts, cts))
+            {
+                _loadItemsCts = null;
+            }
+
             cts.Dispose();
         }
 
@@ -148,10 +155,11 @@
 
     public async ValueTask DisposeAsync()
     {
-        // Cancel the current load items operation
+        // Cancel the current load items operation. Without the Cancel the items provider keeps running after the
+        // component is gone, then appends items and calls StateHasChanged on a disposed component.
         if (_loadItemsCts != null)
         {
-            _loadItemsCts.Dispose();
+            await _loadItemsCts.CancelAsync();
             _loadItemsCts = null;
         }
 

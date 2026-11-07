@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Step line</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="35.9" y1="369.83" x2="628.22" y2="369.83" stroke="#e3e6ea"/>
+<line x1="35.9" y1="327.7" x2="628.22" y2="327.7" stroke="#e3e6ea"/>
+<line x1="35.9" y1="285.57" x2="628.22" y2="285.57" stroke="#e3e6ea"/>
+<line x1="35.9" y1="243.44" x2="628.22" y2="243.44" stroke="#e3e6ea"/>
+<line x1="35.9" y1="201.31" x2="628.22" y2="201.31" stroke="#e3e6ea"/>
+<line x1="35.9" y1="159.18" x2="628.22" y2="159.18" stroke="#e3e6ea"/>
+<line x1="35.9" y1="117.06" x2="628.22" y2="117.06" stroke="#e3e6ea"/>
+<line x1="35.9" y1="74.93" x2="628.22" y2="74.93" stroke="#e3e6ea"/>
+<line x1="35.9" y1="32.8" x2="628.22" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M35.9,154.13 L63.3,154.13 L63.3,154.13 L90.71,154.13 L116.35,154.13 L116.35,177.72 L141.98,177.72 L169.39,177.72 L169.39,219.85 L196.8,219.85 L223.32,219.85 L223.32,267.03 L249.84,267.03 L277.25,267.03 L277.25,309.16 L304.65,309.16 L331.17,309.16 L331.17,332.75 L357.7,332.75 L385.1,332.75 L385.1,332.75 L412.51,332.75 L439.91,332.75 L439.91,309.16 L467.32,309.16 L493.84,309.16 L493.84,267.03 L520.36,267.03 L547.77,267.03 L547.77,219.85 L575.18,219.85 L601.7,219.85 L601.7,177.72 L628.22,177.72" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g>
+<path d="M35.9,119.58 L35.9,119.58 L90.71,119.58 L90.71,136.44 L141.98,136.44 L141.98,166.77 L196.8,166.77 L196.8,202.16 L249.84,202.16 L249.84,232.49 L304.65,232.49 L304.65,249.34 L357.7,249.34 L357.7,249.34 L412.51,249.34 L412.51,232.49 L467.32,232.49 L467.32,202.16 L520.36,202.16 L520.36,166.77 L575.18,166.77 L575.18,136.44 L628.22,136.44" fill="none" stroke="#ff6347" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g>
+<path d="M35.9,69.03 L90.71,69.03 L90.71,69.03 L141.98,69.03 L141.98,90.94 L196.8,90.94 L196.8,128.85 L249.84,128.85 L249.84,172.67 L304.65,172.67 L304.65,210.58 L357.7,210.58 L357.7,232.49 L412.51,232.49 L412.51,232.49 L467.32,232.49 L467.32,210.58 L520.36,210.58 L520.36,172.67 L575.18,172.67 L575.18,128.85 L628.22,128.85 L628.22,90.94" fill="none" stroke="#2e8b57" stroke-width="1.5" stroke-dasharray="4 2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="axes">
+<line x1="30.9" y1="369.83" x2="35.9" y2="369.83" stroke="#8c959f"/>
+<text x="27.9" y="372.64" text-anchor="end" font-size="11" fill="#59636e">-10</text>
+<line x1="30.9" y1="327.7" x2="35.9" y2="327.7" stroke="#8c959f"/>
+<text x="27.9" y="330.51" text-anchor="end" font-size="11" fill="#59636e">-5</text>
+<line x1="30.9" y1="285.57" x2="35.9" y2="285.57" stroke="#8c959f"/>
+<text x="27.9" y="288.38" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="30.9" y1="243.44" x2="35.9" y2="243.44" stroke="#8c959f"/>
+<text x="27.9" y="246.25" text-anchor="end" font-size="11" fill="#59636e">5</text>
+<line x1="30.9" y1="201.31" x2="35.9" y2="201.31" stroke="#8c959f"/>
+<text x="27.9" y="204.12" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="30.9" y1="159.18" x2="35.9" y2="159.18" stroke="#8c959f"/>
+<text x="27.9" y="161.99" text-anchor="end" font-size="11" fill="#59636e">15</text>
+<line x1="30.9" y1="117.06" x2="35.9" y2="117.06" stroke="#8c959f"/>
+<text x="27.9" y="119.87" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="30.9" y1="74.93" x2="35.9" y2="74.93" stroke="#8c959f"/>
+<text x="27.9" y="77.74" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="30.9" y1="32.8" x2="35.9" y2="32.8" stroke="#8c959f"/>
+<text x="27.9" y="35.61" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="35.9" y1="369.83" x2="35.9" y2="374.83" stroke="#8c959f"/>
+<text x="35.9" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2024</text>
+<line x1="90.71" y1="369.83" x2="90.71" y2="374.83" stroke="#8c959f"/>
+<text x="90.71" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Feb</text>
+<line x1="141.98" y1="369.83" x2="141.98" y2="374.83" stroke="#8c959f"/>
+<text x="141.98" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar</text>
+<line x1="196.8" y1="369.83" x2="196.8" y2="374.83" stroke="#8c959f"/>
+<text x="196.8" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Apr</text>
+<line x1="249.84" y1="369.83" x2="249.84" y2="374.83" stroke="#8c959f"/>
+<text x="249.84" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">May</text>
+<line x1="304.65" y1="369.83" x2="304.65" y2="374.83" stroke="#8c959f"/>
+<text x="304.65" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jun</text>
+<line x1="357.7" y1="369.83" x2="357.7" y2="374.83" stroke="#8c959f"/>
+<text x="357.7" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jul</text>
+<line x1="412.51" y1="369.83" x2="412.51" y2="374.83" stroke="#8c959f"/>
+<text x="412.51" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Aug</text>
+<line x1="467.32" y1="369.83" x2="467.32" y2="374.83" stroke="#8c959f"/>
+<text x="467.32" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Sep</text>
+<line x1="520.36" y1="369.83" x2="520.36" y2="374.83" stroke="#8c959f"/>
+<text x="520.36" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Oct</text>
+<line x1="575.18" y1="369.83" x2="575.18" y2="374.83" stroke="#8c959f"/>
+<text x="575.18" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Nov</text>
+<line x1="628.22" y1="369.83" x2="628.22" y2="374.83" stroke="#8c959f"/>
+<text x="628.22" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Dec</text>
+<line x1="35.9" y1="369.83" x2="628.22" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Step line</text>
+</svg>

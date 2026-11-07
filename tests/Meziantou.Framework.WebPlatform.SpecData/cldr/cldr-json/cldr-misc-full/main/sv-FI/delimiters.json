@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sv-FI": {
+      "identity": {
+        "language": "sv",
+        "territory": "FI"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

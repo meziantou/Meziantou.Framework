@@ -1,0 +1,16 @@
+{
+  "main": {
+    "vai-Latn": {
+      "identity": {
+        "language": "vai",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

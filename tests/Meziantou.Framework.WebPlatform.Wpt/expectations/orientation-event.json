@@ -1,0 +1,83 @@
+{
+  "orientation-event/device-orientation-events-of-detached-documents.https.html": {
+    "total": 1
+  },
+  "orientation-event/device-orientation-events-unavailable-on-insecure-origins.html": {
+    "total": 4
+  },
+  "orientation-event/idlharness.https.window.js": {
+    "total": 76
+  },
+  "orientation-event/motion/add-during-dispatch.https.html": {
+    "total": 1
+  },
+  "orientation-event/motion/add-listener-from-callback.https.html": {
+    "total": 1
+  },
+  "orientation-event/motion/create-event.https.html": {
+    "total": 1
+  },
+  "orientation-event/motion/multiple-event-listeners.https.html": {
+    "total": 1
+  },
+  "orientation-event/motion/null-values.https.html": {
+    "total": 1
+  },
+  "orientation-event/motion/optional-event-properties.https.html": {
+    "total": 17
+  },
+  "orientation-event/motion/page-visibility.https.html": {
+    "total": 1
+  },
+  "orientation-event/motion/permission-denied.https.html": {
+    "total": 1
+  },
+  "orientation-event/motion/requestPermission.https.window.js": {
+    "total": 4
+  },
+  "orientation-event/motion/rounding.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/absolute-fallback.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/add-listener-from-callback.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/basic-operation-absolute.https.html": {
+    "total": 2
+  },
+  "orientation-event/orientation/basic-operation.https.html": {
+    "total": 2
+  },
+  "orientation-event/orientation/create-event.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/multiple-event-listeners.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/no-synchronous-events.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/null-values.https.html": {
+    "total": 2
+  },
+  "orientation-event/orientation/optional-event-properties.https.html": {
+    "total": 8
+  },
+  "orientation-event/orientation/page-visibility.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/permission-denied.https.html": {
+    "total": 2
+  },
+  "orientation-event/orientation/requestPermission.https.window.js": {
+    "total": 4
+  },
+  "orientation-event/orientation/rounding.https.html": {
+    "total": 1
+  },
+  "orientation-event/orientation/updates.https.html": {
+    "total": 2
+  }
+}

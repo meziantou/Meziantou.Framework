@@ -9,26 +9,40 @@ namespace Meziantou.Framework.Json.Internals;
 [StructLayout(LayoutKind.Auto)]
 internal ref struct JsonPathParser
 {
+    /// <summary>
+    /// Maximum nesting depth of filter expressions and function calls. The parser is recursive, so an
+    /// unbounded nesting level would overflow the stack, which cannot be caught and terminates the process.
+    /// The value matches <see cref="System.Text.Json.JsonDocumentOptions.MaxDepth"/>'s default and is far
+    /// above any practical query.
+    /// </summary>
+    private const int MaxNestingDepth = 64;
+
+    private const string SingularQueryHint = "A singular query only has name and index segments, with no blank space inside their brackets.";
+
     private JsonPathLexer _lexer;
     private JsonPathToken _current;
+    private int _depth;
+    private readonly JsonPathFunctionRegistry _functions;
 
-    private JsonPathParser(ReadOnlySpan<char> input)
+    private JsonPathParser(ReadOnlySpan<char> input, JsonPathFunctionRegistry functions)
     {
         _lexer = new JsonPathLexer(input);
         _current = _lexer.NextToken();
+        _depth = 0;
+        _functions = functions;
     }
 
-    public static JsonPathExpression Parse(ReadOnlySpan<char> input)
+    public static JsonPathExpression Parse(ReadOnlySpan<char> input, JsonPathFunctionRegistry? functions = null)
     {
-        var parser = new JsonPathParser(input);
+        var parser = new JsonPathParser(input, functions ?? JsonPathFunctionRegistry.Default);
         return parser.ParseQuery();
     }
 
-    public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out JsonPathExpression? result)
+    public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out JsonPathExpression? result, JsonPathFunctionRegistry? functions = null)
     {
         try
         {
-            result = Parse(input);
+            result = Parse(input, functions);
             return true;
         }
         catch (FormatException)
@@ -271,37 +285,62 @@ internal ref struct JsonPathParser
     // logical-or-expr
     private LogicalExpression ParseLogicalOrExpression()
     {
-        var left = ParseLogicalAndExpression();
+        var first = ParseLogicalAndExpression();
+        if (_current.Kind is not JsonPathTokenKind.Or)
+        {
+            return first;
+        }
+
+        // A chain is kept flat so that the evaluator does not need a frame per operand.
+        var operands = new List<LogicalExpression> { first };
         while (_current.Kind is JsonPathTokenKind.Or)
         {
             Advance();
-            var right = ParseLogicalAndExpression();
-            left = new OrExpression(left, right);
+            operands.Add(ParseLogicalAndExpression());
         }
 
-        return left;
+        return new OrExpression([.. operands]);
     }
 
     // logical-and-expr
     private LogicalExpression ParseLogicalAndExpression()
     {
-        var left = ParseBasicExpression();
+        var first = ParseBasicExpression();
+        if (_current.Kind is not JsonPathTokenKind.And)
+        {
+            return first;
+        }
+
+        var operands = new List<LogicalExpression> { first };
         while (_current.Kind is JsonPathTokenKind.And)
         {
             Advance();
-            var right = ParseBasicExpression();
-            left = new AndExpression(left, right);
+            operands.Add(ParseBasicExpression());
         }
 
-        return left;
+        return new AndExpression([.. operands]);
     }
 
     // basic-expr = paren-expr / comparison-expr / test-expr
     private LogicalExpression ParseBasicExpression()
     {
+        EnterNestingLevel();
+        try
+        {
+            return ParseBasicExpressionCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private LogicalExpression ParseBasicExpressionCore()
+    {
         // paren-expr = [logical-not-op S] "(" S logical-expr S ")"
         // test-expr = [logical-not-op S] (filter-query / function-expr)
         var negated = false;
+        var notPosition = _current.Position;
         if (_current.Kind is JsonPathTokenKind.ExclamationMark)
         {
             negated = true;
@@ -310,7 +349,8 @@ internal ref struct JsonPathParser
 
         LogicalExpression expr;
 
-        if (_current.Kind is JsonPathTokenKind.OpenParen)
+        var isParenthesized = _current.Kind is JsonPathTokenKind.OpenParen;
+        if (isParenthesized)
         {
             // paren-expr
             Advance();
@@ -364,6 +404,13 @@ internal ref struct JsonPathParser
 
         if (negated)
         {
+            // logical-not-op only prefixes a paren-expr or a test-expr. '!@.a == 1' does not mean '!(@.a == 1)':
+            // it is not well-formed at all.
+            if (!isParenthesized && expr is ComparisonExpression)
+            {
+                throw new FormatException($"'!' at position {notPosition} cannot negate a comparison. Enclose the comparison in parentheses.");
+            }
+
             expr = new NotExpression(expr);
         }
 
@@ -405,7 +452,7 @@ internal ref struct JsonPathParser
         // Check if followed by a comparison operator — this would be an error for non-singular queries
         if (IsComparisonOperator())
         {
-            throw new FormatException($"Non-singular query cannot be used in a comparison at position {_current.Position}.");
+            throw new FormatException($"Non-singular query cannot be used in a comparison at position {_current.Position}. {SingularQueryHint}");
         }
 
         return new ExistenceTestExpression(query);
@@ -507,9 +554,13 @@ internal ref struct JsonPathParser
     // singular-query-segments = *(S (name-segment / index-segment))
     private SingularQuery ParseSingularQuery()
     {
-        if (!TryParseSingularQuery(out var query))
+        // A query that goes on past its last singular segment (with a wildcard, a slice, a descendant segment or
+        // blank space inside the brackets) is still a query, just not a singular one. Nothing that may follow a
+        // singular query starts with '[' or '..', so stopping at one of them means the query is not singular.
+        var position = _current.Position;
+        if (!TryParseSingularQuery(out var query) || _current.Kind is JsonPathTokenKind.OpenBracket or JsonPathTokenKind.DoubleDot)
         {
-            throw new FormatException($"Expected singular query at position {_current.Position}.");
+            throw new FormatException($"Expected a singular query at position {position}. {SingularQueryHint}");
         }
 
         return query;
@@ -543,23 +594,23 @@ internal ref struct JsonPathParser
                 var savedToken = _current;
                 Advance();
 
-                if (_current.Kind is JsonPathTokenKind.StringLiteral)
+                // name-segment = "[" name-selector "]" and index-segment = "[" index-selector "]" leave no room for
+                // blank space, unlike a bracketed selection: "@[ 'a' ]" is a well-formed query, but not a singular one.
+                if (_current.Position == savedToken.Position + 1 && _lexer.PeekChar() is ']')
                 {
-                    var name = _current.StringValue!;
-                    Advance();
-                    if (_current.Kind is JsonPathTokenKind.CloseBracket)
+                    if (_current.Kind is JsonPathTokenKind.StringLiteral)
                     {
+                        var name = _current.StringValue!;
+                        Advance();
                         Advance();
                         segments.Add(new SingularQuerySegment(name));
                         continue;
                     }
-                }
-                else if (_current.Kind is JsonPathTokenKind.NumberLiteral)
-                {
-                    var index = GetLongValue(_current);
-                    Advance();
-                    if (_current.Kind is JsonPathTokenKind.CloseBracket)
+
+                    if (_current.Kind is JsonPathTokenKind.NumberLiteral)
                     {
+                        var index = GetLongValue(_current);
+                        Advance();
                         Advance();
                         segments.Add(new SingularQuerySegment(index));
                         continue;
@@ -573,7 +624,14 @@ internal ref struct JsonPathParser
             }
             else if (_current.Kind is JsonPathTokenKind.Dot)
             {
+                // RFC 9535: no whitespace allowed between "." and what follows, in any segment
+                var dotPos = _current.Position;
                 Advance();
+                if (_current.Position != dotPos + 1)
+                {
+                    throw new FormatException($"Unexpected whitespace after '.' at position {dotPos}.");
+                }
+
                 if (_current.Kind is JsonPathTokenKind.Identifier or JsonPathTokenKind.True or JsonPathTokenKind.False or JsonPathTokenKind.Null)
                 {
                     var name = _current.Kind switch
@@ -606,6 +664,21 @@ internal ref struct JsonPathParser
     // function-expr = function-name "(" S [function-argument *(S "," S function-argument)] S ")"
     private FunctionCallExpression ParseFunctionCallExpression()
     {
+        // Nested function arguments recurse back into this method without going through
+        // ParseBasicExpression, so this entry point needs its own guard.
+        EnterNestingLevel();
+        try
+        {
+            return ParseFunctionCallExpressionCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private FunctionCallExpression ParseFunctionCallExpressionCore()
+    {
         var name = _current.StringValue!;
         var pos = _current.Position;
         Advance(); // consume function name
@@ -634,7 +707,7 @@ internal ref struct JsonPathParser
             throw new FormatException($"Function '{name}' expects {funcDef.ParameterTypes.Length} argument(s) but got {args.Count} at position {pos}.");
         }
 
-        return new FunctionCallExpression(name, [.. args], funcDef.ResultType);
+        return new FunctionCallExpression(name, [.. args], funcDef.ResultType, _functions.GetFunction(name));
     }
 
     // function-argument = literal / filter-query / logical-expr / function-expr
@@ -730,6 +803,17 @@ internal ref struct JsonPathParser
 
     private FunctionArgument ParseNodesTypeArgument()
     {
+        if (_current.Kind is JsonPathTokenKind.Identifier && IsLowercaseAlpha(_current.StringValue!) && _lexer.PeekChar() == '(')
+        {
+            var function = ParseFunctionCallExpression();
+            if (function.ResultType is not FunctionExpressionType.NodesType)
+            {
+                throw new FormatException($"Function '{function.Name}' does not return NodesType at position {_current.Position}.");
+            }
+
+            return FunctionArgument.FromFunctionCall(function);
+        }
+
         // NodesType argument: filter-query (which includes singular-query)
         var query = ParseFilterQuery();
         return FunctionArgument.FromFilterQuery(query);
@@ -778,6 +862,14 @@ internal ref struct JsonPathParser
         _current = _lexer.NextToken();
     }
 
+    private void EnterNestingLevel()
+    {
+        if (++_depth > MaxNestingDepth)
+        {
+            throw new FormatException($"Filter expression nesting exceeds the maximum depth of {MaxNestingDepth} at position {_current.Position}.");
+        }
+    }
+
     private static long GetLongValue(JsonPathToken token)
     {
         if (!token.IsIntegerLiteral)
@@ -821,8 +913,13 @@ internal ref struct JsonPathParser
 
     // ---- Function Registry ----
 
-    private static FunctionDefinition GetFunctionDefinition(string name, int position)
+    private FunctionDefinition GetFunctionDefinition(string name, int position)
     {
+        if (_functions.GetFunction(name) is { } function)
+        {
+            return new FunctionDefinition(function.ParameterTypes.Select(ConvertFunctionType).ToArray(), ConvertFunctionType(function.ResultType));
+        }
+
         return name switch
         {
             "length" => new FunctionDefinition([FunctionExpressionType.ValueType], FunctionExpressionType.ValueType),
@@ -833,6 +930,14 @@ internal ref struct JsonPathParser
             _ => throw new FormatException($"Unknown function '{name}' at position {position}."),
         };
     }
+
+    private static FunctionExpressionType ConvertFunctionType(JsonPathFunctionType type) => type switch
+    {
+        JsonPathFunctionType.Value => FunctionExpressionType.ValueType,
+        JsonPathFunctionType.Logical => FunctionExpressionType.LogicalType,
+        JsonPathFunctionType.Nodes => FunctionExpressionType.NodesType,
+        _ => throw new InvalidOperationException("Invalid function signature."),
+    };
 
     private readonly struct FunctionDefinition
     {

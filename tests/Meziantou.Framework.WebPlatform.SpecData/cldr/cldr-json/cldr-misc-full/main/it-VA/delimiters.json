@@ -1,0 +1,16 @@
+{
+  "main": {
+    "it-VA": {
+      "identity": {
+        "language": "it",
+        "territory": "VA"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

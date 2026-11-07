@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <!-- Normalizes link labels and converts internationalized domain names with IdnMapping -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>A fast, CommonMark compliant, extensible Markdown processor for .NET.</Description>
+    <PackageTags>markdown, commonmark, md, html, md2html, parser</PackageTags>
+    <Version>1.0.7</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Markdown.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Markdown.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework.HtmlSanitizer/DescriptiveHtmlAttributes.cs" Link="Extensions/GenericAttributes/DescriptiveHtmlAttributes.cs" />
+    <Compile Include="../Meziantou.Framework.ValueStringBuilder/ValueStringBuilder.cs" Link="Internals/ValueStringBuilder/ValueStringBuilder.cs" />
+    <Compile Include="../Meziantou.Framework.ValueStringBuilder/ValueStringBuilder.AppendSpanFormattable.cs" Link="Internals/ValueStringBuilder/ValueStringBuilder.AppendSpanFormattable.cs" />
+  </ItemGroup>
+</Project>

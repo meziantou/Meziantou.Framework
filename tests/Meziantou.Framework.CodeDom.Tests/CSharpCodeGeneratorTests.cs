@@ -18,6 +18,196 @@ public class CSharpCodeGeneratorTests
     }
 
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region CodeDom_Usage
+        var unit = new CompilationUnit();
+        unit.AddUsing("System");
+
+        var ns = unit.AddNamespace("Demo");
+        var type = ns.AddType(new ClassDeclaration("Greeter")
+        {
+            Modifiers = Modifiers.Public,
+        });
+
+        var method = type.AddMember(new MethodDeclaration("GetMessage")
+        {
+            Modifiers = Modifiers.Public | Modifiers.Static,
+            ReturnType = typeof(string),
+        });
+
+        var nameArgument = method.AddArgument("name", typeof(string));
+        method.Statements = new ReturnStatement(Expression.Add("Hello ", nameArgument, "!"));
+
+        var generatedCode = unit.ToCsharpString();
+        #endregion
+
+        // The readme and the documentation show this output after the example.
+        Assert.Equal(RemoveRegionDirectives("""
+            #region CodeDom_UsageOutput
+            using System;
+
+            namespace Demo
+            {
+                public class Greeter
+                {
+                    public static string GetMessage(string name)
+                    {
+                        return (("Hello " + name) + "!");
+                    }
+                }
+            }
+            #endregion
+
+            """), generatedCode.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void Documentation_Statements()
+    {
+        #region CodeDom_Statements
+        var method = new MethodDeclaration("Sum")
+        {
+            Modifiers = Modifiers.Public | Modifiers.Static,
+            ReturnType = typeof(int),
+        };
+        var values = method.AddArgument("values", typeof(int[]));
+        method.Statements = [];
+
+        // Throws an ArgumentNullException when values is null
+        method.Statements.Add(values.CreateThrowIfNullStatement());
+
+        var total = method.Statements.Add(new VariableDeclarationStatement("total", typeof(int), 0));
+        var index = new VariableDeclarationStatement("i", typeof(int), 0);
+        method.Statements.Add(new IterationStatement
+        {
+            Initialization = index,
+            Condition = new BinaryExpression(BinaryOperator.LessThan, index, values.Member("Length")),
+            IncrementStatement = new UnaryExpression(UnaryOperator.PostIncrement, index),
+            Body = new AssignStatement(total, new BinaryExpression(BinaryOperator.Add, total, new ArrayIndexerExpression(values, index))),
+        });
+        method.Statements.Add(new ReturnStatement(total));
+        #endregion
+
+        Assert.Equal(RemoveRegionDirectives("""
+            #region CodeDom_StatementsOutput
+            public static int Sum(int[] values)
+            {
+                if ((values == null))
+                {
+                    throw new global::System.ArgumentNullException(nameof(values));
+                }
+
+                int total = 0;
+                for (int i = 0; (i < values.Length); (i++))
+                {
+                    total = (total + values[i]);
+                }
+
+                return total;
+            }
+            #endregion
+
+            """), method.ToCsharpString());
+    }
+
+    [Fact]
+    public void Documentation_Comments()
+    {
+        #region CodeDom_Comments
+        var method = new MethodDeclaration("Greet")
+        {
+            Modifiers = Modifiers.Public,
+            ReturnType = typeof(string),
+        };
+        var name = method.AddArgument("name", typeof(string));
+        method.XmlComments.AddSummary("Creates a greeting message.");
+        method.XmlComments.AddParam("name", "The name of the person to greet.");
+
+        var statement = new ReturnStatement(Expression.Add("Hello ", name));
+        statement.CommentsBefore.Add("Keep the message short");
+        method.Statements = statement;
+        #endregion
+
+        Assert.Equal(RemoveRegionDirectives("""
+            #region CodeDom_CommentsOutput
+            /// <summary>Creates a greeting message.</summary>
+            /// <param name="name">The name of the person to greet.</param>
+            public string Greet(string name)
+            {
+                // Keep the message short
+                return ("Hello " + name);
+            }
+            #endregion
+
+            """), method.ToCsharpString());
+    }
+
+    [Fact]
+    public void Documentation_NullableContext()
+    {
+        #region CodeDom_NullableContext
+        var unit = new CompilationUnit
+        {
+            NullableContext = NullableContext.Enable,
+        };
+        var type = unit.AddNamespace("Demo").AddType(new ClassDeclaration("Person"));
+        type.AddMember(new FieldDeclaration("_nickname", new TypeReference(typeof(string)).MakeNullable()));
+
+        Assert.Equal("""
+            #nullable enable
+            namespace Demo
+            {
+                class Person
+                {
+                    string? _nickname;
+                }
+            }
+
+            """, unit.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Visitor()
+    {
+        #region CodeDom_Visitor
+        var type = new ClassDeclaration("Sample");
+        type.AddMember(new MethodDeclaration("Write"));
+        type.AddMember(new PropertyDeclaration("Name", typeof(string)));
+        type.AddMember(new MethodDeclaration("Read"));
+
+        var collector = new MethodNameCollector();
+        collector.Visit(type);
+        Assert.Equal(["Write", "Read"], collector.Names);
+
+        // Sort the members: fields, properties, methods... then by name
+        DefaultFormatterVisitor.Instance.Visit(type);
+        Assert.Equal(["Name", "Read", "Write"], type.Members.Select(member => member.Name));
+        #endregion
+    }
+
+    #region CodeDom_CustomVisitor
+    private sealed class MethodNameCollector : Visitor
+    {
+        public List<string?> Names { get; } = [];
+
+        public override void VisitMethodDeclaration(MethodDeclaration methodDeclaration)
+        {
+            Names.Add(methodDeclaration.Name);
+            base.VisitMethodDeclaration(methodDeclaration);
+        }
+    }
+    #endregion
+
+    private static string RemoveRegionDirectives(string value)
+    {
+        var lines = value.ReplaceLineEndings("\n").Split('\n')
+            .Where(line => !line.StartsWith("#region", StringComparison.Ordinal) && !line.StartsWith("#endregion", StringComparison.Ordinal));
+        return string.Join('\n', lines);
+    }
+
+    [Fact]
     public void CSharpCodeGenerator_Factorial()
     {
         var unit = new CompilationUnit();
@@ -56,6 +246,365 @@ public class CSharpCodeGeneratorTests
     }
 }
 ");
+    }
+
+    [Fact]
+    public void Documentation_CodeObject()
+    {
+        #region CodeObject_Example
+        var unit = new CompilationUnit();
+        var ns = unit.AddNamespace("MyNamespace");
+        var cls = ns.AddType(new ClassDeclaration("MyClass"));
+
+        // Code objects form a tree
+        Assert.Same(ns, cls.Parent);
+        Assert.Same(unit, ns.Parent);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CompilationUnit()
+    {
+        #region CompilationUnit_Example
+        var unit = new CompilationUnit();
+        unit.Usings.Add(new UsingDirective("System"));
+        var ns = unit.AddNamespace("MyNamespace");
+        ns.AddType(new ClassDeclaration("MyClass"));
+        var code = unit.ToCsharpString();
+
+        Assert.StartsWith("using System;", code);
+        Assert.Contains("namespace MyNamespace", code);
+        Assert.Contains("class MyClass", code);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CustomAttribute()
+    {
+        #region CustomAttribute_Example
+        var attr = new CustomAttribute(typeof(ObsoleteAttribute));
+        attr.Arguments.Add(new CustomAttributeArgument(new LiteralExpression("Use NewMethod instead")));
+
+        Assert.Equal("""[global::System.ObsoleteAttribute("Use NewMethod instead")]""", attr.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ClassDeclaration()
+    {
+        #region ClassDeclaration_Example
+        var cls = new ClassDeclaration("MyClass");
+        cls.Modifiers = Modifiers.Public;
+        cls.BaseType = typeof(object);
+        cls.Members.Add(new MethodDeclaration("MyMethod") { Statements = [] });
+
+        Assert.Equal("""
+            public class MyClass : object
+            {
+                void MyMethod()
+                {
+                }
+            }
+
+            """, cls.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ConstructorDeclaration()
+    {
+        #region ConstructorDeclaration_Example
+        var cls = new ClassDeclaration("Person");
+        var ctor = cls.AddMember(new ConstructorDeclaration());
+        ctor.Modifiers = Modifiers.Public;
+        ctor.Arguments.Add(new MethodArgumentDeclaration(typeof(string), "name"));
+        ctor.Statements = new AssignStatement(new MemberReferenceExpression(new ThisExpression(), "_name"), new ArgumentReferenceExpression("name"));
+
+        Assert.Equal("""
+            class Person
+            {
+                public Person(string name)
+                {
+                    this._name = name;
+                }
+            }
+
+            """, cls.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DelegateDeclaration()
+    {
+        #region DelegateDeclaration_Example
+        var del = new DelegateDeclaration("MyDelegate");
+        del.ReturnType = typeof(void);
+        del.Arguments.Add(new MethodArgumentDeclaration(typeof(string), "message"));
+
+        Assert.Equal("""
+            delegate void MyDelegate(string message);
+
+            """, del.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EnumerationDeclaration()
+    {
+        #region EnumerationDeclaration_Example
+        var enumDecl = new EnumerationDeclaration("Status");
+        enumDecl.BaseType = typeof(int);
+        enumDecl.Members.Add(new EnumerationMember("Active", 1));
+        enumDecl.Members.Add(new EnumerationMember("Inactive", 2));
+
+        Assert.Equal("""
+            enum Status : int
+            {
+                Active = 1,
+                Inactive = 2
+            }
+
+            """, enumDecl.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FieldDeclaration()
+    {
+        #region FieldDeclaration_Example
+        var field = new FieldDeclaration("_count", typeof(int), Modifiers.Private, new LiteralExpression(0));
+
+        Assert.Equal("""
+            private int _count = 0;
+
+            """, field.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_InterfaceDeclaration()
+    {
+        #region InterfaceDeclaration_Example
+        var iface = new InterfaceDeclaration("IRepository");
+        var typeParameter = new TypeParameter("T");
+        iface.Parameters.Add(typeParameter);
+        iface.Members.Add(new MethodDeclaration("Get") { ReturnType = typeParameter });
+        var code = iface.ToCsharpString();
+
+        Assert.StartsWith("interface IRepository<T>", code);
+        Assert.Contains("Get();", code);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MethodDeclaration()
+    {
+        #region MethodDeclaration_Example
+        var method = new MethodDeclaration("Calculate");
+        method.Modifiers = Modifiers.Public;
+        method.ReturnType = typeof(int);
+        method.Arguments.Add(new MethodArgumentDeclaration(typeof(int), "value"));
+        method.Statements = new ReturnStatement(new LiteralExpression(42));
+
+        Assert.Equal("""
+            public int Calculate(int value)
+            {
+                return 42;
+            }
+
+            """, method.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NamespaceDeclaration()
+    {
+        #region NamespaceDeclaration_Example
+        var ns = new NamespaceDeclaration("MyNamespace");
+        ns.Usings.Add(new UsingDirective("System"));
+        ns.AddType(new ClassDeclaration("MyClass"));
+        var code = ns.ToCsharpString();
+
+        Assert.StartsWith("namespace MyNamespace", code);
+        Assert.Contains("using System;", code);
+        Assert.Contains("class MyClass", code);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_PropertyDeclaration()
+    {
+        #region PropertyDeclaration_Example
+        var prop = new PropertyDeclaration("Name", typeof(string));
+        prop.Modifiers = Modifiers.Public;
+        prop.Getter = new ReturnStatement(new MemberReferenceExpression(new ThisExpression(), "_name"));
+        prop.Setter = new AssignStatement(new MemberReferenceExpression(new ThisExpression(), "_name"), new ValueArgumentExpression());
+
+        Assert.Equal("""
+            public string Name
+            {
+                get
+                {
+                    return this._name;
+                }
+                set
+                {
+                    this._name = value;
+                }
+            }
+
+            """, prop.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RecordDeclaration()
+    {
+        #region RecordDeclaration_Example
+        var record = new RecordDeclaration("Person");
+
+        // An accessor without statements is auto-implemented
+        record.Members.Add(new PropertyDeclaration("Name", typeof(string)) { Getter = new PropertyAccessorDeclaration { Statements = null } });
+        record.Members.Add(new PropertyDeclaration("Age", typeof(int)) { Getter = new PropertyAccessorDeclaration { Statements = null } });
+
+        Assert.Equal("""
+            record Person
+            {
+                string Name
+                {
+                    get;
+                }
+
+                int Age
+                {
+                    get;
+                }
+            }
+
+            """, record.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_StructDeclaration()
+    {
+        #region StructDeclaration_Example
+        var str = new StructDeclaration("Point");
+        str.Members.Add(new FieldDeclaration("X", typeof(int)));
+        str.Members.Add(new FieldDeclaration("Y", typeof(int)));
+
+        Assert.Equal("""
+            struct Point
+            {
+                int X;
+
+                int Y;
+            }
+
+            """, str.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BinaryExpression()
+    {
+        #region BinaryExpression_Example
+        var addition = new BinaryExpression(BinaryOperator.Add, 10, 20);
+        var comparison = new BinaryExpression(BinaryOperator.GreaterThan, new VariableReferenceExpression("x"), 0);
+        var logicalAnd = new BinaryExpression(
+            BinaryOperator.And,
+            new BinaryExpression(BinaryOperator.GreaterThan, new VariableReferenceExpression("x"), 0),
+            new BinaryExpression(BinaryOperator.LessThan, new VariableReferenceExpression("x"), 100));
+
+        Assert.Equal("(10 + 20)", addition.ToCsharpString());
+        Assert.Equal("(x > 0)", comparison.ToCsharpString());
+        Assert.Equal("((x > 0) && (x < 100))", logicalAnd.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Expression()
+    {
+        #region Expression_Example
+        Expression expr1 = new LiteralExpression(42);
+        Expression expr2 = new BinaryExpression(BinaryOperator.Add, expr1, 10);
+        Expression expr3 = new MethodInvokeExpression(new MemberReferenceExpression(typeof(Console), "WriteLine"), expr2);
+
+        Assert.Equal("global::System.Console.WriteLine((42 + 10))", expr3.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_LiteralExpression()
+    {
+        #region LiteralExpression_Example
+        var intLiteral = new LiteralExpression(42);
+        var stringLiteral = new LiteralExpression("Hello");
+        var boolLiteral = new LiteralExpression(true);
+        var nullLiteral = new LiteralExpression(null);
+
+        Assert.Equal("42", intLiteral.ToCsharpString());
+        Assert.Equal("\"Hello\"", stringLiteral.ToCsharpString());
+        Assert.Equal("true", boolLiteral.ToCsharpString());
+        Assert.Equal("null", nullLiteral.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MemberReferenceExpression()
+    {
+        #region MemberReferenceExpression_Example
+        var memberRef = new MemberReferenceExpression(new ThisExpression(), "Name");
+        var staticMemberRef = new MemberReferenceExpression(typeof(Console), "WriteLine");
+
+        Assert.Equal("this.Name", memberRef.ToCsharpString());
+        Assert.Equal("global::System.Console.WriteLine", staticMemberRef.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MethodInvokeExpression()
+    {
+        #region MethodInvokeExpression_Example
+        var method = new MemberReferenceExpression(typeof(Console), "WriteLine");
+        var invoke = new MethodInvokeExpression(method, new LiteralExpression("Hello World"));
+
+        Assert.Equal("global::System.Console.WriteLine(\"Hello World\")", invoke.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NewObjectExpression()
+    {
+        #region NewObjectExpression_Example
+        var newObj = new NewObjectExpression(typeof(StringBuilder));
+        var newObjWithArgs = new NewObjectExpression(typeof(StringBuilder), new LiteralExpression("initial value"));
+
+        Assert.Equal("new global::System.Text.StringBuilder()", newObj.ToCsharpString());
+        Assert.Equal("new global::System.Text.StringBuilder(\"initial value\")", newObjWithArgs.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CSharpCodeGenerator()
+    {
+        #region CSharpCodeGenerator_Example
+        var unit = new CompilationUnit();
+        unit.AddNamespace("MyNamespace").AddType(new ClassDeclaration("MyClass"));
+
+        var generator = new CSharpCodeGenerator();
+        string code = generator.Write(unit);
+
+        Assert.Equal("""
+            namespace MyNamespace
+            {
+                class MyClass
+                {
+                }
+            }
+
+            """, code);
+        #endregion
     }
 
     [Fact]
@@ -1625,6 +2174,122 @@ null
 
         var variable = new VariableDeclarationStatement("demo", new TypeReference(innerStruct));
         AssertCsharp(variable, @"global::A.B.C.D demo;
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_UsingsFollowedByNamespace()
+    {
+        var unit = new CompilationUnit();
+        unit.Usings.Add(new UsingDirective("System"));
+        unit.Usings.Add(new UsingDirective("System.IO"));
+        unit.AddNamespace("MyNamespace");
+
+        AssertCsharp(unit, @"using System;
+using System.IO;
+
+namespace MyNamespace
+{
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_UsingsFollowedByType()
+    {
+        var unit = new CompilationUnit();
+        unit.Usings.Add(new UsingDirective("System"));
+        unit.AddType(new ClassDeclaration("MyClass"));
+
+        AssertCsharp(unit, @"using System;
+
+class MyClass
+{
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_UsingsOnly()
+    {
+        var unit = new CompilationUnit();
+        unit.Usings.Add(new UsingDirective("System"));
+
+        AssertCsharp(unit, "using System;");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_NamespaceDeclaration_UsingsFollowedByType()
+    {
+        var ns = new NamespaceDeclaration("MyNamespace");
+        ns.Usings.Add(new UsingDirective("System"));
+        ns.AddType(new ClassDeclaration("MyClass"));
+
+        AssertCsharp(ns, @"namespace MyNamespace
+{
+    using System;
+
+    class MyClass
+    {
+    }
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_NamespaceDeclaration_UsingsFollowedByNamespace()
+    {
+        var ns = new NamespaceDeclaration("MyNamespace");
+        ns.Usings.Add(new UsingDirective("System"));
+        ns.AddNamespace("Inner");
+
+        AssertCsharp(ns, @"namespace MyNamespace
+{
+    using System;
+
+    namespace Inner
+    {
+    }
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_TypeReference_TypeParameter()
+    {
+        var type = new InterfaceDeclaration("IRepository");
+        var typeParameter = new TypeParameter("T");
+        type.Parameters.Add(typeParameter);
+        var method = type.AddMember(new MethodDeclaration("Get") { ReturnType = typeParameter });
+        method.AddArgument("items", new TypeReference(typeParameter).MakeArray(1));
+        method.AddArgument("defaultValue", new TypeReference(typeParameter).MakeNullable());
+
+        AssertCsharp(type, @"interface IRepository<T>
+{
+    T Get(T[] items, T? defaultValue);
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_TypeReference_TypeParameterAsGenericArgument()
+    {
+        var typeParameter = new TypeParameter("T");
+        var variable = new VariableDeclarationStatement("demo", new TypeReference(typeof(List<>)).MakeGeneric(typeParameter));
+
+        AssertCsharp(variable, @"global::System.Collections.Generic.List<T> demo;
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_TypeReference_GenericTypeDeclaration()
+    {
+        var type = new ClassDeclaration("MyClass");
+        type.Parameters.Add(new TypeParameter("T"));
+        _ = new NamespaceDeclaration("MyNamespace") { Types = { type } };
+
+        var variable = new VariableDeclarationStatement("demo", new TypeReference(type));
+        AssertCsharp(variable, @"global::MyNamespace.MyClass<T> demo;
 ");
     }
 }

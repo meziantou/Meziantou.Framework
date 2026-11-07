@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lrc": {
+      "identity": {
+        "language": "lrc"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

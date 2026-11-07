@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
+using Meziantou.AspNetCore.Components.Internals;
 using Microsoft.AspNetCore.Components.Forms;
 
 namespace Meziantou.AspNetCore.Components;
@@ -19,6 +20,7 @@ namespace Meziantou.AspNetCore.Components;
 public sealed class GenericFormField<TModel>
 {
     private static readonly MethodInfo EventCallbackFactoryCreate = GetEventCallbackFactoryCreate();
+    private static readonly PropertyInfo[] EditableProperties = GetEditableProperties();
 
     private readonly GenericForm<TModel> _form;
 
@@ -33,7 +35,18 @@ public sealed class GenericFormField<TModel>
 
     internal static List<GenericFormField<TModel>> Create(GenericForm<TModel> form)
     {
-        var result = new List<GenericFormField<TModel>>();
+        var result = new List<GenericFormField<TModel>>(EditableProperties.Length);
+        foreach (var prop in EditableProperties)
+        {
+            result.Add(new GenericFormField<TModel>(form, prop));
+        }
+
+        return result;
+    }
+
+    private static PropertyInfo[] GetEditableProperties()
+    {
+        var result = new List<PropertyInfo>();
         var properties = typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
         foreach (var prop in properties)
         {
@@ -44,11 +57,10 @@ public sealed class GenericFormField<TModel>
             if (prop.GetCustomAttribute<EditableAttribute>() is { } editor && !editor.AllowEdit)
                 continue;
 
-            var field = new GenericFormField<TModel>(form, prop);
-            result.Add(field);
+            result.Add(prop);
         }
 
-        return result;
+        return result.ToArray();
     }
 
     /// <summary>Gets the <see cref="PropertyInfo"/> representing the model property for this field.</summary>
@@ -322,13 +334,17 @@ public sealed class GenericFormField<TModel>
         if (property.PropertyType == typeof(Uri))
             return (typeof(InputUrl<Uri>), null);
 
-        if (property.PropertyType.IsEnum)
+        // Note underlyingType unwraps Nullable<T>, so nullable enums are handled here too
+        if (underlyingType.IsEnum)
         {
-            if (!property.PropertyType.IsDefined(typeof(FlagsAttribute), inherit: true))
+            if (!underlyingType.IsDefined(typeof(FlagsAttribute), inherit: true))
                 return (typeof(InputEnumSelect<>).MakeGenericType(property.PropertyType), null);
         }
 
-        return (typeof(InputText), null);
+        // No dedicated editor for this type. InputText cannot be used because it is an InputBase<string> while the
+        // value, the change callback and the value expression are all built from the property type, so use a text
+        // input that stays generic over the property type instead.
+        return (typeof(InputTextFallback<>).MakeGenericType(property.PropertyType), null);
     }
 
     private static MethodInfo GetEventCallbackFactoryCreate()

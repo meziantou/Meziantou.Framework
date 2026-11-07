@@ -1,0 +1,137 @@
+{
+  "spec": {
+    "title": "Keyboard Map",
+    "url": "https://wicg.github.io/keyboard-map/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "KeyboardLayoutMap"
+        ]
+      }
+    },
+    "idlNames": {
+      "KeyboardLayoutMap": {
+        "fragment": "[Exposed=Window]\ninterface KeyboardLayoutMap {\n  readonly maplike<DOMString, DOMString>;\n};",
+        "type": "interface",
+        "name": "KeyboardLayoutMap",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/keyboard-map/#keyboardlayoutmap"
+      }
+    },
+    "idlExtendedNames": {
+      "Keyboard": [
+        {
+          "fragment": "partial interface Keyboard {\n  Promise<KeyboardLayoutMap> getLayoutMap();\n\n  attribute EventHandler onlayoutchange;\n};",
+          "type": "interface",
+          "name": "Keyboard",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getLayoutMap",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "KeyboardLayoutMap"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/keyboard-map/#dom-keyboard-getlayoutmap"
+            },
+            {
+              "type": "attribute",
+              "name": "onlayoutchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/keyboard-map/#dom-keyboard-onlayoutchange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "KeyboardLayoutMap"
+      ]
+    },
+    "dependencies": {
+      "KeyboardLayoutMap": [],
+      "Keyboard": [
+        "KeyboardLayoutMap",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Keyboard",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

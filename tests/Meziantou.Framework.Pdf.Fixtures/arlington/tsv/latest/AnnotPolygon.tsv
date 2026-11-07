@@ -1,0 +1,36 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[Annot]			Table 166 and Table 172 and Table 181 (markup annot)
+Subtype	name	1.5		TRUE	FALSE	FALSE		[Polygon]			
+Rect	rectangle	1.5		TRUE	FALSE	FALSE					
+Contents	string-text	1.5		FALSE	FALSE	FALSE					
+P	dictionary	1.5		FALSE	TRUE	FALSE				[PageObject]	
+NM	string-text	1.5		FALSE	FALSE	FALSE					
+M	date;string-text	1.5		FALSE	FALSE	FALSE					
+F	bitmask	1.5		FALSE	FALSE	FALSE	0		[fn:Eval(fn:BeforeVersion(1.7,fn:BitsClear(10,32)) && fn:SinceVersion(1.7,fn:BitsClear(11,32)))]		Table 167
+AP	dictionary	1.5		fn:IsRequired(fn:SinceVersion(2.0,(fn:RectWidth(Rect)>0) || (fn:RectHeight(Rect)>0)))	FALSE	FALSE				[Appearance]	
+AS	name	1.5		fn:IsRequired(fn:IsPresent(AP::N::*) || fn:IsPresent(AP::R::*) || fn:IsPresent(AP::D::*))	FALSE	FALSE					
+Border	array	1.5		FALSE	FALSE	FALSE	[0 0 1]		[fn:Ignore(fn:IsPresent(BS))]	[ArrayOf_4AnnotBorderCharacteristics]	
+C	array	1.5		FALSE	FALSE	FALSE				[ArrayOf_4NumbersColorAnnotation]	
+StructParent	integer	1.5		FALSE	FALSE	FALSE					Table 359
+OC	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+ca	number	2.0		FALSE	FALSE	FALSE	@CA	[fn:Eval((@ca>=0.0) && (@ca<=1.0))]			https://github.com/pdf-association/pdf-issues/issues/577
+CA	number	1.5		FALSE	FALSE	FALSE	1.0	[fn:Eval((@CA>=0.0) && (@CA<=1.0))]			
+BM	name	2.0		FALSE	FALSE	FALSE	Normal	[fn:Deprecated(1.4,Compatible),Normal,Multiply,Screen,Difference,Darken,Lighten,ColorDodge,ColorBurn,Exclusion,HardLight,Overlay,SoftLight,Luminosity,Hue,Saturation,Color]			Table 134 and Table 135
+Lang	string-text	2.0		FALSE	FALSE	FALSE					
+T	string-text	1.5		FALSE	FALSE	FALSE					
+Popup	dictionary	1.5		FALSE	TRUE	FALSE				[AnnotPopup]	
+RC	stream;string-text	1.5		FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	
+CreationDate	date	1.5		FALSE	FALSE	FALSE					
+IRT	dictionary	1.5		fn:IsRequired(fn:SinceVersion(1.6,fn:IsPresent(RT)))	FALSE	FALSE				[AnnotText,AnnotLink,AnnotFreeText,AnnotLine,AnnotSquare,AnnotCircle,AnnotPolygon,AnnotHighlight,AnnotUnderline,AnnotSquiggly,AnnotStrikeOut,AnnotCaret,AnnotStamp,AnnotInk,AnnotPopup,AnnotFileAttachment,AnnotSound,AnnotMovie,AnnotScreen,AnnotWidget,AnnotPrinterMark,fn:SinceVersion(1.6,AnnotWatermark),fn:SinceVersion(1.6,Annot3D),fn:SinceVersion(1.7,AnnotRedact),fn:SinceVersion(2.0,AnnotProjection),fn:SinceVersion(2.0,AnnotRichMedia)]	https://github.com/pdf-association/pdf-issues/issues/297
+Subj	string-text	1.5		FALSE	FALSE	FALSE					
+RT	name	1.6		FALSE	FALSE	FALSE	R	[R,Group]	[fn:IsMeaningful(fn:IsPresent(IRT))]		
+Vertices	array	1.5		fn:IsRequired(fn:BeforeVersion(2.0) || fn:SinceVersion(2.0,fn:Not(fn:IsPresent(Path))))	FALSE	FALSE			[fn:SinceVersion(2.0,fn:Ignore(fn:IsPresent(Path)))]	[ArrayOfNumbersGeneral]	
+LE	array	1.5		FALSE	FALSE	FALSE	[None None]		[fn:IsMeaningful(@Subtype==Polyline)]	[ArrayOf_2LineEndingsNames]	
+BS	dictionary	1.5		FALSE	FALSE	FALSE				[BorderStyle]	
+IC	array	1.5		FALSE	FALSE	FALSE				[ArrayOf_4NumbersColorAnnotation]	
+BE	dictionary	1.5		FALSE	FALSE	FALSE			[fn:IsMeaningful(@Subtype==Polygon)]	[BorderEffect]	
+IT	name	1.6		FALSE	FALSE	FALSE		[PolygonCloud,fn:SinceVersion(1.7,PolyLineDimension),fn:SinceVersion(1.7,PolygonDimension)]			
+Measure	dictionary	1.7		FALSE	FALSE	FALSE				[MeasureRL,fn:SinceVersion(2.0,MeasureGEO)]	
+Path	array	2.0		FALSE	FALSE	FALSE			[fn:Not(fn:IsPresent(Vertices))]	[ArrayOfArraysPaths]	
+ExData	dictionary	1.7		FALSE	FALSE	FALSE				[ExData3DMarkup,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,ExDataMarkupGeo)),fn:SinceVersion(2.0,ExDataMarkupGeo),fn:SinceVersion(2.0,ExDataProjection)]	2D markup annots only 

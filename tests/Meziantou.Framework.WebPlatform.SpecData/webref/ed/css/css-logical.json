@@ -1,0 +1,310 @@
+{
+  "spec": {
+    "title": "CSS Logical Properties and Values Module Level 1",
+    "url": "https://drafts.csswg.org/css-logical-1/"
+  },
+  "properties": [
+    {
+      "name": "margin-block-start",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-margin-block-start",
+      "value": "<'margin-top'>",
+      "initial": "0",
+      "appliesTo": "Same as margin-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding margin-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-block-start",
+        "marginBlockStart"
+      ]
+    },
+    {
+      "name": "margin-block-end",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-margin-block-end",
+      "value": "<'margin-top'>",
+      "initial": "0",
+      "appliesTo": "Same as margin-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding margin-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-block-end",
+        "marginBlockEnd"
+      ]
+    },
+    {
+      "name": "margin-inline-start",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-margin-inline-start",
+      "value": "<'margin-top'>",
+      "initial": "0",
+      "appliesTo": "Same as margin-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding margin-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-inline-start",
+        "marginInlineStart"
+      ]
+    },
+    {
+      "name": "margin-inline-end",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-margin-inline-end",
+      "value": "<'margin-top'>",
+      "initial": "0",
+      "appliesTo": "Same as margin-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding margin-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-inline-end",
+        "marginInlineEnd"
+      ]
+    },
+    {
+      "name": "margin-block",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-margin-block",
+      "value": "<'margin-top'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "margin-block",
+        "marginBlock"
+      ],
+      "longhands": [
+        "margin-block-start",
+        "margin-block-end"
+      ]
+    },
+    {
+      "name": "margin-inline",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-margin-inline",
+      "value": "<'margin-top'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "margin-inline",
+        "marginInline"
+      ],
+      "longhands": [
+        "margin-inline-start",
+        "margin-inline-end"
+      ]
+    },
+    {
+      "name": "padding-block-start",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-padding-block-start",
+      "value": "<'padding-top'>",
+      "initial": "0",
+      "appliesTo": "Same as padding-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding padding-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-block-start",
+        "paddingBlockStart"
+      ]
+    },
+    {
+      "name": "padding-block-end",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-padding-block-end",
+      "value": "<'padding-top'>",
+      "initial": "0",
+      "appliesTo": "Same as padding-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding padding-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-block-end",
+        "paddingBlockEnd"
+      ]
+    },
+    {
+      "name": "padding-inline-start",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-padding-inline-start",
+      "value": "<'padding-top'>",
+      "initial": "0",
+      "appliesTo": "Same as padding-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding padding-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-inline-start",
+        "paddingInlineStart"
+      ]
+    },
+    {
+      "name": "padding-inline-end",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-padding-inline-end",
+      "value": "<'padding-top'>",
+      "initial": "0",
+      "appliesTo": "Same as padding-top",
+      "inherited": "no",
+      "percentages": "As for the corresponding physical property",
+      "computedValue": "Same as corresponding padding-* properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-inline-end",
+        "paddingInlineEnd"
+      ]
+    },
+    {
+      "name": "padding-block",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-padding-block",
+      "value": "<'padding-top'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "padding-block",
+        "paddingBlock"
+      ],
+      "longhands": [
+        "padding-block-start",
+        "padding-block-end"
+      ]
+    },
+    {
+      "name": "padding-inline",
+      "href": "https://drafts.csswg.org/css-logical-1/#propdef-padding-inline",
+      "value": "<'padding-top'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "padding-inline",
+        "paddingInline"
+      ],
+      "longhands": [
+        "padding-inline-start",
+        "padding-inline-end"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "recto",
+      "prose": "Equivalent to right in left-to-right page progressions and left in right-to-left page progressions.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-logical-page-recto",
+      "type": "value",
+      "value": "recto",
+      "for": "logical-page"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "verso",
+      "prose": "Equivalent to left in left-to-right page progressions and right in right-to-left page progressions.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-logical-page-verso",
+      "type": "value",
+      "value": "verso",
+      "for": "logical-page"
+    },
+    {
+      "msg": "Dangling value",
+      "name": ":recto",
+      "prose": "Equivalent to ':right' in left-to-right page progressions and ':left' in right-to-left page progressions.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-logical-page-selector-recto",
+      "type": "value",
+      "value": ":recto",
+      "for": "logical-page-selector"
+    },
+    {
+      "msg": "Dangling value",
+      "name": ":verso",
+      "prose": "Equivalent to ':left' in left-to-right page progressions and ':right' in right-to-left page progressions.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-logical-page-selector-verso",
+      "type": "value",
+      "value": ":verso",
+      "for": "logical-page-selector"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "logical",
+      "prose": "The shorthand properties for margin, padding, and border set values for physical properties by default. But authors can specify the logical keyword at the beginning of the property value to indicate that the values map to the flow-relative properties instead of the physical ones.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-margin-logical",
+      "type": "value",
+      "value": "logical",
+      "for": "margin"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "logical",
+      "prose": "The shorthand properties for margin, padding, and border set values for physical properties by default. But authors can specify the logical keyword at the beginning of the property value to indicate that the values map to the flow-relative properties instead of the physical ones.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-margin-logical",
+      "type": "value",
+      "value": "logical",
+      "for": "padding"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "logical",
+      "prose": "The shorthand properties for margin, padding, and border set values for physical properties by default. But authors can specify the logical keyword at the beginning of the property value to indicate that the values map to the flow-relative properties instead of the physical ones.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-margin-logical",
+      "type": "value",
+      "value": "logical",
+      "for": "border-color"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "logical",
+      "prose": "The shorthand properties for margin, padding, and border set values for physical properties by default. But authors can specify the logical keyword at the beginning of the property value to indicate that the values map to the flow-relative properties instead of the physical ones.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-margin-logical",
+      "type": "value",
+      "value": "logical",
+      "for": "border-style"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "logical",
+      "prose": "The shorthand properties for margin, padding, and border set values for physical properties by default. But authors can specify the logical keyword at the beginning of the property value to indicate that the values map to the flow-relative properties instead of the physical ones.",
+      "href": "https://drafts.csswg.org/css-logical-1/#valdef-margin-logical",
+      "type": "value",
+      "value": "logical",
+      "for": "border-width"
+    }
+  ]
+}

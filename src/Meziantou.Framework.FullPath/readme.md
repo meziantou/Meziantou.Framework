@@ -2,50 +2,76 @@
 
 `FullPath` ensures you always deal with full path in your application and provides many common methods to manipulate paths.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Create FullPath
 FullPath rootPath = FullPath.FromPath("demo"); // It automatically calls Path.GetFullPath to resolve the path
 FullPath filePath = FullPath.Combine(rootPath, "temp", "meziantou.txt"); // Use Path.Combine to join paths (you can combine as many path as you needed)
 FullPath temp = FullPath.GetTempPath(); // equivalent of Path.GetTempPath()
-FullPath cwd = FullPath.GetCurrentDirectory(); // equivalent of Environment.CurrentDirectory
+FullPath cwd = FullPath.CurrentDirectory(); // equivalent of Environment.CurrentDirectory
+Assert.Equal(Path.GetFullPath("demo"), rootPath.Value);
+Assert.Equal(FullPath.FromPath(Path.GetTempPath()), temp);
+Assert.Equal(FullPath.FromPath(Environment.CurrentDirectory), cwd);
 
 // Combine path: you can use the / operator to join path
 FullPath filePath1 = rootPath / "temp" / "meziantou.txt";
+Assert.Equal(filePath, filePath1);
+
 // Or use the + operator to append a suffix to the current path
 FullPath backupFilePath = filePath1 + ".bak";
+Assert.Equal("meziantou.txt.bak", backupFilePath.Name);
 
 // Compare path
-// Comparisons are case-insensitive on Windows and case-sensitive on other operating systems by default
-_ = filePath == rootPath;
-_ = filePath.Equals(rootPath, ignoreCase: false);
+// Comparisons are case-insensitive on Windows, macOS, iOS and tvOS, and case-sensitive elsewhere by default
+Assert.False(filePath == rootPath);
+Assert.False(filePath.Equals(rootPath, ignoreCase: false));
 
 // Get parent directory
 FullPath parent = filePath.Parent;
+Assert.Equal(rootPath / "temp", parent);
 
 // Get file/directory name - extension
-var name = filePath.Name;
-var ext = filePath.Extension;
-FullPath pathWithExtension = filePath.WithExtension(".log");
-FullPath pathWithAllExtensionsChanged = FullPath.FromPath("archive.tar.gz").WithExtension(".zip", replaceAllTrailingExtensions: true);
-FullPath pathWithTwoExtensionsChanged = FullPath.FromPath("archive.tar.gz").WithExtension(".zip", extensionCount: 2);
-FullPath pathWithNewName = filePath.WithName("other.txt");
-FullPath pathWithNewNameWithoutExtension = filePath.WithNameWithoutExtension("other");
+Assert.Equal("meziantou.txt", filePath.Name);
+Assert.Equal(".txt", filePath.Extension);
+Assert.Equal("meziantou.log", filePath.WithExtension(".log").Name);
+Assert.Equal("archive.zip", FullPath.FromPath("archive.tar.gz").WithExtension(".zip", replaceAllTrailingExtensions: true).Name);
+Assert.Equal("archive.zip", FullPath.FromPath("archive.tar.gz").WithExtension(".zip", extensionCount: 2).Name);
+Assert.Equal("other.txt", filePath.WithName("other.txt").Name);
+Assert.Equal("other.txt", filePath.WithNameWithoutExtension("other").Name);
 
 // Make relative path
-string relativePath = filePath.MakeRelativeTo(rootPath); // temp\meziantou.txt
+string relativePath = filePath.MakePathRelativeTo(rootPath);
+Assert.Equal(Path.Combine("temp", "meziantou.txt"), relativePath); // temp/meziantou.txt, or temp\meziantou.txt on Windows
 
 // Check if a path is under another path
-bool isChildOf = filePath.IsChildOf(rootPath);
+Assert.True(filePath.IsChildOf(rootPath));
 
 // Resolve to canonical final path (follows symbolic links/reparse points)
-if (filePath.TryGetCanonicalPath(out var canonicalPath))
-{
-    Console.WriteLine(canonicalPath);
-}
+Assert.True(temp.TryGetCanonicalPath(out var canonicalPath));
+Assert.NotNull(canonicalPath);
 
 // FullPath is implicitly converted to string, so it works well with File/Directory methods
-System.IO.File.WriteAllText(filePath, content);
-````
+Assert.False(File.Exists(filePath));
+```
+<!-- endref -->
+
+## Native AOT and trimming
+
+The package is annotated `IsAotCompatible` and `IsTrimmable`. It does not use reflection, and the native interop is
+resolved at compile time.
+
+`FullPath` is serialized to JSON as a string by `FullPathJsonConverter`, which also works with the `System.Text.Json`
+source generator:
+
+<!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_JsonSourceGenerator;format=md-fenced-code-block;dedent=true -->
+```csharp
+[JsonSourceGenerationOptions(RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
+[JsonSerializable(typeof(Configuration))]
+internal sealed partial class AppJsonContext : JsonSerializerContext;
+
+internal sealed record Configuration(FullPath OutputPath);
+```
+<!-- endref -->
 
 ## Analyzer rules
 
@@ -60,9 +86,21 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0006` | FullPath | Use FullPath.NameWithoutExtension instead of Path.GetFileNameWithoutExtension | Info | ✔️ |
 | `MFFP0007` | FullPath | Use FullPath.Extension instead of Path.GetExtension | Info | ✔️ |
 | `MFFP0008` | FullPath | Use FullPath.Parent instead of Path.GetDirectoryName | Info | ✔️ |
-| `MFFP0009` | FullPath | Use FullPath.ChangeExtension instead of Path.ChangeExtension | Info | ✔️ |
+| `MFFP0009` | FullPath | Use FullPath.WithExtension instead of Path.ChangeExtension | Info | ✔️ |
 | `MFFP0010` | FullPath | Use FullPath.MakePathRelativeTo instead of Path.GetRelativePath | Info | ✔️ |
 | `MFFP0011` | FullPath | Return FullPath instead of string | Info | ✔️ |
+| `MFFP0012` | FullPath | Declare the property as FullPath instead of string | Info | ✔️ |
+| `MFFP0013` | FullPath | Declare the variable as FullPath instead of string | Info | ✔️ |
+| `MFFP0014` | FullPath | Declare the parameter as FullPath instead of string | Info | ✔️ |
+| `MFFP0015` | FullPath | Compare FullPath values instead of their string representation | Warning | ✔️ |
+| `MFFP0016` | FullPath | FullPath.Equals with a string argument is always false | Warning | ✔️ |
+| `MFFP0018` | FullPath | Path.IsPathRooted and Path.IsPathFullyQualified are redundant on a FullPath | Info | ✔️ |
+| `MFFP0019` | FullPath | Simplify the FullPath.FromPath call | Info | ✔️ |
+| `MFFP0020` | FullPath | Use FullPath.FromFileSystemInfo instead of FullPath.FromPath | Info | ✔️ |
+| `MFFP0021` | FullPath | Use FullPath.IsEmpty | Info | ✔️ |
+| `MFFP0022` | FullPath | Use FullPath.CreateParentDirectory instead of Directory.CreateDirectory | Info | ✔️ |
+| `MFFP0023` | FullPath | Use FullPath.Parent instead of Directory.GetParent | Info | ✔️ |
+| `MFFP0024` | FullPath | Use the FullPath equivalent of Path.GetTempPath or Environment.GetFolderPath | Info | ✔️ |
 <!-- analyzer-rules -->
 
 # Additional resources

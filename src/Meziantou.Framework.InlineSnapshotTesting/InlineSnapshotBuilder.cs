@@ -5,20 +5,28 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 /// <summary>Provides a fluent API for configuring and validating inline snapshots.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs" ref:region="InlineSnapshotBuilder_WithSerializer" ref:dedent="true">
+/// var data = new { LastName = "Doe", FirstName = "John" };
 /// InlineSnapshot
-///     .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
-///     .Validate(data, "expected snapshot");
+///     .WithSerializer(options =&gt; options.PropertyOrder = StringComparer.Ordinal)
+///     .Validate(data, """
+///         FirstName: John
+///         LastName: Doe
+///         """);
 /// </code>
 /// </example>
 public readonly struct InlineSnapshotBuilder
 {
-    private readonly InlineSnapshotSettings _settings;
+    private readonly InlineSnapshotSettings? _settings;
 
     internal InlineSnapshotBuilder(InlineSnapshotSettings? settings)
     {
         _settings = settings ?? InlineSnapshotSettings.Default;
     }
+
+    /// <summary>The settings of this builder, falling back to the defaults for <c>default(InlineSnapshotBuilder)</c>,
+    /// which never runs the constructor and therefore has no settings of its own.</summary>
+    private InlineSnapshotSettings Settings => _settings ?? InlineSnapshotSettings.Default;
 
     /// <summary>Configures the settings for the snapshot validation.</summary>
     public InlineSnapshotBuilder WithSettings(Action<InlineSnapshotSettings>? configure)
@@ -26,7 +34,7 @@ public readonly struct InlineSnapshotBuilder
         if (configure is null)
             return this;
 
-        var settings = _settings with { };
+        var settings = Settings with { };
         configure(settings);
         return new InlineSnapshotBuilder(settings);
     }
@@ -34,7 +42,7 @@ public readonly struct InlineSnapshotBuilder
     /// <summary>Sets the snapshot serializer to use for serializing objects.</summary>
     public InlineSnapshotBuilder WithSerializer(SnapshotSerializer serializer)
     {
-        var settings = _settings with { };
+        var settings = Settings with { };
         settings.SnapshotSerializer = serializer;
         return new InlineSnapshotBuilder(settings);
     }
@@ -45,7 +53,7 @@ public readonly struct InlineSnapshotBuilder
         if (options is null)
             return this;
 
-        var settings = _settings with { };
+        var settings = Settings with { };
         settings.UseHumanReadableSerializer(options);
         return new InlineSnapshotBuilder(settings);
     }
@@ -56,7 +64,7 @@ public readonly struct InlineSnapshotBuilder
         if (configure is null)
             return this;
 
-        var settings = _settings with { };
+        var settings = Settings with { };
         settings.UseHumanReadableSerializer(configure);
         return new InlineSnapshotBuilder(settings);
     }
@@ -73,7 +81,7 @@ public readonly struct InlineSnapshotBuilder
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public void Validate(object? subject, string? expected = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
-        var settings = _settings;
+        var settings = Settings;
         InlineSnapshot.ShouldMatchInlineSnapshot(subject, settings, expected, filePath, lineNumber);
     }
 }

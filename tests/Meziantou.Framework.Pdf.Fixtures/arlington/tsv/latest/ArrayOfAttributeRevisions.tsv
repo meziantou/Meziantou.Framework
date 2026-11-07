@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0*	dictionary;stream	1.3		TRUE	[FALSE];[TRUE]	FALSE				[StructureAttributesDict];[Stream]	Table 355, A cell and Clause 14.7.6 and Clause 14.7.6.3. Attribute object
+1*	integer	1.3		FALSE	FALSE	FALSE		[fn:Eval(@1*>=0)]			Attribute revision

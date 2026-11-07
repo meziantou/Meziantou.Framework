@@ -29,8 +29,8 @@ public sealed class YamlReader : YamlReaderWriterBase
         ArgumentNullException.ThrowIfNull(yaml);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
         var parser = Parser.CreateParser(new StringReader(yaml), effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
-        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader() : null;
-        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases), effectiveOptions);
+        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader(effectiveOptions.EffectiveMaxAliasExpansionNodeCount) : null;
+        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases, IsJsonSchemaStrict(effectiveOptions)), effectiveOptions);
     }
 
     /// <summary>Creates a YAML reader over a text reader.</summary>
@@ -42,8 +42,8 @@ public sealed class YamlReader : YamlReaderWriterBase
         ArgumentNullException.ThrowIfNull(reader);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
         var parser = Parser.CreateParser(reader, effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
-        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader() : null;
-        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases), effectiveOptions);
+        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader(effectiveOptions.EffectiveMaxAliasExpansionNodeCount) : null;
+        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases, IsJsonSchemaStrict(effectiveOptions)), effectiveOptions);
     }
 
     /// <summary>Creates a YAML reader over a string payload that shares the current reader's reference anchor state.</summary>
@@ -60,12 +60,18 @@ public sealed class YamlReader : YamlReaderWriterBase
         return Create(yaml, _state.ReferenceReader, _state.SourceName, Options);
     }
 
+    /// <remarks>
+    /// The JSON schema only resolves null, booleans, and numbers from plain scalars; any other plain scalar is an
+    /// error (YAML 1.2 §10.2.2), so a string must be quoted.
+    /// </remarks>
+    private static bool IsJsonSchemaStrict(YamlSerializerOptions options) => options.UseSchema && options.Schema is YamlSchemaKind.Json;
+
     internal static YamlReader Create(string yaml, YamlReferenceReader? referenceReader, string? sourceName, YamlSerializerOptions options)
     {
         ArgumentNullException.ThrowIfNull(yaml);
         ArgumentNullException.ThrowIfNull(options);
         var parser = Parser.CreateParser(new StringReader(yaml), options.EffectiveMaxDepth, sourceName);
-        return new YamlReader(new YamlReaderState(parser, referenceReader, sourceName, options.AllowAnchors, options.AllowAliases), options);
+        return new YamlReader(new YamlReaderState(parser, referenceReader, sourceName, options.AllowAnchors, options.AllowAliases, IsJsonSchemaStrict(options)), options);
     }
 
     /// <summary>Gets the current token type.</summary>
@@ -105,6 +111,37 @@ public sealed class YamlReader : YamlReaderWriterBase
 
     internal YamlReferenceReader? ReferenceReader => _state.ReferenceReader;
 
+    /// <summary>
+    /// Gets a value indicating whether the derived type of the current node was already selected by its type
+    /// discriminator or tag.
+    /// </summary>
+    /// <remarks>
+    /// A polymorphic type reading a node flagged by <see cref="MarkCurrentNodeDerivedTypeResolved"/> is the derived type
+    /// the node explicitly named. When the node has no type discriminator or tag of its own, the polymorphic type reads
+    /// the node as itself instead of selecting its default derived type or running a type classifier.
+    /// </remarks>
+    public bool IsCurrentNodeDerivedTypeResolved => _state.CurrentEvent is not null && ReferenceEquals(_state.CurrentEvent, _state.DerivedTypeResolvedEvent);
+
+    /// <summary>
+    /// Records that the derived type of the current node was selected by its type discriminator or tag, which
+    /// polymorphic deserialization consumed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Polymorphic deserialization removes the discriminator from the node before reading it as the selected derived
+    /// type. When that type is polymorphic itself, the node no longer tells it which type was selected, so without
+    /// this flag it would select its own default derived type instead of itself.
+    /// </para>
+    /// <para>
+    /// The flag only applies to the current node, not to the nodes it contains. It is intended for generated
+    /// serializers and custom polymorphic converters. See <see cref="IsCurrentNodeDerivedTypeResolved"/>.
+    /// </para>
+    /// </remarks>
+    public void MarkCurrentNodeDerivedTypeResolved()
+    {
+        _state.DerivedTypeResolvedEvent = _state.CurrentEvent;
+    }
+
     /// <summary>Attempts to resolve the current alias token into an anchored object value.</summary>
     /// <param name="value">When successful, receives the resolved anchored object.</param>
     /// <returns><see langword="true"/> when the current token is an alias and reference handling is enabled; otherwise <see langword="false"/>.</returns>
@@ -133,6 +170,49 @@ public sealed class YamlReader : YamlReaderWriterBase
 
         value = null;
         return false;
+    }
+
+    /// <summary>Replays the mapping node the current alias refers to, so that it can be read again as a new node.</summary>
+    /// <returns>
+    /// <see langword="true"/> when the current token is an alias and reference handling is enabled: the reader is then
+    /// positioned on the start of a copy of the anchored mapping node. <see langword="false"/> otherwise, and the reader
+    /// does not move.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This is how a merge key (<c>&lt;&lt;: *defaults</c>) reads its alias: the merge copies the entries of the anchored
+    /// mapping node, as they appear in the document, and not the members of the value that node was deserialized into.
+    /// </para>
+    /// <para>
+    /// The copy is read like the original node, except that the anchors it contains are not defined again. An alias it
+    /// contains still refers to the value its anchor was deserialized into. The replayed nodes count towards
+    /// <see cref="YamlSerializerOptions.MaxAliasExpansionNodeCount"/>.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="YamlException">
+    /// The alias is unknown, does not refer to a mapping, refers to a mapping that contains it, or exceeds the alias
+    /// expansion limit.
+    /// </exception>
+    public bool TryReplayMappingAlias()
+    {
+        if (TokenType != YamlTokenType.Alias || _state.ReferenceReader is null)
+        {
+            return false;
+        }
+
+        var alias = Alias ?? throw new YamlException(SourceName, Start, End, "Alias token did not provide an alias value.");
+        IReadOnlyList<ParsingEvent> events;
+        try
+        {
+            events = _state.ReferenceReader.GetMappingEvents(alias);
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new YamlException(SourceName, Start, End, exception.Message, exception);
+        }
+
+        _state.Replay(events);
+        return true;
     }
 
     /// <summary>Registers an anchored value for later alias resolution.</summary>
@@ -167,11 +247,55 @@ public sealed class YamlReader : YamlReaderWriterBase
         var comparer = reader.Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         discriminatorValue = null;
 
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        var yamlWriter = new YamlWriter(writer, reader.Options);
+        var builder = new StringBuilder();
+        var yamlWriter = CreateBufferWriter(builder, reader.Options);
 
-        WriteBufferedNode(reader, yamlWriter, comparer, discriminatorPropertyName, isRootMapping: true, ref discriminatorValue);
-        return writer.ToString();
+        WriteBufferedNode(reader, yamlWriter, comparer, discriminatorPropertyName, isRootMapping: true, removeDiscriminator: false, removeRootTag: false, ref discriminatorValue);
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Buffers the current YAML node to a string, extracting the type discriminator of the root mapping and removing it,
+    /// along with the tag of the root mapping when requested, from the buffered YAML.
+    /// </summary>
+    /// <param name="reader">The reader positioned at the start of the node.</param>
+    /// <param name="discriminatorPropertyName">
+    /// The mapping key holding the discriminator, or <see langword="null"/> to keep every entry of the root mapping.
+    /// </param>
+    /// <param name="removeTag">Whether the tag of the root mapping is removed from the buffered YAML.</param>
+    /// <param name="discriminatorValue">Receives the discriminator scalar value when present on the root mapping.</param>
+    /// <returns>The buffered YAML for the node, without its type discriminator.</returns>
+    /// <remarks>
+    /// Polymorphic deserialization consumes the type discriminator to select the type to deserialize, so the selected
+    /// type must not see it again: it is not a member of that type, and a type that is itself polymorphic would try to
+    /// resolve it against its own derived types. Only the first matching entry of the root mapping is removed.
+    /// This method consumes the buffered node from <paramref name="reader"/> and advances it past the node.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+    public static string BufferCurrentNodeToStringAndRemoveDiscriminator(
+        YamlReader reader,
+        string? discriminatorPropertyName,
+        bool removeTag,
+        out string? discriminatorValue)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+
+        var comparer = reader.Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        discriminatorValue = null;
+
+        var builder = new StringBuilder();
+        var yamlWriter = CreateBufferWriter(builder, reader.Options);
+
+        WriteBufferedNode(
+            reader,
+            yamlWriter,
+            comparer,
+            discriminatorPropertyName ?? string.Empty,
+            isRootMapping: discriminatorPropertyName is not null,
+            removeDiscriminator: true,
+            removeRootTag: removeTag,
+            ref discriminatorValue);
+        return builder.ToString();
     }
 
     /// <summary>Buffers the current YAML node to a string.</summary>
@@ -185,12 +309,12 @@ public sealed class YamlReader : YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        var yamlWriter = new YamlWriter(writer, reader.Options);
+        var builder = new StringBuilder();
+        var yamlWriter = CreateBufferWriter(builder, reader.Options);
 
         string? unused = null;
-        WriteBufferedNode(reader, yamlWriter, StringComparer.Ordinal, discriminatorPropertyName: string.Empty, isRootMapping: false, ref unused);
-        return writer.ToString();
+        WriteBufferedNode(reader, yamlWriter, StringComparer.Ordinal, discriminatorPropertyName: string.Empty, isRootMapping: false, removeDiscriminator: false, removeRootTag: false, ref unused);
+        return builder.ToString();
     }
 
     /// <summary>Advances to the next token.</summary>
@@ -213,12 +337,22 @@ public sealed class YamlReader : YamlReaderWriterBase
         return ScalarValue ?? string.Empty;
     }
 
+    /// <summary>Creates the writer that copies a node, so that every scalar of the copy resolves as it did in the source.</summary>
+    /// <remarks>
+    /// Scalars keep their style, which is what tells a quoted <c>"42"</c> from the number <c>42</c>. The copy is always
+    /// written in the block style, which can keep more scalars plain than the flow style.
+    /// </remarks>
+    private static YamlWriter CreateBufferWriter(StringBuilder builder, YamlSerializerOptions options)
+        => new(builder, options, forceBlockStyle: true);
+
     private static void WriteBufferedNode(
         YamlReader reader,
         YamlWriter writer,
         StringComparer keyComparer,
         string discriminatorPropertyName,
         bool isRootMapping,
+        bool removeDiscriminator,
+        bool removeRootTag,
         ref string? discriminatorValue)
     {
         switch (reader.TokenType)
@@ -231,10 +365,10 @@ public sealed class YamlReader : YamlReaderWriterBase
 
                 if (reader.Tag is not null)
                 {
-                    writer.WriteTag(reader.Tag);
+                    writer.WriteResolvedTag(reader.Tag);
                 }
 
-                writer.WriteScalar(reader.ScalarValue);
+                writer.WriteScalar(reader.ScalarValue ?? string.Empty, reader.ScalarStyle);
                 reader.Read();
                 return;
 
@@ -251,14 +385,14 @@ public sealed class YamlReader : YamlReaderWriterBase
 
                 if (reader.Tag is not null)
                 {
-                    writer.WriteTag(reader.Tag);
+                    writer.WriteResolvedTag(reader.Tag);
                 }
 
                 writer.WriteStartSequence();
                 reader.Read();
                 while (reader.TokenType != YamlTokenType.EndSequence)
                 {
-                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, ref discriminatorValue);
+                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, removeDiscriminator: false, removeRootTag: false, ref discriminatorValue);
                 }
                 writer.WriteEndSequence();
                 reader.Read();
@@ -270,9 +404,9 @@ public sealed class YamlReader : YamlReaderWriterBase
                     writer.WriteAnchor(reader.Anchor);
                 }
 
-                if (reader.Tag is not null)
+                if (reader.Tag is not null && !removeRootTag)
                 {
-                    writer.WriteTag(reader.Tag);
+                    writer.WriteResolvedTag(reader.Tag);
                 }
 
                 writer.WriteStartMapping();
@@ -284,8 +418,18 @@ public sealed class YamlReader : YamlReaderWriterBase
                         throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
                     }
 
+                    if (reader.Anchor is not null)
+                    {
+                        writer.WriteAnchor(reader.Anchor);
+                    }
+
+                    if (reader.Tag is not null)
+                    {
+                        writer.WriteResolvedTag(reader.Tag);
+                    }
+
                     var key = reader.ScalarValue ?? string.Empty;
-                    writer.WritePropertyName(key);
+                    var keyStyle = reader.ScalarStyle;
                     reader.Read();
 
                     if (isRootMapping && discriminatorValue is null && keyComparer.Equals(key, discriminatorPropertyName))
@@ -296,9 +440,16 @@ public sealed class YamlReader : YamlReaderWriterBase
                         }
 
                         discriminatorValue = reader.ScalarValue ?? string.Empty;
+                        if (removeDiscriminator)
+                        {
+                            reader.Read();
+                            continue;
+                        }
                     }
 
-                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, ref discriminatorValue);
+                    writer.WritePropertyName(key, keyStyle);
+
+                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, removeDiscriminator: false, removeRootTag: false, ref discriminatorValue);
                 }
                 writer.WriteEndMapping();
                 reader.Read();
@@ -314,15 +465,62 @@ public sealed class YamlReader : YamlReaderWriterBase
         private readonly IParser _parser;
         private readonly bool _allowAnchors;
         private readonly bool _allowAliases;
+        private readonly bool _jsonSchemaStrict;
+        private readonly bool _recordMappings;
+        private Stack<ReplayFrame>? _replays;
 
-        public YamlReaderState(IParser parser, YamlReferenceReader? referenceReader, string? sourceName, bool allowAnchors = true, bool allowAliases = true)
+        public YamlReaderState(IParser parser, YamlReferenceReader? referenceReader, string? sourceName, bool allowAnchors = true, bool allowAliases = true, bool jsonSchemaStrict = false)
         {
+            _jsonSchemaStrict = jsonSchemaStrict;
             _parser = parser;
             TokenType = YamlTokenType.None;
             ReferenceReader = referenceReader;
             SourceName = sourceName;
             _allowAnchors = allowAnchors;
             _allowAliases = allowAliases;
+            _recordMappings = referenceReader is not null && allowAliases;
+        }
+
+        /// <summary>Reads <paramref name="events"/> before the rest of the input, starting with the next read.</summary>
+        public void Replay(IReadOnlyList<ParsingEvent> events)
+        {
+            _replays ??= new Stack<ReplayFrame>();
+            _replays.Push(new ReplayFrame(events));
+            Read();
+        }
+
+        private bool TryGetNextEvent([NotNullWhen(true)] out ParsingEvent? current, out bool isReplayed)
+        {
+            while (_replays is { Count: > 0 })
+            {
+                var frame = _replays.Peek();
+                if (frame.Index < frame.Events.Count)
+                {
+                    current = frame.Events[frame.Index++];
+                    isReplayed = true;
+                    return true;
+                }
+
+                _replays.Pop();
+            }
+
+            isReplayed = false;
+            while (_parser.MoveNext())
+            {
+                current = _parser.Current;
+                if (current is not null)
+                {
+                    if (_recordMappings)
+                    {
+                        ReferenceReader!.Record(current);
+                    }
+
+                    return true;
+                }
+            }
+
+            current = null;
+            return false;
         }
 
         public YamlTokenType TokenType { get; private set; }
@@ -334,19 +532,14 @@ public sealed class YamlReader : YamlReaderWriterBase
         public Mark Start { get; private set; } = Mark.Empty;
         public Mark End { get; private set; } = Mark.Empty;
         public ParsingEvent? CurrentEvent { get; private set; }
+        public ParsingEvent? DerivedTypeResolvedEvent { get; set; }
         public YamlReferenceReader? ReferenceReader { get; }
         public string? SourceName { get; }
 
         public bool Read()
         {
-            while (_parser.MoveNext())
+            while (TryGetNextEvent(out var current, out var isReplayed))
             {
-                var current = _parser.Current;
-                if (current is null)
-                {
-                    continue;
-                }
-
                 Start = current.Start;
                 End = current.End;
 
@@ -356,6 +549,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     continue;
                 }
 
+                // The anchors of a replayed node are not defined again: they keep naming the original node.
                 CurrentEvent = current;
                 ScalarValue = null;
                 ScalarStyle = ScalarStyle.Any;
@@ -368,7 +562,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     case MappingStart mappingStart:
                         TokenType = YamlTokenType.StartMapping;
                         Tag = mappingStart.Tag;
-                        Anchor = mappingStart.Anchor;
+                        Anchor = isReplayed ? null : mappingStart.Anchor;
                         ThrowIfAnchorNotAllowed();
                         return true;
 
@@ -379,7 +573,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     case SequenceStart sequenceStart:
                         TokenType = YamlTokenType.StartSequence;
                         Tag = sequenceStart.Tag;
-                        Anchor = sequenceStart.Anchor;
+                        Anchor = isReplayed ? null : sequenceStart.Anchor;
                         ThrowIfAnchorNotAllowed();
                         return true;
 
@@ -392,18 +586,35 @@ public sealed class YamlReader : YamlReaderWriterBase
                         ScalarValue = scalar.Value;
                         ScalarStyle = scalar.Style;
                         Tag = scalar.Tag;
-                        Anchor = scalar.Anchor;
+                        Anchor = isReplayed ? null : scalar.Anchor;
                         ThrowIfAnchorNotAllowed();
+                        ThrowIfInvalidJsonSchemaScalar();
+                        if (Anchor is not null)
+                        {
+                            ReferenceReader?.RegisterScalar(Anchor, scalar);
+                        }
+
                         return true;
 
                     case AnchorAlias alias:
-                        TokenType = YamlTokenType.Alias;
-                        Alias = alias.Value;
                         if (!_allowAliases)
                         {
                             throw new YamlException(SourceName, Start, End, "YAML aliases are not allowed.");
                         }
 
+                        // An alias to a scalar is presented as that scalar, so every converter reads it as the type
+                        // it expects instead of the type the anchored occurrence produced.
+                        if (ReferenceReader is not null && ReferenceReader.TryResolveScalar(alias.Value, out var anchoredScalar))
+                        {
+                            TokenType = YamlTokenType.Scalar;
+                            ScalarValue = anchoredScalar.Value;
+                            ScalarStyle = anchoredScalar.Style;
+                            Tag = anchoredScalar.Tag;
+                            return true;
+                        }
+
+                        TokenType = YamlTokenType.Alias;
+                        Alias = alias.Value;
                         return true;
                 }
 
@@ -427,6 +638,17 @@ public sealed class YamlReader : YamlReaderWriterBase
             if (Anchor is not null && !_allowAnchors)
             {
                 throw new YamlException(SourceName, Start, End, "YAML anchors are not allowed.");
+            }
+        }
+
+        private void ThrowIfInvalidJsonSchemaScalar()
+        {
+            if (_jsonSchemaStrict &&
+                Tag is null &&
+                ScalarStyle is ScalarStyle.Any or ScalarStyle.Plain &&
+                !YamlScalar.ResolvesToNonString(ScalarValue.AsSpan(), YamlSchemaKind.Json))
+            {
+                throw new YamlException(SourceName, Start, End, $"The plain scalar '{ScalarValue}' is not valid under the JSON schema, which only resolves null, booleans, and numbers. Quote it to read it as a string.");
             }
         }
 
@@ -475,6 +697,13 @@ public sealed class YamlReader : YamlReaderWriterBase
             {
                 Read();
             }
+        }
+
+        private sealed class ReplayFrame(IReadOnlyList<ParsingEvent> events)
+        {
+            public IReadOnlyList<ParsingEvent> Events { get; } = events;
+
+            public int Index { get; set; }
         }
     }
 }

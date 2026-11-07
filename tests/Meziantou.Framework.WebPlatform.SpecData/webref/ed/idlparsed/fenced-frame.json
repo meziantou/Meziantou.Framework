@@ -1,0 +1,964 @@
+{
+  "spec": {
+    "title": "Fenced Frame",
+    "url": "https://wicg.github.io/fenced-frame/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "HTMLFencedFrameElement",
+          "FencedFrameConfig"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Fence"
+        ]
+      }
+    },
+    "idlNames": {
+      "HTMLFencedFrameElement": {
+        "fragment": "[Exposed=Window]\ninterface HTMLFencedFrameElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions] attribute FencedFrameConfig? config;\n  [CEReactions] attribute DOMString width;\n  [CEReactions] attribute DOMString height;\n  [SameObject, PutForwards=value] readonly attribute DOMTokenList sandbox;\n  [CEReactions] attribute DOMString allow;\n};",
+        "type": "interface",
+        "name": "HTMLFencedFrameElement",
+        "inheritance": "HTMLElement",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "HTMLConstructor",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "href": "https://wicg.github.io/fenced-frame/#dom-htmlfencedframeelement-htmlfencedframeelement"
+          },
+          {
+            "type": "attribute",
+            "name": "config",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "FencedFrameConfig"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-htmlfencedframeelement-config"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-htmlfencedframeelement-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-htmlfencedframeelement-height"
+          },
+          {
+            "type": "attribute",
+            "name": "sandbox",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMTokenList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "value"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/fenced-frame/#dom-htmlfencedframeelement-sandbox"
+          },
+          {
+            "type": "attribute",
+            "name": "allow",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-htmlfencedframeelement-allow"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/fenced-frame/#htmlfencedframeelement"
+      },
+      "OpaqueProperty": {
+        "fragment": "enum OpaqueProperty {\"opaque\"};",
+        "type": "enum",
+        "name": "OpaqueProperty",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "opaque",
+            "href": "https://wicg.github.io/fenced-frame/#dom-opaqueproperty-opaque"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/fenced-frame/#enumdef-opaqueproperty"
+      },
+      "FencedFrameConfig": {
+        "fragment": "[Exposed=Window, Serializable]\ninterface FencedFrameConfig {\n  constructor(USVString url);\n  undefined setSharedStorageContext(DOMString contextString);\n};",
+        "type": "interface",
+        "name": "FencedFrameConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/fenced-frame/#dom-fencedframeconfig-fencedframeconfig"
+          },
+          {
+            "type": "operation",
+            "name": "setSharedStorageContext",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "contextString",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fencedframeconfig-setsharedstoragecontext"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/fenced-frame/#fencedframeconfig"
+      },
+      "UrnOrConfig": {
+        "fragment": "typedef (USVString or FencedFrameConfig) UrnOrConfig;",
+        "type": "typedef",
+        "name": "UrnOrConfig",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FencedFrameConfig"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/fenced-frame/#typedefdef-urnorconfig"
+      },
+      "FenceReportingDestination": {
+        "fragment": "enum FenceReportingDestination {\n  \"buyer\",\n  \"seller\",\n  \"component-seller\",\n  \"direct-seller\",\n  \"shared-storage-select-url\",\n};",
+        "type": "enum",
+        "name": "FenceReportingDestination",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "buyer",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fencereportingdestination-buyer"
+          },
+          {
+            "type": "enum-value",
+            "value": "seller",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fencereportingdestination-seller"
+          },
+          {
+            "type": "enum-value",
+            "value": "component-seller",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fencereportingdestination-component-seller"
+          },
+          {
+            "type": "enum-value",
+            "value": "direct-seller",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fencereportingdestination-direct-seller"
+          },
+          {
+            "type": "enum-value",
+            "value": "shared-storage-select-url",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fencereportingdestination-shared-storage-select-url"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/fenced-frame/#enumdef-fencereportingdestination"
+      },
+      "FenceEvent": {
+        "fragment": "dictionary FenceEvent {\n  // This dictionary has two mutually exclusive modes that aren’t represented as\n  // distinct IDL types due to distinguishability issues:\n  //\n  // When reporting to a preregistered destination (specified by enum), the following\n  // properties are used:\n  DOMString eventType;\n  DOMString eventData;\n  sequence<FenceReportingDestination> destination;\n\n  // Determines if this data can be sent in a reportEvent() beacon or automatic\n  // beacon that originates from a document that is cross-origin to the mapped\n  // URL of the fenced frame config that loaded this frame tree.\n  // Note that automatic beacon data can only be set from documents that are\n  // same-origin to the fenced frame config’s mapped URL, so this effectively\n  // opts in the data to being used in a cross-origin subframe.\n  boolean crossOriginExposed = false;\n\n  // When setting event data to be used later in an automatic beacon, the\n  // following properties are used:\n  boolean once = false;\n\n  // When reporting to a custom destination URL (with substitution of macros defined by\n  // the Protected Audience buyer), the following property is used:\n  USVString destinationURL;\n};",
+        "type": "dictionary",
+        "name": "FenceEvent",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "eventType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-fenceevent-eventtype"
+          },
+          {
+            "type": "field",
+            "name": "eventData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-fenceevent-eventdata"
+          },
+          {
+            "type": "field",
+            "name": "destination",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FenceReportingDestination"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-fenceevent-destination"
+          },
+          {
+            "type": "field",
+            "name": "crossOriginExposed",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-fenceevent-crossoriginexposed"
+          },
+          {
+            "type": "field",
+            "name": "once",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-fenceevent-once"
+          },
+          {
+            "type": "field",
+            "name": "destinationURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/fenced-frame/#dom-fenceevent-destinationurl"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/fenced-frame/#dictdef-fenceevent"
+      },
+      "ReportEventType": {
+        "fragment": "typedef (FenceEvent or DOMString) ReportEventType;",
+        "type": "typedef",
+        "name": "ReportEventType",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FenceEvent"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/fenced-frame/#typedefdef-reporteventtype"
+      },
+      "Fence": {
+        "fragment": "[Exposed=Window]\ninterface Fence {\n    undefined reportEvent(optional ReportEventType event = {});\n    undefined setReportEventDataForAutomaticBeacons(optional FenceEvent event = {});\n    sequence<FencedFrameConfig> getNestedConfigs();\n    Promise<undefined> disableUntrustedNetwork();\n    undefined notifyEvent(Event event);\n};",
+        "type": "interface",
+        "name": "Fence",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "reportEvent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "event",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReportEventType"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fence-reportevent"
+          },
+          {
+            "type": "operation",
+            "name": "setReportEventDataForAutomaticBeacons",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "event",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FenceEvent"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fence-setreporteventdataforautomaticbeacons"
+          },
+          {
+            "type": "operation",
+            "name": "getNestedConfigs",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FencedFrameConfig"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fence-getnestedconfigs"
+          },
+          {
+            "type": "operation",
+            "name": "disableUntrustedNetwork",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fence-disableuntrustednetwork"
+          },
+          {
+            "type": "operation",
+            "name": "notifyEvent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "event",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Event"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/fenced-frame/#dom-fence-notifyevent"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/fenced-frame/#fence"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  Promise<undefined> deprecatedReplaceInURN(\n    UrnOrConfig urnOrConfig, record<USVString, USVString> replacements);\n  Promise<USVString> deprecatedURNtoURL(\n    UrnOrConfig urnOrConfig, optional boolean send_reports = false);\n  sequence<USVString> adAuctionComponents(unsigned short numAdComponents);\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "deprecatedReplaceInURN",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "urnOrConfig",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "UrnOrConfig"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "replacements",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "record",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "USVString"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "USVString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/fenced-frame/#dom-navigator-deprecatedreplaceinurn"
+            },
+            {
+              "type": "operation",
+              "name": "deprecatedURNtoURL",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "USVString"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "urnOrConfig",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "UrnOrConfig"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "send_reports",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/fenced-frame/#dom-navigator-deprecatedurntourl"
+            },
+            {
+              "type": "operation",
+              "name": "adAuctionComponents",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "USVString"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "numAdComponents",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned short"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/fenced-frame/#dom-navigator-adauctioncomponents"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  // Collection of fenced frame APIs\n  readonly attribute Fence? fence;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "fence",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "Fence"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/fenced-frame/#dom-window-fence"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n  attribute EventHandler onfencedtreeclick;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onfencedtreeclick",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/fenced-frame/#dom-globaleventhandlers-onfencedtreeclick"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "HTMLFencedFrameElement",
+        "FencedFrameConfig",
+        "Fence"
+      ]
+    },
+    "dependencies": {
+      "HTMLFencedFrameElement": [
+        "HTMLElement",
+        "FencedFrameConfig",
+        "DOMTokenList"
+      ],
+      "FencedFrameConfig": [],
+      "Navigator": [
+        "UrnOrConfig"
+      ],
+      "FenceEvent": [
+        "FenceReportingDestination"
+      ],
+      "Fence": [
+        "ReportEventType",
+        "FenceEvent",
+        "FencedFrameConfig",
+        "Event"
+      ],
+      "Window": [
+        "Fence"
+      ],
+      "GlobalEventHandlers": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLElement",
+      "DOMTokenList",
+      "Navigator",
+      "Event",
+      "Window",
+      "GlobalEventHandlers",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

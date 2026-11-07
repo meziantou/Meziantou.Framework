@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.FixedStringBuilder/Meziantou.Framework.FixedStringBuilder.csproj" />
+    <!-- The readme examples declare custom fixed-capacity types, as a consumer of the generator package does -->
+    <ProjectReference Include="../../src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>

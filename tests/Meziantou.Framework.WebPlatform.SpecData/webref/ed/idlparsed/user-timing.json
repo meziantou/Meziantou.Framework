@@ -1,0 +1,562 @@
+{
+  "spec": {
+    "title": "User Timing",
+    "url": "https://w3c.github.io/user-timing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "PerformanceMark"
+        ],
+        "Worker": [
+          "PerformanceMark"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "PerformanceMeasure"
+        ],
+        "Worker": [
+          "PerformanceMeasure"
+        ]
+      }
+    },
+    "idlNames": {
+      "PerformanceMarkOptions": {
+        "fragment": "dictionary PerformanceMarkOptions {\n    any detail;\n    DOMHighResTimeStamp startTime;\n};",
+        "type": "dictionary",
+        "name": "PerformanceMarkOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "detail",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemarkoptions-detail"
+          },
+          {
+            "type": "field",
+            "name": "startTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemarkoptions-starttime"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/user-timing/#dictdef-performancemarkoptions"
+      },
+      "PerformanceMeasureOptions": {
+        "fragment": "dictionary PerformanceMeasureOptions {\n    any detail;\n    (DOMString or DOMHighResTimeStamp) start;\n    DOMHighResTimeStamp duration;\n    (DOMString or DOMHighResTimeStamp) end;\n};",
+        "type": "dictionary",
+        "name": "PerformanceMeasureOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "detail",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-detail"
+          },
+          {
+            "type": "field",
+            "name": "start",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMHighResTimeStamp"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-start"
+          },
+          {
+            "type": "field",
+            "name": "duration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-duration"
+          },
+          {
+            "type": "field",
+            "name": "end",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMHighResTimeStamp"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-end"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/user-timing/#dictdef-performancemeasureoptions"
+      },
+      "PerformanceMark": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PerformanceMark : PerformanceEntry {\n  constructor(DOMString markName, optional PerformanceMarkOptions markOptions = {});\n  readonly attribute any detail;\n};",
+        "type": "interface",
+        "name": "PerformanceMark",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "markName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "markOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PerformanceMarkOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/user-timing/#dom-performancemark-performancemark"
+          },
+          {
+            "type": "attribute",
+            "name": "detail",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemark-detail"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/user-timing/#performancemark"
+      },
+      "PerformanceMeasure": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PerformanceMeasure : PerformanceEntry {\n  readonly attribute any detail;\n};",
+        "type": "interface",
+        "name": "PerformanceMeasure",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "detail",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/user-timing/#dom-performancemeasure-detail"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/user-timing/#performancemeasure"
+      }
+    },
+    "idlExtendedNames": {
+      "Performance": [
+        {
+          "fragment": "partial interface Performance {\n    PerformanceMark mark(DOMString markName, optional PerformanceMarkOptions markOptions = {});\n    undefined clearMarks(optional DOMString markName);\n    PerformanceMeasure measure(DOMString measureName, optional (DOMString or PerformanceMeasureOptions) startOrMeasureOptions = {}, optional DOMString endMark);\n    undefined clearMeasures(optional DOMString measureName);\n};",
+          "type": "interface",
+          "name": "Performance",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "mark",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PerformanceMark"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "markName",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "markOptions",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PerformanceMarkOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/user-timing/#dom-performance-mark"
+            },
+            {
+              "type": "operation",
+              "name": "clearMarks",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "markName",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/user-timing/#dom-performance-clearmarks"
+            },
+            {
+              "type": "operation",
+              "name": "measure",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PerformanceMeasure"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "measureName",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "startOrMeasureOptions",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "PerformanceMeasureOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "endMark",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/user-timing/#dom-performance-measure"
+            },
+            {
+              "type": "operation",
+              "name": "clearMeasures",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "measureName",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/user-timing/#dom-performance-clearmeasures"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PerformanceMark",
+        "PerformanceMeasure"
+      ],
+      "Worker": [
+        "PerformanceMark",
+        "PerformanceMeasure"
+      ]
+    },
+    "dependencies": {
+      "PerformanceMarkOptions": [
+        "DOMHighResTimeStamp"
+      ],
+      "PerformanceMeasureOptions": [
+        "DOMHighResTimeStamp"
+      ],
+      "Performance": [
+        "PerformanceMark",
+        "PerformanceMarkOptions",
+        "PerformanceMeasure",
+        "PerformanceMeasureOptions"
+      ],
+      "PerformanceMark": [
+        "PerformanceEntry",
+        "PerformanceMarkOptions"
+      ],
+      "PerformanceMeasure": [
+        "PerformanceEntry"
+      ]
+    },
+    "externalDependencies": [
+      "DOMHighResTimeStamp",
+      "Performance",
+      "PerformanceEntry"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -10,8 +11,8 @@ public sealed class PathChangeExtensionWithFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathChangeExtensionWithFullPathDiagnosticId,
-        title: "Use FullPath.ChangeExtension instead of Path.ChangeExtension",
-        messageFormat: "Use FullPath.ChangeExtension instead of calling Path.ChangeExtension",
+        title: "Use FullPath.WithExtension instead of Path.ChangeExtension",
+        messageFormat: "Use FullPath.WithExtension instead of calling Path.ChangeExtension",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
@@ -47,6 +48,6 @@ public sealed class PathChangeExtensionWithFullPathAnalyzer : DiagnosticAnalyzer
         if (!analyzerContext.IsFullPathType(invocationOperation.Arguments[0].Value))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, invocationOperation);
     }
 }

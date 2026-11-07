@@ -2,9 +2,11 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a custom attribute that can be applied to code declarations.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="CustomAttribute_Example" ref:dedent="true">
 /// var attr = new CustomAttribute(typeof(ObsoleteAttribute));
 /// attr.Arguments.Add(new CustomAttributeArgument(new LiteralExpression("Use NewMethod instead")));
+///
+/// Assert.Equal("""[global::System.ObsoleteAttribute("Use NewMethod instead")]""", attr.ToCsharpString());
 /// </code>
 /// </example>
 public class CustomAttribute : CodeObject, ICommentable

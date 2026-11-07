@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-GE": {
+      "identity": {
+        "language": "en",
+        "territory": "GE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

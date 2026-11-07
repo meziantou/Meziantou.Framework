@@ -1,26 +1,51 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Json;
 
-/// <summary>Represents a JSON number value.</summary>
+/// <summary>A number value.</summary>
+/// <remarks>The text is kept exactly as written; JSON numbers do not all fit a .NET numeric type without loss.</remarks>
 public sealed class JsonNumberSyntax : JsonValueSyntax
 {
-    public JsonNumberSyntax(JsonSyntaxToken numberToken)
-        : base(JsonSyntaxKind.JsonNumber, numberToken.ToFullString(), numberToken.FullSpan.Start, [numberToken])
+    internal JsonNumberSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        NumberToken = numberToken;
     }
 
-    public JsonSyntaxToken NumberToken { get; }
+    public SyntaxToken NumberToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
+
+    /// <summary>Gets the number exactly as it was written.</summary>
     public string Text => NumberToken.Text;
 
-    public JsonNumberSyntax WithText(string text)
+    /// <summary>Returns this number with a different token, or itself when nothing changed.</summary>
+    public JsonNumberSyntax Update(SyntaxToken numberToken)
     {
-        ArgumentNullException.ThrowIfNull(text);
-        if (string.Equals(text, Text, StringComparison.Ordinal))
+        if (numberToken.Node == Green.GetSlot(0))
             return this;
 
-        return new JsonNumberSyntax(new JsonSyntaxToken(JsonSyntaxKind.NumberToken, text, text));
+        return SyntaxFactory.JsonNumber(numberToken).WithAnnotationsFrom(this);
     }
 
-    public override void Accept(JsonSyntaxVisitor visitor) => visitor.VisitNumber(this);
-    public override TResult Accept<TResult>(JsonSyntaxVisitor<TResult> visitor) => visitor.VisitNumber(this);
+    public JsonNumberSyntax WithNumberToken(SyntaxToken numberToken) => Update(numberToken);
+
+    /// <summary>Returns this number written differently.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public JsonNumberSyntax WithText(string text) => Update(SyntaxFactory.NumberToken(text).WithTriviaFrom(NumberToken));
+
+    internal override SyntaxNode? GetNodeSlot(int index) => null;
+    internal override SyntaxNode? GetCachedSlot(int index) => null;
+
+    public override void Accept(JsonSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.VisitJsonNumber(this);
+    }
+
+    public override TResult? Accept<TResult>(JsonSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.VisitJsonNumber(this);
+    }
 }

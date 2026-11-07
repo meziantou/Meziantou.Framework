@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cgg": {
+      "identity": {
+        "language": "cgg"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -3,6 +3,14 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Specifies identifiers to indicate the return value of a dialog box.</summary>
+/// <remarks>
+/// This enumeration mirrors the full set of dialog box return values for familiarity, but
+/// <see cref="OpenFolderDialog.ShowDialog()"/> only ever returns <see cref="OK"/>,
+/// <see cref="Cancel"/>, or <see cref="Abort"/>. The remaining values are never produced by
+/// this library, so a <see langword="switch"/> over them does not need arms for
+/// <see cref="None"/>, <see cref="Retry"/>, <see cref="Ignore"/>, <see cref="Yes"/>, or
+/// <see cref="No"/>.
+/// </remarks>
 [ComVisible(true)]
 public enum DialogResult
 {

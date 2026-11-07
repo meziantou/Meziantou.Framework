@@ -1,0 +1,336 @@
+{
+  "spec": {
+    "title": "Orientation Sensor",
+    "url": "https://w3c.github.io/orientation-sensor/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "AbsoluteOrientationSensor",
+          "RelativeOrientationSensor"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "OrientationSensor"
+        ]
+      }
+    },
+    "idlNames": {
+      "RotationMatrixType": {
+        "fragment": "typedef (Float32Array or Float64Array or DOMMatrix) RotationMatrixType;",
+        "type": "typedef",
+        "name": "RotationMatrixType",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float64Array"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/orientation-sensor/#typedefdef-rotationmatrixtype"
+      },
+      "OrientationSensor": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface OrientationSensor : Sensor {\n  readonly attribute FrozenArray<double>? quaternion;\n  undefined populateMatrix(RotationMatrixType targetMatrix);\n};",
+        "type": "interface",
+        "name": "OrientationSensor",
+        "inheritance": "Sensor",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "quaternion",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/orientation-sensor/#dom-orientationsensor-quaternion"
+          },
+          {
+            "type": "operation",
+            "name": "populateMatrix",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "targetMatrix",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RotationMatrixType"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/orientation-sensor/#dom-orientationsensor-populatematrix"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/orientation-sensor/#orientationsensor"
+      },
+      "OrientationSensorLocalCoordinateSystem": {
+        "fragment": "enum OrientationSensorLocalCoordinateSystem { \"device\", \"screen\" };",
+        "type": "enum",
+        "name": "OrientationSensorLocalCoordinateSystem",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "device",
+            "href": "https://w3c.github.io/orientation-sensor/#dom-orientationsensorlocalcoordinatesystem-device"
+          },
+          {
+            "type": "enum-value",
+            "value": "screen",
+            "href": "https://w3c.github.io/orientation-sensor/#dom-orientationsensorlocalcoordinatesystem-screen"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/orientation-sensor/#enumdef-orientationsensorlocalcoordinatesystem"
+      },
+      "OrientationSensorOptions": {
+        "fragment": "dictionary OrientationSensorOptions : SensorOptions {\n  OrientationSensorLocalCoordinateSystem referenceFrame = \"device\";\n};",
+        "type": "dictionary",
+        "name": "OrientationSensorOptions",
+        "inheritance": "SensorOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "referenceFrame",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "OrientationSensorLocalCoordinateSystem"
+            },
+            "default": {
+              "type": "string",
+              "value": "device"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/orientation-sensor/#dom-orientationsensoroptions-referenceframe"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/orientation-sensor/#dictdef-orientationsensoroptions"
+      },
+      "AbsoluteOrientationSensor": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface AbsoluteOrientationSensor : OrientationSensor {\n  constructor(optional OrientationSensorOptions sensorOptions = {});\n};",
+        "type": "interface",
+        "name": "AbsoluteOrientationSensor",
+        "inheritance": "OrientationSensor",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sensorOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "OrientationSensorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/orientation-sensor/#dom-absoluteorientationsensor-absoluteorientationsensor"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/orientation-sensor/#absoluteorientationsensor"
+      },
+      "RelativeOrientationSensor": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface RelativeOrientationSensor : OrientationSensor {\n  constructor(optional OrientationSensorOptions sensorOptions = {});\n};",
+        "type": "interface",
+        "name": "RelativeOrientationSensor",
+        "inheritance": "OrientationSensor",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sensorOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "OrientationSensorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/orientation-sensor/#dom-relativeorientationsensor-relativeorientationsensor"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/orientation-sensor/#relativeorientationsensor"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "OrientationSensor",
+        "AbsoluteOrientationSensor",
+        "RelativeOrientationSensor"
+      ]
+    },
+    "dependencies": {
+      "OrientationSensor": [
+        "Sensor",
+        "RotationMatrixType"
+      ],
+      "OrientationSensorOptions": [
+        "SensorOptions",
+        "OrientationSensorLocalCoordinateSystem"
+      ],
+      "AbsoluteOrientationSensor": [
+        "OrientationSensor",
+        "OrientationSensorOptions"
+      ],
+      "RelativeOrientationSensor": [
+        "OrientationSensor",
+        "OrientationSensorOptions"
+      ]
+    },
+    "externalDependencies": [
+      "Float32Array",
+      "Float64Array",
+      "DOMMatrix",
+      "Sensor",
+      "SensorOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

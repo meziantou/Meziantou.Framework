@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+<root xmlns:mfrg="https://meziantou.net/meziantou.framework/resxgenerator">
   <!-- 
     Microsoft ResX Schema 
     
@@ -119,6 +119,7 @@
   </resheader>
   <data name="Hello" xml:space="preserve">
     <value>Bonjour {0}!</value>
+    <mfrg:parameter name="name" typename="global::System.String" comment="Name to greet." />
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="Image1" type="System.Resources.ResXFileRef, System.Windows.Forms">

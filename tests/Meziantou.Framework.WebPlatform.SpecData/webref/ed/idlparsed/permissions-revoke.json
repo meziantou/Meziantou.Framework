@@ -1,0 +1,81 @@
+{
+  "spec": {
+    "title": "Relinquishing Permissions",
+    "url": "https://wicg.github.io/permissions-revoke/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "Permissions": [
+        {
+          "fragment": "partial interface Permissions {\n  Promise<PermissionStatus> revoke(object permissionDesc);\n};",
+          "type": "interface",
+          "name": "Permissions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "revoke",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PermissionStatus"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "permissionDesc",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "object"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/permissions-revoke/#dom-permissions-revoke"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Permissions": [
+        "PermissionStatus"
+      ]
+    },
+    "externalDependencies": [
+      "Permissions",
+      "PermissionStatus"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

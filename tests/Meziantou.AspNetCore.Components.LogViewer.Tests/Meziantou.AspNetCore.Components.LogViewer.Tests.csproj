@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Formats the log entries with named cultures -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-
-    <IsPackable>false</IsPackable>
+    <RootNamespace>Meziantou.AspNetCore.Components.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

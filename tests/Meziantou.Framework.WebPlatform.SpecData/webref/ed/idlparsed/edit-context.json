@@ -1,0 +1,1434 @@
+{
+  "spec": {
+    "title": "EditContext API",
+    "url": "https://w3c.github.io/edit-context/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "EditContext",
+          "TextUpdateEvent",
+          "TextFormat",
+          "TextFormatUpdateEvent",
+          "CharacterBoundsUpdateEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "EditContextInit": {
+        "fragment": "dictionary EditContextInit {\n    DOMString text = \"\";\n    unsigned long selectionStart = 0;\n    unsigned long selectionEnd = 0;\n};",
+        "type": "dictionary",
+        "name": "EditContextInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "text",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontextinit-text"
+          },
+          {
+            "type": "field",
+            "name": "selectionStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontextinit-selectionstart"
+          },
+          {
+            "type": "field",
+            "name": "selectionEnd",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontextinit-selectionend"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-editcontextinit"
+      },
+      "EditContext": {
+        "fragment": "[Exposed=Window]\ninterface EditContext : EventTarget {\n    constructor(optional EditContextInit options = {});\n\n    undefined updateText(unsigned long rangeStart, unsigned long rangeEnd,\n        DOMString text);\n    undefined updateSelection(unsigned long start, unsigned long end);\n    undefined updateControlBounds(DOMRect controlBounds);\n    undefined updateSelectionBounds(DOMRect selectionBounds);\n    undefined updateCharacterBounds(unsigned long rangeStart, sequence<DOMRect> characterBounds);\n\n    sequence<HTMLElement> attachedElements();\n\n    readonly attribute DOMString text;\n    readonly attribute unsigned long selectionStart;\n    readonly attribute unsigned long selectionEnd;\n    readonly attribute unsigned long characterBoundsRangeStart;\n    sequence<DOMRect> characterBounds();\n\n    attribute EventHandler ontextupdate;\n    attribute EventHandler ontextformatupdate;\n    attribute EventHandler oncharacterboundsupdate;\n    attribute EventHandler oncompositionstart;\n    attribute EventHandler oncompositionend;\n};",
+        "type": "interface",
+        "name": "EditContext",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "EditContextInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "updateText",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rangeStart",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "rangeEnd",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "text",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-updatetext"
+          },
+          {
+            "type": "operation",
+            "name": "updateSelection",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "start",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "end",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-updateselection"
+          },
+          {
+            "type": "operation",
+            "name": "updateControlBounds",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "controlBounds",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMRect"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-updatecontrolbounds"
+          },
+          {
+            "type": "operation",
+            "name": "updateSelectionBounds",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "selectionBounds",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMRect"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-updateselectionbounds"
+          },
+          {
+            "type": "operation",
+            "name": "updateCharacterBounds",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rangeStart",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "characterBounds",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMRect"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-updatecharacterbounds"
+          },
+          {
+            "type": "operation",
+            "name": "attachedElements",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HTMLElement"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-attachedelements"
+          },
+          {
+            "type": "attribute",
+            "name": "text",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-text"
+          },
+          {
+            "type": "attribute",
+            "name": "selectionStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-selectionstart"
+          },
+          {
+            "type": "attribute",
+            "name": "selectionEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-selectionend"
+          },
+          {
+            "type": "attribute",
+            "name": "characterBoundsRangeStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-characterboundsrangestart"
+          },
+          {
+            "type": "operation",
+            "name": "characterBounds",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMRect"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-characterbounds"
+          },
+          {
+            "type": "attribute",
+            "name": "ontextupdate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-ontextupdate"
+          },
+          {
+            "type": "attribute",
+            "name": "ontextformatupdate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-ontextformatupdate"
+          },
+          {
+            "type": "attribute",
+            "name": "oncharacterboundsupdate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-oncharacterboundsupdate"
+          },
+          {
+            "type": "attribute",
+            "name": "oncompositionstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-oncompositionstart"
+          },
+          {
+            "type": "attribute",
+            "name": "oncompositionend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/edit-context/#dom-editcontext-oncompositionend"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-editcontext"
+      },
+      "TextUpdateEventInit": {
+        "fragment": "dictionary TextUpdateEventInit : EventInit {\n    unsigned long updateRangeStart = 0;\n    unsigned long updateRangeEnd = 0;\n    DOMString text = \"\";\n    unsigned long selectionStart = 0;\n    unsigned long selectionEnd = 0;\n};",
+        "type": "dictionary",
+        "name": "TextUpdateEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "updateRangeStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateeventinit-updaterangestart"
+          },
+          {
+            "type": "field",
+            "name": "updateRangeEnd",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateeventinit-updaterangeend"
+          },
+          {
+            "type": "field",
+            "name": "text",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateeventinit-text"
+          },
+          {
+            "type": "field",
+            "name": "selectionStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateeventinit-selectionstart"
+          },
+          {
+            "type": "field",
+            "name": "selectionEnd",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateeventinit-selectionend"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-textupdateeventinit"
+      },
+      "TextUpdateEvent": {
+        "fragment": "[Exposed=Window]\ninterface TextUpdateEvent : Event {\n    constructor(DOMString type, optional TextUpdateEventInit options = {});\n    readonly attribute unsigned long updateRangeStart;\n    readonly attribute unsigned long updateRangeEnd;\n    readonly attribute DOMString text;\n    readonly attribute unsigned long selectionStart;\n    readonly attribute unsigned long selectionEnd;\n};",
+        "type": "interface",
+        "name": "TextUpdateEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextUpdateEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "updateRangeStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateevent-updaterangestart"
+          },
+          {
+            "type": "attribute",
+            "name": "updateRangeEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateevent-updaterangeend"
+          },
+          {
+            "type": "attribute",
+            "name": "text",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateevent-text"
+          },
+          {
+            "type": "attribute",
+            "name": "selectionStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateevent-selectionstart"
+          },
+          {
+            "type": "attribute",
+            "name": "selectionEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textupdateevent-selectionend"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-textupdateevent"
+      },
+      "UnderlineStyle": {
+        "fragment": "enum UnderlineStyle { \"none\", \"solid\", \"dotted\", \"dashed\", \"wavy\" };",
+        "type": "enum",
+        "name": "UnderlineStyle",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinestyle-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "solid",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinestyle-solid"
+          },
+          {
+            "type": "enum-value",
+            "value": "dotted",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinestyle-dotted"
+          },
+          {
+            "type": "enum-value",
+            "value": "dashed",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinestyle-dashed"
+          },
+          {
+            "type": "enum-value",
+            "value": "wavy",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinestyle-wavy"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/edit-context/#dom-underlinestyle"
+      },
+      "UnderlineThickness": {
+        "fragment": "enum UnderlineThickness { \"none\", \"thin\", \"thick\" };",
+        "type": "enum",
+        "name": "UnderlineThickness",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinethickness-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "thin",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinethickness-thin"
+          },
+          {
+            "type": "enum-value",
+            "value": "thick",
+            "href": "https://w3c.github.io/edit-context/#dom-underlinethickness-thick"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/edit-context/#dom-underlinethickness"
+      },
+      "TextFormatInit": {
+        "fragment": "dictionary TextFormatInit {\n    unsigned long rangeStart = 0;\n    unsigned long rangeEnd = 0;\n    UnderlineStyle underlineStyle = \"none\";\n    UnderlineThickness underlineThickness = \"none\";\n};",
+        "type": "dictionary",
+        "name": "TextFormatInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "rangeStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textformatinit-rangestart"
+          },
+          {
+            "type": "field",
+            "name": "rangeEnd",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textformatinit-rangeend"
+          },
+          {
+            "type": "field",
+            "name": "underlineStyle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlineStyle"
+            },
+            "default": {
+              "type": "string",
+              "value": "none"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textformatinit-underlinestyle"
+          },
+          {
+            "type": "field",
+            "name": "underlineThickness",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlineThickness"
+            },
+            "default": {
+              "type": "string",
+              "value": "none"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textformatinit-underlinethickness"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-textformatinit"
+      },
+      "TextFormat": {
+        "fragment": "[Exposed=Window]\ninterface TextFormat {\n    constructor(optional TextFormatInit options = {});\n    readonly attribute unsigned long rangeStart;\n    readonly attribute unsigned long rangeEnd;\n    readonly attribute UnderlineStyle underlineStyle;\n    readonly attribute UnderlineThickness underlineThickness;\n};",
+        "type": "interface",
+        "name": "TextFormat",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextFormatInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/edit-context/#dom-textformat-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "rangeStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textformat-rangestart"
+          },
+          {
+            "type": "attribute",
+            "name": "rangeEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textformat-rangeend"
+          },
+          {
+            "type": "attribute",
+            "name": "underlineStyle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlineStyle"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textformat-underlinestyle"
+          },
+          {
+            "type": "attribute",
+            "name": "underlineThickness",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlineThickness"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-textformat-underlinethickness"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-textformat"
+      },
+      "TextFormatUpdateEventInit": {
+        "fragment": "dictionary TextFormatUpdateEventInit : EventInit {\n    sequence<TextFormat> textFormats = [];\n};",
+        "type": "dictionary",
+        "name": "TextFormatUpdateEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "textFormats",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextFormat"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-textformatupdateeventinit-textformats"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-textformatupdateeventinit"
+      },
+      "TextFormatUpdateEvent": {
+        "fragment": "[Exposed=Window]\ninterface TextFormatUpdateEvent : Event {\n    constructor(DOMString type, optional TextFormatUpdateEventInit options = {});\n    sequence<TextFormat> getTextFormats();\n};",
+        "type": "interface",
+        "name": "TextFormatUpdateEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextFormatUpdateEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/edit-context/#dom-textformatupdateevent-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "getTextFormats",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextFormat"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/edit-context/#dom-textformatupdateevent-gettextformats"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-textformatupdateevent"
+      },
+      "CharacterBoundsUpdateEventInit": {
+        "fragment": "dictionary CharacterBoundsUpdateEventInit : EventInit {\n    unsigned long rangeStart = 0;\n    unsigned long rangeEnd = 0;\n};",
+        "type": "dictionary",
+        "name": "CharacterBoundsUpdateEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "rangeStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-characterboundsupdateeventinit-rangestart"
+          },
+          {
+            "type": "field",
+            "name": "rangeEnd",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/edit-context/#dom-characterboundsupdateeventinit-rangeend"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-characterboundsupdateeventinit"
+      },
+      "CharacterBoundsUpdateEvent": {
+        "fragment": "[Exposed=Window]\ninterface CharacterBoundsUpdateEvent : Event {\n    constructor(DOMString type, optional CharacterBoundsUpdateEventInit options = {});\n    readonly attribute unsigned long rangeStart;\n    readonly attribute unsigned long rangeEnd;\n};",
+        "type": "interface",
+        "name": "CharacterBoundsUpdateEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CharacterBoundsUpdateEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/edit-context/#dom-characterboundsupdateevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "rangeStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-characterboundsupdateevent-rangestart"
+          },
+          {
+            "type": "attribute",
+            "name": "rangeEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/edit-context/#dom-characterboundsupdateevent-rangeend"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/edit-context/#dom-characterboundsupdateevent"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLElement": [
+        {
+          "fragment": "partial interface HTMLElement {\n     attribute EditContext? editContext;\n};",
+          "type": "interface",
+          "name": "HTMLElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "editContext",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "EditContext"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/edit-context/#dom-htmlelement-editcontext"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EditContext",
+        "TextUpdateEvent",
+        "TextFormat",
+        "TextFormatUpdateEvent",
+        "CharacterBoundsUpdateEvent"
+      ]
+    },
+    "dependencies": {
+      "HTMLElement": [
+        "EditContext"
+      ],
+      "EditContextInit": [],
+      "EditContext": [
+        "EventTarget",
+        "EditContextInit",
+        "DOMRect",
+        "HTMLElement",
+        "EventHandler"
+      ],
+      "TextUpdateEventInit": [
+        "EventInit"
+      ],
+      "TextUpdateEvent": [
+        "Event",
+        "TextUpdateEventInit"
+      ],
+      "TextFormatInit": [
+        "UnderlineStyle",
+        "UnderlineThickness"
+      ],
+      "TextFormat": [
+        "TextFormatInit",
+        "UnderlineStyle",
+        "UnderlineThickness"
+      ],
+      "TextFormatUpdateEventInit": [
+        "EventInit",
+        "TextFormat"
+      ],
+      "TextFormatUpdateEvent": [
+        "Event",
+        "TextFormatUpdateEventInit",
+        "TextFormat"
+      ],
+      "CharacterBoundsUpdateEventInit": [
+        "EventInit"
+      ],
+      "CharacterBoundsUpdateEvent": [
+        "Event",
+        "CharacterBoundsUpdateEventInit"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLElement",
+      "EventTarget",
+      "DOMRect",
+      "EventHandler",
+      "EventInit",
+      "Event"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

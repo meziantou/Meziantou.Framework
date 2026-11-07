@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.0		TRUE	FALSE	FALSE		[Pages]			Table 30
+Parent	dictionary	1.0		TRUE	TRUE	FALSE				[PageTreeNode,PageTreeNodeRoot]	
+Kids	array	1.0		TRUE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(Kids)>0)]	[ArrayOfPageTreeNodeKids]	https://github.com/pdf-association/pdf-issues/issues/271
+Count	integer	1.0		TRUE	FALSE	FALSE		[fn:Eval(@Count>0)]			https://github.com/pdf-association/pdf-issues/issues/271
+Resources	dictionary	1.0		FALSE	FALSE	TRUE				[Resource]	Inheritable from Parent
+MediaBox	rectangle	1.0		FALSE	FALSE	TRUE					Inheritable from Parent
+CropBox	rectangle	1.0		FALSE	FALSE	TRUE	@MediaBox				Inheritable from Parent
+Rotate	integer	1.0		FALSE	FALSE	TRUE	0	[fn:Eval((@Rotate mod 90)==0)]			Inheritable from Parent

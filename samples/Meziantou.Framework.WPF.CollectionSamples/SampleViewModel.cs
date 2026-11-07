@@ -1,5 +1,5 @@
 using System.Windows.Input;
-using Meziantou.Framework.WPF.Collections;
+using Meziantou.Framework.Collections.Concurrent;
 
 namespace Meziantou.Framework.WPF.CollectionSamples;
 

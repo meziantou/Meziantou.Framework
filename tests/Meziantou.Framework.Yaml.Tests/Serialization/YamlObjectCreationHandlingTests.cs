@@ -4,6 +4,23 @@ using Meziantou.Framework.Yaml.Serialization;
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlObjectCreationHandlingTests
 {
+    [Fact]
+    public void ReadmeExample_Populate()
+    {
+        #region YamlObjectCreationHandling_Deserialize
+        var settings = YamlSerializer.Deserialize<Settings>("Tags:\n  - extra\n");
+        Assert.Equal(["default", "extra"], settings!.Tags);
+        #endregion
+    }
+
+    #region YamlObjectCreationHandling_Settings
+    internal sealed class Settings
+    {
+        [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
+        public List<string> Tags { get; set; } = ["default"];
+    }
+    #endregion
+
     private sealed class ChildModel
     {
         public int Existing { get; set; }

@@ -1,0 +1,82 @@
+{
+  "spec": {
+    "title": "CSS Custom Functions and Mixins Module Level 1",
+    "url": "https://drafts.csswg.org/css-mixins-1/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@function",
+      "href": "https://drafts.csswg.org/css-mixins-1/#at-ruledef-function",
+      "descriptors": [
+        {
+          "name": "result",
+          "href": "https://drafts.csswg.org/css-mixins-1/#descdef-function-result",
+          "for": "@function",
+          "value": "<declaration-value>?",
+          "initial": "n/a (see prose)"
+        }
+      ],
+      "value": "@function <function-token> <function-parameter>#? ) [ returns <css-type> ]? { <declaration-rule-list> }",
+      "values": [
+        {
+          "name": "type()",
+          "href": "https://drafts.csswg.org/css-mixins-1/#funcdef-function-type",
+          "type": "function",
+          "value": "type( <syntax> )"
+        }
+      ]
+    },
+    {
+      "name": "@mixin",
+      "href": "https://drafts.csswg.org/css-mixins-1/#at-ruledef-mixin",
+      "descriptors": [],
+      "value": "@mixin [<function-token> <function-parameter>#? ) | <ident-token> ] { <block-contents> }"
+    },
+    {
+      "name": "@contents",
+      "href": "https://drafts.csswg.org/css-mixins-1/#at-ruledef-contents",
+      "descriptors": [],
+      "value": "@contents [ { <declaration-list> } ]?"
+    },
+    {
+      "name": "@apply",
+      "href": "https://drafts.csswg.org/css-mixins-1/#at-ruledef-apply",
+      "descriptors": [],
+      "value": "@apply [ <dashed-ident> | <dashed-function> ] [ { <declaration-list> } ]?;"
+    },
+    {
+      "name": "@private",
+      "href": "https://drafts.csswg.org/css-mixins-1/#private",
+      "descriptors": [],
+      "value": "@private { <declaration-rule-list> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<function-parameter>",
+      "href": "https://drafts.csswg.org/css-mixins-1/#typedef-function-parameter",
+      "type": "type",
+      "value": "<custom-property-name> <css-type>? [ : <default-value> ]?"
+    },
+    {
+      "name": "<css-type>",
+      "href": "https://drafts.csswg.org/css-mixins-1/#typedef-css-type",
+      "type": "type",
+      "value": "<syntax-component> | <type()>"
+    },
+    {
+      "name": "<default-value>",
+      "href": "https://drafts.csswg.org/css-mixins-1/#typedef-default-value",
+      "type": "type",
+      "value": "<declaration-value>"
+    },
+    {
+      "name": "<dashed-function>",
+      "prose": "A <dashed-function> is a functional notation whose function name starts with two dashes (U+002D HYPHEN-MINUS). Its argument grammar is:",
+      "href": "https://drafts.csswg.org/css-mixins-1/#typedef-dashed-function",
+      "type": "type"
+    }
+  ]
+}

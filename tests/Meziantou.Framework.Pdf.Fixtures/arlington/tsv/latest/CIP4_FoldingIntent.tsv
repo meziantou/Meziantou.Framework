@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_FoldingIntent]			ISO 21812-1:2019 Table 16
+CIP4_FoldCatalog	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[F2-1,F4-1,F6-1,F6-3,F6-4,F6-7,F8-2,F8-4,*]			ISO 21812-1:2019 Table 17
+CIP4_Orientation	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Rotate0,Rotate90,Rotate180,Rotate270,Flip0,Flip90,Flip180,Flip270]			

@@ -5,62 +5,40 @@ namespace Meziantou.Framework.HumanReadable;
 
 internal static class ExpressionExtensions
 {
-    public static IReadOnlyCollection<MemberInfo> GetMemberInfos<T>(this Expression<Func<T, object>> member)
+    // Returns the members and the static type of the instance they are accessed on (e.g. T for x => x.Name, and Address for x => x.Address.City)
+    public static IReadOnlyCollection<(Type OwnerType, MemberInfo Member)> GetMemberInfos<T>(this Expression<Func<T, object>> member)
     {
-        var memberInfo = member.GetMemberInfo();
-        if (memberInfo is not null)
-        {
-            if (memberInfo is PropertyInfo propertyInfo)
-            {
-                return [propertyInfo];
-            }
+        var body = member.Body.UnwrapConversion();
+        if (GetMember(body) is { } result)
+            return [result];
 
-            if (memberInfo is FieldInfo fieldInfo)
-            {
-                return [fieldInfo];
-            }
-        }
-
-        if (member.Body.UnwrapConversion() is NewExpression newExpression)
+        if (body is NewExpression newExpression)
         {
-            var types = new List<MemberInfo>();
+            var members = new List<(Type OwnerType, MemberInfo Member)>();
             foreach (var argument in newExpression.Arguments)
             {
-                if (argument is MemberExpression argumentMemberExpression)
-                {
-                    if (argumentMemberExpression.Member is PropertyInfo propertyInfo)
-                    {
-                        types.Add(propertyInfo);
-                        continue;
-                    }
+                if (GetMember(argument) is not { } argumentMember)
+                    return []; // Not supported expression
 
-                    if (argumentMemberExpression.Member is FieldInfo fieldInfo)
-                    {
-                        types.Add(fieldInfo);
-                        continue;
-                    }
-                }
-
-                // Not supported expression
-                return [];
+                members.Add(argumentMember);
             }
 
-            return types;
+            return members;
         }
 
         return [];
-    }
 
-    public static MemberInfo? GetMemberInfo<T>(this Expression<Func<T, object>> member)
-    {
-        var body = UnwrapConversion(member.Body);
-
-        if (body is MemberExpression memberExpression)
+        static (Type OwnerType, MemberInfo Member)? GetMember(Expression expression)
         {
-            return memberExpression.Member;
-        }
+            if (expression is MemberExpression { Member: PropertyInfo or FieldInfo } memberExpression)
+            {
+                var ownerType = memberExpression.Expression?.Type ?? memberExpression.Member.DeclaringType;
+                if (ownerType is not null)
+                    return (ownerType, memberExpression.Member);
+            }
 
-        return null;
+            return null;
+        }
     }
 
     public static Expression UnwrapConversion(this Expression expression)

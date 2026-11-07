@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_StickOn]	ISO 21812-1:2019, Tables 7 and 11

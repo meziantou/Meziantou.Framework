@@ -1,0 +1,306 @@
+{
+  "spec": {
+    "title": "Idle Detection API",
+    "url": "https://wicg.github.io/idle-detection/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "IdleDetector"
+        ],
+        "DedicatedWorker": [
+          "IdleDetector"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "UserIdleState": {
+        "fragment": "enum UserIdleState {\n    \"active\",\n    \"idle\"\n};",
+        "type": "enum",
+        "name": "UserIdleState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "active",
+            "href": "https://wicg.github.io/idle-detection/#dom-useridlestate-active"
+          },
+          {
+            "type": "enum-value",
+            "value": "idle",
+            "href": "https://wicg.github.io/idle-detection/#dom-useridlestate-idle"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/idle-detection/#enumdef-useridlestate"
+      },
+      "ScreenIdleState": {
+        "fragment": "enum ScreenIdleState {\n    \"locked\",\n    \"unlocked\"\n};",
+        "type": "enum",
+        "name": "ScreenIdleState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "locked",
+            "href": "https://wicg.github.io/idle-detection/#dom-screenidlestate-locked"
+          },
+          {
+            "type": "enum-value",
+            "value": "unlocked",
+            "href": "https://wicg.github.io/idle-detection/#dom-screenidlestate-unlocked"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/idle-detection/#enumdef-screenidlestate"
+      },
+      "IdleOptions": {
+        "fragment": "dictionary IdleOptions {\n  [EnforceRange] unsigned long long threshold;\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "IdleOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "threshold",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/idle-detection/#dom-idleoptions-threshold"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/idle-detection/#dom-idleoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/idle-detection/#dictdef-idleoptions"
+      },
+      "IdleDetector": {
+        "fragment": "[\n  SecureContext,\n  Exposed=(Window,DedicatedWorker)\n] interface IdleDetector : EventTarget {\n  constructor();\n  readonly attribute UserIdleState? userState;\n  readonly attribute ScreenIdleState? screenState;\n  attribute EventHandler onchange;\n  [Exposed=Window] static Promise<PermissionState> requestPermission();\n  Promise<undefined> start(optional IdleOptions options = {});\n};",
+        "type": "interface",
+        "name": "IdleDetector",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/idle-detection/#dom-idledetector-idledetector"
+          },
+          {
+            "type": "attribute",
+            "name": "userState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "UserIdleState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/idle-detection/#dom-idledetector-userstate"
+          },
+          {
+            "type": "attribute",
+            "name": "screenState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ScreenIdleState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/idle-detection/#dom-idledetector-screenstate"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/idle-detection/#dom-idledetector-onchange"
+          },
+          {
+            "type": "operation",
+            "name": "requestPermission",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PermissionState"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://wicg.github.io/idle-detection/#dom-idledetector-requestpermission"
+          },
+          {
+            "type": "operation",
+            "name": "start",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IdleOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/idle-detection/#dom-idledetector-start"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/idle-detection/#idledetector"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "IdleDetector"
+      ],
+      "DedicatedWorker": [
+        "IdleDetector"
+      ]
+    },
+    "dependencies": {
+      "IdleOptions": [
+        "AbortSignal"
+      ],
+      "IdleDetector": [
+        "EventTarget",
+        "UserIdleState",
+        "ScreenIdleState",
+        "EventHandler",
+        "PermissionState",
+        "IdleOptions"
+      ]
+    },
+    "externalDependencies": [
+      "AbortSignal",
+      "EventTarget",
+      "EventHandler",
+      "PermissionState"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

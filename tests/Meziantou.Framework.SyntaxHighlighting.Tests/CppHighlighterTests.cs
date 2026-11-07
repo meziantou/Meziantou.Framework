@@ -1627,7 +1627,7 @@ int add(int a, int b) { return a + b; }
 auto add(int a, int b) -> int { return a + b; }
 """,
 """
-auto add(int a, int b) -&gt; int { return a + b; }
+<span class="hljs-function"><span class="hljs-keyword">auto</span> <span class="hljs-title">add</span><span class="hljs-params">(<span class="hljs-type">int</span> a, <span class="hljs-type">int</span> b)</span> -&gt; <span class="hljs-type">int</span> </span>{ <span class="hljs-keyword">return</span> a + b; }
 """);
     }
 

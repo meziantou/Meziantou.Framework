@@ -1,0 +1,53 @@
+{
+  "hr-time/basic.any.js": {
+    "total": 5
+  },
+  "hr-time/basic.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "hr-time/clamped-time-origin-isolated.https.html": {
+    "total": 1
+  },
+  "hr-time/clamped-time-origin.html": {
+    "total": 1
+  },
+  "hr-time/cross-origin-isolated-timing-attack.https.html": {
+    "total": 1
+  },
+  "hr-time/idlharness.any.js": {
+    "total": 29
+  },
+  "hr-time/idlharness.any.js#dedicatedworker": {
+    "total": 29
+  },
+  "hr-time/idlharness.any.js#sharedworker": {
+    "total": 29
+  },
+  "hr-time/monotonic-clock.any.js": {
+    "total": 2
+  },
+  "hr-time/monotonic-clock.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "hr-time/navigation-start-post-before-unload.html": {
+    "total": 1
+  },
+  "hr-time/performance-tojson.html": {
+    "total": 1
+  },
+  "hr-time/raf-coarsened-time.https.html": {
+    "total": 1
+  },
+  "hr-time/test_cross_frame_start.html": {
+    "total": 5
+  },
+  "hr-time/timeOrigin.html": {
+    "total": 3
+  },
+  "hr-time/timing-attack.html": {
+    "total": 1
+  },
+  "hr-time/window-worker-timeOrigin.window.js": {
+    "total": 1
+  }
+}

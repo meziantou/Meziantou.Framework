@@ -1,10 +1,65 @@
 using System.Net;
+using System.Net.Http.Headers;
+using Meziantou.Framework.Http.Caching.InMemory;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
 /// <summary>Tests for RFC 8246 immutable directive, Expires header, heuristic freshness, and edge cases.</summary>
 public sealed class AdvancedCachingTests
 {
+    [Fact]
+    public async Task Documentation_Options()
+    {
+        #region HttpCaching_Options
+        var options = new HttpCachingOptions
+        {
+            // Do not store the responses larger than 1 MB. The default is 5 MB, and null removes the limit.
+            MaximumResponseSize = 1024 * 1024,
+
+            // Only store the successful responses, even when the server allows storing the others
+            ShouldCacheResponse = response => response.IsSuccessStatusCode,
+        };
+        #endregion
+
+        await using var context = new HttpTestContext(options);
+        context.AddResponse(HttpStatusCode.NotFound, "missing", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NotFound, "missing", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, new string('a', 2 * 1024 * 1024), ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, new string('a', 2 * 1024 * 1024), ("Cache-Control", "max-age=3600"));
+
+        using var notFound1 = await context.HttpClient.GetAsync("https://example.com/missing", CancellationToken.None);
+        using var notFound2 = await context.HttpClient.GetAsync("https://example.com/missing", CancellationToken.None);
+        Assert.Null(notFound2.Headers.Age);
+
+        using var large1 = await context.HttpClient.GetAsync("https://example.com/large", CancellationToken.None);
+        using var large2 = await context.HttpClient.GetAsync("https://example.com/large", CancellationToken.None);
+        Assert.Null(large2.Headers.Age);
+        Assert.HasCount(2 * 1024 * 1024, await large2.Content.ReadAsByteArrayAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Immutable()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "console.log('hello');", ("Cache-Control", "max-age=31536000, immutable"), ("ETag", "\"abc123\""));
+        var httpClient = context.HttpClient;
+
+        #region HttpCachingDelegateHandler_Immutable
+        // Server responds with:
+        // Cache-Control: max-age=31536000, immutable
+        // ETag: "abc123"
+
+        // First request fetches from origin
+        using var response1 = await httpClient.GetAsync("https://cdn.example.com/script.js");
+
+        // Second request with no-cache still uses cached version (because immutable + fresh)
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "https://cdn.example.com/script.js");
+        request2.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true };
+        using var response2 = await httpClient.SendAsync(request2); // Served from cache, no revalidation
+        Assert.NotNull(response2.Headers.Age);
+        #endregion
+    }
+
     #region RFC 8246: Immutable Responses
 
     [Fact]
@@ -745,6 +800,54 @@ public sealed class AdvancedCachingTests
                 Content-Type: text/plain; charset=utf-8
               Value: {content}
             """);
+    }
+
+    [Fact]
+    public async Task WhenContentLengthExceedsLimitThenResponseIsNotBuffered()
+    {
+        // The body must not be read at all: the announced length is already over the limit.
+        var contentReadCount = 0;
+        using var innerHandler = new ContentReadCountingHandler(() => contentReadCount++);
+        var options = new HttpCachingOptions { MaximumResponseSize = 100 };
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore(), options);
+        using var client = new HttpClient(handler);
+
+        // ResponseHeadersRead so that HttpClient does not buffer the content itself.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, CancellationToken.None);
+        Assert.Equal(0, contentReadCount);
+
+        // The caller still gets the untouched response.
+        Assert.Equal(new string('x', 500), await response.Content.ReadAsStringAsync(CancellationToken.None));
+        Assert.Equal(1, contentReadCount);
+    }
+
+    private sealed class ContentReadCountingHandler(Action onRead) : HttpMessageHandler
+    {
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=3600");
+            response.Content = new CountingContent(new string('x', 500), onRead);
+            return Task.FromResult(response);
+        }
+    }
+
+    private sealed class CountingContent(string content, Action onRead) : HttpContent
+    {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+        {
+            onRead();
+            var bytes = Encoding.UTF8.GetBytes(content);
+            return stream.WriteAsync(bytes, 0, bytes.Length);
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = Encoding.UTF8.GetByteCount(content);
+            return true;
+        }
     }
 
     [Fact]

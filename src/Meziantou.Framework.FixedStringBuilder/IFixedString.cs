@@ -18,16 +18,47 @@ public interface IFixedString : ISpanFormattable
     /// <summary>
     /// Resets this string to an empty string.
     /// </summary>
+    /// <remarks>
+    /// Only the length is reset. The characters that were written are not overwritten: they stay in the underlying
+    /// buffer and remain readable through <see cref="GetUnsafeFullSpan"/>. Do not rely on this method to erase
+    /// sensitive data.
+    /// </remarks>
     void Clear();
+
+    /// <summary>
+    /// Resets this string to an empty string, optionally overwriting the underlying buffer with zeros.
+    /// </summary>
+    /// <param name="zeroBuffer">
+    /// <see langword="true"/> to overwrite the whole underlying buffer with <c>'\0'</c>, so the characters that
+    /// were written can no longer be read through <see cref="GetUnsafeFullSpan"/>; <see langword="false"/> to only
+    /// reset the length, as <see cref="Clear()"/> does.
+    /// </param>
+    /// <remarks>
+    /// The whole buffer is overwritten, not only the characters up to <see cref="Length"/>: a previous longer value
+    /// can still be present after <see cref="Length"/>.
+    /// </remarks>
+    void Clear(bool zeroBuffer);
 
     /// <summary>
     /// Returns a span of all the characters up to <see cref="MaxLength"/>.
     /// </summary>
     /// <returns>A span of characters that contains the characters of this string.</returns>
-    /// <remarks>This method is unsafe as it doesn't protect from returning a ref to a struct that could go out of scope. Favor using AsSpan() on individual FixedStrings structs.
+    /// <remarks>
+    /// <para>
+    /// This method is unsafe: the returned span is not tied to the lifetime of the struct, so the compiler cannot
+    /// prevent it from outliving the struct. The caller must not use the span after the struct goes out of scope
+    /// (for instance, it must not return the span of a local variable). Favor using AsSpan() on individual
+    /// FixedStrings structs.
+    /// </para>
+    /// <para>
+    /// This method requires an unsafe context (an <c>unsafe</c> block or expression) when the calling code is compiled
+    /// with the updated memory safety rules.
+    /// </para>
+    /// <para>
     /// This method can only be used through a generic constraint or by explicit casting/boxing to <see cref="IFixedString"/>.
+    /// </para>
     /// </remarks>
-    Span<char> GetUnsafeFullSpan();
+    unsafe Span<char> GetUnsafeFullSpan();
 }
 
 /// <summary>

@@ -1,0 +1,13 @@
+{
+  "spec": {
+    "title": "Fenced Frame",
+    "url": "https://wicg.github.io/fenced-frame/"
+  },
+  "elements": [
+    {
+      "name": "fencedframe",
+      "href": "https://wicg.github.io/fenced-frame/#elementdef-fencedframe",
+      "interface": "HTMLFencedFrameElement"
+    }
+  ]
+}

@@ -9,6 +9,11 @@ namespace Meziantou.AspNetCore.Diagnostics;
 public static class MiddlewarePipelineDebuggingWebApplicationExtensions
 {
     /// <summary>Gets a middleware pipeline snapshot from code without using the debug route.</summary>
+    /// <remarks>
+    /// The pipeline is captured while the host builds it, so call this after the host has started. Before then,
+    /// <see cref="MiddlewarePipelineDebugSnapshot.IsPipelineCaptured"/> is <see langword="false"/> and the pipeline is
+    /// empty — notably inside an <c>IHostedService</c> registered before the web host.
+    /// </remarks>
     /// <param name="app">The web application.</param>
     /// <returns>The middleware pipeline snapshot.</returns>
     public static MiddlewarePipelineDebugSnapshot GetMiddlewarePipelineDebugSnapshot(this WebApplication app)
@@ -20,26 +25,39 @@ public static class MiddlewarePipelineDebuggingWebApplicationExtensions
 
     /// <summary>
     /// Maps a JSON endpoint that returns the middleware tree and endpoint list.
-    /// By default, the endpoint is only mapped in Development.
+    /// By default, the endpoint responds only in Development and returns 404 elsewhere.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The endpoint is <b>not authenticated</b>. It discloses every registered route, the middleware order, and
+    /// implementation type names. When mapping it outside Development, gate it — the returned builder allows
+    /// <c>.RequireAuthorization()</c>.
+    /// </para>
+    /// <para>
+    /// The route is always registered so the return value can be chained; when
+    /// <paramref name="developmentOnly"/> is <see langword="true"/> and the environment is not Development, the handler
+    /// responds 404 instead of returning the snapshot.
+    /// </para>
+    /// </remarks>
     /// <param name="app">The web application.</param>
     /// <param name="pattern">The route pattern used for the debug endpoint.</param>
-    /// <param name="developmentOnly">Indicates whether the endpoint should only be mapped in Development.</param>
-    /// <returns>The mapped route builder, or <see langword="null"/> if not mapped because of environment filtering.</returns>
+    /// <param name="developmentOnly">Indicates whether the endpoint should respond only in Development.</param>
+    /// <returns>The mapped route builder.</returns>
     [RequiresUnreferencedCode("This method maps a delegate endpoint, which may use reflection and is not trim-safe.")]
-    public static RouteHandlerBuilder? MapMiddlewarePipelineDebugEndpoint(this WebApplication app, string pattern = "/_debug/pipeline", bool developmentOnly = true)
+    [RequiresDynamicCode("This method maps a delegate endpoint that serializes the snapshot with reflection-based JSON serialization.")]
+    public static RouteHandlerBuilder MapMiddlewarePipelineDebugEndpoint(this WebApplication app, string pattern = "/_debug/pipeline", bool developmentOnly = true)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentException.ThrowIfNullOrEmpty(pattern);
 
-        if (developmentOnly && !app.Environment.IsDevelopment())
-            return null;
-
+        // Checked regardless of environment, so a missing AddMiddlewarePipelineDebugging() fails the same way everywhere.
         _ = GetDebugInfoProvider(app.Services);
 
-        return app.MapGet(pattern, static (MiddlewarePipelineDebugInfoProvider debugInfoProvider) =>
+        var blocked = developmentOnly && !app.Environment.IsDevelopment();
+
+        return app.MapGet(pattern, (MiddlewarePipelineDebugInfoProvider debugInfoProvider) =>
         {
-            return TypedResults.Ok(debugInfoProvider.GetSnapshot());
+            return blocked ? Results.NotFound() : Results.Ok(debugInfoProvider.GetSnapshot());
         });
     }
 

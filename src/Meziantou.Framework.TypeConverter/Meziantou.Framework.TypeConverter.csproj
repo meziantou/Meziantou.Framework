@@ -1,10 +1,13 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Converts culture names to CultureInfo -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <Description>Convert objects to other types using all standard .NET ways to convert objects</Description>
-    <Version>4.0.0</Version>
+    <PackageTags>type-converter, conversion, reflection, culture</PackageTags>
+    <Version>4.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,23 +6,12 @@ internal sealed class ConsumeSegmentUntilSegment : Segment
 {
     private readonly SearchValues<char> _characters;
 
-    public ConsumeSegmentUntilSegment(char[] characters, bool ignoreCase)
+    // The characters are expanded by the parser through IgnoreCaseExpansion when the case is ignored: this segment
+    // skips ahead to the next character the following subsegment could match, so a missing character would silently
+    // reject a matching path.
+    public ConsumeSegmentUntilSegment(char[] characters)
     {
-        if (!ignoreCase)
-        {
-            _characters = SearchValues.Create(characters);
-            return;
-        }
-
-        var expandedCharacters = new HashSet<char>();
-        foreach (var character in characters)
-        {
-            expandedCharacters.Add(character);
-            expandedCharacters.Add(char.ToLowerInvariant(character));
-            expandedCharacters.Add(char.ToUpperInvariant(character));
-        }
-
-        _characters = SearchValues.Create([.. expandedCharacters]);
+        _characters = SearchValues.Create(characters);
     }
 
     public override bool IsMatch(ref PathReader pathReader)
@@ -37,5 +26,12 @@ internal sealed class ConsumeSegmentUntilSegment : Segment
         }
 
         return true;
+    }
+
+    public override string ToString()
+    {
+        // The segment is a pure prefilter that scans ahead to the next character the following subsegment could
+        // match, so it doesn't contribute anything to the textual pattern.
+        return "";
     }
 }

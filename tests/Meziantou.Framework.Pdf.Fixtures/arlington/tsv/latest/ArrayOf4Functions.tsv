@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	fn:SinceVersion(1.3,dictionary);stream	1.2		TRUE	[FALSE];[TRUE]	FALSE				[fn:SinceVersion(1.3,FunctionType2),fn:SinceVersion(1.3,FunctionType3)];[FunctionType0,fn:SinceVersion(1.3,FunctionType4)]	
+1	fn:SinceVersion(1.3,dictionary);stream	1.2		TRUE	[FALSE];[TRUE]	FALSE				[fn:SinceVersion(1.3,FunctionType2),fn:SinceVersion(1.3,FunctionType3)];[FunctionType0,fn:SinceVersion(1.3,FunctionType4)]	
+2	fn:SinceVersion(1.3,dictionary);stream	1.2		TRUE	[FALSE];[TRUE]	FALSE				[fn:SinceVersion(1.3,FunctionType2),fn:SinceVersion(1.3,FunctionType3)];[FunctionType0,fn:SinceVersion(1.3,FunctionType4)]	
+3	fn:SinceVersion(1.3,dictionary);stream	1.2		TRUE	[FALSE];[TRUE]	FALSE				[fn:SinceVersion(1.3,FunctionType2),fn:SinceVersion(1.3,FunctionType3)];[FunctionType0,fn:SinceVersion(1.3,FunctionType4)]	

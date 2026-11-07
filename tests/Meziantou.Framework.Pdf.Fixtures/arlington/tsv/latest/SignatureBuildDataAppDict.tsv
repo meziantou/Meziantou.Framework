@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Name	name	1.5		FALSE	FALSE	FALSE					Adobe _Digital Signature Build Dictionary Specification_ Table 2 and Table 3
+Date	string-text	1.5		FALSE	FALSE	FALSE					
+R	number	1.5		FALSE	FALSE	FALSE					
+PreRelease	boolean	1.5		FALSE	FALSE	FALSE	false				
+OS	array	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsTextOrNames]	Adobe Acrobat DC generates an array of names which is undocumented
+NonEFontNoWarn	boolean	1.5		FALSE	FALSE	FALSE					
+TrustedMode	boolean	1.5		FALSE	FALSE	FALSE	false				
+V	number	1.5	1.7	FALSE	FALSE	FALSE					
+REx	string-text	1.6		FALSE	FALSE	FALSE					

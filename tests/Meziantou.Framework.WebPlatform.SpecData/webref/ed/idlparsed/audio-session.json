@@ -1,0 +1,215 @@
+{
+  "spec": {
+    "title": "Audio Session",
+    "url": "https://w3c.github.io/audio-session/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "AudioSession",
+          "Navigator"
+        ]
+      }
+    },
+    "idlNames": {
+      "AudioSession": {
+        "fragment": "[Exposed=Window]\ninterface AudioSession : EventTarget {\n  attribute AudioSessionType type;\n\n  readonly attribute AudioSessionState state;\n  attribute EventHandler onstatechange;\n};",
+        "type": "interface",
+        "name": "AudioSession",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AudioSessionType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/audio-session/#dom-audiosession-type"
+          },
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AudioSessionState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/audio-session/#dom-audiosession-state"
+          },
+          {
+            "type": "attribute",
+            "name": "onstatechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/audio-session/#dom-audiosession-onstatechange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/audio-session/#audiosession"
+      },
+      "AudioSessionType": {
+        "fragment": "enum AudioSessionType {\n  \"auto\",\n  \"playback\",\n  \"transient\",\n  \"transient-solo\",\n  \"ambient\",\n  \"play-and-record\"\n};",
+        "type": "enum",
+        "name": "AudioSessionType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessiontype-auto"
+          },
+          {
+            "type": "enum-value",
+            "value": "playback",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessiontype-playback"
+          },
+          {
+            "type": "enum-value",
+            "value": "transient",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessiontype-transient"
+          },
+          {
+            "type": "enum-value",
+            "value": "transient-solo",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessiontype-transient-solo"
+          },
+          {
+            "type": "enum-value",
+            "value": "ambient",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessiontype-ambient"
+          },
+          {
+            "type": "enum-value",
+            "value": "play-and-record",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessiontype-play-and-record"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/audio-session/#enumdef-audiosessiontype"
+      },
+      "AudioSessionState": {
+        "fragment": "enum AudioSessionState {\n  \"inactive\",\n  \"active\",\n  \"interrupted\"\n};",
+        "type": "enum",
+        "name": "AudioSessionState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "inactive",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessionstate-inactive"
+          },
+          {
+            "type": "enum-value",
+            "value": "active",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessionstate-active"
+          },
+          {
+            "type": "enum-value",
+            "value": "interrupted",
+            "href": "https://w3c.github.io/audio-session/#dom-audiosessionstate-interrupted"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/audio-session/#enumdef-audiosessionstate"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Navigator {\n  // The default audio session that the user agent will use when media elements start/stop playing.\n  readonly attribute AudioSession audioSession;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "audioSession",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AudioSession"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/audio-session/#dom-navigator-audiosession"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AudioSession",
+        "Navigator"
+      ]
+    },
+    "dependencies": {
+      "AudioSession": [
+        "EventTarget",
+        "AudioSessionType",
+        "AudioSessionState",
+        "EventHandler"
+      ],
+      "Navigator": [
+        "AudioSession"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

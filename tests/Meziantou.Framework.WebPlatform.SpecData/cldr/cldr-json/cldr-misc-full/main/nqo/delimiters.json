@@ -1,0 +1,15 @@
+{
+  "main": {
+    "nqo": {
+      "identity": {
+        "language": "nqo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

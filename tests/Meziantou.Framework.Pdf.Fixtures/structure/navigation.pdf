@@ -1,0 +1,126 @@
+%PDF-1.7
+% ò¤ô
+% Outlines (nested, closed, styled), links to URIs and to destinations, named destinations of the
+% /Dests dictionary (PDF 1.1) and of the /Dests name tree (PDF 1.2)
+1 0 obj <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /Outlines 6 0 R
+  /Dests 15 0 R
+  /Names << /Dests 12 0 R >>
+  /PageMode /UseOutlines
+>>
+endobj
+2 0 obj <<
+  /Type /Pages
+  /Kids [3 0 R 4 0 R]
+  /Count 2
+  /MediaBox [0 0 612 792]
+>>
+endobj
+3 0 obj <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources << >>
+  /Annots [10 0 R 11 0 R 13 0 R]
+>>
+endobj
+4 0 obj <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources << >>
+>>
+endobj
+6 0 obj <<
+  /Type /Outlines
+  /First 7 0 R
+  /Last 9 0 R
+  /Count 2
+>>
+endobj
+7 0 obj <<
+  /Title (Chapter 1)
+  /Parent 6 0 R
+  /Next 9 0 R
+  /First 8 0 R
+  /Last 8 0 R
+  /Count -1
+  /Dest [3 0 R /XYZ 0 792 null]
+>>
+endobj
+8 0 obj <<
+  /Title <FEFF00530065006300740069006F006E00200031002E0031>
+  /Parent 7 0 R
+  /A << /S /GoTo /D (Named) >>
+>>
+endobj
+9 0 obj <<
+  /Title (Chapter 2)
+  /Parent 6 0 R
+  /Prev 7 0 R
+  /Dest /Legacy
+  /C [0 0 1]
+  /F 3
+>>
+endobj
+10 0 obj <<
+  /Type /Annot
+  /Subtype /Link
+  /Rect [72 700 200 720]
+  /Border [0 0 0]
+  /A << /S /URI /URI (https://example.com/a?b=c) >>
+>>
+endobj
+11 0 obj <<
+  /Type /Annot
+  /Subtype /Link
+  /Rect [72 650 200 670]
+  /Dest (Named)
+>>
+endobj
+12 0 obj <<
+  /Kids [14 0 R]
+>>
+endobj
+13 0 obj <<
+  /Type /Annot
+  /Subtype /Text
+  /Rect [300 700 320 720]
+  /Contents (A note)
+>>
+endobj
+14 0 obj <<
+  /Limits [(A) (Z)]
+  /Names [(A) [3 0 R /Fit] (Named) [4 0 R /FitH 500]]
+>>
+endobj
+15 0 obj <<
+  /Legacy [4 0 R /Fit]
+>>
+endobj
+xref
+0 16
+0000000000 65535 f 
+0000000181 00000 n 
+0000000322 00000 n 
+0000000417 00000 n 
+0000000520 00000 n 
+0000000000 65535 f 
+0000000590 00000 n 
+0000000669 00000 n 
+0000000814 00000 n 
+0000000942 00000 n 
+0000001050 00000 n 
+0000001199 00000 n 
+0000001294 00000 n 
+0000001333 00000 n 
+0000001434 00000 n 
+0000001530 00000 n 
+
+trailer <<
+  /Root 1 0 R
+  /Size 16
+>>
+startxref
+1575
+%%EOF

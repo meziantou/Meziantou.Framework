@@ -2,6 +2,7 @@ name: retry-ci
 on:
   workflow_run:
     workflows:
+      - ci
       - publish
     types:
       - completed

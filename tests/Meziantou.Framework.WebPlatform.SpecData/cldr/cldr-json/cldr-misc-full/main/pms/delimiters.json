@@ -1,0 +1,15 @@
+{
+  "main": {
+    "pms": {
+      "identity": {
+        "language": "pms"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

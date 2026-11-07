@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Formats values with named cultures -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.HumanReadable.Tests</RootNamespace>
   </PropertyGroup>

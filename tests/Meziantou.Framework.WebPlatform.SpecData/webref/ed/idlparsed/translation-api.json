@@ -1,0 +1,969 @@
+{
+  "spec": {
+    "title": "Translator and Language Detector APIs",
+    "url": "https://webmachinelearning.github.io/translation-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Translator",
+          "LanguageDetector"
+        ]
+      }
+    },
+    "idlNames": {
+      "Translator": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface Translator {\n  static Promise<Translator> create(TranslatorCreateOptions options);\n  static Promise<Availability> availability(TranslatorCreateCoreOptions options);\n\n  Promise<DOMString> translate(\n    DOMString input,\n    optional TranslatorTranslateOptions options = {}\n  );\n  ReadableStream translateStreaming(\n    DOMString input,\n    optional TranslatorTranslateOptions options = {}\n  );\n\n  readonly attribute DOMString sourceLanguage;\n  readonly attribute DOMString targetLanguage;\n\n  Promise<double> measureInputUsage(\n    DOMString input,\n    optional TranslatorTranslateOptions options = {}\n  );\n  readonly attribute unrestricted double inputQuota;\n};",
+        "type": "interface",
+        "name": "Translator",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Translator"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TranslatorCreateOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-create"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TranslatorCreateCoreOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-availability"
+          },
+          {
+            "type": "operation",
+            "name": "translate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TranslatorTranslateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-translate"
+          },
+          {
+            "type": "operation",
+            "name": "translateStreaming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TranslatorTranslateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-translatestreaming"
+          },
+          {
+            "type": "attribute",
+            "name": "sourceLanguage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-sourcelanguage"
+          },
+          {
+            "type": "attribute",
+            "name": "targetLanguage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-targetlanguage"
+          },
+          {
+            "type": "operation",
+            "name": "measureInputUsage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TranslatorTranslateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-measureinputusage"
+          },
+          {
+            "type": "attribute",
+            "name": "inputQuota",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translator-inputquota"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#translator"
+      },
+      "TranslatorCreateCoreOptions": {
+        "fragment": "dictionary TranslatorCreateCoreOptions {\n  required DOMString sourceLanguage;\n  required DOMString targetLanguage;\n};",
+        "type": "dictionary",
+        "name": "TranslatorCreateCoreOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sourceLanguage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translatorcreatecoreoptions-sourcelanguage"
+          },
+          {
+            "type": "field",
+            "name": "targetLanguage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translatorcreatecoreoptions-targetlanguage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#dictdef-translatorcreatecoreoptions"
+      },
+      "TranslatorCreateOptions": {
+        "fragment": "dictionary TranslatorCreateOptions : TranslatorCreateCoreOptions {\n  AbortSignal signal;\n  CreateMonitorCallback monitor;\n};",
+        "type": "dictionary",
+        "name": "TranslatorCreateOptions",
+        "inheritance": "TranslatorCreateCoreOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translatorcreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitorCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translatorcreateoptions-monitor"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#dictdef-translatorcreateoptions"
+      },
+      "TranslatorTranslateOptions": {
+        "fragment": "dictionary TranslatorTranslateOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "TranslatorTranslateOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-translatortranslateoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#dictdef-translatortranslateoptions"
+      },
+      "LanguageDetector": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface LanguageDetector {\n  static Promise<LanguageDetector> create(\n    optional LanguageDetectorCreateOptions options = {}\n  );\n  static Promise<Availability> availability(\n    optional LanguageDetectorCreateCoreOptions options = {}\n  );\n\n  Promise<sequence<LanguageDetectionResult>> detect(\n    DOMString input,\n    optional LanguageDetectorDetectOptions options = {}\n  );\n\n  readonly attribute FrozenArray<DOMString>? expectedInputLanguages;\n\n  Promise<double> measureInputUsage(\n    DOMString input,\n    optional LanguageDetectorDetectOptions options = {}\n  );\n  readonly attribute unrestricted double inputQuota;\n};",
+        "type": "interface",
+        "name": "LanguageDetector",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageDetector"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageDetectorCreateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetector-create"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageDetectorCreateCoreOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetector-availability"
+          },
+          {
+            "type": "operation",
+            "name": "detect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "LanguageDetectionResult"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageDetectorDetectOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetector-detect"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedInputLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetector-expectedinputlanguages"
+          },
+          {
+            "type": "operation",
+            "name": "measureInputUsage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageDetectorDetectOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetector-measureinputusage"
+          },
+          {
+            "type": "attribute",
+            "name": "inputQuota",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetector-inputquota"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#languagedetector"
+      },
+      "LanguageDetectorCreateCoreOptions": {
+        "fragment": "dictionary LanguageDetectorCreateCoreOptions {\n  sequence<DOMString> expectedInputLanguages;\n};",
+        "type": "dictionary",
+        "name": "LanguageDetectorCreateCoreOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "expectedInputLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetectorcreatecoreoptions-expectedinputlanguages"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#dictdef-languagedetectorcreatecoreoptions"
+      },
+      "LanguageDetectorCreateOptions": {
+        "fragment": "dictionary LanguageDetectorCreateOptions : LanguageDetectorCreateCoreOptions {\n  AbortSignal signal;\n  CreateMonitorCallback monitor;\n};",
+        "type": "dictionary",
+        "name": "LanguageDetectorCreateOptions",
+        "inheritance": "LanguageDetectorCreateCoreOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetectorcreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitorCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetectorcreateoptions-monitor"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#dictdef-languagedetectorcreateoptions"
+      },
+      "LanguageDetectorDetectOptions": {
+        "fragment": "dictionary LanguageDetectorDetectOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "LanguageDetectorDetectOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetectordetectoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#dictdef-languagedetectordetectoptions"
+      },
+      "LanguageDetectionResult": {
+        "fragment": "dictionary LanguageDetectionResult {\n  DOMString detectedLanguage;\n  double confidence;\n};",
+        "type": "dictionary",
+        "name": "LanguageDetectionResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "detectedLanguage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetectionresult-detectedlanguage"
+          },
+          {
+            "type": "field",
+            "name": "confidence",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/translation-api/#dom-languagedetectionresult-confidence"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/translation-api/#dictdef-languagedetectionresult"
+      }
+    },
+    "idlExtendedNames": {
+      "Translator": [
+        {
+          "fragment": "Translator includes DestroyableModel;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Translator",
+          "includes": "DestroyableModel"
+        }
+      ],
+      "LanguageDetector": [
+        {
+          "fragment": "LanguageDetector includes DestroyableModel;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "LanguageDetector",
+          "includes": "DestroyableModel"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Translator",
+        "LanguageDetector"
+      ]
+    },
+    "dependencies": {
+      "Translator": [
+        "Translator",
+        "TranslatorCreateOptions",
+        "Availability",
+        "TranslatorCreateCoreOptions",
+        "TranslatorTranslateOptions",
+        "ReadableStream",
+        "DestroyableModel"
+      ],
+      "TranslatorCreateCoreOptions": [],
+      "TranslatorCreateOptions": [
+        "TranslatorCreateCoreOptions",
+        "AbortSignal",
+        "CreateMonitorCallback"
+      ],
+      "TranslatorTranslateOptions": [
+        "AbortSignal"
+      ],
+      "LanguageDetector": [
+        "LanguageDetector",
+        "LanguageDetectorCreateOptions",
+        "Availability",
+        "LanguageDetectorCreateCoreOptions",
+        "LanguageDetectionResult",
+        "LanguageDetectorDetectOptions",
+        "DestroyableModel"
+      ],
+      "LanguageDetectorCreateCoreOptions": [],
+      "LanguageDetectorCreateOptions": [
+        "LanguageDetectorCreateCoreOptions",
+        "AbortSignal",
+        "CreateMonitorCallback"
+      ],
+      "LanguageDetectorDetectOptions": [
+        "AbortSignal"
+      ],
+      "LanguageDetectionResult": []
+    },
+    "externalDependencies": [
+      "Availability",
+      "ReadableStream",
+      "AbortSignal",
+      "CreateMonitorCallback"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

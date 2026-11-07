@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Text;
@@ -29,9 +28,18 @@ public static class Utf8Extensions
 
         public bool MoveNext()
         {
-            var operationStatus = Rune.DecodeFromUtf8(_remaining, out _current, out var bytesConsumed);
+            if (_remaining.IsEmpty)
+            {
+                _current = default;
+                return false;
+            }
+
+            // Invalid and incomplete sequences decode to Rune.ReplacementChar with the number of bytes
+            // to skip, so enumeration continues instead of silently truncating the rest of the input.
+            // This matches MemoryExtensions.EnumerateRunes.
+            Rune.DecodeFromUtf8(_remaining, out _current, out var bytesConsumed);
             _remaining = _remaining[bytesConsumed..];
-            return operationStatus is OperationStatus.Done;
+            return true;
         }
     }
 }

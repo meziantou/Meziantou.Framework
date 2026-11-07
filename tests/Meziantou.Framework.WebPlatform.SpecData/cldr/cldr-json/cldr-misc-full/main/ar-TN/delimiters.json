@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-TN": {
+      "identity": {
+        "language": "ar",
+        "territory": "TN"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

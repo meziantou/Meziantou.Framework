@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-BE": {
+      "identity": {
+        "language": "fr",
+        "territory": "BE"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

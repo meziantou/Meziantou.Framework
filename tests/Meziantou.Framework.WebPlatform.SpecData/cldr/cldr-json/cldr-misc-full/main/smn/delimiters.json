@@ -1,0 +1,15 @@
+{
+  "main": {
+    "smn": {
+      "identity": {
+        "language": "smn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

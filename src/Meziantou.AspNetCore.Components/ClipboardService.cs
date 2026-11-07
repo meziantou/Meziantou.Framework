@@ -1,4 +1,3 @@
-using Meziantou.AspNetCore.Components.Internals;
 using Microsoft.JSInterop;
 
 namespace Meziantou.AspNetCore.Components;
@@ -11,11 +10,12 @@ namespace Meziantou.AspNetCore.Components;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
-/// // In Program.cs or Startup.cs
+/// Register the service in <c>Program.cs</c>:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Program.cs" ref:region="ClipboardService_Registration" ref:dedent="true">
 /// builder.Services.AddClipboard();
-///
-/// // In a component
+/// </code>
+/// Use it in a component:
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Examples/ClipboardServiceExample.razor">
 /// @inject ClipboardService ClipboardService
 ///
 /// &lt;button @onclick="CopyToClipboard"&gt;Copy&lt;/button&gt;
@@ -54,8 +54,15 @@ public sealed class ClipboardService
     /// <param name="text">The text to write to the clipboard.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="JSException">
+    /// The browser refused the write. This happens in a non-secure (non-HTTPS) context, when the clipboard permission
+    /// is denied, or when the call does not originate from a user gesture. The failure is reported rather than
+    /// swallowed so the caller does not report success for a copy that never happened.
+    /// </exception>
     public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
     {
-        return _jsRuntime.SafeInvokeVoidAsync("navigator.clipboard.writeText", cancellationToken, text);
+#pragma warning disable BL0016 // Unguarded JS interop call
+        return _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", cancellationToken, text);
+#pragma warning restore BL0016 // Unguarded JS interop call
     }
 }

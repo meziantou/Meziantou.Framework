@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ksb": {
+      "identity": {
+        "language": "ksb"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

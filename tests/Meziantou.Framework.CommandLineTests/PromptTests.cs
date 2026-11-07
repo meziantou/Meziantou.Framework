@@ -1,6 +1,8 @@
 namespace Meziantou.Framework.CommandLineTests;
 
-[Collection("PromptTests")]
+// UsingConsole redirects Console.In and Console.Out, which are process-wide, so no test of this class can run
+// beside another test.
+[TestClass(DisableParallelization = true)]
 public class PromptTests
 {
     [Fact]
@@ -53,6 +55,28 @@ public class PromptTests
         });
         Assert.Equal(0, output.IndexOf("test?", StringComparison.Ordinal));
         Assert.True(output.LastIndexOf("test?", StringComparison.Ordinal) >= 0);
+    }
+
+    [Fact]
+    public void YesNo_ShouldThrowWhenInputIsClosedAndNoDefaultValue()
+    {
+        Assert.Throws<EndOfStreamException>(() => UsingConsole("", () => Prompt.YesNo("test?", defaultValue: null)));
+    }
+
+    [Fact]
+    public void YesNo_ShouldThrowWhenInputIsClosedAfterAnInvalidValue()
+    {
+        Assert.Throws<EndOfStreamException>(() => UsingConsole("maybe\r\n", () => Prompt.YesNo("test?", "Yes", "No", defaultValue: null)));
+    }
+
+    [Fact]
+    public void YesNo_ShouldUseDefaultValueWhenInputIsClosed()
+    {
+        UsingConsole("", () =>
+        {
+            var result = Prompt.YesNo("test?", defaultValue: true);
+            Assert.True(result);
+        });
     }
 
     private static string UsingConsole(string input, Action action)

@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[Rendition]			Table 277 and Table 282
+S	name	1.5		TRUE	FALSE	FALSE		[MR]			
+N	string-text	1.5		FALSE	FALSE	FALSE					https://github.com/pdf-association/pdf-issues/issues/214
+MH	dictionary	1.5		FALSE	FALSE	FALSE				[RenditionMH]	
+BE	dictionary	1.5		FALSE	FALSE	FALSE				[RenditionBE]	
+C	dictionary	1.5		FALSE	FALSE	FALSE				[MediaClipSection,MediaClipData]	
+P	dictionary	1.5		fn:IsRequired(fn:Not(fn:IsPresent(C)))	FALSE	FALSE				[MediaPlayParameters]	
+SP	dictionary	1.5		FALSE	FALSE	FALSE				[MediaScreenParameters]	

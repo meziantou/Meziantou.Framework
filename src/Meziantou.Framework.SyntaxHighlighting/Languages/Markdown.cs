@@ -17,11 +17,16 @@ internal static class Markdown
         var linkText = new Mode { Scope = "string", Begin = "\\[", End = "\\]", ExcludeBegin = true, ReturnEnd = true };
         var linkUrl = new Mode { Scope = "link", Begin = "\\]\\(", End = "\\)", ExcludeBegin = true, ExcludeEnd = true };
         var linkRef = new Mode { Scope = "symbol", Begin = "\\]\\[", End = "\\]", ExcludeBegin = true, ExcludeEnd = true };
-        var referenceLink = new Mode { Begin = "\\[.+?\\]\\[.*?\\]" };
-        var safeUrlLink = new Mode { Begin = "\\[.+?\\]\\(((data|javascript|mailto):|(?:http|ftp)s?:\\/\\/).*?\\)" };
-        var schemeUrlLink = new Mode { Begin = "\\[.+?\\]\\([A-Za-z][A-Za-z0-9+.-]*:\\/\\/.*?\\)" };
-        var relativeUrlLink = new Mode { Begin = "\\[.+?\\]\\([./?&#].*?\\)" };
-        var anyUrlLink = new Mode { Begin = "\\[.*?\\]\\(.*?\\)" };
+        // For each of these links, if the first `]` + `[`/`(` (with its scheme) after a `[` is not followed
+        // by the closing bracket on the same line, no later one is. So the atomic groups stop at the
+        // first candidate, and only the first `[` of a line (or after the scan start) may start a match:
+        // if it fails, every later `[` of the line fails too.
+        const string FirstBracketOfLine = "\\[(?<=(?:\\G|^)[^\\[\\n]*\\[)";
+        var referenceLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\[).*?\\]" };
+        var safeUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\(((data|javascript|mailto):|(?:http|ftp)s?:\\/\\/)).*?\\)" };
+        var schemeUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\([A-Za-z][A-Za-z0-9+.-]*:\\/\\/).*?\\)" };
+        var relativeUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\([./?&#]).*?\\)" };
+        var anyUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.*?\\]\\().*?\\)" };
         var strong = new Mode { Scope = "strong" };
         var strongInner = new Mode { Scope = "emphasis" };
         var emphasisStar = new Mode { Begin = "\\*(?![*\\s])", End = "\\*" };
@@ -36,10 +41,13 @@ internal static class Markdown
         var listBullet = new Mode { Scope = "bullet", Begin = "^[ \t]*([*+-]|(\\d+\\.))(?=\\s+)", End = "\\s+", ExcludeEnd = true };
         var blockquote = new Mode { Scope = "quote", Begin = "^>\\s+", End = "$" };
         var code = new Mode { Scope = "code" };
-        var fencedCodeBacktick = new Mode { Begin = "(`{3,})[^`](.|\\n)*?\\1`*[ ]*" };
-        var fencedCodeTilde = new Mode { Begin = "(~{3,})[^~](.|\\n)*?\\1~*[ ]*" };
-        var fencedCodeBacktickAlt = new Mode { Begin = "```", End = "```+[ ]*$" };
-        var fencedCodeTildeAlt = new Mode { Begin = "~~~", End = "~~~+[ ]*$" };
+        // A fence is limited to 64 characters: from each position of a longer run, the opening fence would
+        // rescan the rest of the run. Only the first character of a run may start a closing fence: the
+        // later ones would end at the same place.
+        var fencedCodeBacktick = new Mode { Begin = "((?>`{3,64}))[^`](.|\\n)*?\\1`*[ ]*" };
+        var fencedCodeTilde = new Mode { Begin = "((?>~{3,64}))[^~](.|\\n)*?\\1~*[ ]*" };
+        var fencedCodeBacktickAlt = new Mode { Begin = "```", End = "(?:\\G|(?<!`))```+[ ]*$" };
+        var fencedCodeTildeAlt = new Mode { Begin = "~~~", End = "(?:\\G|(?<!~))~~~+[ ]*$" };
         var inlineCode = new Mode { Begin = "`.+?`" };
         var indentedCode = new Mode { Begin = "(?=^( {4}|\\t))" };
         var indentedCodeBlock = new Mode { Begin = "^( {4}|\\t)", End = "(\\n)$" };

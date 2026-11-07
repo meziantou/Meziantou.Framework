@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	name	1.5	2.0	FALSE	FALSE	FALSE		[Add,Delete,FillIn,Import,Export,SubmitStandalone,SpawnTemplate,BarcodePlaintext,Online]			Table 258, Form cell

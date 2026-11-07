@@ -1,0 +1,256 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_clip_cull_distance Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_clip_cull_distance/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_clip_cull_distance"
+        ],
+        "Worker": [
+          "WEBGL_clip_cull_distance"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_clip_cull_distance": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_clip_cull_distance {\n  const GLenum MAX_CLIP_DISTANCES_WEBGL                   = 0x0D32;\n  const GLenum MAX_CULL_DISTANCES_WEBGL                   = 0x82F9;\n  const GLenum MAX_COMBINED_CLIP_AND_CULL_DISTANCES_WEBGL = 0x82FA;\n\n  const GLenum CLIP_DISTANCE0_WEBGL                       = 0x3000;\n  const GLenum CLIP_DISTANCE1_WEBGL                       = 0x3001;\n  const GLenum CLIP_DISTANCE2_WEBGL                       = 0x3002;\n  const GLenum CLIP_DISTANCE3_WEBGL                       = 0x3003;\n  const GLenum CLIP_DISTANCE4_WEBGL                       = 0x3004;\n  const GLenum CLIP_DISTANCE5_WEBGL                       = 0x3005;\n  const GLenum CLIP_DISTANCE6_WEBGL                       = 0x3006;\n  const GLenum CLIP_DISTANCE7_WEBGL                       = 0x3007;\n};",
+        "type": "interface",
+        "name": "WEBGL_clip_cull_distance",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "MAX_CLIP_DISTANCES_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x0D32"
+            }
+          },
+          {
+            "type": "const",
+            "name": "MAX_CULL_DISTANCES_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x82F9"
+            }
+          },
+          {
+            "type": "const",
+            "name": "MAX_COMBINED_CLIP_AND_CULL_DISTANCES_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x82FA"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE0_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3000"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE1_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3001"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE2_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3002"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE3_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3003"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE4_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3004"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE5_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3005"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE6_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3006"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DISTANCE7_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x3007"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_clip_cull_distance"
+      ],
+      "Worker": [
+        "WEBGL_clip_cull_distance"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_clip_cull_distance": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

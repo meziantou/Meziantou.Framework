@@ -59,6 +59,30 @@ public sealed class ImmutableEquatableDictionaryTests
     }
 
     [Fact]
+    public void ToImmutableEquatableDictionary_FromEmptyTuples_ShouldReturnEmpty()
+    {
+        var empty = Array.Empty<(string, int)>().ToImmutableEquatableDictionary();
+
+        Assert.Same(ImmutableEquatableDictionary<string, int>.Empty, empty);
+    }
+
+    [Fact]
+    public void ToImmutableEquatableDictionary_WithKeySelector_FromEmptyCollection_ShouldReturnEmpty()
+    {
+        var empty = new List<string>().ToImmutableEquatableDictionary(s => s[0]);
+
+        Assert.Same(ImmutableEquatableDictionary<char, string>.Empty, empty);
+    }
+
+    [Fact]
+    public void ToImmutableEquatableDictionary_WithKeyAndValueSelectors_FromEmptyCollection_ShouldReturnEmpty()
+    {
+        var empty = Array.Empty<string>().ToImmutableEquatableDictionary(s => s[0], s => s.Length);
+
+        Assert.Same(ImmutableEquatableDictionary<char, int>.Empty, empty);
+    }
+
+    [Fact]
     public void ToImmutableEquatableDictionary_WithKeySelector_ShouldCreateDictionary()
     {
         var values = new[] { "apple", "banana", "cherry" };
@@ -172,14 +196,26 @@ public sealed class ImmutableEquatableDictionaryTests
     }
 
     [Fact]
+    public void Equals_NullValues_ShouldNotThrow()
+    {
+        var dict1 = new[] { ("a", (string)null!), ("b", "value") }.ToImmutableEquatableDictionary();
+        var dict2 = new[] { ("a", (string)null!), ("b", "value") }.ToImmutableEquatableDictionary();
+        var dict3 = new[] { ("a", "value"), ("b", "value") }.ToImmutableEquatableDictionary();
+
+        Assert.True(dict1.Equals(dict2));
+        Assert.False(dict1.Equals(dict3));
+        Assert.False(dict3.Equals(dict1));
+    }
+
+    [Fact]
     public void Equals_WithNull_ShouldReturnFalse()
     {
         var dict = new[] { ("a", 1) }.ToImmutableEquatableDictionary();
 
         Assert.False(dict.Equals(null));
+#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.False(dict == null);
         Assert.False(null == dict);
-#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.True(dict != null);
         Assert.True(null != dict);
 #pragma warning restore MFAS0007
@@ -212,6 +248,16 @@ public sealed class ImmutableEquatableDictionaryTests
         var dict2 = new[] { ("a", 1), ("b", 2) }.ToImmutableEquatableDictionary();
 
         Assert.NotEqual(dict1.GetHashCode(), dict2.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_SameCountDifferentContent_ShouldReturnDifferentValues()
+    {
+        var keyHashCodes = Enumerable.Range(0, 100).Select(i => new[] { (i, 0) }.ToImmutableEquatableDictionary().GetHashCode()).Distinct().Count();
+        var valueHashCodes = Enumerable.Range(0, 100).Select(i => new[] { (0, i) }.ToImmutableEquatableDictionary().GetHashCode()).Distinct().Count();
+
+        Assert.True(keyHashCodes > 90);
+        Assert.True(valueHashCodes > 90);
     }
 
     [Fact]
@@ -265,9 +311,9 @@ public sealed class ImmutableEquatableDictionaryTests
         var dict = new[] { ("a", 1) }.ToImmutableEquatableDictionary();
         var idict = (IDictionary<string, int>)dict;
 
-        Assert.Throws<InvalidOperationException>(() => idict.Add("b", 2));
-        Assert.Throws<InvalidOperationException>(() => idict.Remove("a"));
-        Assert.Throws<InvalidOperationException>(() => idict["a"] = 2);
+        Assert.Throws<NotSupportedException>(() => idict.Add("b", 2));
+        Assert.Throws<NotSupportedException>(() => idict.Remove("a"));
+        Assert.Throws<NotSupportedException>(() => idict["a"] = 2);
     }
 
     [Fact]
@@ -276,9 +322,9 @@ public sealed class ImmutableEquatableDictionaryTests
         var dict = new[] { ("a", 1) }.ToImmutableEquatableDictionary();
         var icoll = (ICollection<KeyValuePair<string, int>>)dict;
 
-        Assert.Throws<InvalidOperationException>(() => icoll.Add(new KeyValuePair<string, int>("b", 2)));
-        Assert.Throws<InvalidOperationException>(() => icoll.Remove(new KeyValuePair<string, int>("a", 1)));
-        Assert.Throws<InvalidOperationException>(() => icoll.Clear());
+        Assert.Throws<NotSupportedException>(() => icoll.Add(new KeyValuePair<string, int>("b", 2)));
+        Assert.Throws<NotSupportedException>(() => icoll.Remove(new KeyValuePair<string, int>("a", 1)));
+        Assert.Throws<NotSupportedException>(() => icoll.Clear());
     }
 
     [Fact]
@@ -287,10 +333,10 @@ public sealed class ImmutableEquatableDictionaryTests
         var dict = new[] { ("a", 1) }.ToImmutableEquatableDictionary();
         var idict = (System.Collections.IDictionary)dict;
 
-        Assert.Throws<InvalidOperationException>(() => idict.Add("b", 2));
-        Assert.Throws<InvalidOperationException>(() => idict.Remove("a"));
-        Assert.Throws<InvalidOperationException>(() => idict.Clear());
-        Assert.Throws<InvalidOperationException>(() => idict["a"] = 2);
+        Assert.Throws<NotSupportedException>(() => idict.Add("b", 2));
+        Assert.Throws<NotSupportedException>(() => idict.Remove("a"));
+        Assert.Throws<NotSupportedException>(() => idict.Clear());
+        Assert.Throws<NotSupportedException>(() => idict["a"] = 2);
     }
 
     [Fact]

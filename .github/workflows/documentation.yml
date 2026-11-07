@@ -1,0 +1,116 @@
+name: Documentation
+
+# The API pages are generated from the packages of the checked-out commit, so the site is rebuilt on every push to
+# main. Pull requests only build it when the documentation or its build changes.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'docgen.json'
+      - 'dotnet-tools.json'
+      - '.github/actions/pack/**'
+      - '.github/workflows/documentation.yml'
+
+# On main, a newer run replaces the site anyway, so an older one is cancelled instead of deploying after it
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build_documentation:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    env:
+      # Analyzers run in the run_analyzers job of ci.yml
+      RunAnalyzers: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      # Packs every package, as publish.yml does, in the folder docgen.json reads them from. The packages on nuget.org
+      # can be behind main until the next version bump, and a page using a new member would fail. The versions keep
+      # no -build-<commit> suffix on pull requests, so the pages show the versions of the project files.
+      - name: Build and pack
+        uses: $/.github/actions/pack
+        with:
+          project: eng/packages.proj
+          output: artifacts/package/release
+          build-version-suffix: "false"
+      - name: Restore tools
+        run: dotnet tool restore
+      # Generates the site in artifacts/docs. Broken links and invalid pages are errors; the warnings are about the XML
+      # documentation of the packages and of their references, so they do not fail the build. Only the site deployed
+      # from main is minified: minification slows the build, and pull requests only check the site builds.
+      - name: Build documentation
+        run: dotnet Meziantou.DocumentationGenerator build --site-minify-html ${{ github.ref == 'refs/heads/main' }}
+      - parallel:
+          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+            with:
+              name: documentation
+              path: artifacts/docs
+              if-no-files-found: error
+          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+            if: always()
+            with:
+              name: binlog
+              if-no-files-found: warn
+              retention-days: 3
+              path: '*.binlog'
+
+  publish_documentation:
+    if: github.ref == 'refs/heads/main'
+    needs: build_documentation
+    runs-on: ubuntu-26.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: documentation
+          path: artifacts/docs
+      # deploy-pages fails when several artifacts of the run have the name it deploys, so each attempt and each deploy
+      # uses its own name. Otherwise, re-running the job fails because the artifact of the previous attempt remains.
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          name: github-pages-${{ github.run_attempt }}
+          path: artifacts/docs
+      # GitHub Pages sometimes keeps a deployment queued or syncing for more than 10 minutes, the maximum timeout of
+      # deploy-pages, which then cancels it. A second deployment usually succeeds.
+      - name: Deploy to GitHub Pages
+        id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+      - if: steps.deployment.outcome == 'failure'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          name: github-pages-${{ github.run_attempt }}-retry
+          path: artifacts/docs
+      - name: Deploy to GitHub Pages (retry)
+        id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}-retry

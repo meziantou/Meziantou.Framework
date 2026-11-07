@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE Id >-21474836482

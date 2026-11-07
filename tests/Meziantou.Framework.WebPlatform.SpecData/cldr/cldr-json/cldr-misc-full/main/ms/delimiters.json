@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ms": {
+      "identity": {
+        "language": "ms"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

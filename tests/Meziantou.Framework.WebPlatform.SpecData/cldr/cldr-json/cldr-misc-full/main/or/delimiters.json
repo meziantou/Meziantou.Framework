@@ -1,0 +1,15 @@
+{
+  "main": {
+    "or": {
+      "identity": {
+        "language": "or"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

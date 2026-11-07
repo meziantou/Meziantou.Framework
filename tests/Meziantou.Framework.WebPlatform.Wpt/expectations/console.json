@@ -1,0 +1,59 @@
+{
+  "console/console-count-logging.html": {
+    "total": 1
+  },
+  "console/console-countReset-logging.html": {
+    "total": 1
+  },
+  "console/console-is-a-namespace.any.js": {
+    "total": 4
+  },
+  "console/console-is-a-namespace.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "console/console-label-conversion.any.js": {
+    "total": 10
+  },
+  "console/console-label-conversion.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "console/console-log-large-array.any.js": {
+    "total": 1
+  },
+  "console/console-log-large-array.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "console/console-log-symbol.any.js": {
+    "total": 1
+  },
+  "console/console-log-symbol.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "console/console-namespace-object-class-string.any.js": {
+    "total": 4
+  },
+  "console/console-namespace-object-class-string.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "console/console-number-format-specifiers-symbol.html": {
+    "total": 1
+  },
+  "console/console-tests-historical.any.js": {
+    "total": 3
+  },
+  "console/console-tests-historical.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "console/console-timing-logging.html": {
+    "total": 1
+  },
+  "console/console-timing-missing-label-warnings.tentative.html": {
+    "total": 1
+  },
+  "console/idlharness.any.js": {
+    "total": 28
+  },
+  "console/idlharness.any.js#dedicatedworker": {
+    "total": 28
+  }
+}

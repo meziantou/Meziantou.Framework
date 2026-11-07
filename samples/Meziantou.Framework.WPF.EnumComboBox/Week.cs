@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Meziantou.Framework.WPF.EnumComboBox;
 
+#region LocalizedEnumValuesExtension_Enum
 public enum Week
 {
     [Display(ResourceType = typeof(TestEnumResources), Name = "TestEnum_First")]
@@ -19,3 +20,4 @@ public enum Week
     [Display(ResourceType = typeof(TestEnumResources), Name = "TestEnum_Last")]
     Last,
 }
+#endregion

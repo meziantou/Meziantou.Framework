@@ -1,0 +1,17 @@
+{
+  "main": {
+    "zh-Hant-MY": {
+      "identity": {
+        "language": "zh",
+        "script": "Hant",
+        "territory": "MY"
+      },
+      "delimiters": {
+        "quotationStart": "「",
+        "quotationEnd": "」",
+        "alternateQuotationStart": "『",
+        "alternateQuotationEnd": "』"
+      }
+    }
+  }
+}

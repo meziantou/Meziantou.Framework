@@ -1,0 +1,13 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+
+    <!-- The sources are shipped as content files, so warnings are disabled by default. Enable them here to validate the sources. -->
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS</DefineConstants>
+
+    <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
+  </PropertyGroup>
+</Project>

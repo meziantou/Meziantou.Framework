@@ -1,4 +1,4 @@
-using System.Collections;
+using System.Collections.Frozen;
 using System.Security.Cryptography;
 using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
@@ -16,7 +16,39 @@ internal static class DnssecCanonicalizer
         if (string.IsNullOrEmpty(name) || name is ".")
             return "";
 
-        return name.TrimEnd('.').ToLowerInvariant();
+        var span = name.AsSpan();
+        if (DnsName.EndsWithUnescapedDot(span))
+        {
+            span = span[..^1];
+        }
+
+        return span.IsEmpty ? "" : ToLowerAscii(span);
+    }
+
+    /// <summary>Downcases A-Z only. DNS case folding is ASCII-only (RFC 4343); culture-aware casing would be wrong.</summary>
+    private static string ToLowerAscii(ReadOnlySpan<char> value)
+    {
+        var needsLowering = false;
+        foreach (var c in value)
+        {
+            if (c is >= 'A' and <= 'Z')
+            {
+                needsLowering = true;
+                break;
+            }
+        }
+
+        if (!needsLowering)
+            return value.ToString();
+
+        return string.Create(value.Length, value, static (destination, source) =>
+        {
+            for (var i = 0; i < source.Length; i++)
+            {
+                var c = source[i];
+                destination[i] = c is >= 'A' and <= 'Z' ? (char)(c + ('a' - 'A')) : c;
+            }
+        });
     }
 
     public static string ToDisplayName(string name)
@@ -58,14 +90,16 @@ internal static class DnssecCanonicalizer
         var writer = new DnsWireWriter(1024);
         WriteRrsigCoveredFields(ref writer, signature);
 
+        // RFC 4034 6.3: RRs are sorted by their canonical RDATA alone, treated as a left-justified unsigned octet
+        // sequence. Sorting by the full canonical RR would order by RDLENGTH first and produce a different sequence.
         var records = rrset
-            .Select(record => GetCanonicalRecordData(record, signature))
-            .Order(ByteArrayComparer.Instance)
+            .Select(record => (RData: GetCanonicalRData(record), Full: GetCanonicalRecordData(record, signature)))
+            .OrderBy(record => record.RData, ByteArrayComparer.Instance)
             .ToArray();
 
         foreach (var record in records)
         {
-            writer.WriteBytes(record);
+            writer.WriteBytes(record.Full);
         }
 
         return writer.ToArray();
@@ -108,11 +142,44 @@ internal static class DnssecCanonicalizer
         return digestType is 1 or 2 or 4;
     }
 
+    /// <summary>
+    /// The record types whose embedded domain names must be downcased in canonical form, per RFC 4034 section 6.2 as
+    /// amended by RFC 6840 section 5.1 (which removes NSEC's Next Domain Name from the list). Every other type's RDATA
+    /// is used verbatim, which is why newer types such as SVCB/HTTPS (RFC 9460) must not appear here.
+    /// </summary>
+    private static readonly FrozenSet<DnsQueryType> DowncasedRdataTypes = new[]
+    {
+        DnsQueryType.NS, DnsQueryType.CNAME, DnsQueryType.SOA, DnsQueryType.PTR, DnsQueryType.MX,
+        DnsQueryType.RP, DnsQueryType.NAPTR, DnsQueryType.SRV, DnsQueryType.DNAME, DnsQueryType.RRSIG,
+    }.ToFrozenSet();
+
     public static byte[] GetCanonicalRData(DnsRecord record)
     {
+        // Prefer the bytes as they arrived on the wire. Re-encoding from the parsed fields is lossy for any RDATA
+        // holding octets that the parser decoded as text (a CAA value or NAPTR regexp with a non-ASCII byte, say),
+        // and a single differing byte turns a legitimately signed RRset into a Bogus verdict.
+        if (record.RawData.Length > 0 && !DowncasedRdataTypes.Contains(record.RecordType))
+            return record.RawData;
+
         var writer = new DnsWireWriter(Math.Max(record.DataLength, (ushort)32));
         WriteCanonicalRData(ref writer, record);
         return writer.ToArray();
+    }
+
+    /// <summary>Returns the longest sequence of trailing labels the two names have in common.</summary>
+    public static string GetLongestCommonSuffix(string left, string right)
+    {
+        var leftLabels = DnsNameComparer.SplitLabels(NormalizeName(left));
+        var rightLabels = DnsNameComparer.SplitLabels(NormalizeName(right));
+
+        var count = 0;
+        while (count < leftLabels.Length && count < rightLabels.Length
+            && DnsNameComparer.CompareLabels(leftLabels[^(count + 1)], rightLabels[^(count + 1)]) is 0)
+        {
+            count++;
+        }
+
+        return count is 0 ? "" : string.Join('.', leftLabels[^count..]);
     }
 
     public static bool NsecCovers(string ownerName, string nextName, string name)
@@ -140,7 +207,14 @@ internal static class DnssecCanonicalizer
 
         var owner = GetCanonicalDomainNameBytes(name);
         var salt = record.Salt.AsSpan();
-        Span<byte> buffer = stackalloc byte[owner.Length + salt.Length];
+
+        // owner is bounded by DnsName.MaxLength and salt by a wire length byte, but size the buffer defensively
+        // rather than from parsed input: a stack overflow cannot be caught and would kill the process.
+        if (owner.Length > DnsName.MaxLength || salt.Length > 255)
+            return [];
+
+        Span<byte> buffer = stackalloc byte[DnsName.MaxLength + 255];
+        buffer = buffer[..(owner.Length + salt.Length)];
         owner.CopyTo(buffer);
         salt.CopyTo(buffer[owner.Length..]);
 #pragma warning disable CA5350 // NSEC3 hash algorithm 1 is SHA-1 by specification.
@@ -504,13 +578,12 @@ internal static class DnssecCanonicalizer
 
     private static string[] GetLabels(string name)
     {
-        var normalized = NormalizeName(name);
-        return normalized.Length is 0 ? [] : normalized.Split('.');
+        return DnsNameComparer.SplitLabels(NormalizeName(name));
     }
 
     private static int CompareCanonicalLabels(string left, string right)
     {
-        return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+        return DnsNameComparer.CompareLabels(left, right);
     }
 
     private sealed class ByteArrayComparer : IComparer<byte[]>
@@ -528,7 +601,9 @@ internal static class DnssecCanonicalizer
             if (y is null)
                 return 1;
 
-            return StructuralComparisons.StructuralComparer.Compare(x, y);
+            // RFC 4034 6.3 orders canonical RRs octet-wise, shorter-first on a common prefix.
+            // StructuralComparer cannot be used here: it throws when the arrays differ in length.
+            return x.AsSpan().SequenceCompareTo(y);
         }
     }
 }

@@ -1,0 +1,387 @@
+{
+  "spec": {
+    "title": "CSS Painting API Level 1",
+    "url": "https://drafts.css-houdini.org/css-paint-api-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "PaintWorklet": [
+          "PaintWorkletGlobalScope",
+          "PaintRenderingContext2D",
+          "PaintSize"
+        ]
+      }
+    },
+    "idlNames": {
+      "PaintWorkletGlobalScope": {
+        "fragment": "[Global=(Worklet,PaintWorklet),Exposed=PaintWorklet]\ninterface PaintWorkletGlobalScope : WorkletGlobalScope {\n    undefined registerPaint(DOMString name, VoidFunction paintCtor);\n    readonly attribute unrestricted double devicePixelRatio;\n};",
+        "type": "interface",
+        "name": "PaintWorkletGlobalScope",
+        "inheritance": "WorkletGlobalScope",
+        "members": [
+          {
+            "type": "operation",
+            "name": "registerPaint",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "paintCtor",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "VoidFunction"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.css-houdini.org/css-paint-api-1/#dom-paintworkletglobalscope-registerpaint"
+          },
+          {
+            "type": "attribute",
+            "name": "devicePixelRatio",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-paint-api-1/#dom-paintworkletglobalscope-devicepixelratio"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Global",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worklet"
+                },
+                {
+                  "value": "PaintWorklet"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "PaintWorklet"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-paint-api-1/#paintworkletglobalscope"
+      },
+      "PaintRenderingContext2DSettings": {
+        "fragment": "dictionary PaintRenderingContext2DSettings {\n    boolean alpha = true;\n};",
+        "type": "dictionary",
+        "name": "PaintRenderingContext2DSettings",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "alpha",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://drafts.css-houdini.org/css-paint-api-1/#dom-paintrenderingcontext2dsettings-alpha"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-paint-api-1/#dictdef-paintrenderingcontext2dsettings"
+      },
+      "PaintRenderingContext2D": {
+        "fragment": "[Exposed=PaintWorklet]\ninterface PaintRenderingContext2D {\n};",
+        "type": "interface",
+        "name": "PaintRenderingContext2D",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "PaintWorklet"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-paint-api-1/#paintrenderingcontext2d"
+      },
+      "PaintSize": {
+        "fragment": "[Exposed=PaintWorklet]\ninterface PaintSize {\n    readonly attribute double width;\n    readonly attribute double height;\n};",
+        "type": "interface",
+        "name": "PaintSize",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-paint-api-1/#dom-paintsize-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-paint-api-1/#dom-paintsize-height"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "PaintWorklet"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-paint-api-1/#paintsize"
+      }
+    },
+    "idlExtendedNames": {
+      "CSS": [
+        {
+          "fragment": "partial namespace CSS {\n    [SameObject] readonly attribute Worklet paintWorklet;\n};",
+          "type": "namespace",
+          "name": "CSS",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "paintWorklet",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Worklet"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.css-houdini.org/css-paint-api-1/#dom-css-paintworklet"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "PaintRenderingContext2D": [
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasState;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasState"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasTransform;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasTransform"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasCompositing;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasCompositing"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasImageSmoothing;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasImageSmoothing"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasFillStrokeStyles;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasFillStrokeStyles"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasShadowStyles;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasShadowStyles"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasRect;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasRect"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasDrawPath;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasDrawPath"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasDrawImage;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasDrawImage"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasPathDrawingStyles;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasPathDrawingStyles"
+        },
+        {
+          "fragment": "PaintRenderingContext2D includes CanvasPath;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PaintRenderingContext2D",
+          "includes": "CanvasPath"
+        }
+      ]
+    },
+    "globals": {
+      "Worklet": [
+        "PaintWorkletGlobalScope"
+      ],
+      "PaintWorklet": [
+        "PaintWorkletGlobalScope"
+      ]
+    },
+    "exposed": {
+      "PaintWorklet": [
+        "PaintWorkletGlobalScope",
+        "PaintRenderingContext2D",
+        "PaintSize"
+      ]
+    },
+    "dependencies": {
+      "CSS": [
+        "Worklet"
+      ],
+      "PaintWorkletGlobalScope": [
+        "WorkletGlobalScope",
+        "VoidFunction"
+      ],
+      "PaintRenderingContext2DSettings": [],
+      "PaintRenderingContext2D": [
+        "CanvasState",
+        "CanvasTransform",
+        "CanvasCompositing",
+        "CanvasImageSmoothing",
+        "CanvasFillStrokeStyles",
+        "CanvasShadowStyles",
+        "CanvasRect",
+        "CanvasDrawPath",
+        "CanvasDrawImage",
+        "CanvasPathDrawingStyles",
+        "CanvasPath"
+      ],
+      "PaintSize": []
+    },
+    "externalDependencies": [
+      "CSS",
+      "Worklet",
+      "WorkletGlobalScope",
+      "VoidFunction"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

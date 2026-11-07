@@ -165,4 +165,22 @@ public sealed class SkipListTests
 
         Assert.Equal([3, 2, 1], list.ToArray());
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region SkipList_Usage
+        var tags = new SkipList<string>(StringComparer.OrdinalIgnoreCase);
+        Assert.True(tags.Add("beta"));
+        Assert.True(tags.Add("alpha"));
+
+        // Values are unique for the comparer
+        Assert.False(tags.Add("ALPHA"));
+        Assert.Equal(["alpha", "beta"], tags);
+
+        // Get the stored value that is equal to another one
+        Assert.True(tags.TryGetValue("BETA", out var stored));
+        Assert.Equal("beta", stored);
+        #endregion
+    }
 }

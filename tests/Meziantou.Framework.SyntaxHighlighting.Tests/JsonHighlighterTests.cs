@@ -1,3 +1,4 @@
+#pragma warning disable MA0243 // Tab characters in raw string literals are part of the test input
 namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class JsonHighlighterTests
@@ -918,6 +919,18 @@ null
 """,
 """
 <span class="hljs-literal"><span class="hljs-keyword">null</span></span>
+""");
+    }
+
+    [Fact]
+    public void Illegal_KeyAfterBackslash_IsAString()
+    {
+        AssertHighlighter("json",
+"""
+\"a":1
+""",
+"""
+\<span class="hljs-string">&quot;a&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-number">1</span>
 """);
     }
 }

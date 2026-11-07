@@ -19,14 +19,7 @@ public readonly struct CountingBloomFilterSize
 
     public static CountingBloomFilterSize CreateOptimalSize(long expectedItemCount, double falsePositiveProbability)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(expectedItemCount);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(falsePositiveProbability);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(falsePositiveProbability, 1);
-
-        const double Ln2 = 0.6931471805599453d; // Math.Log(2)
-        var counterCount = (long)Math.Ceiling(-expectedItemCount * Math.Log(falsePositiveProbability) / (Ln2 * Ln2));
-        var hashCount = (int)Math.Ceiling((double)counterCount / expectedItemCount * Ln2);
-
+        var (counterCount, hashCount) = BloomFilterSize.GetOptimalSize(expectedItemCount, falsePositiveProbability);
         return new CountingBloomFilterSize(counterCount, hashCount);
     }
 

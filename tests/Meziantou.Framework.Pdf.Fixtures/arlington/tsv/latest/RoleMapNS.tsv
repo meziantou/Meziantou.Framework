@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	array;name	2.0		FALSE	FALSE	FALSE				[ArrayOf_RoleMapNS];[]	Table 356

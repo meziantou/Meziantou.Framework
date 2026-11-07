@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Http;
 /// </summary>
 public sealed class LinkHeaderValue
 {
-    private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '=', ';', ','];
+    private static ReadOnlySpan<char> WhiteSpaceCharacters => [' ', '\t', '\r', '\n'];
+    private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '\r', '\n', '=', ';', ','];
 
     /// <summary>Gets the URL of the link.</summary>
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
@@ -17,7 +18,7 @@ public sealed class LinkHeaderValue
     /// <summary>Gets the relation type (rel parameter) of the link.</summary>
     public string Rel => GetParameterValue("rel") ?? "";
 
-    /// <summary>Gets the value of a parameter by name.</summary>
+    /// <summary>Gets the value of a parameter by name. The comparison is case-insensitive.</summary>
     /// <param name="parameterName">The name of the parameter.</param>
     /// <returns>The parameter value, or <see langword="null"/> if the parameter is not found.</returns>
     public string? GetParameterValue(string parameterName)
@@ -25,7 +26,7 @@ public sealed class LinkHeaderValue
         var parameters = Parameters;
         for (var i = 0; i < parameters.Count; i++)
         {
-            if (parameters[i].Key == parameterName)
+            if (string.Equals(parameters[i].Key, parameterName, StringComparison.OrdinalIgnoreCase))
                 return parameters[i].Value;
         }
 
@@ -49,13 +50,20 @@ public sealed class LinkHeaderValue
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     // https://httpwg.org/specs/rfc8288.html
     // https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3
-    public static IEnumerable<LinkHeaderValue> Parse(HttpResponseMessage httpResponse) => Parse(httpResponse.Headers);
+    public static IEnumerable<LinkHeaderValue> Parse(HttpResponseMessage httpResponse)
+    {
+        ArgumentNullException.ThrowIfNull(httpResponse);
+
+        return Parse(httpResponse.Headers);
+    }
 
     /// <summary>Parses Link header values from HTTP headers.</summary>
     /// <param name="headers">The HTTP headers containing Link header values.</param>
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(HttpHeaders headers)
     {
+        ArgumentNullException.ThrowIfNull(headers);
+
         if (!headers.TryGetValues("Link", out var values))
             return [];
 
@@ -65,7 +73,12 @@ public sealed class LinkHeaderValue
     /// <summary>Parses a Link header value from a string.</summary>
     /// <param name="value">The Link header value to parse.</param>
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
-    public static IEnumerable<LinkHeaderValue> Parse(string value) => Parse(value.AsSpan());
+    public static IEnumerable<LinkHeaderValue> Parse(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        return Parse(value.AsSpan());
+    }
 
     /// <summary>Parses a Link header value from a character span.</summary>
     /// <param name="value">The Link header value to parse.</param>
@@ -80,15 +93,27 @@ public sealed class LinkHeaderValue
                 break;
 
             if (value[0] is not '<')
-                break;
+            {
+                // Not a link-value. Ignore it and resume at the next one rather than dropping the rest
+                // of the header: RFC 7230 section 7 requires empty list elements to be ignored.
+                value = SkipToNextLinkValue(value);
+                continue;
+            }
 
             // Remove the first '<'
             value = value[1..];
-            var index = value.IndexOf('>');
-            if (index == -1)
-                break;
 
-            var targetLink = value[..index].ToString();
+            // A URI-Reference cannot contain '<', so one appearing before the closing '>' means the
+            // current link-value is unterminated and that '<' starts the next one. Commas are legal
+            // inside a URI, so they cannot be used to delimit the target here.
+            var index = value.IndexOfAny('>', '<');
+            if (index == -1 || value[index] is '<')
+            {
+                value = SkipToNextLinkValue(value);
+                continue;
+            }
+
+            var targetLink = value[..index].Trim().ToString();
             value = value[(index + 1)..];
 
             // Parse parameters
@@ -192,18 +217,25 @@ public sealed class LinkHeaderValue
                         index = value.IndexOfAny(';', ',');
                         if (index == -1)
                         {
-                            parameterValue = value.ToString();
+                            // Trim the trailing whitespace: an unquoted value is terminated by the next
+                            // ';' or ',', and RFC 7230 allows optional whitespace before that separator.
+                            parameterValue = value.Trim().ToString();
                             value = [];
                         }
                         else
                         {
-                            parameterValue = value[0..index].ToString();
+                            parameterValue = value[0..index].Trim().ToString();
                             value = value[index..];
                         }
                     }
                 }
 
-                parameters.Add(KeyValuePair.Create(ToLowerInvariantString(parameterName), parameterValue));
+                // A separator right after ';' yields no name at all (";;" or ";=value"). Skip it rather
+                // than recording a phantom parameter that callers enumerating Parameters would see.
+                if (!parameterName.IsEmpty)
+                {
+                    parameters.Add(KeyValuePair.Create(ToLowerInvariantString(parameterName), parameterValue));
+                }
 
                 value = ConsumeOptionalWhiteSpaces(value);
             }
@@ -220,8 +252,40 @@ public sealed class LinkHeaderValue
 
         static ReadOnlySpan<char> ConsumeOptionalWhiteSpaces(ReadOnlySpan<char> value)
         {
-            var index = value.IndexOfAnyExcept(' ', '\t');
+            var index = value.IndexOfAnyExcept(WhiteSpaceCharacters);
             return index == -1 ? [] : value[index..];
+        }
+
+        // Resumes after the next ',' that is not inside a quoted string, so a malformed link-value
+        // only discards itself instead of everything that follows it.
+        static ReadOnlySpan<char> SkipToNextLinkValue(ReadOnlySpan<char> value)
+        {
+            var inQuotes = false;
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (inQuotes)
+                {
+                    if (c is '\\')
+                    {
+                        i++;
+                    }
+                    else if (c is '"')
+                    {
+                        inQuotes = false;
+                    }
+                }
+                else if (c is '"')
+                {
+                    inQuotes = true;
+                }
+                else if (c is ',')
+                {
+                    return value[(i + 1)..];
+                }
+            }
+
+            return [];
         }
     }
 

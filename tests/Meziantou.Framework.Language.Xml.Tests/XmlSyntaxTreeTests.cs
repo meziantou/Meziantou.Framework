@@ -1,10 +1,209 @@
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.XPath;
 
 namespace Meziantou.Framework.Language.Xml.Tests;
 
 public sealed class XmlSyntaxTreeTests
 {
+    [Fact]
+    public void ReadmeExample_Overview()
+    {
+        #region XmlSyntaxTree_Overview
+        const string Xml = "<root><item version='1.0.0' /></root>";
+
+        var tree = XmlSyntaxTree.ParseText(Xml);
+
+        // The text comes back exactly as it went in.
+        Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
+
+        // Find a node with XPath, and edit it without touching anything else.
+        var updated = tree.GetRoot().ReplaceNode("//item/@version", node => ((XmlAttributeSyntax)node).WithValue("2.0.0"));
+
+        Assert.Equal("<root><item version='2.0.0' /></root>", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Tokens()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><item version='1.0.0' /></root>");
+
+        #region XmlSyntaxTree_Tokens
+        var attribute = (XmlAttributeSyntax)tree.GetRoot().SelectSingleSyntaxNode("//item/@version")!;
+
+        Assert.Equal("version", attribute.NameToken.Text);
+        Assert.Equal("'", attribute.StartQuoteToken.Text);
+        Assert.Equal("1.0.0", attribute.ValueToken.Text);
+        Assert.Equal("1.0.0", attribute.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Trivia()
+    {
+        #region XmlSyntaxTree_Trivia
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <book id = '1' />\n</root>");
+        var book = (XmlEmptyElementSyntax)tree.GetRoot().SelectSingleSyntaxNode("//book")!;
+
+        Assert.Equal(" ", book.Attributes[0].NameToken.LeadingTrivia.ToFullString());
+        Assert.Equal(" ", book.Attributes[0].EqualsToken.LeadingTrivia.ToFullString());
+
+        var root = (XmlElementSyntax)tree.GetRoot().Nodes[0];
+        Assert.Equal("\n  ", ((XmlTextSyntax)root.Content[0]).Text);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Editing()
+    {
+        #region XmlSyntaxTree_Editing
+        var tree = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>");
+        var root = (XmlElementSyntax)tree.GetRoot().Nodes[0];
+        var b = root.Content.OfType<XmlElementSyntax>().Single(element => element.Name == "b");
+
+        XmlDocumentSyntax updated = tree.GetRoot().ReplaceNode(b, b.WithInnerText("two"));
+
+        Assert.Equal("<root><a>1</a><b>two</b></root>", updated.ToFullString());
+
+        // <a> was not touched, so it is the very same node.
+        Assert.True(root.Content[0].IsIncrementallyIdenticalTo(((XmlElementSyntax)updated.Nodes[0]).Content[0]));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_XPathWithNamespaces()
+    {
+        #region XmlSyntaxTree_XPathWithNamespaces
+        var tree = XmlSyntaxTree.ParseText("<root xmlns:pkg='urn:test'><pkg:item pkg:version='1.0.0' /></root>");
+        var namespaces = new XmlNamespaceManager(new NameTable());
+        namespaces.AddNamespace("pkg", "urn:test");
+
+        var item = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item", namespaces);
+        var version = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item/@pkg:version", namespaces);
+
+        Assert.IsType<XmlEmptyElementSyntax>(item);
+        Assert.Equal("1.0.0", ((XmlAttributeSyntax)version!).Value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Annotations()
+    {
+        #region XmlSyntaxTree_Annotations
+        var root = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>").GetRoot();
+        var a = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "a");
+
+        var marker = new SyntaxAnnotation();
+        var marked = root.ReplaceNode(a, a.WithAdditionalAnnotations(marker));
+
+        // Something else entirely: replace <b>, which rebuilds the path from <b> up to the root
+        var b = marked.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "b");
+        var edited = marked.ReplaceNode(b, b.WithInnerText("two"));
+
+        var found = edited.GetAnnotatedNodes(marker).Single();
+        Assert.Equal("<a>1</a>", found.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Diagnostics()
+    {
+        #region XmlSyntaxTree_Diagnostics
+        var messages = new List<string>();
+        foreach (var diagnostic in XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>").GetDiagnostics())
+        {
+            var line = diagnostic.Location.GetLineSpan().Start;
+            messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+        }
+
+        Assert.Equal(["XML0001 (1,2): Missing end tag for 'item'."], messages);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Walker()
+    {
+        #region XmlSyntaxTree_WalkerUsage
+        var counter = new ElementCounter();
+        counter.Visit(XmlSyntaxTree.ParseText("<root><a><b></b></a><c /></root>").GetRoot());
+
+        // <c /> is an XmlEmptyElementSyntax, so VisitElement does not count it
+        Assert.Equal(3, counter.Count);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EditingByText()
+    {
+        #region XmlSyntaxTree_EditingByText
+        var tree = XmlSyntaxTree.ParseText("<root><a /></root>");
+        var updated = tree.WithChanges(new TextChange(new TextSpan(6, 5), "<b />"));
+
+        Assert.Equal("<root><b /></root>", updated.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Values()
+    {
+        #region XmlSyntaxTree_Values
+        var root = XmlSyntaxTree.ParseText("<note title='Tom &amp; Jerry'>1 &lt; 2</note>").GetRoot();
+        var note = (XmlElementSyntax)root.Nodes[0];
+        var title = note.GetAttribute("title")!;
+
+        // The text as written, and the value an XML processor reads
+        Assert.Equal("Tom &amp; Jerry", title.ValueToken.Text);
+        Assert.Equal("Tom & Jerry", title.Value);
+        Assert.Equal("1 < 2", ((XmlTextSyntax)note.Content[0]).Value);
+
+        // WithValue escapes what it has to
+        var updated = root.ReplaceNode(title, title.WithValue("Tom & Jerry's"));
+        Assert.Equal("<note title='Tom &amp; Jerry&apos;s'>1 &lt; 2</note>", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SelectSyntaxNodes()
+    {
+        #region XmlSyntaxTree_SelectSyntaxNodes
+        var root = XmlSyntaxTree.ParseText("""
+            <Project>
+              <ItemGroup>
+                <PackageReference Include="Meziantou.Framework.Language.Xml" Version="4.0.0" />
+                <PackageReference Include="Meziantou.Framework.Language.Json" Version="4.0.0" />
+              </ItemGroup>
+            </Project>
+            """).GetRoot();
+
+        var packages = new List<string>();
+        foreach (var node in root.SelectSyntaxNodes("//PackageReference/@Include"))
+        {
+            packages.Add(((XmlAttributeSyntax)node).Value);
+        }
+
+        Assert.Equal(["Meziantou.Framework.Language.Xml", "Meziantou.Framework.Language.Json"], packages);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_LanguageDiagnostics()
+    {
+        #region Language_Diagnostics
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>");
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("XML0001 at (1,2)-(1,8): Missing end tag for 'item'.", $"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
+
+        var lineSpan = diagnostic.Location.GetLineSpan();
+        Assert.Equal(1, lineSpan.Start.Line);      // zero-based
+        Assert.Equal(2, lineSpan.Start.Character); // zero-based
+
+        // The location is bound to the tree's own text
+        Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripSamples => new()
     {
         "<?xml version=\"1.0\"?><root xmlns='urn:default' xmlns:a='urn:attr'><a:item id='1'>value</a:item><!--comment--><![CDATA[data]]></root>",
@@ -30,8 +229,31 @@ public sealed class XmlSyntaxTreeTests
         const string Text = "<?xml version=\"1.0\"?><root attr=\"value\"><child>sample</child><!--c--><![CDATA[data]]></root>";
         var tree = XmlSyntaxTree.ParseText(Text);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void WithChanges_DocumentationExample()
+    {
+        #region XmlSyntaxTree_WithChanges
+        var tree = XmlSyntaxTree.ParseText("<root />");
+        var updated = tree.WithChanges(new TextChange(new TextSpan(0, 0), "<!--generated-->"));
+        Assert.Equal("<!--generated--><root />", updated.GetText().Text);
+        #endregion
+    }
+
+    [Fact]
+    public void TextChange_DocumentationExample()
+    {
+        #region TextChange_WithChanges
+        var tree = XmlSyntaxTree.ParseText("<version>1.0.0</version>");
+
+        // Replace the 5 characters starting at offset 9 ("1.0.0")
+        var change = new TextChange(new TextSpan(9, 5), "2.0.0");
+        var updated = tree.WithChanges(change);
+        Assert.Equal("<version>2.0.0</version>", updated.GetText().Text);
+        #endregion
     }
 
     [Fact]
@@ -41,31 +263,56 @@ public sealed class XmlSyntaxTreeTests
         var tree = XmlSyntaxTree.ParseText("<root><child></root>");
 
         Assert.Null(exception);
-        Assert.NotEmpty(tree.Diagnostics);
-        Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "XML0001" || diagnostic.Id == "XML0002");
-        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(XmlDiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.NotEmpty(tree.GetDiagnostics());
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "XML0001" || diagnostic.Id == "XML0002");
+        Assert.All(tree.GetDiagnostics(), diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
+    }
+
+    [Fact]
+    public void Diagnostic_DocumentationExample()
+    {
+        #region Diagnostic_GetDiagnostics
+        var tree = XmlSyntaxTree.ParseText("<root><child></root>");
+
+        var messages = new List<string>();
+        foreach (var diagnostic in tree.GetDiagnostics())
+        {
+            messages.Add($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
+        }
+
+        Assert.Equal(["XML0001 at (0,6)-(0,13): Missing end tag for 'child'."], messages);
+        #endregion
     }
 
     [Fact]
     public void SyntaxFactory_CreatesNodes()
     {
-        var element = SyntaxFactory.Element(
+        var element = SyntaxFactory.XmlElement(
             "book",
-            [SyntaxFactory.Attribute("id", "42")],
-            [SyntaxFactory.Text("hello")],
-            isSelfClosing: false);
+            [SyntaxFactory.XmlAttribute("id", "42")],
+            [SyntaxFactory.XmlText("hello")]);
 
         Assert.Equal("<book id=\"42\">hello</book>", element.ToFullString());
+    }
+
+    [Fact]
+    public void SyntaxFactory_DocumentationExample()
+    {
+        #region SyntaxFactory_XmlDocument
+        var node = SyntaxFactory.XmlEmptyElement("package", [SyntaxFactory.XmlAttribute("version", "1.0.0")]);
+        var document = SyntaxFactory.XmlDocument(node);
+        Assert.Equal("<package version=\"1.0.0\" />", document.ToFullString());
+        #endregion
     }
 
     [Fact]
     public void ReplaceNode_ReplacesElement()
     {
         var tree = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>");
-        var oldNode = tree.Root.DescendantNodes().OfType<XmlElementSyntax>().First(node => node.Name == "a");
-        var replacement = SyntaxFactory.Element("a", [SyntaxFactory.Text("updated")]);
+        var oldNode = tree.GetRoot().DescendantNodes().OfType<XmlElementSyntax>().First(node => node.Name == "a");
+        var replacement = SyntaxFactory.XmlElement("a", SyntaxFactory.XmlText("updated"));
 
-        var updated = tree.Root.ReplaceNode(oldNode, replacement);
+        var updated = tree.GetRoot().ReplaceNode(oldNode, replacement);
 
         Assert.Equal("<root><a>updated</a><b>2</b></root>", updated.ToFullString());
     }
@@ -74,10 +321,10 @@ public sealed class XmlSyntaxTreeTests
     public void ReplaceNode_ReplacesExactInstance_WhenNodeTextIsDuplicated()
     {
         var tree = XmlSyntaxTree.ParseText("<root><a>1</a><a>1</a></root>");
-        var oldNode = tree.Root.DescendantNodes().OfType<XmlElementSyntax>().Where(node => node.Name == "a").Skip(1).First();
+        var oldNode = tree.GetRoot().DescendantNodes().OfType<XmlElementSyntax>().Where(node => node.Name == "a").Skip(1).First();
         var replacement = oldNode.WithInnerText("2");
 
-        var updated = tree.Root.ReplaceNode(oldNode, replacement);
+        var updated = tree.GetRoot().ReplaceNode(oldNode, replacement);
 
         Assert.Equal("<root><a>1</a><a>2</a></root>", updated.ToFullString());
     }
@@ -88,19 +335,32 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText(text);
 
-        Assert.Equal(text, tree.Root.ToFullString());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
     }
 
     [Theory]
     [InlineData("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n<root />")]
-    [InlineData("<?xml version=\"1.0\" standalone=\"yes\" encoding=\"UTF-8\" ?>\n<root />")]
     [InlineData("<?xml version=\"1.0\"\n encoding=\"UTF-8\"\n standalone=\"yes\" ?>\n<root />")]
     public void Parse_Save_RoundTripsXmlDeclarationVariants(string text)
     {
         var tree = XmlSyntaxTree.ParseText(text);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Equal(text, tree.Root.ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    /// <summary>The declaration fixes the order of its pseudo-attributes, but one written out of order still round-trips.</summary>
+    [Fact]
+    public void Parse_Save_RoundTripsAnXmlDeclarationWrittenOutOfOrder()
+    {
+        const string Text = "<?xml version=\"1.0\" standalone=\"yes\" encoding=\"UTF-8\" ?>\n<root />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("XML0013", diagnostic.Id);
+        AssertSpan(Text.IndexOf("encoding", StringComparison.Ordinal), "encoding".Length, diagnostic.Location.SourceSpan);
+        Assert.Equal("UTF-8", Assert.IsType<XmlDeclarationSyntax>(tree.GetRoot().Nodes[0]).Encoding);
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
     }
 
     [Fact]
@@ -108,9 +368,9 @@ public sealed class XmlSyntaxTreeTests
     {
         const string Text = "<?xml version = '1.0' ?>\n<root />";
         var tree = XmlSyntaxTree.ParseText(Text);
-        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.Root.ChildNodes[0]);
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.GetRoot().Nodes[0]);
 
-        var updated = tree.Root.ReplaceNode(declaration, declaration.WithVersion("2.0"));
+        var updated = tree.GetRoot().ReplaceNode(declaration, declaration.WithVersion("2.0"));
 
         Assert.Equal("<?xml version = '2.0' ?>\n<root />", updated.ToFullString());
     }
@@ -120,9 +380,9 @@ public sealed class XmlSyntaxTreeTests
     {
         const string Text = "<?xml version=\"1.0\" standalone=\"yes\" encoding=\"UTF-8\" ?>\n<root />";
         var tree = XmlSyntaxTree.ParseText(Text);
-        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.Root.ChildNodes[0]);
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.GetRoot().Nodes[0]);
 
-        var updated = tree.Root.ReplaceNode(declaration, declaration.WithVersion("2.0"));
+        var updated = tree.GetRoot().ReplaceNode(declaration, declaration.WithVersion("2.0"));
 
         Assert.Equal("<?xml version=\"2.0\" standalone=\"yes\" encoding=\"UTF-8\" ?>\n<root />", updated.ToFullString());
     }
@@ -132,12 +392,12 @@ public sealed class XmlSyntaxTreeTests
     {
         const string Text = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n<root />";
         var tree = XmlSyntaxTree.ParseText(Text);
-        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.Root.ChildNodes[0]);
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.GetRoot().Nodes[0]);
         var versionAttribute = Assert.IsType<XmlAttributeSyntax>(declaration.VersionAttribute);
 
-        var updated = tree.Root.ReplaceNode(
+        var updated = tree.GetRoot().ReplaceNode(
             versionAttribute,
-            versionAttribute.WithLeadingTrivia([SyntaxFactory.Trivia(XmlSyntaxKind.WhitespaceTrivia, "  ")]));
+            versionAttribute.WithLeadingTrivia([SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, "  ")]));
 
         Assert.Equal("<?xml  version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n<root />", updated.ToFullString());
     }
@@ -151,7 +411,7 @@ public sealed class XmlSyntaxTreeTests
         namespaceManager.AddNamespace("a", "urn:a");
         namespaceManager.AddNamespace("b", "urn:b");
 
-        var updated = tree.Root.ReplaceNode("//item/@b:value", namespaceManager, static node => ((XmlAttributeSyntax)node).WithValue("9"));
+        var updated = tree.GetRoot().ReplaceNode("//item/@b:value", namespaceManager, static node => ((XmlAttributeSyntax)node).WithValue("9"));
 
         Assert.Equal("<root xmlns:a='urn:a' xmlns:b='urn:b'><item a:value='1' b:value='9' value='3' /></root>", updated.ToFullString());
     }
@@ -169,7 +429,7 @@ public sealed class XmlSyntaxTreeTests
         var namespaceManager = new XmlNamespaceManager(new NameTable());
         namespaceManager.AddNamespace("d", "urn:default");
 
-        var updated = tree.Root.ReplaceNode("//d:item", namespaceManager, static node => ((XmlElementSyntax)node).WithInnerText("new-value"));
+        var updated = tree.GetRoot().ReplaceNode("//d:item", namespaceManager, static node => ((XmlElementSyntax)node).WithInnerText("new-value"));
 
         Assert.Equal(
             """
@@ -191,19 +451,221 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void Formatter_SpaceAroundEquals_SurroundsTheEqualsSignOfEachAttribute()
+    {
+        var formatted = FormatText("<root a='1'><b c='2' d='3'/></root>", new XmlFormattingOptions { SpaceAroundEquals = true });
+
+        Assert.Equal("<root a = \"1\">\n  <b c = \"2\" d = \"3\" />\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_SpaceAroundEquals_RemovesSpacesWhenFalse()
+    {
+        var formatted = FormatText("<root a = '1'><b c\t=\t'2'/></root>", new XmlFormattingOptions { SpaceAroundEquals = false });
+
+        Assert.Equal("<root a=\"1\">\n  <b c=\"2\" />\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_SpaceBeforeSelfClosingSlash_IsOnByDefault()
+    {
+        Assert.True(XmlFormattingOptions.Default.SpaceBeforeSelfClosingSlash);
+        Assert.Equal("<root>\n  <a />\n  <b c=\"1\" />\n</root>", FormatText("<root><a/><b c='1'/></root>", XmlFormattingOptions.Default));
+    }
+
+    [Fact]
+    public void Formatter_SpaceBeforeSelfClosingSlash_False_WritesTheSlashRightAfterTheTag()
+    {
+        var formatted = FormatText("<root><a /><b c='1' /></root>", new XmlFormattingOptions { SpaceBeforeSelfClosingSlash = false });
+
+        Assert.Equal("<root>\n  <a/>\n  <b c=\"1\"/>\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_AttributeWrapping_PutsEachAttributeOnItsOwnLine()
+    {
+        var formatted = FormatText("<root a='1' b='2'><c d='3'/><e f='4' g='5'/><h i='6' j='7'>text</h></root>", new XmlFormattingOptions { AttributeWrapping = true });
+
+        Assert.Equal(
+            """
+            <root
+              a="1"
+              b="2">
+              <c d="3" />
+              <e
+                f="4"
+                g="5" />
+              <h
+                i="6"
+                j="7">text</h>
+            </root>
+            """.ReplaceLineEndings("\n"),
+            formatted);
+    }
+
+    [Fact]
+    public void Formatter_AttributeWrapping_CombinesWithTheOtherOptions()
+    {
+        var options = new XmlFormattingOptions { AttributeWrapping = true, UseTabs = true, NewLine = "\r\n", SpaceAroundEquals = true, SpaceBeforeSelfClosingSlash = false };
+        var formatted = FormatText("<root><e f='4' g='5'/></root>", options);
+
+        Assert.Equal("<root>\r\n\t<e\r\n\t\tf = \"4\"\r\n\t\tg = \"5\"/>\r\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_AttributeWrapping_LeavesTagsInMixedContentOnTheirLine()
+    {
+        var formatted = FormatText("<p>Hello <b x='1' y='2'>world</b></p>", new XmlFormattingOptions { AttributeWrapping = true });
+
+        Assert.Equal("<p>Hello <b x=\"1\" y=\"2\">world</b></p>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_PreserveSingleLineElements_KeepsElementsWrittenOnOneLine()
+    {
+        const string Text = "<root>\n<a><b/><c/></a>\n<d>\n<e/></d>\n</root>";
+
+        Assert.Equal("<root>\n  <a><b /><c /></a>\n  <d>\n    <e />\n  </d>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = true }));
+        Assert.Equal("<root>\n  <a>\n    <b />\n    <c />\n  </a>\n  <d>\n    <e />\n  </d>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = false }));
+    }
+
+    [Fact]
+    public void Formatter_PreserveSingleLineElements_KeepsTheWhitespaceAndTheAttributesOfThePreservedElement()
+    {
+        const string Text = "<root>\n<a x='1' y='2'> <b/>  <c/> </a>\n</root>";
+
+        Assert.Equal("<root>\n  <a x=\"1\" y=\"2\"> <b />  <c /> </a>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = true, AttributeWrapping = true }));
+    }
+
+    [Fact]
+    public void Formatter_PreserveSingleLineElements_FindsElementsAfterSurrogatePairsAndCarriageReturns()
+    {
+        const string Text = "<root x='\U0001F600'>\r<a><b/></a>\r\n<c>\r<d/></c></root>";
+
+        Assert.Equal("<root x=\"\U0001F600\">\n  <a><b /></a>\n  <c>\n    <d />\n  </c>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = true }));
+    }
+
+    [Fact]
+    public void Formatter_ReindentsElementsThatAreAlreadyIndented()
+    {
+        const string Text = "<?xml version='1.0'?>\n<root>\n  <a>\n      <b/>\n  </a>\n  <!-- c -->\n</root>\n";
+
+        Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<root>\n    <a>\n        <b />\n    </a>\n    <!-- c -->\n</root>\n", FormatText(Text, new XmlFormattingOptions { IndentationSize = 4 }));
+    }
+
+    [Fact]
+    public void Formatter_KeepsTheFinalLineBreakWrittenWithNewLine()
+    {
+        var options = new XmlFormattingOptions { NewLine = "\r\n" };
+
+        Assert.Equal("<!--c-->\r\n<root>\r\n  <a />\r\n</root>\r\n", FormatText("\n<!--c-->\n\n<root><a/></root>\n\n", options));
+        Assert.Equal("<root />", FormatText("<root/>  ", options));
+    }
+
+    [Theory]
+    [InlineData("<p>Hello <b>a</b> <i><j/></i></p>", "<p>Hello <b>a</b> <i><j /></i></p>")]
+    [InlineData("<root><a>  </a></root>", "<root>\n  <a>  </a>\n</root>")]
+    [InlineData("<root><a xml:space='preserve'>\n<b/>\n</a></root>", "<root>\n  <a xml:space=\"preserve\">\n<b />\n</a>\n</root>")]
+    [InlineData("<root><a><![CDATA[x]]><b/></a></root>", "<root>\n  <a><![CDATA[x]]><b /></a>\n</root>")]
+    public void Formatter_KeepsWhitespaceThatCanBeSignificant(string text, string expected)
+    {
+        Assert.Equal(expected, FormatText(text, XmlFormattingOptions.Default));
+    }
+
+    [Theory]
+    [InlineData("<a x='l1&#10;l2'/>", "<a x=\"l1&#xA;l2\" />", "l1\nl2")]
+    [InlineData("<a x='l1&#13;l2'/>", "<a x=\"l1&#xD;l2\" />", "l1\rl2")]
+    [InlineData("<a x='l1&#9;l2'/>", "<a x=\"l1&#x9;l2\" />", "l1\tl2")]
+    [InlineData("<a x='&#13;&#10;' y='l1\nl2\tl3'/>", "<a x=\"&#xD;&#xA;\" y=\"l1 l2 l3\" />", "\r\n")]
+    public void Formatter_KeepsTheTabsAndLineBreaksOfAttributeValues(string text, string expected, string expectedValue)
+    {
+        var formatted = FormatText(text, XmlFormattingOptions.Default);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(expectedValue, XDocument.Parse(formatted).Root!.Attribute("x")!.Value);
+        Assert.Equal(formatted, FormatText(formatted, XmlFormattingOptions.Default));
+    }
+
+    [Theory]
+    [InlineData("<a>A&#13;</a>", "<a>A&#xD;</a>", "A\r")]
+    [InlineData("<a>l1&#13;&#10;l2</a>", "<a>l1&#xD;\nl2</a>", "l1\r\nl2")]
+    [InlineData("<a>l1\r\nl2&#xD;\rl3</a>", "<a>l1\nl2&#xD;\nl3</a>", "l1\nl2\r\nl3")]
+    [InlineData("<root><b/>&#13;x</root>", "<root><b />&#xD;x</root>", "\rx")]
+    public void Formatter_KeepsTheCarriageReturnsOfText(string text, string expected, string expectedValue)
+    {
+        var formatted = FormatText(text, XmlFormattingOptions.Default);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(expectedValue, XDocument.Parse(formatted, LoadOptions.PreserveWhitespace).Root!.Value);
+        Assert.Equal(formatted, FormatText(formatted, XmlFormattingOptions.Default));
+        Assert.Equal(formatted, FormatText(formatted, new XmlFormattingOptions { NewLine = "\r\n" }));
+    }
+
+    [Fact]
+    public void Formatter_KeepsTheLineBreaksOfAttributeValuesWithTheOtherOptions()
+    {
+        var options = new XmlFormattingOptions { NewLine = "\r\n", AttributeWrapping = true, SpaceAroundEquals = true };
+        const string Text = "<root x='l1&#10;l2'><a y='&#13;' z='&#9;'/><b>t1\nt2</b></root>";
+
+        var formatted = FormatText(Text, options);
+
+        Assert.Equal("<root x = \"l1&#xA;l2\">\r\n  <a\r\n    y = \"&#xD;\"\r\n    z = \"&#x9;\" />\r\n  <b>t1\nt2</b>\r\n</root>", formatted);
+        Assert.Equal(formatted, FormatText(formatted, options));
+    }
+
+    [Fact]
+    public void Formatter_KeepsTheLineBreaksOfTextNextToAnAttributeWithALineBreak()
+    {
+        var formatted = FormatText("<root x='&#10;'>\n<a>l1\nl2</a>\n</root>", new XmlFormattingOptions { NewLine = "\r\n" });
+
+        Assert.Equal("<root x=\"&#xA;\">\r\n  <a>l1\nl2</a>\r\n</root>", formatted);
+    }
+
+    private static string FormatText(string text, XmlFormattingOptions options) => Formatter.Format(XmlSyntaxTree.ParseText(text).GetRoot(), options).ToFullString();
+
+    [Fact]
+    public void Formatter_DocumentationExample()
+    {
+        #region Formatter_Format
+        var tree = XmlSyntaxTree.ParseText("<root><item/></root>");
+        var formatted = Formatter.Format(tree);
+        Assert.Equal("<root>\n  <item />\n</root>", formatted.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void XmlFormattingOptions_DocumentationExample()
+    {
+        #region XmlFormattingOptions_Format
+        var tree = XmlSyntaxTree.ParseText("<root><item id=\"1\"/></root>");
+        var options = new XmlFormattingOptions { IndentationSize = 4, NewLine = "\r\n", SpaceAroundEquals = true };
+        var formatted = Formatter.Format(tree.GetRoot(), options);
+        Assert.Equal("<root>\r\n    <item id = \"1\" />\r\n</root>", formatted.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void SourceText_ToStringReturnsTheText()
+    {
+        const string Text = "<root>\n  <a />\n</root>";
+
+        Assert.Equal(Text, XmlSyntaxTree.ParseText(Text).GetText().ToString());
+    }
+
+    [Fact]
     public void SourceText_ExposesLines()
     {
         var tree = XmlSyntaxTree.ParseText("<root>\n  <a />\n</root>");
 
-        Assert.HasCount(3, tree.SourceText.Lines);
-        Assert.Equal("<root>", tree.SourceText.Lines[0].Text);
+        Assert.HasCount(3, tree.GetText().Lines);
+        Assert.Equal("<root>", tree.GetText().Lines[0].Text);
     }
 
     [Fact]
     public void XPathNavigator_SelectsNodes()
     {
         var tree = XmlSyntaxTree.ParseText("<root><book id=\"1\"/><book id=\"2\"/></root>");
-        var nodes = tree.Root.SelectNodes("//book[@id='2']").ToList();
+        var nodes = tree.GetRoot().SelectNodes("//book[@id='2']").ToList();
 
         Assert.Single(nodes);
         Assert.Equal(XPathNodeType.Element, nodes[0].NodeType);
@@ -211,11 +673,22 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void XmlSyntaxNavigator_DocumentationExample()
+    {
+        #region XmlSyntaxNavigator_SelectSingleNode
+        var document = XmlSyntaxTree.ParseText("<root><item>value</item></root>").GetRoot();
+        var navigator = new XmlSyntaxNavigator(document);
+        var result = navigator.SelectSingleNode("/root/item");
+        Assert.Equal("value", result?.Value);
+        #endregion
+    }
+
+    [Fact]
     public void SelectSyntaxNodes_SelectsCommentNodes()
     {
         var tree = XmlSyntaxTree.ParseText("<root><!--first--><book id='1' /><!--second--></root>");
 
-        var comments = tree.Root.SelectSyntaxNodes("//comment()").Cast<XmlCommentSyntax>().ToList();
+        var comments = tree.GetRoot().SelectSyntaxNodes("//comment()").Cast<XmlCommentSyntax>().ToList();
 
         Assert.HasCount(2, comments);
         Assert.Equal("first", comments[0].Text);
@@ -227,7 +700,7 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText("<root><item>alpha</item><item><![CDATA[beta]]></item></root>");
 
-        var textNodes = tree.Root.SelectSyntaxNodes("//item/text()").ToList();
+        var textNodes = tree.GetRoot().SelectSyntaxNodes("//item/text()").ToList();
 
         Assert.HasCount(2, textNodes);
         Assert.Equal("alpha", Assert.IsType<XmlTextSyntax>(textNodes[0]).Text);
@@ -238,7 +711,7 @@ public sealed class XmlSyntaxTreeTests
     public void XPathNavigator_UsesSyntaxNodeAsUnderlyingObject()
     {
         var tree = XmlSyntaxTree.ParseText("<root><book version='1.0.0' /></root>");
-        var navigator = tree.Root.SelectSingleNode("//book/@version");
+        var navigator = tree.GetRoot().SelectSingleNode("//book/@version");
 
         var attribute = Assert.IsType<XmlAttributeSyntax>(navigator?.UnderlyingObject);
         Assert.Equal("version", attribute.Name);
@@ -249,7 +722,7 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText("<root><book id='1'></root>");
 
-        var node = tree.Root.SelectSingleSyntaxNode("//book/@id");
+        var node = tree.GetRoot().SelectSingleSyntaxNode("//book/@id");
 
         var attribute = Assert.IsType<XmlAttributeSyntax>(node);
         Assert.Equal("1", attribute.Value);
@@ -260,9 +733,9 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText("<root><book id=\"1\"/><book id=\"2\"/></root>");
 
-        var node = tree.Root.SelectSingleSyntaxNode("//book[@id='2']");
+        var node = tree.GetRoot().SelectSingleSyntaxNode("//book[@id='2']");
 
-        var element = Assert.IsType<XmlElementSyntax>(node);
+        var element = Assert.IsType<XmlEmptyElementSyntax>(node);
         Assert.Equal("book", element.Name);
         Assert.Equal("2", element.GetAttribute("id")?.Value);
     }
@@ -272,7 +745,7 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText("<root><book version = '1.0.0' /></root>");
 
-        var node = tree.Root.SelectSingleSyntaxNode("//book/@version");
+        var node = tree.GetRoot().SelectSingleSyntaxNode("//book/@version");
 
         var attribute = Assert.IsType<XmlAttributeSyntax>(node);
         Assert.Equal("version", attribute.Name);
@@ -285,7 +758,7 @@ public sealed class XmlSyntaxTreeTests
         const string Text = "<root>\n  <book version = '1.0.0' />\n</root>";
         var tree = XmlSyntaxTree.ParseText(Text);
 
-        var updated = tree.Root.ReplaceNode("//book/@version", static node => ((XmlAttributeSyntax)node).WithValue("2.0.0"));
+        var updated = tree.GetRoot().ReplaceNode("//book/@version", static node => ((XmlAttributeSyntax)node).WithValue("2.0.0"));
 
         Assert.Equal("<root>\n  <book version = '2.0.0' />\n</root>", updated.ToFullString());
     }
@@ -295,13 +768,13 @@ public sealed class XmlSyntaxTreeTests
     {
         const string Text = "<root>\n  <book version = '1.0.0' />\n</root>";
         var tree = XmlSyntaxTree.ParseText(Text);
-        var attribute = Assert.IsType<XmlAttributeSyntax>(tree.Root.SelectSingleSyntaxNode("//book/@version"));
-        var attributeNameToken = Assert.Single(attribute.Tokens, static token => token.Kind == XmlSyntaxKind.IdentifierToken);
-        var updatedNameToken = attributeNameToken.WithLeadingTrivia([SyntaxFactory.Trivia(XmlSyntaxKind.WhitespaceTrivia, "  ")]);
+        var attribute = Assert.IsType<XmlAttributeSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//book/@version"));
+        var updatedNameToken = attribute.NameToken.WithLeadingTrivia([SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, "  ")]);
 
-        var updated = tree.Root.ReplaceToken(attributeNameToken, updatedNameToken);
+        var updated = tree.GetRoot().ReplaceToken(attribute.NameToken, updatedNameToken);
 
-        Assert.Equal("<root>\n  <book   version = '1.0.0' />\n</root>", updated.ToFullString());
+        // The space in front of the name is that token's own trivia now, so setting the trivia replaces it.
+        Assert.Equal("<root>\n  <book  version = '1.0.0' />\n</root>", updated.ToFullString());
     }
 
     [Fact]
@@ -309,11 +782,10 @@ public sealed class XmlSyntaxTreeTests
     {
         const string Text = "<root>\n  <book version = '1.0.0' />\n</root>";
         var tree = XmlSyntaxTree.ParseText(Text);
-        var attribute = Assert.IsType<XmlAttributeSyntax>(tree.Root.SelectSingleSyntaxNode("//book/@version"));
-        var attributeNameToken = Assert.Single(attribute.Tokens, static token => token.Kind == XmlSyntaxKind.IdentifierToken);
-        var updatedNameToken = attributeNameToken.WithTrailingTrivia([SyntaxFactory.Trivia(XmlSyntaxKind.WhitespaceTrivia, " ")]);
+        var attribute = Assert.IsType<XmlAttributeSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//book/@version"));
+        var updatedNameToken = attribute.NameToken.WithTrailingTrivia([SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, " ")]);
 
-        var updated = tree.Root.ReplaceToken(attributeNameToken, updatedNameToken);
+        var updated = tree.GetRoot().ReplaceToken(attribute.NameToken, updatedNameToken);
 
         Assert.Equal("<root>\n  <book version  = '1.0.0' />\n</root>", updated.ToFullString());
     }
@@ -324,20 +796,21 @@ public sealed class XmlSyntaxTreeTests
         const string Text = "<root>\n  <book version = '1.0.0' />\n</root>";
         var tree = XmlSyntaxTree.ParseText(Text);
 
-        var updated = tree.Root.ReplaceNode("//book/@version", static node => ((XmlAttributeSyntax)node).WithLeadingTrivia([SyntaxFactory.Trivia(XmlSyntaxKind.WhitespaceTrivia, "  ")]));
+        var updated = tree.GetRoot().ReplaceNode("//book/@version", static node => node.WithLeadingTrivia(SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, "  ")));
 
-        Assert.Equal("<root>\n  <book   version = '1.0.0' />\n</root>", updated.ToFullString());
+        Assert.Equal("<root>\n  <book  version = '1.0.0' />\n</root>", updated.ToFullString());
     }
 
     [Fact]
-    public void ReplaceNode_WithTrailingTrivia_OnElementName_AdjustsSpacingBeforeFirstAttribute()
+    public void ReplaceToken_WithTrailingTrivia_OnElementName_AdjustsSpacingBeforeFirstAttribute()
     {
         const string Text = "<root><book id='1' /></root>";
         var tree = XmlSyntaxTree.ParseText(Text);
+        var element = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//book"));
 
-        var updated = tree.Root.ReplaceNode("//book", static node => ((XmlElementSyntax)node).WithTrailingTrivia([SyntaxFactory.Trivia(XmlSyntaxKind.WhitespaceTrivia, "  ")]));
+        var updated = tree.GetRoot().ReplaceToken(element.NameToken, element.NameToken.WithTrailingTrivia(SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, "  ")));
 
-        Assert.Equal("<root><book  id='1' /></root>", updated.ToFullString());
+        Assert.Equal("<root><book   id='1' /></root>", updated.ToFullString());
     }
 
     [Fact]
@@ -345,9 +818,9 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText("<root>prefix<item id=\"1\"/>suffix<item id=\"2\"/></root>");
 
-        var node = tree.Root.SelectSingleSyntaxNode("//item[@id='2']");
+        var node = tree.GetRoot().SelectSingleSyntaxNode("//item[@id='2']");
 
-        var element = Assert.IsType<XmlElementSyntax>(node);
+        var element = Assert.IsType<XmlEmptyElementSyntax>(node);
         Assert.Equal("item", element.Name);
         Assert.Equal("2", element.GetAttribute("id")?.Value);
     }
@@ -357,9 +830,9 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText("<root><item id='a'>alpha</item><item id='b'>beta</item><item id='c'>gamma</item></root>");
 
-        var byTextAndAttribute = tree.Root.SelectSingleSyntaxNode("//item[@id='a' and contains(text(),'alp')]");
-        var byPosition = tree.Root.SelectSingleSyntaxNode("/root/item[position()=2]");
-        var byNotCondition = tree.Root.SelectSingleSyntaxNode("//item[not(@id='a') and text()='beta']");
+        var byTextAndAttribute = tree.GetRoot().SelectSingleSyntaxNode("//item[@id='a' and contains(text(),'alp')]");
+        var byPosition = tree.GetRoot().SelectSingleSyntaxNode("/root/item[position()=2]");
+        var byNotCondition = tree.GetRoot().SelectSingleSyntaxNode("//item[not(@id='a') and text()='beta']");
 
         Assert.Equal("a", Assert.IsType<XmlElementSyntax>(byTextAndAttribute).GetAttribute("id")?.Value);
         Assert.Equal("b", Assert.IsType<XmlElementSyntax>(byPosition).GetAttribute("id")?.Value);
@@ -373,10 +846,10 @@ public sealed class XmlSyntaxTreeTests
         var namespaceManager = new XmlNamespaceManager(new NameTable());
         namespaceManager.AddNamespace("pkg", "urn:test");
 
-        var elementNode = tree.Root.SelectSingleSyntaxNode("//pkg:item", namespaceManager);
-        var attributeNode = tree.Root.SelectSingleSyntaxNode("//pkg:item/@pkg:version", namespaceManager);
+        var elementNode = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item", namespaceManager);
+        var attributeNode = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item/@pkg:version", namespaceManager);
 
-        var element = Assert.IsType<XmlElementSyntax>(elementNode);
+        var element = Assert.IsType<XmlEmptyElementSyntax>(elementNode);
         var attribute = Assert.IsType<XmlAttributeSyntax>(attributeNode);
         Assert.Equal("pkg:item", element.Name);
         Assert.Equal("pkg:version", attribute.Name);
@@ -389,9 +862,9 @@ public sealed class XmlSyntaxTreeTests
         var namespaceManager = new XmlNamespaceManager(new NameTable());
         namespaceManager.AddNamespace("d", "urn:default");
 
-        var node = tree.Root.SelectSingleSyntaxNode("//d:item", namespaceManager);
+        var node = tree.GetRoot().SelectSingleSyntaxNode("//d:item", namespaceManager);
 
-        var element = Assert.IsType<XmlElementSyntax>(node);
+        var element = Assert.IsType<XmlEmptyElementSyntax>(node);
         Assert.Equal("item", element.Name);
     }
 
@@ -402,7 +875,7 @@ public sealed class XmlSyntaxTreeTests
         var namespaceManager = new XmlNamespaceManager(new NameTable());
         namespaceManager.AddNamespace("pkg", "urn:test");
 
-        var node = tree.Root.SelectSingleNode("//pkg:item", namespaceManager);
+        var node = tree.GetRoot().SelectSingleNode("//pkg:item", namespaceManager);
 
         Assert.NotNull(node);
         Assert.Equal("urn:test", node.NamespaceURI);
@@ -416,12 +889,12 @@ public sealed class XmlSyntaxTreeTests
         namespaceManager.AddNamespace("a", "urn:a");
         namespaceManager.AddNamespace("b", "urn:b");
 
-        var namespacedElement = tree.Root.SelectSingleSyntaxNode("//a:item", namespaceManager);
-        var attributeInNamespaceA = tree.Root.SelectSingleSyntaxNode("//a:item/@a:value", namespaceManager);
-        var attributeInNamespaceB = tree.Root.SelectSingleSyntaxNode("//a:item/@b:value", namespaceManager);
-        var attributeWithoutNamespace = tree.Root.SelectSingleSyntaxNode("//a:item/@value", namespaceManager);
+        var namespacedElement = tree.GetRoot().SelectSingleSyntaxNode("//a:item", namespaceManager);
+        var attributeInNamespaceA = tree.GetRoot().SelectSingleSyntaxNode("//a:item/@a:value", namespaceManager);
+        var attributeInNamespaceB = tree.GetRoot().SelectSingleSyntaxNode("//a:item/@b:value", namespaceManager);
+        var attributeWithoutNamespace = tree.GetRoot().SelectSingleSyntaxNode("//a:item/@value", namespaceManager);
 
-        _ = Assert.IsType<XmlElementSyntax>(namespacedElement);
+        _ = Assert.IsType<XmlEmptyElementSyntax>(namespacedElement);
         Assert.Equal("1", Assert.IsType<XmlAttributeSyntax>(attributeInNamespaceA).Value);
         Assert.Equal("2", Assert.IsType<XmlAttributeSyntax>(attributeInNamespaceB).Value);
         Assert.Equal("0", Assert.IsType<XmlAttributeSyntax>(attributeWithoutNamespace).Value);
@@ -435,7 +908,7 @@ public sealed class XmlSyntaxTreeTests
         namespaceManager.AddNamespace("a", "urn:a");
         namespaceManager.AddNamespace("b", "urn:b");
 
-        var attributes = tree.Root.SelectSyntaxNodes("//a:item/@a:value | //a:item/@b:value", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
+        var attributes = tree.GetRoot().SelectSyntaxNodes("//a:item/@a:value | //a:item/@b:value", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
 
         Assert.HasCount(2, attributes);
         Assert.Contains(attributes, attribute => attribute.Name == "a:value" && attribute.Value == "1");
@@ -460,14 +933,14 @@ public sealed class XmlSyntaxTreeTests
         var tree = XmlSyntaxTree.ParseText(Text);
         var namespaceManager = CreateNamespaceManager();
 
-        Assert.IsType<XmlElementSyntax>(tree.Root.SelectSingleSyntaxNode("/d:root", namespaceManager));
-        Assert.IsType<XmlElementSyntax>(tree.Root.SelectSingleSyntaxNode("//d:item[@id='root-default']", namespaceManager));
-        Assert.IsType<XmlElementSyntax>(tree.Root.SelectSingleSyntaxNode("//sub:item[@id='sub-default']", namespaceManager));
-        Assert.IsType<XmlElementSyntax>(tree.Root.SelectSingleSyntaxNode("//r:item[@id='prefixed-root-ns']", namespaceManager));
-        Assert.IsType<XmlElementSyntax>(tree.Root.SelectSingleSyntaxNode("//plain[@id='sub-no-ns']", namespaceManager));
-        Assert.IsType<XmlElementSyntax>(tree.Root.SelectSingleSyntaxNode("//plain[@id='root-no-ns']", namespaceManager));
-        Assert.Null(tree.Root.SelectSingleSyntaxNode("//d:plain[@id='root-no-ns']", namespaceManager));
-        Assert.Null(tree.Root.SelectSingleSyntaxNode("//sub:plain[@id='sub-no-ns']", namespaceManager));
+        Assert.IsType<XmlElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("/d:root", namespaceManager));
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//d:item[@id='root-default']", namespaceManager));
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//sub:item[@id='sub-default']", namespaceManager));
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//r:item[@id='prefixed-root-ns']", namespaceManager));
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//plain[@id='sub-no-ns']", namespaceManager));
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//plain[@id='root-no-ns']", namespaceManager));
+        Assert.Null(tree.GetRoot().SelectSingleSyntaxNode("//d:plain[@id='root-no-ns']", namespaceManager));
+        Assert.Null(tree.GetRoot().SelectSingleSyntaxNode("//sub:plain[@id='sub-no-ns']", namespaceManager));
     }
 
     [Fact]
@@ -487,14 +960,14 @@ public sealed class XmlSyntaxTreeTests
         var tree = XmlSyntaxTree.ParseText(Text);
         var namespaceManager = CreateNamespaceManager();
 
-        var namespacedAttributes = tree.Root.SelectSyntaxNodes("//@a:flag | //@s:flag | //@r:flag", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
+        var namespacedAttributes = tree.GetRoot().SelectSyntaxNodes("//@a:flag | //@s:flag | //@r:flag", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
         Assert.HasCount(4, namespacedAttributes);
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "a:flag" && attribute.Value == "1");
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "a:flag" && attribute.Value == "3");
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "s:flag" && attribute.Value == "2");
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "r:flag" && attribute.Value == "4");
 
-        var nonNamespacedAttributes = tree.Root.SelectSyntaxNodes("//@id | //@flag", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
+        var nonNamespacedAttributes = tree.GetRoot().SelectSyntaxNodes("//@id | //@flag", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
         Assert.HasCount(5, nonNamespacedAttributes);
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "id" && attribute.Value == "root-default");
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "id" && attribute.Value == "sub-default");
@@ -502,6 +975,645 @@ public sealed class XmlSyntaxTreeTests
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "id" && attribute.Value == "root-no-ns");
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "flag" && attribute.Value == "local");
     }
+
+    [Fact]
+    public void Diagnostics_AreLocatedInTheTreesOwnSourceText()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>");
+
+        Assert.All(tree.GetDiagnostics(), diagnostic => Assert.Same(tree.GetText(), diagnostic.Location.SourceText));
+
+        // The end tag on the third line closes <root>, which leaves the <item> indented on the second unclosed.
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal(new LinePosition(1, 2), diagnostic.Location.GetLineSpan().Start);
+        Assert.Equal(new LinePosition(1, 8), diagnostic.Location.GetLineSpan().End);
+    }
+
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    public void Positions_AreAbsoluteOffsetsIntoTheSourceText(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        foreach (var node in EnumerateNodes(tree.GetRoot()))
+        {
+            Assert.Equal(node.ToFullString(), text.Substring(node.FullSpan.Start, node.FullSpan.Length));
+        }
+
+        foreach (var token in tree.GetRoot().DescendantTokens())
+        {
+            Assert.Equal(token.Text, text.Substring(token.Span.Start, token.Span.Length));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    public void ChildrenTileTheirParentExactly(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        foreach (var node in EnumerateNodes(tree.GetRoot()))
+        {
+            var position = node.FullSpan.Start;
+            foreach (var child in node.ChildNodesAndTokens())
+            {
+                Assert.Equal(position, child.FullSpan.Start);
+                position = child.FullSpan.End;
+            }
+
+            if (node.ChildNodesAndTokens().Count > 0)
+            {
+                Assert.Equal(node.FullSpan.End, position);
+            }
+        }
+    }
+
+    [Fact]
+    public void Positions_NestedElements()
+    {
+        const string Text = "<root><a>x</a></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var root = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+        var inner = Assert.IsType<XmlElementSyntax>(root.Content[0]);
+
+        AssertSpan(0, 21, root.FullSpan);
+        AssertSpan(6, 8, inner.FullSpan);
+        AssertSpan(6, 3, inner.StartTag.FullSpan);
+        AssertSpan(7, 1, inner.StartTag.NameToken.Span);
+        AssertSpan(9, 1, inner.Content[0].FullSpan);
+
+        var endTag = Assert.IsType<XmlElementEndTagSyntax>(inner.EndTag);
+        AssertSpan(10, 4, endTag.FullSpan);
+        AssertSpan(12, 1, endTag.NameToken.Span);
+    }
+
+    [Fact]
+    public void Positions_EveryAttributeIsAnchoredToItsOwnStart()
+    {
+        const string Text = "<book id='1' name='x' />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var element = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[0]);
+
+        // An attribute's full span starts at the whitespace separating it from what precedes it, which is the
+        // leading trivia of its name token.
+        AssertSpan(5, 7, element.Attributes[0].FullSpan);
+        AssertSpan(6, 2, element.Attributes[0].NameToken.Span);
+        AssertSpan(10, 1, element.Attributes[0].ValueToken.Span);
+
+        AssertSpan(12, 9, element.Attributes[1].FullSpan);
+        AssertSpan(13, 4, element.Attributes[1].NameToken.Span);
+        AssertSpan(19, 1, element.Attributes[1].ValueToken.Span);
+    }
+
+    [Fact]
+    public void Positions_DeclarationPseudoAttributes()
+    {
+        const string Text = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<root />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.GetRoot().Nodes[0]);
+        var versionAttribute = Assert.IsType<XmlAttributeSyntax>(declaration.VersionAttribute);
+        var encodingAttribute = Assert.IsType<XmlAttributeSyntax>(declaration.EncodingAttribute);
+
+        AssertSpan(0, 39, declaration.FullSpan);
+
+        // A pseudo-attribute segment starts at the whitespace separating it from what precedes it, so the name token
+        // is what lines up with the name in the source.
+        Assert.Equal(Text.IndexOf("version", StringComparison.Ordinal), versionAttribute.NameToken.Span.Start);
+        Assert.Equal(Text.IndexOf("encoding", StringComparison.Ordinal), encodingAttribute.NameToken.Span.Start);
+        Assert.Equal(versionAttribute.ToFullString(), Text.Substring(versionAttribute.FullSpan.Start, versionAttribute.FullSpan.Length));
+        Assert.Equal(encodingAttribute.ToFullString(), Text.Substring(encodingAttribute.FullSpan.Start, encodingAttribute.FullSpan.Length));
+
+        AssertSpan(40, 8, tree.GetRoot().Nodes[2].FullSpan);
+    }
+
+    [Fact]
+    public void Positions_CommentSkipsItsOpeningDelimiter()
+    {
+        var tree = XmlSyntaxTree.ParseText("<a><!--c--></a>");
+        var element = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+        var comment = Assert.IsType<XmlCommentSyntax>(element.Content[0]);
+
+        AssertSpan(3, 8, comment.FullSpan);
+        AssertSpan(7, 1, comment.TextToken.Span);
+    }
+
+    [Fact]
+    public void Positions_CDataSectionSkipsItsOpeningDelimiter()
+    {
+        var tree = XmlSyntaxTree.ParseText("<a><![CDATA[d]]></a>");
+        var element = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+        var cdata = Assert.IsType<XmlCDataSectionSyntax>(element.Content[0]);
+
+        AssertSpan(3, 13, cdata.FullSpan);
+        AssertSpan(12, 1, cdata.TextToken.Span);
+    }
+
+    [Fact]
+    public void Positions_LeadingWhitespaceShiftsTheRootElement()
+    {
+        var tree = XmlSyntaxTree.ParseText("\n  <root/>");
+
+        AssertSpan(0, 3, tree.GetRoot().Nodes[0].FullSpan);
+        AssertSpan(3, 7, tree.GetRoot().Nodes[1].FullSpan);
+    }
+
+    [Fact]
+    public void Positions_UnclosedElementEndsWhereItsParentIsClosed()
+    {
+        const string Text = "<root><a></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var root = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+
+        AssertSpan(0, 16, root.FullSpan);
+
+        var inner = Assert.IsType<XmlElementSyntax>(root.Content[0]);
+        AssertSpan(6, 3, inner.FullSpan);
+        Assert.Null(inner.EndTag);
+
+        AssertSpan(9, 7, Assert.IsType<XmlElementEndTagSyntax>(root.EndTag).FullSpan);
+        AssertSpan(6, 3, Assert.Single(tree.GetDiagnostics()).Location.SourceSpan);
+    }
+
+    [Fact]
+    public void Positions_UnexpectedEndTagMatchesItsDiagnostic()
+    {
+        var tree = XmlSyntaxTree.ParseText("</a>");
+        var skipped = Assert.IsType<XmlSkippedTextSyntax>(tree.GetRoot().Nodes[0]);
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+
+        AssertSpan(0, 4, skipped.FullSpan);
+        AssertSpan(diagnostic.Location.SourceSpan.Start, diagnostic.Location.SourceSpan.Length, skipped.FullSpan);
+    }
+
+    [Fact]
+    public void Positions_UnterminatedComment()
+    {
+        var tree = XmlSyntaxTree.ParseText("<a><!--x");
+        var element = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+        var comment = Assert.IsType<XmlCommentSyntax>(element.Content[0]);
+
+        AssertSpan(3, 5, comment.FullSpan);
+        AssertSpan(7, 1, comment.TextToken.Span);
+    }
+
+    [Fact]
+    public void Positions_InvalidStartTag()
+    {
+        var tree = XmlSyntaxTree.ParseText("<1bad>");
+        var skipped = Assert.IsType<XmlSkippedTextSyntax>(tree.GetRoot().Nodes[0]);
+
+        AssertSpan(0, 6, skipped.FullSpan);
+    }
+
+    [Fact]
+    public void Positions_DetachedNodesStartAtZeroAndAreRestoredWhenReinserted()
+    {
+        const string Text = "<root><item /></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var root = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+        var item = Assert.IsType<XmlEmptyElementSyntax>(root.Content[0]);
+
+        AssertSpan(6, 8, item.FullSpan);
+
+        var renamed = item.WithName("other");
+        Assert.Equal(0, renamed.FullSpan.Start);
+
+        var updated = tree.GetRoot().ReplaceNode(item, renamed);
+        var updatedRoot = Assert.IsType<XmlElementSyntax>(updated.Nodes[0]);
+        var reinserted = Assert.IsType<XmlEmptyElementSyntax>(updatedRoot.Content[0]);
+
+        Assert.Equal(6, reinserted.FullSpan.Start);
+        Assert.Equal(reinserted.ToFullString(), updated.ToFullString().Substring(reinserted.FullSpan.Start, reinserted.FullSpan.Length));
+    }
+
+    [Fact]
+    public void DescendantTokens_IncludesTheNodesOwnTokens()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root id='1'><item /></root>");
+        var root = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+
+        // Every token of the element, in source order: its start tag, then its content, then its end tag.
+        Assert.Equal(["<", "root", "id", "=", "'", "1", "'", ">", "<", "item", "/>", "</", "root", ">"], root.DescendantTokens().Select(token => token.Text));
+    }
+
+    [Fact]
+    public void DescendantNodesAndTokens_ReportsNodesAndTokensInSourceOrder()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root id='1'><item /></root>");
+        var root = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+
+        var children = root.ChildNodesAndTokens().Select(item => item.IsNode ? item.AsNode()!.Kind().ToString() : item.AsToken().Text);
+        Assert.Equal(["XmlElementStartTag", "XmlEmptyElement", "XmlElementEndTag"], children);
+    }
+
+    [Fact]
+    public void DescendantNodes_DocumentationExample()
+    {
+        #region XmlSyntaxNode_DescendantNodes
+        var tree = XmlSyntaxTree.ParseText("<root><item /></root>");
+
+        var kinds = new List<SyntaxKind>();
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            kinds.Add(node.Kind());
+        }
+
+        Assert.Equal([SyntaxKind.XmlElement, SyntaxKind.XmlElementStartTag, SyntaxKind.XmlEmptyElement, SyntaxKind.XmlElementEndTag], kinds);
+        #endregion
+    }
+
+    [Fact]
+    public void SyntaxKind_DocumentationExample()
+    {
+        #region SyntaxKind_CompareKind
+        var tree = XmlSyntaxTree.ParseText("<root><item /><item>text</item></root>");
+
+        var elementCount = 0;
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            if (node.Kind() == SyntaxKind.XmlElement)
+            {
+                // handle element
+                elementCount++;
+            }
+        }
+
+        // <item /> is an XmlEmptyElement, so only <root> and the second <item> are counted
+        Assert.Equal(2, elementCount);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentType_WithName_RenamesTheDeclaration()
+    {
+        var tree = XmlSyntaxTree.ParseText("<!DOCTYPE html><root />");
+        var documentType = Assert.IsType<XmlDocumentTypeSyntax>(tree.GetRoot().Nodes[0]);
+
+        var renamed = documentType.WithName("other");
+
+        Assert.Equal("other", renamed.Name);
+        Assert.Equal("<!DOCTYPE other>", renamed.ToFullString());
+    }
+
+    [Fact]
+    public void DocumentType_WithName_KeepsTheExternalIdentifier()
+    {
+        var tree = XmlSyntaxTree.ParseText("<!DOCTYPE html PUBLIC \"-//W3C//DTD\"><root />");
+        var documentType = Assert.IsType<XmlDocumentTypeSyntax>(tree.GetRoot().Nodes[0]);
+
+        var renamed = documentType.WithName("other");
+
+        Assert.Equal("other", renamed.Name);
+        Assert.Equal("<!DOCTYPE other PUBLIC \"-//W3C//DTD\">", renamed.ToFullString());
+    }
+
+    [Fact]
+    public void DocumentType_RenderedTextAlwaysCarriesTheName()
+    {
+        Assert.Equal("<!DOCTYPE html>", SyntaxFactory.XmlDocumentType("html").ToFullString());
+
+        // A value that is only the part after the name gets the name put back in front of it.
+        Assert.Equal("<!DOCTYPE html PUBLIC \"x\">", SyntaxFactory.XmlDocumentType("html", "PUBLIC \"x\"").ToFullString());
+
+        // A value that is already the whole content, as the parser produces, is used as it stands.
+        Assert.Equal("<!DOCTYPE html PUBLIC \"x\">", SyntaxFactory.XmlDocumentType("html", "html PUBLIC \"x\"").ToFullString());
+
+        // A value merely starting with the same characters is not the name.
+        Assert.Equal("<!DOCTYPE html htmlx>", SyntaxFactory.XmlDocumentType("html", "htmlx").ToFullString());
+    }
+
+    [Fact]
+    public void DocumentType_RoundTripsThroughTheParser()
+    {
+        var documentType = SyntaxFactory.XmlDocumentType("html", "PUBLIC \"x\"");
+        var reparsed = Assert.IsType<XmlDocumentTypeSyntax>(XmlSyntaxTree.ParseText(documentType.ToFullString()).GetRoot().Nodes[0]);
+
+        Assert.Equal(documentType.Name, reparsed.Name);
+        Assert.Equal(documentType.ToFullString(), reparsed.ToFullString());
+    }
+
+    public static TheoryData<string> RecoverySamples => new()
+    {
+        "", "plain text", "<root><a></root>", "</a>", "<a><!--x", "<1bad>", "<a><![CDATA[d",
+        "<?xml version", "<?pi", "<!DOCTYPE html", "<a b>", "<a b=c>x</a>", "<a @@@>", "<a></a >",
+        "<a></a junk>", "<a>&amp;</a>", "<a b='1' c=\"2\" />", "<a\n  b='1'\n/>", "<!DOCTYPE a [<!ENTITY x \"y\">]><a/>",
+        "<a\u00B7b/>", "<\U00010330 x\u0300='1'/>", "<\u00AA/>", "</\U00010330>", "<?\U00010330 d?>", "<!DOCTYPE \U00010330>",
+    };
+
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    [MemberData(nameof(RecoverySamples))]
+    public void ParseText_ReproducesItsSourceExactly(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+
+        // Concatenating the tokens has to reproduce the source too: the round trip alone can hide a token that was
+        // dropped and a node whose text was written twice.
+        Assert.Equal(text, string.Concat(tree.GetRoot().DescendantTokens().Select(token => token.ToFullString())));
+    }
+
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    [MemberData(nameof(RecoverySamples))]
+    public void ParseText_ReproducesEveryPrefixAndEverySingleCharacterDeletion(string text)
+    {
+        for (var length = 0; length <= text.Length; length++)
+        {
+            var prefix = text[..length];
+            Assert.Equal(prefix, XmlSyntaxTree.ParseText(prefix).GetRoot().ToFullString());
+        }
+
+        for (var index = 0; index < text.Length; index++)
+        {
+            var damaged = text.Remove(index, 1);
+            Assert.Equal(damaged, XmlSyntaxTree.ParseText(damaged).GetRoot().ToFullString());
+        }
+    }
+
+    /// <summary>
+    /// Names follow the XML NameStartChar and NameChar productions rather than "is it a Unicode letter", which is a
+    /// different set in both directions.
+    /// </summary>
+    [Theory]
+    // The middle dot and the combining marks may appear in a name, though not start one.
+    [InlineData("<a\u00B7b/>", "a\u00B7b")]
+    [InlineData("<a\u0300/>", "a\u0300")]
+    [InlineData("<a\u203F b/>", "a\u203F")]
+    // A name may hold a character from outside the basic plane, written as a surrogate pair.
+    [InlineData("<\U00010330/>", "\U00010330")]
+    [InlineData("<a\U00010330b/>", "a\U00010330b")]
+    // The Fifth Edition allows U+07DE in a name, though System.Xml, which follows the Fourth, does not.
+    [InlineData("<xmln\u07DEa/>", "xmln\u07DEa")]
+    // Ordinary names still work.
+    [InlineData("<a:b-c.d/>", "a:b-c.d")]
+    [InlineData("<_x/>", "_x")]
+    public void ElementNamesFollowTheXmlNameProductions(string text, string expectedName)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        var element = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(expectedName, element.Name);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Theory]
+    // A digit, the middle dot, and a combining mark may follow a name character but not begin one.
+    [InlineData("<1bad/>")]
+    [InlineData("<\u00B7bad/>")]
+    [InlineData("<\u0300bad/>")]
+    // These are Unicode letters that the XML productions leave out.
+    [InlineData("<\u00AA/>")]
+    [InlineData("<\u00B5/>")]
+    public void AnElementNameThatCannotStartIsSkippedText(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.IsType<XmlSkippedTextSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    /// <summary>
+    /// A lone surrogate is not a scalar value, so it can be no part of a name. It is built here rather than passed
+    /// as test data, which would replace it with U+FFFD -- a character XML does allow in a name.
+    /// </summary>
+    [Fact]
+    public void AnElementNameCannotStartWithALoneSurrogate()
+    {
+        var text = "<" + (char)0xD800 + "/>";
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.IsType<XmlSkippedTextSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void AttributeNamesFollowTheXmlNameProductionsToo()
+    {
+        const string Text = "<root a\u00B7b='1' \U00010330='2' />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        var element = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(["a\u00B7b", "\U00010330"], element.Attributes.Select(attribute => attribute.Name));
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void WhitespaceIsTriviaInsideATagAndContentBetweenTags()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <book id = '1' />\n</root>");
+        var book = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().SelectSingleSyntaxNode("//book"));
+
+        // Inside the tag the space in front of a token is that token's own trivia.
+        Assert.Equal(" ", book.Attributes[0].NameToken.LeadingTrivia.ToFullString());
+        Assert.Equal(" ", book.Attributes[0].EqualsToken.LeadingTrivia.ToFullString());
+
+        // Between tags it is character data, which XML says is significant.
+        Assert.Equal("\n  ", Assert.IsType<XmlTextSyntax>(Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]).Content[0]).Text);
+    }
+
+    [Fact]
+    public void ReplaceNode_KeepsEveryNodeItDidNotTouch()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b><c>3</c></root>");
+        var root = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+        var b = root.Content.OfType<XmlElementSyntax>().Single(element => element.Name == "b");
+
+        var updated = tree.GetRoot().ReplaceNode(b, b.WithInnerText("two"));
+        var updatedRoot = Assert.IsType<XmlElementSyntax>(updated.Nodes[0]);
+
+        Assert.Equal("<root><a>1</a><b>two</b><c>3</c></root>", updated.ToFullString());
+        Assert.True(root.Content[0].IsIncrementallyIdenticalTo(updatedRoot.Content[0]));
+        Assert.True(root.Content[2].IsIncrementallyIdenticalTo(updatedRoot.Content[2]));
+        Assert.False(root.Content[1].IsIncrementallyIdenticalTo(updatedRoot.Content[1]));
+    }
+
+    [Fact]
+    public void ReplaceNode_ReturnsTheSameTreeWhenNothingChanged()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a>1</a></root>");
+        var root = tree.GetRoot();
+        var a = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "a");
+
+        Assert.True(root.IsIncrementallyIdenticalTo(root.ReplaceNode(a, a)));
+    }
+
+    [Fact]
+    public void Annotations_SurviveAnEditElsewhereInTheDocument()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>");
+        var root = tree.GetRoot();
+        var a = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "a");
+        var b = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "b");
+        var marker = new SyntaxAnnotation();
+
+        var marked = root.ReplaceNode(a, a.WithAdditionalAnnotations(marker));
+        var edited = marked.ReplaceNode(marked.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "b"), b.WithInnerText("two"));
+
+        Assert.Equal("<a>1</a>", edited.GetAnnotatedNodes(marker).Single().ToFullString());
+        Assert.Equal("<root><a>1</a><b>two</b></root>", edited.ToFullString());
+    }
+
+    [Fact]
+    public void SyntaxAnnotation_DocumentationExample()
+    {
+        #region SyntaxAnnotation_FindAnnotatedNode
+        var root = XmlSyntaxTree.ParseText("<root><item>1</item></root>").GetRoot();
+        var node = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "item");
+
+        var marker = new SyntaxAnnotation();
+        var annotated = node.WithAdditionalAnnotations(marker);
+        var updated = root.ReplaceNode(node, annotated);
+        var found = updated.GetAnnotatedNodes(marker).Single();
+        Assert.Equal("<item>1</item>", found.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void Walker_VisitsEveryNodeAndTheVisitorVisitsOnlyOne()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a id='1'>x</a></root>");
+
+        var walker = new NodeCounter();
+        walker.Visit(tree.GetRoot());
+
+        var visitor = new NodeCounter { AsVisitor = true };
+        ((XmlSyntaxVisitor)visitor).Visit(tree.GetRoot());
+
+        Assert.Equal(tree.GetRoot().DescendantNodesAndSelf().Count(), walker.Count);
+        Assert.Equal(1, visitor.Count);
+    }
+
+    [Fact]
+    public void FindToken_AndFindNode_LocateWhatCoversAPosition()
+    {
+        const string Text = "<root><a id='1'>x</a></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        Assert.Equal("id", tree.GetRoot().FindToken(Text.IndexOf("id", StringComparison.Ordinal)).Text);
+
+        // FindNode returns the smallest node covering the span, which for the opening angle bracket is the start tag.
+        Assert.Equal("<a id='1'>", tree.GetRoot().FindNode(new TextSpan(Text.IndexOf("<a", StringComparison.Ordinal), 2)).ToFullString());
+        Assert.Equal("<a id='1'>x</a>", tree.GetRoot().FindNode(new TextSpan(Text.IndexOf("<a", StringComparison.Ordinal), "<a id='1'>x</a>".Length)).ToFullString());
+    }
+
+    [Fact]
+    public void Rewriter_ReplacesEveryMatchingNodeAndKeepsTheRest()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a>1</a><a>2</a><b>3</b></root>");
+
+        var rewritten = new RenameElement("a", "z").Visit(tree.GetRoot());
+
+        Assert.Equal("<root><z>1</z><z>2</z><b>3</b></root>", rewritten?.ToFullString());
+    }
+
+    [Fact]
+    public void Rewriter_DocumentationExample()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><item /></root>");
+
+        var rewritten = new RenameRoot().Visit(tree.GetRoot());
+
+        Assert.Equal("<renamed><item /></renamed>", rewritten?.ToFullString());
+    }
+
+    [Fact]
+    public void Walker_DocumentationExample()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root a='1'><item b='2' c='3' /><item>text</item></root>");
+
+        var elementCounter = new ElementCounter();
+        elementCounter.Visit(tree.GetRoot());
+        var attributeCounter = new AttributeCounter();
+        attributeCounter.Visit(tree.GetRoot());
+
+        Assert.Equal(2, elementCounter.Count);
+        Assert.Equal(3, attributeCounter.Count);
+    }
+
+    [Fact]
+    public void VisitorWithResult_DocumentationExample()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root></root>");
+
+        Assert.Equal("root", new ElementName().Visit(tree.GetRoot().Nodes[0]));
+    }
+
+    private sealed class NodeCounter : XmlSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public bool AsVisitor { get; init; }
+
+        public override void DefaultVisit(XmlSyntaxNode node)
+        {
+            Count++;
+            if (!AsVisitor)
+            {
+                base.DefaultVisit(node);
+            }
+        }
+    }
+
+    private sealed class RenameElement(string from, string to) : XmlSyntaxRewriter
+    {
+        public override SyntaxNode? VisitElement(XmlElementSyntax node)
+        {
+            var visited = (XmlElementSyntax?)base.VisitElement(node);
+
+            return visited?.Name == from ? visited.WithName(to) : visited;
+        }
+    }
+
+    #region XmlSyntaxRewriter_RenameRoot
+    private sealed class RenameRoot : XmlSyntaxRewriter
+    {
+        public override SyntaxNode? VisitElement(XmlElementSyntax node)
+            => node.Name == "root" ? node.WithName("renamed") : base.VisitElement(node);
+    }
+    #endregion
+
+    #region XmlSyntaxVisitor_ElementCounter
+    private sealed class ElementCounter : XmlSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitElement(XmlElementSyntax node)
+        {
+            Count++;
+            base.VisitElement(node);
+        }
+    }
+    #endregion
+
+    #region XmlSyntaxVisitor_ElementName
+    private sealed class ElementName : XmlSyntaxVisitor<string?>
+    {
+        public override string? VisitElement(XmlElementSyntax node) => node.Name;
+    }
+    #endregion
+
+    #region XmlSyntaxWalker_AttributeCounter
+    private sealed class AttributeCounter : XmlSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitAttribute(XmlAttributeSyntax node)
+        {
+            Count++;
+            base.VisitAttribute(node);
+        }
+    }
+    #endregion
+
+    private static void AssertSpan(int expectedStart, int expectedLength, TextSpan actual)
+    {
+        Assert.Equal(expectedStart, actual.Start);
+        Assert.Equal(expectedLength, actual.Length);
+    }
+
+    private static IEnumerable<XmlSyntaxNode> EnumerateNodes(XmlSyntaxNode root) => root.DescendantNodesAndSelf().Cast<XmlSyntaxNode>();
 
     private static XmlNamespaceManager CreateNamespaceManager()
     {
@@ -512,5 +1624,566 @@ public sealed class XmlSyntaxTreeTests
         namespaceManager.AddNamespace("a", "urn:attr");
         namespaceManager.AddNamespace("s", "urn:sub-attr");
         return namespaceManager;
+    }
+
+    /// <summary>
+    /// The content of an element is a plain list, with nothing between its children, so removing one child takes
+    /// only that child.
+    /// </summary>
+    [Fact]
+    public void RemoveNode_FromElementContent_TakesOnlyThatChild()
+    {
+        var tree = XmlSyntaxTree.ParseText("<r><a/><b/><c/></r>");
+        var root = tree.GetRoot().DescendantNodes().OfType<XmlElementSyntax>().First();
+
+        var updated = tree.GetRoot().RemoveNode(root.Content[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("<r><a/><c/></r>", updated.ToFullString());
+    }
+
+    [Fact]
+    public void InsertNodesAfter_InElementContent_AddsNoSeparator()
+    {
+        var tree = XmlSyntaxTree.ParseText("<r><a/></r>");
+        var root = tree.GetRoot().DescendantNodes().OfType<XmlElementSyntax>().First();
+        var added = XmlSyntaxTree.ParseText("<b/>").GetRoot().DescendantNodes().OfType<XmlEmptyElementSyntax>().Single();
+
+        var updated = tree.GetRoot().InsertNodesAfter(root.Content[0], [added]);
+
+        Assert.Equal("<r><a/><b/></r>", updated.ToFullString());
+    }
+
+    /// <summary>Documents XML 1.0 and Namespaces in XML 1.0 call well-formed, each checked against System.Xml too.</summary>
+    public static TheoryData<string> WellFormedDocuments => new()
+    {
+        "<a/>",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<!-- c -->\n<?pi?>\n<!DOCTYPE a>\n<a/>\n<!-- trailing -->\n<?end data?>\n",
+        "<?xml version='1.0'?><a/>",
+        "<?xml-stylesheet type=\"text/xsl\" href=\"style.xsl\"?><a/>",
+        "<?xmlfoo bar?><a/>",
+        "<!DOCTYPE a [<!-- don't -->]><a/>",
+        "<!DOCTYPE a [<?pi it's [data]?>]><a/>",
+        "<!DOCTYPE a [<!ENTITY e \"x'>\">]><a>&e;</a>",
+        "<!DOCTYPE a SYSTEM \"a.dtd\"><a/>",
+        "<a b=\"it's\" c='say \"hi\"' d='&#60;&#x3C;&lt;'/>",
+        "<a>&lt;&gt;&amp;&apos;&quot;&#65;&#x41;&#x10000;&#xFFFD;</a>",
+        "<a></a >",
+        "<a\n/>",
+        "<a b = \"1\"\t\r\n c='2'/>",
+        "<a>]]</a>",
+        "<a>]></a>",
+        "<a>x > y</a>",
+        "<a><![CDATA[<&]]]]><![CDATA[>]]></a>",
+        "<!----><a><!--a-b--></a>",
+        "<p:a xmlns:p=\"urn:x\" p:b=\"1\"><p:c/></p:a>",
+        "<a xml:lang=\"en\" xmlns=\"urn:x\"><b xmlns=\"\"/></a>",
+        "<a xmlns:p=\"urn:x\" xmlns:q=\"urn:y\" p:b=\"1\" q:b=\"2\"/>",
+        "<a>\u00A0\U0001F600</a>",
+        "<a\u00B7b/>",
+        "<root>\r\n  <child>text</child>\r\n</root>",
+        "<a>&#x9;&#xA;&#xD;</a>",
+    };
+
+    [Theory]
+    [MemberData(nameof(WellFormedDocuments))]
+    public void WellFormedDocumentsHaveNoDiagnostics(string text)
+    {
+        Assert.Null(ReadWithXmlReader(text));
+
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    /// <summary>Documents that break a well-formedness constraint, with the diagnostic each must report.</summary>
+    public static TheoryData<string, string> MalformedDocuments => new()
+    {
+        // Structure
+        { "", "XML0014" },
+        { "   ", "XML0014" },
+        { "<!-- only a comment -->", "XML0014" },
+        { "<a/><b/>", "XML0014" },
+        { "<a/>text", "XML0014" },
+        { "text<a/>", "XML0014" },
+        { "&amp;<a/>", "XML0014" },
+        { "<![CDATA[x]]><a/>", "XML0014" },
+        { "<a/><!DOCTYPE a>", "XML0014" },
+        { "<!DOCTYPE a><!DOCTYPE a><a/>", "XML0014" },
+        { "<a><!DOCTYPE a></a>", "XML0014" },
+
+        // XML declaration
+        { " <?xml version=\"1.0\"?><a/>", "XML0013" },
+        { "<a/><?xml version=\"1.0\"?>", "XML0013" },
+        { "<a><?xml version=\"1.0\"?></a>", "XML0013" },
+        { "<?XML version=\"1.0\"?><a/>", "XML0013" },
+        { "<?xml?><a/>", "XML0013" },
+        { "<?xml encoding=\"UTF-8\"?><a/>", "XML0013" },
+        { "<?xml version=\"2.0\"?><a/>", "XML0013" },
+        { "<?xml version=\"1.0\" standalone=\"maybe\"?><a/>", "XML0013" },
+        { "<?xml version=\"1.0\" standalone=\"yes\" encoding=\"UTF-8\"?><a/>", "XML0013" },
+        { "<?xml version=\"1.0\" foo=\"bar\"?><a/>", "XML0013" },
+        { "<?xml version=\"1.0\"encoding=\"UTF-8\"?><a/>", "XML0013" },
+        { "<?xml version=\"1.0\" version=\"1.0\"?><a/>", "XML0013" },
+        { "<?xml version=\"1.0\"", "XML0007" },
+
+        // Processing instructions
+        { "<a><? pi?></a>", "XML0016" },
+        { "<a><?pi!data?></a>", "XML0016" },
+        { "<a><?XmL data?></a>", "XML0013" },
+        { "<a><?xml!?></a>", "XML0016" },
+        { "<a><?pi data", "XML0012" },
+
+        // Comments
+        { "<a><!-- a -- b --></a>", "XML0015" },
+        { "<a><!-- a ---></a>", "XML0015" },
+
+        // Document type declaration
+        { "<!doctype a><a/>", "XML0018" },
+        { "<!DOCTYPEa><a/>", "XML0018" },
+        { "<!DOCTYPE><a/>", "XML0018" },
+        { "<!DOCTYPE a", "XML0011" },
+
+        // Start tags and attributes
+        { "<a b/>", "XML0010" },
+        { "<a b=c/>", "XML0010" },
+        { "<a b=/>", "XML0010" },
+        { "<a b=\"1\"c=\"2\"/>", "XML0010" },
+        { "<a @/>", "XML0010" },
+        { "<a\u00A0b=\"1\"/>", "XML0010" },
+        { "<a b=\"1\" / >", "XML0010" },
+        { "<a b=\"1\"", "XML0010" },
+        { "<a>x < y</a>", "XML0010" },
+        { "<a b=\"1\" b=\"2\"/>", "XML0006" },
+        { "<a xmlns:p=\"urn:x\" xmlns:q=\"urn:x\" p:b=\"1\" q:b=\"2\"/>", "XML0006" },
+        { "<a b=\"<\"/>", "XML0005" },
+
+        // End tags
+        { "<a></b>", "XML0002" },
+        { "<a></ a>", "XML0002" },
+        { "<a></a b>", "XML0002" },
+        { "<a></>", "XML0002" },
+        { "<a>", "XML0001" },
+
+        // Character data and references
+        { "<a>]]></a>", "XML0005" },
+        { "<a>&</a>", "XML0004" },
+        { "<a>& b</a>", "XML0004" },
+        { "<a>&amp</a>", "XML0004" },
+        { "<a>&unknown;</a>", "XML0004" },
+        { "<!DOCTYPE a [<!ENTITY e \"x\">]><a>&f;</a>", "XML0004" },
+        { "<a>&#;</a>", "XML0004" },
+        { "<a>&#x;</a>", "XML0004" },
+        { "<a>&#12a;</a>", "XML0004" },
+        { "<a>&#0;</a>", "XML0004" },
+        { "<a>&#xD800;</a>", "XML0004" },
+        { "<a>&#xFFFE;</a>", "XML0004" },
+        { "<a>&#x110000;</a>", "XML0004" },
+        { "<a>&#99999999999;</a>", "XML0004" },
+        { "<a b=\"&\"/>", "XML0004" },
+        { "<a b=\"&x;\"/>", "XML0004" },
+
+        // Characters XML does not allow at all
+        { "<a>\u0001</a>", "XML0003" },
+        { "<a b=\"\u001F\"/>", "XML0003" },
+        { "<a><!--\u0008--></a>", "XML0003" },
+        { "<a><![CDATA[\uFFFF]]></a>", "XML0003" },
+        { "<a>\uFFFE</a>", "XML0003" },
+
+        // Namespaces
+        { "<p:a/>", "XML0017" },
+        { "<a p:b=\"1\"/>", "XML0017" },
+        { "<a><b xmlns:p=\"urn:x\"/><p:c/></a>", "XML0017" },
+        { "<a xmlns:p=\"\"/>", "XML0017" },
+        { "<a:b:c xmlns:a=\"urn:x\"/>", "XML0017" },
+        { "<a xmlns:xml=\"urn:x\"/>", "XML0017" },
+        { "<a xmlns:xmlns=\"urn:x\"/>", "XML0017" },
+        { "<a><?p:i data?></a>", "XML0017" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MalformedDocuments))]
+    public void MalformedDocumentsReportTheirDiagnostic(string text, string expectedId)
+    {
+        Assert.NotNull(ReadWithXmlReader(text));
+
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == expectedId);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    /// <summary>Documents the specifications call malformed, but that System.Xml accepts anyway.</summary>
+    public static TheoryData<string, string> MalformedDocumentsSystemXmlAccepts => new()
+    {
+        // EncName must start with a letter; a reader over a string never looks at the encoding.
+        { "<?xml version=\"1.0\" encoding=\"8bit\"?><a/>", "XML0013" },
+
+        // Namespaces in XML 1.0: element names must not have the prefix xmlns.
+        { "<xmlns:a/>", "XML0017" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MalformedDocumentsSystemXmlAccepts))]
+    public void MalformedDocumentsSystemXmlAcceptsReportTheirDiagnostic(string text, string expectedId)
+    {
+        Assert.Null(ReadWithXmlReader(text));
+
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == expectedId);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Theory]
+    [MemberData(nameof(MalformedDocuments))]
+    public void MalformedDocumentsReproduceEveryPrefixAndEverySingleCharacterDeletion(string text, string expectedId)
+    {
+        _ = expectedId;
+        ParseText_ReproducesEveryPrefixAndEverySingleCharacterDeletion(text);
+    }
+
+    /// <summary>A lone surrogate is not a character at all, so it is built here rather than passed as test data.</summary>
+    [Fact]
+    public void ALoneSurrogateInContentIsAnInvalidCharacter()
+    {
+        var text = "<a>" + (char)0xDC00 + "</a>";
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("XML0003", diagnostic.Id);
+        AssertSpan(3, 1, diagnostic.Location.SourceSpan);
+    }
+
+    [Fact]
+    public void AnXmlStylesheetProcessingInstructionIsNotAnXmlDeclaration()
+    {
+        var tree = XmlSyntaxTree.ParseText("<?xml-stylesheet type=\"text/xsl\" href=\"style.xsl\"?>\n<root/>");
+
+        Assert.Empty(tree.GetDiagnostics());
+        var processingInstruction = Assert.IsType<XmlProcessingInstructionSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal("xml-stylesheet", processingInstruction.Target);
+        Assert.Equal("type=\"text/xsl\" href=\"style.xsl\"", processingInstruction.Data);
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[2]);
+    }
+
+    [Fact]
+    public void AnApostropheInACommentOfTheInternalSubsetDoesNotSwallowTheDocument()
+    {
+        var tree = XmlSyntaxTree.ParseText("<!DOCTYPE root [\n<!-- don't -->\n<!ENTITY e \"x\">\n]>\n<root>&e;</root>");
+
+        Assert.Empty(tree.GetDiagnostics());
+        var documentType = Assert.IsType<XmlDocumentTypeSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.False(documentType.GreaterThanToken.IsMissing);
+        Assert.Equal("root", Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[2]).Name);
+    }
+
+    [Fact]
+    public void AttributeValue_ResolvesReferencesAndNormalizesWhitespace()
+    {
+        const string Text = "<a b=\"&lt;&amp;&gt;&quot;&apos;&#65;&#x42;&#x1F600;\" c=\"x&#10;y&#x9;z&#13;\" d=\"line1\r\n\tline2\rline3\" e=\"&custom;\"/>";
+        var tree = XmlSyntaxTree.ParseText("<!DOCTYPE a [<!ENTITY custom \"v\">]>" + Text);
+        var element = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[1]);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal("<&>\"'AB\U0001F600", element.GetAttribute("b")?.Value);
+        Assert.Equal("x\ny\tz\r", element.GetAttribute("c")?.Value);
+        Assert.Equal("line1  line2 line3", element.GetAttribute("d")?.Value);
+
+        // Only the predefined entities and character references can be resolved without reading the DTD.
+        Assert.Equal("&custom;", element.GetAttribute("e")?.Value);
+
+        var expected = System.Xml.Linq.XDocument.Parse("<!DOCTYPE a [<!ENTITY custom \"v\">]>" + Text).Root!;
+        Assert.Equal(expected.Attribute("b")?.Value, element.GetAttribute("b")?.Value);
+        Assert.Equal(expected.Attribute("c")?.Value, element.GetAttribute("c")?.Value);
+        Assert.Equal(expected.Attribute("d")?.Value, element.GetAttribute("d")?.Value);
+    }
+
+    [Fact]
+    public void AttributeValue_SelectedThroughXPathIsResolved()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><item name=\"a &amp; b\" /></root>");
+
+        Assert.Single(tree.GetRoot().SelectNodes("//item[@name='a & b']"));
+    }
+
+    [Theory]
+    [InlineData("a\nb")]
+    [InlineData("tab\there")]
+    [InlineData("cr\rlf\r\n")]
+    [InlineData("<\"'&>")]
+    [InlineData("  leading and trailing  ")]
+    public void AttributeValue_WithValueSurvivesAReparse(string value)
+    {
+        var tree = XmlSyntaxTree.ParseText("<a b='x' c=\"y\"/>");
+
+        var updated = tree.GetRoot()
+            .ReplaceNode("//@b", node => ((XmlAttributeSyntax)node).WithValue(value))
+            .ReplaceNode("//@c", node => ((XmlAttributeSyntax)node).WithValue(value));
+
+        Assert.Equal(value, Assert.IsType<XmlAttributeSyntax>(updated.SelectSingleSyntaxNode("//@b")).Value);
+
+        var reparsed = XmlSyntaxTree.ParseText(updated.ToFullString());
+        var reparsedElement = Assert.IsType<XmlEmptyElementSyntax>(reparsed.GetRoot().Nodes[0]);
+
+        Assert.Empty(reparsed.GetDiagnostics());
+        Assert.Equal(value, reparsedElement.GetAttribute("b")?.Value);
+        Assert.Equal(value, reparsedElement.GetAttribute("c")?.Value);
+        Assert.Equal(value, System.Xml.Linq.XElement.Parse(updated.ToFullString()).Attribute("b")?.Value);
+    }
+
+    [Fact]
+    public void TextValue_ResolvesReferencesAndNormalizesLineBreaks()
+    {
+        const string Text = "<a>x &lt; y&#x20;&#13;\r\n&amp;&#x10000;\rz</a>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var element = Assert.IsType<XmlElementSyntax>(tree.GetRoot().Nodes[0]);
+        var text = Assert.IsType<XmlTextSyntax>(Assert.Single(element.Content));
+
+        Assert.Equal("x &lt; y&#x20;&#13;\r\n&amp;&#x10000;\rz", text.Text);
+        Assert.Equal("x < y \r\n&\U00010000\nz", text.Value);
+        Assert.Equal(System.Xml.Linq.XElement.Parse(Text).Value, text.Value);
+        Assert.Equal(text.Value, tree.GetRoot().CreateNavigator().SelectSingleNode("/a")?.Value);
+    }
+
+    [Fact]
+    public void ProcessingInstructionData_ExcludesTheWhitespaceAfterTheTarget()
+    {
+        var tree = XmlSyntaxTree.ParseText("<?target  some data ?><?empty?><?blank   ?><a/>");
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal("some data ", Assert.IsType<XmlProcessingInstructionSyntax>(tree.GetRoot().Nodes[0]).Data);
+        Assert.Null(Assert.IsType<XmlProcessingInstructionSyntax>(tree.GetRoot().Nodes[1]).Data);
+        Assert.Null(Assert.IsType<XmlProcessingInstructionSyntax>(tree.GetRoot().Nodes[2]).Data);
+        Assert.Equal("some data ", tree.GetRoot().CreateNavigator().SelectSingleNode("/processing-instruction('target')")?.Value);
+
+        var created = SyntaxFactory.XmlProcessingInstruction("target", "data");
+        Assert.Equal("<?target data?>", created.ToFullString());
+        Assert.Equal("data", created.Data);
+        Assert.Same(created, created.WithData("data"));
+    }
+
+    [Fact]
+    public void Diagnostics_AreSortedByPosition()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <item>\n    <a b=c/>\n");
+
+        var positions = tree.GetDiagnostics().Select(diagnostic => diagnostic.Location.SourceSpan.Start).ToList();
+
+        Assert.Equal(positions.Order().ToList(), positions);
+        Assert.HasCount(3, positions);
+    }
+
+    [Fact]
+    public void Recovery_AnEndTagMatchingAnAncestorClosesTheElementsLeftOpen()
+    {
+        const string Text = "<root>\n  <a>\n    <b>\n</root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        Assert.NotNull(root.EndTag);
+        var a = Assert.IsType<XmlElementSyntax>(root.Content[1]);
+        Assert.Null(a.EndTag);
+        var b = Assert.IsType<XmlElementSyntax>(a.Content[1]);
+        Assert.Null(b.EndTag);
+
+        Assert.Equal(["XML0001", "XML0001"], tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        Assert.Equal("Missing end tag for 'a'.", tree.GetDiagnostics()[0].Message);
+        AssertSpan(Text.IndexOf("<a>", StringComparison.Ordinal), 3, tree.GetDiagnostics()[0].Location.SourceSpan);
+        AssertSpan(Text.IndexOf("<b>", StringComparison.Ordinal), 3, tree.GetDiagnostics()[1].Location.SourceSpan);
+    }
+
+    [Fact]
+    public void Recovery_AnEndTagMatchingNoOpenElementIsSkipped()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a>text</b></a></root>");
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        var a = Assert.IsType<XmlElementSyntax>(Assert.Single(root.Content));
+        Assert.NotNull(a.EndTag);
+        Assert.IsType<XmlSkippedTextSyntax>(a.Content[1]);
+        Assert.Equal("XML0002", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_AStartTagMissingItsGreaterThanStillOpensTheElement()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <a b=\"1\"\n  <c/>\n  </a>\n</root>");
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        Assert.NotNull(root.EndTag);
+        var a = Assert.IsType<XmlElementSyntax>(root.Content[1]);
+        Assert.True(a.StartTag.GreaterThanToken.IsMissing);
+        Assert.Equal("1", a.GetAttribute("b")?.Value);
+        Assert.NotNull(a.EndTag);
+        Assert.IsType<XmlEmptyElementSyntax>(a.Content[0]);
+        Assert.Equal("XML0010", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_UnexpectedCharactersInAStartTagAreSkippedAndTheElementKept()
+    {
+        const string Text = "<root><a @ b=\"1\" #>text</a></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        var a = Assert.IsType<XmlElementSyntax>(Assert.Single(root.Content));
+        Assert.Equal("1", a.GetAttribute("b")?.Value);
+        Assert.Equal("text", Assert.IsType<XmlTextSyntax>(Assert.Single(a.Content)).Text);
+        Assert.NotNull(a.EndTag);
+        Assert.True(a.StartTag.ContainsSkippedText);
+        Assert.Equal(["XML0010", "XML0010"], tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        AssertSpan(Text.IndexOf('@', StringComparison.Ordinal), 1, tree.GetDiagnostics()[0].Location.SourceSpan);
+    }
+
+    [Fact]
+    public void Recovery_AnUnterminatedAttributeValueStopsAtTheNextTag()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <a b=\"1>\n  <c/>\n</root>");
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        Assert.NotNull(root.EndTag);
+        var a = Assert.IsType<XmlElementSyntax>(root.Content[1]);
+        Assert.True(a.Attributes[0].EndQuoteToken.IsMissing);
+        Assert.IsType<XmlEmptyElementSyntax>(a.Content[0]);
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "XML0010" && diagnostic.Message.Contains("quote", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Recovery_ALessThanInAnAttributeValueThatIsNotATagIsKept()
+    {
+        var tree = XmlSyntaxTree.ParseText("<a Condition=\"'$(X)' < '2'\"/>");
+
+        var element = Assert.IsType<XmlEmptyElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        Assert.Equal("'$(X)' < '2'", element.GetAttribute("Condition")?.Value);
+        Assert.Equal("XML0005", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_ALessThanInTextDoesNotSwallowTheEndTag()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root>a < b</root>");
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        Assert.NotNull(root.EndTag);
+        Assert.Equal("XML0010", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_AnUnterminatedDeclarationKeepsTheRestOfTheDocument()
+    {
+        var tree = XmlSyntaxTree.ParseText("<?xml version=\"1.0\"\n<root/>");
+
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.True(declaration.EndDeclarationToken.IsMissing);
+        Assert.Equal("1.0", declaration.Version);
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[^1]);
+        Assert.Equal("XML0007", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_AnInvalidDeclarationAttributeKeepsTheRestOfTheDocument()
+    {
+        var tree = XmlSyntaxTree.ParseText("<?xml version=\"1.0\" ! ?>\n<root/>");
+
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.False(declaration.EndDeclarationToken.IsMissing);
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[^1]);
+        Assert.Single(tree.GetDiagnostics());
+    }
+
+    [Fact]
+    public void Recovery_AnUnterminatedDocumentTypeKeepsTheRootElement()
+    {
+        var tree = XmlSyntaxTree.ParseText("<!DOCTYPE root\n<root/>");
+
+        var documentType = Assert.IsType<XmlDocumentTypeSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.True(documentType.GreaterThanToken.IsMissing);
+        Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[^1]);
+        Assert.Equal("XML0011", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_AnUnterminatedProcessingInstructionIsStillOne()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><?pi data");
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        var processingInstruction = Assert.IsType<XmlProcessingInstructionSyntax>(Assert.Single(root.Content));
+        Assert.Equal("pi", processingInstruction.Target);
+        Assert.True(processingInstruction.EndProcessingInstructionToken.IsMissing);
+        Assert.Equal(["XML0001", "XML0012"], tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+    }
+
+    [Fact]
+    public void Recovery_AMalformedEndTagStillClosesItsElement()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a></a b=\"1\"><c/></root>");
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        var a = Assert.IsType<XmlElementSyntax>(root.Content[0]);
+        Assert.NotNull(a.EndTag);
+        Assert.IsType<XmlEmptyElementSyntax>(root.Content[1]);
+        Assert.Equal("XML0002", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_AnEndTagMissingItsGreaterThanDoesNotSwallowTheNextTag()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><a></a\n<b/></root>");
+
+        var root = Assert.IsType<XmlElementSyntax>(Assert.Single(tree.GetRoot().Nodes));
+        Assert.True(Assert.IsType<XmlElementSyntax>(root.Content[0]).EndTag?.GreaterThanToken.IsMissing);
+        Assert.IsType<XmlEmptyElementSyntax>(root.Content[1]);
+        Assert.Equal("XML0002", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Recovery_TheRootElementIsNotReportedMissingWhenMarkupWasSkipped()
+    {
+        Assert.Equal(["XML0002"], XmlSyntaxTree.ParseText("</a>").GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        Assert.Equal(["XML0014"], XmlSyntaxTree.ParseText("<?xml version=\"1.0\"?>\n").GetDiagnostics().Select(diagnostic => diagnostic.Id));
+    }
+
+    public static TheoryData<string> AdditionalRecoverySamples => new()
+    {
+        "<?xml-stylesheet href='a'?><a/>", "<!DOCTYPE a [<!-- ' -->]><a/>", "<a b=\"1\" c='2' @ d>x</a>", "<a b=\"<c/>",
+        "<a b=\"x<y\"/>", "<a <b/></a>", "<root>a < b</root>", "<?xml version=\"1.0\" ! ?><a/>", "<!DOCTYPE a\n<a/>",
+        "<a></a\n<b/>", "<a>&#x;&#;&amp&unknown;]]></a>", "<a xmlns:p=''><p:b p:c='1'/></a>", "<?XML version='1.0'?><a/>",
+        "<!doctype a><a/>", "<a><? x?></a>", "<a><!-- -- --></a>", "<a b='1'/ ><c/ >", "<a\u00A0b='1'/>", "<a></ a >",
+    };
+
+    [Theory]
+    [MemberData(nameof(AdditionalRecoverySamples))]
+    public void AdditionalRecoverySamplesReproduceEveryPrefixAndEverySingleCharacterDeletion(string text)
+    {
+        ParseText_ReproducesEveryPrefixAndEverySingleCharacterDeletion(text);
+        ParseText_ReproducesItsSourceExactly(text);
+    }
+
+    private static Exception? ReadWithXmlReader(string text)
+    {
+        return Record.Exception(() =>
+        {
+            var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
+            using var reader = XmlReader.Create(new StringReader(text), settings);
+            while (reader.Read())
+            {
+                if (reader.NodeType == XmlNodeType.Element)
+                {
+                    _ = reader.MoveToFirstAttribute();
+                }
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData("<xmlns:a/>")]
+    [InlineData("<root><xmlns:a/></root>")]
+    public void Formatter_ADocumentXmlWriterRefuses_IsReturnedUnchanged(string text)
+    {
+        var document = XmlSyntaxTree.ParseText(text).GetRoot();
+
+        Assert.Same(document, Formatter.Format(document));
     }
 }

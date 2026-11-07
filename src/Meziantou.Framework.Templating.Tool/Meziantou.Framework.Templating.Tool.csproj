@@ -5,12 +5,13 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
 
-    <Version>2.0.2</Version>
+    <Version>2.0.18</Version>
     <Description>CLI to render templates using Meziantou.Framework.Templating</Description>
+    <PackageTags>template, template-engine, cli, dotnet-tool</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.10" />
+    <PackageReference Include="System.CommandLine" Version="2.0.13" />
   </ItemGroup>
 
   <ItemGroup>

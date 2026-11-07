@@ -180,4 +180,73 @@ public sealed class VorbisCommentTests
 
         return result;
     }
+
+    [Fact]
+    public void TryParse_NumbersWithTotals()
+    {
+        var data = BuildVorbisComment("Vendor", ["TRACKNUMBER=3/12", "DISCNUMBER=1/2"]);
+
+        var tags = new MediaTagInfo();
+        Assert.True(VorbisCommentReader.TryParse(data, tags));
+
+        Assert.Equal(3, tags.TrackNumber);
+        Assert.Equal(12, tags.TrackTotal);
+        Assert.Equal(1, tags.DiscNumber);
+        Assert.Equal(2, tags.DiscTotal);
+        Assert.Empty(tags.CustomFields);
+    }
+
+    [Fact]
+    public void TryParse_ValuesThatDoNotParse_AreKeptAsCustomFields()
+    {
+        var data = BuildVorbisComment("Vendor", ["TRACKNUMBER=A1", "DATE=unknown", "BPM=120.5", "DISCTOTAL=?"]);
+
+        var tags = new MediaTagInfo();
+        Assert.True(VorbisCommentReader.TryParse(data, tags));
+
+        Assert.Null(tags.TrackNumber);
+        Assert.Null(tags.Year);
+        Assert.Null(tags.Bpm);
+        Assert.Null(tags.DiscTotal);
+        Assert.Equal("A1", tags.CustomFields["TRACKNUMBER"]);
+        Assert.Equal("unknown", tags.CustomFields["DATE"]);
+        Assert.Equal("120.5", tags.CustomFields["BPM"]);
+        Assert.Equal("?", tags.CustomFields["DISCTOTAL"]);
+    }
+
+    [Fact]
+    public void RoundTrip_ValueThatDoesNotParse_IsWrittenBack()
+    {
+        // The writer rebuilds the comment from MediaTagInfo, so a value the reader drops is deleted from the file.
+        var tags = new MediaTagInfo();
+        VorbisCommentReader.TryParse(BuildVorbisComment("Vendor", ["TRACKNUMBER=A1"]), tags);
+
+        var reread = new MediaTagInfo();
+        VorbisCommentReader.TryParse(VorbisCommentWriter.Build(tags), reread);
+
+        Assert.Equal("A1", reread.CustomFields["TRACKNUMBER"]);
+    }
+
+    [Fact]
+    public void TryParse_VendorLengthAboveInt32MaxValue_ReturnsFalse()
+    {
+        var data = BuildVorbisComment("Vendor", ["TITLE=Title"]);
+        BinaryPrimitives.WriteUInt32LittleEndian(data, 0xFFFF_FFF0);
+
+        Assert.False(VorbisCommentReader.TryParse(data, new MediaTagInfo()));
+    }
+
+    [Fact]
+    public void TryParse_PictureWithALengthAboveInt32MaxValue_IsSkipped()
+    {
+        var picture = new byte[40];
+        BinaryPrimitives.WriteUInt32BigEndian(picture.AsSpan(4), 0xFFFF_FFF0); // MIME type length
+        var data = BuildVorbisComment("Vendor", ["METADATA_BLOCK_PICTURE=" + Convert.ToBase64String(picture), "TITLE=Title"]);
+
+        var tags = new MediaTagInfo();
+        Assert.True(VorbisCommentReader.TryParse(data, tags));
+
+        Assert.Equal("Title", tags.Title);
+        Assert.Empty(tags.Pictures);
+    }
 }

@@ -3,8 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Language.Json</RootNamespace>
-    <Description>Immutable JSON concrete syntax tree with diagnostics, trivia, source locations, and editing helpers.</Description>
-    <Version>2.0.2</Version>
+    <Description>A Roslyn-style immutable JSON syntax tree: green and red nodes, trivia, diagnostics, annotations, and editing that keeps the text you did not touch.</Description>
+    <PackageTags>json, syntax-tree, cst, parser, diagnostics</PackageTags>
+    <Version>4.0.8</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
@@ -13,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
     <ProjectReference Include="../Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
   </ItemGroup>
 

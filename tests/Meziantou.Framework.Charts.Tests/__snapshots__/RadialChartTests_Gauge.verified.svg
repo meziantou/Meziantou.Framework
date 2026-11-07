@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="240" viewBox="0 0 360 240" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>CPU usage</title>
+<rect width="360" height="240" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M14,214.4 A166,166 0 0,1 285.81,86.49 L254.07,124.87 A116.2,116.2 0 0,0 63.8,214.4 Z" fill="#4269d0" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M285.81,86.49 A166,166 0 0,1 346,214.4 L296.2,214.4 A116.2,116.2 0 0,0 254.07,124.87 Z" fill="#e3e6ea" stroke="#ffffff" stroke-linejoin="round"/>
+</g>
+<g>
+<line x1="254.07" y1="124.87" x2="285.81" y2="86.49" stroke="#1f2328" stroke-width="3"/>
+</g>
+<g>
+<text x="180" y="198.58" text-anchor="middle" font-size="32" font-weight="bold" fill="#1f2328">72%</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">CPU usage</text>
+</svg>

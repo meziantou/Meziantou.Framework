@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-PS": {
+      "identity": {
+        "language": "ar",
+        "territory": "PS"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		TRUE	FALSE	FALSE		[OCMD]			Table 97
+OCGs	array;dictionary;null	1.5		FALSE	FALSE	FALSE				[ArrayOfOCG];[OptContentGroup];[]	
+P	name	1.5		FALSE	FALSE	FALSE	AnyOn	[AllOn,AnyOn,AnyOff,AllOff]			
+VE	array	1.6		FALSE	FALSE	FALSE				[VisibilityExpressionArray]	

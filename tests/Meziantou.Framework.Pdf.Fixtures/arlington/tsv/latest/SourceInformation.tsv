@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+AU	dictionary;string-ascii	1.3	2.0	TRUE	FALSE	FALSE				[URLAlias];[]	Table 391
+TS	date	1.3	2.0	FALSE	FALSE	FALSE					
+E	date	1.3	2.0	FALSE	FALSE	FALSE					
+S	integer	1.3	2.0	FALSE	FALSE	FALSE	0	[0,1,2]	[fn:Eval(parent::@S==SPS)]		only for spider page sets
+C	dictionary	1.3	2.0	FALSE	TRUE	FALSE			[fn:Eval(parent::@S==SPS)]	[WebCaptureCommand]	only for spider page sets

@@ -1,6 +1,9 @@
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Yaml.Serialization.Converters;
 
 namespace Meziantou.Framework.Yaml.Serialization;
@@ -14,11 +17,17 @@ namespace Meziantou.Framework.Yaml.Serialization;
 /// </remarks>
 public abstract class YamlReaderWriterBase
 {
+    // The caches are shared by every reader and writer created from the same options instance, which is immutable
+    // once constructed. Reusing them keeps the contract a converter builds by reflection alive across calls instead
+    // of rebuilding it for every serializer call. The cache cannot be a field of YamlSerializerOptions: it is a
+    // record, so a 'with' expression would copy the reference and hand the derived options a cache built for a
+    // different configuration.
+    private static readonly ConditionalWeakTable<YamlSerializerOptions, ConverterCache> SharedConverterCaches = new();
+
     private readonly StringComparer _propertyNameComparer;
+    private readonly ConverterCache _converterCache;
     private Dictionary<string, string>? _propertyNameCache;
     private Dictionary<string, string>? _dictionaryKeyCache;
-    private Dictionary<Type, YamlConverter>? _converterCache;
-    private Dictionary<Type, YamlConverter?>? _customConverterCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="YamlReaderWriterBase"/> class.
@@ -30,6 +39,7 @@ public abstract class YamlReaderWriterBase
         ArgumentNullException.ThrowIfNull(options);
         Options = options;
         _propertyNameComparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        _converterCache = SharedConverterCaches.GetValue(options, static _ => new ConverterCache());
     }
 
     /// <summary>Gets the options associated with this reader or writer instance.</summary>
@@ -100,8 +110,7 @@ public abstract class YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(typeToConvert);
 
-        _converterCache ??= new Dictionary<Type, YamlConverter>();
-        if (_converterCache.TryGetValue(typeToConvert, out var cached))
+        if (_converterCache.Converters.TryGetValue(typeToConvert, out var cached))
         {
             return cached;
         }
@@ -109,14 +118,12 @@ public abstract class YamlReaderWriterBase
         var attributeConverter = CreateConverterFromAttribute(typeToConvert);
         if (attributeConverter is not null)
         {
-            _converterCache[typeToConvert] = attributeConverter;
-            return attributeConverter;
+            return _converterCache.Converters.GetOrAdd(typeToConvert, attributeConverter);
         }
 
         if (TryGetCustomConverter(typeToConvert, out var custom) && custom is not null)
         {
-            _converterCache[typeToConvert] = custom;
-            return custom;
+            return _converterCache.Converters.GetOrAdd(typeToConvert, custom);
         }
 
         var created = YamlBuiltInConverters.CreateConverter(typeToConvert);
@@ -125,8 +132,7 @@ public abstract class YamlReaderWriterBase
             throw new NotSupportedException($"No YAML converter is registered for '{typeToConvert}'.");
         }
 
-        _converterCache[typeToConvert] = created;
-        return created;
+        return _converterCache.Converters.GetOrAdd(typeToConvert, created);
     }
 
     private YamlConverter? CreateConverterFromAttribute(Type typeToConvert)
@@ -137,12 +143,7 @@ public abstract class YamlReaderWriterBase
             return null;
         }
 
-        var converterType = attribute.ConverterType;
-        if (converterType.IsGenericTypeDefinition)
-        {
-            throw new NotSupportedException($"Converter type '{converterType}' cannot be an open generic type.");
-        }
-
+        var converterType = YamlConverterAttributeHelper.ResolveConverterType(attribute.ConverterType, typeToConvert);
         if (!typeof(YamlConverter).IsAssignableFrom(converterType))
         {
             throw new NotSupportedException($"Converter type '{converterType}' must derive from '{typeof(YamlConverter)}'.");
@@ -188,8 +189,7 @@ public abstract class YamlReaderWriterBase
             return false;
         }
 
-        _customConverterCache ??= new Dictionary<Type, YamlConverter?>();
-        if (_customConverterCache.TryGetValue(typeToConvert, out converter))
+        if (_converterCache.CustomConverters.TryGetValue(typeToConvert, out converter))
         {
             return converter is not null;
         }
@@ -216,25 +216,30 @@ public abstract class YamlReaderWriterBase
                     throw new InvalidOperationException($"Converter factory '{factory.GetType()}' returned an invalid converter for '{typeToConvert}'.");
                 }
 
-                converter = created;
-                _customConverterCache[typeToConvert] = converter;
+                converter = _converterCache.CustomConverters.GetOrAdd(typeToConvert, created);
                 return true;
             }
 
             if (candidate.CanConvert(typeToConvert))
             {
-                converter = candidate;
-                _customConverterCache[typeToConvert] = converter;
+                converter = _converterCache.CustomConverters.GetOrAdd(typeToConvert, candidate);
                 return true;
             }
         }
 
         converter = null;
-        _customConverterCache[typeToConvert] = null;
+        _converterCache.CustomConverters.TryAdd(typeToConvert, null);
         return false;
     }
 
-    private static class YamlBuiltInConverters
+    private sealed class ConverterCache
+    {
+        public ConcurrentDictionary<Type, YamlConverter> Converters { get; } = new();
+
+        public ConcurrentDictionary<Type, YamlConverter?> CustomConverters { get; } = new();
+    }
+
+    internal static class YamlBuiltInConverters
     {
         [UnconditionalSuppressMessage(
             "AOT",
@@ -344,6 +349,16 @@ public abstract class YamlReaderWriterBase
                 return YamlTimeSpanConverter.Instance;
             }
 
+            if (typeToConvert == typeof(Uri))
+            {
+                return YamlUriConverter.Instance;
+            }
+
+            if (typeToConvert == typeof(CultureInfo))
+            {
+                return YamlCultureInfoConverter.Instance;
+            }
+
             if (typeToConvert == typeof(DateOnly))
             {
                 return YamlDateOnlyConverter.Instance;
@@ -367,6 +382,43 @@ public abstract class YamlReaderWriterBase
             if (typeToConvert == typeof(UInt128))
             {
                 return YamlUInt128Converter.Instance;
+            }
+
+#if NET11_0_OR_GREATER
+            if (typeToConvert == typeof(BFloat16))
+            {
+                return YamlBFloat16Converter.Instance;
+            }
+
+            if (typeToConvert == typeof(Decimal32))
+            {
+                return YamlDecimal32Converter.Instance;
+            }
+
+            if (typeToConvert == typeof(Decimal64))
+            {
+                return YamlDecimal64Converter.Instance;
+            }
+
+            if (typeToConvert == typeof(Decimal128))
+            {
+                return YamlDecimal128Converter.Instance;
+            }
+#endif
+
+            if (typeToConvert == typeof(System.Numerics.BigInteger))
+            {
+                return YamlBigIntegerConverter.Instance;
+            }
+
+            if (typeToConvert == typeof(System.Version))
+            {
+                return YamlVersionConverter.Instance;
+            }
+
+            if (typeToConvert == typeof(System.Text.Rune))
+            {
+                return YamlRuneConverter.Instance;
             }
 
             if (typeToConvert == typeof(nint))
@@ -423,6 +475,11 @@ public abstract class YamlReaderWriterBase
                 return (YamlConverter)Activator.CreateInstance(converterType)!;
             }
 
+            if (typeToConvert.IsArray && !typeToConvert.IsSZArray)
+            {
+                throw new NotSupportedException($"Multi-dimensional array type '{typeToConvert}' is not supported. Use a jagged array instead.");
+            }
+
             if (typeToConvert.IsArray)
             {
                 var elementType = typeToConvert.GetElementType()!;
@@ -475,9 +532,21 @@ public abstract class YamlReaderWriterBase
                     return (YamlConverter)Activator.CreateInstance(converterType)!;
                 }
 
+                if (definition == typeof(IDictionary<,>) && args[0] == typeof(string))
+                {
+                    var converterType = typeof(YamlIDictionaryConverter<>).MakeGenericType(args[1]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
                 if (definition == typeof(IDictionary<,>))
                 {
                     var converterType = typeof(YamlIDictionaryConverter<,>).MakeGenericType(args[0], args[1]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(IReadOnlyDictionary<,>) && args[0] == typeof(string))
+                {
+                    var converterType = typeof(YamlIReadOnlyDictionaryConverter<>).MakeGenericType(args[1]);
                     return (YamlConverter)Activator.CreateInstance(converterType)!;
                 }
 
@@ -496,6 +565,12 @@ public abstract class YamlReaderWriterBase
                 if (definition == typeof(ISet<>))
                 {
                     var converterType = typeof(YamlISetConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(IReadOnlySet<>))
+                {
+                    var converterType = typeof(YamlIReadOnlySetConverter<>).MakeGenericType(args[0]);
                     return (YamlConverter)Activator.CreateInstance(converterType)!;
                 }
 
@@ -546,6 +621,72 @@ public abstract class YamlReaderWriterBase
                     var converterType = typeof(YamlEnumerableConverter<>).MakeGenericType(args[0]);
                     return (YamlConverter)Activator.CreateInstance(converterType)!;
                 }
+
+                if (definition == typeof(Queue<>))
+                {
+                    var converterType = typeof(YamlQueueConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(Stack<>))
+                {
+                    var converterType = typeof(YamlStackConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(ConcurrentQueue<>))
+                {
+                    var converterType = typeof(YamlConcurrentQueueConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(ConcurrentStack<>))
+                {
+                    var converterType = typeof(YamlConcurrentStackConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(ConcurrentBag<>))
+                {
+                    var converterType = typeof(YamlConcurrentBagConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(ArraySegment<>))
+                {
+                    var converterType = typeof(YamlArraySegmentConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (definition == typeof(KeyValuePair<,>))
+                {
+                    var converterType = typeof(YamlKeyValuePairConverter<,>).MakeGenericType(args[0], args[1]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+            }
+
+            // The frozen collections are abstract: the instance is always one of their internal implementations.
+            if (TryGetGenericBaseType(typeToConvert, typeof(FrozenSet<>), out var frozenSetType))
+            {
+                var converterType = typeof(YamlFrozenSetConverter<>).MakeGenericType(frozenSetType.GetGenericArguments()[0]);
+                return (YamlConverter)Activator.CreateInstance(converterType)!;
+            }
+
+            if (TryGetGenericBaseType(typeToConvert, typeof(FrozenDictionary<,>), out var frozenDictionaryType))
+            {
+                var frozenArguments = frozenDictionaryType.GetGenericArguments();
+                var converterType = frozenArguments[0] == typeof(string)
+                    ? typeof(YamlFrozenDictionaryConverter<>).MakeGenericType(frozenArguments[1])
+                    : typeof(YamlFrozenDictionaryConverter<,>).MakeGenericType(frozenArguments[0], frozenArguments[1]);
+                return (YamlConverter)Activator.CreateInstance(converterType)!;
+            }
+
+            if (TryGetMutableDictionaryTypes(typeToConvert, out var dictionaryKeyType, out var dictionaryValueType))
+            {
+                var converterType = dictionaryKeyType == typeof(string)
+                    ? typeof(YamlMutableStringDictionaryConverter<,>).MakeGenericType(typeToConvert, dictionaryValueType)
+                    : typeof(YamlMutableDictionaryConverter<,,>).MakeGenericType(typeToConvert, dictionaryKeyType, dictionaryValueType);
+                return (YamlConverter)Activator.CreateInstance(converterType)!;
             }
 
             if (TryGetMutableCollectionElementType(typeToConvert, out var collectionElementType))
@@ -554,11 +695,124 @@ public abstract class YamlReaderWriterBase
                 return (YamlConverter)Activator.CreateInstance(converterType)!;
             }
 
+            if (GetUnsupportedTypeReason(typeToConvert) is { } reason)
+            {
+                throw new NotSupportedException($"Type '{typeToConvert}' is not supported: {reason}");
+            }
+
             var objectConverterType = typeof(YamlObjectConverter<>).MakeGenericType(typeToConvert);
             return (YamlConverter)Activator.CreateInstance(objectConverterType)!;
         }
 
-        private static bool TryGetMutableCollectionElementType(
+        private static bool TryGetGenericBaseType(Type type, Type genericDefinition, [NotNullWhen(true)] out Type? baseType)
+        {
+            for (var current = type; current is not null; current = current.BaseType)
+            {
+                if (current.IsGenericType && current.GetGenericTypeDefinition() == genericDefinition)
+                {
+                    baseType = current;
+                    return true;
+                }
+            }
+
+            baseType = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets why a type that has no built-in converter cannot be serialized as an object made of its public members.
+        /// </summary>
+        /// <remarks>
+        /// A collection of the base class library that none of the collection converters handles, such as
+        /// <c>ArrayList</c> or <c>Hashtable</c>, would be written as its public properties (<c>Count</c>, ...)
+        /// and read back empty, and the members of a <see cref="Type"/> or a delegate reference each other endlessly.
+        /// They are rejected instead. The source generator reports the same types.
+        /// </remarks>
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2070",
+            Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+        internal static string? GetUnsupportedTypeReason(Type type)
+        {
+            if (typeof(Delegate).IsAssignableFrom(type))
+            {
+                return "delegates cannot be serialized.";
+            }
+
+            if (typeof(MemberInfo).IsAssignableFrom(type))
+            {
+                return "reflection types cannot be serialized.";
+            }
+
+            if (type == typeof(IAsyncEnumerable<>) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>)) ||
+                type.GetInterfaces().Any(static interfaceType => interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>)))
+            {
+                return "asynchronous sequences cannot be serialized synchronously. Materialize the sequence into a List<T> first.";
+            }
+
+            if (typeof(IEnumerable).IsAssignableFrom(type) && IsDeclaredInSystemNamespace(type))
+            {
+                return "this collection type is not supported. Use a supported collection such as List<T>, Dictionary<TKey, TValue>, or an array.";
+            }
+
+            return null;
+        }
+
+        private static bool IsDeclaredInSystemNamespace(Type type)
+        {
+            // Every type derives from System.Object, so only the types a collection can derive from are considered.
+            for (var current = type; current is not null && current != typeof(object) && current != typeof(ValueType); current = current.BaseType)
+            {
+                if (current.Namespace is { } ns && (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryGetMutableDictionaryTypes(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type,
+            [NotNullWhen(true)] out Type? keyType,
+            [NotNullWhen(true)] out Type? valueType)
+        {
+            keyType = null;
+            valueType = null;
+
+            if (type.IsInterface || type.IsAbstract || type.IsValueType || typeof(Model.YamlNode).IsAssignableFrom(type) || type.GetConstructor(Type.EmptyTypes) is null)
+            {
+                return false;
+            }
+
+            Type? dictionaryInterface = null;
+            foreach (var interfaceType in type.GetInterfaces())
+            {
+                if (!interfaceType.IsGenericType || interfaceType.GetGenericTypeDefinition() != typeof(IDictionary<,>))
+                {
+                    continue;
+                }
+
+                if (dictionaryInterface is not null && dictionaryInterface != interfaceType)
+                {
+                    return false;
+                }
+
+                dictionaryInterface = interfaceType;
+            }
+
+            if (dictionaryInterface is null)
+            {
+                return false;
+            }
+
+            var arguments = dictionaryInterface.GetGenericArguments();
+            keyType = arguments[0];
+            valueType = arguments[1];
+            return true;
+        }
+
+        internal static bool TryGetMutableCollectionElementType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type,
             [NotNullWhen(true)] out Type? elementType)
         {

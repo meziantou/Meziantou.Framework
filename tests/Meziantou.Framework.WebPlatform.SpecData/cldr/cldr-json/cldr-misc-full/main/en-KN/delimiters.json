@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-KN": {
+      "identity": {
+        "language": "en",
+        "territory": "KN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

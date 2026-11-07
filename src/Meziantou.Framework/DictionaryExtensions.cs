@@ -21,15 +21,19 @@ public static class DictionaryExtensions
     }
 
     /// <summary>Gets the value associated with the specified key or adds it using the factory function if it doesn't exist.</summary>
+    /// <remarks>The key is only added once <paramref name="valueFactory"/> has returned, so a factory that throws leaves the dictionary unchanged.</remarks>
     public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue> valueFactory)
         where TKey : notnull
     {
-        ref var dictionaryValue = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out var exists);
-        if (exists)
-            return dictionaryValue!;
+        if (dict.TryGetValue(key, out var existingValue))
+            return existingValue;
 
-        dictionaryValue = valueFactory(key);
-        return dictionaryValue;
+        // The value is computed before touching the dictionary: GetValueRefOrAddDefault would insert
+        // the key before the factory runs, and the ref it returns is invalidated if the factory
+        // mutates the same dictionary.
+        var value = valueFactory(key);
+        dict[key] = value;
+        return value;
     }
 
     /// <summary>Attempts to update the value associated with the specified key.</summary>
@@ -50,13 +54,12 @@ public static class DictionaryExtensions
     public static bool TryUpdate<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue, TValue> valueFactory)
         where TKey : notnull
     {
-        ref var dictionaryValue = ref CollectionsMarshal.GetValueRefOrNullRef(dict, key);
-        if (!Unsafe.IsNullRef(ref dictionaryValue))
-        {
-            dictionaryValue = valueFactory(key, dictionaryValue);
-            return true;
-        }
+        if (!dict.TryGetValue(key, out var currentValue))
+            return false;
 
-        return false;
+        // The new value is stored through the indexer instead of the ref returned by
+        // GetValueRefOrNullRef, which the factory could invalidate by mutating the dictionary.
+        dict[key] = valueFactory(key, currentValue);
+        return true;
     }
 }

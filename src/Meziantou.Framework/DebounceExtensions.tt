@@ -11,7 +11,6 @@
 #nullable enable
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Meziantou.Framework;
 
@@ -27,13 +26,30 @@ public static class DebounceExtensions
     /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
     /// the timer is reset and only the most recent call is executed.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
 <#= GetTypeParamDocs(i) #>    /// <param name="action">The action to debounce.</param>
     /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
     /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
     {
-        return Debounce(action, interval, TimeProvider.System);
+        return Debounce(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+<#= GetTypeParamDocs(i) #>    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Debounce(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -44,26 +60,55 @@ public static class DebounceExtensions
 <#= GetTypeParamDocs(i) #>    /// <param name="action">The action to debounce.</param>
     /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback.
+    /// </param>
     /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+<# if (i > 0) { #>
+        <#= GetTupleTypeString(i) #> args = <#= GetTupleDefaultValue(i) #>;
+<# } #>
         return (<#= GetArgsString(i) #>) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+<# if (i > 0) { #>
+                args = <#= GetTupleCreationExpression(i) #>;
+<# } #>
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(<#= GetArgsString(i) #>);
-                }
+<# if (i > 0) { #>
+                    <#= GetTupleTypeString(i) #> pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+<# } #>
+                    try
+                    {
+                        action(<#= GetTupleItemsString(i, "pendingArgs") #>);
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -95,6 +140,54 @@ public static class DebounceExtensions
         {
             str += "    /// <typeparam name=\"T" + i + "\">The type of the parameter " + i + " of the action.</typeparam>\r\n";
         }
+        return str;
+    }
+
+    static string GetTupleTypeString(int count)
+    {
+        return count switch
+        {
+            1 => "T0",
+            _ => "(" + GetTemplateString(count).Substring(1, GetTemplateString(count).Length - 2) + ")",
+        };
+    }
+
+    static string GetTupleCreationExpression(int count)
+    {
+        if (count == 1)
+            return "arg0";
+
+        return "(" + GetArgsString(count) + ")";
+    }
+
+    static string GetTupleDefaultValue(int count)
+    {
+        return count switch
+        {
+            1 => "default!",
+            _ => "default",
+        };
+    }
+
+    static string GetTupleItemsString(int count, string tupleName)
+    {
+        if (count == 0)
+            return "";
+
+        if (count == 1)
+            return tupleName;
+
+        var str = "";
+        for (var i = 1; i <= count; i++)
+        {
+            if (i > 1)
+            {
+                str += ", ";
+            }
+
+            str += tupleName + ".Item" + i;
+        }
+
         return str;
     }
 

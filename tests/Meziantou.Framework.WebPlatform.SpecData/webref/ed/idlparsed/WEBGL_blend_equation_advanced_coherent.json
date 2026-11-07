@@ -1,0 +1,324 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_blend_equation_advanced_coherent Extension Draft Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_blend_equation_advanced_coherent/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_blend_equation_advanced_coherent"
+        ],
+        "Worker": [
+          "WEBGL_blend_equation_advanced_coherent"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_blend_equation_advanced_coherent": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_blend_equation_advanced_coherent  {\n  const GLenum MULTIPLY       = 0x9294;\n  const GLenum SCREEN         = 0x9295;\n  const GLenum OVERLAY        = 0x9296;\n  const GLenum DARKEN         = 0x9297;\n  const GLenum LIGHTEN        = 0x9298;\n  const GLenum COLORDODGE     = 0x9299;\n  const GLenum COLORBURN      = 0x929A;\n  const GLenum HARDLIGHT      = 0x929B;\n  const GLenum SOFTLIGHT      = 0x929C;\n  const GLenum DIFFERENCE     = 0x929E;\n  const GLenum EXCLUSION      = 0x92A0;\n  const GLenum HSL_HUE        = 0x92AD;\n  const GLenum HSL_SATURATION = 0x92AE;\n  const GLenum HSL_COLOR      = 0x92AF;\n  const GLenum HSL_LUMINOSITY = 0x92B0;\n};",
+        "type": "interface",
+        "name": "WEBGL_blend_equation_advanced_coherent",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "MULTIPLY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9294"
+            }
+          },
+          {
+            "type": "const",
+            "name": "SCREEN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9295"
+            }
+          },
+          {
+            "type": "const",
+            "name": "OVERLAY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9296"
+            }
+          },
+          {
+            "type": "const",
+            "name": "DARKEN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9297"
+            }
+          },
+          {
+            "type": "const",
+            "name": "LIGHTEN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9298"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COLORDODGE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9299"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COLORBURN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x929A"
+            }
+          },
+          {
+            "type": "const",
+            "name": "HARDLIGHT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x929B"
+            }
+          },
+          {
+            "type": "const",
+            "name": "SOFTLIGHT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x929C"
+            }
+          },
+          {
+            "type": "const",
+            "name": "DIFFERENCE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x929E"
+            }
+          },
+          {
+            "type": "const",
+            "name": "EXCLUSION",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x92A0"
+            }
+          },
+          {
+            "type": "const",
+            "name": "HSL_HUE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x92AD"
+            }
+          },
+          {
+            "type": "const",
+            "name": "HSL_SATURATION",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x92AE"
+            }
+          },
+          {
+            "type": "const",
+            "name": "HSL_COLOR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x92AF"
+            }
+          },
+          {
+            "type": "const",
+            "name": "HSL_LUMINOSITY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x92B0"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_blend_equation_advanced_coherent"
+      ],
+      "Worker": [
+        "WEBGL_blend_equation_advanced_coherent"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_blend_equation_advanced_coherent": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "spec": {
+    "title": "CSS Animations Module Level 2",
+    "url": "https://drafts.csswg.org/css-animations-2/"
+  },
+  "properties": [
+    {
+      "name": "animation-duration",
+      "href": "https://drafts.csswg.org/css-animations-2/#propdef-animation-duration",
+      "value": "[ auto | <time [0s,∞]> ]#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item either a time or the keyword auto",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "For time-driven animations, equivalent to 0s. For scroll-driven animations, equivalent to the duration necessary to fill the timeline in consideration of animation-range, animation-delay, and animation-iteration-count. See Scroll-driven Animations § 4.1 Finite Timeline Calculations.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-duration-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<time [0s,∞]>",
+          "prose": "For time-driven animations, specifies the length of time that an animation takes to complete one cycle. A negative <time> is invalid. For scroll-driven animations, treated as auto.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-duration-time-0s",
+          "type": "value",
+          "value": "<time [0s,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-duration",
+        "animationDuration"
+      ]
+    },
+    {
+      "name": "animation-delay-start",
+      "href": "https://drafts.csswg.org/css-animations-2/#propdef-animation-delay-start",
+      "value": "<time>#",
+      "initial": "0s",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a duration",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "<time>",
+          "prose": "The <time> defines how long of a delay there is between the start of the animation (when the animation is applied to the element via these properties) and when it begins executing. A delay of 0s (the initial value) means that the animation will execute as soon as it is applied. A negative delay is valid. Similar to a delay of 0s, it means that the animation executes immediately, but is automatically progressed by the absolute value of the delay, as if the animation had started the specified time in the past, and so it appears to start partway through its active duration. If an animation’s keyframes have an implied starting value, the values are taken from the time the animation starts, not some time in the past.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-delay-start-time",
+          "type": "value",
+          "value": "<time>"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-delay-start",
+        "animationDelayStart"
+      ]
+    },
+    {
+      "name": "animation-delay-end",
+      "href": "https://drafts.csswg.org/css-animations-2/#propdef-animation-delay-end",
+      "value": "<time [0s,∞]>#",
+      "initial": "0s",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a duration",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "animation-delay-end",
+        "animationDelayEnd"
+      ]
+    },
+    {
+      "name": "animation-delay",
+      "href": "https://drafts.csswg.org/css-animations-2/#propdef-animation-delay",
+      "value": "[ <'animation-delay-start'> <'animation-delay-end'>? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "animation-delay",
+        "animationDelay"
+      ],
+      "longhands": [
+        "animation-delay-start",
+        "animation-delay-end"
+      ]
+    },
+    {
+      "name": "animation-composition",
+      "href": "https://drafts.csswg.org/css-animations-2/#propdef-animation-composition",
+      "value": "<single-animation-composition>#",
+      "initial": "replace",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "animation-composition",
+        "animationComposition"
+      ]
+    },
+    {
+      "name": "animation-timeline",
+      "href": "https://drafts.csswg.org/css-animations-2/#propdef-animation-timeline",
+      "value": "<single-animation-timeline>#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item either the keyword none, the keyword auto, a case-sensitive css identifier, a computed scroll() function, or a computed view() function",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "animation-timeline",
+        "animationTimeline"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<single-animation-composition>",
+      "value": "replace | add | accumulate",
+      "href": "https://drafts.csswg.org/css-animations-2/#typedef-single-animation-composition",
+      "type": "type"
+    },
+    {
+      "name": "<single-animation-timeline>",
+      "href": "https://drafts.csswg.org/css-animations-2/#typedef-single-animation-timeline",
+      "type": "type",
+      "value": "auto | none | <dashed-ident> | <scroll()> | <view()>",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The animation’s timeline is a DocumentTimeline, more specifically the default document timeline.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-timeline-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "The animation is not associated with a timeline.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-timeline-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<dashed-ident>",
+          "prose": "If a named scroll progress timeline or view progress timeline is in scope on this element, use the referenced timeline as defined in Scroll-driven Animations § Declaring a Named Timeline’s Scope: the timeline-scope property. Otherwise the animation is not associated with a timeline.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-timeline-dashed-ident",
+          "type": "value",
+          "value": "<dashed-ident>"
+        },
+        {
+          "name": "<scroll()>",
+          "prose": "Use the scroll progress timeline indicated by the given scroll() function. See Scroll-driven Animations § 2.2.1 The scroll() notation.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-timeline-scroll",
+          "type": "value",
+          "value": "<scroll()>"
+        },
+        {
+          "name": "<view()>",
+          "prose": "Use the view progress timeline indicated by the given view() function. See Scroll-driven Animations § 3.3.1 The view() notation.",
+          "href": "https://drafts.csswg.org/css-animations-2/#valdef-animation-timeline-view",
+          "type": "value",
+          "value": "<view()>"
+        }
+      ]
+    },
+    {
+      "name": "<single-animation>",
+      "value": "<'animation-duration'> || <easing-function> || <'animation-delay-start'> || <single-animation-iteration-count> || <single-animation-direction> || <single-animation-fill-mode> || <single-animation-play-state> || [ none | <keyframes-name> ] || <single-animation-timeline>",
+      "href": "https://drafts.csswg.org/css-animations-2/#typedef-single-animation",
+      "type": "type"
+    }
+  ]
+}

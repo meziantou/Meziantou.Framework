@@ -21,23 +21,37 @@ public sealed class JsonHttpRecordingStore : IHttpRecordingStore
             return [];
         }
 
-        await using var stream = File.OpenRead(_filePath);
-        var entries = await JsonSerializer.DeserializeAsync(stream, HttpRecordingSerializerContext.Default.ListHttpRecordingEntry, cancellationToken).ConfigureAwait(false);
-        return entries ?? [];
+        List<HttpRecordingEntry>? entries;
+        await using (var stream = File.OpenRead(_filePath))
+        {
+            try
+            {
+                entries = await JsonSerializer.DeserializeAsync(stream, HttpRecordingSerializerContext.Default.ListHttpRecordingEntry, cancellationToken).ConfigureAwait(false);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidDataException($"The recording file '{_filePath}' is not valid JSON. It may have been truncated by an interrupted save.", ex);
+            }
+        }
+
+        if (entries is null)
+        {
+            throw new InvalidDataException($"The recording file '{_filePath}' does not contain a list of recordings. Delete it to start a new recording.");
+        }
+
+        HttpRecordingStoreHelpers.ValidateEntries(entries, _filePath);
+        return entries;
     }
 
     /// <inheritdoc />
-    public async ValueTask SaveAsync(IReadOnlyList<HttpRecordingEntry> entries, CancellationToken cancellationToken)
+    public ValueTask SaveAsync(IReadOnlyList<HttpRecordingEntry> entries, CancellationToken cancellationToken)
     {
-        var directory = Path.GetDirectoryName(_filePath);
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        ArgumentNullException.ThrowIfNull(entries);
 
         var list = entries as List<HttpRecordingEntry> ?? new List<HttpRecordingEntry>(entries);
-
-        await using var stream = File.Create(_filePath);
-        await JsonSerializer.SerializeAsync(stream, list, HttpRecordingSerializerContext.Default.ListHttpRecordingEntry, cancellationToken).ConfigureAwait(false);
+        return HttpRecordingStoreHelpers.WriteAtomicallyAsync(
+            _filePath,
+            async (stream, token) => await JsonSerializer.SerializeAsync(stream, list, HttpRecordingSerializerContext.Default.ListHttpRecordingEntry, token).ConfigureAwait(false),
+            cancellationToken);
     }
 }

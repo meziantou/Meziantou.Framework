@@ -1,0 +1,3305 @@
+{
+  "spec": {
+    "title": "Streams Standard",
+    "url": "https://streams.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "*": [
+          "ReadableStream",
+          "ReadableStreamDefaultReader",
+          "ReadableStreamBYOBReader",
+          "WritableStream",
+          "WritableStreamDefaultWriter",
+          "TransformStream",
+          "ByteLengthQueuingStrategy",
+          "CountQueuingStrategy"
+        ]
+      },
+      "functions": {
+        "*": [
+          "ReadableStreamDefaultController",
+          "ReadableByteStreamController",
+          "ReadableStreamBYOBRequest",
+          "WritableStreamDefaultController",
+          "TransformStreamDefaultController"
+        ]
+      }
+    },
+    "idlNames": {
+      "ReadableStream": {
+        "fragment": "[Exposed=*, Transferable]\ninterface ReadableStream {\n  constructor(optional object underlyingSource, optional QueuingStrategy strategy = {});\n\n  static ReadableStream from(async_sequence<any> asyncIterable);\n\n  readonly attribute boolean locked;\n\n  Promise<undefined> cancel(optional any reason);\n  ReadableStreamReader getReader(optional ReadableStreamGetReaderOptions options = {});\n  ReadableStream pipeThrough(ReadableWritablePair transform, optional StreamPipeOptions options = {});\n  Promise<undefined> pipeTo(WritableStream destination, optional StreamPipeOptions options = {});\n  sequence<ReadableStream> tee();\n\n  async_iterable<any>(optional ReadableStreamIteratorOptions options = {});\n};",
+        "type": "interface",
+        "name": "ReadableStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "underlyingSource",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "strategy",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "QueuingStrategy"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#rs-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "from",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "asyncIterable",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "async_sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "any"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://streams.spec.whatwg.org/#rs-from"
+          },
+          {
+            "type": "attribute",
+            "name": "locked",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#rs-locked"
+          },
+          {
+            "type": "operation",
+            "name": "cancel",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reason",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-cancel"
+          },
+          {
+            "type": "operation",
+            "name": "getReader",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamReader"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStreamGetReaderOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-get-reader"
+          },
+          {
+            "type": "operation",
+            "name": "pipeThrough",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "transform",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableWritablePair"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StreamPipeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-pipe-through"
+          },
+          {
+            "type": "operation",
+            "name": "pipeTo",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "destination",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WritableStream"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StreamPipeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-pipe-to"
+          },
+          {
+            "type": "operation",
+            "name": "tee",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStream"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-tee"
+          },
+          {
+            "type": "async_iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "any"
+              }
+            ],
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStreamIteratorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#readablestream"
+      },
+      "ReadableStreamReader": {
+        "fragment": "typedef (ReadableStreamDefaultReader or ReadableStreamBYOBReader) ReadableStreamReader;",
+        "type": "typedef",
+        "name": "ReadableStreamReader",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamDefaultReader"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamBYOBReader"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#typedefdef-readablestreamreader"
+      },
+      "ReadableStreamReaderMode": {
+        "fragment": "enum ReadableStreamReaderMode { \"byob\" };",
+        "type": "enum",
+        "name": "ReadableStreamReaderMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "byob",
+            "href": "https://streams.spec.whatwg.org/#dom-readablestreamreadermode-byob"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#enumdef-readablestreamreadermode"
+      },
+      "ReadableStreamGetReaderOptions": {
+        "fragment": "dictionary ReadableStreamGetReaderOptions {\n  ReadableStreamReaderMode mode;\n};",
+        "type": "dictionary",
+        "name": "ReadableStreamGetReaderOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamReaderMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-readablestreamgetreaderoptions-mode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-readablestreamgetreaderoptions"
+      },
+      "ReadableStreamIteratorOptions": {
+        "fragment": "dictionary ReadableStreamIteratorOptions {\n  boolean preventCancel = false;\n};",
+        "type": "dictionary",
+        "name": "ReadableStreamIteratorOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "preventCancel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-readablestreamiteratoroptions-preventcancel"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-readablestreamiteratoroptions"
+      },
+      "ReadableWritablePair": {
+        "fragment": "dictionary ReadableWritablePair {\n  required ReadableStream readable;\n  required WritableStream writable;\n};",
+        "type": "dictionary",
+        "name": "ReadableWritablePair",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "readable",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://streams.spec.whatwg.org/#dom-readablewritablepair-readable"
+          },
+          {
+            "type": "field",
+            "name": "writable",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WritableStream"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://streams.spec.whatwg.org/#dom-readablewritablepair-writable"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-readablewritablepair"
+      },
+      "StreamPipeOptions": {
+        "fragment": "dictionary StreamPipeOptions {\n  boolean preventClose = false;\n  boolean preventAbort = false;\n  boolean preventCancel = false;\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "StreamPipeOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "preventClose",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-streampipeoptions-preventclose"
+          },
+          {
+            "type": "field",
+            "name": "preventAbort",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-streampipeoptions-preventabort"
+          },
+          {
+            "type": "field",
+            "name": "preventCancel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-streampipeoptions-preventcancel"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-streampipeoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-streampipeoptions"
+      },
+      "UnderlyingSource": {
+        "fragment": "dictionary UnderlyingSource {\n  UnderlyingSourceStartCallback start;\n  UnderlyingSourcePullCallback pull;\n  UnderlyingSourceCancelCallback cancel;\n  ReadableStreamType type;\n  [EnforceRange] unsigned long long autoAllocateChunkSize;\n};",
+        "type": "dictionary",
+        "name": "UnderlyingSource",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "start",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlyingSourceStartCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsource-start"
+          },
+          {
+            "type": "field",
+            "name": "pull",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlyingSourcePullCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsource-pull"
+          },
+          {
+            "type": "field",
+            "name": "cancel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlyingSourceCancelCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsource-cancel"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamType"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsource-type"
+          },
+          {
+            "type": "field",
+            "name": "autoAllocateChunkSize",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsource-autoallocatechunksize"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-underlyingsource"
+      },
+      "ReadableStreamController": {
+        "fragment": "typedef (ReadableStreamDefaultController or ReadableByteStreamController) ReadableStreamController;",
+        "type": "typedef",
+        "name": "ReadableStreamController",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamDefaultController"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableByteStreamController"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#typedefdef-readablestreamcontroller"
+      },
+      "UnderlyingSourceStartCallback": {
+        "fragment": "callback UnderlyingSourceStartCallback = any (ReadableStreamController controller);",
+        "type": "callback",
+        "name": "UnderlyingSourceStartCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "controller",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamController"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-underlyingsourcestartcallback"
+      },
+      "UnderlyingSourcePullCallback": {
+        "fragment": "callback UnderlyingSourcePullCallback = Promise<undefined> (ReadableStreamController controller);",
+        "type": "callback",
+        "name": "UnderlyingSourcePullCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "controller",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamController"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-underlyingsourcepullcallback"
+      },
+      "UnderlyingSourceCancelCallback": {
+        "fragment": "callback UnderlyingSourceCancelCallback = Promise<undefined> (optional any reason);",
+        "type": "callback",
+        "name": "UnderlyingSourceCancelCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "reason",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": true,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-underlyingsourcecancelcallback"
+      },
+      "ReadableStreamType": {
+        "fragment": "enum ReadableStreamType { \"bytes\" };",
+        "type": "enum",
+        "name": "ReadableStreamType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "bytes",
+            "href": "https://streams.spec.whatwg.org/#dom-readablestreamtype-bytes"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#enumdef-readablestreamtype"
+      },
+      "ReadableStreamGenericReader": {
+        "fragment": "interface mixin ReadableStreamGenericReader {\n  readonly attribute Promise<undefined> closed;\n\n  Promise<undefined> cancel(optional any reason);\n};",
+        "type": "interface mixin",
+        "name": "ReadableStreamGenericReader",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "closed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#generic-reader-closed"
+          },
+          {
+            "type": "operation",
+            "name": "cancel",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reason",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#generic-reader-cancel"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#readablestreamgenericreader"
+      },
+      "ReadableStreamDefaultReader": {
+        "fragment": "[Exposed=*]\ninterface ReadableStreamDefaultReader {\n  constructor(ReadableStream stream);\n\n  Promise<ReadableStreamReadResult> read();\n  undefined releaseLock();\n};",
+        "type": "interface",
+        "name": "ReadableStreamDefaultReader",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stream",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStream"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#default-reader-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "read",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStreamReadResult"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#default-reader-read"
+          },
+          {
+            "type": "operation",
+            "name": "releaseLock",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#default-reader-release-lock"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#readablestreamdefaultreader"
+      },
+      "ReadableStreamReadResult": {
+        "fragment": "dictionary ReadableStreamReadResult {\n  any value;\n  boolean done;\n};",
+        "type": "dictionary",
+        "name": "ReadableStreamReadResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-readablestreamreadresult-value"
+          },
+          {
+            "type": "field",
+            "name": "done",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-readablestreamreadresult-done"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-readablestreamreadresult"
+      },
+      "ReadableStreamBYOBReader": {
+        "fragment": "[Exposed=*]\ninterface ReadableStreamBYOBReader {\n  constructor(ReadableStream stream);\n\n  Promise<ReadableStreamReadResult> read(ArrayBufferView view, optional ReadableStreamBYOBReaderReadOptions options = {});\n  undefined releaseLock();\n};",
+        "type": "interface",
+        "name": "ReadableStreamBYOBReader",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stream",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStream"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#byob-reader-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "read",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStreamReadResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "view",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBufferView"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ReadableStreamBYOBReaderReadOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#byob-reader-read"
+          },
+          {
+            "type": "operation",
+            "name": "releaseLock",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#byob-reader-release-lock"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#readablestreambyobreader"
+      },
+      "ReadableStreamBYOBReaderReadOptions": {
+        "fragment": "dictionary ReadableStreamBYOBReaderReadOptions {\n  [EnforceRange] unsigned long long min = 1;\n};",
+        "type": "dictionary",
+        "name": "ReadableStreamBYOBReaderReadOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "min",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-readablestreambyobreaderreadoptions-min"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-readablestreambyobreaderreadoptions"
+      },
+      "ReadableStreamDefaultController": {
+        "fragment": "[Exposed=*]\ninterface ReadableStreamDefaultController {\n  readonly attribute unrestricted double? desiredSize;\n\n  undefined close();\n  undefined enqueue(optional any chunk);\n  undefined error(optional any e);\n};",
+        "type": "interface",
+        "name": "ReadableStreamDefaultController",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "desiredSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#rs-default-controller-desired-size"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-default-controller-close"
+          },
+          {
+            "type": "operation",
+            "name": "enqueue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "chunk",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-default-controller-enqueue"
+          },
+          {
+            "type": "operation",
+            "name": "error",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "e",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-default-controller-error"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#readablestreamdefaultcontroller"
+      },
+      "ReadableByteStreamController": {
+        "fragment": "[Exposed=*]\ninterface ReadableByteStreamController {\n  readonly attribute ReadableStreamBYOBRequest? byobRequest;\n  readonly attribute unrestricted double? desiredSize;\n\n  undefined close();\n  undefined enqueue(ArrayBufferView chunk);\n  undefined error(optional any e);\n};",
+        "type": "interface",
+        "name": "ReadableByteStreamController",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "byobRequest",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ReadableStreamBYOBRequest"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#rbs-controller-byob-request"
+          },
+          {
+            "type": "attribute",
+            "name": "desiredSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#rbs-controller-desired-size"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rbs-controller-close"
+          },
+          {
+            "type": "operation",
+            "name": "enqueue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "chunk",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBufferView"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rbs-controller-enqueue"
+          },
+          {
+            "type": "operation",
+            "name": "error",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "e",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rbs-controller-error"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#readablebytestreamcontroller"
+      },
+      "ReadableStreamBYOBRequest": {
+        "fragment": "[Exposed=*]\ninterface ReadableStreamBYOBRequest {\n  readonly attribute Uint8Array? view;\n\n  undefined respond([EnforceRange] unsigned long long bytesWritten);\n  undefined respondWithNewView(ArrayBufferView view);\n};",
+        "type": "interface",
+        "name": "ReadableStreamBYOBRequest",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "view",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Uint8Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#rs-byob-request-view"
+          },
+          {
+            "type": "operation",
+            "name": "respond",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "bytesWritten",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "EnforceRange",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-byob-request-respond"
+          },
+          {
+            "type": "operation",
+            "name": "respondWithNewView",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "view",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBufferView"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#rs-byob-request-respond-with-new-view"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#readablestreambyobrequest"
+      },
+      "WritableStream": {
+        "fragment": "[Exposed=*, Transferable]\ninterface WritableStream {\n  constructor(optional object underlyingSink, optional QueuingStrategy strategy = {});\n\n  readonly attribute boolean locked;\n\n  Promise<undefined> abort(optional any reason);\n  Promise<undefined> close();\n  WritableStreamDefaultWriter getWriter();\n};",
+        "type": "interface",
+        "name": "WritableStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "underlyingSink",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "strategy",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "QueuingStrategy"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#ws-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "locked",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#ws-locked"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reason",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#ws-abort"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#ws-close"
+          },
+          {
+            "type": "operation",
+            "name": "getWriter",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WritableStreamDefaultWriter"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#ws-get-writer"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#writablestream"
+      },
+      "UnderlyingSink": {
+        "fragment": "dictionary UnderlyingSink {\n  UnderlyingSinkStartCallback start;\n  UnderlyingSinkWriteCallback write;\n  UnderlyingSinkCloseCallback close;\n  UnderlyingSinkAbortCallback abort;\n  any type;\n};",
+        "type": "dictionary",
+        "name": "UnderlyingSink",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "start",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlyingSinkStartCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsink-start"
+          },
+          {
+            "type": "field",
+            "name": "write",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlyingSinkWriteCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsink-write"
+          },
+          {
+            "type": "field",
+            "name": "close",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlyingSinkCloseCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsink-close"
+          },
+          {
+            "type": "field",
+            "name": "abort",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UnderlyingSinkAbortCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsink-abort"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-underlyingsink-type"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-underlyingsink"
+      },
+      "UnderlyingSinkStartCallback": {
+        "fragment": "callback UnderlyingSinkStartCallback = any (WritableStreamDefaultController controller);",
+        "type": "callback",
+        "name": "UnderlyingSinkStartCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "controller",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WritableStreamDefaultController"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-underlyingsinkstartcallback"
+      },
+      "UnderlyingSinkWriteCallback": {
+        "fragment": "callback UnderlyingSinkWriteCallback = Promise<undefined> (any chunk, WritableStreamDefaultController controller);",
+        "type": "callback",
+        "name": "UnderlyingSinkWriteCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "chunk",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "controller",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WritableStreamDefaultController"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-underlyingsinkwritecallback"
+      },
+      "UnderlyingSinkCloseCallback": {
+        "fragment": "callback UnderlyingSinkCloseCallback = Promise<undefined> ();",
+        "type": "callback",
+        "name": "UnderlyingSinkCloseCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-underlyingsinkclosecallback"
+      },
+      "UnderlyingSinkAbortCallback": {
+        "fragment": "callback UnderlyingSinkAbortCallback = Promise<undefined> (optional any reason);",
+        "type": "callback",
+        "name": "UnderlyingSinkAbortCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "reason",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": true,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-underlyingsinkabortcallback"
+      },
+      "WritableStreamDefaultWriter": {
+        "fragment": "[Exposed=*]\ninterface WritableStreamDefaultWriter {\n  constructor(WritableStream stream);\n\n  readonly attribute Promise<undefined> closed;\n  readonly attribute unrestricted double? desiredSize;\n  readonly attribute Promise<undefined> ready;\n\n  Promise<undefined> abort(optional any reason);\n  Promise<undefined> close();\n  undefined releaseLock();\n  Promise<undefined> write(optional any chunk);\n};",
+        "type": "interface",
+        "name": "WritableStreamDefaultWriter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stream",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WritableStream"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#default-writer-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "closed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#default-writer-closed"
+          },
+          {
+            "type": "attribute",
+            "name": "desiredSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#default-writer-desired-size"
+          },
+          {
+            "type": "attribute",
+            "name": "ready",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#default-writer-ready"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reason",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#default-writer-abort"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#default-writer-close"
+          },
+          {
+            "type": "operation",
+            "name": "releaseLock",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#default-writer-release-lock"
+          },
+          {
+            "type": "operation",
+            "name": "write",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "chunk",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#default-writer-write"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#writablestreamdefaultwriter"
+      },
+      "WritableStreamDefaultController": {
+        "fragment": "[Exposed=*]\ninterface WritableStreamDefaultController {\n  readonly attribute AbortSignal signal;\n  undefined error(optional any e);\n};",
+        "type": "interface",
+        "name": "WritableStreamDefaultController",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "signal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#ws-default-controller-signal"
+          },
+          {
+            "type": "operation",
+            "name": "error",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "e",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#ws-default-controller-error"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#writablestreamdefaultcontroller"
+      },
+      "TransformStream": {
+        "fragment": "[Exposed=*, Transferable]\ninterface TransformStream {\n  constructor(optional object transformer,\n              optional QueuingStrategy writableStrategy = {},\n              optional QueuingStrategy readableStrategy = {});\n\n  readonly attribute ReadableStream readable;\n  readonly attribute WritableStream writable;\n};",
+        "type": "interface",
+        "name": "TransformStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "transformer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "writableStrategy",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "QueuingStrategy"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "readableStrategy",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "QueuingStrategy"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#ts-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "readable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#ts-readable"
+          },
+          {
+            "type": "attribute",
+            "name": "writable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WritableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#ts-writable"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#transformstream"
+      },
+      "Transformer": {
+        "fragment": "dictionary Transformer {\n  TransformerStartCallback start;\n  TransformerTransformCallback transform;\n  TransformerFlushCallback flush;\n  TransformerCancelCallback cancel;\n  any readableType;\n  any writableType;\n};",
+        "type": "dictionary",
+        "name": "Transformer",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "start",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransformerStartCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-transformer-start"
+          },
+          {
+            "type": "field",
+            "name": "transform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransformerTransformCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-transformer-transform"
+          },
+          {
+            "type": "field",
+            "name": "flush",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransformerFlushCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-transformer-flush"
+          },
+          {
+            "type": "field",
+            "name": "cancel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransformerCancelCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-transformer-cancel"
+          },
+          {
+            "type": "field",
+            "name": "readableType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-transformer-readabletype"
+          },
+          {
+            "type": "field",
+            "name": "writableType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-transformer-writabletype"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-transformer"
+      },
+      "TransformerStartCallback": {
+        "fragment": "callback TransformerStartCallback = any (TransformStreamDefaultController controller);",
+        "type": "callback",
+        "name": "TransformerStartCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "controller",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransformStreamDefaultController"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-transformerstartcallback"
+      },
+      "TransformerFlushCallback": {
+        "fragment": "callback TransformerFlushCallback = Promise<undefined> (TransformStreamDefaultController controller);",
+        "type": "callback",
+        "name": "TransformerFlushCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "controller",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransformStreamDefaultController"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-transformerflushcallback"
+      },
+      "TransformerTransformCallback": {
+        "fragment": "callback TransformerTransformCallback = Promise<undefined> (any chunk, TransformStreamDefaultController controller);",
+        "type": "callback",
+        "name": "TransformerTransformCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "chunk",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "controller",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransformStreamDefaultController"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-transformertransformcallback"
+      },
+      "TransformerCancelCallback": {
+        "fragment": "callback TransformerCancelCallback = Promise<undefined> (any reason);",
+        "type": "callback",
+        "name": "TransformerCancelCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "reason",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-transformercancelcallback"
+      },
+      "TransformStreamDefaultController": {
+        "fragment": "[Exposed=*]\ninterface TransformStreamDefaultController {\n  readonly attribute unrestricted double? desiredSize;\n\n  undefined enqueue(optional any chunk);\n  undefined error(optional any reason);\n  undefined terminate();\n};",
+        "type": "interface",
+        "name": "TransformStreamDefaultController",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "desiredSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#ts-default-controller-desired-size"
+          },
+          {
+            "type": "operation",
+            "name": "enqueue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "chunk",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#ts-default-controller-enqueue"
+          },
+          {
+            "type": "operation",
+            "name": "error",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reason",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#ts-default-controller-error"
+          },
+          {
+            "type": "operation",
+            "name": "terminate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://streams.spec.whatwg.org/#ts-default-controller-terminate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#transformstreamdefaultcontroller"
+      },
+      "QueuingStrategy": {
+        "fragment": "dictionary QueuingStrategy {\n  unrestricted double highWaterMark;\n  QueuingStrategySize size;\n};",
+        "type": "dictionary",
+        "name": "QueuingStrategy",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "highWaterMark",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-queuingstrategy-highwatermark"
+          },
+          {
+            "type": "field",
+            "name": "size",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "QueuingStrategySize"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://streams.spec.whatwg.org/#dom-queuingstrategy-size"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-queuingstrategy"
+      },
+      "QueuingStrategySize": {
+        "fragment": "callback QueuingStrategySize = unrestricted double (any chunk);",
+        "type": "callback",
+        "name": "QueuingStrategySize",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "unrestricted double"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "chunk",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://streams.spec.whatwg.org/#callbackdef-queuingstrategysize"
+      },
+      "QueuingStrategyInit": {
+        "fragment": "dictionary QueuingStrategyInit {\n  required unrestricted double highWaterMark;\n};",
+        "type": "dictionary",
+        "name": "QueuingStrategyInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "highWaterMark",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://streams.spec.whatwg.org/#dom-queuingstrategyinit-highwatermark"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#dictdef-queuingstrategyinit"
+      },
+      "ByteLengthQueuingStrategy": {
+        "fragment": "[Exposed=*]\ninterface ByteLengthQueuingStrategy {\n  constructor(QueuingStrategyInit init);\n\n  readonly attribute unrestricted double highWaterMark;\n  readonly attribute Function size;\n};",
+        "type": "interface",
+        "name": "ByteLengthQueuingStrategy",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "QueuingStrategyInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#blqs-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "highWaterMark",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#blqs-high-water-mark"
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Function"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#blqs-size"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#bytelengthqueuingstrategy"
+      },
+      "CountQueuingStrategy": {
+        "fragment": "[Exposed=*]\ninterface CountQueuingStrategy {\n  constructor(QueuingStrategyInit init);\n\n  readonly attribute unrestricted double highWaterMark;\n  readonly attribute Function size;\n};",
+        "type": "interface",
+        "name": "CountQueuingStrategy",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "QueuingStrategyInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://streams.spec.whatwg.org/#cqs-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "highWaterMark",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#cqs-high-water-mark"
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Function"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#cqs-size"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#countqueuingstrategy"
+      },
+      "GenericTransformStream": {
+        "fragment": "interface mixin GenericTransformStream {\n  readonly attribute ReadableStream readable;\n  readonly attribute WritableStream writable;\n};",
+        "type": "interface mixin",
+        "name": "GenericTransformStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "readable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#dom-generictransformstream-readable"
+          },
+          {
+            "type": "attribute",
+            "name": "writable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WritableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://streams.spec.whatwg.org/#dom-generictransformstream-writable"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://streams.spec.whatwg.org/#generictransformstream"
+      }
+    },
+    "idlExtendedNames": {
+      "ReadableStreamDefaultReader": [
+        {
+          "fragment": "ReadableStreamDefaultReader includes ReadableStreamGenericReader;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "ReadableStreamDefaultReader",
+          "includes": "ReadableStreamGenericReader"
+        }
+      ],
+      "ReadableStreamBYOBReader": [
+        {
+          "fragment": "ReadableStreamBYOBReader includes ReadableStreamGenericReader;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "ReadableStreamBYOBReader",
+          "includes": "ReadableStreamGenericReader"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "*": [
+        "ReadableStream",
+        "ReadableStreamDefaultReader",
+        "ReadableStreamBYOBReader",
+        "ReadableStreamDefaultController",
+        "ReadableByteStreamController",
+        "ReadableStreamBYOBRequest",
+        "WritableStream",
+        "WritableStreamDefaultWriter",
+        "WritableStreamDefaultController",
+        "TransformStream",
+        "TransformStreamDefaultController",
+        "ByteLengthQueuingStrategy",
+        "CountQueuingStrategy"
+      ]
+    },
+    "dependencies": {
+      "ReadableStream": [
+        "QueuingStrategy",
+        "ReadableStream",
+        "ReadableStreamReader",
+        "ReadableStreamGetReaderOptions",
+        "ReadableWritablePair",
+        "StreamPipeOptions",
+        "WritableStream"
+      ],
+      "ReadableStreamGetReaderOptions": [
+        "ReadableStreamReaderMode"
+      ],
+      "ReadableStreamIteratorOptions": [],
+      "ReadableWritablePair": [
+        "ReadableStream",
+        "WritableStream"
+      ],
+      "StreamPipeOptions": [
+        "AbortSignal"
+      ],
+      "UnderlyingSource": [
+        "UnderlyingSourceStartCallback",
+        "UnderlyingSourcePullCallback",
+        "UnderlyingSourceCancelCallback",
+        "ReadableStreamType"
+      ],
+      "ReadableStreamGenericReader": [],
+      "ReadableStreamDefaultReader": [
+        "ReadableStream",
+        "ReadableStreamReadResult",
+        "ReadableStreamGenericReader"
+      ],
+      "ReadableStreamReadResult": [],
+      "ReadableStreamBYOBReader": [
+        "ReadableStream",
+        "ReadableStreamReadResult",
+        "ArrayBufferView",
+        "ReadableStreamBYOBReaderReadOptions",
+        "ReadableStreamGenericReader"
+      ],
+      "ReadableStreamBYOBReaderReadOptions": [],
+      "ReadableStreamDefaultController": [],
+      "ReadableByteStreamController": [
+        "ReadableStreamBYOBRequest",
+        "ArrayBufferView"
+      ],
+      "ReadableStreamBYOBRequest": [
+        "Uint8Array",
+        "ArrayBufferView"
+      ],
+      "WritableStream": [
+        "QueuingStrategy",
+        "WritableStreamDefaultWriter"
+      ],
+      "UnderlyingSink": [
+        "UnderlyingSinkStartCallback",
+        "UnderlyingSinkWriteCallback",
+        "UnderlyingSinkCloseCallback",
+        "UnderlyingSinkAbortCallback"
+      ],
+      "WritableStreamDefaultWriter": [
+        "WritableStream"
+      ],
+      "WritableStreamDefaultController": [
+        "AbortSignal"
+      ],
+      "TransformStream": [
+        "QueuingStrategy",
+        "ReadableStream",
+        "WritableStream"
+      ],
+      "Transformer": [
+        "TransformerStartCallback",
+        "TransformerTransformCallback",
+        "TransformerFlushCallback",
+        "TransformerCancelCallback"
+      ],
+      "TransformStreamDefaultController": [],
+      "QueuingStrategy": [
+        "QueuingStrategySize"
+      ],
+      "QueuingStrategyInit": [],
+      "ByteLengthQueuingStrategy": [
+        "QueuingStrategyInit",
+        "Function"
+      ],
+      "CountQueuingStrategy": [
+        "QueuingStrategyInit",
+        "Function"
+      ],
+      "GenericTransformStream": [
+        "ReadableStream",
+        "WritableStream"
+      ]
+    },
+    "externalDependencies": [
+      "AbortSignal",
+      "ArrayBufferView",
+      "Uint8Array",
+      "Function"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

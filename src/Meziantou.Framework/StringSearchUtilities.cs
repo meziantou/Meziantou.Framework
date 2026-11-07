@@ -14,16 +14,7 @@ public static partial class StringSearchUtilities
     /// <returns> The hamming distance.</returns>
     public static uint Hamming(uint word1, uint word2)
     {
-        uint result = 0;
-        while (word1 != 0 || word2 != 0)
-        {
-            var u = (word1 & 1) ^ (word2 & 1);
-            result += u;
-            word1 = (word1 >> 1) & 0x7FFFFFFF;
-            word2 = (word2 >> 1) & 0x7FFFFFFF;
-        }
-
-        return result;
+        return (uint)BitOperations.PopCount(word1 ^ word2);
     }
 
     /// <summary>Compute the <see href="http://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</see>.</summary>
@@ -67,19 +58,23 @@ public static partial class StringSearchUtilities
 
         using var enumerator1 = word1.GetEnumerator();
         using var enumerator2 = word2.GetEnumerator();
-        bool firstMoveNext;
-        var secondMoveNext = false;
+        var comparer = EqualityComparer<T>.Default;
 
-        while ((firstMoveNext = enumerator1.MoveNext()) && (secondMoveNext = enumerator2.MoveNext()))
+        while (true)
         {
-            if (!enumerator1.Current.Equals(enumerator2.Current))
+            var firstMoveNext = enumerator1.MoveNext();
+            var secondMoveNext = enumerator2.MoveNext();
+            if (firstMoveNext != secondMoveNext)
+                throw new ArgumentException("Lists must have the same length.", nameof(word2));
+
+            if (!firstMoveNext)
+                break;
+
+            if (!comparer.Equals(enumerator1.Current, enumerator2.Current))
             {
                 result++;
             }
         }
-
-        if (firstMoveNext != secondMoveNext)
-            throw new ArgumentException("Lists must have the same length.", nameof(word2));
 
         return result;
     }
@@ -207,7 +202,9 @@ public static partial class StringSearchUtilities
             return distance;
         }
 
-        if (maxDistance is int maxDistanceValue)
+        // The distance never exceeds the length of the longest word, so a larger bound is the same as no bound.
+        // Skipping the banded path for such bounds also avoids an overflow when computing the band.
+        if (maxDistance is int maxDistanceValue && maxDistanceValue < word1.Length)
         {
             return LevenshteinBanded(word1, word2, maxDistanceValue);
         }

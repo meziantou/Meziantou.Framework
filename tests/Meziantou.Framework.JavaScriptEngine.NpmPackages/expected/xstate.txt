@@ -1,0 +1,37 @@
+{
+ "snapshots": [
+  "\"idle\" ticks=0",
+  "\"loading\" ticks=0",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=0",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=0",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=0",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=0",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=0",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=1",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=2",
+  "{\"ready\":{\"list\":\"filled\",\"form\":\"editing\"}} ticks=3",
+  "\"idle\" ticks=3",
+  "\"loading\" ticks=3",
+  "\"failed\" ticks=3",
+  "\"idle\" ticks=3"
+ ],
+ "failed": "failed",
+ "final": "idle",
+ "context": {
+  "items": [
+   "a",
+   "b"
+  ],
+  "log": [
+   "loading on LOAD",
+   "invalid SUBMIT",
+   "invalid SUBMIT",
+   "loading on LOAD",
+   "error failed"
+  ],
+  "ticks": 3,
+  "input": "abc"
+ },
+ "status": "stopped",
+ "can": true
+}

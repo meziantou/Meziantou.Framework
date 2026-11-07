@@ -11,6 +11,9 @@ internal sealed class CharacterRangeInverseSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
+        if (pathReader.IsEndOfCurrentSegment)
+            return false;
+
         var result = !_range.IsInRange(pathReader.CurrentText[0]);
         if (result)
         {

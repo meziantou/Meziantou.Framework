@@ -1,0 +1,76 @@
+{
+  "spec": {
+    "title": "Window Management",
+    "url": "https://w3c.github.io/window-management/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@media",
+      "descriptors": [
+        {
+          "name": "display-state",
+          "href": "https://w3c.github.io/window-management/#descdef-media-display-state",
+          "for": "@media",
+          "value": "normal | minimized | maximized | fullscreen",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "normal",
+              "prose": "The browsing context is displayed in the normal display state.",
+              "href": "https://w3c.github.io/window-management/#valdef-media-display-state-normal",
+              "type": "value",
+              "value": "normal"
+            },
+            {
+              "name": "minimized",
+              "prose": "The browsing context is displayed in the minimized display state.",
+              "href": "https://w3c.github.io/window-management/#valdef-media-display-state-minimized",
+              "type": "value",
+              "value": "minimized"
+            },
+            {
+              "name": "maximized",
+              "prose": "The browsing context is displayed in the maximized display state.",
+              "href": "https://w3c.github.io/window-management/#valdef-media-display-state-maximized",
+              "type": "value",
+              "value": "maximized"
+            },
+            {
+              "name": "fullscreen",
+              "prose": "The browsing context is displayed in the fullscreen display state.",
+              "href": "https://w3c.github.io/window-management/#valdef-media-display-state-fullscreen",
+              "type": "value",
+              "value": "fullscreen"
+            }
+          ]
+        },
+        {
+          "name": "resizable",
+          "href": "https://w3c.github.io/window-management/#descdef-media-resizable",
+          "for": "@media",
+          "value": "true | false",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "true",
+              "prose": "The window can be resized by the user by dragging the edge of the window.",
+              "href": "https://w3c.github.io/window-management/#valdef-media-resizable-true",
+              "type": "value",
+              "value": "true"
+            },
+            {
+              "name": "false",
+              "prose": "The window cannot be resized by the user by dragging the edge of the window. This keyword value evaluates as false in the boolean context.",
+              "href": "https://w3c.github.io/window-management/#valdef-media-resizable-false",
+              "type": "value",
+              "value": "false"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "selectors": [],
+  "values": []
+}

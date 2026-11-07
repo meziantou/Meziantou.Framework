@@ -9,7 +9,7 @@ namespace Meziantou.Framework;
 /// <see href="https://urlpattern.spec.whatwg.org/">WHATWG URL Pattern Spec</see>
 /// </remarks>
 /// <example>
-/// <code language="csharp">
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Uri.Tests/UrlPatternCollectionTests.cs" ref:region="UrlPatternCollection_Example" ref:dedent="true">
 /// // Create a collection of patterns for routing
 /// var patterns = new UrlPatternCollection();
 /// patterns.Add("https://example.com/api/users/:id");
@@ -17,13 +17,17 @@ namespace Meziantou.Framework;
 /// patterns.Add("https://example.com/static/*");
 ///
 /// // Check if any pattern matches
-/// bool isMatch = patterns.IsMatch("https://example.com/api/users/123"); // true
+/// Assert.True(patterns.IsMatch("https://example.com/api/users/123"));
 ///
 /// // Find the first matching pattern
 /// var matchingPattern = patterns.FindPattern("https://example.com/api/products/456");
+/// Assert.NotNull(matchingPattern);
+/// Assert.Equal("/api/products/:id", matchingPattern.Pathname);
 ///
 /// // Get match result with captured groups
 /// var result = patterns.Match("https://example.com/api/users/789");
+/// Assert.NotNull(result);
+/// Assert.Equal("789", result.Pathname.Groups["id"]);
 /// </code>
 /// </example>
 public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>

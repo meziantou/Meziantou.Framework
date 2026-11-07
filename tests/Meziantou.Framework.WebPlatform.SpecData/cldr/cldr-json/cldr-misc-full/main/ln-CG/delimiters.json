@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ln-CG": {
+      "identity": {
+        "language": "ln",
+        "territory": "CG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

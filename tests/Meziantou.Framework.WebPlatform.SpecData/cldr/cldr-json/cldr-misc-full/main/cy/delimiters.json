@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cy": {
+      "identity": {
+        "language": "cy"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "version": "1.7",
+  "pageCount": 1,
+  "information": {
+    "title": "Invoice",
+    "isEncrypted": false
+  },
+  "pages": [
+    {
+      "number": 1,
+      "width": 419.528,
+      "height": 595.276,
+      "rotation": 0
+    }
+  ]
+}

@@ -5,101 +5,149 @@
 namespace Meziantou.Framework.Unix.ControlGroups
 {
     [System.Runtime.Versioning.SupportedOSPlatform("linux")]
-    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     public sealed class CGroup2
     {
         public string Name { get => throw null; }
         public Meziantou.Framework.Unix.ControlGroups.CGroup2? Parent { get => throw null; }
         public static Meziantou.Framework.Unix.ControlGroups.CGroup2 Root { get => throw null; }
-        public void SetCpusetCpus(params System.ReadOnlySpan<int> cpus) { }
-        public void SetCpusetCpusRaw(string cpuList) { }
-        public int[]? GetCpusetCpus() => throw null;
-        public int[]? GetCpusetCpusEffective() => throw null;
-        public void SetCpusetMems(params int[] nodes) { }
-        public void SetCpusetMemsRaw(string nodeList) { }
-        public int[]? GetCpusetMems() => throw null;
-        public int[]? GetCpusetMemsEffective() => throw null;
-        public void SetCpusetPartition(string partitionType) { }
-        public string? GetCpusetPartition() => throw null;
-        public Meziantou.Framework.Unix.ControlGroups.CGroup2? GetChild(string name) => throw null;
-        public Meziantou.Framework.Unix.ControlGroups.CGroup2 CreateOrGetChild(string name) => throw null;
-        public void Delete() { }
-        public bool Exists() => throw null;
         public void AssociateProcess(System.Diagnostics.Process process) { }
         public void AssociateProcess(int pid) { }
         public void AssociateThread(int tid) { }
-        public System.Collections.Generic.IEnumerable<int> GetProcesses() => throw null;
-        public System.Collections.Generic.IEnumerable<int> GetThreads() => throw null;
-        public System.Collections.Generic.IEnumerable<string> GetAvailableControllers() => throw null;
-        public System.Collections.Generic.IEnumerable<string> GetEnabledControllers() => throw null;
-        public void SetControllers(params System.ReadOnlySpan<string> controllers) { }
-        public void SetCpuWeight(int weight) { }
-        public int? GetCpuWeight() => throw null;
-        public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000) { }
-        public void RemoveCpuMax() { }
-        public void SetMemoryMax(long? bytes) { }
-        public long? GetMemoryMax() => throw null;
-        public void SetMemoryHigh(long? bytes) { }
-        public void SetMemoryLow(long? bytes) { }
-        public void SetMemoryMin(long? bytes) { }
-        public long? GetMemoryCurrent() => throw null;
-        public void SetSwapMax(long? bytes) { }
-        public void SetIoWeight(int major, int minor, int weight) { }
-        public void SetDefaultIoWeight(int weight) { }
-        public void SetIoMax(int major, int minor, long? readBytesPerSecond = null, long? writeBytesPerSecond = null, long? readIopsPerSecond = null, long? writeIopsPerSecond = null) { }
-        public void RemoveIoMax(int major, int minor) { }
-        public void SetPidsMax(long? max) { }
-        public long? GetPidsMax() => throw null;
-        public long? GetPidsCurrent() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroup2 CreateOrGetChild(string name) => throw null;
+        public void Delete() { }
+        public bool Exists() => throw null;
         public void Freeze() { }
-        public void Unfreeze() { }
+        public System.Collections.Generic.IEnumerable<string> GetAvailableControllers() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroup2? GetChild(string name) => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<Meziantou.Framework.Unix.ControlGroups.CpuMax> GetCpuMax() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<Meziantou.Framework.Unix.ControlGroups.CpuStat> GetCpuStat() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<int> GetCpuWeight() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<int[]> GetCpusetCpus() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<int[]> GetCpusetCpusEffective() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<int[]> GetCpusetMems() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<int[]> GetCpusetMemsEffective() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<string> GetCpusetPartition() => throw null;
+        public System.Collections.Generic.IEnumerable<string> GetEnabledControllers() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetHugeTlbCurrent(string pageSize) => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetHugeTlbEventsMax(string pageSize) => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetHugeTlbMax(string pageSize) => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetMemoryCurrent() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetMemoryHigh() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetMemoryLow() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetMemoryMax() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetMemoryMin() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<Meziantou.Framework.Unix.ControlGroups.MemoryStat> GetMemoryStat() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetPidsCurrent() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetPidsMax() => throw null;
+        public System.Collections.Generic.IEnumerable<int> GetProcesses() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValue<long> GetSwapMax() => throw null;
+        public System.Collections.Generic.IEnumerable<int> GetThreads() => throw null;
         public bool IsFrozen() => throw null;
         public void Kill() { }
-        public Meziantou.Framework.Unix.ControlGroups.CpuStat? GetCpuStat() => throw null;
-        public Meziantou.Framework.Unix.ControlGroups.MemoryStat? GetMemoryStat() => throw null;
-        public override string ToString() => throw null;
+        public void RemoveCpuMax() { }
+        public void RemoveIoMax(int major, int minor) { }
+        public void SetControllers(params System.ReadOnlySpan<string> controllers) { }
+        public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000L) { }
+        public void SetCpuWeight(int weight) { }
+        public void SetCpusetCpus(params System.ReadOnlySpan<int> cpus) { }
+        public void SetCpusetCpusRaw(string cpuList) { }
+        public void SetCpusetMems(params System.ReadOnlySpan<int> nodes) { }
+        public void SetCpusetMemsRaw(string nodeList) { }
+        public void SetCpusetPartition(string partitionType) { }
+        public void SetDefaultIoWeight(int weight) { }
         public void SetHugeTlbMax(string pageSize, long? bytes) { }
-        public long? GetHugeTlbMax(string pageSize) => throw null;
-        public long? GetHugeTlbCurrent(string pageSize) => throw null;
-        public long? GetHugeTlbEventsMax(string pageSize) => throw null;
+        public void SetIoMax(int major, int minor, long? readBytesPerSecond = null, long? writeBytesPerSecond = null, long? readIopsPerSecond = null, long? writeIopsPerSecond = null) { }
+        public void SetIoWeight(int major, int minor, int weight) { }
+        public void SetMemoryHigh(long? bytes) { }
+        public void SetMemoryLow(long? bytes) { }
+        public void SetMemoryMax(long? bytes) { }
+        public void SetMemoryMin(long? bytes) { }
+        public void SetPidsMax(long? max) { }
+        public void SetSwapMax(long? bytes) { }
+        public override string ToString() => throw null;
+        public void Unfreeze() { }
+    }
+
+    public enum CGroupValueState
+    {
+        Unavailable = 0,
+        NotConfigured = 1,
+        Configured = 2,
+        Invalid = 3,
+    }
+
+    public readonly struct CGroupValue<T> : System.IEquatable<Meziantou.Framework.Unix.ControlGroups.CGroupValue<T>>
+    {
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "RawValue")]
+        public bool IsConfigured { get => throw null; }
+        public string? RawValue { get => throw null; }
+        public Meziantou.Framework.Unix.ControlGroups.CGroupValueState State { get => throw null; }
+        public T Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.Unix.ControlGroups.CGroupValue<T> other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public T? GetValueOrDefault() => throw null;
+        public T GetValueOrDefault(T defaultValue) => throw null;
+        public override string ToString() => throw null;
+        public bool TryGetValue([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
+        public static bool operator ==(Meziantou.Framework.Unix.ControlGroups.CGroupValue<T> left, Meziantou.Framework.Unix.ControlGroups.CGroupValue<T> right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Unix.ControlGroups.CGroupValue<T> left, Meziantou.Framework.Unix.ControlGroups.CGroupValue<T> right) => throw null;
+    }
+
+    public readonly struct CpuMax : System.IEquatable<Meziantou.Framework.Unix.ControlGroups.CpuMax>
+    {
+        public long? MaxMicroseconds { get => throw null; init { } }
+        public long PeriodMicroseconds { get => throw null; init { } }
+        public CpuMax(long? MaxMicroseconds, long PeriodMicroseconds) { }
+        public void Deconstruct(out long? MaxMicroseconds, out long PeriodMicroseconds) => throw null;
+        public bool Equals(Meziantou.Framework.Unix.ControlGroups.CpuMax other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Unix.ControlGroups.CpuMax left, Meziantou.Framework.Unix.ControlGroups.CpuMax right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Unix.ControlGroups.CpuMax left, Meziantou.Framework.Unix.ControlGroups.CpuMax right) => throw null;
     }
 
     public sealed class CpuStat
     {
-        public long UsageMicroseconds { get => throw null; }
-        public long UserMicroseconds { get => throw null; }
-        public long SystemMicroseconds { get => throw null; }
+        public long? BurstMicroseconds { get => throw null; }
+        public long? NumberOfBursts { get => throw null; }
         public long? NumberOfPeriods { get => throw null; }
         public long? NumberOfThrottled { get => throw null; }
+        public long SystemMicroseconds { get => throw null; }
         public long? ThrottledMicroseconds { get => throw null; }
-        public long? NumberOfBursts { get => throw null; }
-        public long? BurstMicroseconds { get => throw null; }
+        public long UsageMicroseconds { get => throw null; }
+        public long UserMicroseconds { get => throw null; }
     }
 
     public sealed class MemoryStat
     {
-        public long Anon { get => throw null; }
-        public long File { get => throw null; }
-        public long Kernel { get => throw null; }
-        public long KernelStack { get => throw null; }
-        public long PageTables { get => throw null; }
-        public long PerCpu { get => throw null; }
-        public long Sock { get => throw null; }
-        public long SwapCached { get => throw null; }
-        public long FileMapped { get => throw null; }
-        public long FileDirty { get => throw null; }
-        public long FileWriteback { get => throw null; }
-        public long InactiveAnon { get => throw null; }
-        public long ActiveAnon { get => throw null; }
-        public long InactiveFile { get => throw null; }
-        public long ActiveFile { get => throw null; }
-        public long Unevictable { get => throw null; }
-        public long SlabReclaimable { get => throw null; }
-        public long SlabUnreclaimable { get => throw null; }
-        public long Slab { get => throw null; }
-        public long? PageSwapIn { get => throw null; }
-        public long? PageSwapOut { get => throw null; }
+        public long? ActiveAnon { get => throw null; }
+        public long? ActiveFile { get => throw null; }
+        public long? Anon { get => throw null; }
+        public long? File { get => throw null; }
+        public long? FileDirty { get => throw null; }
+        public long? FileMapped { get => throw null; }
+        public long? FileWriteback { get => throw null; }
+        public long? InactiveAnon { get => throw null; }
+        public long? InactiveFile { get => throw null; }
+        public long? Kernel { get => throw null; }
+        public long? KernelStack { get => throw null; }
         public long? PageFault { get => throw null; }
         public long? PageMajorFault { get => throw null; }
+        public long? PageSwapIn { get => throw null; }
+        public long? PageSwapOut { get => throw null; }
+        public long? PageTables { get => throw null; }
+        public long? PerCpu { get => throw null; }
+        public long? Slab { get => throw null; }
+        public long? SlabReclaimable { get => throw null; }
+        public long? SlabUnreclaimable { get => throw null; }
+        public long? Sock { get => throw null; }
+        public long? SwapCached { get => throw null; }
+        public long? Unevictable { get => throw null; }
     }
 }

@@ -23,7 +23,16 @@ public sealed class PowerManagementSnapshot
         if (result != Windows.Win32.Foundation.WIN32_ERROR.ERROR_SUCCESS || guid is null)
             return null;
 
-        var currentPlan = *guid;
+        Guid currentPlan;
+        try
+        {
+            currentPlan = *guid;
+        }
+        finally
+        {
+            // PowerGetActiveScheme allocates the returned GUID with LocalAlloc; the caller must free it.
+            Windows.Win32.PInvoke.LocalFree((Windows.Win32.Foundation.HLOCAL)guid);
+        }
 
         uint buffSize = 0;
         result = Windows.Win32.PInvoke.PowerReadFriendlyName(RootPowerKey: null, currentPlan, SubGroupOfPowerSettingsGuid: null, PowerSettingGuid: null, Buffer: null, ref buffSize);

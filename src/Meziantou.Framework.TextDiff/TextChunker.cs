@@ -2,12 +2,43 @@ using System.Buffers;
 
 namespace Meziantou.Framework;
 
+/// <summary>Splits a text into the chunks that a diff compares against each other. Derive from this type and
+/// override <see cref="Chunk"/> to supply a custom chunking strategy.</summary>
 public class TextChunker
 {
+    /// <summary>
+    /// Gets a chunker that splits on line terminators, keeping the terminator at the end of each chunk so the
+    /// text can be rebuilt exactly.
+    /// </summary>
+    /// <remarks>
+    /// A text that ends with a line terminator produces a final empty chunk, and an empty text produces a single
+    /// empty chunk. This is what makes the chunks concatenate back to the original text; <see cref="Words"/> and
+    /// <see cref="Characters"/> produce no chunks at all for an empty text.
+    /// </remarks>
     public static TextChunker Lines { get; } = new LineChunker();
+
+    /// <summary>
+    /// Gets a chunker that alternates between runs of non-whitespace and runs of whitespace, so that whitespace
+    /// is preserved in its own chunks.
+    /// </summary>
     public static TextChunker Words { get; } = new WordChunker();
+
+    /// <summary>Gets a chunker that produces one chunk per <see cref="char"/>.</summary>
+    /// <remarks>
+    /// Chunks are UTF-16 code units, not grapheme clusters: a surrogate pair is split into two chunks.
+    /// </remarks>
     public static TextChunker Characters { get; } = new CharacterChunker();
 
+    /// <summary>Splits <paramref name="value"/> into chunks.</summary>
+    /// <param name="value">The text to split.</param>
+    /// <returns>
+    /// The chunks, in order. Concatenating them should reproduce <paramref name="value"/> exactly, otherwise the
+    /// diff cannot be used to rebuild either text.
+    /// </returns>
+    /// <remarks>
+    /// The base implementation delegates to <see cref="Lines"/>. A derived chunker that does not override this
+    /// method therefore produces line chunks rather than failing.
+    /// </remarks>
     public virtual IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         => Lines.Chunk(value);
 

@@ -12,4 +12,6 @@ internal sealed class AlwaysWithoutFailureStrategy : SnapshotUpdateStrategy
     {
         MoveFile(newFilePath, currentFilePath);
     }
+
+    public override string ToString() => nameof(OverwriteWithoutFailure);
 }

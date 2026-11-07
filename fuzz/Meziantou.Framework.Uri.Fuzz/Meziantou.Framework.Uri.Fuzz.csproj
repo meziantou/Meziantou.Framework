@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Uri. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The WPT conformance corpora (URL, URL Pattern), the Public Suffix List tests and the literals of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Uri.Tests\files\urlpatterntestdata.json;..\..\tests\Meziantou.Framework.Uri.Tests\files\urltestdata.json;..\..\tests\Meziantou.Framework.Uri.Tests\files\public_suffix_tests.txt" LogicalName="%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Uri.Tests\UrlPatternTests.cs;..\..\tests\Meziantou.Framework.Uri.Tests\QueryStringUtilitiesTests.cs;..\..\tests\Meziantou.Framework.Uri.Tests\PublicSuffixListTests.cs" LogicalName="%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
+    <!-- The reference implementation of the URL Standard and of the URL Pattern spec, for the differential targets -->
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+  </ItemGroup>
+</Project>

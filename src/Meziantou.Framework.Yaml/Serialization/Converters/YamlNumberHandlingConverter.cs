@@ -31,6 +31,31 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
         _handling = handling;
     }
 
+    // Whether a numeric type configured with the handling can read the scalar the reader is positioned on, when that
+    // scalar resolves to a string, such as a quoted number. The source generator emits the same check inline.
+    /// <summary>Gets whether <paramref name="handling"/> lets a numeric <paramref name="type"/> read some string scalars.</summary>
+    internal static bool CanReadStringScalars(Type type, YamlNumberHandling handling)
+        => (handling & YamlNumberHandling.AllowReadingFromString) != YamlNumberHandling.None ||
+           ((handling & YamlNumberHandling.AllowNamedFloatingPointLiterals) != YamlNumberHandling.None && IsNamedFloatType(Nullable.GetUnderlyingType(type) ?? type));
+
+    internal static bool CanReadStringScalar(YamlReader reader, Type type, YamlNumberHandling handling)
+    {
+        if (reader.TokenType != YamlTokenType.Scalar)
+        {
+            return false;
+        }
+
+        if ((handling & YamlNumberHandling.AllowNamedFloatingPointLiterals) != YamlNumberHandling.None &&
+            IsNamedFloatType(Nullable.GetUnderlyingType(type) ?? type) &&
+            GetNamedFloatLiteral(reader.ScalarValue) is not NamedFloatLiteral.None)
+        {
+            return true;
+        }
+
+        return (handling & YamlNumberHandling.AllowReadingFromString) != YamlNumberHandling.None &&
+               (YamlScalar.TryParseInt64(reader, out _) || YamlScalar.TryParseDouble(reader, out _));
+    }
+
     /// <inheritdoc />
     public override bool CanConvert(Type typeToConvert) => typeToConvert == _type;
 
@@ -73,58 +98,141 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
     private bool TryReadNamedFloat(string? text, out object? value)
     {
         value = null;
-        if (_underlyingType != typeof(double) && _underlyingType != typeof(float))
+
+        var literal = GetNamedFloatLiteral(text);
+        if (literal is NamedFloatLiteral.None)
         {
             return false;
         }
 
-        double? parsed = text switch
+        if (_underlyingType == typeof(double))
         {
-            "NaN" => double.NaN,
-            "Infinity" => double.PositiveInfinity,
-            "+Infinity" => double.PositiveInfinity,
-            "-Infinity" => double.NegativeInfinity,
-            _ => null,
+            value = CreateNamedFloat<double>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(float))
+        {
+            value = CreateNamedFloat<float>(literal);
+            return true;
+        }
+
+#if NET11_0_OR_GREATER
+        if (_underlyingType == typeof(BFloat16))
+        {
+            value = CreateNamedFloat<BFloat16>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(Decimal32))
+        {
+            value = CreateNamedFloat<Decimal32>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(Decimal64))
+        {
+            value = CreateNamedFloat<Decimal64>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(Decimal128))
+        {
+            value = CreateNamedFloat<Decimal128>(literal);
+            return true;
+        }
+#endif
+
+        return false;
+    }
+
+    internal static bool IsSupportedType(Type type)
+    {
+        var underlying = Nullable.GetUnderlyingType(type) ?? type;
+        return underlying == typeof(byte) || underlying == typeof(sbyte)
+            || underlying == typeof(short) || underlying == typeof(ushort)
+            || underlying == typeof(int) || underlying == typeof(uint)
+            || underlying == typeof(long) || underlying == typeof(ulong)
+            || underlying == typeof(float) || underlying == typeof(double)
+            || underlying == typeof(decimal)
+#if NET11_0_OR_GREATER
+            || underlying == typeof(BFloat16)
+            || underlying == typeof(Decimal32)
+            || underlying == typeof(Decimal64)
+            || underlying == typeof(Decimal128)
+#endif
+            || underlying == typeof(nint) || underlying == typeof(nuint);
+    }
+
+    private static NamedFloatLiteral GetNamedFloatLiteral(string? text)
+        => text switch
+        {
+            "NaN" => NamedFloatLiteral.NaN,
+            "Infinity" or "+Infinity" => NamedFloatLiteral.PositiveInfinity,
+            "-Infinity" => NamedFloatLiteral.NegativeInfinity,
+            _ => NamedFloatLiteral.None,
         };
 
-        if (parsed is null)
-        {
-            return false;
-        }
+    private static bool IsNamedFloatType(Type type)
+        => type == typeof(double) ||
+           type == typeof(float)
+#if NET11_0_OR_GREATER
+           || type == typeof(BFloat16)
+           || type == typeof(Decimal32)
+           || type == typeof(Decimal64)
+           || type == typeof(Decimal128)
+#endif
+        ;
 
-        value = _underlyingType == typeof(float) ? (float)parsed.Value : parsed.Value;
-        return true;
-    }
+    private static object CreateNamedFloat<T>(NamedFloatLiteral literal)
+        where T : struct, IFloatingPointIeee754<T>
+        => literal switch
+        {
+            NamedFloatLiteral.NaN => T.NaN,
+            NamedFloatLiteral.PositiveInfinity => T.PositiveInfinity,
+            _ => T.NegativeInfinity,
+        };
 
     private static bool TryGetNamedFloatLiteral(object value, out string literal)
     {
-        double d;
         switch (value)
         {
             case double doubleValue:
-                d = doubleValue;
-                break;
+                return TryGetNamedFloatLiteral(doubleValue, out literal);
             case float floatValue:
-                d = floatValue;
-                break;
+                return TryGetNamedFloatLiteral(floatValue, out literal);
+#if NET11_0_OR_GREATER
+            case BFloat16 bfloat16Value:
+                return TryGetNamedFloatLiteral(bfloat16Value, out literal);
+            case Decimal32 decimal32Value:
+                return TryGetNamedFloatLiteral(decimal32Value, out literal);
+            case Decimal64 decimal64Value:
+                return TryGetNamedFloatLiteral(decimal64Value, out literal);
+            case Decimal128 decimal128Value:
+                return TryGetNamedFloatLiteral(decimal128Value, out literal);
+#endif
             default:
                 literal = string.Empty;
                 return false;
         }
+    }
 
-        if (double.IsNaN(d))
+    private static bool TryGetNamedFloatLiteral<T>(T value, out string literal)
+        where T : struct, IFloatingPointIeee754<T>
+    {
+        if (T.IsNaN(value))
         {
             literal = "NaN";
             return true;
         }
 
-        if (double.IsPositiveInfinity(d))
+        if (T.IsPositiveInfinity(value))
         {
             literal = "Infinity";
             return true;
         }
 
-        if (double.IsNegativeInfinity(d))
+        if (T.IsNegativeInfinity(value))
         {
             literal = "-Infinity";
             return true;
@@ -138,4 +246,12 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
         => value is IFormattable formattable
             ? formattable.ToString(format: null, CultureInfo.InvariantCulture)
             : value.ToString() ?? string.Empty;
+
+    private enum NamedFloatLiteral
+    {
+        None,
+        NaN,
+        PositiveInfinity,
+        NegativeInfinity,
+    }
 }

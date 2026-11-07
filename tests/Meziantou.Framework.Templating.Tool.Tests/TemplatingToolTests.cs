@@ -2,6 +2,28 @@ namespace Meziantou.Framework.Templating.Tool.Tests;
 
 public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
 {
+    // The templates of the documentation are rendered next to themselves, from their output directive
+    [Theory]
+    [InlineData("Weekdays.template", "Weekdays.g.cs")]
+    [InlineData("Greeting.tt", "Greeting.txt")]
+    public async Task DocumentationExample_RendersTheExpectedFile(string templateFileName, string expectedFileName)
+    {
+        var examplesPath = FullPath.FromPath(AppContext.BaseDirectory) / "Examples";
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = temp.GetFullPath(templateFileName);
+        File.Copy(examplesPath / templateFileName, inputPath);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal(string.Empty, console.Output);
+        Assert.Equal(string.Empty, console.Error);
+        var expected = await File.ReadAllTextAsync(examplesPath / expectedFileName, XunitCancellationToken);
+        var actual = await File.ReadAllTextAsync(temp.GetFullPath(expectedFileName), XunitCancellationToken);
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public async Task RenderToStdout_DefaultDelimiters()
     {
@@ -218,5 +240,119 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
 
         Assert.Equal(1, result);
         Assert.Contains("template.txt(2,4)", console.Error);
+    }
+
+    [Fact]
+    public async Task OnlyStartDelimiterSpecified_WithUnknownValue_ReturnsError()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "Hello {{= \"World\" }}!", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--input", inputPath.ToString(),
+                "--start-code-block-delimiter", "{{",
+            ],
+            console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        Assert.Contains("must be specified together", console.Error, ignoreCase: false);
+        Assert.Equal(string.Empty, console.Output);
+    }
+
+    [Fact]
+    public async Task OnlyStartDelimiterSpecified_WithWellKnownValue_InfersTheEndDelimiter()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "Hello <#= \"World\" #>!", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--input", inputPath.ToString(),
+                "--start-code-block-delimiter", "<#",
+            ],
+            console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal("Hello World!", console.Output);
+        Assert.Equal(string.Empty, console.Error);
+    }
+
+    [Fact]
+    public async Task OnlyEndDelimiterSpecified_WithWellKnownValue_InfersTheStartDelimiter()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "Hello <#= \"World\" #>!", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--input", inputPath.ToString(),
+                "--end-code-block-delimiter", "#>",
+            ],
+            console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal("Hello World!", console.Output);
+        Assert.Equal(string.Empty, console.Error);
+    }
+
+    [Fact]
+    public async Task T4Delimiters_AreAutoDetected()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "Hello <#= \"World\" #>!", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal("Hello World!", console.Output);
+    }
+
+    // A '<#' that is not part of a complete block, in a template that uses the default delimiters,
+    // must not switch the tool to T4 delimiters.
+    [Fact]
+    public async Task T4Delimiters_AreNotAutoDetectedFromAnIncompleteMarkerInText()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "C# generics: List<#> and <%= 1 + 1 %>", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal("C# generics: List<#> and 2", console.Output);
+    }
+
+    [Fact]
+    public async Task T4Delimiters_AreNotAutoDetectedWhenTheDefaultDelimiterIsAlsoPresent()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "<# is a T4 block #> and <%= 1 + 1 %>", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal("<# is a T4 block #> and 2", console.Output);
+    }
+
+    [Fact]
+    public async Task TemplateThrowsAtRuntime_ReturnsDiagnosticWithInputPathAndPosition()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "line1\n<% throw new System.InvalidOperationException(\"boom\"); %>", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        Assert.Equal(string.Empty, console.Output);
+        Assert.Contains("template.txt(2", console.Error, ignoreCase: false);
+        Assert.Contains("error: boom", console.Error, ignoreCase: false);
+        Assert.DoesNotContain("System.Reflection", console.Error, ignoreCase: false);
     }
 }

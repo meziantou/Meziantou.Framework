@@ -92,13 +92,10 @@ public class JsonSchema : FailsafeSchema
         AddScalarRule("!!bool", @"false", m => false, null);
 
         // 10.2.1.3. Integer
-        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"((0|-?[1-9][0-9_]*))", JsonSchema.DecodeInteger, null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"-?(0|[1-9][0-9]*)", JsonSchema.DecodeInteger, null);
 
         // 10.2.1.4. Floating Point
-        AddScalarRule("!!float", @"-?(0|[1-9][0-9]*)(\.[0-9]*)?([eE][-+]?[0-9]+)?", m => Convert.ToDouble(m.Value.Replace("_", "", StringComparison.Ordinal), CultureInfo.InvariantCulture), null);
-        AddScalarRule("!!float", @"\.inf", m => double.PositiveInfinity, null);
-        AddScalarRule("!!float", @"-\.inf", m => double.NegativeInfinity, null);
-        AddScalarRule("!!float", @"\.nan", m => double.NaN, null);
+        AddScalarRule("!!float", @"-?(0|[1-9][0-9]*)(\.[0-9]*)?([eE][-+]?[0-9]+)?", m => Convert.ToDouble(m.Value, CultureInfo.InvariantCulture), null);
 
         // Json doesn't allow failsafe string, so we are disabling it here.
         AllowFailsafeString = false;
@@ -108,20 +105,13 @@ public class JsonSchema : FailsafeSchema
     }
 
     /// <summary>Decodes a matched integer scalar into an <see cref="int"/>, <see cref="long"/>, or <see cref="ulong"/>.</summary>
+    /// <remarks>
+    /// A scalar too large for any of those types is decoded as a <see cref="double"/>: tag resolution classifies a
+    /// scalar by its spelling, so an unrepresentable value must not fail the surrounding <c>TryParse</c> call.
+    /// </remarks>
     protected static object DecodeInteger(Match m)
     {
-        var valueStr = m.Value.Replace("_", "", StringComparison.Ordinal);
-        // Try plain native int first
-        if (int.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
-        {
-            return value;
-        }
-        // Else long
-        if (long.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long result))
-        {
-            return result;
-        }
-        // Else ulong
-        return ulong.Parse(valueStr, CultureInfo.InvariantCulture);
+        ArgumentNullException.ThrowIfNull(m);
+        return SchemaScalarDecoder.DecodeInteger(m.Value);
     }
 }

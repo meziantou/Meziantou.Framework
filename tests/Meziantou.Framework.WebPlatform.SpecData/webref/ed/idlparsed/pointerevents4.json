@@ -1,0 +1,2094 @@
+{
+  "spec": {
+    "title": "Pointer Events",
+    "url": "https://w3c.github.io/pointerevents/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "PointerEvent",
+          "MouseEvent",
+          "WheelEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "PointerEventInit": {
+        "fragment": "dictionary PointerEventInit : MouseEventInit {\n    long        pointerId = 0;\n    double      width = 1;\n    double      height = 1;\n    float       pressure = 0;\n    float       tangentialPressure = 0;\n    long        tiltX;\n    long        tiltY;\n    long        twist = 0;\n    double      altitudeAngle;\n    double      azimuthAngle;\n    DOMString   pointerType = \"\";\n    boolean     isPrimary = false;\n    long        persistentDeviceId = 0;\n    sequence<PointerEvent> coalescedEvents = [];\n    sequence<PointerEvent> predictedEvents = [];\n};",
+        "type": "dictionary",
+        "name": "PointerEventInit",
+        "inheritance": "MouseEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "pointerId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-pointerid"
+          },
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-height"
+          },
+          {
+            "type": "field",
+            "name": "pressure",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-pressure"
+          },
+          {
+            "type": "field",
+            "name": "tangentialPressure",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-tangentialpressure"
+          },
+          {
+            "type": "field",
+            "name": "tiltX",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-tiltx"
+          },
+          {
+            "type": "field",
+            "name": "tiltY",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-tilty"
+          },
+          {
+            "type": "field",
+            "name": "twist",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-twist"
+          },
+          {
+            "type": "field",
+            "name": "altitudeAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-altitudeangle"
+          },
+          {
+            "type": "field",
+            "name": "azimuthAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-azimuthangle"
+          },
+          {
+            "type": "field",
+            "name": "pointerType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-pointertype"
+          },
+          {
+            "type": "field",
+            "name": "isPrimary",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-isprimary"
+          },
+          {
+            "type": "field",
+            "name": "persistentDeviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-persistentdeviceid"
+          },
+          {
+            "type": "field",
+            "name": "coalescedEvents",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PointerEvent"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-coalescedevents"
+          },
+          {
+            "type": "field",
+            "name": "predictedEvents",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PointerEvent"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit-predictedevents"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/pointerevents/#dom-pointereventinit"
+      },
+      "PointerEvent": {
+        "fragment": "[Exposed=Window]\ninterface PointerEvent : MouseEvent {\n    constructor(DOMString type, optional PointerEventInit eventInitDict = {});\n    readonly        attribute long        pointerId;\n    readonly        attribute double      width;\n    readonly        attribute double      height;\n    readonly        attribute float       pressure;\n    readonly        attribute float       tangentialPressure;\n    readonly        attribute long        tiltX;\n    readonly        attribute long        tiltY;\n    readonly        attribute long        twist;\n    readonly        attribute double      altitudeAngle;\n    readonly        attribute double      azimuthAngle;\n    readonly        attribute DOMString   pointerType;\n    readonly        attribute boolean     isPrimary;\n    readonly        attribute long        persistentDeviceId;\n    [SecureContext] sequence<PointerEvent> getCoalescedEvents();\n    sequence<PointerEvent> getPredictedEvents();\n};",
+        "type": "interface",
+        "name": "PointerEvent",
+        "inheritance": "MouseEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PointerEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "pointerId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-pointerid"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-height"
+          },
+          {
+            "type": "attribute",
+            "name": "pressure",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-pressure"
+          },
+          {
+            "type": "attribute",
+            "name": "tangentialPressure",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-tangentialpressure"
+          },
+          {
+            "type": "attribute",
+            "name": "tiltX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-tiltx"
+          },
+          {
+            "type": "attribute",
+            "name": "tiltY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-tilty"
+          },
+          {
+            "type": "attribute",
+            "name": "twist",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-twist"
+          },
+          {
+            "type": "attribute",
+            "name": "altitudeAngle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-altitudeangle"
+          },
+          {
+            "type": "attribute",
+            "name": "azimuthAngle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-azimuthangle"
+          },
+          {
+            "type": "attribute",
+            "name": "pointerType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-pointertype"
+          },
+          {
+            "type": "attribute",
+            "name": "isPrimary",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-isprimary"
+          },
+          {
+            "type": "attribute",
+            "name": "persistentDeviceId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-persistentdeviceid"
+          },
+          {
+            "type": "operation",
+            "name": "getCoalescedEvents",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PointerEvent"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SecureContext",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-getcoalescedevents"
+          },
+          {
+            "type": "operation",
+            "name": "getPredictedEvents",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PointerEvent"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/pointerevents/#dom-pointerevent-getpredictedevents"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/pointerevents/#dom-pointerevent"
+      },
+      "MouseEventInit": {
+        "fragment": "dictionary MouseEventInit : EventModifierInit {\n  long screenX = 0;\n  long screenY = 0;\n  long clientX = 0;\n  long clientY = 0;\n\n  short button = 0;\n  unsigned short buttons = 0;\n  EventTarget? relatedTarget = null;\n};",
+        "type": "dictionary",
+        "name": "MouseEventInit",
+        "inheritance": "EventModifierInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "screenX",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit-screenx"
+          },
+          {
+            "type": "field",
+            "name": "screenY",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit-screeny"
+          },
+          {
+            "type": "field",
+            "name": "clientX",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit-clientx"
+          },
+          {
+            "type": "field",
+            "name": "clientY",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit-clienty"
+          },
+          {
+            "type": "field",
+            "name": "button",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "short"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit-button"
+          },
+          {
+            "type": "field",
+            "name": "buttons",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit-buttons"
+          },
+          {
+            "type": "field",
+            "name": "relatedTarget",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EventTarget"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit-relatedtarget"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/pointerevents/#dom-mouseeventinit"
+      },
+      "MouseEvent": {
+        "fragment": "[Exposed=Window]\ninterface MouseEvent : UIEvent {\n  constructor(DOMString type, optional MouseEventInit eventInitDict = {});\n  readonly attribute long screenX;\n  readonly attribute long screenY;\n  readonly attribute long clientX;\n  readonly attribute long clientY;\n  readonly attribute long layerX;\n  readonly attribute long layerY;\n\n  readonly attribute boolean ctrlKey;\n  readonly attribute boolean shiftKey;\n  readonly attribute boolean altKey;\n  readonly attribute boolean metaKey;\n\n  readonly attribute short button;\n  readonly attribute unsigned short buttons;\n\n  readonly attribute EventTarget? relatedTarget;\n\n  boolean getModifierState(DOMString keyArg);\n};",
+        "type": "interface",
+        "name": "MouseEvent",
+        "inheritance": "UIEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MouseEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "screenX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-screenx"
+          },
+          {
+            "type": "attribute",
+            "name": "screenY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-screeny"
+          },
+          {
+            "type": "attribute",
+            "name": "clientX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-clientx"
+          },
+          {
+            "type": "attribute",
+            "name": "clientY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-clienty"
+          },
+          {
+            "type": "attribute",
+            "name": "layerX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-layerx"
+          },
+          {
+            "type": "attribute",
+            "name": "layerY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-layery"
+          },
+          {
+            "type": "attribute",
+            "name": "ctrlKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-ctrlkey"
+          },
+          {
+            "type": "attribute",
+            "name": "shiftKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-shiftkey"
+          },
+          {
+            "type": "attribute",
+            "name": "altKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-altkey"
+          },
+          {
+            "type": "attribute",
+            "name": "metaKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-metakey"
+          },
+          {
+            "type": "attribute",
+            "name": "button",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-button"
+          },
+          {
+            "type": "attribute",
+            "name": "buttons",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-buttons"
+          },
+          {
+            "type": "attribute",
+            "name": "relatedTarget",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EventTarget"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-relatedtarget"
+          },
+          {
+            "type": "operation",
+            "name": "getModifierState",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "keyArg",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-getmodifierstate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/pointerevents/#dom-mouseevent"
+      },
+      "WheelEventInit": {
+        "fragment": "dictionary WheelEventInit : MouseEventInit {\n    double deltaX = 0.0;\n    double deltaY = 0.0;\n    double deltaZ = 0.0;\n    unsigned long deltaMode = 0;\n    boolean momentum = false;\n};",
+        "type": "dictionary",
+        "name": "WheelEventInit",
+        "inheritance": "MouseEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "deltaX",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheeleventinit-deltax"
+          },
+          {
+            "type": "field",
+            "name": "deltaY",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheeleventinit-deltay"
+          },
+          {
+            "type": "field",
+            "name": "deltaZ",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheeleventinit-deltaz"
+          },
+          {
+            "type": "field",
+            "name": "deltaMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheeleventinit-deltamode"
+          },
+          {
+            "type": "field",
+            "name": "momentum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheeleventinit-momentum"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/pointerevents/#dom-wheeleventinit"
+      },
+      "WheelEvent": {
+        "fragment": "[Exposed=Window]\ninterface WheelEvent : MouseEvent {\n    constructor(DOMString type, optional WheelEventInit eventInitDict = {});\n    // DeltaModeCode\n    const unsigned long DOM_DELTA_PIXEL = 0x00;\n    const unsigned long DOM_DELTA_LINE  = 0x01;\n    const unsigned long DOM_DELTA_PAGE  = 0x02;\n\n    readonly attribute double deltaX;\n    readonly attribute double deltaY;\n    readonly attribute double deltaZ;\n    readonly attribute unsigned long deltaMode;\n    readonly attribute boolean momentum;\n};",
+        "type": "interface",
+        "name": "WheelEvent",
+        "inheritance": "MouseEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WheelEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-constructor"
+          },
+          {
+            "type": "const",
+            "name": "DOM_DELTA_PIXEL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x00"
+            },
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-dom_delta_pixel"
+          },
+          {
+            "type": "const",
+            "name": "DOM_DELTA_LINE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x01"
+            },
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-dom_delta_line"
+          },
+          {
+            "type": "const",
+            "name": "DOM_DELTA_PAGE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x02"
+            },
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-dom_delta_page"
+          },
+          {
+            "type": "attribute",
+            "name": "deltaX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-deltax"
+          },
+          {
+            "type": "attribute",
+            "name": "deltaY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-deltay"
+          },
+          {
+            "type": "attribute",
+            "name": "deltaZ",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-deltaz"
+          },
+          {
+            "type": "attribute",
+            "name": "deltaMode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-deltamode"
+          },
+          {
+            "type": "attribute",
+            "name": "momentum",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/pointerevents/#dom-wheelevent-momentum"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/pointerevents/#dom-wheelevent"
+      }
+    },
+    "idlExtendedNames": {
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n  undefined setPointerCapture (long pointerId);\n  undefined releasePointerCapture (long pointerId);\n  boolean hasPointerCapture (long pointerId);\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "setPointerCapture",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "pointerId",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/pointerevents/#dom-element-setpointercapture"
+            },
+            {
+              "type": "operation",
+              "name": "releasePointerCapture",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "pointerId",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/pointerevents/#dom-element-releasepointercapture"
+            },
+            {
+              "type": "operation",
+              "name": "hasPointerCapture",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "pointerId",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/pointerevents/#dom-element-haspointercapture"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n    attribute EventHandler onpointerover;\n    attribute EventHandler onpointerenter;\n    attribute EventHandler onpointerdown;\n    attribute EventHandler onpointermove;\n    [SecureContext] attribute EventHandler onpointerrawupdate;\n    attribute EventHandler onpointerup;\n    attribute EventHandler onpointercancel;\n    attribute EventHandler onpointerout;\n    attribute EventHandler onpointerleave;\n    attribute EventHandler ongotpointercapture;\n    attribute EventHandler onlostpointercapture;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onpointerover",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerover"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointerenter",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerenter"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointerdown",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerdown"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointermove",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointermove"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointerrawupdate",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerrawupdate"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointerup",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerup"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointercancel",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointercancel"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointerout",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerout"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointerleave",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerleave"
+            },
+            {
+              "type": "attribute",
+              "name": "ongotpointercapture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-ongotpointercapture"
+            },
+            {
+              "type": "attribute",
+              "name": "onlostpointercapture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onlostpointercapture"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n    readonly  attribute long maxTouchPoints;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "maxTouchPoints",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "long"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/pointerevents/#dom-navigator-maxtouchpoints"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MouseEvent": [
+        {
+          "fragment": "partial interface MouseEvent {\n  // Deprecated in this specification\n  undefined initMouseEvent(DOMString typeArg,\n    optional boolean bubblesArg = false,\n    optional boolean cancelableArg = false,\n    optional Window? viewArg = null,\n    optional long detailArg = 0,\n    optional long screenXArg = 0,\n    optional long screenYArg = 0,\n    optional long clientXArg = 0,\n    optional long clientYArg = 0,\n    optional boolean ctrlKeyArg = false,\n    optional boolean altKeyArg = false,\n    optional boolean shiftKeyArg = false,\n    optional boolean metaKeyArg = false,\n    optional short buttonArg = 0,\n    optional EventTarget? relatedTargetArg = null);\n};",
+          "type": "interface",
+          "name": "MouseEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "initMouseEvent",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "typeArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "bubblesArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "cancelableArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "viewArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "Window"
+                  },
+                  "default": {
+                    "type": "null"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "detailArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "screenXArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "screenYArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "clientXArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "clientYArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "ctrlKeyArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "altKeyArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "shiftKeyArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "metaKeyArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "buttonArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "short"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "relatedTargetArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "EventTarget"
+                  },
+                  "default": {
+                    "type": "null"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/pointerevents/#dom-mouseevent-initmouseevent"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PointerEvent",
+        "MouseEvent",
+        "WheelEvent"
+      ]
+    },
+    "dependencies": {
+      "PointerEventInit": [
+        "MouseEventInit",
+        "PointerEvent"
+      ],
+      "PointerEvent": [
+        "MouseEvent",
+        "PointerEventInit",
+        "PointerEvent"
+      ],
+      "Element": [],
+      "GlobalEventHandlers": [
+        "EventHandler"
+      ],
+      "Navigator": [],
+      "MouseEventInit": [
+        "EventModifierInit",
+        "EventTarget"
+      ],
+      "MouseEvent": [
+        "UIEvent",
+        "MouseEventInit",
+        "EventTarget",
+        "Window"
+      ],
+      "WheelEventInit": [
+        "MouseEventInit"
+      ],
+      "WheelEvent": [
+        "MouseEvent",
+        "WheelEventInit"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "GlobalEventHandlers",
+      "EventHandler",
+      "Navigator",
+      "EventModifierInit",
+      "EventTarget",
+      "UIEvent",
+      "Window"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="47.52" y1="219.83" x2="630" y2="219.83" stroke="#e3e6ea"/>
+<line x1="47.52" y1="167.37" x2="630" y2="167.37" stroke="#e3e6ea"/>
+<line x1="47.52" y1="114.91" x2="630" y2="114.91" stroke="#e3e6ea"/>
+<line x1="47.52" y1="62.46" x2="630" y2="62.46" stroke="#e3e6ea"/>
+<line x1="47.52" y1="10" x2="630" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M113.7,219.83 L126.93,219.72 L140.16,219.41 L153.43,218.88 L166.66,218.15 L179.89,217.2 L193.11,216.05 L206.38,214.68 L219.61,213.11 L232.84,211.33 L246.07,209.33 L259.33,207.13 L272.56,204.72 L285.79,202.09 L299.02,199.26 L312.28,196.22 L325.51,192.97 L338.74,189.51 L351.97,185.83 L365.24,181.95 L378.47,177.86 L391.7,173.56 L404.92,169.05 L418.19,164.33 L431.42,159.4 L444.65,154.25 L457.88,148.9 L471.14,143.34 L484.37,137.57 L497.6,131.59 L510.83,125.4 L524.09,119 L537.32,112.39 L550.55,105.58 L563.78,98.55 L577.05,91.31 L590.28,83.86 L603.51,76.2 L616.73,68.33 L630,60.25" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="axes">
+<line x1="42.52" y1="219.83" x2="47.52" y2="219.83" stroke="#8c959f"/>
+<text x="39.52" y="222.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="42.52" y1="167.37" x2="47.52" y2="167.37" stroke="#8c959f"/>
+<text x="39.52" y="170.18" text-anchor="end" font-size="11" fill="#59636e">500</text>
+<line x1="42.52" y1="114.91" x2="47.52" y2="114.91" stroke="#8c959f"/>
+<text x="39.52" y="117.72" text-anchor="end" font-size="11" fill="#59636e">1,000</text>
+<line x1="42.52" y1="62.46" x2="47.52" y2="62.46" stroke="#8c959f"/>
+<text x="39.52" y="65.27" text-anchor="end" font-size="11" fill="#59636e">1,500</text>
+<line x1="42.52" y1="10" x2="47.52" y2="10" stroke="#8c959f"/>
+<text x="39.52" y="12.81" text-anchor="end" font-size="11" fill="#59636e">2,000</text>
+<line x1="47.52" y1="219.83" x2="47.52" y2="224.83" stroke="#8c959f"/>
+<text x="47.52" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">1985</text>
+<line x1="113.7" y1="219.83" x2="113.7" y2="224.83" stroke="#8c959f"/>
+<text x="113.7" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">1990</text>
+<line x1="179.89" y1="219.83" x2="179.89" y2="224.83" stroke="#8c959f"/>
+<text x="179.89" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">1995</text>
+<line x1="246.07" y1="219.83" x2="246.07" y2="224.83" stroke="#8c959f"/>
+<text x="246.07" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2000</text>
+<line x1="312.28" y1="219.83" x2="312.28" y2="224.83" stroke="#8c959f"/>
+<text x="312.28" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2005</text>
+<line x1="378.47" y1="219.83" x2="378.47" y2="224.83" stroke="#8c959f"/>
+<text x="378.47" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2010</text>
+<line x1="444.65" y1="219.83" x2="444.65" y2="224.83" stroke="#8c959f"/>
+<text x="444.65" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2015</text>
+<line x1="510.83" y1="219.83" x2="510.83" y2="224.83" stroke="#8c959f"/>
+<text x="510.83" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2020</text>
+<line x1="577.05" y1="219.83" x2="577.05" y2="224.83" stroke="#8c959f"/>
+<text x="577.05" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2025</text>
+<line x1="47.52" y1="219.83" x2="630" y2="219.83" stroke="#8c959f"/>
+</g>
+</svg>

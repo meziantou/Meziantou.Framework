@@ -9,11 +9,47 @@ internal static class YamlThrowHelper
 {
     /// <summary>Throws an exception for expected Token.</summary>
     public static YamlException ThrowExpectedToken(YamlReader reader, YamlTokenType expectedToken)
-        => new(reader.SourceName, reader.Start, reader.End, $"Expected a {expectedToken} token but found '{reader.TokenType}'.");
+    {
+        if (reader.TokenType is YamlTokenType.Alias)
+        {
+            // Without reference handling, an alias is never resolved, so it reaches the check of the expected token.
+            if (reader.Options.ReferenceHandling is YamlReferenceHandling.None)
+            {
+                return new(reader.SourceName, reader.Start, reader.End, "Aliases are not supported unless ReferenceHandling is Preserve.");
+            }
+
+            // An alias to a scalar is presented as that scalar, so this alias names either an unknown anchor or a node
+            // that is not a scalar. Resolving it reports an unknown anchor as the other converters do. It moves the
+            // reader past the alias, which does not matter as the caller throws the returned exception.
+            var aliasStart = reader.Start;
+            var aliasEnd = reader.End;
+            if (reader.TryReadAlias(out _))
+            {
+                return new(reader.SourceName, aliasStart, aliasEnd, $"Expected a {expectedToken} token but found '{YamlTokenType.Alias}'.");
+            }
+        }
+
+        return new(reader.SourceName, reader.Start, reader.End, $"Expected a {expectedToken} token but found '{reader.TokenType}'.");
+    }
 
     /// <summary>Throws an exception for expected Scalar.</summary>
     public static YamlException ThrowExpectedScalar(YamlReader reader)
         => ThrowExpectedToken(reader, YamlTokenType.Scalar);
+
+    /// <summary>Throws an exception for expected Scalar when deserializing a string.</summary>
+    public static YamlException ThrowExpectedStringScalar(YamlReader reader)
+    {
+        if (reader.TokenType is YamlTokenType.Alias && reader.Options.ReferenceHandling is YamlReferenceHandling.None)
+        {
+            return new(reader.SourceName, reader.Start, reader.End, "Aliases are not supported when deserializing into string unless ReferenceHandling is Preserve.");
+        }
+
+        return ThrowExpectedScalar(reader);
+    }
+
+    /// <summary>Throws an exception for an alias read without reference handling.</summary>
+    public static YamlException ThrowAliasNotSupported(YamlReader reader, Type type)
+        => new(reader.SourceName, reader.Start, reader.End, $"Aliases are not supported when deserializing into '{type}' unless ReferenceHandling is Preserve.");
 
     /// <summary>Throws an exception for expected Scalar Key.</summary>
     public static YamlException ThrowExpectedScalarKey(YamlReader reader)
@@ -41,15 +77,41 @@ internal static class YamlThrowHelper
 
     /// <summary>Throws an exception for unknown Type Discriminator.</summary>
     public static YamlException ThrowUnknownTypeDiscriminator(YamlReader reader, string? discriminatorValue, Type baseType)
-        => new(reader.SourceName, reader.Start, reader.End, $"Unknown type discriminator '{discriminatorValue}' for '{baseType}'.");
+        => ThrowUnknownTypeDiscriminator(reader, reader.Start, reader.End, discriminatorValue, baseType);
+
+    /// <summary>Throws an exception for unknown Type Discriminator, located at the polymorphic node.</summary>
+    public static YamlException ThrowUnknownTypeDiscriminator(YamlReader reader, Mark start, Mark end, string? discriminatorValue, Type baseType)
+        => new(reader.SourceName, start, end, $"Unknown type discriminator '{discriminatorValue}' for '{baseType}'.");
 
     /// <summary>Throws an exception for unknown Type Tag.</summary>
     public static YamlException ThrowUnknownTypeTag(YamlReader reader, string? tag, Type baseType)
-        => new(reader.SourceName, reader.Start, reader.End, $"Unknown type tag '{tag}' for '{baseType}'.");
+        => ThrowUnknownTypeTag(reader, reader.Start, reader.End, tag, baseType);
+
+    /// <summary>Throws an exception for unknown Type Tag, located at the polymorphic node.</summary>
+    public static YamlException ThrowUnknownTypeTag(YamlReader reader, Mark start, Mark end, string? tag, Type baseType)
+        => new(reader.SourceName, start, end, $"Unknown type tag '{tag}' for '{baseType}'.");
 
     /// <summary>Throws an exception for abstract Type Without Discriminator.</summary>
     public static YamlException ThrowAbstractTypeWithoutDiscriminator(YamlReader reader, Type type)
-        => new(reader.SourceName, reader.Start, reader.End, $"Cannot deserialize abstract type '{type}' without a known derived type discriminator.");
+        => ThrowAbstractTypeWithoutDiscriminator(reader, reader.Start, reader.End, type);
+
+    /// <summary>Throws an exception for abstract Type Without Discriminator, located at the polymorphic node.</summary>
+    public static YamlException ThrowAbstractTypeWithoutDiscriminator(YamlReader reader, Mark start, Mark end, Type type)
+        => new(reader.SourceName, start, end, $"Cannot deserialize abstract type '{type}' without a known derived type discriminator.");
+
+    /// <summary>Converts the value an alias resolved to into the type being deserialized.</summary>
+    /// <remarks>An anchored node can be deserialized as a type the alias destination does not accept.</remarks>
+    public static T CastAliasValue<T>(YamlReader reader, object? value)
+    {
+        try
+        {
+            return (T)value!;
+        }
+        catch (InvalidCastException exception)
+        {
+            throw new YamlException(reader.SourceName, reader.Start, reader.End, exception.Message, exception);
+        }
+    }
 
     /// <summary>Throws an exception for expected Discriminator Scalar.</summary>
     public static YamlException ThrowExpectedDiscriminatorScalar(YamlReader reader, string discriminatorPropertyName)
@@ -127,6 +189,14 @@ internal static class YamlThrowHelper
     public static YamlException ThrowInvalidGuidScalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid Guid scalar '{reader.ScalarValue}'.");
 
+    /// <summary>Throws an exception for invalid <see cref="Uri"/> Scalar.</summary>
+    public static YamlException ThrowInvalidUriScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Uri scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="CultureInfo"/> Scalar.</summary>
+    public static YamlException ThrowInvalidCultureInfoScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid CultureInfo scalar '{reader.ScalarValue}'.");
+
     /// <summary>Throws an exception for invalid <see cref="TimeSpan"/> Scalar.</summary>
     public static YamlException ThrowInvalidTimeSpanScalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid TimeSpan scalar '{reader.ScalarValue}'.");
@@ -147,9 +217,39 @@ internal static class YamlThrowHelper
     public static YamlException ThrowInvalidInt128Scalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid Int128 scalar '{reader.ScalarValue}'.");
 
+    /// <summary>Throws an exception for an invalid BigInteger scalar.</summary>
+    public static YamlException ThrowInvalidBigIntegerScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid BigInteger scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for an invalid Version scalar.</summary>
+    public static YamlException ThrowInvalidVersionScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Version scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for an invalid Rune scalar.</summary>
+    public static YamlException ThrowInvalidRuneScalar(YamlReader reader, string text)
+        => ThrowInvalidScalar(reader, $"Invalid Rune scalar '{text}'.");
+
     /// <summary>Throws an exception for invalid <see cref="UInt128"/> Scalar.</summary>
     public static YamlException ThrowInvalidUInt128Scalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid UInt128 scalar '{reader.ScalarValue}'.");
+
+#if NET11_0_OR_GREATER
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.BFloat16"/> Scalar.</summary>
+    public static YamlException ThrowInvalidBFloat16Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid BFloat16 scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.Decimal32"/> Scalar.</summary>
+    public static YamlException ThrowInvalidDecimal32Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Decimal32 scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.Decimal64"/> Scalar.</summary>
+    public static YamlException ThrowInvalidDecimal64Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Decimal64 scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.Decimal128"/> Scalar.</summary>
+    public static YamlException ThrowInvalidDecimal128Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Decimal128 scalar '{reader.ScalarValue}'.");
+#endif
 
     /// <summary>Throws an exception for alias Missing Value.</summary>
     public static YamlException ThrowAliasMissingValue(YamlReader reader)

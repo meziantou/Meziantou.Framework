@@ -1,0 +1,874 @@
+using System.Buffers.Binary;
+using System.IO.Compression;
+using Meziantou.Framework.SnapshotTesting;
+
+namespace Meziantou.Framework.Barcodes.Tests;
+
+public class QRCodePngRendererTests
+{
+    [Fact]
+    public void ReadmeExample_ToPng()
+    {
+        #region QRCode_ToPng
+        var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+        var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+        var barcode = Barcode.CreateCode39("ABC-123", includeChecksum: true);
+
+        // The content of a PNG file, to save with File.WriteAllBytes("qrcode.png", png)
+        var png = qrCode.ToPng();
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]); // the PNG signature
+
+        // Any writable stream, such as File.Create("micro-qrcode.png")
+        using var stream = new MemoryStream();
+        microQr.WriteToPng(stream, new QRCodePngOptions
+        {
+            ModuleSize = 4,
+            QuietZoneModules = 2,
+            DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
+            LightColor = Color.FromRgb(0xf9, 0xfa, 0xfb),
+        });
+
+        var barcodePng = barcode.ToPng(new BarcodePngOptions
+        {
+            ModuleWidth = 2,
+            ModuleHeight = 80,
+            DarkColor = Color.FromRgb(0x0f, 0x76, 0x6e),
+            LightColor = Color.FromRgb(0xec, 0xfe, 0xff),
+        });
+        #endregion
+
+        Assert.NotEmpty(stream.ToArray());
+        Assert.NotEmpty(barcodePng);
+    }
+
+    [Fact]
+    public void Documentation_Colors()
+    {
+        #region QRCode_Colors
+        var qrCode = QRCode.Create("https://www.meziantou.net");
+        var png = qrCode.ToPng(new QRCodePngOptions
+        {
+            ModuleSize = 4,
+            QuietZoneModules = 2,
+            DarkColor = Color.Parse("#1e3a8a"),
+            LightColor = Color.Parse("rgb(239, 246, 255)"),
+        });
+        #endregion
+
+        DocumentationImages.AssertPng("Colors", png);
+    }
+
+    public static IEnumerable<object[]> ModuleSizes
+    {
+        get
+        {
+            for (var moduleSize = 1; moduleSize <= 10; moduleSize++)
+            {
+                yield return [moduleSize];
+            }
+        }
+    }
+
+    public static TheoryData<string> ScenarioNames()
+    {
+        var data = new TheoryData<string>();
+        foreach (var scenario in QRCodePngScenarios.All)
+        {
+            data.Add(scenario.Name);
+        }
+
+        return data;
+    }
+
+    public static TheoryData<QRCodeType, int, int> Layouts()
+    {
+        var data = new TheoryData<QRCodeType, int, int>();
+        foreach (var type in new[] { QRCodeType.Standard, QRCodeType.MicroQR, QRCodeType.RMQR })
+        {
+            // A module size of 1 with no quiet zone leaves a row width that is not a multiple of
+            // 8, which is where the bit packing is most likely to go wrong.
+            foreach (var moduleSize in new[] { 1, 2, 3, 7 })
+            {
+                foreach (var quietZoneModules in new[] { 0, 1, 4 })
+                {
+                    data.Add(type, moduleSize, quietZoneModules);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    [Fact]
+    public void ToPng_DefaultOptions()
+    {
+        var qr = QRCode.Create("TEST", ErrorCorrectionLevel.L);
+        var png = qr.ToPng();
+
+        Snapshot.Validate(png, SnapshotType.Png);
+    }
+
+    [Fact]
+    public void ToPng_HasPngSignature()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var png = qr.ToPng();
+
+        Assert.Equal(137, png[0]);
+        Assert.Equal((byte)'P', png[1]);
+        Assert.Equal((byte)'N', png[2]);
+        Assert.Equal((byte)'G', png[3]);
+        Assert.Equal(13, png[4]);
+        Assert.Equal(10, png[5]);
+        Assert.Equal(26, png[6]);
+        Assert.Equal(10, png[7]);
+    }
+
+    [Fact]
+    public void ToPng_DefaultOptions_UsesModuleSize10_QuietZone4()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var png = qr.ToPng();
+
+        var parsed = ParsePng(png);
+        Assert.Equal(290, parsed.Width);
+        Assert.Equal(290, parsed.Height);
+    }
+
+    [Theory]
+    [MemberData(nameof(ModuleSizes))]
+    public void ToPng_UsesConfiguredModuleSize(int moduleSize)
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var png = qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize });
+
+        Snapshot.Validate(png, SnapshotType.Png);
+    }
+
+    [Fact]
+    public void ToPng_MicroQr_HasExpectedDimensions()
+    {
+        var qr = QRCode.CreateMicroQR("123", ErrorCorrectionLevel.L);
+        var png = qr.ToPng(new QRCodePngOptions { ModuleSize = 2, QuietZoneModules = 1 });
+
+        var parsed = ParsePng(png);
+        Assert.Equal((11 + 2) * 2, parsed.Width);
+        Assert.Equal((11 + 2) * 2, parsed.Height);
+    }
+
+    [Fact]
+    public void ToPng_Rmqr_HasExpectedDimensions()
+    {
+        var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
+        var png = qr.ToPng(new QRCodePngOptions { ModuleSize = 3, QuietZoneModules = 0 });
+
+        var parsed = ParsePng(png);
+        Assert.Equal(27 * 3, parsed.Width);
+        Assert.Equal(11 * 3, parsed.Height);
+    }
+
+    [Theory]
+    [MemberData(nameof(Layouts))]
+    public void ToPng_PixelsMatchTheModuleMatrix(QRCodeType type, int moduleSize, int quietZoneModules)
+    {
+        var qr = CreateSample(type);
+        var png = qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
+
+        var parsed = ParsePng(png);
+        Assert.Equal((qr.Width + (2 * quietZoneModules)) * moduleSize, parsed.Width);
+        Assert.Equal((qr.Height + (2 * quietZoneModules)) * moduleSize, parsed.Height);
+
+        for (var y = 0; y < parsed.Height; y++)
+        {
+            for (var x = 0; x < parsed.Width; x++)
+            {
+                var row = (y / moduleSize) - quietZoneModules;
+                var column = (x / moduleSize) - quietZoneModules;
+                var expected = row >= 0 && row < qr.Height && column >= 0 && column < qr.Width && qr[row, column];
+                if (expected != parsed.IsSet(y, x))
+                {
+                    Assert.Fail($"Pixel ({x}, {y}) is {(expected ? "light" : "dark")} but module ({column}, {row}) is {(expected ? "dark" : "light")}.");
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Layouts))]
+    public void ToPng_UnusedBitsAtTheEndOfARowAreClear(QRCodeType type, int moduleSize, int quietZoneModules)
+    {
+        // A row is padded to a whole number of bytes. Leaving the padding bits set would still
+        // decode, but it makes the image data depend on uninitialised state.
+        var qr = CreateSample(type);
+        var png = qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
+
+        var parsed = ParsePng(png);
+        for (var y = 0; y < parsed.Height; y++)
+        {
+            for (var bit = parsed.Width; bit < parsed.BytesPerRow * 8; bit++)
+            {
+                if (parsed.IsSet(y, bit))
+                {
+                    Assert.Fail($"Padding bit {bit} of row {y} is set.");
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScenarioNames))]
+    public void ToPng_Scenario(string name)
+    {
+        var scenario = QRCodePngScenarios.Get(name);
+
+        Snapshot.Validate(scenario.CreatePng(), SnapshotType.Png);
+    }
+
+    [Fact]
+    public void Scenarios_HaveUniqueNames()
+    {
+        // Two scenarios sharing a name would share a snapshot file, so one of them would never
+        // be checked against anything.
+        Assert.Distinct(QRCodePngScenarios.All.Select(scenario => scenario.Name), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void WriteToPng_MatchesToPng()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var options = new QRCodePngOptions { ModuleSize = 2, QuietZoneModules = 1 };
+        var expected = qr.ToPng(options);
+
+        using var stream = new MemoryStream();
+        qr.WriteToPng(stream, options);
+        var actual = stream.ToArray();
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void WriteToPng_WritesAtTheCurrentPositionAndLeavesTheStreamOpen()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var expected = qr.ToPng();
+
+        using var stream = new MemoryStream();
+        stream.WriteByte(0xAA);
+        qr.WriteToPng(stream);
+        stream.WriteByte(0xBB);
+
+        var actual = stream.ToArray();
+        Assert.Equal(0xAA, actual[0]);
+        Assert.Equal(0xBB, actual[^1]);
+        Assert.Equal<byte>(expected, actual.AsSpan(1, actual.Length - 2));
+    }
+
+    [Fact]
+    public void ToPng_IsDeterministic()
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.Q);
+
+        Assert.Equal(qr.ToPng(), qr.ToPng());
+    }
+
+    [Fact]
+    public void ToPng_ChunksAreWellFormed()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var chunks = ReadChunks(qr.ToPng());
+        string[] expectedTypes = ["IHDR", "PLTE", "IDAT", "IEND"];
+
+        Assert.Equal(expectedTypes, chunks.Select(chunk => chunk.Type));
+        Assert.All(chunks, chunk => Assert.Equal(ComputeCrc32(chunk.Type, chunk.Data), chunk.Crc));
+        Assert.Empty(chunks[^1].Data);
+    }
+
+    [Fact]
+    public void ToPng_TransparentColors_WritesTransparencyBeforeTheImageData()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var png = qr.ToPng(new QRCodePngOptions { LightColor = Color.Transparent });
+        var chunks = ReadChunks(png);
+        string[] expectedTypes = ["IHDR", "PLTE", "tRNS", "IDAT", "IEND"];
+
+        // tRNS must come after PLTE and before IDAT.
+        Assert.Equal(expectedTypes, chunks.Select(chunk => chunk.Type));
+        Assert.All(chunks, chunk => Assert.Equal(ComputeCrc32(chunk.Type, chunk.Data), chunk.Crc));
+    }
+
+    [Fact]
+    public void ToPng_CustomColors_UsesConfiguredRgb()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var options = new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = 0 };
+        var normal = ParsePng(qr.ToPng(options));
+        var custom = ParsePng(qr.ToPng(new QRCodePngOptions
+        {
+            ModuleSize = 1,
+            QuietZoneModules = 0,
+            DarkColor = Color.FromArgb(0x7f, 0x11, 0x22, 0x33),
+            LightColor = Color.FromArgb(0x40, 0xaa, 0xbb, 0xcc),
+        }));
+
+        Assert.Equal(normal.Width, custom.Width);
+        Assert.Equal(normal.Height, custom.Height);
+
+        // Indexed, one bit per pixel: the colours live in PLTE and tRNS, and a set bit means dark.
+        Assert.Equal((byte)3, custom.ColorType);
+        Assert.Equal((byte)1, custom.BitDepth);
+        Assert.Equal(new byte[] { 0xaa, 0xbb, 0xcc, 0x11, 0x22, 0x33 }, custom.Palette);
+        Assert.Equal(new byte[] { 0x40, 0x7f }, custom.Transparency);
+        Assert.Equal(qr[0, 0], custom.IsSet(0, 0));
+
+        // The default colours are opaque, so no tRNS chunk is written at all.
+        Assert.Equal(new byte[] { 0xff, 0xff, 0xff, 0x00, 0x00, 0x00 }, normal.Palette);
+        Assert.Empty(normal.Transparency);
+        Assert.Equal(qr[0, 0], normal.IsSet(0, 0));
+    }
+
+    [Fact]
+    public void ToPng_SameDarkAndLightColor_StillWritesTwoPaletteEntries()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var parsed = ParsePng(qr.ToPng(new QRCodePngOptions
+        {
+            ModuleSize = 1,
+            QuietZoneModules = 0,
+            DarkColor = Color.FromRgb(0x12, 0x34, 0x56),
+            LightColor = Color.FromRgb(0x12, 0x34, 0x56),
+        }));
+
+        Assert.Equal(new byte[] { 0x12, 0x34, 0x56, 0x12, 0x34, 0x56 }, parsed.Palette);
+        Assert.Equal(qr[0, 0], parsed.IsSet(0, 0));
+    }
+
+    [Fact]
+    public void ToPng_FullyTransparentColors_WritesBothAlphaValues()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var parsed = ParsePng(qr.ToPng(new QRCodePngOptions
+        {
+            DarkColor = Color.Transparent,
+            LightColor = Color.Transparent,
+        }));
+
+        Assert.Equal(new byte[] { 0x00, 0x00 }, parsed.Transparency);
+    }
+
+    [Fact]
+    public void ToPng_TransparentColors_Snapshot()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var png = qr.ToPng(new QRCodePngOptions
+        {
+            ModuleSize = 1,
+            QuietZoneModules = 0,
+            DarkColor = Color.FromArgb(0x80, 0x11, 0x22, 0x33),
+            LightColor = Color.Transparent,
+        });
+
+        Snapshot.Validate(png, SnapshotType.Png);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void ToPng_InvalidModuleSize_ThrowsArgumentOutOfRangeException(int moduleSize)
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize }));
+    }
+
+    [Fact]
+    public void ToPng_NegativeQuietZone_ThrowsArgumentOutOfRangeException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToPng(new QRCodePngOptions { QuietZoneModules = -1 }));
+    }
+
+    [Fact]
+    public void ToPng_ModuleSizeOverflowsTheImageDimensions_ThrowsArgumentOutOfRangeException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        // The size is rejected before anything is allocated, so this must not try to build a
+        // 21 * int.MaxValue pixel image.
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToPng(new QRCodePngOptions { ModuleSize = int.MaxValue }));
+    }
+
+    [Fact]
+    public void ToPng_QuietZoneOverflowsTheImageDimensions_ThrowsArgumentOutOfRangeException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToPng(new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = int.MaxValue }));
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(7, 1)]
+    [InlineData(8, 1)]
+    [InlineData(9, 2)]
+    [InlineData(16, 2)]
+    [InlineData(17, 3)]
+    [InlineData(int.MaxValue - 8, 268_435_455)]
+    [InlineData(int.MaxValue - 7, 268_435_455)]
+    [InlineData(int.MaxValue - 6, 268_435_456)]
+    [InlineData(int.MaxValue, 268_435_456)]
+    public void PngWriter_GetBytesPerRow_RoundsUpWithoutOverflowing(int width, int expected)
+    {
+        Assert.Equal(expected, Internal.PngWriter.GetBytesPerRow(width));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void PngWriter_GetBytesPerRow_NonPositiveWidth_ThrowsArgumentOutOfRangeException(int width)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(width), () => Internal.PngWriter.GetBytesPerRow(width));
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 0)]
+    [InlineData(-1, 1)]
+    [InlineData(1, -1)]
+    public void PngWriter_WritePalette_EmptyImage_ThrowsArgumentOutOfRangeExceptionBeforeWriting(int width, int height)
+    {
+        using var stream = new MemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Internal.PngWriter.WritePalette(stream, width, height, Color.White, Color.Black, (row, rowIndex) => 1));
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
+    public void PngWriter_SetPixels_SetsExactlyTheRequestedBits()
+    {
+        for (var start = 0; start < 40; start++)
+        {
+            for (var count = 0; start + count <= 40; count++)
+            {
+                var actual = new byte[5];
+                Internal.PngWriter.SetPixels(actual, start, count);
+
+                var expected = new byte[5];
+                for (var x = start; x < start + count; x++)
+                {
+                    expected[x >> 3] |= (byte)(0x80 >> (x & 7));
+                }
+
+                if (!expected.AsSpan().SequenceEqual(actual))
+                {
+                    Assert.Fail($"SetPixels({start}, {count}) wrote {Convert.ToHexString(actual)} instead of {Convert.ToHexString(expected)}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void PngWriter_SetPixels_KeepsTheBitsAlreadySet()
+    {
+        var row = new byte[] { 0x81, 0x00, 0x01 };
+        Internal.PngWriter.SetPixels(row, 3, 10);
+
+        Assert.Equal(new byte[] { 0x9F, 0xF8, 0x01 }, row);
+    }
+
+    [Fact]
+    public void PngWriter_RepeatedRows_MatchRenderingEachRow()
+    {
+        // 13 pixels wide, so the last byte of each row is partly padding.
+        const int Width = 13;
+        const int Height = 12;
+        static void Fill(Span<byte> row, int band)
+        {
+            Internal.PngWriter.SetPixels(row, band, Width - (2 * band));
+        }
+
+        using var eachRow = new MemoryStream();
+        Internal.PngWriter.WritePalette(eachRow, Width, Height, Color.White, Color.Black, (row, y) =>
+        {
+            Fill(row, y / 4);
+            return 1;
+        });
+
+        var calls = new List<int>();
+        using var repeated = new MemoryStream();
+        Internal.PngWriter.WritePalette(repeated, Width, Height, Color.White, Color.Black, (row, y) =>
+        {
+            calls.Add(y);
+            Fill(row, y / 4);
+            return 4;
+        });
+
+        Assert.Equal([0, 4, 8], calls);
+        Assert.Equal(eachRow.ToArray(), repeated.ToArray());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(4)]
+    public void PngWriter_InvalidRowCount_ThrowsInvalidOperationException(int rowCount)
+    {
+        using var stream = new MemoryStream();
+
+        Assert.Throws<InvalidOperationException>(() => Internal.PngWriter.WritePalette(stream, 8, 3, Color.White, Color.Black, (row, y) => rowCount));
+    }
+
+    [Fact]
+    public void PngWriter_SmallChunks_SplitOneZlibStream()
+    {
+        const int Width = 61;
+        const int Height = 40;
+        var lightColor = Color.Transparent;
+
+        using var single = new MemoryStream();
+        Internal.PngWriter.WritePalette(single, Width, Height, lightColor, Color.Black, FillNoise, maxIdatChunkLength: 1 << 20);
+        using var split = new MemoryStream();
+        Internal.PngWriter.WritePalette(split, Width, Height, lightColor, Color.Black, FillNoise, maxIdatChunkLength: 16);
+
+        var singleChunks = ReadChunks(single.ToArray());
+        var splitChunks = ReadChunks(split.ToArray());
+        var idatChunks = splitChunks.Where(chunk => chunk.Type is "IDAT").ToList();
+        string[] expectedTypes = ["IHDR", "PLTE", "tRNS", .. idatChunks.Select(chunk => chunk.Type), "IEND"];
+
+        Assert.Equal(expectedTypes, splitChunks.Select(chunk => chunk.Type));
+        Assert.HasCountGreaterThan(2, idatChunks);
+        Assert.All(idatChunks.SkipLast(1), chunk => Assert.HasCount(16, chunk.Data));
+        Assert.InRange(idatChunks[^1].Data.Length, 1, 16);
+        Assert.All(splitChunks, chunk => Assert.Equal(ComputeCrc32(chunk.Type, chunk.Data), chunk.Crc));
+
+        // The chunks are pieces of the same zlib stream, not separately compressed parts.
+        Assert.Equal(singleChunks.Single(chunk => chunk.Type is "IDAT").Data, idatChunks.SelectMany(chunk => chunk.Data));
+        Assert.Equal(new byte[] { 0x00, 0xff }, ParsePng(split.ToArray()).Transparency);
+    }
+
+    [Fact]
+    public void PngWriter_LargeImage_IsSplitIntoBoundedChunks()
+    {
+        const int Width = 512;
+        const int Height = 512;
+
+        using var stream = new MemoryStream();
+        Internal.PngWriter.WritePalette(stream, Width, Height, Color.White, Color.Black, FillNoise);
+
+        var png = stream.ToArray();
+        var idatChunks = ReadChunks(png).Where(chunk => chunk.Type is "IDAT").ToList();
+        Assert.HasCountGreaterThan(1, idatChunks);
+        Assert.All(idatChunks, chunk => Assert.InRange(chunk.Data.Length, 1, Internal.PngWriter.DefaultMaxIdatChunkLength));
+
+        var expected = new byte[Width / 8 * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            FillNoise(expected.AsSpan(y * Width / 8, Width / 8), y);
+        }
+
+        Assert.Equal(expected, ParsePng(png).ImageData);
+    }
+
+    [Fact]
+    public void PngWriter_WritesTheHeadersBeforeRenderingAnyRow()
+    {
+        using var stream = new MemoryStream();
+        var headerLength = -1L;
+        Internal.PngWriter.WritePalette(stream, 8, 2, Color.Transparent, Color.Black, (row, y) =>
+        {
+            if (y is 0)
+            {
+                headerLength = stream.Length;
+            }
+
+            return 1;
+        });
+
+        // Signature, then IHDR (13 bytes), PLTE (6 bytes) and tRNS (2 bytes), each with 12 bytes of overhead.
+        Assert.Equal(8 + (12 + 13) + (12 + 6) + (12 + 2), headerLength);
+    }
+
+    [Fact]
+    public void PngWriter_RendererThrows_PropagatesTheException()
+    {
+        using var stream = new MemoryStream();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => Internal.PngWriter.WritePalette(stream, 8, 4, Color.White, Color.Black, (row, y) => y is 2 ? throw new InvalidOperationException("sample") : 1));
+
+        Assert.Equal("sample", exception.Message);
+        Assert.DoesNotContain("IEND", ReadChunks(stream.ToArray()).Select(chunk => chunk.Type));
+    }
+
+    [Fact]
+    public void WriteToPng_NonSeekableStream_MatchesToPng()
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.Q);
+        var options = new QRCodePngOptions { LightColor = Color.Transparent };
+        var barcode = Barcode.CreateCode128("Hello 123");
+
+        using var qrStream = new WriteOnlyStream();
+        qr.WriteToPng(qrStream, options);
+        using var barcodeStream = new WriteOnlyStream();
+        barcode.WriteToPng(barcodeStream);
+
+        Assert.Equal(qr.ToPng(options), qrStream.ToArray());
+        Assert.Equal(barcode.ToPng(), barcodeStream.ToArray());
+    }
+
+    /// <summary>Fills a row with bits that do not compress, and are different for each row.</summary>
+    private static int FillNoise(Span<byte> row, int y)
+    {
+        for (var i = 0; i < row.Length; i++)
+        {
+            // A bit-mixing hash: a linear sequence would turn into a constant once Up-filtered.
+            var hash = (uint)((y << 16) | i);
+            hash = (hash ^ (hash >> 16)) * 0x7feb352du;
+            hash = (hash ^ (hash >> 15)) * 0x846ca68bu;
+            row[i] = (byte)(hash ^ (hash >> 16));
+        }
+
+        // Keep the padding bits of a partial last byte clear, as the renderers do.
+        row[^1] &= 0xF8;
+        return 1;
+    }
+
+    [Fact]
+    public void ToPng_BarcodePixelsMatchTheModules()
+    {
+        var barcode = Barcode.CreateCode128("Hello 123");
+        foreach (var (moduleWidth, quietZoneModules) in new[] { (1, 0), (1, 3), (3, 1), (5, 2) })
+        {
+            var parsed = ParsePng(barcode.ToPng(new BarcodePngOptions { ModuleWidth = moduleWidth, ModuleHeight = 3, QuietZoneModules = quietZoneModules }));
+            Assert.Equal((barcode.Width + (2 * quietZoneModules)) * moduleWidth, parsed.Width);
+            Assert.Equal(barcode.Height * 3, parsed.Height);
+
+            for (var y = 0; y < parsed.Height; y++)
+            {
+                for (var x = 0; x < parsed.BytesPerRow * 8; x++)
+                {
+                    var column = (x / moduleWidth) - quietZoneModules;
+                    var expected = x < parsed.Width && column >= 0 && column < barcode.Width && barcode[y / 3, column];
+                    if (expected != parsed.IsSet(y, x))
+                    {
+                        Assert.Fail($"Pixel ({x}, {y}) with module width {moduleWidth} and quiet zone {quietZoneModules} is wrong.");
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void WriteToPng_NullStream_ThrowsArgumentNullException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentNullException>(() => qr.WriteToPng(stream: null!));
+    }
+
+    [Fact]
+    public void ToPng_NullOptions_ThrowsArgumentNullException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentNullException>(() => qr.ToPng(options: null!));
+    }
+
+    private static QRCode CreateSample(QRCodeType type)
+    {
+        return type switch
+        {
+            QRCodeType.MicroQR => QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L),
+            QRCodeType.RMQR => QRCode.CreateRMQR("https://example.com", ErrorCorrectionLevel.M),
+            _ => QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.M),
+        };
+    }
+
+    private sealed record ParsedPng(int Width, int Height, byte BitDepth, byte ColorType, byte[] Palette, byte[] Transparency, byte[] ImageData)
+    {
+        public int BytesPerRow => ((Width * BitDepth) + 7) / 8;
+
+        /// <summary>Gets whether the pixel at the given position uses palette entry 1.</summary>
+        public bool IsSet(int row, int column)
+        {
+            var rowOffset = row * BytesPerRow;
+
+            return (ImageData[rowOffset + (column >> 3)] & (0x80 >> (column & 7))) != 0;
+        }
+    }
+
+    private sealed record PngChunk(string Type, byte[] Data, uint Crc);
+
+    /// <summary>A stream that can only be written to, like a network stream.</summary>
+    private sealed class WriteOnlyStream : Stream
+    {
+        private readonly MemoryStream _inner = new();
+
+        public override bool CanRead => false;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public byte[] ToArray() => _inner.ToArray();
+
+        public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+
+        public override void Write(ReadOnlySpan<byte> buffer) => _inner.Write(buffer);
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
+    private static ParsedPng ParsePng(byte[] data)
+    {
+        var width = 0;
+        var height = 0;
+        byte bitDepth = 0;
+        byte colorType = 0;
+        var palette = Array.Empty<byte>();
+        var transparency = Array.Empty<byte>();
+        using var idatData = new MemoryStream();
+
+        foreach (var chunk in ReadChunks(data))
+        {
+            switch (chunk.Type)
+            {
+                case "IHDR":
+                    width = BinaryPrimitives.ReadInt32BigEndian(chunk.Data.AsSpan(0, 4));
+                    height = BinaryPrimitives.ReadInt32BigEndian(chunk.Data.AsSpan(4, 4));
+                    bitDepth = chunk.Data[8];
+                    colorType = chunk.Data[9];
+                    break;
+
+                case "PLTE":
+                    palette = chunk.Data;
+                    break;
+
+                case "tRNS":
+                    transparency = chunk.Data;
+                    break;
+
+                case "IDAT":
+                    idatData.Write(chunk.Data);
+                    break;
+            }
+        }
+
+        using var compressed = new MemoryStream(idatData.ToArray());
+        using var zlib = new ZLibStream(compressed, CompressionMode.Decompress);
+        using var imageData = new MemoryStream();
+        zlib.CopyTo(imageData);
+
+        var bytesPerRow = ((width * bitDepth) + 7) / 8;
+
+        return new ParsedPng(width, height, bitDepth, colorType, palette, transparency, Unfilter(imageData.ToArray(), bytesPerRow, height));
+    }
+
+    /// <summary>Reverses the per-scanline filters and returns the raw rows, without the filter bytes.</summary>
+    private static byte[] Unfilter(byte[] filteredData, int bytesPerRow, int height)
+    {
+        // One byte per pixel or fewer, so a filter looks one byte back.
+        const int BytesPerPixel = 1;
+
+        var result = new byte[bytesPerRow * height];
+        for (var row = 0; row < height; row++)
+        {
+            var filterType = filteredData[row * (bytesPerRow + 1)];
+            var source = filteredData.AsSpan((row * (bytesPerRow + 1)) + 1, bytesPerRow);
+            var target = result.AsSpan(row * bytesPerRow, bytesPerRow);
+            var previous = row is 0 ? default : result.AsSpan((row - 1) * bytesPerRow, bytesPerRow);
+
+            for (var i = 0; i < bytesPerRow; i++)
+            {
+                var left = i >= BytesPerPixel ? target[i - BytesPerPixel] : (byte)0;
+                var up = previous.IsEmpty ? (byte)0 : previous[i];
+                var upperLeft = previous.IsEmpty || i < BytesPerPixel ? (byte)0 : previous[i - BytesPerPixel];
+
+                target[i] = filterType switch
+                {
+                    0 => source[i],
+                    1 => (byte)(source[i] + left),
+                    2 => (byte)(source[i] + up),
+                    3 => (byte)(source[i] + ((left + up) / 2)),
+                    4 => (byte)(source[i] + Paeth(left, up, upperLeft)),
+                    _ => throw new InvalidOperationException($"Unknown PNG filter type {filterType}."),
+                };
+            }
+        }
+
+        return result;
+    }
+
+    private static byte Paeth(byte left, byte up, byte upperLeft)
+    {
+        var p = left + up - upperLeft;
+        var pa = Math.Abs(p - left);
+        var pb = Math.Abs(p - up);
+        var pc = Math.Abs(p - upperLeft);
+
+        if (pa <= pb && pa <= pc)
+            return left;
+
+        return pb <= pc ? up : upperLeft;
+    }
+
+    private static List<PngChunk> ReadChunks(byte[] data)
+    {
+        var chunks = new List<PngChunk>();
+        var offset = 8;
+        while (offset < data.Length)
+        {
+            var chunkLength = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(offset, 4));
+            var chunkType = Encoding.ASCII.GetString(data.AsSpan(offset + 4, 4));
+            var chunkData = data.AsSpan(offset + 8, chunkLength).ToArray();
+            var crc = BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(offset + 8 + chunkLength, 4));
+            chunks.Add(new PngChunk(chunkType, chunkData, crc));
+
+            offset += 12 + chunkLength;
+        }
+
+        return chunks;
+    }
+
+    private static uint ComputeCrc32(string chunkType, byte[] data)
+    {
+        var crc = uint.MaxValue;
+        foreach (var value in Encoding.ASCII.GetBytes(chunkType).Concat(data))
+        {
+            crc ^= value;
+            for (var bit = 0; bit < 8; bit++)
+            {
+                crc = (crc & 1) == 0 ? crc >> 1 : 0xEDB88320u ^ (crc >> 1);
+            }
+        }
+
+        return ~crc;
+    }
+}

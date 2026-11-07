@@ -1,0 +1,497 @@
+{
+  "spec": {
+    "title": "CSS Spatial Navigation Module Level 1",
+    "url": "https://drafts.csswg.org/css-spatial-nav-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "NavigationEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "SpatialNavigationDirection": {
+        "fragment": "enum SpatialNavigationDirection {\n    \"up\",\n    \"down\",\n    \"left\",\n    \"right\",\n};",
+        "type": "enum",
+        "name": "SpatialNavigationDirection",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "up",
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-spatialnavigationdirection-up"
+          },
+          {
+            "type": "enum-value",
+            "value": "down",
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-spatialnavigationdirection-down"
+          },
+          {
+            "type": "enum-value",
+            "value": "left",
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-spatialnavigationdirection-left"
+          },
+          {
+            "type": "enum-value",
+            "value": "right",
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-spatialnavigationdirection-right"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/css-spatial-nav-1/#enumdef-spatialnavigationdirection"
+      },
+      "FocusableAreaSearchMode": {
+        "fragment": "enum FocusableAreaSearchMode {\n    \"visible\",\n    \"all\"\n};",
+        "type": "enum",
+        "name": "FocusableAreaSearchMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "visible",
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-focusableareasearchmode-visible"
+          },
+          {
+            "type": "enum-value",
+            "value": "all",
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-focusableareasearchmode-all"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/css-spatial-nav-1/#enumdef-focusableareasearchmode"
+      },
+      "FocusableAreasOption": {
+        "fragment": "dictionary FocusableAreasOption {\n    FocusableAreaSearchMode mode;\n};",
+        "type": "dictionary",
+        "name": "FocusableAreasOption",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FocusableAreaSearchMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-focusableareasoption-mode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-spatial-nav-1/#dictdef-focusableareasoption"
+      },
+      "SpatialNavigationSearchOptions": {
+        "fragment": "dictionary SpatialNavigationSearchOptions {\n    sequence<Node>? candidates;\n    Node? container;\n};",
+        "type": "dictionary",
+        "name": "SpatialNavigationSearchOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "candidates",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Node"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-spatialnavigationsearchoptions-candidates"
+          },
+          {
+            "type": "field",
+            "name": "container",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Node"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-spatialnavigationsearchoptions-container"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-spatial-nav-1/#dictdef-spatialnavigationsearchoptions"
+      },
+      "NavigationEvent": {
+        "fragment": "[Exposed=Window]\ninterface NavigationEvent : UIEvent {\n    constructor(DOMString type,\n                optional NavigationEventInit eventInitDict = {});\n    readonly attribute SpatialNavigationDirection dir;\n    readonly attribute EventTarget? relatedTarget;\n};",
+        "type": "interface",
+        "name": "NavigationEvent",
+        "inheritance": "UIEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NavigationEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-navigationevent-navigationevent"
+          },
+          {
+            "type": "attribute",
+            "name": "dir",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpatialNavigationDirection"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-navigationevent-dir"
+          },
+          {
+            "type": "attribute",
+            "name": "relatedTarget",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EventTarget"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-navigationevent-relatedtarget"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-spatial-nav-1/#navigationevent"
+      },
+      "NavigationEventInit": {
+        "fragment": "dictionary NavigationEventInit : UIEventInit {\n    SpatialNavigationDirection dir;\n    EventTarget? relatedTarget = null;\n};",
+        "type": "dictionary",
+        "name": "NavigationEventInit",
+        "inheritance": "UIEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "dir",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpatialNavigationDirection"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-navigationeventinit-dir"
+          },
+          {
+            "type": "field",
+            "name": "relatedTarget",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EventTarget"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-navigationeventinit-relatedtarget"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-spatial-nav-1/#dictdef-navigationeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n    undefined navigate(SpatialNavigationDirection dir);\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "navigate",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "dir",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SpatialNavigationDirection"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-window-navigate"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n    Node getSpatialNavigationContainer();\n    sequence<Node> focusableAreas(optional FocusableAreasOption option = {});\n    Node? spatialNavigationSearch(SpatialNavigationDirection dir, optional SpatialNavigationSearchOptions options = {});\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getSpatialNavigationContainer",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Node"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-element-getspatialnavigationcontainer"
+            },
+            {
+              "type": "operation",
+              "name": "focusableAreas",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Node"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "option",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FocusableAreasOption"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-element-focusableareas"
+            },
+            {
+              "type": "operation",
+              "name": "spatialNavigationSearch",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "Node"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "dir",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SpatialNavigationDirection"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SpatialNavigationSearchOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-spatial-nav-1/#dom-element-spatialnavigationsearch"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NavigationEvent"
+      ]
+    },
+    "dependencies": {
+      "Window": [
+        "SpatialNavigationDirection"
+      ],
+      "FocusableAreasOption": [
+        "FocusableAreaSearchMode"
+      ],
+      "SpatialNavigationSearchOptions": [
+        "Node"
+      ],
+      "Element": [
+        "Node",
+        "FocusableAreasOption",
+        "SpatialNavigationDirection",
+        "SpatialNavigationSearchOptions"
+      ],
+      "NavigationEvent": [
+        "UIEvent",
+        "NavigationEventInit",
+        "SpatialNavigationDirection",
+        "EventTarget"
+      ],
+      "NavigationEventInit": [
+        "UIEventInit",
+        "SpatialNavigationDirection",
+        "EventTarget"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "Node",
+      "Element",
+      "UIEvent",
+      "EventTarget",
+      "UIEventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -14,6 +14,9 @@ static partial class StringExtensions
 
     public static LineSplitEnumerator SplitLines(this string str, LineBreakMode lineBreakMode) => new(str.AsSpan(), lineBreakMode);
 
+    public static LineSplitEnumerator SplitLines(this ReadOnlySpan<char> str) => new(str, LineBreakMode.Unicode);
+
+    public static LineSplitEnumerator SplitLines(this ReadOnlySpan<char> str, LineBreakMode lineBreakMode) => new(str, lineBreakMode);
 
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]

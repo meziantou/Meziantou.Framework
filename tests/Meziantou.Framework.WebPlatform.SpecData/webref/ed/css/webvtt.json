@@ -1,0 +1,33 @@
+{
+  "spec": {
+    "title": "WebVTT: The Web Video Text Tracks Format",
+    "url": "https://w3c.github.io/webvtt/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": "::cue",
+      "prose": "The ::cue pseudo-element (with no argument) matches any list of WebVTT Node Objects constructed for the matched element, with the exception that the properties corresponding to the background shorthand must be applied to the WebVTT cue background box rather than the list of WebVTT Node Objects.",
+      "href": "https://w3c.github.io/webvtt/#selectordef-cue",
+      "value": "::cue"
+    },
+    {
+      "name": "::cue()",
+      "value": "::cue(selector)",
+      "href": "https://w3c.github.io/webvtt/#selectordef-cue-selector"
+    },
+    {
+      "name": "::cue-region",
+      "prose": "The ::cue-region pseudo-element (with no argument) matches any list of WebVTT region objects constructed for the matched element.",
+      "href": "https://w3c.github.io/webvtt/#selectordef-cue-region",
+      "value": "::cue-region"
+    },
+    {
+      "name": "::cue-region()",
+      "value": "::cue-region(selector)",
+      "href": "https://w3c.github.io/webvtt/#selectordef-cue-region-selector"
+    }
+  ],
+  "values": []
+}

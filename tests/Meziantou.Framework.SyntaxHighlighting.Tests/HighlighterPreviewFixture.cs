@@ -5,15 +5,27 @@ using System.Net;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
+/// <summary>
+/// Writes one HTML page per language showing every golden test's input next to its highlighted output, for reviewing
+/// grammar changes visually. Opt-in: set the <c>SYNTAXHIGHLIGHTING_PREVIEW_DIRECTORY</c> environment variable to the
+/// directory the pages should be written to.
+/// </summary>
 public sealed class HighlighterPreviewFixture : IDisposable
 {
+    private const string OutputDirectoryVariable = "SYNTAXHIGHLIGHTING_PREVIEW_DIRECTORY";
+
     private readonly ConcurrentDictionary<string, ConcurrentQueue<TestCase>> _cases = new(StringComparer.Ordinal);
+    private readonly string? _outputDirectory;
 
     public static HighlighterPreviewFixture? Current { get; private set; }
 
     public HighlighterPreviewFixture()
     {
-        Current = this;
+        _outputDirectory = Environment.GetEnvironmentVariable(OutputDirectoryVariable);
+        if (!string.IsNullOrEmpty(_outputDirectory))
+        {
+            Current = this;
+        }
     }
 
     public void Add(string language, string testName, string code, string highlighted)
@@ -24,14 +36,17 @@ public sealed class HighlighterPreviewFixture : IDisposable
 
     public void Dispose()
     {
-        var outputDir = AppContext.BaseDirectory;
+        if (string.IsNullOrEmpty(_outputDirectory))
+            return;
+
+        Directory.CreateDirectory(_outputDirectory);
         foreach (var language in _cases.Keys.Order(StringComparer.Ordinal))
         {
             var cases = _cases[language]
                 .OrderBy(c => c.TestName, StringComparer.Ordinal)
                 .ToList();
 
-            var path = Path.Combine(outputDir, language + ".html");
+            var path = Path.Combine(_outputDirectory, language + ".html");
             File.WriteAllText(path, RenderHtml(language, cases));
         }
     }

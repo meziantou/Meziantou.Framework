@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	array;null	1.5		TRUE	FALSE	FALSE				[ArrayOf_3RGBNumbers];[]	
+1	array;null	1.5		TRUE	FALSE	FALSE				[ArrayOf_3RGBNumbers];[]	
+2	array;null	1.5		TRUE	FALSE	FALSE				[ArrayOf_3RGBNumbers];[]	
+3	array;null	1.5		TRUE	FALSE	FALSE				[ArrayOf_3RGBNumbers];[]	

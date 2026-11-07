@@ -14,12 +14,6 @@ public static class FormatterExtensions
         return serializerOptions;
     }
 
-    public static HumanReadableSerializerOptions AddHtmlFormatter(this HumanReadableSerializerOptions serializerOptions, HtmlFormatterOptions? formatterOptions = null)
-    {
-        var formatter = new HtmlFormatter(formatterOptions ?? new());
-        serializerOptions.AddFormatter(ValueFormatter.HtmlMediaTypeName, formatter);
-        return serializerOptions;
-    }
     public static HumanReadableSerializerOptions AddUrlEncodedFormFormatter(this HumanReadableSerializerOptions serializerOptions, UrlEncodedFormFormatterOptions? formatterOptions = null)
     {
         serializerOptions.AddFormatter(ValueFormatter.WwwFormUrlEncodedMediaTypeName, new UrlEncodedFormFormatter(formatterOptions ?? new() { PrettyFormat = true }));

@@ -1,0 +1,113 @@
+{
+  "css/css-forms/appearance-base-basic.html": {
+    "total": 12
+  },
+  "css/css-forms/appearance-base-cursor.html": {
+    "total": 25,
+    "failures": {
+      "cursor for <input type=range>": "FAIL",
+      "cursor for <label>": "FAIL",
+      "cursor for base appearance <button>": "FAIL",
+      "cursor for base appearance <input type=button>": "FAIL",
+      "cursor for base appearance <input type=checkbox>": "FAIL",
+      "cursor for base appearance <input type=color>": "FAIL",
+      "cursor for base appearance <input type=date>": "FAIL",
+      "cursor for base appearance <input type=datetime-local>": "FAIL",
+      "cursor for base appearance <input type=email>": "FAIL",
+      "cursor for base appearance <input type=file>": "FAIL",
+      "cursor for base appearance <input type=month>": "FAIL",
+      "cursor for base appearance <input type=number>": "FAIL",
+      "cursor for base appearance <input type=password>": "FAIL",
+      "cursor for base appearance <input type=radio>": "FAIL",
+      "cursor for base appearance <input type=reset>": "FAIL",
+      "cursor for base appearance <input type=search>": "FAIL",
+      "cursor for base appearance <input type=submit>": "FAIL",
+      "cursor for base appearance <input type=tel>": "FAIL",
+      "cursor for base appearance <input type=text>": "FAIL",
+      "cursor for base appearance <input type=time>": "FAIL",
+      "cursor for base appearance <input type=url>": "FAIL",
+      "cursor for base appearance <input type=week>": "FAIL",
+      "cursor for base appearance <select multiple>": "FAIL",
+      "cursor for base appearance <select>": "FAIL",
+      "cursor for base appearance <textarea>": "FAIL"
+    }
+  },
+  "css/css-forms/button-base-appearance-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/checkbox-checkmark-animation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-forms/checkbox-checkmark-animation.html": {
+    "total": 1
+  },
+  "css/css-forms/datetime-stacking-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-forms/input-button-base-appearance-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/input-checkbox-base-appearance-rendering.html": {
+    "reftest": "PASS"
+  },
+  "css/css-forms/input-color-base-appearance-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/input-file-base-appearance-computed.html": {
+    "total": 1,
+    "failures": {
+      "Basic appearance stylesheet properties for input type=file": "FAIL"
+    }
+  },
+  "css/css-forms/input-no-resizer.html": {
+    "reftest": "PASS"
+  },
+  "css/css-forms/input-number-base-appearance-rendering.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/input-search-base-appearance-rendering.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/input-text-base-appearance-computed-style.html": {
+    "total": 1,
+    "failures": {
+      "UA styles of base appearance <input type=text>.": "FAIL"
+    }
+  },
+  "css/css-forms/input-text-base-appearance-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/meter-base-appearance-custom-style-initial-rendering.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/meter-base-appearance-custom-style-value-dynamic-rendering.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/meter-base-appearance-rendering.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/parsing/checkmark-pseudo-element.html": {
+    "total": 16
+  },
+  "css/css-forms/parsing/picker-icon-pseudo-element.html": {
+    "total": 16
+  },
+  "css/css-forms/parsing/picker-select-pseudo-element.html": {
+    "total": 20
+  },
+  "css/css-forms/progress-base-appearance-rendering.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-forms/radio-checkmark-animation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-forms/radio-checkmark-animation.html": {
+    "total": 1
+  },
+  "css/css-forms/select-combobox-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-forms/textarea-base-appearance-rendering.tentative.html": {
+    "reftest": "FAIL"
+  }
+}

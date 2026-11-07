@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[SigFieldLock]			Table 236
+Action	name	1.5		TRUE	FALSE	FALSE		[All,Include,Exclude]			
+Fields	array	1.5		fn:IsRequired((@Action==Include) || (@Action==Exclude))	FALSE	FALSE				[ArrayOfStringsText]	
+P	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE		[1,2,3]			

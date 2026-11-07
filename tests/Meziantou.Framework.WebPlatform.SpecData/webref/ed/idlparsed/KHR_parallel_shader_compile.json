@@ -1,0 +1,86 @@
+{
+  "spec": {
+    "title": "WebGL KHR_parallel_shader_compile Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/KHR_parallel_shader_compile/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "KHR_parallel_shader_compile"
+        ],
+        "Worker": [
+          "KHR_parallel_shader_compile"
+        ]
+      }
+    },
+    "idlNames": {
+      "KHR_parallel_shader_compile": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface KHR_parallel_shader_compile {\n  const GLenum COMPLETION_STATUS_KHR                = 0x91B1;\n};",
+        "type": "interface",
+        "name": "KHR_parallel_shader_compile",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "COMPLETION_STATUS_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x91B1"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "KHR_parallel_shader_compile"
+      ],
+      "Worker": [
+        "KHR_parallel_shader_compile"
+      ]
+    },
+    "dependencies": {
+      "KHR_parallel_shader_compile": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

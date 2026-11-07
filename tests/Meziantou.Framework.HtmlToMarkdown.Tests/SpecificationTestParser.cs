@@ -2,9 +2,9 @@ namespace Meziantou.Framework.HtmlToMarkdownTests;
 
 internal static class SpecificationTestParser
 {
-    public static List<MarkdigTestCase> Parse(string content, string fileName)
+    public static List<MarkdownSpecTestCase> Parse(string content, string fileName)
     {
-        var testCases = new List<MarkdigTestCase>();
+        var testCases = new List<MarkdownSpecTestCase>();
         var lines = content.Split('\n');
         var exampleNumber = 0;
         var i = 0;
@@ -54,7 +54,7 @@ internal static class SpecificationTestParser
 
                 if (!string.IsNullOrEmpty(html))
                 {
-                    testCases.Add(new MarkdigTestCase
+                    testCases.Add(new MarkdownSpecTestCase
                     {
                         Markdown = markdown,
                         Html = html,

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-DJ": {
+      "identity": {
+        "language": "ar",
+        "territory": "DJ"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

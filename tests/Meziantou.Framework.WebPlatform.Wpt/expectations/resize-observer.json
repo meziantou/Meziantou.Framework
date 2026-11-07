@@ -1,0 +1,116 @@
+{
+  "resize-observer/calculate-depth-for-node.html": {
+    "total": 1
+  },
+  "resize-observer/callback-cross-realm-report-exception.html": {
+    "total": 1
+  },
+  "resize-observer/change-layout-in-error.html": {
+    "total": 1
+  },
+  "resize-observer/devicepixel.html": {
+    "reftest": "PASS"
+  },
+  "resize-observer/devicepixel2.html": {
+    "reftest": "PASS"
+  },
+  "resize-observer/eventloop.html": {
+    "total": 5
+  },
+  "resize-observer/fragments.html": {
+    "total": 5
+  },
+  "resize-observer/idlharness.window.js": {
+    "total": 49
+  },
+  "resize-observer/iframe-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "resize-observer/notify.html": {
+    "total": 15
+  },
+  "resize-observer/observe-001.html": {
+    "total": 1
+  },
+  "resize-observer/observe-002.html": {
+    "total": 1
+  },
+  "resize-observer/observe-003.html": {
+    "total": 1
+  },
+  "resize-observer/observe-004.html": {
+    "total": 1
+  },
+  "resize-observer/observe-005.html": {
+    "total": 1
+  },
+  "resize-observer/observe-006.html": {
+    "total": 1
+  },
+  "resize-observer/observe-007.html": {
+    "total": 1
+  },
+  "resize-observer/observe-008.html": {
+    "total": 1
+  },
+  "resize-observer/observe-009.html": {
+    "total": 1
+  },
+  "resize-observer/observe-010.html": {
+    "total": 1
+  },
+  "resize-observer/observe-011.html": {
+    "total": 1
+  },
+  "resize-observer/observe-012.html": {
+    "total": 1
+  },
+  "resize-observer/observe-013.html": {
+    "total": 1
+  },
+  "resize-observer/observe-014.html": {
+    "total": 1
+  },
+  "resize-observer/observe-015.html": {
+    "total": 1
+  },
+  "resize-observer/observe-016.html": {
+    "total": 1
+  },
+  "resize-observer/observe-017.html": {
+    "total": 1
+  },
+  "resize-observer/observe-018.html": {
+    "total": 1
+  },
+  "resize-observer/observe-019.html": {
+    "total": 1
+  },
+  "resize-observer/observe-020.html": {
+    "total": 1
+  },
+  "resize-observer/observer-in-cross-origin-frame.sub.html": {
+    "total": 2
+  },
+  "resize-observer/ordering.html": {
+    "total": 1
+  },
+  "resize-observer/scrollbars-2.html": {
+    "total": 1
+  },
+  "resize-observer/scrollbars.html": {
+    "total": 1
+  },
+  "resize-observer/svg-with-css-box-001.html": {
+    "total": 4
+  },
+  "resize-observer/svg-with-css-box-002.svg": {
+    "total": 4
+  },
+  "resize-observer/svg.html": {
+    "total": 20
+  },
+  "resize-observer/zoom.html": {
+    "total": 1
+  }
+}

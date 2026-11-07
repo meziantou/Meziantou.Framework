@@ -72,4 +72,18 @@ public sealed class AssertSameTests
             Actual:       System.Object
             """);
     }
+
+    [Fact]
+    public void Documentation_Same()
+    {
+        #region Assert_Same
+        var original = new List<int> { 1, 2 };
+        IReadOnlyList<int> view = original;
+        var copy = new List<int>(original);
+
+        Assert.Same(original, view);                // the same instance
+        Assert.NotSame(original, copy);             // another instance...
+        Assert.Equal(original, copy);               // ...with the same content
+        #endregion
+    }
 }

@@ -1,0 +1,71 @@
+{
+  "urlpattern/urlpattern-compare.tentative.any.js": {
+    "total": 26
+  },
+  "urlpattern/urlpattern-compare.tentative.any.js#dedicatedworker": {
+    "total": 26
+  },
+  "urlpattern/urlpattern-compare.tentative.any.js#sharedworker": {
+    "total": 26
+  },
+  "urlpattern/urlpattern-compare.tentative.https.any.js": {
+    "total": 26
+  },
+  "urlpattern/urlpattern-compare.tentative.https.any.js#dedicatedworker": {
+    "total": 26
+  },
+  "urlpattern/urlpattern-compare.tentative.https.any.js#sharedworker": {
+    "total": 26
+  },
+  "urlpattern/urlpattern-constructor.any.js": {
+    "total": 2
+  },
+  "urlpattern/urlpattern-constructor.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "urlpattern/urlpattern-constructor.any.js#sharedworker": {
+    "total": 2
+  },
+  "urlpattern/urlpattern-detached-frame-regexp.html": {
+    "total": 4
+  },
+  "urlpattern/urlpattern-empty-regexp-group.html": {
+    "total": 2
+  },
+  "urlpattern/urlpattern-generate.tentative.any.js": {
+    "total": 20
+  },
+  "urlpattern/urlpattern-generate.tentative.any.js#dedicatedworker": {
+    "total": 20
+  },
+  "urlpattern/urlpattern-generate.tentative.any.js#sharedworker": {
+    "total": 20
+  },
+  "urlpattern/urlpattern-hasregexpgroups.any.js": {
+    "total": 1
+  },
+  "urlpattern/urlpattern-hasregexpgroups.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "urlpattern/urlpattern-hasregexpgroups.any.js#sharedworker": {
+    "total": 1
+  },
+  "urlpattern/urlpattern.any.js": {
+    "total": 370
+  },
+  "urlpattern/urlpattern.any.js#dedicatedworker": {
+    "total": 370
+  },
+  "urlpattern/urlpattern.any.js#sharedworker": {
+    "total": 370
+  },
+  "urlpattern/urlpattern.https.any.js": {
+    "total": 370
+  },
+  "urlpattern/urlpattern.https.any.js#dedicatedworker": {
+    "total": 370
+  },
+  "urlpattern/urlpattern.https.any.js#sharedworker": {
+    "total": 370
+  }
+}

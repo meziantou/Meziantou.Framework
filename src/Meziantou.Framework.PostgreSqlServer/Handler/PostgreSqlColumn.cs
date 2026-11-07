@@ -20,5 +20,9 @@ public sealed class PostgreSqlColumn
     public PostgreSqlColumnType ColumnType { get; }
 
     /// <summary>Gets a value indicating whether the column can be null.</summary>
+    /// <remarks>
+    /// Informational metadata for the query callback. RowDescription has no nullability field, so this is
+    /// not sent to the client and does not affect the wire format.
+    /// </remarks>
     public bool IsNullable { get; }
 }

@@ -6,4 +6,7 @@ internal readonly ref struct CollectionAssertionError<T>(CollectionSnapshot<T> a
     public string? ActualExpression { get; } = actualExpression;
     public CollectionSnapshot<T> ActualValue { get; } = actualValue;
     public int ExpectedCount { get; } = expectedCount;
+
+    /// <summary>Gets the number of items, read when the message is formatted so the items observed for it count too.</summary>
+    public string ActualCount => ActualValue.GetCountText();
 }

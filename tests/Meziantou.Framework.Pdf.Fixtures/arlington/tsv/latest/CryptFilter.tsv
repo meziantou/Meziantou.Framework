@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[CryptFilter]			Table 25 
+CFM	name	1.5		FALSE	FALSE	FALSE	None	[None,fn:Deprecated(2.0,V2),fn:Deprecated(2.0,fn:SinceVersion(1.6,AESV2)),fn:Deprecated(2.0,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,AESV3))),fn:SinceVersion(2.0,AESV3),fn:SinceVersion(2.0,fn:Extension(ISO_TS_32003,AESV4))]			
+AuthEvent	name	1.5		FALSE	FALSE	FALSE	DocOpen	[DocOpen,EFOpen]			
+Length	integer	1.5	2.0	TRUE	FALSE	FALSE		[fn:RequiredValue(@CFM==AESV2,16),fn:RequiredValue(@CFM==AESV3,32),fn:Eval((@Length>=5) && (@Length<=16))]			Expressed in BYTES. https://github.com/pdf-association/pdf-issues/issues/184

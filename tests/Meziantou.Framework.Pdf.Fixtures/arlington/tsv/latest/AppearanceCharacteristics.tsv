@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+R	integer	1.2		FALSE	FALSE	FALSE	0				Table 192
+BC	array	1.2		FALSE	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+BG	array	1.2		FALSE	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+CA	string-text	1.2		FALSE	FALSE	FALSE					
+RC	string-text	1.2		FALSE	FALSE	FALSE					
+AC	string-text	1.2		FALSE	FALSE	FALSE					
+I	stream	1.2		FALSE	TRUE	FALSE				[XObjectFormType1,XObjectImage]	
+RI	stream	1.2		FALSE	TRUE	FALSE				[XObjectFormType1,XObjectImage]	
+IX	stream	1.2		FALSE	TRUE	FALSE				[XObjectFormType1,XObjectImage]	
+IF	dictionary	1.3		FALSE	FALSE	FALSE				[IconFit]	
+TP	integer	1.2		FALSE	FALSE	FALSE	0	[0,1,2,3,4,5,6]			

@@ -5,6 +5,9 @@ type public Shape =
     | Circle of radius : float
     | Prism of width : float * float * height : float
 
+type public Boxed =
+    | Boxed of value : obj
+
 module public Factory =
     let create_tuple = (1,2,3)
     let create_array = [|1;2;3|]

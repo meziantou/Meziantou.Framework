@@ -1,0 +1,29 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Charts.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- An OFL font for the tests of FontFaceTextMeasurer: the Liberation Sans subset of Meziantou.Framework.Pdf -->
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Regular.woff2" Link="TestData/LiberationSans-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The countries of Natural Earth (public domain), at 1:110m, reduced to a few properties: the data of the map tests -->
+    <None Update="TestData/countries-110m.geojson" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The map bundle of Switzerland of the tests of Meziantou.Framework.Geo.Maps, in a maps folder next to the tests, as the packages of bundles copy it -->
+    <None Include="../Meziantou.Framework.Geo.Maps.Tests/TestData/maps/*/**" Link="maps/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Geo" />
+  </ItemGroup>
+
+</Project>

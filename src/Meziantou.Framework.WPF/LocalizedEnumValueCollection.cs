@@ -8,6 +8,4 @@ internal sealed class LocalizedEnumValueCollection : ReadOnlyCollection<Localize
         : base(list)
     {
     }
-
-    public LocalizedEnumValue this[object value] => this.First(_ => _.Value.Equals(value));
 }

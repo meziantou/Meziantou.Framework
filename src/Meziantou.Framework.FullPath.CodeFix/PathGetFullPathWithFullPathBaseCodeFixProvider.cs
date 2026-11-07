@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -107,8 +108,8 @@ public sealed class PathGetFullPathWithFullPathBaseCodeFixProvider : CodeFixProv
             return false;
         }
 
-        var normalizedPathValue = UnwrapImplicitConversion(pathArgument.Value);
-        var normalizedBasePathValue = UnwrapImplicitConversion(basePathArgument.Value);
+        var normalizedPathValue = FullPathAnalyzerCommon.UnwrapToFullPath(pathArgument.Value, fullPathType);
+        var normalizedBasePathValue = FullPathAnalyzerCommon.UnwrapToFullPath(basePathArgument.Value, fullPathType);
         if (SymbolEqualityComparer.Default.Equals(normalizedPathValue.Type, fullPathType) ||
             !SymbolEqualityComparer.Default.Equals(normalizedBasePathValue.Type, fullPathType) ||
             normalizedPathValue.Syntax is not ExpressionSyntax pathExpression ||
@@ -120,19 +121,9 @@ public sealed class PathGetFullPathWithFullPathBaseCodeFixProvider : CodeFixProv
 
         replacementExpression = SyntaxFactory.BinaryExpression(
             SyntaxKind.DivideExpression,
-            basePathExpression.WithoutTrivia(),
-            pathExpression.WithoutTrivia());
+            basePathExpression.WithoutTrivia().Parenthesize(),
+            pathExpression.WithoutTrivia().Parenthesize());
 
         return true;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

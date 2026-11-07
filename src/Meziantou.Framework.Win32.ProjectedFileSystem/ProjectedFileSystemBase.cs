@@ -9,18 +9,21 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 /// <summary>Base class for creating a virtual file system using Windows Projected File System (ProjFS).</summary>
 /// <example>
-/// <code>
-/// public class MyVirtualFileSystem : ProjectedFileSystemBase
-/// {
-///     public MyVirtualFileSystem(string rootFolder) : base(rootFolder) { }
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Win32.ProjectedFileSystem.Samples/Program.cs" ref:region="ProjectedFileSystemBase_Usage" ref:dedent="true">
+/// var rootPath = @"C:\MyVirtualFS";
+/// Directory.CreateDirectory(rootPath);
+/// using var vfs = new MyVirtualFileSystem(rootPath);
+/// vfs.Start(options: null);
 ///
+/// public class MyVirtualFileSystem(string rootFolder) : ProjectedFileSystemBase(rootFolder)
+/// {
 ///     protected override ValueTask&lt;IEnumerable&lt;ProjectedFileSystemEntry&gt;&gt; GetEntriesAsync(string path)
 ///     {
 ///         if (string.IsNullOrEmpty(path))
 ///         {
 ///             return ValueTask.FromResult&lt;IEnumerable&lt;ProjectedFileSystemEntry&gt;&gt;(
 ///             [
-///                 ProjectedFileSystemEntry.File("file.txt", length: 100),
+///                 ProjectedFileSystemEntry.File("file.txt", length: 13),
 ///                 ProjectedFileSystemEntry.Directory("folder"),
 ///             ]);
 ///         }
@@ -36,11 +39,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 ///         return ValueTask.FromResult&lt;Stream?&gt;(null);
 ///     }
 /// }
-///
-/// var rootPath = @"C:\MyVirtualFS";
-/// Directory.CreateDirectory(rootPath);
-/// using var vfs = new MyVirtualFileSystem(rootPath);
-/// vfs.Start(options: null);
 /// </code>
 /// </example>
 // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
@@ -58,11 +56,27 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new();
 
+    // Counts commands that returned ERROR_IO_PENDING and have not called PrjCompleteCommand yet.
+    // The initial count is the instance itself; Stop signals it and then drains the rest.
+    private readonly CountdownEvent _pendingCommands = new(initialCount: 1);
+    private int _drainStarted;
+
     /// <summary>Gets the root folder path where the virtual file system is mounted.</summary>
     public string RootFolder { get; }
 
+    private int _bufferSize = 4096; // 4kB
+
     /// <summary>Gets or sets the buffer size used for reading file data. Default is 4096 bytes.</summary>
-    protected int BufferSize { get; set; } = 4096; // 4kB
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the value is zero or negative.</exception>
+    protected int BufferSize
+    {
+        get => _bufferSize;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            _bufferSize = value;
+        }
+    }
 
     /// <summary>Initializes a new instance of the <see cref="ProjectedFileSystemBase"/> class.</summary>
     /// <param name="rootFolder">The root folder path where the virtual file system will be mounted.</param>
@@ -184,11 +198,16 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <exception cref="InvalidOperationException">Thrown when the virtual file system is not started.</exception>
     protected void ClearNegativePathCache()
     {
-        if (_instanceHandle is null)
-            throw new InvalidOperationException("The service is not started");
-
-        var result = NativeMethods.PrjClearNegativePathCache(_instanceHandle, out _);
-        result.EnsureSuccess();
+        var instanceHandle = EnterInstanceCall();
+        try
+        {
+            var result = NativeMethods.PrjClearNegativePathCache(instanceHandle, out _);
+            result.EnsureSuccess();
+        }
+        finally
+        {
+            _pendingCommands.Signal();
+        }
     }
 
     /// <summary>Deletes a file from the virtual file system projection.</summary>
@@ -199,15 +218,39 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <exception cref="InvalidOperationException">Thrown when the virtual file system is not started.</exception>
     protected bool DeleteFile(string relativePath, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
     {
-        if (_instanceHandle is null)
+        var instanceHandle = EnterInstanceCall();
+        try
+        {
+            var hr = NativeMethods.PrjDeleteFile(instanceHandle, relativePath, updateFlags, out failureReason);
+            if (hr == HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION)
+                return false;
+
+            hr.EnsureSuccess();
+            return true;
+        }
+        finally
+        {
+            _pendingCommands.Signal();
+        }
+    }
+
+    // Registers a call that uses the instance handle, as a pending command: Stop disposes the handle only once the
+    // registered calls returned, so the driver never gets the context of a stopped instance, and the handle is always
+    // released by Stop (releasing it from a callback would call PrjStopVirtualizing from that callback). The caller
+    // must signal _pendingCommands when the call returns.
+    private ProjFSSafeHandle EnterInstanceCall()
+    {
+        if (!_pendingCommands.TryAddCount())
             throw new InvalidOperationException("The service is not started");
 
-        var hr = NativeMethods.PrjDeleteFile(_instanceHandle, relativePath, updateFlags, out failureReason);
-        if (hr == HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION)
-            return false;
+        var instanceHandle = _instanceHandle;
+        if (instanceHandle is null)
+        {
+            _pendingCommands.Signal();
+            throw new InvalidOperationException("The service is not started");
+        }
 
-        hr.EnsureSuccess();
-        return true;
+        return instanceHandle;
     }
 
     /// <summary>Stops the virtual file system.</summary>
@@ -216,9 +259,29 @@ public abstract class ProjectedFileSystemBase : IDisposable
         if (_instanceHandle is null)
             return;
 
-        _callbacks = default;
+        // Drain the commands that returned ERROR_IO_PENDING before tearing the context down.
+        // PrjCompleteCommand against an instance that has already been stopped is undefined
+        // behaviour in the driver, and PrjStopVirtualizing only waits for callbacks that
+        // returned synchronously.
+        if (Interlocked.Exchange(ref _drainStarted, 1) is 0)
+        {
+            _pendingCommands.Signal();
+        }
+
+        _pendingCommands.Wait();
+
+        // Stop virtualizing before dropping the callback table: the driver can still be
+        // invoking those delegates until PrjStopVirtualizing returns.
         _instanceHandle.Dispose();
         _instanceHandle = null;
+        _callbacks = default;
+
+        foreach (var enumeration in _activeEnumerations.Values)
+        {
+            enumeration.Dispose();
+        }
+
+        _activeEnumerations.Clear();
 
         if (_instanceContextHandle.IsAllocated)
         {
@@ -284,6 +347,11 @@ public abstract class ProjectedFileSystemBase : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         Stop();
+
+        if (disposing)
+        {
+            _pendingCommands.Dispose();
+        }
     }
 
     private static unsafe HRESULT QueryFileNameCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData)
@@ -430,7 +498,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     {
         return ExecuteCallback(
             in callbackData,
-            QueryFileNameCallbackAsync(callbackData.FilePathName.ToString() ?? ""),
+            (Instance: this, FileName: callbackData.FilePathName.ToString() ?? ""),
+            static state => state.Instance.QueryFileNameCallbackAsync(state.FileName),
             extendedParameters: null);
     }
 
@@ -459,7 +528,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     {
         return ExecuteCallback(
             in callbackData,
-            StartDirectoryEnumerationCallbackAsync(callbackData.FilePathName.ToString() ?? "", enumerationId),
+            (Instance: this, FilePathName: callbackData.FilePathName.ToString() ?? "", EnumerationId: enumerationId),
+            static state => state.Instance.StartDirectoryEnumerationCallbackAsync(state.FilePathName, state.EnumerationId),
             extendedParameters: null);
     }
 
@@ -473,15 +543,17 @@ public abstract class ProjectedFileSystemBase : IDisposable
     private HResult EndDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId)
     {
         _ = callbackData;
-        if (_activeEnumerations.TryRemove(enumerationId, out _))
+        if (_activeEnumerations.TryRemove(enumerationId, out var session))
+        {
+            session.Dispose();
             return HResult.S_OK;
+        }
 
         return HResult.E_INVALIDARG;
     }
 
     private HResult GetDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId, string searchExpression, IntPtr dirEntryBufferHandle)
     {
-        _ = searchExpression;
         if (!_activeEnumerations.TryGetValue(enumerationId, out var session))
         {
             return HResult.E_INVALIDARG;
@@ -495,6 +567,12 @@ public abstract class ProjectedFileSystemBase : IDisposable
         ProjectedFileSystemEntry? entry;
         while ((entry = session.GetNextEntry()) is not null)
         {
+            // ProjFS does not filter the entries the provider supplies, so an unfiltered
+            // entry here would be returned to a caller that asked for a narrower pattern.
+            // Skipped entries must not be re-enqueued: they were never offered to the buffer.
+            if (!MatchesSearchExpression(entry.Name, searchExpression))
+                continue;
+
             var info = new ProjFs.PRJ_FILE_BASIC_INFO
             {
                 FileSize = entry.Length,
@@ -512,11 +590,21 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return HResult.S_OK;
     }
 
+    private static bool MatchesSearchExpression(string fileName, string searchExpression)
+    {
+        // ProjFS passes an empty expression when the caller did not ask for one
+        if (string.IsNullOrEmpty(searchExpression))
+            return true;
+
+        return FileNameMatch(fileName, searchExpression);
+    }
+
     private HResult GetPlaceholderInfoCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData)
     {
         return ExecuteCallback(
             in callbackData,
-            GetPlaceholderInfoCallbackAsync(callbackData.FilePathName.ToString() ?? "", callbackData.NamespaceVirtualizationContext),
+            (FilePathName: callbackData.FilePathName.ToString() ?? "", Context: callbackData.NamespaceVirtualizationContext, Instance: this),
+            static state => state.Instance.GetPlaceholderInfoCallbackAsync(state.FilePathName, state.Context),
             extendedParameters: null);
     }
 
@@ -535,21 +623,23 @@ public abstract class ProjectedFileSystemBase : IDisposable
                     new ProjFSSafeHandle(namespaceVirtualizationContext, ownHandle: false),
                     filePathName, // Use the full relative path from the callback, not just the entry name
                     in info,
-                    (uint)Marshal.SizeOf(info));
+                    PlaceholderInfoSize);
 #pragma warning restore CA2000
         return hr;
     }
+
+    // The size the driver expects is the unmanaged size of the struct that gets pinned and
+    // handed to PrjWritePlaceholderInfo, so take it with sizeof rather than Marshal.SizeOf:
+    // that boxes on every call and reports the marshaled size, which is not guaranteed to
+    // agree with the layout the span is built over.
+    private static unsafe uint PlaceholderInfoSize => (uint)sizeof(ProjFs.PRJ_PLACEHOLDER_INFO);
 
     private HResult GetFileDataCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ulong byteOffset, uint length)
     {
         return ExecuteCallback(
             in callbackData,
-            GetFileDataCallbackAsync(
-                callbackData.FilePathName.ToString() ?? "",
-                callbackData.NamespaceVirtualizationContext,
-                callbackData.DataStreamId,
-                byteOffset,
-                length),
+            (Instance: this, FilePathName: callbackData.FilePathName.ToString() ?? "", Context: callbackData.NamespaceVirtualizationContext, callbackData.DataStreamId, ByteOffset: byteOffset, Length: length),
+            static state => state.Instance.GetFileDataCallbackAsync(state.FilePathName, state.Context, state.DataStreamId, state.ByteOffset, state.Length),
             extendedParameters: null);
     }
 
@@ -575,7 +665,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
                 while (bytesToSkip > 0)
                 {
                     var toRead = (int)Math.Min(bytesToSkip, skipBuffer.Length);
-                    var skipped = stream.Read(skipBuffer, 0, toRead);
+                    var skipped = await stream.ReadAsync(skipBuffer.AsMemory(0, toRead)).ConfigureAwait(false);
                     if (skipped == 0)
                         break;
                     bytesToSkip -= skipped;
@@ -624,9 +714,15 @@ public abstract class ProjectedFileSystemBase : IDisposable
                     }
                 }
 
-                var read = stream.Read(data, 0, (int)writeLength);
-                if (read == 0)
-                    break;
+                // Stream.Read may return fewer bytes than requested, so fill the whole chunk before writing it
+                var read = await stream.ReadAtLeastAsync(data.AsMemory(0, (int)writeLength), (int)writeLength, throwOnEndOfStream: false).ConfigureAwait(false);
+                if (read < writeLength)
+                {
+                    // The stream ended before supplying the range ProjFS asked for. Returning success here
+                    // would let ProjFS zero-fill the remainder and hand the caller silently corrupt content,
+                    // so fail the read instead.
+                    return HResult.ERROR_HANDLE_EOF;
+                }
 
                 Marshal.Copy(data, 0, writeBuffer, read);
 
@@ -652,16 +748,51 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
     }
 
-    private static HResult ExecuteCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ValueTask<HResult> callbackResult, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    // The state carries the arguments of the callback, so that starting it does not allocate a closure
+    private HResult ExecuteCallback<TState>(in ProjFs.PRJ_CALLBACK_DATA callbackData, TState state, Func<TState, ValueTask<HResult>> callback, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
     {
-        if (callbackResult.IsCompletedSuccessfully)
-            return callbackResult.Result;
+        // Register before starting the work, not only before handing back ERROR_IO_PENDING: the work calls ProjFS with
+        // the context of the instance (PrjWriteFileData, PrjWritePlaceholderInfo, then PrjCompleteCommand), so it must
+        // be part of what Stop drains. Work started without a registration would keep running after Stop tore the
+        // context down. TryAddCount fails once the drain has finished, which means the instance is going away.
+        if (!_pendingCommands.TryAddCount())
+            return HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION;
 
+        ValueTask<HResult> callbackResult;
+        try
+        {
+            callbackResult = callback(state);
+        }
+        catch
+        {
+            _pendingCommands.Signal();
+            throw;
+        }
+
+        if (callbackResult.IsCompletedSuccessfully)
+        {
+            _pendingCommands.Signal();
+            return callbackResult.Result;
+        }
+
+        // CompleteCommandAsync releases the registration once the command is completed
         _ = CompleteCommandAsync(callbackData.NamespaceVirtualizationContext, callbackData.CommandId, callbackResult.AsTask(), extendedParameters);
         return HResult.ERROR_IO_PENDING;
     }
 
-    private static async Task CompleteCommandAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    private async Task CompleteCommandAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    {
+        try
+        {
+            await CompleteCommandCoreAsync(namespaceVirtualizationContext, commandId, callbackTask, extendedParameters).ConfigureAwait(false);
+        }
+        finally
+        {
+            _pendingCommands.Signal();
+        }
+    }
+
+    private static async Task CompleteCommandCoreAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
     {
         HResult completionResult;
         try

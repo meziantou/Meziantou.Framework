@@ -103,7 +103,7 @@ internal static class QueryHelpers
 
         if (result is null)
         {
-            return new Dictionary<string, StringValues>(StringComparer.Ordinal);
+            return new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
         }
 
         return result;

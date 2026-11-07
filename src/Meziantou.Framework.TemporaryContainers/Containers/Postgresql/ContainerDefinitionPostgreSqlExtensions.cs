@@ -7,14 +7,14 @@ public static class ContainerDefinitionPostgreSqlExtensions
 {
     extension(ContainerDefinition)
     {
-        /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a default password, and a readiness wait strategy).</summary>
-        /// <returns>A PostgreSQL container definition using the <c>postgres:17</c> image.</returns>
+        /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a strong random password, and a readiness wait strategy).</summary>
+        /// <returns>A PostgreSQL container definition using the <c>postgres:18</c> image.</returns>
         public static PostgreSqlContainerDefinition CreatePostgreSql()
         {
-            return CreatePostgreSql(ImageSource.FromRegistry("postgres:17"));
+            return CreatePostgreSql(ImageSource.FromRegistry("postgres:18"));
         }
 
-        /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a default password, and a readiness wait strategy).</summary>
+        /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a strong random password, and a readiness wait strategy).</summary>
         /// <param name="image">The PostgreSQL image to use.</param>
         /// <returns>A PostgreSQL container definition.</returns>
         public static PostgreSqlContainerDefinition CreatePostgreSql(ImageSource image)
@@ -22,11 +22,14 @@ public static class ContainerDefinitionPostgreSqlExtensions
             ArgumentNullException.ThrowIfNull(image);
 
             var definition = new PostgreSqlContainerDefinition(image);
-            if (!definition.Environment.Contains("POSTGRES_PASSWORD"))
-                definition.Environment.Add("POSTGRES_PASSWORD", "postgres");
-
             definition.Ports.Add(5432);
-            definition.WaitStrategies.Add(Wait.ForLogMessage("database system is ready to accept connections", occurrences: 2));
+
+            // On an empty data directory, the image starts a temporary server to run the initialization scripts, stops it,
+            // then starts the real one; on a data directory that is already initialized, it only starts the real one. The
+            // ready message is therefore logged once or twice, so it cannot tell the two servers apart. The temporary
+            // server does not listen on TCP, and pg_isready only succeeds once a server accepts connections, so a
+            // pg_isready over TCP only succeeds against the real server.
+            definition.WaitStrategies.Add(Wait.ForCommand("pg_isready", "--host", "127.0.0.1", "--port", "5432"));
             definition.WaitStrategies.Add(Wait.ForPort(5432));
             return definition;
         }

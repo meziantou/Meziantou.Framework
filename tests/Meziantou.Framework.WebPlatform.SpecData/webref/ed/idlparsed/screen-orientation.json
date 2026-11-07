@@ -1,0 +1,283 @@
+{
+  "spec": {
+    "title": "Screen Orientation",
+    "url": "https://w3c.github.io/screen-orientation/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "ScreenOrientation"
+        ]
+      }
+    },
+    "idlNames": {
+      "ScreenOrientation": {
+        "fragment": "[Exposed=Window]\ninterface ScreenOrientation : EventTarget {\n  Promise<undefined> lock(OrientationLockType orientation);\n  undefined unlock();\n  readonly attribute OrientationType type;\n  readonly attribute unsigned short angle;\n  attribute EventHandler onchange;\n};",
+        "type": "interface",
+        "name": "ScreenOrientation",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "lock",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "orientation",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "OrientationLockType"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/screen-orientation/#dom-screenorientation-lock"
+          },
+          {
+            "type": "operation",
+            "name": "unlock",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/screen-orientation/#dom-screenorientation-unlock"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "OrientationType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/screen-orientation/#dom-screenorientation-type"
+          },
+          {
+            "type": "attribute",
+            "name": "angle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/screen-orientation/#dom-screenorientation-angle"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/screen-orientation/#dom-screenorientation-onchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/screen-orientation/#dom-screenorientation"
+      },
+      "OrientationLockType": {
+        "fragment": "enum OrientationLockType {\n  \"any\",\n  \"natural\",\n  \"landscape\",\n  \"portrait\",\n  \"portrait-primary\",\n  \"portrait-secondary\",\n  \"landscape-primary\",\n  \"landscape-secondary\"\n};",
+        "type": "enum",
+        "name": "OrientationLockType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "any",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-any"
+          },
+          {
+            "type": "enum-value",
+            "value": "natural",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-natural"
+          },
+          {
+            "type": "enum-value",
+            "value": "landscape",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-landscape"
+          },
+          {
+            "type": "enum-value",
+            "value": "portrait",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-portrait"
+          },
+          {
+            "type": "enum-value",
+            "value": "portrait-primary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-portrait-primary"
+          },
+          {
+            "type": "enum-value",
+            "value": "portrait-secondary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-portrait-secondary"
+          },
+          {
+            "type": "enum-value",
+            "value": "landscape-primary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-landscape-primary"
+          },
+          {
+            "type": "enum-value",
+            "value": "landscape-secondary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype-landscape-secondary"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/screen-orientation/#dom-orientationlocktype"
+      },
+      "OrientationType": {
+        "fragment": "enum OrientationType {\n  \"portrait-primary\",\n  \"portrait-secondary\",\n  \"landscape-primary\",\n  \"landscape-secondary\"\n};",
+        "type": "enum",
+        "name": "OrientationType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "portrait-primary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationtype-portrait-primary"
+          },
+          {
+            "type": "enum-value",
+            "value": "portrait-secondary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationtype-portrait-secondary"
+          },
+          {
+            "type": "enum-value",
+            "value": "landscape-primary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationtype-landscape-primary"
+          },
+          {
+            "type": "enum-value",
+            "value": "landscape-secondary",
+            "href": "https://w3c.github.io/screen-orientation/#dom-orientationtype-landscape-secondary"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/screen-orientation/#dom-orientationtype"
+      }
+    },
+    "idlExtendedNames": {
+      "Screen": [
+        {
+          "fragment": "partial interface Screen {\n  [SameObject] readonly attribute ScreenOrientation orientation;\n};",
+          "type": "interface",
+          "name": "Screen",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "orientation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ScreenOrientation"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/screen-orientation/#dom-screen-orientation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ScreenOrientation"
+      ]
+    },
+    "dependencies": {
+      "Screen": [
+        "ScreenOrientation"
+      ],
+      "ScreenOrientation": [
+        "EventTarget",
+        "OrientationLockType",
+        "OrientationType",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Screen",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

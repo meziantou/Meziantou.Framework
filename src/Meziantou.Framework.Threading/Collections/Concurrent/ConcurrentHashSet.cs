@@ -7,16 +7,14 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// <summary>Represents a thread-safe set of unique values.</summary>
 /// <typeparam name="T">The type of elements in the set.</typeparam>
 /// <example>
-/// <code><![CDATA[
-/// var set = new ConcurrentHashSet<int>();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../../tests/Meziantou.Framework.Threading.Tests/ConcurrentHashSetTests.cs" ref:region="ConcurrentHashSet_Usage" ref:dedent="true">
+/// var set = new ConcurrentHashSet&lt;int&gt;();
 /// set.Add(1);
 /// set.Add(2);
-/// if (set.Contains(1))
-/// {
-///     Console.WriteLine("Set contains 1");
-/// }
-/// ]]></code>
+/// Assert.Contains(1, set);
+/// </code>
 /// </example>
+/// <remarks>The set comparison methods (<see cref="IsSubsetOf(IEnumerable{T})"/>, <see cref="IsSupersetOf(IEnumerable{T})"/>, <see cref="Overlaps(IEnumerable{T})"/>, <see cref="SetEquals(IEnumerable{T})"/> and their proper variants) do not take an atomic snapshot of the set: elements can be added or removed while they run, so their result is best-effort and only reflects a set that was not modified concurrently.</remarks>
 public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     where T : notnull
 {
@@ -153,11 +151,18 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a superset of a specified collection.</summary>
     /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
     /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    /// <remarks><paramref name="other"/> is enumerated only until an element that is not in the set is found, so the elements after it are never looked up.</remarks>
     public bool IsSupersetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        return CreateSet(this).IsSupersetOf(other);
+        foreach (var item in other)
+        {
+            if (!Contains(item))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a proper subset of a specified collection.</summary>
@@ -173,21 +178,49 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a proper superset of a specified collection.</summary>
     /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
     /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a proper superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    /// <remarks><paramref name="other"/> is enumerated only until an element that is not in the set is found, so the elements after it are never looked up. The set itself is never copied: only the distinct elements of <paramref name="other"/> are tracked.</remarks>
     public bool IsProperSupersetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        return CreateSet(this).IsProperSupersetOf(other);
+        if (ReferenceEquals(other, this) || IsEmpty)
+            return false;
+
+        // A set using the same comparer has no duplicates, so its count is the number of distinct elements.
+        if (IsSetWithSameComparer(other, out var otherCount))
+            return otherCount < Count && IsSupersetOf(other);
+
+        HashSet<T>? distinctItems = null;
+        foreach (var item in other)
+        {
+            if (!Contains(item))
+                return false;
+
+            distinctItems ??= new HashSet<T>(other.TryGetNonEnumeratedCount(out var capacity) ? capacity : 0, _dictionary.Comparer);
+            distinctItems.Add(item);
+        }
+
+        return (distinctItems?.Count ?? 0) < Count;
     }
 
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> overlaps with the specified collection.</summary>
     /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
     /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> and <paramref name="other"/> share at least one common element; otherwise, <see langword="false"/>.</returns>
+    /// <remarks><paramref name="other"/> is enumerated only until a common element is found, so the elements after it are never looked up. It is not enumerated at all when the set is empty.</remarks>
     public bool Overlaps(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        return CreateSet(this).Overlaps(other);
+        if (IsEmpty)
+            return false;
+
+        foreach (var item in other)
+        {
+            if (Contains(item))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> and the specified collection contain the same elements.</summary>
@@ -260,16 +293,42 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     /// <summary>Copies the elements of the <see cref="ConcurrentHashSet{T}"/> to an array, starting at the specified array index.</summary>
     /// <param name="array">The destination array.</param>
     /// <param name="arrayIndex">The zero-based index in the array at which copying begins.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="array"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="arrayIndex"/> is negative.</exception>
+    /// <exception cref="ArgumentException">The number of elements in the set is greater than the available space from <paramref name="arrayIndex"/> to the end of <paramref name="array"/>.</exception>
     public void CopyTo(T[] array, int arrayIndex)
     {
-        // PERF: Do not use dictionary.Keys here because that creates a snapshot
-        // of the collection resulting in a List<T> allocation.
-        // Instead, enumerate the set and copy over the elements.
-        foreach (var element in this)
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+
+        // The set can grow while it is being copied, so the size cannot be validated against a live Count and
+        // then trusted. Snapshotting first is also what keeps the destination untouched when it turns out to be
+        // too small, instead of leaving it partially written.
+        // Enumerate the dictionary directly: new List<T>(this) would detect ICollection<T> and call back into
+        // this method, recursing until the stack overflows.
+        var items = new List<T>(_dictionary.Count);
+        foreach (var kvp in _dictionary)
         {
-            array[arrayIndex++] = element;
+            items.Add(kvp.Key);
         }
+
+        if (items.Count > array.Length - arrayIndex)
+            throw new ArgumentException("The destination array is too small to contain all the elements of the collection.", nameof(array));
+
+        items.CopyTo(array, arrayIndex);
     }
 
     private HashSet<T> CreateSet(IEnumerable<T> values) => new(values, _dictionary.Comparer);
+
+    private bool IsSetWithSameComparer(IEnumerable<T> other, out int count)
+    {
+        (var comparer, count) = other switch
+        {
+            HashSet<T> set => (set.Comparer, set.Count),
+            ConcurrentHashSet<T> set => (set._dictionary.Comparer, set.Count),
+            _ => (null, 0),
+        };
+
+        return comparer is not null && comparer.Equals(_dictionary.Comparer);
+    }
 }

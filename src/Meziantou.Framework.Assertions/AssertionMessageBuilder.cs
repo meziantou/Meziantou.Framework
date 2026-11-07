@@ -19,7 +19,7 @@ internal readonly struct AssertionMessageBuilder
         return this;
     }
 
-    public AssertionMessageBuilder AppendGroup(params (string Label, string? Value)[] rows)
+    public AssertionMessageBuilder AppendGroup(params ReadOnlySpan<(string Label, string? Value)> rows)
     {
         var maxLabelLength = 0;
         foreach (var row in rows)

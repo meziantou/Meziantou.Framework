@@ -1,5 +1,3 @@
-using Meziantou.Framework.HumanReadable.Utils;
-
 namespace Meziantou.Framework.SnapshotTesting;
 
 internal abstract class LineScrubber : Scrubber
@@ -7,7 +5,7 @@ internal abstract class LineScrubber : Scrubber
     public sealed override string Scrub(string text)
     {
         var sb = new StringBuilder(text.Length);
-        foreach (var (line, eol) in StringUtils.EnumerateLines(text))
+        foreach (var (line, eol) in ScrubberUtilities.EnumerateLines(text))
         {
             var newLine = ScrubLine(line);
             if (newLine is not null)

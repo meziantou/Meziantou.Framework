@@ -30,7 +30,7 @@ internal sealed class ReadOnlyMemoryConverterFactory : HumanReadableConverterFac
                 foreach (var item in value.Span)
                 {
                     writer.StartArrayItem();
-                    HumanReadableSerializer.Serialize(writer, item, typeof(T), options);
+                    HumanReadableSerializer.Serialize(writer, item, item?.GetType() ?? typeof(T), options);
                     writer.EndArrayItem();
                 }
 

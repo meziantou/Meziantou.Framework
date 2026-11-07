@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL EXT_shader_texture_lod Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_shader_texture_lod/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_shader_texture_lod"
+        ],
+        "Worker": [
+          "EXT_shader_texture_lod"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_shader_texture_lod": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_shader_texture_lod {\n};",
+        "type": "interface",
+        "name": "EXT_shader_texture_lod",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_shader_texture_lod"
+      ],
+      "Worker": [
+        "EXT_shader_texture_lod"
+      ]
+    },
+    "dependencies": {
+      "EXT_shader_texture_lod": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

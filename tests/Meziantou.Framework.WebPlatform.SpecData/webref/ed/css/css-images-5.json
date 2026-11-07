@@ -1,0 +1,62 @@
+{
+  "spec": {
+    "title": "CSS Images Module Level 5",
+    "url": "https://drafts.csswg.org/css-images-5/"
+  },
+  "properties": [
+    {
+      "name": "object-view-box",
+      "href": "https://drafts.csswg.org/css-images-5/#propdef-object-view-box",
+      "value": "none | <basic-shape-rect>",
+      "initial": "none",
+      "appliesTo": "replaced elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword, or computed <basic-shape> function",
+      "canonicalOrder": "per grammar",
+      "animationType": "as <basic-shape> if possible, otherwise discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element does not have a view box.",
+          "href": "https://drafts.csswg.org/css-images-5/#valdef-object-view-box-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<basic-shape-rect>",
+          "prose": "If the element does not have both a natural width and a natural height, this value has no effect, similar to none. Otherwise, specifies a view box for the element. First, resolve the <basic-shape-rect> against a reference box formed by the element’s natural sizes to obtain the element’s view box. For all purposes, the element is now treated as having natural sizes equal to the view box’s width and height. If the element had a natural aspect ratio, it’s now treated as instead having the same ratio as the view box. Further adjustments to the size/position of the element’s contents, such as object-position or object-fit, are similarly performed on the view box instead. When the element is painted, its contents are scaled and translated such that the element’s contents retain the same position and size, relative to the view box’s final size and position, that they had when the view box was determined (above). Have not yet defined what happens if the view box is zero-area. It’s an error case, so precise behavior isn’t important; just need to see what impls want to do about it.",
+          "href": "https://drafts.csswg.org/css-images-5/#valdef-object-view-box-basic-shape-rect",
+          "type": "value",
+          "value": "<basic-shape-rect>"
+        }
+      ],
+      "styleDeclaration": [
+        "object-view-box",
+        "objectViewBox"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "image()",
+      "value": "image( <image-tags>? [ <image-src>? , <color>? ]! )",
+      "href": "https://drafts.csswg.org/css-images-5/#funcdef-image",
+      "type": "function"
+    },
+    {
+      "name": "<image-tags>",
+      "href": "https://drafts.csswg.org/css-images-5/#typedef-image-tags",
+      "type": "type",
+      "value": "[ ltr | rtl ]"
+    },
+    {
+      "name": "<image-src>",
+      "href": "https://drafts.csswg.org/css-images-5/#typedef-image-src",
+      "type": "type",
+      "value": "[ <url> | <string> ]"
+    }
+  ]
+}

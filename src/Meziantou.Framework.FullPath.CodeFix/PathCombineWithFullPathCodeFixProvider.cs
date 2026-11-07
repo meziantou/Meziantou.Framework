@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -80,17 +81,17 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
     {
         if (semanticModel.GetOperation(expressionSyntax, cancellationToken) is not IInvocationOperation invocationOperation ||
             invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" } targetMethod ||
-            !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) ||
-            invocationOperation.Arguments.Length == 0)
+            !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType))
         {
             replacementExpression = null!;
             return false;
         }
 
+        var argumentValues = FullPathAnalyzerCommon.GetArgumentValues(invocationOperation).ToArray();
         var fullPathIndex = -1;
-        for (var i = 0; i < invocationOperation.Arguments.Length; i++)
+        for (var i = 0; i < argumentValues.Length; i++)
         {
-            var argument = UnwrapImplicitConversion(invocationOperation.Arguments[i].Value);
+            var argument = FullPathAnalyzerCommon.UnwrapToFullPath(argumentValues[i], fullPathType);
             if (SymbolEqualityComparer.Default.Equals(argument.Type, fullPathType))
             {
                 fullPathIndex = i;
@@ -103,36 +104,49 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
             return false;
         }
 
-        var startOperation = UnwrapImplicitConversion(invocationOperation.Arguments[fullPathIndex].Value);
+        // Arguments before the FullPath are discarded by the rewrite, because Path.Combine already discards
+        // everything before a rooted segment. Dropping them is only safe when evaluating them does nothing.
+        for (var i = 0; i < fullPathIndex; i++)
+        {
+            if (!IsSideEffectFree(argumentValues[i]))
+            {
+                replacementExpression = null!;
+                return false;
+            }
+        }
+
+        var startOperation = FullPathAnalyzerCommon.UnwrapToFullPath(argumentValues[fullPathIndex], fullPathType);
         if (startOperation.Syntax is not ExpressionSyntax expression)
         {
             replacementExpression = null!;
             return false;
         }
 
-        replacementExpression = expression.WithoutTrivia();
-        for (var i = fullPathIndex + 1; i < invocationOperation.Arguments.Length; i++)
+        replacementExpression = expression.WithoutTrivia().Parenthesize();
+        for (var i = fullPathIndex + 1; i < argumentValues.Length; i++)
         {
-            var nextOperation = UnwrapImplicitConversion(invocationOperation.Arguments[i].Value);
+            var nextOperation = FullPathAnalyzerCommon.UnwrapToFullPath(argumentValues[i], fullPathType);
             if (nextOperation.Syntax is not ExpressionSyntax nextExpression)
             {
                 replacementExpression = null!;
                 return false;
             }
 
-            replacementExpression = SyntaxFactory.BinaryExpression(SyntaxKind.DivideExpression, replacementExpression, nextExpression.WithoutTrivia());
+            replacementExpression = SyntaxFactory.BinaryExpression(SyntaxKind.DivideExpression, replacementExpression, nextExpression.WithoutTrivia().Parenthesize());
         }
 
         return true;
     }
 
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
+    /// <summary>Reports whether evaluating the operation can be skipped without changing the program.</summary>
+    private static bool IsSideEffectFree(IOperation operation)
     {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
+        return operation.UnwrapImplicitConversions() switch
         {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
+            ILiteralOperation or INameOfOperation or IDefaultValueOperation => true,
+            ILocalReferenceOperation or IParameterReferenceOperation => true,
+            IFieldReferenceOperation { Instance: var instance } => instance is null || IsSideEffectFree(instance),
+            _ => false,
+        };
     }
 }

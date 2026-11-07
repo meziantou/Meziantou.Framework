@@ -9,7 +9,17 @@ namespace Meziantou.AspNetCore.Components;
 /// <typeparam name="TValue">The type of the value. Supported types are <see cref="DateTime"/>, <see cref="DateTimeOffset"/>, and their nullable variants.</typeparam>
 public class InputDateTime<TValue> : InputDate<TValue>
 {
+    // datetime-local has no seconds component, so values round-tripped through this input are truncated to the minute
     private const string DateFormat = "yyyy-MM-ddTHH:mm";
+
+    /// <summary>
+    /// Gets or sets the UTC offset to apply when the bound value is a <see cref="DateTimeOffset"/>.
+    /// An HTML <c>datetime-local</c> input carries no timezone, so without this the offset of the machine running the
+    /// component is used, which is the server's offset under Blazor Server rather than the user's.
+    /// Use <see cref="TimeZoneService"/> to obtain the user's offset.
+    /// </summary>
+    [Parameter]
+    public TimeSpan? Offset { get; set; }
 
     /// <inheritdoc />
     protected override void BuildRenderTree(RenderTreeBuilder builder)
@@ -48,7 +58,7 @@ public class InputDateTime<TValue> : InputDate<TValue>
         }
         else if (targetType == typeof(DateTimeOffset))
         {
-            success = TryParseDateTimeOffset(value, out result);
+            success = TryParseDateTimeOffset(value, Offset, out result);
         }
         else
         {
@@ -83,11 +93,17 @@ public class InputDateTime<TValue> : InputDate<TValue>
         }
     }
 
-    private static bool TryParseDateTimeOffset(string? value, out TValue? result)
+    private static bool TryParseDateTimeOffset(string? value, TimeSpan? offset, out TValue? result)
     {
         var success = BindConverter.TryConvertToDateTimeOffset(value, CultureInfo.InvariantCulture, DateFormat, out var parsedValue);
         if (success)
         {
+            if (offset is { } userOffset)
+            {
+                // Reinterpret the wall-clock time the user typed as being in their timezone rather than the machine's
+                parsedValue = new DateTimeOffset(DateTime.SpecifyKind(parsedValue.DateTime, DateTimeKind.Unspecified), userOffset);
+            }
+
             result = (TValue)(object)parsedValue;
             return true;
         }

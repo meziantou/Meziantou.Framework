@@ -5,11 +5,11 @@ namespace Meziantou.Framework;
 
 /// <summary>Represents a temporary directory that is automatically deleted when disposed.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryDirectory_Example" ref:dedent="true">
 /// // Basic usage with using statement
 /// using var tempDir = TemporaryDirectory.Create();
 /// var filePath = tempDir.CreateTextFile("test.txt", "Hello World");
-/// Console.WriteLine($"File created at: {filePath}");
+/// Assert.Equal("Hello World", File.ReadAllText(filePath));
 /// // Directory is automatically deleted when disposed
 ///
 /// // Async disposal
@@ -25,6 +25,7 @@ namespace Meziantou.Framework;
 /// // Using path operators
 /// using var tempDir4 = TemporaryDirectory.Create();
 /// var path = tempDir4 / "data" / "output.txt";
+/// Assert.Equal(tempDir4.GetFullPath("data/output.txt"), path);
 /// </code>
 /// </example>
 /// <remarks>
@@ -34,8 +35,11 @@ namespace Meziantou.Framework;
 [DebuggerDisplay("{FullPath}")]
 public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 {
+    private bool _disposed;
+
     /// <summary>Gets the full path to the temporary directory.</summary>
     /// <value>The absolute path to the temporary directory where files and subdirectories can be created.</value>
+    /// <remarks>The path remains readable after the instance is disposed, even though the directory no longer exists.</remarks>
     public FullPath FullPath { get; }
 
     private TemporaryDirectory(FullPath path)
@@ -48,7 +52,9 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <remarks>
     /// The directory is created under the system temp path in a "MezTD" subdirectory.
     /// The directory name includes a timestamp and GUID to ensure uniqueness.
+    /// On Unix, the directories are created so that only the current user can access them.
     /// </remarks>
+    /// <exception cref="UnauthorizedAccessException">The "MezTD" directory already exists and is accessible to other users.</exception>
     public static TemporaryDirectory Create()
     {
         return Create(FullPath.Combine(Path.GetTempPath(), "MezTD"));
@@ -59,10 +65,13 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <returns>A new <see cref="TemporaryDirectory"/> instance.</returns>
     /// <remarks>
     /// The directory name includes a timestamp (yyyyMMdd_HHmmss) and GUID to ensure uniqueness.
+    /// On Unix, the directories are created so that only the current user can access them.
     /// </remarks>
+    /// <exception cref="UnauthorizedAccessException"><paramref name="rootDirectory"/> already exists and is accessible to other users.</exception>
     public static TemporaryDirectory Create(FullPath rootDirectory)
     {
         var folderName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N");
+        TemporaryPaths.EnsureRootDirectory(rootDirectory);
         var path = CreateUniqueDirectory(rootDirectory / folderName);
         return new TemporaryDirectory(path);
     }
@@ -70,31 +79,46 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <summary>Gets the full path for a relative path within the temporary directory.</summary>
     /// <param name="relativePath">The relative path (can include subdirectories).</param>
     /// <returns>The absolute <see cref="FullPath"/> combining the temporary directory and the relative path.</returns>
+    /// <remarks>The resulting path must stay inside the temporary directory, so it cannot be escaped using "..".</remarks>
+    /// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> is rooted, or resolves to a path outside the temporary directory.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryDirectory_GetFullPath" ref:dedent="true">
     /// using var tempDir = TemporaryDirectory.Create();
     /// var fullPath = tempDir.GetFullPath("data/output.txt");
+    /// Assert.Equal(tempDir.FullPath / "data" / "output.txt", fullPath);
     /// </code>
     /// </example>
     public FullPath GetFullPath(string relativePath)
     {
-        return FullPath.Combine(FullPath, relativePath);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var path = FullPath.Combine(FullPath, relativePath);
+
+        // Path.Combine returns relativePath as-is when it is rooted, and GetFullPath resolves any "..",
+        // so both ways out of the directory are caught here.
+        if (path != FullPath && !path.IsChildOf(FullPath))
+            throw new ArgumentException($"The path '{relativePath}' resolves to '{path}', which is outside the temporary directory '{FullPath}'.", nameof(relativePath));
+
+        return path;
     }
 
     /// <summary>Creates an empty file at the specified relative path.</summary>
     /// <param name="relativePath">The relative path for the file (can include subdirectories).</param>
     /// <returns>The absolute <see cref="FullPath"/> of the created file.</returns>
     /// <remarks>If the parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryDirectory_CreateEmptyFile" ref:dedent="true">
     /// using var tempDir = TemporaryDirectory.Create();
     /// var filePath = tempDir.CreateEmptyFile("test.txt");
+    /// Assert.Equal(0, new FileInfo(filePath).Length);
     /// </code>
     /// </example>
     public FullPath CreateEmptyFile(string relativePath)
     {
         var path = GetFullPath(relativePath);
-        Directory.CreateDirectory(path.Parent);
+        path.CreateParentDirectory();
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         return path;
     }
@@ -104,16 +128,18 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <param name="content">The text content to write to the file.</param>
     /// <returns>The absolute <see cref="FullPath"/> of the created file.</returns>
     /// <remarks>If the parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryDirectory_CreateTextFile" ref:dedent="true">
     /// using var tempDir = TemporaryDirectory.Create();
     /// var filePath = tempDir.CreateTextFile("config.json", "{ \"setting\": \"value\" }");
+    /// Assert.Equal("{ \"setting\": \"value\" }", File.ReadAllText(filePath));
     /// </code>
     /// </example>
     public FullPath CreateTextFile(string relativePath, string content)
     {
         var path = GetFullPath(relativePath);
-        Directory.CreateDirectory(path.Parent);
+        path.CreateParentDirectory();
         File.WriteAllText(path, content);
         return path;
     }
@@ -124,16 +150,18 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation, containing the absolute <see cref="FullPath"/> of the created file.</returns>
     /// <remarks>If the parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryDirectory_CreateTextFileAsync" ref:dedent="true">
     /// await using var tempDir = TemporaryDirectory.Create();
     /// var filePath = await tempDir.CreateTextFileAsync("data.txt", "Hello World");
+    /// Assert.Equal("Hello World", await File.ReadAllTextAsync(filePath));
     /// </code>
     /// </example>
     public async Task<FullPath> CreateTextFileAsync(string relativePath, string content, CancellationToken cancellationToken = default)
     {
         var path = GetFullPath(relativePath);
-        Directory.CreateDirectory(path.Parent);
+        path.CreateParentDirectory();
         await File.WriteAllTextAsync(path, content, cancellationToken).ConfigureAwait(false);
         return path;
     }
@@ -142,10 +170,12 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <param name="relativePath">The relative path for the directory (can include subdirectories).</param>
     /// <returns>The absolute <see cref="FullPath"/> of the created directory.</returns>
     /// <remarks>If parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryDirectory_CreateDirectory" ref:dedent="true">
     /// using var tempDir = TemporaryDirectory.Create();
     /// var dirPath = tempDir.CreateDirectory("data/output");
+    /// Assert.True(Directory.Exists(dirPath));
     /// </code>
     /// </example>
     public FullPath CreateDirectory(string relativePath)
@@ -158,20 +188,30 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     private static FullPath CreateUniqueDirectory(FullPath folderPath)
     {
         // The folder name includes a GUID, so it is unique and cannot collide with an existing directory.
-        Directory.CreateDirectory(folderPath);
+        TemporaryPaths.CreateDirectory(folderPath);
         return folderPath;
     }
 
     /// <summary>Deletes the temporary directory and all its contents.</summary>
+    /// <remarks>Disposing an already disposed instance does nothing, so it cannot delete a directory recreated at the same path.</remarks>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
         IOUtilities.Delete(new DirectoryInfo(FullPath));
     }
 
     /// <summary>Asynchronously deletes the temporary directory and all its contents.</summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
+    /// <remarks>Disposing an already disposed instance does nothing, so it cannot delete a directory recreated at the same path.</remarks>
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
         await IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None).ConfigureAwait(false);
     }
 
@@ -181,9 +221,10 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <returns>The combined <see cref="FullPath"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="temporaryDirectory"/> is <see langword="null"/>.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryDirectory_SlashOperator" ref:dedent="true">
     /// using var tempDir = TemporaryDirectory.Create();
     /// var filePath = tempDir / "data" / "output.txt";
+    /// Assert.Equal(tempDir.GetFullPath("data/output.txt"), filePath);
     /// </code>
     /// </example>
     public static FullPath operator /(TemporaryDirectory temporaryDirectory, string path)
@@ -222,7 +263,12 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 
     /// <summary>Opens the temporary directory in Windows Explorer.</summary>
     /// <remarks>This method is only available on Windows platforms.</remarks>
+    /// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
-    public void OpenInExplorer() => FullPath.OpenInExplorer();
+    public void OpenInExplorer()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        FullPath.OpenInExplorer();
+    }
 }

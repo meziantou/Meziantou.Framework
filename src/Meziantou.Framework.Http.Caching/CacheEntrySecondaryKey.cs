@@ -4,8 +4,15 @@ namespace Meziantou.Framework.Http.Caching;
 
 internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondaryKey>
 {
-    public static CacheEntrySecondaryKey MatchAll { get; } = new(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+    // A new instance is returned every time: the value is a struct wrapping a mutable dictionary, so a
+    // shared instance would let Add on any copy corrupt the key for the whole process. An empty
+    // Dictionary does not allocate its buckets, so this stays cheap.
+    public static CacheEntrySecondaryKey MatchAll => new();
     public static CacheEntrySecondaryKey MatchNone { get; }
+
+    // RFC 9110 Section 5.5: a field value is made of visible ASCII characters, spaces and horizontal tabs,
+    // so NUL can never appear in one and is safe as a marker.
+    private const string AbsentValue = "\u0000";
 
     private readonly Dictionary<string, string>? _headers;
 
@@ -31,7 +38,31 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         if (headers is null || headers.Count is 0)
             return MatchAll;
 
-        return new CacheEntrySecondaryKey(new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase));
+        // The headers come from a store, whose dictionary can be case-sensitive and hold several names that only differ
+        // by case. A request has a single value for a header, so names with different values match no request.
+        var result = new Dictionary<string, string>(headers.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, value) in headers)
+        {
+            if (!result.TryAdd(name, value) && !string.Equals(result[name], value, StringComparison.Ordinal))
+                return MatchNone;
+        }
+
+        return new CacheEntrySecondaryKey(result);
+    }
+
+    /// <summary>Records that a header nominated by <c>Vary</c> was absent from the request.</summary>
+    /// <remarks>
+    /// RFC 9111 Section 4.1: a nominated field matches when it is absent from both the stored request and
+    /// the presented one, or present in both with the same value. Absence therefore has to be recorded.
+    /// Leaving it out made the key of a request that carried none of the nominated headers indistinguishable
+    /// from the key of a response with no <c>Vary</c> at all, which matches every request.
+    /// </remarks>
+    public void AddAbsent(string name)
+    {
+        if (_headers is null)
+            return;
+
+        _headers.TryAdd(name, AbsentValue);
     }
 
     public void Add(string name, string value)
@@ -75,12 +106,16 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         {
             if (request.Headers.TryGetValues(headerName, out var values))
             {
-                // Sort values to ensure consistent ordering for cache matching
-                // RFC 7234: Order of header values shouldn't affect cache matching
-                foreach (var value in values.Order(StringComparer.Ordinal))
+                // Values can only be reordered when their field specification says that ordering does not
+                // affect semantics. A generic Vary implementation must preserve the received order.
+                foreach (var value in values)
                 {
                     requestKey.Add(headerName, value);
                 }
+            }
+            else
+            {
+                requestKey.AddAbsent(headerName);
             }
         }
 
@@ -121,7 +156,7 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         foreach (var header in _headers.OrderBy(h => h.Key, StringComparer.OrdinalIgnoreCase))
         {
             hash.Add(header.Key, StringComparer.OrdinalIgnoreCase);
-            hash.Add(header.Value);
+            hash.Add(header.Value, StringComparer.Ordinal);
         }
 
         return hash.ToHashCode();

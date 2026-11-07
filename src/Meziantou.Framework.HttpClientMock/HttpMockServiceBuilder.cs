@@ -35,4 +35,15 @@ public sealed class HttpMockServiceBuilder
         Builder.AddMock<T>(mock);
         return this;
     }
+
+    /// <summary>
+    /// Throws an <see cref="InvalidOperationException"/> when an <see cref="HttpClient"/> is created for which no
+    /// mock is registered, instead of letting it send real HTTP requests.
+    /// </summary>
+    /// <returns>The builder for chaining additional calls.</returns>
+    public HttpMockServiceBuilder ThrowOnUnknownHttpClient()
+    {
+        Builder.ThrowOnUnknownHttpClient = true;
+        return this;
+    }
 }

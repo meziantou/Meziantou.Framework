@@ -1,0 +1,166 @@
+%PDF-1.7
+% ò¤ô
+% Text in the encodings of simple and composite fonts
+1 0 obj <<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj <<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+3 0 obj <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Resources <<
+    /Font << /WinAnsi 4 0 R /Standard 5 0 R /Symbol 6 0 R /Differences 7 0 R /Composite 8 0 R /MacRoman 11 0 R >>
+  >>
+  /Contents 12 0 R
+>>
+endobj
+4 0 obj <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Helvetica
+  /Encoding /WinAnsiEncoding
+>>
+endobj
+5 0 obj <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Courier
+>>
+endobj
+6 0 obj <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Symbol
+>>
+endobj
+7 0 obj <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Times-Roman
+  /Encoding << /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [65 /Aring /ccedilla 200 /fi /fl] >>
+>>
+endobj
+8 0 obj <<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /Unembedded
+  /Encoding /Identity-H
+  /DescendantFonts [9 0 R]
+  /ToUnicode 10 0 R
+>>
+endobj
+9 0 obj <<
+  /Type /Font
+  /Subtype /CIDFontType2
+  /BaseFont /Unembedded
+  /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >>
+  /FontDescriptor 13 0 R
+  /DW 1000
+  /W [1 [500 600] 10 20 400]
+>>
+endobj
+10 0 obj <<
+  /Length 398
+>>
+stream
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def
+/CMapName /Adobe-Identity-UCS def
+/CMapType 2 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+2 beginbfchar
+<0001> <004B>
+<0002> <00E9>
+endbfchar
+1 beginbfrange
+<000A> <000C> <03B1>
+endbfrange
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+endstream
+endobj
+11 0 obj <<
+  /Type /Font
+  /Subtype /TrueType
+  /BaseFont /Arial
+  /Encoding /MacRomanEncoding
+  /FirstChar 32
+  /LastChar 255
+>>
+endobj
+12 0 obj <<
+  /Length 303
+>>
+stream
+BT
+/WinAnsi 12 Tf
+72 720 Td
+(Caf\351 \200 \226 \223quoted\224) Tj
+/Standard 12 Tf
+0 -20 Td
+(It\047s \140quoted\047) Tj
+/Symbol 12 Tf
+0 -20 Td
+(abg \273 p) Tj
+/Differences 12 Tf
+0 -20 Td
+(AB\310\311) Tj
+/Composite 12 Tf
+0 -20 Td
+<0001 0002 000A 000B 000C> Tj
+/MacRoman 12 Tf
+0 -20 Td
+(\212\216\247) Tj
+ET
+endstream
+endobj
+13 0 obj <<
+  /Type /FontDescriptor
+  /FontName /Unembedded
+  /Flags 32
+  /FontBBox [0 -200 1000 900]
+  /ItalicAngle 0
+  /Ascent 900
+  /Descent -200
+  /CapHeight 700
+  /StemV 80
+>>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000069 00000 n 
+0000000122 00000 n 
+0000000185 00000 n 
+0000000416 00000 n 
+0000000521 00000 n 
+0000000595 00000 n 
+0000000668 00000 n 
+0000000858 00000 n 
+0000001006 00000 n 
+0000001231 00000 n 
+0000001683 00000 n 
+0000001821 00000 n 
+0000002178 00000 n 
+
+trailer <<
+  /Root 1 0 R
+  /Size 14
+>>
+startxref
+2366
+%%EOF

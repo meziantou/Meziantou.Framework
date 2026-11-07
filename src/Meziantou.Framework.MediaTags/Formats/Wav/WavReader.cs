@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Wav;
 
@@ -22,7 +23,9 @@ internal sealed class WavReader : IMediaTagReader
             if (riffHeader[8] != 'W' || riffHeader[9] != 'A' || riffHeader[10] != 'V' || riffHeader[11] != 'E')
                 return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.UnsupportedFormat, "Not a WAV file.");
 
-            var chunks = RiffChunk.ReadChunks(stream, stream.Length);
+            // Reading is best effort: whatever chunks were parsed before a malformed one still carry usable
+            // tags, and unlike the writer nothing is destroyed by using them.
+            var chunks = RiffChunk.ReadChunks(stream, stream.Length, out _);
 
             // Look for LIST-INFO chunk
             foreach (var chunk in chunks)
@@ -31,7 +34,7 @@ internal sealed class WavReader : IMediaTagReader
                 {
                     ReadInfoChunks(chunk.SubChunks, tags);
                 }
-                else if (chunk.Id is "id3 " or "ID3 " or "ID32")
+                else if (RiffChunk.IsId3Chunk(chunk.Id))
                 {
                     // ID3v2 tag embedded in WAV
                     if (chunk.Data is not null)
@@ -42,12 +45,16 @@ internal sealed class WavReader : IMediaTagReader
                 }
             }
 
-            tags.Duration ??= TryReadDuration(chunks);
+            if (tags.Duration is null)
+            {
+                tags.Duration = TryReadDuration(chunks);
+                tags.DurationFromAudio = tags.Duration;
+            }
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
 
@@ -98,7 +105,7 @@ internal sealed class WavReader : IMediaTagReader
             return TimeSpan.FromSeconds(dataChunk.Size / (double)byteRate);
 
         if (blockAlign > 0)
-            return TimeSpan.FromSeconds(dataChunk.Size / (double)(sampleRate * blockAlign));
+            return TimeSpan.FromSeconds(dataChunk.Size / ((double)sampleRate * blockAlign));
 
         return null;
     }
@@ -107,7 +114,9 @@ internal sealed class WavReader : IMediaTagReader
     {
         foreach (var chunk in chunks)
         {
-            if (chunk.Data is null)
+            // A chunk identifier is four printable characters. Anything else comes from a misaligned parse, and
+            // cannot be stored back as a custom field name.
+            if (chunk.Data is null || !IsValidInfoId(chunk.Id))
                 continue;
 
             var value = ReadInfoString(chunk.Data);
@@ -125,19 +134,39 @@ internal sealed class WavReader : IMediaTagReader
                         tags.Year = year;
                     break;
                 case "ITRK":
-                    if (tags.TrackNumber is null && int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var track))
+                    if (tags.TrackNumber is null && TagFieldMapping.TryParseNumberPair(value, out var track, out var trackTotal))
+                    {
                         tags.TrackNumber = track;
+                        tags.TrackTotal ??= trackTotal;
+                    }
+                    else
+                    {
+                        tags.CustomFields.TryAdd(chunk.Id, value);
+                    }
+
                     break;
                 case "ICMT": tags.Comment ??= value; break;
                 case "ILYR": tags.Lyrics ??= value; break;
                 case "ISRC": tags.Isrc ??= value; break;
                 case "ICOP": tags.Copyright ??= value; break;
-                case "IENG": tags.Composer ??= value; break;
+
+                // IENG is the engineer, not the composer: RIFF INFO has no composer field.
                 default:
                     tags.CustomFields.TryAdd(chunk.Id, value);
                     break;
             }
         }
+    }
+
+    private static bool IsValidInfoId(string id)
+    {
+        foreach (var c in id)
+        {
+            if (c is < ' ' or > '~')
+                return false;
+        }
+
+        return true;
     }
 
     private static string ReadInfoString(byte[] data)

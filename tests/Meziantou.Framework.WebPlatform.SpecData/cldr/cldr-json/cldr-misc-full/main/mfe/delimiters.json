@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mfe": {
+      "identity": {
+        "language": "mfe"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "zu": {
+      "identity": {
+        "language": "zu"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,101 @@
+---
+title: Cookies and storage
+description: Give pages cookies, local storage and the other stores of the browsers, share them between pages, persist them, and let sites clear them.
+---
+
+## Cookies
+
+Without a [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar), the pages have no cookies. Give the browsing contexts a jar: the document loader sends its cookies
+and stores the cookies of the responses, and the pages read and write it with `document.cookie` and `cookieStore`.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/CookieJarTests.cs;region=WebPlatform_Cookies;format=md-fenced-code-block;dedent=true -->
+```csharp
+var cookies = new CookieJar();
+cookies.SetCookie("https://example.com/", "session=abc; Path=/; Secure; HttpOnly");
+cookies.SetCookie("https://example.com/", "theme=dark; Path=/");
+
+using var context = new BrowsingContext(new BrowsingContextOptions { CookieJar = cookies });
+var document = context.Navigate("https://example.com/", _ => "<p>Hello</p>");
+
+// document.cookie does not see the HttpOnly cookies
+Assert.Equal("theme=dark", document.Cookie);
+document.Cookie = "lang=fr; Path=/";
+
+var names = cookies.GetCookies("https://example.com/").Select(cookie => cookie.Name).Order(StringComparer.Ordinal);
+Assert.Equal(["lang", "session", "theme"], names);
+```
+<!-- endref -->
+
+- The jar follows the rules of the browsers ([RFC 6265bis](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html)):
+  `Expires` and `Max-Age`, `Domain` and `Path`, `Secure`, `HttpOnly`, `SameSite` (`Lax` by default), `Partitioned`,
+  the cookie prefixes and the public suffixes. Third-party cookies are not blocked.
+- Several browsing contexts can share a jar, as the tabs of a browser share their cookies.
+- `SetCookie(url, header)` adds a cookie as a `Set-Cookie` header does (to sign a session in before loading a page);
+  `GetCookies(url)` and [GetCookies()](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.GetCookies) list them, [Remove](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Remove) and [Clear](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Clear) delete them.
+- Create the jar with the `TimeProvider` of the browsing context (`new CookieJar(timeProvider)`) so that the cookies
+  expire with its clock.
+- To keep the persistent cookies between runs, derive from [CookiePersistence](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence) ([LoadCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.LoadCookies), [SetCookie](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.SetCookie), [RemoveCookie](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.RemoveCookie),
+  [ClearAll](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.ClearAll)) and give it to the jar: `new CookieJar(persistence, timeProvider)`. The jar keeps the cookies in memory and
+  reports each change.
+
+## Local storage and session storage
+
+`window.localStorage` keeps its items in a [StorageShed](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed). By default, each browsing context created by your application
+has its own; give the same shed to several browsing contexts to share the items of an origin:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebStorageTests.cs;region=WebPlatform_LocalStorage;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The local storage areas of the origins, which several browsing contexts can share
+var storage = new StorageShed();
+using var context = new BrowsingContext(new BrowsingContextOptions { LocalStorage = storage });
+context.Navigate("https://example.com/", _ => "<p>Hello</p>");
+
+// window.localStorage, from .NET or from the scripts of the page
+context.Window.LocalStorage.SetItem("theme", "dark");
+Assert.Equal([new("theme", "dark")], storage.GetItems("https://example.com"));
+```
+<!-- endref -->
+
+- The items are kept per origin, with a quota of 5 Mi characters per origin (`new StorageShed(quota)` sets another one).
+  [GetOrigins](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetOrigins), [GetItems](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetItems), [SetItem](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.SetItem) and [Clear](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.Clear) read and change them from .NET.
+- To keep the items between runs, derive from [WebStoragePersistence](cref:Meziantou.Framework.WebPlatform.Dom.WebStoragePersistence) and give it to the shed:
+  `new StorageShed(persistence)`.
+- `window.sessionStorage` belongs to the top-level browsing context, and is always kept in memory.
+
+## The other stores
+
+The other storage APIs of the browsers keep their data in backends that you can replace, to share or persist them:
+
+| Option | Store | Default |
+| --- | --- | --- |
+| [IndexedDB](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IndexedDB) | `indexedDB` | [InMemoryIndexedDBBackend](cref:Meziantou.Framework.WebPlatform.Dom.InMemoryIndexedDBBackend), per browsing context created by the application |
+| [CacheStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CacheStorage) | `caches` (the Cache API) | In memory |
+| [FileSystem](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.FileSystem) | The origin private file system (`navigator.storage.getDirectory()`) | In memory |
+| [ServiceWorkers](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ServiceWorkers) | The registrations of the service workers | In memory |
+
+These stores are used by the scripts of the pages: they need a [script engine](../06-Scripting/01-Overview.md).
+
+## Clear-Site-Data
+
+A site clears the data that the browser keeps for it with the `Clear-Site-Data` header of a response. The header is
+honored on the responses of the secure URLs (`https`, and `http://localhost`), when the request sends credentials:
+
+| Type | What is cleared for the origin of the response |
+| --- | --- |
+| `"cache"` | The responses of its URLs in the HTTP cache and its pages in the back/forward cache (for the tab's site only, as the browsers partition their caches), and its prefetched and prerendered pages |
+| `"cookies"` | The cookies of its registrable domain (`"cookies"` for `https://www.example.com` removes the cookies of `example.com` and of its subdomains) |
+| `"storage"` | Its local storage, its session storage, its IndexedDB databases, its caches of the Cache API, and its service worker registrations |
+| `"executionContexts"` | Its pages are reloaded |
+| `"clientHints"` | The client hints it opted into (also cleared by `"cache"` and `"cookies"`) |
+| `"*"` | All of the above |
+
+The cookies that the response sets are cleared too. As in the browsers, a response loaded by a page of another site
+(a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies and the
+caches. Its local storage, IndexedDB databases and other stores are kept. Some data is always kept:
+
+- An IndexedDB database that a page still has open.
+- The origin private file system.
+- The pages that a service worker controls keep it until they are unloaded: unregistering does not remove the
+  controller.
+- `"executionContexts"` only reloads the pages in the tab of the request, and never the page or frame that loaded the
+  response, nor the pages that contain it: reloading them would load the response again, forever.

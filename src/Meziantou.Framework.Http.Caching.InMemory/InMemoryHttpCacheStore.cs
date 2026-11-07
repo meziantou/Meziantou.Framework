@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Text.Json;
 
 namespace Meziantou.Framework.Http.Caching.InMemory;
@@ -8,7 +9,10 @@ namespace Meziantou.Framework.Http.Caching.InMemory;
 /// </summary>
 public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 {
-    private readonly ConcurrentDictionary<string, ConcurrentBag<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
+    // The value is replaced wholesale on every write, never mutated in place, so an immutable array says
+    // what the code actually does. A ConcurrentBag here paid for thread-local storage and work stealing that
+    // nothing used, since no two threads ever added to the same instance.
+    private readonly ConcurrentDictionary<string, ImmutableArray<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Saves all in-memory cache entries to a JSON file.
@@ -35,21 +39,51 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
             Directory.CreateDirectory(directoryPath);
         }
 
-        var tempFilePath = filePath + ".tmp";
+        // The temporary name is unique so that two concurrent saves to the same path do not collide on it.
+        var tempFilePath = filePath + "." + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + ".tmp";
         try
         {
-            await using (var stream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
+            await using (var stream = new FileStream(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
             {
                 await JsonSerializer.SerializeAsync(stream, snapshot, InMemorySerializationContext.Default.InMemoryHttpCachePersistenceData, cancellationToken).ConfigureAwait(false);
             }
 
-            File.Move(tempFilePath, filePath, overwrite: true);
+            await MoveOverwritingWithRetryAsync(tempFilePath, filePath, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            if (File.Exists(tempFilePath))
+            // Cleaning up must not replace the exception that is being propagated, and the file is already
+            // gone on the success path.
+            try
             {
                 File.Delete(tempFilePath);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>Replaces the destination, waiting out the concurrent saves that are replacing it at the same time.</summary>
+    private static async Task MoveOverwritingWithRetryAsync(string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken)
+    {
+        // Replacing a file is atomic on Unix, but Windows denies access to the destination while another move is
+        // replacing it, so concurrent saves to the same path have to wait for each other instead of failing.
+        const int MaxAttempts = 50;
+
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(sourceFilePath, destinationFilePath, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (attempt < MaxAttempts && ex is UnauthorizedAccessException or (IOException and not (FileNotFoundException or DirectoryNotFoundException)))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(20), cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -90,7 +124,7 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            _entries[primaryKey] = new ConcurrentBag<HttpCachePersistenceEntry>(entries.Select(static entry => entry.Clone()));
+            _entries[primaryKey] = [.. entries.Select(static entry => entry.Clone())];
         }
     }
 
@@ -104,7 +138,14 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         if (!_entries.TryGetValue(primaryKey, out var entries))
             return ValueTask.FromResult<IReadOnlyCollection<HttpCachePersistenceEntry>>(Array.Empty<HttpCachePersistenceEntry>());
 
-        var clonedEntries = entries.Select(static entry => entry.Clone()).ToArray();
+        // The entries are handed out as clones: HttpCachePersistenceEntry is public and mutable, so a
+        // caller must not be able to reach into what the store holds.
+        var clonedEntries = new HttpCachePersistenceEntry[entries.Length];
+        for (var i = 0; i < entries.Length; i++)
+        {
+            clonedEntries[i] = entries[i].Clone();
+        }
+
         return ValueTask.FromResult<IReadOnlyCollection<HttpCachePersistenceEntry>>(clonedEntries);
     }
 
@@ -116,23 +157,12 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        var storedEntry = entry.Clone();
         _entries.AddOrUpdate(
             primaryKey,
-            _ => new ConcurrentBag<HttpCachePersistenceEntry> { entry.Clone() },
-            (_, bag) =>
-            {
-                var newBag = new ConcurrentBag<HttpCachePersistenceEntry>();
-                foreach (var existing in bag)
-                {
-                    if (!HttpCachePersistenceEntry.HasSameSecondaryKey(existing, entry))
-                    {
-                        newBag.Add(existing);
-                    }
-                }
-
-                newBag.Add(entry.Clone());
-                return newBag;
-            });
+            static (_, added) => [added],
+            static (_, existing, added) => existing.RemoveAll(candidate => HttpCachePersistenceEntry.HasSameSecondaryKey(candidate, added)).Add(added),
+            storedEntry);
 
         return ValueTask.CompletedTask;
     }
@@ -170,29 +200,15 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            while (_entries.TryGetValue(primaryKey, out var bag))
+            while (_entries.TryGetValue(primaryKey, out var entries))
             {
-                var keptEntries = new List<HttpCachePersistenceEntry>();
-                var deletedEntriesForKey = 0;
-
-                foreach (var entry in bag)
-                {
-                    if (ShouldDelete(entry, now))
-                    {
-                        deletedEntriesForKey++;
-                    }
-                    else
-                    {
-                        keptEntries.Add(entry);
-                    }
-                }
-
-                if (deletedEntriesForKey is 0)
+                var keptEntries = entries.RemoveAll(entry => entry.IsObsolete(now));
+                if (keptEntries.Length == entries.Length)
                     break;
 
-                if (keptEntries.Count is 0)
+                if (keptEntries.IsEmpty)
                 {
-                    if (_entries.TryRemove(new KeyValuePair<string, ConcurrentBag<HttpCachePersistenceEntry>>(primaryKey, bag)))
+                    if (_entries.TryRemove(new KeyValuePair<string, ImmutableArray<HttpCachePersistenceEntry>>(primaryKey, entries)))
                     {
                         break;
                     }
@@ -200,8 +216,7 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
                     continue;
                 }
 
-                var replacementBag = new ConcurrentBag<HttpCachePersistenceEntry>(keptEntries);
-                if (_entries.TryUpdate(primaryKey, replacementBag, bag))
+                if (_entries.TryUpdate(primaryKey, keptEntries, entries))
                 {
                     break;
                 }
@@ -209,74 +224,5 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         }
 
         return ValueTask.CompletedTask;
-    }
-
-    private static bool ShouldDelete(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        return IsExpired(entry, now) && ShouldDeleteWhenExpired(entry);
-    }
-
-    private static bool ShouldDeleteWhenExpired(HttpCachePersistenceEntry entry)
-    {
-        var cannotBeUsedStale = entry.MustRevalidate || entry.ProxyRevalidate || entry.ResponseNoCache;
-        if (!cannotBeUsedStale)
-            return false;
-
-        return string.IsNullOrEmpty(entry.ETag) && entry.LastModified is null;
-    }
-
-    private static bool IsExpired(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        var freshnessLifetime = GetFreshnessLifetime(entry);
-        var currentAge = CalculateCurrentAge(entry, now);
-        return currentAge >= freshnessLifetime;
-    }
-
-    private static TimeSpan GetFreshnessLifetime(HttpCachePersistenceEntry entry)
-    {
-        if (entry.SharedMaxAge.HasValue)
-            return entry.SharedMaxAge.Value;
-
-        if (entry.MaxAge.HasValue)
-            return entry.MaxAge.Value;
-
-        if (entry.Expires.HasValue)
-        {
-            var expiresTime = entry.Expires.Value;
-            if (expiresTime == DateTimeOffset.MinValue)
-                return TimeSpan.Zero;
-
-            var freshness = expiresTime - entry.ResponseDate;
-            return freshness > TimeSpan.Zero ? freshness : TimeSpan.Zero;
-        }
-
-        if (entry.LastModified.HasValue)
-        {
-            var age = entry.ResponseDate - entry.LastModified.Value;
-            if (age > TimeSpan.Zero)
-            {
-                return TimeSpan.FromSeconds(age.TotalSeconds * 0.1);
-            }
-        }
-
-        return TimeSpan.Zero;
-    }
-
-    private static TimeSpan CalculateCurrentAge(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        var correctedInitialAge = CalculateCorrectedInitialAge(entry);
-        var residentTime = now - entry.ResponseTime;
-        return correctedInitialAge + residentTime;
-    }
-
-    private static TimeSpan CalculateCorrectedInitialAge(HttpCachePersistenceEntry entry)
-    {
-        var apparentAge = entry.ResponseTime - entry.ResponseDate;
-        if (apparentAge < TimeSpan.Zero)
-            apparentAge = TimeSpan.Zero;
-
-        var responseDelay = entry.ResponseTime - entry.RequestTime;
-        var correctedAgeValue = entry.AgeValue + responseDelay;
-        return apparentAge > correctedAgeValue ? apparentAge : correctedAgeValue;
     }
 }

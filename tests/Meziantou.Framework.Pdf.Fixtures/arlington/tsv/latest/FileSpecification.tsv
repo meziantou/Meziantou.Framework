@@ -1,0 +1,17 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		fn:IsRequired(fn:IsPresent(EF) || fn:SinceVersion(2.0,fn:IsPresent(EP)) || fn:IsPresent(RF))	FALSE	FALSE		[Filespec]			Table 43 and https://github.com/pdf-association/pdf-issues/issues/298
+FS	name	1.1		FALSE	FALSE	FALSE		[URL,*]			
+F	string	1.1		fn:IsRequired(fn:Not(fn:IsPresent(DOS)) && fn:Not(fn:IsPresent(Mac)) && fn:Not(fn:IsPresent(Unix)))	FALSE	FALSE					
+UF	string-text	1.7		FALSE	FALSE	FALSE					
+DOS	string-byte	1.1	2.0	FALSE	FALSE	FALSE					
+Mac	string-byte	1.1	2.0	FALSE	FALSE	FALSE					
+Unix	string-byte	1.1	2.0	FALSE	FALSE	FALSE					
+ID	array	1.1		FALSE	FALSE	FALSE				[ArrayOf_2StringsByte]	
+V	boolean	1.2		FALSE	FALSE	FALSE	false				
+EF	dictionary	1.3		fn:IsRequired(fn:IsPresent(RF))	FALSE	FALSE				[FileSpecEF]	
+RF	dictionary	1.3		FALSE	FALSE	FALSE				[FileSpecRF]	
+Desc	string-text	1.6		FALSE	FALSE	FALSE					
+CI	dictionary	1.7		FALSE	TRUE	FALSE				[CollectionItem]	
+Thumb	stream	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	TRUE	FALSE				[Thumbnail]	
+AFRelationship	name	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE	Unspecified	[Source,Data,Alternative,Supplement,fn:SinceVersion(2.0,EncryptedPayload),fn:SinceVersion(2.0,FormData),fn:SinceVersion(2.0,Schema),Unspecified,fn:Extension(C2PA,C2PA_Manifest)]			
+EP	dictionary	2.0		FALSE	FALSE	FALSE				[EncryptedPayload]	

@@ -3,7 +3,12 @@ namespace Meziantou.Framework.Yaml;
 /// <summary>
 /// Specifies a built-in <see cref="YamlNamingPolicy"/> for use with the source generator.
 /// </summary>
-public enum YamlKnownNamingPolicy
+#if MEZIANTOU_FRAMEWORK_YAML_SOURCE_GENERATOR
+internal
+#else
+public
+#endif
+enum YamlKnownNamingPolicy
 {
     /// <summary>No naming policy is applied; CLR member names are used as-is.</summary>
     Unspecified = 0,
@@ -32,4 +37,9 @@ public enum YamlKnownNamingPolicy
     /// KEBAB-CASE (uppercase). See <see cref="YamlNamingPolicy.KebabCaseUpper"/>.
     /// </summary>
     KebabCaseUpper = 5,
+
+    /// <summary>
+    /// PascalCase. See <see cref="YamlNamingPolicy.PascalCase"/>.
+    /// </summary>
+    PascalCase = 6,
 }

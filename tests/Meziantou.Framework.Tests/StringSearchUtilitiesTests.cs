@@ -38,6 +38,27 @@ public class StringSearchUtilitiesTests
         Assert.Equal(expected, StringSearchUtilities.Levenshtein(word1.AsSpan(), word2.AsSpan(), maxDistance));
     }
 
+    [Theory]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MaxValue - 1)]
+    [InlineData(101)]
+    [InlineData(1000)]
+    public void Levenshtein_Bounded_LargeMaxDistance(int maxDistance)
+    {
+        var word1 = new string('a', 100) + "x";
+        var word2 = "y" + new string('b', 100);
+        Assert.Equal(101, StringSearchUtilities.Levenshtein(word1, word2, maxDistance));
+    }
+
+    [Fact]
+    public void Levenshtein_Bounded_LongWords()
+    {
+        var word1 = new string('a', 100) + "x";
+        var word2 = "y" + new string('b', 100);
+        Assert.Equal(100, StringSearchUtilities.Levenshtein(word1, word2, 99));
+        Assert.Equal(101, StringSearchUtilities.Levenshtein(word1, word2, 100));
+    }
+
     [Fact]
     public void LevenshteinBatch_Test()
     {
@@ -57,6 +78,9 @@ public class StringSearchUtilitiesTests
     [InlineData(0b010101u, 0b101010u, 6u)]
     [InlineData(0b1111u, 0b0u, 4u)]
     [InlineData(0b11111111u, 0b11110111u, 1u)]
+    [InlineData(uint.MaxValue, 0u, 32u)]
+    [InlineData(0x80000000u, 0u, 1u)]
+    [InlineData(0x80000001u, 0x00000001u, 1u)]
     public void Hamming_Uint32Tests(uint word1, uint word2, uint expected)
     {
         Assert.Equal(expected, StringSearchUtilities.Hamming(word1, word2));
@@ -67,6 +91,29 @@ public class StringSearchUtilitiesTests
     public void Hamming_StringTests(string word1, string word2, int expected)
     {
         Assert.Equal(expected, StringSearchUtilities.Hamming(word1, word2));
+    }
+
+    [Fact]
+    public void Hamming_Enumerable_SameLength()
+    {
+        Assert.Equal(1, StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 1, 2, 4 }));
+        Assert.Equal(0, StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 1, 2, 3 }));
+        Assert.Equal(3, StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 4, 5, 6 }));
+        Assert.Equal(1, StringSearchUtilities.Hamming(Enumerable.Range(0, 3), new[] { 0, 1, 3 }));
+    }
+
+    [Fact]
+    public void Hamming_Enumerable_Empty()
+    {
+        Assert.Equal(0, StringSearchUtilities.Hamming(Array.Empty<int>(), Array.Empty<int>()));
+    }
+
+    [Fact]
+    public void Hamming_Enumerable_DifferentLength()
+    {
+        Assert.Throws<ArgumentException>("word2", () => StringSearchUtilities.Hamming(new[] { 1, 2 }, new[] { 1, 2, 3 }));
+        Assert.Throws<ArgumentException>("word2", () => StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 1, 2 }));
+        Assert.Throws<ArgumentException>("word2", () => StringSearchUtilities.Hamming(Array.Empty<int>(), new[] { 1 }));
     }
 
     [Fact]
@@ -134,6 +181,11 @@ public class StringSearchUtilitiesTests
     [InlineData("MLN ", "MOULIN")]
     [InlineData("RS  ", "ROUSSEAU")]
     [InlineData("RS  ", "YROUSSYEAU")]
+    [InlineData("FLP ", "PHILIPPE")]
+    [InlineData("SMT ", "SCHMITT")]
+    [InlineData("NG  ", "KNIGHT")]
+    [InlineData("FR  ", "PFEIFFER")]
+    [InlineData("AZ  ", "ASAS")]
     public void Soundex2_Test(string expected, string value)
     {
         Assert.Equal(expected, StringSearchUtilities.Soundex2(value));
@@ -182,6 +234,9 @@ public class StringSearchUtilitiesTests
     [InlineData("KSK", "chzkou")]
     [InlineData("BLKK", "blaggyguest")]
     [InlineData("AXXX", "atiatiotch")]
+    [InlineData("JKSN", "Jackson")]
+    [InlineData("TKNS", "Dickens")]
+    [InlineData("KK", "kck")]
     public void Metaphone_Test(string expected, string value)
     {
         Assert.Equal(expected, StringSearchUtilities.Metaphone(value));
@@ -367,5 +422,44 @@ public class StringSearchUtilitiesTests
 
         foreach (var item in new[] { "Celene", "Celina", "Celine", "Selena", "Selene", "Selina", "Seline", "Suellen", "Xylina" })
             yield return new object[] { "Xalan", item };
+    }
+
+    [Fact]
+    public void Documentation_Levenshtein()
+    {
+        #region StringSearchUtilities_Levenshtein
+        // The number of insertions, deletions and substitutions that turn one word into the other
+        Assert.Equal(3, StringSearchUtilities.Levenshtein("kitten", "sitting"));
+
+        // With a maximum distance, the computation stops early and returns maxDistance + 1
+        Assert.Equal(2, StringSearchUtilities.Levenshtein("kitten", "sitting", maxDistance: 1));
+
+        // Compare one word with many candidates
+        var commands = new[] { "build", "test", "publish" };
+        Assert.Equal([1, 4, 5], StringSearchUtilities.LevenshteinBatch("buid", commands));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Hamming()
+    {
+        #region StringSearchUtilities_Hamming
+        // The number of positions at which two strings of the same length differ
+        Assert.Equal(3, StringSearchUtilities.Hamming("karolin", "kathrin"));
+
+        // The number of different bits of two integers
+        Assert.Equal(2u, StringSearchUtilities.Hamming(0b1010u, 0b0110u));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Soundex()
+    {
+        #region StringSearchUtilities_Soundex
+        // Names that sound alike get the same code
+        Assert.Equal("R163", StringSearchUtilities.SoundexEnglish("Robert"));
+        Assert.Equal("R163", StringSearchUtilities.SoundexEnglish("Rupert"));
+        Assert.Equal(StringSearchUtilities.Metaphone("Smith"), StringSearchUtilities.Metaphone("Smyth"));
+        #endregion
     }
 }

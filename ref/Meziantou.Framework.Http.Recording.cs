@@ -6,7 +6,10 @@ namespace Meziantou.Framework.Http.Recording
 {
     public sealed class DefaultHttpRequestMatcher : Meziantou.Framework.Http.Recording.IHttpRequestMatcher
     {
+        public static Meziantou.Framework.Http.Recording.DefaultHttpRequestMatcher IgnoringRequestBody { get => throw null; }
         public static Meziantou.Framework.Http.Recording.DefaultHttpRequestMatcher Instance { get => throw null; }
+        public bool MatchRequestBody { get => throw null; }
+        public DefaultHttpRequestMatcher(bool matchRequestBody = true) { }
         public string ComputeFingerprint(Meziantou.Framework.Http.Recording.HttpRecordingEntry entry) => throw null;
     }
 
@@ -25,39 +28,44 @@ namespace Meziantou.Framework.Http.Recording
 
     public sealed class HttpRecordingEntry
     {
+        [System.Text.Json.Serialization.JsonPropertyName("httpVersion")]
+        public string? HttpVersion { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("method")]
         public required string Method { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName("requestUri")]
-        public required string RequestUri { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName("requestHeaders")]
-        public System.Collections.Generic.Dictionary<string, string[]>? RequestHeaders { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName("requestBody")]
-        public byte[]? RequestBody { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
-        public required int StatusCode { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName("responseHeaders")]
-        public System.Collections.Generic.Dictionary<string, string[]>? ResponseHeaders { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName("responseBody")]
-        public byte[]? ResponseBody { get => throw null; set { } }
+        [System.Text.Json.Serialization.JsonPropertyName("reasonPhrase")]
+        public string? ReasonPhrase { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("recordedAt")]
         public System.DateTimeOffset RecordedAt { get => throw null; set { } }
+        [System.Text.Json.Serialization.JsonPropertyName("requestBody")]
+        public byte[]? RequestBody { get => throw null; set { } }
+        [System.Text.Json.Serialization.JsonPropertyName("requestHeaders")]
+        public System.Collections.Generic.Dictionary<string, string[]>? RequestHeaders { get => throw null; set { } }
+        [System.Text.Json.Serialization.JsonPropertyName("requestUri")]
+        public required string RequestUri { get => throw null; set { } }
+        [System.Text.Json.Serialization.JsonPropertyName("responseBody")]
+        public byte[]? ResponseBody { get => throw null; set { } }
+        [System.Text.Json.Serialization.JsonPropertyName("responseHeaders")]
+        public System.Collections.Generic.Dictionary<string, string[]>? ResponseHeaders { get => throw null; set { } }
+        [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
+        public required int StatusCode { get => throw null; set { } }
     }
 
-    public sealed class HttpRecordingHandler : System.Net.Http.DelegatingHandler
+    public sealed class HttpRecordingHandler : System.Net.Http.DelegatingHandler, System.IAsyncDisposable
     {
         public HttpRecordingHandler(Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
         public HttpRecordingHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
-        public System.Threading.Tasks.Task InitializeAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
         protected override void Dispose(bool disposing) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public System.Threading.Tasks.Task InitializeAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
     public enum HttpRecordingMissBehavior
     {
         Throw = 0,
         ReturnDefault = 1,
-        Passthrough = 2
+        Passthrough = 2,
     }
 
     public sealed class HttpRecordingMissException : System.InvalidOperationException
@@ -71,15 +79,16 @@ namespace Meziantou.Framework.Http.Recording
     {
         Record = 0,
         Replay = 1,
-        Auto = 2
+        Auto = 2,
     }
 
     public sealed class HttpRecordingOptions
     {
+        public bool AutoSave { get => throw null; set { } }
+        public Meziantou.Framework.Http.Recording.HttpRecordingMissBehavior? MissBehavior { get => throw null; set { } }
         public Meziantou.Framework.Http.Recording.HttpRecordingMode Mode { get => throw null; set { } }
-        public Meziantou.Framework.Http.Recording.HttpRecordingMissBehavior MissBehavior { get => throw null; set { } }
         public Meziantou.Framework.Http.Recording.IHttpRequestMatcher? RequestMatcher { get => throw null; set { } }
-        public Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer? Sanitizer { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer> Sanitizers { get => throw null; }
     }
 
     public interface IHttpRecordingSanitizer
@@ -103,5 +112,11 @@ namespace Meziantou.Framework.Http.Recording
         public JsonHttpRecordingStore(string filePath) { }
         public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry>> LoadAsync(System.Threading.CancellationToken cancellationToken) => throw null;
         public System.Threading.Tasks.ValueTask SaveAsync(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry> entries, System.Threading.CancellationToken cancellationToken) => throw null;
+    }
+
+    public sealed class UriQueryParameterSanitizer : Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer
+    {
+        public UriQueryParameterSanitizer(params string[] parameterNames) { }
+        public void Sanitize(Meziantou.Framework.Http.Recording.HttpRecordingEntry entry) { }
     }
 }

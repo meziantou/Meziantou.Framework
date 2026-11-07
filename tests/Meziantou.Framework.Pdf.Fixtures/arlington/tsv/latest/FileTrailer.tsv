@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Size	integer	1.0		TRUE	fn:MustBeDirect()	FALSE		[fn:Eval(@Size>0)]			Table 15 and Table 19
+Prev	integer	1.0		FALSE	fn:MustBeDirect()	FALSE		[fn:Eval((@Prev>=0) && (@Prev<=fn:FileSize()))]			
+Root	dictionary	1.0		TRUE	TRUE	FALSE				[Catalog]	
+Encrypt	dictionary	1.1		FALSE	FALSE	FALSE				[EncryptionStandard,EncryptionPublicKey]	
+Info	dictionary	1.0		fn:IsRequired(fn:SinceVersion(1.4,fn:IsPresent(trailer::Catalog::PieceInfo)))	fn:MustBeIndirect(fn:BeforeVersion(2.0))	FALSE			[fn:Eval(fn:SinceVersion(1.4,fn:IsPresent(trailer::Catalog::PieceInfo,fn:IsPresent(trailer::Info::ModDate))))]	[DocInfo]	https://github.com/pdf-association/pdf-issues/issues/106
+ID	array	1.1		fn:IsRequired(fn:SinceVersion(2.0) || fn:IsPresent(Encrypt))	fn:MustBeDirect(fn:IsPresent(Encrypt))	FALSE				[TrailerIDArray]	
+XRefStm	integer	1.5		FALSE	FALSE	FALSE		[fn:Eval((@XRefStm>=0) && (@XRefStm<=fn:FileSize()))]			
+AuthCode	dictionary	fn:Extension(ISO_TS_32004,2.0)		FALSE	fn:MustBeDirect()	FALSE			[fn:Eval(Encrypt::@V>=5)]	[AuthCode]	ISO/TS 32004 integrity protection
+AdditionalStreams	array	fn:Extension(OpenOffice)		FALSE	fn:MustBeDirect()	FALSE			[fn:Eval((fn:ArrayLength(AdditionalStreams) mod 2)==0)]	[OOAdditionalStmsArray]	OpenOffice/LibreOffice extension - array of MIME types and streams
+DocChecksum	name	fn:Extension(OpenOffice)		FALSE	fn:MustBeDirect()	FALSE					OpenOffice/LibreOffice extension - hex MD5 as a name object

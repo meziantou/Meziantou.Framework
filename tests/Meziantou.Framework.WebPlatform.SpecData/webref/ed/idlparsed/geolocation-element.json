@@ -1,0 +1,396 @@
+{
+  "spec": {
+    "title": "The HTML Geolocation Element",
+    "url": "https://wicg.github.io/PEPC/geolocation-element.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "HTMLGeolocationElement"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "HTMLGeolocationElement": {
+        "fragment": "[Exposed=Window]\ninterface HTMLGeolocationElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  readonly attribute GeolocationPosition? position;\n  readonly attribute GeolocationPositionError? error;\n  [CEReactions, Reflect] attribute boolean autolocate;\n  [CEReactions, Reflect] attribute boolean watch;\n\n  attribute EventHandler onlocation;\n};",
+        "type": "interface",
+        "name": "HTMLGeolocationElement",
+        "inheritance": "HTMLElement",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "HTMLConstructor",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-htmlgeolocationelement-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "position",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "GeolocationPosition"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-htmlgeolocationelement-position"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "GeolocationPositionError"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-htmlgeolocationelement-error"
+          },
+          {
+            "type": "attribute",
+            "name": "autolocate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-htmlgeolocationelement-autolocate"
+          },
+          {
+            "type": "attribute",
+            "name": "watch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-htmlgeolocationelement-watch"
+          },
+          {
+            "type": "attribute",
+            "name": "onlocation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-htmlgeolocationelement-onlocation"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/PEPC/geolocation-element.html#htmlgeolocationelement"
+      },
+      "ActivationBlockersMixin": {
+        "fragment": "interface mixin ActivationBlockersMixin {\n  readonly attribute boolean isValid;\n  readonly attribute ActivationBlockersMixinBlockerReason invalidReason;\n  attribute EventHandler onvalidationstatuschange;\n};",
+        "type": "interface mixin",
+        "name": "ActivationBlockersMixin",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "isValid",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixin-isvalid"
+          },
+          {
+            "type": "attribute",
+            "name": "invalidReason",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ActivationBlockersMixinBlockerReason"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixin-invalidreason"
+          },
+          {
+            "type": "attribute",
+            "name": "onvalidationstatuschange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixin-onvalidationstatuschange"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/PEPC/geolocation-element.html#activationblockersmixin"
+      },
+      "ActivationBlockersMixinBlockerReason": {
+        "fragment": "enum ActivationBlockersMixinBlockerReason {\n  \"\",   // No blocker reason.\n  \"illegal_subframe\", \"unsuccessful_registration\",\n  \"recently_attached\", \"intersection_changed\",\n  \"intersection_out_of_viewport_or_clipped\",\n  \"intersection_occluded_or_distorted\", \"style_invalid\",\n  \"type_invalid\",\n};",
+        "type": "enum",
+        "name": "ActivationBlockersMixinBlockerReason",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason"
+          },
+          {
+            "type": "enum-value",
+            "value": "illegal_subframe",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-illegal_subframe"
+          },
+          {
+            "type": "enum-value",
+            "value": "unsuccessful_registration",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-unsuccessful_registration"
+          },
+          {
+            "type": "enum-value",
+            "value": "recently_attached",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-recently_attached"
+          },
+          {
+            "type": "enum-value",
+            "value": "intersection_changed",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-intersection_changed"
+          },
+          {
+            "type": "enum-value",
+            "value": "intersection_out_of_viewport_or_clipped",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-intersection_out_of_viewport_or_clipped"
+          },
+          {
+            "type": "enum-value",
+            "value": "intersection_occluded_or_distorted",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-intersection_occluded_or_distorted"
+          },
+          {
+            "type": "enum-value",
+            "value": "style_invalid",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-style_invalid"
+          },
+          {
+            "type": "enum-value",
+            "value": "type_invalid",
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-activationblockersmixinblockerreason-type_invalid"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/PEPC/geolocation-element.html#enumdef-activationblockersmixinblockerreason"
+      },
+      "PowerfulFeatureObserver": {
+        "fragment": "interface mixin PowerfulFeatureObserver {\n  readonly attribute PermissionState initialPermissionStatus;\n  readonly attribute PermissionState permissionStatus;\n  attribute EventHandler onpromptaction;\n  attribute EventHandler onpromptdismiss;\n};",
+        "type": "interface mixin",
+        "name": "PowerfulFeatureObserver",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "initialPermissionStatus",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PermissionState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-powerfulfeatureobserver-initialpermissionstatus"
+          },
+          {
+            "type": "attribute",
+            "name": "permissionStatus",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PermissionState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-powerfulfeatureobserver-permissionstatus"
+          },
+          {
+            "type": "attribute",
+            "name": "onpromptaction",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-powerfulfeatureobserver-onpromptaction"
+          },
+          {
+            "type": "attribute",
+            "name": "onpromptdismiss",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/PEPC/geolocation-element.html#dom-powerfulfeatureobserver-onpromptdismiss"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/PEPC/geolocation-element.html#powerfulfeatureobserver"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLGeolocationElement": [
+        {
+          "fragment": "HTMLGeolocationElement includes ActivationBlockersMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "HTMLGeolocationElement",
+          "includes": "ActivationBlockersMixin"
+        },
+        {
+          "fragment": "HTMLGeolocationElement includes PowerfulFeatureObserver;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "HTMLGeolocationElement",
+          "includes": "PowerfulFeatureObserver"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "HTMLGeolocationElement"
+      ]
+    },
+    "dependencies": {
+      "HTMLGeolocationElement": [
+        "HTMLElement",
+        "GeolocationPosition",
+        "GeolocationPositionError",
+        "EventHandler",
+        "ActivationBlockersMixin",
+        "PowerfulFeatureObserver"
+      ],
+      "ActivationBlockersMixin": [
+        "ActivationBlockersMixinBlockerReason",
+        "EventHandler"
+      ],
+      "PowerfulFeatureObserver": [
+        "PermissionState",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLElement",
+      "GeolocationPosition",
+      "GeolocationPositionError",
+      "EventHandler",
+      "PermissionState"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

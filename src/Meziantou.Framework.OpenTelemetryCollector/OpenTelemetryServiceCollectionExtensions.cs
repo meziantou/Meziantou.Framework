@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Meziantou.Framework.OpenTelemetryCollector;
 
@@ -11,10 +12,17 @@ public static class OpenTelemetryServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         AddOpenTelemetryInfrastructure(services, configure);
-        services.AddSingleton<OpenTelemetryHandlerRegistration>(static serviceProvider => new OpenTelemetryHandlerRegistration(serviceProvider.GetRequiredService<TReceiver>()));
+        services.TryAddSingleton<TReceiver>();
+
+        // Keyed on TReceiver, so calling this method twice for the same handler type does not dispatch every record twice.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<OpenTelemetryHandlerRegistration, OpenTelemetryHandlerRegistration<TReceiver>>());
         return services;
     }
 
+    /// <remarks>
+    /// Unlike the overload taking a receiver type, this method always adds a registration. When the factory returns an
+    /// instance that is already registered, the duplicate is ignored when the handlers are resolved.
+    /// </remarks>
     public static IServiceCollection AddOpenTelemetryReceiver(this IServiceCollection services, Func<IServiceProvider, OpenTelemetryHandler> implementationFactory, Action<OpenTelemetryReceiverOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -36,7 +44,9 @@ public static class OpenTelemetryServiceCollectionExtensions
             services.Configure(configure);
         }
 
+        services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<OpenTelemetryTraceTailSamplerHandler>();
         services.TryAddSingleton<OpenTelemetryRequestPipeline>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, OpenTelemetryTailSamplerBackgroundService>());
     }
 }

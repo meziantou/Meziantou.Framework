@@ -41,15 +41,200 @@ insert_final_newline = true
 # endreference
 
 [*.cs]
+# CA1008: Enums should have zero value
 dotnet_diagnostic.CA1008.severity = none
+# CA1034: Nested types should not be visible
 dotnet_diagnostic.CA1034.severity = none
+# CA1308: Normalize strings to uppercase
 dotnet_diagnostic.CA1308.severity = none
+# CA1508: Avoid dead conditional code
 dotnet_diagnostic.CA1508.severity = none
+# CA2237: Mark ISerializable types with serializable
 dotnet_diagnostic.CA2237.severity = none
+# RS2008: Enable analyzer release tracking
 dotnet_diagnostic.RS2008.severity = none
+# IDE0130: Namespace does not match folder structure
 dotnet_diagnostic.IDE0130.severity = none
+# SYSLIB1054: Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 dotnet_diagnostic.SYSLIB1054.severity = warning
+# MA0186: Equals method should use [NotNullWhen(true)] on the parameter
 dotnet_diagnostic.MA0186.severity = warning
 
 [samples/**/*.cs]
+# CA1852: Seal internal types
 dotnet_diagnostic.CA1852.severity = none
+
+[src/Meziantou.AspNetCore.Components/**.{cs,razor}]
+# BL0016: Unguarded JS interop call
+dotnet_diagnostic.BL0016.severity = none
+
+[src/Meziantou.Framework.Html.Tool/**.cs]
+# MA0004: Use Task.ConfigureAwait
+dotnet_diagnostic.MA0004.severity = none
+# MA0032: Use an overload with a CancellationToken argument, even when no token is available in scope
+dotnet_diagnostic.MA0032.severity = none
+
+[src/Meziantou.Framework.Language/**.cs]
+# MA0182: Avoid unused internal types
+# The green layer is shared infrastructure: most of it has no caller inside this assembly and is consumed by the
+# Meziantou.Framework.Language.* parsers through InternalsVisibleTo, which the analyzer cannot see.
+dotnet_diagnostic.MA0182.severity = none
+
+[src/Meziantou.Framework.Markdown/**.cs]
+# The public API keeps the shape of Markdig (https://github.com/xoofx/markdig), the library this project is derived from.
+# The following rules would require breaking changes to that API, so they are disabled for this project only.
+
+# CA1000: Do not declare static members on generic types
+dotnet_diagnostic.CA1000.severity = none
+# CA1002: Do not expose generic lists (List<T> is part of the syntax tree API)
+dotnet_diagnostic.CA1002.severity = none
+# CA1003: Use generic event handler instances (pipeline events use dedicated delegates)
+dotnet_diagnostic.CA1003.severity = none
+# CA1010: Generic interface should also be implemented
+dotnet_diagnostic.CA1010.severity = none
+# CA1051: Do not declare visible instance fields (StringSlice, StringLine and syntax nodes expose fields for performance)
+dotnet_diagnostic.CA1051.severity = none
+# CA1054: URI-like parameters should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1054.severity = none
+# CA1055: URI-like return values should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1055.severity = none
+# CA1056: URI-like properties should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1056.severity = none
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = none
+# MA0046: Use EventHandler<T> to declare events
+dotnet_diagnostic.MA0046.severity = none
+
+[src/Meziantou.Framework.NuGetPackageValidation.Tool/**.cs]
+# MA0004: Use Task.ConfigureAwait
+dotnet_diagnostic.MA0004.severity = none
+# MA0032: Use an overload with a CancellationToken argument, even when no token is available in scope
+dotnet_diagnostic.MA0032.severity = none
+
+[tests/**.cs]
+# CA1054: URI-like parameters should not be strings
+dotnet_diagnostic.CA1054.severity = none
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = none
+# CA1416: Validate platform compatibility
+dotnet_diagnostic.CA1416.severity = none
+# CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1707.severity = none
+# CA1812: Avoid uninstantiated internal classes
+dotnet_diagnostic.CA1812.severity = none
+# CA1851: Possible multiple enumerations of 'IEnumerable' collection
+dotnet_diagnostic.CA1851.severity = none
+# CA1861: Avoid constant arrays as arguments
+dotnet_diagnostic.CA1861.severity = none
+# CA2201: Do not raise reserved exception types
+dotnet_diagnostic.CA2201.severity = none
+# CA2234: Pass system uri objects instead of strings
+dotnet_diagnostic.CA2234.severity = none
+
+# MA0003: Add parameter name to improve readability
+dotnet_diagnostic.MA0003.severity = none
+# MA0004: Use Task.ConfigureAwait
+dotnet_diagnostic.MA0004.severity = none
+# MA0032: Use an overload with a CancellationToken argument, even when no token is available in scope
+dotnet_diagnostic.MA0032.severity = none
+# MA0036: Make class static
+dotnet_diagnostic.MA0036.severity = none
+# MA0038: Make method static (deprecated, use CA1822 instead)
+dotnet_diagnostic.MA0038.severity = none
+# MA0080: Use a cancellation token using .WithCancellation()
+dotnet_diagnostic.MA0080.severity = none
+
+# xUnit1051: Calls to methods which accept CancellationToken should use TestContext.Current.CancellationToken
+dotnet_diagnostic.xUnit1051.severity = none
+
+# VSTHRD200: Use "Async" suffix for async methods
+dotnet_diagnostic.VSTHRD200.severity = none
+
+[tests/Meziantou.Framework.Assertions.Tests/**.cs]
+# This project tests the assertion methods themselves, so it must call assertions whose
+# result is known in advance, such as Assert.True(true) or Assert.Same(value, value).
+# MFAS0049: Assertion always produces the same result
+dotnet_diagnostic.MFAS0049.severity = none
+# MFAS0050: Use Assert.Fail instead of an assertion that always fails
+dotnet_diagnostic.MFAS0050.severity = none
+
+# The predicate overloads of Assert.Contains and Assert.DoesNotContain are validated here,
+# so the predicate cannot be replaced by the expected value.
+# MFAS0054: Use Assert.Contains with the expected value instead of an equality predicate
+dotnet_diagnostic.MFAS0054.severity = none
+# MFAS0055: Use Assert.DoesNotContain with the expected value instead of an equality predicate
+dotnet_diagnostic.MFAS0055.severity = none
+
+[tests/Meziantou.Framework.Imaging.Tests.Shared/Helpers/**.cs]
+# MA0182: Avoid unused internal types
+# These helpers are compiled into every Meziantou.Framework.Imaging.*Tests project, and each project uses only some of them.
+dotnet_diagnostic.MA0182.severity = none
+
+[{src,tests,tools,fuzz,benchmarks,samples}/Meziantou.Framework.WebPlatform*/**.cs]
+# Meziantou.Framework.WebPlatform implements the web platform specifications: its code mirrors their algorithms and WebIDL.
+# CA1502: Avoid excessive complexity. The spec algorithms mirror the spec step numbering: long methods and switch statements.
+dotnet_diagnostic.CA1502.severity = none
+# CA1707, CA1716: The names mirror WebIDL (e.g. HTMLElement, DOMTokenList).
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1716.severity = none
+# CA1822: Mark members as static. The WebIDL members are instance members even when the implementation does not use instance data.
+dotnet_diagnostic.CA1822.severity = suggestion
+# MA0048: File name must match type name. The files are organized by specification area: the interface mixins are partial
+# classes spread across files and the generated files contain many types.
+dotnet_diagnostic.MA0048.severity = none
+# CA1054, CA1055, CA1056: URLs are strings parsed by the WHATWG URL parser: System.Uri does not follow the URL specification.
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1055.severity = none
+dotnet_diagnostic.CA1056.severity = none
+# CA1065: The WebIDL attribute getters and stringifiers throw the exceptions required by the specifications (e.g. XPathResult).
+dotnet_diagnostic.CA1065.severity = none
+# CA1508: The flow analysis reports false positives on the tree traversals (e.g. properties of other nodes).
+dotnet_diagnostic.CA1508.severity = none
+
+[{src,tests,tools,benchmarks}/Meziantou.Framework.JavaScriptEngine*/**.cs]
+# Meziantou.Framework.JavaScriptEngine implements ECMAScript: its code mirrors the algorithms of the specification.
+# CA1502: Avoid excessive complexity. The spec algorithms and the interpreter loop are long methods and switch statements.
+dotnet_diagnostic.CA1502.severity = none
+# MA0051: Method is too long. Same reason: the interpreter loop and the spec algorithms follow the specification steps.
+dotnet_diagnostic.MA0051.severity = none
+# MA0048: File name must match type name. The files are organized by specification area (e.g. a built-in object and
+# its prototype, the nodes of a grammar production).
+dotnet_diagnostic.MA0048.severity = none
+# CA1707, CA1716: The names mirror the specification (e.g. %Object.prototype%, Function, Symbol.iterator).
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1716.severity = none
+# CA1822: Mark members as static. The internal methods of the objects are instance members even when an implementation does not use instance data.
+dotnet_diagnostic.CA1822.severity = suggestion
+# CA1508: The flow analysis reports false positives on the tree traversals and the interpreter state.
+dotnet_diagnostic.CA1508.severity = none
+# MA0099: The flags of the hot paths (property attributes, object flags) are tested with '(flags & X) != 0'.
+dotnet_diagnostic.MA0099.severity = none
+# CA1720: The names mirror the types of the specification (e.g. JsValueKind.String, JsValueKind.Object).
+dotnet_diagnostic.CA1720.severity = none
+# IDE0370: The intrinsics are initialized by the partial methods of their area (not seen by the nullable analysis): the
+# null-forgiving initializers are required on one target framework and reported as unnecessary on the other.
+dotnet_diagnostic.IDE0370.severity = none
+# CA1054, CA1056: The URL of a script is any string given by the host (a URL, a file name...), as in the stack traces of the browsers.
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1056.severity = none
+
+[tools/Meziantou.Framework.WebPlatform*/**.cs]
+# MA0009: The tools only process the pinned specification data.
+dotnet_diagnostic.MA0009.severity = none
+
+[tests/Meziantou.Framework.WebPlatform*/**.cs]
+# MA0002, MA0009: The assertions compare sequences of strings with the default comparer, and the regular expressions only process test data.
+dotnet_diagnostic.MA0002.severity = none
+dotnet_diagnostic.MA0009.severity = none
+# CA1034: The data of the theories are nested records.
+dotnet_diagnostic.CA1034.severity = none
+
+[{src,tests,tools}/Meziantou.Framework.WebPlatform*/**.g.cs]
+generated_code = true
+
+[{src,tests,tools,fuzz,benchmarks,samples}/Meziantou.Framework.Pdf*/**.cs]
+# Meziantou.Framework.Pdf implements ISO 32000-2.
+# CA1720: The names mirror the object types of the specification (e.g. PdfObjectKind.Integer, PdfObjectKind.String).
+dotnet_diagnostic.CA1720.severity = none
+# CA5351: MD5 is required by the specification: the file identifiers (14.4) and the keys of the standard security handler (7.6.4).
+dotnet_diagnostic.CA5351.severity = none

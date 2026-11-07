@@ -8,6 +8,7 @@ internal static class DockerApiModels
     {
         public string? ApiVersion { get; set; }
         public string? MinAPIVersion { get; set; }
+        public string? Os { get; set; }
     }
 
     internal sealed class ErrorResponse
@@ -26,8 +27,15 @@ internal static class DockerApiModels
         public Dictionary<string, string>? Labels { get; set; }
     }
 
+    internal sealed class VolumeInspectResponse
+    {
+        public string? Name { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
     internal sealed class PullProgress
     {
+        public string? Stream { get; set; }
         public string? Error { get; set; }
         public ErrorDetail? ErrorDetail { get; set; }
     }
@@ -44,7 +52,10 @@ internal static class DockerApiModels
 
     internal sealed class ExecInspectResponse
     {
-        public int ExitCode { get; set; }
+        public bool Running { get; set; }
+
+        /// <summary>The exit code, which the daemon only records once it has processed the exit of the process.</summary>
+        public int? ExitCode { get; set; }
     }
 
     internal sealed class ExecCreateRequest
@@ -53,6 +64,7 @@ internal static class DockerApiModels
         public bool AttachStderr { get; set; }
         public bool AttachStdin { get; set; }
         public bool Tty { get; set; }
+        public bool Privileged { get; set; }
         public string[]? Cmd { get; set; }
         public string[]? Env { get; set; }
         public string? User { get; set; }
@@ -78,6 +90,68 @@ internal static class DockerApiModels
         public Dictionary<string, EmptyObject>? ExposedPorts { get; set; }
         public HostConfig? HostConfig { get; set; }
         public NetworkingConfig? NetworkingConfig { get; set; }
+        public Healthcheck? Healthcheck { get; set; }
+        public int? StopTimeout { get; set; }
+        public string? StopSignal { get; set; }
+    }
+
+    internal sealed class Healthcheck
+    {
+        public string[]? Test { get; set; }
+
+        /// <summary>The durations are in nanoseconds.</summary>
+        public long? Interval { get; set; }
+        public long? Timeout { get; set; }
+        public long? StartPeriod { get; set; }
+        public int? Retries { get; set; }
+    }
+
+    internal sealed class Ulimit
+    {
+        public string? Name { get; set; }
+        public long Soft { get; set; }
+        public long Hard { get; set; }
+    }
+
+    internal sealed class NetworkCreateRequest
+    {
+        public string? Name { get; set; }
+        public string? Driver { get; set; }
+        public bool Internal { get; set; }
+        public bool CheckDuplicate { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
+    internal sealed class NetworkConnectRequest
+    {
+        public string? Container { get; set; }
+        public EndpointSettings? EndpointConfig { get; set; }
+    }
+
+    internal sealed class NetworkSummary
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
+    internal sealed class VolumeListResponse
+    {
+        public List<VolumeSummary>? Volumes { get; set; }
+    }
+
+    internal sealed class VolumeSummary
+    {
+        public string? Name { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
+    internal sealed class VolumeCreateRequest
+    {
+        public string? Name { get; set; }
+        public string? Driver { get; set; }
+        public Dictionary<string, string>? DriverOpts { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
     }
 
     internal sealed class EmptyObject
@@ -94,6 +168,12 @@ internal static class DockerApiModels
         public Dictionary<string, List<DockerPortBindingDto>?>? PortBindings { get; set; }
         public List<Mount>? Mounts { get; set; }
         public Dictionary<string, string>? Tmpfs { get; set; }
+        public bool Privileged { get; set; }
+        public string[]? CapAdd { get; set; }
+        public string[]? CapDrop { get; set; }
+        public string[]? ExtraHosts { get; set; }
+        public long? ShmSize { get; set; }
+        public Ulimit[]? Ulimits { get; set; }
     }
 
     internal sealed class Mount
@@ -144,5 +224,22 @@ internal static class DockerApiModels
         public string? Username { get; set; }
         public string? Password { get; set; }
         public string? IdentityToken { get; set; }
+    }
+
+    /// <summary>The metadata the daemon reports for a container path in the <c>X-Docker-Container-Path-Stat</c> header.</summary>
+    internal sealed class ContainerPathStat
+    {
+        public string? Name { get; set; }
+        public long Size { get; set; }
+        public uint Mode { get; set; }
+        public string? LinkTarget { get; set; }
+
+        /// <summary>The mode is a Go <c>os.FileMode</c>, whose highest bit marks a directory.</summary>
+        [JsonIgnore]
+        public bool IsDirectory => (Mode & 0x8000_0000) != 0;
+
+        /// <summary>The <c>os.ModeSymlink</c> bit of the Go <c>os.FileMode</c>.</summary>
+        [JsonIgnore]
+        public bool IsSymbolicLink => (Mode & 0x0800_0000) != 0;
     }
 }

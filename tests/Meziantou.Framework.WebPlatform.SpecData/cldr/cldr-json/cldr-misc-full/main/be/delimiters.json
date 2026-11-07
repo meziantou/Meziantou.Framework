@@ -1,0 +1,15 @@
+{
+  "main": {
+    "be": {
+      "identity": {
+        "language": "be"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bez": {
+      "identity": {
+        "language": "bez"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

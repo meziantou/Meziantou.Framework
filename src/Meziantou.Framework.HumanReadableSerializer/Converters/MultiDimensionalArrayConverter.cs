@@ -4,7 +4,8 @@ namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
 {
-    public override bool CanConvert(Type type) => type.IsArray && type.GetArrayRank() > 1;
+    // Also handles the single-dimension arrays with a non-zero lower bound (e.g. int[*]), whose indices are not implied by the position
+    public override bool CanConvert(Type type) => type.IsArray && !type.IsSZArray;
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
     {
@@ -35,7 +36,7 @@ internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
                 var rankIndex = index2 % length;
                 index2 /= length;
 
-                indexStr = rankIndex.ToString(CultureInfo.InvariantCulture) + indexStr;
+                indexStr = (rankIndex + array.GetLowerBound(rank)).ToString(CultureInfo.InvariantCulture) + indexStr;
             }
 
             indexStr = "[" + indexStr + "]: ";

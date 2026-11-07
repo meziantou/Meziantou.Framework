@@ -29,17 +29,51 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     /// <summary>Loads data.</summary>
     public static YamlStream Load(TextReader stream)
     {
-        return Load(new EventReader(Parser.CreateParser(stream)));
+        return Load(stream, options: null);
+    }
+
+    /// <summary>Loads data, honoring the hardening options in <paramref name="options"/>.</summary>
+    /// <param name="stream">The reader over the YAML payload.</param>
+    /// <param name="options">
+    /// The options used to bound nesting depth and alias expansion. If <see langword="null"/>,
+    /// <see cref="YamlSerializerOptions.Default"/> is used.
+    /// </param>
+    /// <remarks>
+    /// Use this overload for untrusted input: it applies <see cref="YamlSerializerOptions.MaxDepth"/>,
+    /// <see cref="YamlSerializerOptions.AllowAnchors"/>, <see cref="YamlSerializerOptions.AllowAliases"/> and
+    /// <see cref="YamlSerializerOptions.MaxAliasExpansionNodeCount"/>.
+    /// </remarks>
+    public static YamlStream Load(TextReader stream, YamlSerializerOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        var effectiveOptions = options ?? YamlSerializerOptions.Default;
+        var parser = Parser.CreateParser(stream, effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
+        return Load(new EventReader(parser), effectiveOptions);
     }
 
     /// <summary>Loads data.</summary>
     public static YamlStream Load(EventReader eventReader)
     {
+        return Load(eventReader, options: null);
+    }
+
+    /// <summary>Loads data, honoring the anchor, alias and alias-expansion limits of <paramref name="options"/>.</summary>
+    /// <param name="eventReader">The event reader.</param>
+    /// <param name="options">
+    /// The options used to bound alias expansion. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.
+    /// </param>
+    public static YamlStream Load(EventReader eventReader, YamlSerializerOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(eventReader);
+
+        // One context for the whole stream so alias expansion is bounded across every document, not per document.
+        var context = YamlDocument.CreateContext(options);
+
         var streamStart = eventReader.Expect<StreamStart>();
 
         var documents = new List<YamlDocument>();
         while (!eventReader.Accept<StreamEnd>())
-            documents.Add(YamlDocument.Load(eventReader));
+            documents.Add(YamlDocument.Load(eventReader, context));
 
         var streamEnd = eventReader.Expect<StreamEnd>();
 

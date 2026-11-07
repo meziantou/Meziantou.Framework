@@ -1,3 +1,4 @@
+using System.Collections;
 using Meziantou.Framework.Collections;
 
 namespace Meziantou.Framework.Tests.Collections;
@@ -170,5 +171,89 @@ public sealed class MultiValueDictionaryTests
     public void Constructor_NullEnumerable_Throws()
     {
         Assert.Throws<ArgumentNullException>(() => new MultiValueDictionary<string, int>(enumerable: null!, comparer: StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region MultiValueDictionary_Usage
+        var headers = new MultiValueDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        headers.Add("Accept", "text/html");
+        headers.Add("accept", "application/json");
+        headers.AddRange("Cache-Control", ["no-cache", "no-store"]);
+
+        Assert.Equal(["text/html", "application/json"], headers["ACCEPT"]);
+        Assert.True(headers.Contains("Cache-Control", "no-store"));
+
+        // Remove one value, or the key and all its values
+        Assert.True(headers.Remove("Cache-Control", "no-cache"));
+        Assert.True(headers.Remove("Accept"));
+        Assert.Equal(["Cache-Control"], headers.Keys);
+        #endregion
+    }
+
+    [Fact]
+    public void AddRange_Empty_DoesNotAddKey()
+    {
+        var dictionary = new MultiValueDictionary<string, int>(StringComparer.Ordinal);
+        dictionary.AddRange("a", []);
+
+        Assert.Empty(dictionary);
+        Assert.DoesNotContain("a", (IReadOnlyDictionary<string, IReadOnlyCollection<int>>)dictionary);
+        Assert.False(dictionary.TryGetValue("a", out _));
+    }
+
+    [Fact]
+    public void AddRange_EmptyLazyEnumerable_DoesNotAddKey()
+    {
+        var dictionary = new MultiValueDictionary<string, int>(StringComparer.Ordinal);
+        dictionary.AddRange("a", Enumerable.Range(0, 0).Select(i => i));
+
+        Assert.DoesNotContain("a", (IReadOnlyDictionary<string, IReadOnlyCollection<int>>)dictionary);
+    }
+
+    [Fact]
+    public void AddRange_Empty_ExistingKey_KeepsValues()
+    {
+        var dictionary = new MultiValueDictionary<string, int>(StringComparer.Ordinal);
+        dictionary.Add("a", 1);
+        dictionary.AddRange("a", []);
+
+        Assert.Equal([1], dictionary["a"]);
+    }
+
+    [Fact]
+    public void Constructor_EmptyCollection_DoesNotAddKey()
+    {
+        var dictionary = new MultiValueDictionary<string, int>(
+        [
+            new KeyValuePair<string, IReadOnlyCollection<int>>("a", []),
+            new KeyValuePair<string, IReadOnlyCollection<int>>("b", [1]),
+        ], StringComparer.Ordinal);
+
+        Assert.HasCount(1, dictionary);
+        Assert.DoesNotContain("a", (IReadOnlyDictionary<string, IReadOnlyCollection<int>>)dictionary);
+        Assert.Equal(["b"], dictionary.Keys);
+    }
+
+    [Fact]
+    public void Enumerator_IsStruct()
+    {
+        var dictionary = new MultiValueDictionary<string, int>(StringComparer.Ordinal);
+        dictionary.Add("a", 1);
+        dictionary.Add("a", 2);
+
+        MultiValueDictionary<string, int>.Enumerator enumerator = dictionary.GetEnumerator();
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("a", enumerator.Current.Key);
+        Assert.Equal([1, 2], enumerator.Current.Value);
+        Assert.False(enumerator.MoveNext());
+
+        IEnumerator boxed = dictionary.GetEnumerator();
+        Assert.True(boxed.MoveNext());
+        Assert.False(boxed.MoveNext());
+        boxed.Reset();
+        Assert.True(boxed.MoveNext());
+        Assert.Equal("a", ((KeyValuePair<string, IReadOnlyCollection<int>>)boxed.Current!).Key);
     }
 }

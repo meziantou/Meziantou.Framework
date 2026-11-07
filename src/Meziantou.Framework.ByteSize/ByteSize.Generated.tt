@@ -34,32 +34,32 @@ partial struct ByteSize
     /// <summary>Creates a <see cref="ByteSize"/> instance from a <#= unit.Description #> value.</summary>
     /// <param name="value">The number of <#= unit.Description #>s (<#= unit.NumericValue #>).</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified number of <#= unit.Description #>s.</returns>
-    public static ByteSize From<#= unit.Name #>s(byte value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit.Name #>);
+    public static ByteSize From<#= unit.Name #>s(byte value) => new ByteSize(checked((long)value * (long)ByteSizeUnit.<#= unit.Name #>));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a <#= unit.Description #> value.</summary>
     /// <param name="value">The number of <#= unit.Description #>s (<#= unit.NumericValue #>).</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified number of <#= unit.Description #>s.</returns>
-    public static ByteSize From<#= unit.Name #>s(short value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit.Name #>);
+    public static ByteSize From<#= unit.Name #>s(short value) => new ByteSize(checked((long)value * (long)ByteSizeUnit.<#= unit.Name #>));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a <#= unit.Description #> value.</summary>
     /// <param name="value">The number of <#= unit.Description #>s (<#= unit.NumericValue #>).</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified number of <#= unit.Description #>s.</returns>
-    public static ByteSize From<#= unit.Name #>s(int value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit.Name #>);
+    public static ByteSize From<#= unit.Name #>s(int value) => new ByteSize(checked((long)value * (long)ByteSizeUnit.<#= unit.Name #>));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a <#= unit.Description #> value.</summary>
     /// <param name="value">The number of <#= unit.Description #>s (<#= unit.NumericValue #>).</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified number of <#= unit.Description #>s.</returns>
-    public static ByteSize From<#= unit.Name #>s(long value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit.Name #>);
+    public static ByteSize From<#= unit.Name #>s(long value) => new ByteSize(checked((long)value * (long)ByteSizeUnit.<#= unit.Name #>));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a <#= unit.Description #> value.</summary>
     /// <param name="value">The number of <#= unit.Description #>s (<#= unit.NumericValue #>).</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified number of <#= unit.Description #>s.</returns>
-    public static ByteSize From<#= unit.Name #>s(float value) => new ByteSize((long)(value * (long)ByteSizeUnit.<#= unit.Name #>));
+    public static ByteSize From<#= unit.Name #>s(float value) => new ByteSize(checked((long)(value * (long)ByteSizeUnit.<#= unit.Name #>)));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a <#= unit.Description #> value.</summary>
     /// <param name="value">The number of <#= unit.Description #>s (<#= unit.NumericValue #>).</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified number of <#= unit.Description #>s.</returns>
-    public static ByteSize From<#= unit.Name #>s(double value) => new ByteSize((long)(value * (long)ByteSizeUnit.<#= unit.Name #>));
+    public static ByteSize From<#= unit.Name #>s(double value) => new ByteSize(checked((long)(value * (long)ByteSizeUnit.<#= unit.Name #>)));
 
 <# } #>
 }

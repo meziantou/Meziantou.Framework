@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Tests;
 
 public class DefaultConverterTests_Int32To
 {
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void TryConvert_Int32ToCultureInfo_LcidAsInt()
     {
         var converter = new DefaultConverter();

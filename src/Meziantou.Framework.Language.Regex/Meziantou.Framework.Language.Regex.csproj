@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Language.Regex</RootNamespace>
+    <Description>Immutable, round-trip regular-expression pattern concrete syntax tree for .NET, JavaScript, PCRE/Perl, and POSIX ERE/BRE, with diagnostics, trivia, source locations, and editing helpers.</Description>
+    <PackageTags>regex, syntax-tree, cst, parser, pcre</PackageTags>
+    <Version>4.0.6</Version>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Regex.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+  </ItemGroup>
+
+</Project>

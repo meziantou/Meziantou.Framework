@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-AR": {
+      "identity": {
+        "language": "es",
+        "territory": "AR"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

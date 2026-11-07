@@ -1,0 +1,16 @@
+{
+  "main": {
+    "suz-Sunu": {
+      "identity": {
+        "language": "suz",
+        "script": "Sunu"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

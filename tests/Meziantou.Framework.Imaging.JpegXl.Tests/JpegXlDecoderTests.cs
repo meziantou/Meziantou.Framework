@@ -1,0 +1,2087 @@
+using System.Buffers.Binary;
+using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
+
+namespace Meziantou.Framework.Imaging.Tests;
+
+/// <summary>
+/// JPEG XL identification and container rules, on files written by the reference tools (<see cref="JpegXlTestFiles"/>) and
+/// on containers assembled around their codestreams: the image header, the frames a viewer shows, the metadata boxes, the
+/// codestream split in parts, truncation and limits.
+/// </summary>
+public sealed class JpegXlDecoderTests
+{
+    public static TheoryData<string, int, int, PixelFormat, ImageColorModel, int, bool> Headers => new()
+    {
+        { nameof(JpegXlTestFiles.Rgb), 5, 3, PixelFormat.Rgb24, ImageColorModel.Rgb, 8, false },
+        { nameof(JpegXlTestFiles.RgbaContainer), 5, 3, PixelFormat.Rgba32, ImageColorModel.Rgba, 8, true },
+        { nameof(JpegXlTestFiles.Gray16Container), 5, 3, PixelFormat.Gray16, ImageColorModel.Grayscale, 16, false },
+        { nameof(JpegXlTestFiles.SplitCodestreamWithXmp), 5, 3, PixelFormat.Rgb24, ImageColorModel.Rgb, 8, false },
+        { nameof(JpegXlTestFiles.SplitCodestreamWithCompressedXmp), 5, 3, PixelFormat.Rgba32, ImageColorModel.Rgba, 8, true },
+        { nameof(JpegXlTestFiles.Oriented12Bit), 3, 2, PixelFormat.Rgba64, ImageColorModel.Rgba, 12, true },
+    };
+
+    public static TheoryData<string> Files =>
+    [
+        nameof(JpegXlTestFiles.Rgb),
+        nameof(JpegXlTestFiles.RgbaContainer),
+        nameof(JpegXlTestFiles.Gray16Container),
+        nameof(JpegXlTestFiles.SplitCodestreamWithXmp),
+        nameof(JpegXlTestFiles.SplitCodestreamWithCompressedXmp),
+        nameof(JpegXlTestFiles.Oriented12Bit),
+        nameof(JpegXlTestFiles.LayeredAnimation),
+    ];
+
+    [Theory]
+    [MemberData(nameof(Headers))]
+    public void IdentifyReadsTheImageHeader(string file, int width, int height, PixelFormat pixelFormat, ImageColorModel colorModel, int bitsPerComponent, bool hasAlpha)
+    {
+        var data = GetFile(file);
+        Assert.Equal(ImageFormat.JpegXl, Image.DetectFormat(data));
+        foreach (var mode in new[] { ImageIdentifyMode.Header, ImageIdentifyMode.FullScan })
+        {
+            var info = Image.Identify(data, new ImageIdentifyOptions { Mode = mode });
+            Assert.Equal(ImageFormat.JpegXl, info.Format);
+            Assert.Equal(ImageFormat.JpegXl, info.Metadata.SourceFormat);
+            Assert.Equal((width, height), (info.Width, info.Height));
+            Assert.Equal(pixelFormat, info.PixelFormat);
+            Assert.Equal(colorModel, info.ColorModel);
+            Assert.Equal(bitsPerComponent, info.BitsPerComponent);
+            Assert.Equal(hasAlpha, info.MayHaveTransparency);
+            Assert.Equal(1, info.FrameCount);
+            Assert.False(info.IsAnimated);
+            Assert.False(info.HasPosterFrame);
+            Assert.Null(info.Animation);
+            Assert.Null(info.Metadata.IccProfile);
+            Assert.Null(info.Metadata.Cicp);
+            Assert.Equal(mode, info.IdentifyMode);
+        }
+    }
+
+    [Fact]
+    public void LayersAreNotCountedAsFrames()
+    {
+        // Three coded frames, the second of which has no duration: a viewer shows two images
+        var data = JpegXlTestFiles.LayeredAnimation;
+        var header = Image.Identify(data);
+        Assert.True(header.IsAnimated);
+        Assert.Null(header.FrameCount);
+        Assert.NotNull(header.Animation);
+        Assert.Null(header.Animation.TotalPlays);
+
+        var scan = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Assert.True(scan.IsAnimated);
+        Assert.Equal(2, scan.FrameCount);
+        Assert.Equal((4, 4, PixelFormat.Rgb24), (scan.Width, scan.Height, scan.PixelFormat));
+    }
+
+    [Fact]
+    public void TheOrientationIsTheOneOfTheImageHeader()
+    {
+        // The size is the stored one: the orientation is reported, never applied
+        var info = Image.Identify(JpegXlTestFiles.Oriented12Bit);
+        Assert.Equal(ExifOrientation.RightTop, info.Metadata.Orientation);
+        Assert.Equal((3, 2), (info.Width, info.Height));
+    }
+
+    [Theory]
+    [InlineData(nameof(JpegXlTestFiles.SplitCodestreamWithXmp))]
+    [InlineData(nameof(JpegXlTestFiles.SplitCodestreamWithCompressedXmp))]
+    public void MetadataBoxesBeforeTheFramesAreReadByAHeaderIdentification(string file)
+    {
+        // The first part of the codestream holds the image header only; the XMP box, compressed or not, comes before the frames
+        var data = GetFile(file);
+        foreach (var mode in new[] { ImageIdentifyMode.Header, ImageIdentifyMode.FullScan })
+        {
+            var info = Image.Identify(data, new ImageIdentifyOptions { Mode = mode });
+            Assert.NotNull(info.Metadata.XmpProfile);
+            Assert.Equal(JpegXlTestFiles.XmpPacket, info.Metadata.XmpProfile.Data.Span);
+            Assert.Null(info.Metadata.ExifProfile);
+        }
+    }
+
+    [Fact]
+    public void MetadataBoxesAfterTheCodestreamAreReadByAFullScan()
+    {
+        // 'Exif' payload: the offset of the TIFF header (2 bytes are skipped), then a little-endian TIFF header and an empty directory
+        byte[] tiff = [0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        byte[] data =
+        [
+            .. JpegXlTestFiles.ContainerStart,
+            .. JpegXlTestFiles.Box("jxlc", JpegXlTestFiles.Rgb),
+            .. JpegXlTestFiles.Box("Exif", [0, 0, 0, 2, 0xAA, 0xBB, .. tiff]),
+            .. JpegXlTestFiles.Box("xml ", JpegXlTestFiles.XmpPacket),
+            .. JpegXlTestFiles.Box("xml ", "<second/>"u8),
+            .. JpegXlTestFiles.Box("free", [1, 2, 3]),
+        ];
+
+        var header = Image.Identify(data);
+        Assert.Null(header.Metadata.ExifProfile);
+        Assert.Null(header.Metadata.XmpProfile);
+
+        var scan = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Assert.NotNull(scan.Metadata.ExifProfile);
+        Assert.Equal(tiff, scan.Metadata.ExifProfile.Data.Span);
+        Assert.NotNull(scan.Metadata.XmpProfile);
+        Assert.Equal(JpegXlTestFiles.XmpPacket, scan.Metadata.XmpProfile.Data.Span);
+
+        // The orientation comes from the image header, whatever the EXIF block says
+        Assert.Equal(ExifOrientation.TopLeft, scan.Metadata.Orientation);
+    }
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public async Task EveryInputVariantIdentifiesTheSameImage(string file)
+    {
+        var data = GetFile(file);
+        foreach (var mode in new[] { ImageIdentifyMode.Header, ImageIdentifyMode.FullScan })
+        {
+            var options = new ImageIdentifyOptions { Mode = mode };
+            var expected = Describe(Image.Identify(data, options));
+            foreach (var variant in InputVariants.All)
+            {
+                var info = await InputVariants.IdentifyAsync(variant, data, ImageFormat.JpegXl, options, XunitCancellationToken);
+                Assert.Equal(expected, Describe(info), message: $"{variant}, {mode}");
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public void ACodestreamSplitAnywhereIsTheSameImage(string file)
+    {
+        // Parts of the codestream may end anywhere: inside the image header, inside a table of contents, inside a section
+        var data = GetFile(file);
+        if (!data.AsSpan().StartsWith([(byte)0xFF, (byte)0x0A]))
+            return;
+
+        var options = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan };
+        var expected = Describe(Image.Identify(data, options));
+        for (var split = 0; split <= data.Length; split++)
+        {
+            var container = JpegXlTestFiles.WrapInParts(data, split);
+            Assert.Equal(expected, Describe(Image.Identify(container, options)), message: $"split at {split}");
+        }
+
+        var three = JpegXlTestFiles.WrapInParts(data, 1, 1, data.Length / 2);
+        Assert.Equal(expected, Describe(Image.Identify(three, options)));
+    }
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public void TruncationIsNeverACleanEnd(string file)
+    {
+        // A full scan needs every byte of these files: each proper prefix that is still recognized is invalid
+        var data = GetFile(file);
+        var options = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan };
+        for (var length = 12; length < data.Length; length++)
+        {
+            var prefix = data.AsSpan(0, length).ToArray();
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(prefix, options));
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(new MemoryStream(prefix), options));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public void AHeaderIdentificationStopsBeforeTheFrames(string file)
+    {
+        // The smallest encoded-byte limit that identifies the header is smaller than the file, and one byte less fails with the limit
+        var data = GetFile(file);
+        var required = -1;
+        for (var limit = 1; limit <= data.Length && required < 0; limit++)
+        {
+            var options = new ImageIdentifyOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = limit } } };
+            try
+            {
+                _ = Image.Identify(data, options);
+                required = limit;
+            }
+            catch (ImageResourceLimitException exception)
+            {
+                Assert.Equal(ImageResourceLimitKind.EncodedBytes, exception.Kind);
+            }
+        }
+
+        Assert.InRange(required, 3, data.Length - 1);
+    }
+
+    [Fact]
+    public void LimitsAreCheckedOnTheImageHeader()
+    {
+        var data = JpegXlTestFiles.Rgb;
+        Assert.Equal(ImageResourceLimitKind.Width, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, Limits(new ImageResourceLimits { MaxWidth = 4 }))).Kind);
+        Assert.Equal(ImageResourceLimitKind.Height, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, Limits(new ImageResourceLimits { MaxHeight = 2 }))).Kind);
+        Assert.Equal(ImageResourceLimitKind.FramePixels, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, Limits(new ImageResourceLimits { MaxFramePixels = 14 }))).Kind);
+        _ = Image.Identify(data, Limits(new ImageResourceLimits { MaxWidth = 5, MaxHeight = 3, MaxFramePixels = 15 }));
+
+        // The frames of an animation are counted by a full scan only, and a layer is not a frame
+        var animation = JpegXlTestFiles.LayeredAnimation;
+        _ = Image.Identify(animation, Limits(new ImageResourceLimits { MaxFrames = 1 }));
+        _ = Image.Identify(animation, Limits(new ImageResourceLimits { MaxFrames = 2 }, ImageIdentifyMode.FullScan));
+        Assert.Equal(ImageResourceLimitKind.Frames, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(animation, Limits(new ImageResourceLimits { MaxFrames = 1 }, ImageIdentifyMode.FullScan))).Kind);
+
+        // The XMP packet of 38 bytes is charged to the metadata limit before it is kept
+        var metadata = JpegXlTestFiles.SplitCodestreamWithXmp;
+        _ = Image.Identify(metadata, Limits(new ImageResourceLimits { MaxMetadataBytes = 38 }));
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(metadata, Limits(new ImageResourceLimits { MaxMetadataBytes = 37 }))).Kind);
+        var compressed = JpegXlTestFiles.SplitCodestreamWithCompressedXmp;
+        _ = Image.Identify(compressed, Limits(new ImageResourceLimits { MaxMetadataBytes = 38 }));
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(compressed, Limits(new ImageResourceLimits { MaxMetadataBytes = 37 }))).Kind);
+    }
+
+    [Fact]
+    public void ContainerRulesAreEnforced()
+    {
+        var codestream = JpegXlTestFiles.Rgb;
+        var options = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan };
+        byte[] signature = [0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20, 0x0D, 0x0A, 0x87, 0x0A];
+        byte[] part0 = [0, 0, 0, 0, .. codestream[..10]];
+        byte[] part1Last = [0x80, 0, 0, 1, .. codestream[10..]];
+        byte[] part1 = [0, 0, 0, 1, .. codestream[10..]];
+        byte[] part2Last = [0x80, 0, 0, 2, .. codestream[10..]];
+
+        // The reference: the same boxes in a valid order
+        byte[] valid = [.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlp", part0), .. JpegXlTestFiles.Box("jxlp", part1Last)];
+        Assert.Equal(1, Image.Identify(valid, options).FrameCount);
+
+        AssertInvalid([.. signature, .. JpegXlTestFiles.Box("jxlc", codestream)], "no file type box");
+        AssertInvalid([.. signature, .. JpegXlTestFiles.Box("ftyp", "avif\0\0\0\0jxl "u8), .. JpegXlTestFiles.Box("jxlc", codestream)], "the brand is not 'jxl '");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlc", codestream), .. JpegXlTestFiles.Box("jxlc", codestream)], "two codestreams");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlp", part0), .. JpegXlTestFiles.Box("jxlc", codestream)], "a codestream box after a part");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlp", part0), .. JpegXlTestFiles.Box("jxlp", part2Last)], "a part is missing");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlp", part1), .. JpegXlTestFiles.Box("jxlp", part0)], "the parts are not in order");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlp", part0), .. JpegXlTestFiles.Box("jxlp", part1Last), .. JpegXlTestFiles.Box("jxlp", part2Last)], "a part after the last one");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlp", [0, 0, 0])], "a part without index");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlp", part0), .. JpegXlTestFiles.Box("free", [1, 2, 3])], "the codestream is not complete");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, 0, 0, 0, 7, (byte)'j', (byte)'x', (byte)'l', (byte)'c', .. codestream], "a box smaller than its header");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("brob", [(byte)'j', (byte)'x', (byte)'l', (byte)'c', 0x0B, 0x00, 0x80]), .. JpegXlTestFiles.Box("jxlc", codestream)], "a compressed codestream box");
+        AssertInvalid([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlc", codestream), 0, 0, 0], "bytes that are not a box after the last box");
+
+        void AssertInvalid(byte[] data, string reason)
+        {
+            try
+            {
+                _ = Image.Identify(data, options);
+            }
+            catch (InvalidImageContentException)
+            {
+                return;
+            }
+
+            Assert.Fail($"The file is accepted: {reason}.");
+        }
+    }
+
+    [Fact]
+    public async Task BoxesMayUseTheLargeSizeAndTheLastOneMayExtendToTheEndOfTheInput()
+    {
+        var codestream = JpegXlTestFiles.Rgb;
+        var options = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan };
+        var expected = Describe(Image.Identify(codestream, options));
+
+        // A 64-bit size: the 32-bit field is 1 and the size follows the type
+        byte[] large = [.. JpegXlTestFiles.ContainerStart, 0, 0, 0, 1, (byte)'j', (byte)'x', (byte)'l', (byte)'c', 0, 0, 0, 0, 0, 0, 0, (byte)(16 + codestream.Length), .. codestream];
+        Assert.Equal(expected, Describe(Image.Identify(large, options)));
+
+        // A size of 0: the box is the rest of the file, a codestream box or a box that is skipped
+        byte[] toEnd = [.. JpegXlTestFiles.ContainerStart, 0, 0, 0, 0, (byte)'j', (byte)'x', (byte)'l', (byte)'c', .. codestream];
+        Assert.Equal(expected, Describe(Image.Identify(toEnd, options)));
+        byte[] skippedToEnd = [.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlc", codestream), 0, 0, 0, 0, (byte)'f', (byte)'r', (byte)'e', (byte)'e', 1, 2, 3];
+        Assert.Equal(expected, Describe(Image.Identify(skippedToEnd, options)));
+
+        // An XMP box that extends to the end of the input is read to that end
+        byte[] metadataToEnd = [.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlc", codestream), 0, 0, 0, 0, (byte)'x', (byte)'m', (byte)'l', (byte)' ', .. JpegXlTestFiles.XmpPacket];
+        foreach (var variant in InputVariants.All)
+        {
+            var info = await InputVariants.IdentifyAsync(variant, metadataToEnd, ImageFormat.JpegXl, options, XunitCancellationToken);
+            Assert.NotNull(info.Metadata.XmpProfile);
+            Assert.Equal(JpegXlTestFiles.XmpPacket, info.Metadata.XmpProfile.Data.Span);
+        }
+    }
+
+    [Theory]
+    [InlineData(nameof(JpegXlTestFiles.Rgb), 3)]
+    [InlineData(nameof(JpegXlTestFiles.SplitCodestreamWithXmp), 3)]
+    [InlineData(nameof(JpegXlTestFiles.RgbaContainer), 4)]
+    [InlineData(nameof(JpegXlTestFiles.SplitCodestreamWithCompressedXmp), 4)]
+    public void LosslessEightBitFilesDecodeToTheSamplesGivenToTheEncoder(string file, int channels)
+    {
+        // Sample i of the source (row by row, channel after channel) is (i * 37 + 11) mod 256
+        using var image = Image.Load(GetFile(file));
+        Assert.Equal(channels == 4 ? PixelFormat.Rgba32 : PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Equal((5, 3, 1), (image.Width, image.Height, image.Frames.Count));
+        Assert.Null(image.Animation);
+        using var typed = image.CloneAs<Rgba32>();
+        for (var pixel = 0; pixel < 15; pixel++)
+        {
+            var expected = new Rgba32(Sample(pixel, 0), Sample(pixel, 1), Sample(pixel, 2), channels == 4 ? Sample(pixel, 3) : byte.MaxValue);
+            Assert.Equal(expected, typed.Frames[0][pixel % 5, pixel / 5], message: $"pixel {pixel}");
+        }
+
+        byte Sample(int pixel, int channel) => (byte)((((pixel * channels) + channel) * 37) + 11);
+    }
+
+    [Fact]
+    public void LosslessSixteenBitGrayDecodesToTheSamplesGivenToTheEncoder()
+    {
+        // Sample i of the source is (i * 3701 + 11) mod 65536: the low bits are kept
+        using var image = Image.Load<Gray16>(JpegXlTestFiles.Gray16Container);
+        Assert.Equal((5, 3, 1), (image.Width, image.Height, image.Frames.Count));
+        for (var pixel = 0; pixel < 15; pixel++)
+        {
+            Assert.Equal((ushort)((pixel * 3701) + 11), image.Frames[0][pixel % 5, pixel / 5].Value, message: $"pixel {pixel}");
+        }
+    }
+
+    [Fact]
+    public void OtherBitDepthsAreScaledExactly()
+    {
+        // Every sample of the 12-bit file is 7 (color and alpha): round(7 * 65535 / 4095) = 112. The pixels are the stored ones
+        using var image = Image.Load(JpegXlTestFiles.Oriented12Bit);
+        Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
+        Assert.Equal((3, 2), (image.Width, image.Height));
+        Assert.Equal(ExifOrientation.RightTop, image.Metadata.Orientation);
+        using var typed = image.CloneAs<Rgba64>();
+        for (var pixel = 0; pixel < 6; pixel++)
+        {
+            Assert.Equal(new Rgba64(112, 112, 112, 112), typed.Frames[0][pixel % 3, pixel / 3]);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StillFiles))]
+    public async Task EveryInputVariantLoadsTheSameImage(string file)
+    {
+        var data = GetFile(file);
+        using var expected = Image.Load<Rgba64>(data);
+        var expectedPixels = GetPixels(expected.Frames[0]);
+        foreach (var variant in InputVariants.All)
+        {
+            using var image = await InputVariants.LoadAsync<Rgba64>(variant, data, ImageFormat.JpegXl, options: null, XunitCancellationToken);
+            Assert.Equal(expectedPixels, GetPixels(image.Frames[0]));
+            Assert.Equal(expected.Metadata.XmpProfile?.Data.Length, image.Metadata.XmpProfile?.Data.Length);
+            await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, data, ImageFormat.JpegXl, XunitCancellationToken);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StillFiles))]
+    public async Task ReadersProduceTheSameFramesAsEagerLoads(string file)
+    {
+        var data = GetFile(file);
+        using var eager = Image.Load<Rgba64>(data);
+        await using var reader = await Image.OpenReaderAsync<Rgba64>(new MemoryStream(data), cancellationToken: XunitCancellationToken);
+        Assert.Equal((eager.Width, eager.Height), (reader.Info.Width, reader.Info.Height));
+        using var frame = await reader.ReadFrameAsync(XunitCancellationToken);
+        Assert.NotNull(frame);
+        Assert.Equal(GetPixels(eager.Frames[0]), GetPixels(frame.Frames[0]));
+        Assert.Null(await reader.ReadFrameAsync(XunitCancellationToken));
+    }
+
+    [Theory]
+    [MemberData(nameof(StillFiles))]
+    public void TruncatedFilesDoNotLoad(string file)
+    {
+        var data = GetFile(file);
+        for (var length = 12; length < data.Length; length++)
+        {
+            var prefix = data.AsSpan(0, length).ToArray();
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(prefix).Dispose());
+        }
+    }
+
+    [Fact]
+    public void MetadataBoxesAfterTheCodestreamAreLoaded()
+    {
+        byte[] data = [.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlc", JpegXlTestFiles.Rgb), .. JpegXlTestFiles.Box("xml ", JpegXlTestFiles.XmpPacket)];
+        using var image = Image.Load(data);
+        Assert.NotNull(image.Metadata.XmpProfile);
+        Assert.Equal(JpegXlTestFiles.XmpPacket, image.Metadata.XmpProfile.Data.Span);
+
+        // A reader gives the metadata that follows the image with the image
+        using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data));
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.NotNull(frame.Metadata.XmpProfile);
+        Assert.Equal(JpegXlTestFiles.XmpPacket, frame.Metadata.XmpProfile.Data.Span);
+    }
+
+    [Fact]
+    public void PixelsThatAreDecodedWithoutBeingShownCountTowardTheTotal()
+    {
+        // Two frames of 4x4 pixels are shown; the layer between them has 2x2 pixels
+        var animation = JpegXlTestFiles.LayeredAnimation;
+        using (var image = Image.Load(animation, new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxTotalPixels = 36 } } }))
+        {
+            Assert.HasCount(2, image.Frames);
+        }
+
+        var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load(animation, new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxTotalPixels = 35 } } }));
+        Assert.Equal(ImageResourceLimitKind.TotalPixels, exception.Kind);
+
+        // The frame that is not shown has 16 pixels; the one that is shown has 36, 16 of them in the image
+        var still = JpegXlTestFiles.FrameLargerThanTheImage;
+        using (var image = Image.Load<Rgb24>(still, new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxTotalPixels = 52 } } }))
+        {
+            Assert.Equal((4, 4, 1), (image.Width, image.Height, image.Frames.Count));
+            for (var pixel = 0; pixel < 16; pixel++)
+            {
+                Assert.Equal(new Rgb24(120, 120, 120), image.Frames[0][pixel % 4, pixel / 4]);
+            }
+        }
+
+        exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load(still, new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxTotalPixels = 51 } } }));
+        Assert.Equal(ImageResourceLimitKind.TotalPixels, exception.Kind);
+
+        // Every frame is checked against the limits of a frame, shown or not
+        exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load(still, new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxWidth = 5 } } }));
+        Assert.Equal(ImageResourceLimitKind.Width, exception.Kind);
+        exception = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(still, Limits(new ImageResourceLimits { MaxFramePixels = 35 }, ImageIdentifyMode.FullScan)));
+        Assert.Equal(ImageResourceLimitKind.FramePixels, exception.Kind);
+        _ = Image.Identify(still, Limits(new ImageResourceLimits { MaxFramePixels = 16 }));
+    }
+
+    [Fact]
+    public void CustomPrimariesAndGammaAreDescribedByAnIccProfile()
+    {
+        // The samples are the stored ones: sample i of the source is (i * 37 + 11) mod 256
+        using var image = Image.Load<Rgb24>(JpegXlTestFiles.CustomPrimariesAndGamma);
+        for (var pixel = 0; pixel < 15; pixel++)
+        {
+            Assert.Equal(new Rgb24((byte)((pixel * 111) + 11), (byte)((pixel * 111) + 48), (byte)((pixel * 111) + 85)), image.Frames[0][pixel % 5, pixel / 5]);
+        }
+
+        Assert.Null(image.Metadata.Cicp);
+        Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+        var profile = image.Metadata.IccProfile;
+        Assert.NotNull(profile);
+        Assert.True(MetadataValidation.TryValidateIccProfile(profile.Data.Span, out _));
+        Assert.Equal(IccProfileColorSpace.Rgb, profile.ColorSpace);
+        Assert.Equal(IccProfileClass.Display, profile.ProfileClass);
+        Assert.Equal(IccRenderingIntent.RelativeColorimetric, profile.RenderingIntent);
+
+        // The primaries of Adobe RGB (1998) adapted from D65 to D50 with the linear Bradford transform, as published for
+        // the D50 of ASTM E308 (Z = 0.82521; the ICC illuminant has Z = 0.8249, hence the tolerance)
+        AssertNumbers(GetIccTag(profile, "rXYZ")[8..], 0.0005, 0.6097559, 0.3111242, 0.0194811);
+        AssertNumbers(GetIccTag(profile, "gXYZ")[8..], 0.0005, 0.2052401, 0.6256560, 0.0608902);
+        AssertNumbers(GetIccTag(profile, "bXYZ")[8..], 0.0005, 0.1492240, 0.0632197, 0.7448387);
+        AssertNumbers(GetIccTag(profile, "chad")[8..], 0.0005, 1.0478112, 0.0228866, -0.0501270, 0.0295424, 0.9904844, -0.0170491, -0.0092345, 0.0150436, 0.7521316);
+
+        // A parametricCurveType of function type 0: the decoding exponent is 1 / 0.4547
+        foreach (var signature in (string[])["rTRC", "gTRC", "bTRC"])
+        {
+            var curve = GetIccTag(profile, signature);
+            Assert.True(curve[..4].SequenceEqual("para"u8));
+            Assert.Equal(0, BinaryPrimitives.ReadUInt16BigEndian(curve[8..]));
+            AssertNumbers(curve[12..], 0.00002, 1 / 0.4547);
+        }
+
+        // Identification reports the same profile
+        var info = Image.Identify(JpegXlTestFiles.CustomPrimariesAndGamma);
+        Assert.NotNull(info.Metadata.IccProfile);
+        Assert.Equal(profile.Data.Span, info.Metadata.IccProfile.Data.Span);
+    }
+
+    [Fact]
+    public void GrayscaleWithACustomWhitePointIsDescribedByAGrayIccProfile()
+    {
+        using var image = Image.Load<Gray8>(JpegXlTestFiles.GrayCustomWhitePointAndGamma);
+        for (var pixel = 0; pixel < 15; pixel++)
+        {
+            Assert.Equal((byte)((pixel * 37) + 11), image.Frames[0][pixel % 5, pixel / 5].Value);
+        }
+
+        Assert.Null(image.Metadata.Cicp);
+        var profile = image.Metadata.IccProfile;
+        Assert.NotNull(profile);
+        Assert.True(MetadataValidation.TryValidateIccProfile(profile.Data.Span, out _));
+        Assert.Equal(IccProfileColorSpace.Gray, profile.ColorSpace);
+        Assert.Equal(IccRenderingIntent.Perceptual, profile.RenderingIntent);
+
+        // The white of the profile is the illuminant of the connection space; the adaptation tag keeps the one of the image:
+        // it maps the white point (x = 0.34, y = 0.35), that is X = 0.34 / 0.35 and Z = 0.31 / 0.35, to that illuminant
+        AssertNumbers(GetIccTag(profile, "wtpt")[8..], 0.00002, 0.9642, 1, 0.8249);
+        var adaptation = GetIccTag(profile, "chad")[8..];
+        double[] white = [0.34 / 0.35, 1, 0.31 / 0.35];
+        double[] illuminant = [0.9642, 1, 0.8249];
+        for (var row = 0; row < 3; row++)
+        {
+            var value = 0.0;
+            for (var column = 0; column < 3; column++)
+            {
+                value += BinaryPrimitives.ReadInt32BigEndian(adaptation[(4 * ((row * 3) + column))..]) / 65536.0 * white[column];
+            }
+
+            Assert.True(Math.Abs(value - illuminant[row]) < 0.0001, $"row {row}: {value}");
+        }
+
+        var curve = GetIccTag(profile, "kTRC");
+        Assert.True(curve[..4].SequenceEqual("para"u8));
+        Assert.Equal(0, BinaryPrimitives.ReadUInt16BigEndian(curve[8..]));
+        AssertNumbers(curve[12..], 0, 2);
+    }
+
+    [Fact]
+    public void TheWhitePointEAndTheBt709CurveAreDescribedByAnIccProfile()
+    {
+        using var image = Image.Load(JpegXlTestFiles.WhitePointE);
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Null(image.Metadata.Cicp);
+        var profile = image.Metadata.IccProfile;
+        Assert.NotNull(profile);
+        Assert.True(MetadataValidation.TryValidateIccProfile(profile.Data.Span, out _));
+        Assert.Equal(IccRenderingIntent.Saturation, profile.RenderingIntent);
+
+        // The colorants sum to the illuminant of the profile: white converts to the white of the connection space
+        var sum = new int[3];
+        foreach (var signature in (string[])["rXYZ", "gXYZ", "bXYZ"])
+        {
+            var colorant = GetIccTag(profile, signature);
+            for (var i = 0; i < 3; i++)
+            {
+                sum[i] += BinaryPrimitives.ReadInt32BigEndian(colorant[(8 + (4 * i))..]);
+            }
+        }
+
+        Assert.Equal([0x0000F6D6, 0x00010000, 0x0000D32D], sum);
+
+        // Rec. ITU-R BT.709 as a parametricCurveType of function type 3: g = 1 / 0.45, a = 1 / 1.099, b = 0.099 / 1.099,
+        // c = 1 / 4.5 and d = 0.081
+        var curve = GetIccTag(profile, "rTRC");
+        Assert.True(curve[..4].SequenceEqual("para"u8));
+        Assert.Equal(3, BinaryPrimitives.ReadUInt16BigEndian(curve[8..]));
+        AssertNumbers(curve[12..], 0.00001, 1 / 0.45, 1 / 1.099, 0.099 / 1.099, 1 / 4.5, 0.081);
+    }
+
+    [Fact]
+    public void PqWithANonStandardWhitePointIsNotSupported()
+    {
+        // Neither code points nor a parametric curve of an ICC profile describe it
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(JpegXlTestFiles.PqWithWhitePointE));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(JpegXlTestFiles.PqWithWhitePointE));
+    }
+
+    [Fact]
+    public void ManyTypeCommandsOfAnIccProfileDoNotGrowTheStack()
+    {
+        // Each type command writes 8 bytes. The commands cost nothing in an entropy-coded stream, so a file can contain a
+        // lot of them: the decoder must not use stack space for each one
+        const int CommandCount = 200_000;
+        const int OutputSize = JpegXlIccDecoder.HeaderSize + (CommandCount * 8);
+        var encoded = new List<byte>();
+        WriteVarInt(encoded, OutputSize);
+        WriteVarInt(encoded, 1 + CommandCount);
+        encoded.Add(0); // No tag list
+        encoded.AddRange(Enumerable.Repeat((byte)16, CommandCount)); // The "XYZ " type
+        encoded.AddRange(new byte[JpegXlIccDecoder.HeaderSize]); // The header is the prediction
+        var data = encoded.ToArray();
+
+        byte[]? profile = null;
+        Exception? exception = null;
+        var thread = new Thread(
+            () =>
+            {
+                try
+                {
+                    profile = JpegXlIccDecoder.Unpredict(data, new JpegXlBitReader(), OutputSize, new ImageResourceLimits());
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+            },
+            maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+        Assert.NotNull(profile);
+        Assert.HasCount(OutputSize, profile);
+        Assert.Equal("XYZ \0\0\0\0"u8.ToArray(), profile[JpegXlIccDecoder.HeaderSize..(JpegXlIccDecoder.HeaderSize + 8)]);
+        Assert.Equal("XYZ \0\0\0\0"u8.ToArray(), profile[^8..]);
+
+        static void WriteVarInt(List<byte> output, int value)
+        {
+            while (value >= 0x80)
+            {
+                output.Add((byte)(value | 0x80));
+                value >>= 7;
+            }
+
+            output.Add((byte)value);
+        }
+    }
+
+    private static ReadOnlySpan<byte> GetIccTag(IccProfile profile, string signature)
+    {
+        var data = profile.Data.Span;
+        var count = BinaryPrimitives.ReadInt32BigEndian(data[128..]);
+        for (var i = 0; i < count; i++)
+        {
+            var entry = data.Slice(132 + (12 * i), 12);
+            if (entry[..4].SequenceEqual(Encoding.ASCII.GetBytes(signature)))
+                return data.Slice(BinaryPrimitives.ReadInt32BigEndian(entry[4..]), BinaryPrimitives.ReadInt32BigEndian(entry[8..]));
+        }
+
+        throw new InvalidOperationException($"Tag '{signature}' not found.");
+    }
+
+    /// <summary>Compares s15Fixed16 numbers with their expected values.</summary>
+    private static void AssertNumbers(ReadOnlySpan<byte> data, double tolerance, params ReadOnlySpan<double> expected)
+    {
+        for (var i = 0; i < expected.Length; i++)
+        {
+            var actual = BinaryPrimitives.ReadInt32BigEndian(data[(4 * i)..]) / 65536.0;
+            Assert.True(Math.Abs(actual - expected[i]) <= tolerance + (0.5 / 65536), $"number {i}: expected {expected[i]}, got {actual}");
+        }
+    }
+
+    // The properties that the learned trees of libjxl test most, and the predictors of their leaves
+    private const int LearnedTreeProperties = -2;
+    private const int GradientOrWeighted = -2;
+
+    private static readonly int[] LearnedProperties = [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15];
+
+    public static TheoryData<int> ModularTreeSeeds
+    {
+        get
+        {
+            var data = new TheoryData<int>();
+            for (var seed = 0; seed < 120; seed++)
+            {
+                data.Add(seed);
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// A Modular sub-bitstream whose tree is drawn at random (the first 14 seeds: one leaf with each predictor; the next 14:
+    /// decisions on one property, 2 to 15; from 60: decisions on the property of the weighted predictor and leaves that all
+    /// use it, the tree of most lossless files; from 84: decisions on the properties of the neighbors and of the weighted
+    /// predictor, as in learned trees, with leaves that use the gradient or the weighted predictor from 102; ANS for the
+    /// even seeds) is decoded like a transcription of the section H.3 of the standard does: every sample computes the
+    /// properties, walks the tree and predicts from its neighbors, at the edges of channels of 1 to 40 samples, with the
+    /// previous channels of the same size as the source of the properties from 16 on.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ModularTreeSeeds))]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ModularSamplesFollowTheirTree(int seed)
+    {
+        const int StreamIndex = 5;
+        var random = new Random(seed);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(ModularSamplesFollowTheirTree));
+        var sizes = new (int Width, int Height, int Shift)[random.Next(1, 5)];
+        var width = seed % 3 == 0 ? random.Next(1, 4) : random.Next(1, 41);
+        var height = seed % 5 == 0 ? random.Next(1, 4) : random.Next(1, 41);
+        for (var i = 0; i < sizes.Length; i++)
+        {
+            sizes[i] = random.Next(4) == 0 ? (random.Next(1, 9), random.Next(1, 9), random.Next(2)) : (width, height, 0);
+        }
+
+        // The tree, in breadth-first order: (property, value, left, right) for a decision, (-1, offset, context, predictor, multiplier) for a leaf
+        var nodes = new List<JpegXlMaTreeNode>();
+        if (seed < JpegXlMaTree.PredictorCount)
+        {
+            nodes.Add(new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-3, 4), RightOrPredictor = seed, Multiplier = 1 });
+        }
+        else
+        {
+            // Then trees whose decisions all test the same property, of the sample and its neighbors, then any
+            var isWeightedTable = seed is >= 60 and < 84;
+            var isLearnedTree = seed >= 84;
+            var onlyProperty = isWeightedTable ? JpegXlMaTree.WeightedProperty : isLearnedTree ? LearnedTreeProperties : seed < JpegXlMaTree.PredictorCount + 14 ? seed - JpegXlMaTree.PredictorCount + 2 : -1;
+            var onlyPredictor = isWeightedTable ? 6 : seed >= 102 ? GradientOrWeighted : -1;
+            BuildTree(random, nodes, sizes.Length, onlyProperty, onlyPredictor);
+        }
+
+        var leafCount = 0;
+        for (var i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i].IsLeaf)
+            {
+                var node = nodes[i];
+                node.LeftOrContext = leafCount++;
+                nodes[i] = node;
+            }
+        }
+
+        // The samples: the reference decoder draws the residual of each sample and records the token it reads
+        var tokens = new List<(int Context, uint Token)>();
+        var expected = new int[sizes.Length][];
+        for (var c = 0; c < sizes.Length; c++)
+        {
+            expected[c] = DecodeReferenceChannel(c);
+        }
+
+        using var writer = new LsbBitWriter(scope);
+        JpegXlModularEncoder.WriteHeader(writer);
+        using (var tree = new JpegXlEntropyEncoder(JpegXlMaTree.TreeContextCount, new JpegXlHybridUintConfig(4, 0, 0), scope))
+        {
+            foreach (var node in nodes)
+            {
+                if (node.IsLeaf)
+                {
+                    var multiplierLog = System.Numerics.BitOperations.TrailingZeroCount(node.Multiplier);
+                    tree.Add(1, 0);
+                    tree.Add(2, (uint)node.RightOrPredictor);
+                    tree.Add(3, Pack(node.ValueOrOffset));
+                    tree.Add(4, (uint)multiplierLog);
+                    tree.Add(5, (uint)((node.Multiplier >> multiplierLog) - 1));
+                }
+                else
+                {
+                    tree.Add(1, (uint)node.Property + 1);
+                    tree.Add(0, Pack(node.ValueOrOffset));
+                }
+            }
+
+            tree.Write(writer);
+        }
+
+        using (var samples = new JpegXlEntropyEncoder(leafCount, new JpegXlHybridUintConfig(4, 1, 0), scope, seed % 2 == 0 ? JpegXlEntropyCoding.Ans : JpegXlEntropyCoding.PrefixCodes))
+        {
+            foreach (var (context, token) in tokens)
+            {
+                samples.Add(context, token);
+            }
+
+            samples.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        using var image = new JpegXlModularImage(8);
+        foreach (var (channelWidth, channelHeight, shift) in sizes)
+        {
+            image.AddChannel(channelWidth, channelHeight, shift, 0);
+        }
+
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        JpegXlModularDecoder.Decode(reader, image, StreamIndex, globalTree: null, int.MaxValue, undoTransforms: false, scope, TestContext.Current.CancellationToken);
+        reader.EnsureNotOverrun();
+        for (var c = 0; c < sizes.Length; c++)
+        {
+            Assert.Equal(expected[c], image.Channels[c].Samples.ToArray());
+        }
+
+        static uint Pack(int value) => value >= 0 ? (uint)value * 2 : ((uint)-value * 2) - 1;
+
+        int[] DecodeReferenceChannel(int channelIndex)
+        {
+            var (w, h, shift) = sizes[channelIndex];
+            var samples = new int[w * h];
+            var references = new List<int>();
+            for (var i = channelIndex - 1; i >= 0; i--)
+            {
+                if (sizes[i] == sizes[channelIndex])
+                {
+                    references.Add(i);
+                }
+            }
+
+            var properties = new int[16 + (4 * 64)];
+            properties[0] = channelIndex;
+            properties[1] = StreamIndex;
+            using var weighted = new JpegXlWeightedPredictor(JpegXlWeightedPredictorHeader.Default, w, scope);
+            for (var y = 0; y < h; y++)
+            {
+                properties[2] = y;
+                properties[9] = 0;
+                for (var x = 0; x < w; x++)
+                {
+                    long Get(int column, int row) => samples[(row * w) + column];
+                    long left = x > 0 ? Get(x - 1, y) : y > 0 ? Get(x, y - 1) : 0;
+                    long top = y > 0 ? Get(x, y - 1) : left;
+                    long topLeft = x > 0 && y > 0 ? Get(x - 1, y - 1) : left;
+                    long topRight = x + 1 < w && y > 0 ? Get(x + 1, y - 1) : top;
+                    long leftLeft = x > 1 ? Get(x - 2, y) : left;
+                    long topTop = y > 1 ? Get(x, y - 2) : top;
+                    long topRightRight = x + 2 < w && y > 0 ? Get(x + 2, y - 1) : topRight;
+                    var weightedPrediction = weighted.Predict(x, y, top, left, topRight, topLeft, topTop, out var weightedProperty);
+                    properties[3] = x;
+                    properties[4] = (int)Math.Abs(top);
+                    properties[5] = (int)Math.Abs(left);
+                    properties[6] = (int)top;
+                    properties[7] = (int)left;
+                    properties[8] = (int)(left - properties[9]);
+                    properties[9] = (int)(left + top - topLeft);
+                    properties[10] = (int)(left - topLeft);
+                    properties[11] = (int)(topLeft - top);
+                    properties[12] = (int)(top - topRight);
+                    properties[13] = (int)(top - topTop);
+                    properties[14] = (int)(left - leftLeft);
+                    properties[15] = weightedProperty;
+                    for (var i = 0; i < references.Count; i++)
+                    {
+                        var other = expected[references[i]];
+                        long value = other[(y * w) + x];
+                        long otherLeft = x > 0 ? other[(y * w) + x - 1] : 0;
+                        long otherTop = y > 0 ? other[((y - 1) * w) + x] : otherLeft;
+                        long otherTopLeft = x > 0 && y > 0 ? other[((y - 1) * w) + x - 1] : otherLeft;
+                        long predicted = JpegXlModularTransform.ClampedGradient((int)otherLeft, (int)otherTop, (int)otherTopLeft);
+                        properties[16 + (i * 4)] = (int)Math.Abs(value);
+                        properties[17 + (i * 4)] = (int)value;
+                        properties[18 + (i * 4)] = (int)Math.Abs(value - predicted);
+                        properties[19 + (i * 4)] = (int)(value - predicted);
+                    }
+
+                    var index = 0;
+                    while (!nodes[index].IsLeaf)
+                    {
+                        index = properties[nodes[index].Property] > nodes[index].ValueOrOffset ? nodes[index].LeftOrContext : nodes[index].RightOrPredictor;
+                    }
+
+                    var leaf = nodes[index];
+                    var token = random.Next(8) == 0 ? (uint)random.Next(1 << 12) : (uint)random.Next(24);
+                    tokens.Add((leaf.LeftOrContext, token));
+                    var guess = leaf.ValueOrOffset + JpegXlModularTransform.Predict(leaf.RightOrPredictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction);
+                    var sample = (int)(((long)JpegXlBitReader.UnpackSigned(token) * leaf.Multiplier) + guess);
+                    samples[(y * w) + x] = sample;
+                    weighted.Update(sample, x, y);
+                }
+            }
+
+            return samples;
+        }
+
+        static void BuildTree(Random random, List<JpegXlMaTreeNode> nodes, int channelCount, int onlyProperty, int onlyPredictor)
+        {
+            // Breadth first: each queued node keeps the range of values its ancestors leave to each property
+            var queue = new Queue<(int Index, int Depth, Dictionary<int, (int Low, int High)> Ranges)>();
+            nodes.Add(default);
+            queue.Enqueue((0, 0, []));
+            while (queue.TryDequeue(out var item))
+            {
+                var property = onlyProperty >= 0 ? onlyProperty : onlyProperty == LearnedTreeProperties ? LearnedProperties[random.Next(LearnedProperties.Length)] : random.Next(4) switch
+                {
+                    0 => random.Next(16),
+                    1 => 16 + random.Next(4 * channelCount),
+                    _ => random.Next(2, 16),
+                };
+                var (low, high) = item.Ranges.GetValueOrDefault(property, (-20, 20));
+                if (item.Depth >= 6 || random.Next(4) == 0 || low >= high)
+                {
+                    var multiplierLog = random.Next(3) == 0 ? random.Next(3) : 0;
+                    var multiplier = random.Next(3) == 0 ? (random.Next(3) + 1) << multiplierLog : 1;
+                    nodes[item.Index] = new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-5, 6), RightOrPredictor = onlyPredictor >= 0 ? onlyPredictor : onlyPredictor == GradientOrWeighted ? 5 + random.Next(2) : random.Next(JpegXlMaTree.PredictorCount), Multiplier = multiplier };
+                    continue;
+                }
+
+                // The left child takes the values above the split, the right one the others
+                var value = random.Next(low, high);
+                var left = nodes.Count;
+                nodes.Add(default);
+                nodes.Add(default);
+                nodes[item.Index] = new JpegXlMaTreeNode { Property = property, ValueOrOffset = value, LeftOrContext = left, RightOrPredictor = left + 1, Multiplier = 1 };
+                var leftRanges = new Dictionary<int, (int Low, int High)>(item.Ranges) { [property] = (value + 1, high) };
+                var rightRanges = new Dictionary<int, (int Low, int High)>(item.Ranges) { [property] = (low, value) };
+                queue.Enqueue((left, item.Depth + 1, leftRanges));
+                queue.Enqueue((left + 1, item.Depth + 1, rightRanges));
+            }
+        }
+    }
+
+    public static TheoryData<long, int, bool> ModularTreeNodeLimits => new()
+    {
+        // The limit of a local tree is 1024 plus the samples of the channels; a tree has an odd number of nodes
+        { 1025, 1025, true },
+        { 1025, 1027, false },
+        { 1026, 1027, true },
+        { 1026, 1029, false },
+        { 0, 1, true },
+        { 0, 3, false },
+        { 2, 3, true },
+        { 2, 5, false },
+    };
+
+    /// <summary>
+    /// Like libjxl and jxl-oxide, the decoder reads a node while the nodes already read are not more than the limit: a tree
+    /// may have one node more than the limit. The trees are valid combs (each decision splits the values its parent leaves on
+    /// its right), far from the height limit, so only the node count can reject them.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ModularTreeNodeLimits))]
+    public void ModularTreeNodeCountIsLimited(long maxNodeCount, int nodeCount, bool isAccepted)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(ModularTreeNodeCountIsLimited));
+        var decisionCount = nodeCount / 2;
+        var leafCount = decisionCount + 1;
+        using var writer = new LsbBitWriter(scope);
+        using (var tree = new JpegXlEntropyEncoder(JpegXlMaTree.TreeContextCount, new JpegXlHybridUintConfig(4, 0, 0), scope))
+        {
+            // Breadth-first order: each decision is followed by its left leaf and by the next decision, the last one by two leaves
+            for (var i = 0; i < decisionCount; i++)
+            {
+                if (i > 0)
+                {
+                    AddLeaf(tree);
+                }
+
+                tree.Add(1, 2 + 1);
+                tree.Add(0, (uint)(2 * i) + 1);
+            }
+
+            AddLeaf(tree);
+            if (decisionCount > 0)
+            {
+                AddLeaf(tree);
+            }
+
+            tree.Write(writer);
+        }
+
+        using (var samples = new JpegXlEntropyEncoder(leafCount, new JpegXlHybridUintConfig(4, 1, 0), scope))
+        {
+            samples.Add(0, 0);
+            samples.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (isAccepted)
+        {
+            using var tree = JpegXlMaTree.Read(reader, scope, maxNodeCount);
+            reader.EnsureNotOverrun();
+            Assert.Equal(nodeCount, tree.NodeCount);
+            Assert.Equal(leafCount, tree.LeafCount);
+        }
+        else
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegXlMaTree.Read(reader, scope, maxNodeCount).Dispose());
+            Assert.Contains("more nodes than its image allows", exception.Message, StringComparison.Ordinal);
+        }
+
+        static void AddLeaf(JpegXlEntropyEncoder tree)
+        {
+            tree.Add(1, 0);
+            tree.Add(2, 0);
+            tree.Add(3, 0);
+            tree.Add(4, 0);
+            tree.Add(5, 0);
+        }
+    }
+
+    /// <summary>
+    /// The restoration filters run as a pipeline over rings of rows; the result is the one of each filter applied to the
+    /// whole frame after the previous one, computed here sample by sample from section J of the standard: every combination
+    /// of filters, default and custom parameters, frames of one sample (mirrored several times) to several blocks, blocks
+    /// the edge-preserving filter leaves, rows with padding after them, and frames split in bands of rows filtered at the
+    /// same time, down to bands of one row that read the rows of several bands around them.
+    /// </summary>
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame()
+    {
+        var random = new Random(186);
+        var bandRandom = new Random(187);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame));
+        for (var round = 0; round < 600; round++)
+        {
+            var width = round < 120 ? 1 + (round % 12) : random.Next(1, 80);
+            var height = round < 120 ? 1 + (round / 12) : random.Next(1, 45);
+            var isGaborEnabled = round % 5 != 4;
+            var iterations = round % 4;
+            var filter = CreateRestorationFilter(scope, random, isGaborEnabled, iterations, isCustom: round % 3 == 2);
+            var stride = width + random.Next(3);
+            var blocksWide = (width + 7) / 8;
+            var inverseSigma = new float[blocksWide * ((height + 7) / 8)];
+            for (var i = 0; i < inverseSigma.Length; i++)
+            {
+                inverseSigma[i] = random.Next(6) == 0 ? -4f : (float)(-0.01 - (random.NextDouble() * 3.8));
+            }
+
+            var input = new float[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                input[c] = new float[stride * height];
+                for (var i = 0; i < input[c].Length; i++)
+                {
+                    input[c][i] = (round % 4) switch
+                    {
+                        0 => 0.25f,
+                        1 => (float)random.NextDouble() * 1e-3f,
+                        2 => random.Next(4) == 0 ? -0f : (float)((random.NextDouble() - 0.5) * 1e3),
+                        _ => (float)random.NextDouble(),
+                    };
+                }
+            }
+
+            var expected = FilterWholeFrames(input, stride, width, height, filter, isGaborEnabled, iterations, inverseSigma, blocksWide);
+            var bands = round % 3 == 0 ? 1 : bandRandom.Next(2, height + 2);
+            var planes = new Av1PooledArray<float>[3];
+            try
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    planes[c] = Av1PooledArray<float>.Rent(scope, input[c].Length, clear: false);
+                    input[c].CopyTo(planes[c].Span);
+                }
+
+                if (round % 2 == 0 && isGaborEnabled)
+                {
+                    // The Modular frames apply the two filters one after the other
+                    JpegXlRestorationFilters.ApplyGaborish(planes, stride, width, height, filter, bands, scope, TestContext.Current.CancellationToken);
+                    JpegXlRestorationFilters.ApplyEdgePreservingFilter(planes, stride, width, height, filter, inverseSigma, blocksWide, bands, scope, TestContext.Current.CancellationToken);
+                }
+                else
+                {
+                    JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, inverseSigma, blocksWide, bands, scope, TestContext.Current.CancellationToken);
+                }
+
+                for (var c = 0; c < 3; c++)
+                {
+                    Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(planes[c].Span[..input[c].Length].ToArray(), BitConverter.SingleToInt32Bits));
+                }
+            }
+            finally
+            {
+                foreach (var plane in planes)
+                {
+                    plane?.Dispose();
+                }
+            }
+        }
+    }
+
+    /// <summary>Reads the parameters of the restoration filters from a header that sets them, with random weights and scales when <paramref name="isCustom"/> is set.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static JpegXlRestorationFilter CreateRestorationFilter(AllocationScope scope, Random random, bool isGaborEnabled, int iterations, bool isCustom)
+    {
+        using var writer = new LsbBitWriter(scope);
+        writer.WriteBool(false);
+        writer.WriteBool(isGaborEnabled);
+        if (isGaborEnabled)
+        {
+            writer.WriteBool(isCustom);
+            if (isCustom)
+            {
+                for (var i = 0; i < 6; i++)
+                {
+                    writer.WriteF16((float)(random.NextDouble() * 0.3));
+                }
+            }
+        }
+
+        writer.WriteBits((uint)iterations, 2);
+        if (iterations > 0)
+        {
+            writer.WriteBool(false);
+            writer.WriteBool(isCustom);
+            if (isCustom)
+            {
+                writer.WriteF16((float)(random.NextDouble() * 60));
+                writer.WriteF16((float)(random.NextDouble() * 8));
+                writer.WriteF16((float)(random.NextDouble() * 5));
+                writer.WriteBits(0, 32);
+            }
+
+            writer.WriteBool(isCustom);
+            if (isCustom)
+            {
+                writer.WriteF16(0.46f);
+                writer.WriteF16((float)(random.NextDouble() * 2));
+                writer.WriteF16((float)(random.NextDouble() * 10));
+                writer.WriteF16((float)random.NextDouble());
+            }
+        }
+
+        writer.WriteU64(0);
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        return JpegXlRestorationFilter.Read(new JpegXlBitReader(data, 0, data.Length), isModular: false);
+    }
+
+    /// <summary>The Gabor-like filter, then each step of the edge-preserving filter, each on the whole frame: the result of the previous filter, mirrored at its edges.</summary>
+    private static float[][] FilterWholeFrames(float[][] input, int stride, int width, int height, JpegXlRestorationFilter filter, bool isGaborEnabled, int iterations, float[] inverseSigma, int blocksWide)
+    {
+        var current = Array.ConvertAll(input, plane => (float[])plane.Clone());
+        float At(int c, int x, int y) => current[c][(Mirror(y, height) * stride) + Mirror(x, width)];
+        if (isGaborEnabled)
+        {
+            var next = Array.ConvertAll(current, plane => (float[])plane.Clone());
+            for (var c = 0; c < 3; c++)
+            {
+                var side = filter.GaborWeights[c * 2];
+                var corner = filter.GaborWeights[(c * 2) + 1];
+                var scale = 1f / (1f + (4f * (side + corner)));
+                for (var y = 0; y < height; y++)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        var sides = (At(c, x - 1, y) + At(c, x + 1, y)) + (At(c, x, y - 1) + At(c, x, y + 1));
+                        var corners = (At(c, x - 1, y - 1) + At(c, x + 1, y - 1)) + (At(c, x - 1, y + 1) + At(c, x + 1, y + 1));
+                        next[c][(y * stride) + x] = (corners * (corner * scale)) + ((sides * (side * scale)) + (At(c, x, y) * scale));
+                    }
+                }
+            }
+
+            current = next;
+        }
+
+        (int Y, int X)[] wide = [(-2, 0), (-1, -1), (-1, 0), (-1, 1), (0, -2), (0, -1), (0, 1), (0, 2), (1, -1), (1, 0), (1, 1), (2, 0)];
+        (int Y, int X)[] cross = [(-1, 0), (0, -1), (0, 1), (1, 0)];
+        (int Y, int X)[] patch = [(0, 0), (-1, 0), (0, -1), (1, 0), (0, 1)];
+        int[] steps = iterations switch
+        {
+            0 => [],
+            1 => [1],
+            2 => [1, 2],
+            _ => [0, 1, 2],
+        };
+        foreach (var step in steps)
+        {
+            var neighbors = step == 0 ? wide : cross;
+            var compared = step == 2 ? patch[..1] : patch;
+            var sigmaScale = step switch
+            {
+                0 => filter.EpfPass0SigmaScale * 1.65f,
+                1 => 1.65f,
+                _ => filter.EpfPass2SigmaScale * 1.65f,
+            };
+            var borderScale = sigmaScale * filter.EpfBorderSadMultiplier;
+            var next = Array.ConvertAll(current, plane => (float[])plane.Clone());
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    // A block whose strength is under 0.3 is left as it is
+                    var blockInverseSigma = inverseSigma[((y / 8) * blocksWide) + (x / 8)];
+                    if (blockInverseSigma < -3.90524291751269967465540850526868f)
+                        continue;
+
+                    var scaledInverseSigma = blockInverseSigma * ((y % 8) is 0 or 7 || (x % 8) is 0 or 7 ? borderScale : sigmaScale);
+                    var weightSum = 1f;
+                    var sums = new[] { At(0, x, y), At(1, x, y), At(2, x, y) };
+                    foreach (var neighbor in neighbors)
+                    {
+                        var distances = new float[3];
+                        for (var c = 0; c < 3; c++)
+                        {
+                            foreach (var offset in compared)
+                            {
+                                distances[c] += MathF.Abs(At(c, x + offset.X, y + offset.Y) - At(c, x + offset.X + neighbor.X, y + offset.Y + neighbor.Y));
+                            }
+                        }
+
+                        var distance = (distances[0] * filter.EpfChannelScale[0]) + (distances[1] * filter.EpfChannelScale[1]) + (distances[2] * filter.EpfChannelScale[2]);
+                        var weight = (distance * scaledInverseSigma) + 1f;
+                        if (weight > 0)
+                        {
+                            weightSum += weight;
+                            for (var c = 0; c < 3; c++)
+                            {
+                                sums[c] += weight * At(c, x + neighbor.X, y + neighbor.Y);
+                            }
+                        }
+                    }
+
+                    var inverseWeight = 1f / weightSum;
+                    for (var c = 0; c < 3; c++)
+                    {
+                        next[c][(y * stride) + x] = sums[c] * inverseWeight;
+                    }
+                }
+            }
+
+            current = next;
+        }
+
+        return current;
+
+        static int Mirror(int position, int size)
+        {
+            while (position < 0 || position >= size)
+            {
+                position = position < 0 ? -position - 1 : (2 * size) - 1 - position;
+            }
+
+            return position;
+        }
+    }
+
+    /// <summary>
+    /// The weighted predictor gives the predictions and the property of a transcription of the section H.5.2 of the
+    /// standard (four planes of sub-errors, every value computed as the text says), with the default parameters and with
+    /// parameters read from a header, on samples that follow a texture, on random samples and on the extreme samples whose
+    /// errors wrap the 32-bit sums.
+    /// </summary>
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(2, 1)]
+    [InlineData(3, 2)]
+    [InlineData(37, 3)]
+    [InlineData(64, 4)]
+    [InlineData(5, 5)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WeightedPredictorFollowsItsTranscription(int width, int seed)
+    {
+        var random = new Random(seed);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(WeightedPredictorFollowsItsTranscription));
+        var header = JpegXlWeightedPredictorHeader.Default;
+        if (seed % 2 == 1)
+        {
+            using var writer = new LsbBitWriter(scope);
+            writer.WriteBits(0, 1);
+            for (var i = 0; i < 7; i++)
+            {
+                writer.WriteBits((uint)random.Next(32), 5);
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                writer.WriteBits((uint)random.Next(16), 4);
+            }
+
+            writer.Finish();
+            var data = writer.WrittenSpan.ToArray();
+            header = JpegXlWeightedPredictorHeader.Read(new JpegXlBitReader(data, 0, data.Length));
+        }
+
+        var height = 40;
+        var samples = new int[width * height];
+        using var weighted = new JpegXlWeightedPredictor(header, width, scope);
+        var reference = new WeightedPredictorTranscription(header, width);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                long Get(int column, int row) => samples[(row * width) + column];
+                long left = x > 0 ? Get(x - 1, y) : y > 0 ? Get(x, y - 1) : 0;
+                long top = y > 0 ? Get(x, y - 1) : left;
+                long topLeft = x > 0 && y > 0 ? Get(x - 1, y - 1) : left;
+                long topRight = x + 1 < width && y > 0 ? Get(x + 1, y - 1) : top;
+                long topTop = y > 1 ? Get(x, y - 2) : top;
+                var prediction = weighted.Predict(x, y, top, left, topRight, topLeft, topTop, out var property);
+                var expected = reference.Predict(x, y, top, left, topRight, topLeft, topTop, out var expectedProperty);
+                Assert.Equal((expected, expectedProperty), (prediction, property));
+
+                // Rows 0 to 9 follow a texture, 10 to 19 are random, 20 to 29 are extreme, then random again
+                var sample = (y / 10) switch
+                {
+                    0 => (int)Math.Clamp(prediction + random.Next(-6, 7), int.MinValue, int.MaxValue),
+                    2 => random.Next(4) switch
+                    {
+                        0 => int.MinValue,
+                        1 => int.MaxValue,
+                        2 => -(1 << 30),
+                        _ => 1 << 30,
+                    },
+                    _ => random.Next(-70000, 70000),
+                };
+                samples[(y * width) + x] = sample;
+                weighted.Update(sample, x, y);
+                reference.Update(sample, x, y);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The weighted predictor gives, a row at a time, the predictions and the property of the transcription of the section
+    /// H.5.2 of the standard, on the samples of <see cref="WeightedPredictorFollowsItsTranscription"/>.
+    /// </summary>
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(2, 1)]
+    [InlineData(3, 2)]
+    [InlineData(4, 3)]
+    [InlineData(37, 4)]
+    [InlineData(64, 5)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WeightedPredictorRowsFollowItsTranscription(int width, int seed)
+    {
+        var random = new Random(seed);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(WeightedPredictorRowsFollowItsTranscription));
+        var header = JpegXlWeightedPredictorHeader.Default;
+        if (seed % 2 == 1)
+        {
+            using var writer = new LsbBitWriter(scope);
+            writer.WriteBits(0, 1);
+            for (var i = 0; i < 7; i++)
+            {
+                writer.WriteBits((uint)random.Next(32), 5);
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                writer.WriteBits((uint)random.Next(16), 4);
+            }
+
+            writer.Finish();
+            var data = writer.WrittenSpan.ToArray();
+            header = JpegXlWeightedPredictorHeader.Read(new JpegXlBitReader(data, 0, data.Length));
+        }
+
+        var height = 40;
+        var samples = new int[width * height];
+        using var weighted = new JpegXlWeightedPredictor(header, width, scope);
+        var sink = new TranscriptionSink(new WeightedPredictorTranscription(header, width), random, samples, width);
+        for (var y = 0; y < height; y++)
+        {
+            sink.Y = y;
+            var above = y > 0 ? samples.AsSpan((y - 1) * width, width) : default;
+            var twoAbove = y > 1 ? samples.AsSpan((y - 2) * width, width) : above;
+            weighted.PredictRow(y, above, twoAbove, ref sink);
+        }
+
+        Assert.Equal(width * height, sink.Count);
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private struct TranscriptionSink(WeightedPredictorTranscription reference, Random random, int[] samples, int width) : JpegXlWeightedPredictor.IRowSink
+    {
+        public int Y { get; set; }
+
+        public int Count { get; private set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        public int Next(int x, long prediction, int maxError)
+        {
+            var y = Y;
+            var samples1 = samples;
+            var width1 = width;
+            long Get(int column, int row) => samples1[(row * width1) + column];
+            long left = x > 0 ? Get(x - 1, y) : y > 0 ? Get(x, y - 1) : 0;
+            long top = y > 0 ? Get(x, y - 1) : left;
+            long topLeft = x > 0 && y > 0 ? Get(x - 1, y - 1) : left;
+            long topRight = x + 1 < width && y > 0 ? Get(x + 1, y - 1) : top;
+            long topTop = y > 1 ? Get(x, y - 2) : top;
+            var expected = reference.Predict(x, y, top, left, topRight, topLeft, topTop, out var expectedProperty);
+            Assert.Equal((expected, expectedProperty), (prediction, maxError));
+
+            // Rows 0 to 9 follow a texture, 10 to 19 are random, 20 to 29 are extreme, then random again
+            var sample = (y / 10) switch
+            {
+                0 => (int)Math.Clamp(prediction + random.Next(-6, 7), int.MinValue, int.MaxValue),
+                2 => random.Next(4) switch
+                {
+                    0 => int.MinValue,
+                    1 => int.MaxValue,
+                    2 => -(1 << 30),
+                    _ => 1 << 30,
+                },
+                _ => random.Next(-70000, 70000),
+            };
+            samples[(y * width) + x] = sample;
+            reference.Update(sample, x, y);
+            Count++;
+            return sample;
+        }
+    }
+
+    /// <summary>
+    /// The gradient and the select predictors computed without a branch give the predictions of the predictors of
+    /// <see cref="JpegXlModularTransform.Predict"/>, on random samples, on nearby samples and on the extreme 32-bit samples.
+    /// </summary>
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PredictorsWithoutBranchFollowThePredictors()
+    {
+        var random = new Random(7);
+        int[] extremes = [int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue - 1, int.MaxValue];
+        for (var i = 0; i < 100_000; i++)
+        {
+            long left;
+            long top;
+            long topLeft;
+            switch (i % 3)
+            {
+                case 0:
+                    left = random.Next(int.MinValue, int.MaxValue);
+                    top = random.Next(int.MinValue, int.MaxValue);
+                    topLeft = random.Next(int.MinValue, int.MaxValue);
+                    break;
+                case 1:
+                    left = random.Next(-8, 8);
+                    top = random.Next(-8, 8);
+                    topLeft = random.Next(-8, 8);
+                    break;
+                default:
+                    left = extremes[random.Next(extremes.Length)];
+                    top = extremes[random.Next(extremes.Length)];
+                    topLeft = extremes[random.Next(extremes.Length)];
+                    break;
+            }
+
+            Assert.Equal(JpegXlModularTransform.Predict(5, left, top, 0, topLeft, 0, 0, 0, 0), JpegXlModularTransform.ClampedGradientWithoutBranch(left, top, topLeft));
+            Assert.Equal(JpegXlModularTransform.Predict(4, left, top, 0, topLeft, 0, 0, 0, 0), JpegXlModularTransform.SelectWithoutBranch(left, top, topLeft));
+        }
+    }
+
+    public static TheoryData<string> StillFiles =>
+    [
+        nameof(JpegXlTestFiles.Rgb),
+        nameof(JpegXlTestFiles.RgbaContainer),
+        nameof(JpegXlTestFiles.Gray16Container),
+        nameof(JpegXlTestFiles.SplitCodestreamWithXmp),
+        nameof(JpegXlTestFiles.SplitCodestreamWithCompressedXmp),
+        nameof(JpegXlTestFiles.Oriented12Bit),
+    ];
+
+    /// <summary>
+    /// Patches that each cover the whole of a 64x64 frame, stored in a few bytes, are read up to the area limit (16 times
+    /// the frame plus 2^20 samples: 272 patches) and rejected beyond it, before they are blended.
+    /// </summary>
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(272, false)]
+    [InlineData(273, true)]
+    [InlineData(8000, true)]
+    public void PatchesThatCoverTooLargeAnAreaAreRejected(int patchCount, bool rejected)
+    {
+        const int Size = 64;
+        Assert.Equal(272UL * Size * Size, (JpegXlPatchDictionary.MaxFrameCoverage * Size * Size) + JpegXlPatchDictionary.AreaAllowance);
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(PatchesThatCoverTooLargeAnAreaAreRejected));
+        using var writer = new LsbBitWriter(scope);
+        using (var encoder = new JpegXlEntropyEncoder(10, new JpegXlHybridUintConfig(4, 0, 0), scope, JpegXlEntropyCoding.Ans))
+        {
+            // One source: the whole of reference frame 0, then its patches, all at the origin and without blending
+            encoder.Add(0, 1);
+            encoder.Add(1, 0);
+            encoder.Add(3, 0);
+            encoder.Add(3, 0);
+            encoder.Add(2, Size - 1);
+            encoder.Add(2, Size - 1);
+            encoder.Add(7, (uint)patchCount - 1);
+            for (var i = 0; i < patchCount; i++)
+            {
+                encoder.Add(i == 0 ? 4 : 6, 0);
+                encoder.Add(i == 0 ? 4 : 6, 0);
+                encoder.Add(5, JpegXlChannelBlending.ModeNone);
+            }
+
+            encoder.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (rejected)
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegXlPatchDictionary.Read(reader, Size, Size, extraChannelCount: 0, scope));
+            Assert.Contains("too large an area", exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            using var patches = JpegXlPatchDictionary.Read(reader, Size, Size, extraChannelCount: 0, scope);
+            reader.EnsureNotOverrun();
+        }
+    }
+
+    /// <summary>
+    /// A value of the patch dictionary may take no bit, so the number of sources (1024 plus a quarter of the area of the
+    /// frame: 1028 for a 4x4 frame) and the number of patches (four times that: 4112) are bounded before they are read.
+    /// </summary>
+    [Theory]
+    [InlineData(1028, 1, false)]
+    [InlineData(1029, 1, true)]
+    [InlineData(1, 4112, false)]
+    [InlineData(1, 4113, true)]
+    [InlineData(1028, 4, false)]
+    [InlineData(1028, 5, true)]
+    public void PatchDictionariesWithTooManyPatchesAreRejected(int sourceCount, int patchesPerSource, bool rejected)
+    {
+        const int Size = 4;
+        var symbols = new List<(int Context, uint Value)> { (0, (uint)sourceCount) };
+        for (var i = 0; i < sourceCount; i++)
+        {
+            // A 1x1 source at the origin of reference frame 0, then its patches, all at the origin and without blending
+            symbols.AddRange([(1, 0), (3, 0), (3, 0), (2, 0), (2, 0), (7, (uint)patchesPerSource - 1)]);
+            for (var j = 0; j < patchesPerSource; j++)
+            {
+                symbols.AddRange([(j == 0 ? 4 : 6, 0), (j == 0 ? 4 : 6, 0), (5, JpegXlChannelBlending.ModeNone)]);
+            }
+        }
+
+        AssertPatchDictionary(Size, Size, symbols, rejected ? "too many patches" : null);
+    }
+
+    /// <summary>
+    /// A 4x4 patch is inside its 16x8 frame: its position, the first one of its source or the previous one plus a signed
+    /// offset, is not negative, and the patch ends at most at the edge of the frame.
+    /// </summary>
+    [Theory]
+    [InlineData(12, 4, 0, 0, false)]
+    [InlineData(13, 4, 0, 0, true)]
+    [InlineData(12, 5, 0, 0, true)]
+    [InlineData(0, 0, 12, 4, false)]
+    [InlineData(0, 0, 13, 0, true)]
+    [InlineData(0, 0, 0, 5, true)]
+    [InlineData(0, 0, -1, 0, true)]
+    [InlineData(0, 0, 0, -1, true)]
+    public void PatchesOutsideTheirFrameAreRejected(int x, int y, int offsetX, int offsetY, bool rejected)
+    {
+        static uint PackSigned(int value) => value >= 0 ? (uint)value * 2 : ((uint)-value * 2) - 1;
+
+        List<(int Context, uint Value)> symbols =
+        [
+            (0, 1), (1, 0), (3, 0), (3, 0), (2, 3), (2, 3), (7, 1),
+            (4, (uint)x), (4, (uint)y), (5, JpegXlChannelBlending.ModeNone),
+            (6, PackSigned(offsetX)), (6, PackSigned(offsetY)), (5, JpegXlChannelBlending.ModeNone),
+        ];
+
+        AssertPatchDictionary(16, 8, symbols, rejected ? "outside its frame" : null);
+    }
+
+    /// <summary>
+    /// The position of a source in its reference frame and its size are below 2^30, so that the sums of the positions and
+    /// sizes do not overflow.
+    /// </summary>
+    [Theory]
+    [InlineData((1u << 30) - 1, 0u, 0u, 0u, null)]
+    [InlineData(1u << 30, 0u, 0u, 0u, "position or a size that is too large")]
+    [InlineData(0u, (1u << 30) - 1, 0u, 0u, null)]
+    [InlineData(0u, 1u << 30, 0u, 0u, "position or a size that is too large")]
+    [InlineData(0u, 0u, (1u << 30) - 1, 0u, "outside its frame")]
+    [InlineData(0u, 0u, 1u << 30, 0u, "position or a size that is too large")]
+    [InlineData(0u, 0u, 0u, (1u << 30) - 1, "outside its frame")]
+    [InlineData(0u, 0u, 0u, 1u << 30, "position or a size that is too large")]
+    public void PatchSourcesOfTooLargeAPositionOrSizeAreRejected(uint sourceX, uint sourceY, uint codedWidth, uint codedHeight, string? error)
+    {
+        List<(int Context, uint Value)> symbols =
+        [
+            (0, 1), (1, 0), (3, sourceX), (3, sourceY), (2, codedWidth), (2, codedHeight), (7, 0),
+            (4, 0), (4, 0), (5, JpegXlChannelBlending.ModeNone),
+        ];
+
+        AssertPatchDictionary(64, 64, symbols, error);
+    }
+
+    private static void AssertPatchDictionary(int width, int height, List<(int Context, uint Value)> symbols, string? error)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(AssertPatchDictionary));
+        using var writer = new LsbBitWriter(scope);
+        using (var encoder = new JpegXlEntropyEncoder(10, new JpegXlHybridUintConfig(4, 0, 0), scope, JpegXlEntropyCoding.Ans))
+        {
+            foreach (var (context, value) in symbols)
+            {
+                encoder.Add(context, value);
+            }
+
+            encoder.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (error is not null)
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegXlPatchDictionary.Read(reader, width, height, extraChannelCount: 0, scope));
+            Assert.Contains(error, exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            using var patches = JpegXlPatchDictionary.Read(reader, width, height, extraChannelCount: 0, scope);
+            reader.EnsureNotOverrun();
+        }
+    }
+
+    /// <summary>
+    /// A palette of one color is a 1x1 meta-channel, whose shifts do not grow: each in-place squeeze keeps it and inserts an
+    /// empty residual right after it, moving the channels that follow. The squeezes are read up to the limit of moved
+    /// channels (2^22: 2895 squeezes) and rejected beyond it, before the samples are decoded.
+    /// </summary>
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(2895, false)]
+    [InlineData(2896, true)]
+    [InlineData(272 * 296, true)]
+    public void RepeatedSqueezesOfAPaletteAreBounded(int squeezeCount, bool rejected)
+    {
+        // The palette moves the image channel; then the k-th squeeze moves the k + 1 channels after the palette: 2895
+        // squeezes move 4,191,961 channels in all, 2896 move 4,194,857
+        Assert.Equal(4_194_304, JpegXlModularImage.MaxChannelMoves);
+
+        var squeezes = Enumerable.Repeat((Horizontal: true, InPlace: true, Begin: 0, Count: 1), squeezeCount).ToArray();
+        var data = WriteModularTransforms(withPalette: true, squeezes);
+        using var image = new JpegXlModularImage(8);
+        image.AddChannel(1, 1, 0, 0);
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (rejected)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken));
+            Assert.Contains("too many channels", exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken);
+            reader.EnsureNotOverrun();
+            Assert.HasCount(squeezeCount + 2, image.Channels);
+            Assert.Equal(squeezeCount + 1, image.MetaChannelCount);
+        }
+    }
+
+    /// <summary>
+    /// Squeezes that append their residuals move no channel: 1x1 channels, squeezed by blocks of 19 until their shifts reach
+    /// 31 (30 horizontal squeezes, as a squeeze needs both shifts at most 30, then 31 vertical ones), have 62 times as many
+    /// channels. 55 blocks (64,790 channels) are within the limit of 2^16 channels, 56 (65,968) are not.
+    /// </summary>
+    [Theory]
+    [InlineData(55, false)]
+    [InlineData(56, true)]
+    public void SqueezesThatAddTooManyChannelsAreRejected(int blockCount, bool rejected)
+    {
+        const int BlockSize = 19;
+        const int HorizontalSqueezes = 30;
+        const int SqueezesPerBlock = HorizontalSqueezes + 31;
+        var squeezes = new List<(bool Horizontal, bool InPlace, int Begin, int Count)>();
+        for (var block = 0; block < blockCount; block++)
+        {
+            for (var i = 0; i < SqueezesPerBlock; i++)
+            {
+                squeezes.Add((i < HorizontalSqueezes, false, block * BlockSize, BlockSize));
+            }
+        }
+
+        var data = WriteModularTransforms(withPalette: false, squeezes);
+        using var image = new JpegXlModularImage(8);
+        for (var i = 0; i < blockCount * BlockSize; i++)
+        {
+            image.AddChannel(1, 1, 0, 0);
+        }
+
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (rejected)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken));
+            Assert.Contains("too many channels", exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken);
+            reader.EnsureNotOverrun();
+            Assert.HasCount(blockCount * BlockSize * (SqueezesPerBlock + 1), image.Channels);
+        }
+    }
+
+    [Fact]
+    public void ReadingModularTransformsChecksCancellation()
+    {
+        var squeezes = Enumerable.Repeat((Horizontal: true, InPlace: true, Begin: 0, Count: 1), 1000).ToArray();
+        var data = WriteModularTransforms(withPalette: true, squeezes);
+        using var image = new JpegXlModularImage(8);
+        image.AddChannel(1, 1, 0, 0);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        Assert.Throws<OperationCanceledException>(() => JpegXlModularDecoder.ReadTransforms(reader, image, cancellation.Token));
+        Assert.Single(image.Channels);
+    }
+
+    /// <summary>
+    /// Writes the transforms of a Modular sub-bitstream: a palette of one color of the first channel, when asked, then
+    /// squeeze transforms of at most 296 steps each.
+    /// </summary>
+    private static byte[] WriteModularTransforms(bool withPalette, IReadOnlyList<(bool Horizontal, bool InPlace, int Begin, int Count)> squeezes)
+    {
+        const int MaxStepsPerTransform = 296;
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(WriteModularTransforms));
+        using var writer = new LsbBitWriter(scope);
+        var squeezeTransformCount = (squeezes.Count + MaxStepsPerTransform - 1) / MaxStepsPerTransform;
+        writer.WriteU32((uint)(squeezeTransformCount + (withPalette ? 1 : 0)), 0, 0, 1, 0, 2, 4, 18, 8);
+        if (withPalette)
+        {
+            writer.WriteBits(1, 2);
+            writer.WriteU32(0, 0, 3, 8, 6, 72, 10, 1096, 13);
+            writer.WriteU32(1, 1, 0, 3, 0, 4, 0, 1, 13);
+            writer.WriteU32(1, 0, 8, 256, 10, 1280, 12, 5376, 16);
+            writer.WriteU32(0, 0, 0, 1, 8, 257, 10, 1281, 16);
+            writer.WriteBits(0, 4);
+        }
+
+        for (var first = 0; first < squeezes.Count; first += MaxStepsPerTransform)
+        {
+            var stepCount = Math.Min(MaxStepsPerTransform, squeezes.Count - first);
+            writer.WriteBits(2, 2);
+            writer.WriteU32((uint)stepCount, 0, 0, 1, 4, 9, 6, 41, 8);
+            for (var i = first; i < first + stepCount; i++)
+            {
+                var (horizontal, inPlace, begin, count) = squeezes[i];
+                writer.WriteBool(horizontal);
+                writer.WriteBool(inPlace);
+                writer.WriteU32((uint)begin, 0, 3, 8, 6, 72, 10, 1096, 13);
+                writer.WriteU32((uint)count, 1, 0, 2, 0, 3, 0, 4, 4);
+            }
+        }
+
+        writer.Finish();
+        return writer.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// The sRGB transfer function of the XYB output computes its power with polynomials: on every other float of the curved
+    /// segment up to 1, and on a stride of the floats above it, the power is within 3e-7 of the exact one (relative) and the
+    /// encoded sample within 4e-7 of the exact encoding, a negative sample is the opposite of the encoding of its opposite,
+    /// and the linear segment is exact.
+    /// </summary>
+    [Fact]
+    public void SrgbTransferFunctionIsWithinItsBoundOfTheExactPower()
+    {
+        const double MaxRelativePowerError = 3e-7;
+        const double MaxEncodingError = 4e-7;
+        var first = BitConverter.SingleToInt32Bits(0.0031308f) + 1;
+        var one = BitConverter.SingleToInt32Bits(1f);
+        var last = BitConverter.SingleToInt32Bits(float.MaxValue);
+        var worstPower = 0.0;
+        var worstEncoding = 0.0;
+        var samples = new float[4096];
+        var expected = new double[samples.Length];
+        var count = 0;
+        for (var bits = first; bits <= last; bits += bits < one ? 2 : 4099)
+        {
+            var value = BitConverter.Int32BitsToSingle(bits);
+            var power = Math.Pow(value, 1 / 2.4);
+            worstPower = Math.Max(worstPower, Math.Abs((JpegXlColorTransform.PowerFiveTwelfths(value) / power) - 1));
+            if (value <= 1)
+            {
+                samples[count] = (count & 1) == 0 ? value : -value;
+                expected[count] = (1.055 * power) - 0.055;
+                count++;
+                if (count == samples.Length)
+                {
+                    worstEncoding = Math.Max(worstEncoding, Encode(samples, expected, count));
+                    count = 0;
+                }
+            }
+        }
+
+        worstEncoding = Math.Max(worstEncoding, Encode(samples, expected, count));
+        Assert.True(worstPower <= MaxRelativePowerError, $"The relative error of the power is {worstPower:E3}.");
+        Assert.True(worstEncoding <= MaxEncodingError, $"The error of the encoding is {worstEncoding:E3}.");
+
+        float[] linear = [0f, -0f, 1e-40f, 1e-6f, -0.001f, 0.0031308f, -0.0031308f];
+        var encoded = linear.ToArray();
+        JpegXlColorTransform.LinearToSrgb(encoded);
+        Assert.Equal(Array.ConvertAll(linear, value => BitConverter.SingleToInt32Bits(MathF.CopySign(12.92f * MathF.Abs(value), value))), Array.ConvertAll(encoded, BitConverter.SingleToInt32Bits));
+
+        float[] special = [float.PositiveInfinity, float.NegativeInfinity, float.NaN];
+        JpegXlColorTransform.LinearToSrgb(special);
+        Assert.Equal(float.PositiveInfinity, special[0]);
+        Assert.Equal(float.NegativeInfinity, special[1]);
+        Assert.True(float.IsNaN(special[2]));
+
+        static double Encode(float[] samples, double[] expected, int count)
+        {
+            var encoded = samples.AsSpan(0, count).ToArray();
+            JpegXlColorTransform.LinearToSrgb(encoded);
+            var worst = 0.0;
+            for (var i = 0; i < count; i++)
+            {
+                worst = Math.Max(worst, Math.Abs(Math.Abs(encoded[i]) - expected[i]));
+                Assert.Equal(samples[i] < 0, float.IsNegative(encoded[i]));
+            }
+
+            return worst;
+        }
+    }
+
+    /// <summary>
+    /// The groups of a frame are decoded by several workers when the configuration allows it (600x300 pixels: six groups,
+    /// more than the 65,536 pixels that several workers need), and so are the rows converted from XYB: the pixels are those
+    /// of a single worker, for VarDCT frames of one pass and of several, with an alpha channel, and for Modular frames.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void FramesDecodedByWorkersHaveThePixelsOfOneWorker(bool lossy, bool progressive)
+    {
+        var pixels = new Rgba32[600 * 300];
+        for (var y = 0; y < 300; y++)
+        {
+            for (var x = 0; x < 600; x++)
+            {
+                var noise = (byte)(((uint)((x * 73856093) ^ (y * 19349663)) * 2654435761u) >> 24);
+                pixels[(y * 600) + x] = new Rgba32((byte)(x + (noise >> 3)), (byte)((y * 2) + (x / 7)), noise, (byte)((x / 20) % 3 == 0 ? 255 : x + y));
+            }
+        }
+
+        using var image = Image.ImportPixelData<Rgba32>(pixels, 600, 300);
+        using var output = new MemoryStream();
+        image.Save(output, new Formats.JpegXlEncoder { Compression = lossy ? Formats.JpegXlCompression.Lossy : Formats.JpegXlCompression.Lossless, Progressive = progressive });
+        var data = output.ToArray();
+        using var expected = Image.Load<Rgba64>(data);
+        foreach (var workers in (int[])[2, 4, 16])
+        {
+            using var decoded = Image.Load<Rgba64>(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+            Assert.Equal(GetPixels(expected.Frames[0]), GetPixels(decoded.Frames[0]));
+        }
+    }
+
+    /// <summary>
+    /// The samples of a channel become numbers where 1 is the largest integer: integers up to 31 bits are scaled by their
+    /// depth, and floating-point samples of 16 to 32 bits are the numbers their bits encode, subnormal numbers included.
+    /// </summary>
+    [Theory]
+    [InlineData(8, 0, 0, 0x0000_0000u)]
+    [InlineData(8, 0, 255, 0x3F80_0000u)]
+    [InlineData(31, 0, int.MaxValue, 0x3F80_0000u)]
+    [InlineData(32, 8, 0x3E80_0000, 0x3E80_0000u)]
+    [InlineData(16, 5, 0x3C00, 0x3F80_0000u)]
+    [InlineData(16, 5, 0xC000, 0xC000_0000u)]
+    [InlineData(16, 5, 0x8000, 0x8000_0000u)]
+    [InlineData(16, 5, 0x7BFF, 0x477F_E000u)]
+    [InlineData(16, 5, 0x0001, 0x3380_0000u)]
+    [InlineData(16, 5, 0x0200, 0x3800_0000u)]
+    [InlineData(16, 5, 0x7C00, 0x4780_0000u)]
+    [InlineData(16, 8, 0x3E80, 0x3E80_0000u)]
+    [InlineData(24, 7, 0x3D_0000, 0x3E80_0000u)]
+    [InlineData(24, 8, 0x00_0001, 0x0000_0100u)]
+    public void SamplesAreConvertedAccordingToTheirBitDepth(int bitsPerSample, int exponentBits, int sample, uint expectedBits)
+    {
+        var depth = new JpegXlBitDepth(bitsPerSample, exponentBits);
+        var result = new float[1];
+        depth.ToSingle([sample], result);
+        Assert.Equal(expectedBits, BitConverter.SingleToUInt32Bits(result[0]));
+
+        depth.ToSingle([depth.One], result);
+        Assert.Equal(1f, result[0]);
+    }
+
+    /// <summary>
+    /// A frame is blended over the one below with the second alpha channel of the image, which the feature policy ignores:
+    /// that channel can be stored as floating-point numbers or as 31-bit integers, and it weights the colors by 0.25.
+    /// </summary>
+    [Theory]
+    [InlineData(32, 8, 0x3F80_0000, 0x3E80_0000)]
+    [InlineData(16, 5, 0x3C00, 0x3400)]
+    [InlineData(16, 8, 0x3F80, 0x3E80)]
+    [InlineData(24, 7, 0x3F_0000, 0x3D_0000)]
+    [InlineData(31, 0, int.MaxValue, 536_870_912)]
+    [InlineData(16, 0, 65_535, 16_384)]
+    public void FramesAreBlendedWithAnExtraChannelOfAnyDepth(int bitsPerSample, int exponentBits, int one, int quarter)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(FramesAreBlendedWithAnExtraChannelOfAnyDepth));
+        using var writer = new LsbBitWriter(scope);
+
+        // An 8x8 sRGB image with two extra channels: the 8-bit alpha channel of the image, then an alpha channel of the depth under test
+        writer.WriteBits(0x0AFF, 16);
+        writer.WriteBool(true);
+        writer.WriteBits(0, 5);
+        writer.WriteBits(0, 3);
+        writer.WriteBits(0, 5);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteU32(8, 8, 0, 10, 0, 12, 0, 1, 6);
+        writer.WriteBool(false);
+        writer.WriteU32(2, 0, 0, 1, 0, 2, 4, 1, 12);
+        writer.WriteBool(true);
+        writer.WriteBool(false);
+        writer.WriteEnum(JpegXlExtraChannelInfo.TypeAlpha);
+        writer.WriteBool(exponentBits != 0);
+        if (exponentBits != 0)
+        {
+            writer.WriteU32((uint)bitsPerSample, 32, 0, 16, 0, 24, 0, 1, 6);
+            writer.WriteBits((uint)exponentBits - 1, 4);
+        }
+        else
+        {
+            writer.WriteU32((uint)bitsPerSample, 8, 0, 10, 0, 12, 0, 1, 6);
+        }
+
+        writer.WriteU32(0, 0, 0, 3, 0, 4, 0, 1, 3);
+        writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteBool(true);
+        writer.WriteU64(0);
+        writer.WriteBool(true);
+        writer.ZeroPadToByte();
+
+        // A red frame kept as reference 0, then a blue frame blended over it with the second alpha channel
+        WriteFrame(isLast: false, red: 200, blue: 0, secondAlpha: one);
+        WriteFrame(isLast: true, red: 0, blue: 200, secondAlpha: quarter);
+        writer.Finish();
+
+        using var image = Image.Load<Rgba32>(writer.WrittenSpan.ToArray());
+        var pixels = new Rgba32[64];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        Assert.All(pixels, pixel => Assert.Equal(new Rgba32(150, 0, 50, 255), pixel));
+
+        void WriteFrame(bool isLast, int red, int blue, int secondAlpha)
+        {
+            // A Modular frame of one group, without restoration filters
+            writer.WriteBool(false);
+            writer.WriteBits(JpegXlFrameHeader.TypeRegular, 2);
+            writer.WriteBool(true);
+            writer.WriteU64(0);
+            writer.WriteBool(false);
+            writer.WriteBits(0, 2);
+            writer.WriteBits(0, 2);
+            writer.WriteBits(0, 2);
+            writer.WriteBits(1, 2);
+            writer.WriteU32(1, 1, 0, 2, 0, 3, 0, 4, 3);
+            writer.WriteBool(false);
+            if (isLast)
+            {
+                // The colors are blended with the extra channel 1 over the reference 0
+                writer.WriteU32(JpegXlBlendingInfo.ModeBlend, 0, 0, 1, 0, 2, 0, 3, 2);
+                writer.WriteU32(1, 0, 0, 1, 0, 2, 0, 3, 3);
+                writer.WriteBool(false);
+                writer.WriteBits(0, 2);
+            }
+            else
+            {
+                writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            }
+
+            writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            writer.WriteBool(isLast);
+            if (!isLast)
+            {
+                // Saved as reference 0, after its color transform
+                writer.WriteBits(0, 2);
+                writer.WriteBool(false);
+            }
+
+            writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
+            writer.WriteBool(false);
+            writer.WriteBool(false);
+            writer.WriteBits(0, 2);
+            writer.WriteU64(0);
+            writer.WriteU64(0);
+
+            // The only section: LfGlobal with the default LF dequantization, no global tree, and the whole image
+            using var section = new LsbBitWriter(scope);
+            section.WriteBool(true);
+            section.WriteBool(false);
+            using (var modular = new JpegXlModularImage(8))
+            {
+                int[] samples = [red, 0, blue, 255, secondAlpha];
+                foreach (var sample in samples)
+                {
+                    modular.AddChannel(8, 8, 0, 0);
+                    var channel = modular.Channels[^1];
+                    channel.Allocate(scope);
+                    channel.Samples.Fill(sample);
+                }
+
+                JpegXlModularEncoder.Encode(section, modular, colorChannelCount: 3, effort: 1, scope, TestContext.Current.CancellationToken);
+            }
+
+            section.Finish();
+            JpegXlHeaderWriter.WriteToc(writer, [section.WrittenSpan.Length]);
+            writer.WriteAlignedBytes(section.WrittenSpan);
+        }
+    }
+
+    private static Rgba64[] GetPixels(ImageFrame<Rgba64> frame)
+    {
+        var pixels = new Rgba64[frame.Width * frame.Height];
+        frame.CopyPixelDataTo(pixels);
+        return pixels;
+    }
+
+    private static byte[] GetFile(string name) => name switch
+    {
+        nameof(JpegXlTestFiles.Rgb) => JpegXlTestFiles.Rgb,
+        nameof(JpegXlTestFiles.RgbaContainer) => JpegXlTestFiles.RgbaContainer,
+        nameof(JpegXlTestFiles.Gray16Container) => JpegXlTestFiles.Gray16Container,
+        nameof(JpegXlTestFiles.LayeredAnimation) => JpegXlTestFiles.LayeredAnimation,
+        nameof(JpegXlTestFiles.SplitCodestreamWithXmp) => JpegXlTestFiles.SplitCodestreamWithXmp,
+        nameof(JpegXlTestFiles.SplitCodestreamWithCompressedXmp) => JpegXlTestFiles.SplitCodestreamWithCompressedXmp,
+        nameof(JpegXlTestFiles.Oriented12Bit) => JpegXlTestFiles.Oriented12Bit,
+        _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown file."),
+    };
+
+    private static ImageIdentifyOptions Limits(ImageResourceLimits limits, ImageIdentifyMode mode = ImageIdentifyMode.Header)
+        => new() { Mode = mode, Configuration = new ImageConfiguration { Limits = limits } };
+
+    private static string Describe(ImageInfo info)
+        => string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{info.Format} {info.Width}x{info.Height} {info.PixelFormat} {info.ColorModel} {info.BitsPerComponent} frames={info.FrameCount} animated={info.IsAnimated} alpha={info.MayHaveTransparency} plays={info.Animation?.TotalPlays} orientation={info.Metadata.Orientation} xmp={info.Metadata.XmpProfile?.Data.Length} exif={info.Metadata.ExifProfile?.Data.Length} icc={info.Metadata.IccProfile?.Data.Length} cicp={info.Metadata.Cicp} transfer={info.Metadata.TransferFunction} mode={info.IdentifyMode}");
+    /// <summary>The section H.5.2 of the standard as it is written: the reference of <see cref="JpegXlWeightedPredictor"/>.</summary>
+    private sealed class WeightedPredictorTranscription(JpegXlWeightedPredictorHeader header, int width)
+    {
+        private readonly int _rowLength = width + 2;
+        private readonly int[] _errors = new int[(width + 2) * 2];
+        private readonly uint[][] _subErrors = [new uint[(width + 2) * 2], new uint[(width + 2) * 2], new uint[(width + 2) * 2], new uint[(width + 2) * 2]];
+        private readonly long[] _subPredictions = new long[4];
+        private long _prediction;
+
+        public long Predict(int x, int y, long north, long west, long northEast, long northWest, long northNorth, out int maxError)
+        {
+            var previousRow = (y & 1) != 0 ? _rowLength : 0;
+            var currentRow = _rowLength - previousRow;
+            var positionN = previousRow + x;
+            var positionNE = x < width - 1 ? positionN + 1 : positionN;
+            var positionNW = x > 0 ? positionN - 1 : positionN;
+            var weights = new uint[4];
+            for (var i = 0; i < 4; i++)
+            {
+                var error = _subErrors[i][positionN] + _subErrors[i][positionNE] + _subErrors[i][positionNW];
+                var shift = Math.Max(0, System.Numerics.BitOperations.Log2((ulong)error + 1) - 5);
+                weights[i] = 4 + ((header.Weights[i] * (uint)((1 << 24) / ((error >> shift) + 1))) >> shift);
+            }
+
+            north <<= 3;
+            west <<= 3;
+            northEast <<= 3;
+            northWest <<= 3;
+            northNorth <<= 3;
+            long errorW = x == 0 ? 0 : _errors[currentRow + x - 1];
+            long errorN = _errors[positionN];
+            long errorNW = _errors[positionNW];
+            long errorNE = _errors[positionNE];
+            long largest = errorW;
+            foreach (var error in new[] { errorN, errorNW, errorNE })
+            {
+                if (Math.Abs(error) > Math.Abs(largest))
+                {
+                    largest = error;
+                }
+            }
+
+            maxError = (int)largest;
+            _subPredictions[0] = west + northEast - north;
+            _subPredictions[1] = north - (((errorW + errorN + errorNE) * header.P1) >> 5);
+            _subPredictions[2] = west - (((errorW + errorN + errorNW) * header.P2) >> 5);
+            _subPredictions[3] = north - (((errorNW * header.P3A) + (errorN * header.P3B) + (errorNE * header.P3C) + ((northNorth - north) * header.P3D) + ((northWest - west) * header.P3E)) >> 5);
+            var logWeight = System.Numerics.BitOperations.Log2(weights[0] + weights[1] + weights[2] + weights[3]) - 4;
+            uint weightSum = 0;
+            for (var i = 0; i < 4; i++)
+            {
+                weights[i] >>= logWeight;
+                weightSum += weights[i];
+            }
+
+            var total = (long)(weightSum >> 1) - 1;
+            for (var i = 0; i < 4; i++)
+            {
+                total += _subPredictions[i] * weights[i];
+            }
+
+            var prediction = (total * ((1 << 24) / weightSum)) >> 24;
+            if (((errorN ^ errorW) | (errorN ^ errorNW)) <= 0)
+            {
+                prediction = Math.Clamp(prediction, Math.Min(west, Math.Min(northEast, north)), Math.Max(west, Math.Max(northEast, north)));
+            }
+
+            _prediction = prediction;
+            return (prediction + 3) >> 3;
+        }
+
+        public void Update(int value, int x, int y)
+        {
+            var previousRow = (y & 1) != 0 ? _rowLength : 0;
+            var currentRow = _rowLength - previousRow;
+            var scaled = (long)value << 3;
+            _errors[currentRow + x] = (int)(_prediction - scaled);
+            for (var i = 0; i < 4; i++)
+            {
+                var error = (uint)((Math.Abs(_subPredictions[i] - scaled) + 3) >> 3);
+                _subErrors[i][currentRow + x] = error;
+                _subErrors[i][previousRow + x + 1] += error;
+            }
+        }
+    }
+}

@@ -64,7 +64,13 @@ public sealed class PostgreSqlAuthenticationContext
 
     private bool ValidateClearTextPassword(string expectedPassword)
     {
-        return string.Equals(Password, expectedPassword, StringComparison.Ordinal);
+        if (Password is null)
+        {
+            return false;
+        }
+
+        // Compared in constant time: this is the only place a long-lived secret is compared directly.
+        return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(Password), Encoding.UTF8.GetBytes(expectedPassword));
     }
 
     private bool ValidateMd5Password(string expectedPassword)

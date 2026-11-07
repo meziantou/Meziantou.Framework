@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Geo.Maps.GeoPackage</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Reads and writes the map bundles of Meziantou.Framework.Geo.Maps as GeoPackage files: one SQLite file per region, with a table and a spatial index per layer, that QGIS and GDAL open.</Description>
+    <PackageTags>geo;gis;map;maps;offline;geopackage;gpkg;sqlite;openstreetmap;natural-earth</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+  </ItemGroup>
+
+</Project>

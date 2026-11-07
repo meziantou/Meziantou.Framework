@@ -19,7 +19,7 @@ internal sealed class YamlICollectionConverter<TElement> : YamlConverter<ICollec
 
     public override ICollection<TElement>? Read(YamlReader reader)
     {
-        var list = SequenceReadHelpers.ReadList<TElement>(reader, ref _elementConverter, "ICollection");
+        var list = SequenceReadHelpers.ReadList<ICollection<TElement>, TElement>(reader, ref _elementConverter, "ICollection");
         return list;
     }
 

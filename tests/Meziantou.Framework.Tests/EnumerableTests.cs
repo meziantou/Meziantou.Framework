@@ -190,21 +190,21 @@ public class EnumerableTests
     public void IsDistinct_MultipleNulls()
     {
         var array = new[] { "a", null, null };
-        Assert.False(array.IsDistinct());
+        Assert.False(array.IsDistinct(StringComparer.Ordinal));
     }
 
     [Fact]
     public void IsDistinct_MultipleIdenticalValues()
     {
         var array = new[] { "a", "b", "a" };
-        Assert.False(array.IsDistinct());
+        Assert.False(array.IsDistinct(StringComparer.Ordinal));
     }
 
     [Fact]
     public void IsDistinct()
     {
         var array = new[] { "a", "b", "c" };
-        Assert.True(array.IsDistinct());
+        Assert.True(array.IsDistinct(StringComparer.Ordinal));
     }
 
     [Fact]
@@ -438,6 +438,31 @@ public class EnumerableTests
         Assert.Throws<ArgumentNullException>(() => values.ParallelStableSort());
     }
 
+    [Fact]
+    public async Task ToAsyncEnumerable_BindsToSystemLinq()
+    {
+        // Not ambiguous with System.Linq.AsyncEnumerable.ToAsyncEnumerable while Meziantou.Framework is in scope
+        var actual = new[] { 1, 2 }.ToAsyncEnumerable();
+
+        await Assert.Equal([1, 2], actual);
+    }
+
+    [Fact]
+    public async Task ToAsyncEnumerable_HonorsCancellation()
+    {
+        using var cts = new CancellationTokenSource();
+#pragma warning disable CS0618 // Type or member is obsolete
+        var enumerable = EnumerableExtensions.ToAsyncEnumerable(new[] { 1, 2, 3 });
+#pragma warning restore CS0618
+
+        await using var enumerator = enumerable.GetAsyncEnumerator(cts.Token);
+        Assert.True(await enumerator.MoveNextAsync());
+        Assert.Equal(1, enumerator.Current);
+
+        await cts.CancelAsync();
+        await Assert.ThrowsAny<OperationCanceledException>(async () => { await enumerator.MoveNextAsync(); });
+    }
+
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct StableSortableValue(int Key, int Order);
 
@@ -528,5 +553,114 @@ public class EnumerableTests
         B = 1,
         A = 2,
         C = 3,
+    }
+
+    [Fact]
+    public void TimeSpanAverage_EmptySequenceThrowsInvalidOperationException()
+    {
+        Assert.Throws<InvalidOperationException>(() => Array.Empty<TimeSpan>().Average());
+    }
+
+    [Fact]
+    public void TimeSpanAverage_OverflowingSumThrows()
+    {
+        var values = new[] { TimeSpan.MaxValue, TimeSpan.MaxValue };
+
+        Assert.Throws<OverflowException>(() => values.Average());
+    }
+
+    [Fact]
+    public void TimeSpanAverage_ComputesTheAverage()
+    {
+        var values = new[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3) };
+
+        Assert.Equal(TimeSpan.FromSeconds(2), values.Average());
+    }
+
+#nullable enable
+    [Fact]
+    public void Documentation_Filtering()
+    {
+        #region EnumerableExtensions_Filtering
+        string?[] values = ["a", null, "", " ", "b"];
+
+        // Remove null values, and get a sequence of non-nullable items
+        IEnumerable<string> notNull = values.WhereNotNull();
+        Assert.Equal(["a", "", " ", "b"], notNull);
+        Assert.Equal(["a", " ", "b"], values.WhereNotNullOrEmpty());
+        Assert.Equal(["a", "b"], values.WhereNotNullOrWhiteSpace());
+
+        // Treat a null sequence as an empty one
+        IEnumerable<int>? missing = null;
+        Assert.Empty(missing.EmptyIfNull());
+        #endregion
+    }
+#nullable disable
+
+    [Fact]
+    public void Documentation_Checks()
+    {
+        #region EnumerableExtensions_Checks
+        Assert.True(new[] { 1, 2, 3 }.IsDistinct());
+        Assert.False(new[] { "a", "A" }.IsDistinct(StringComparer.OrdinalIgnoreCase));
+        Assert.False(new[] { (Id: 1, Name: "a"), (Id: 1, Name: "b") }.IsDistinctBy(item => item.Id));
+
+        Assert.Equal(1, new[] { "a", "b" }.IndexOf("b", StringComparer.Ordinal));
+        Assert.True(new[] { "Alpha", "Beta" }.ContainsIgnoreCase("beta"));
+
+        Assert.Equal(TimeSpan.FromMinutes(3), new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2) }.Sum());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Collections()
+    {
+        #region EnumerableExtensions_Collections
+        ICollection<int> numbers = new List<int> { 1, 2, 3, 4 };
+        numbers.AddRange(5, 6);
+        numbers.RemoveAll(number => number % 2 == 0);
+        Assert.Equal([1, 3, 5], numbers);
+
+        IList<string> names = ["a", "b"];
+        names.Replace("a", "A"); // Throws when the item is not in the list
+        names.AddOrReplace("c", "C"); // Adds the item when it is not in the list
+        Assert.Equal(["A", "b", "C"], names);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ForEachAsync()
+    {
+        #region EnumerableExtensions_ForEachAsync
+        var processed = new ConcurrentBag<int>();
+
+        // One item at a time, in order
+        await new[] { 1, 2, 3 }.ForEachAsync(async item =>
+        {
+            await Task.Yield();
+            processed.Add(item);
+        });
+
+        // Up to 2 items at the same time
+        await new[] { 4, 5, 6 }.ParallelForEachAsync(degreeOfParallelism: 2, async item =>
+        {
+            await Task.Yield();
+            processed.Add(item);
+        });
+
+        Assert.Equal([1, 2, 3, 4, 5, 6], processed.Order());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AsEnumerableOnce()
+    {
+        #region EnumerableExtensions_AsEnumerableOnce
+        var once = new[] { 1, 2 }.AsEnumerableOnce();
+        Assert.Equal(3, once.Sum());
+
+        // A second enumeration throws, which reveals code that enumerates a sequence twice
+        Assert.Throws<InvalidOperationException>(() => once.Sum());
+        #endregion
     }
 }

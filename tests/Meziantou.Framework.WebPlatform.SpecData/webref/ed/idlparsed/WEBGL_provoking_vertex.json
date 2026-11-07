@@ -1,0 +1,156 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_provoking_vertex Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_provoking_vertex/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_provoking_vertex"
+        ],
+        "Worker": [
+          "WEBGL_provoking_vertex"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_provoking_vertex": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_provoking_vertex {\n    const GLenum FIRST_VERTEX_CONVENTION_WEBGL = 0x8E4D;\n    const GLenum LAST_VERTEX_CONVENTION_WEBGL  = 0x8E4E; // default\n    const GLenum PROVOKING_VERTEX_WEBGL        = 0x8E4F;\n\n    undefined provokingVertexWEBGL(GLenum provokeMode);\n};",
+        "type": "interface",
+        "name": "WEBGL_provoking_vertex",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "FIRST_VERTEX_CONVENTION_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8E4D"
+            }
+          },
+          {
+            "type": "const",
+            "name": "LAST_VERTEX_CONVENTION_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8E4E"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PROVOKING_VERTEX_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8E4F"
+            }
+          },
+          {
+            "type": "operation",
+            "name": "provokingVertexWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "provokeMode",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLenum"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_provoking_vertex"
+      ],
+      "Worker": [
+        "WEBGL_provoking_vertex"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_provoking_vertex": [
+        "GLenum"
+      ]
+    },
+    "externalDependencies": [
+      "GLenum"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

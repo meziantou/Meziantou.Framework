@@ -1,0 +1,1854 @@
+{
+  "spec": {
+    "title": "Observable",
+    "url": "https://wicg.github.io/observable/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "*": [
+          "Observable"
+        ]
+      },
+      "functions": {
+        "*": [
+          "Subscriber"
+        ]
+      }
+    },
+    "idlNames": {
+      "Subscriber": {
+        "fragment": "[Exposed=*]\ninterface Subscriber {\n  undefined next(any value);\n  undefined error(any error);\n  undefined complete();\n  undefined addTeardown(VoidFunction teardown);\n\n  // True after the Subscriber is created, up until either\n  // complete()/error() are invoked, or the subscriber unsubscribes. Inside\n  // complete()/error(), this attribute is true.\n  readonly attribute boolean active;\n\n  readonly attribute AbortSignal signal;\n};",
+        "type": "interface",
+        "name": "Subscriber",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "next",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-subscriber-next"
+          },
+          {
+            "type": "operation",
+            "name": "error",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "error",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-subscriber-error"
+          },
+          {
+            "type": "operation",
+            "name": "complete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-subscriber-complete"
+          },
+          {
+            "type": "operation",
+            "name": "addTeardown",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "teardown",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "VoidFunction"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-subscriber-addteardown"
+          },
+          {
+            "type": "attribute",
+            "name": "active",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/observable/#dom-subscriber-active"
+          },
+          {
+            "type": "attribute",
+            "name": "signal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/observable/#dom-subscriber-signal"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/observable/#subscriber"
+      },
+      "SubscribeCallback": {
+        "fragment": "// SubscribeCallback is where the Observable \"creator's\" code lives. It's\n// called when subscribe() is called, to set up a new subscription.\ncallback SubscribeCallback = undefined (Subscriber subscriber);",
+        "type": "callback",
+        "name": "SubscribeCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "subscriber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Subscriber"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-subscribecallback"
+      },
+      "ObservableSubscriptionCallback": {
+        "fragment": "callback ObservableSubscriptionCallback = undefined (any value);",
+        "type": "callback",
+        "name": "ObservableSubscriptionCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-observablesubscriptioncallback"
+      },
+      "SubscriptionObserver": {
+        "fragment": "dictionary SubscriptionObserver {\n  ObservableSubscriptionCallback next;\n  ObservableSubscriptionCallback error;\n  VoidFunction complete;\n};",
+        "type": "dictionary",
+        "name": "SubscriptionObserver",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "next",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableSubscriptionCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-subscriptionobserver-next"
+          },
+          {
+            "type": "field",
+            "name": "error",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableSubscriptionCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-subscriptionobserver-error"
+          },
+          {
+            "type": "field",
+            "name": "complete",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "VoidFunction"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-subscriptionobserver-complete"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/observable/#dictdef-subscriptionobserver"
+      },
+      "ObservableInspectorAbortHandler": {
+        "fragment": "callback ObservableInspectorAbortHandler = undefined (any value);",
+        "type": "callback",
+        "name": "ObservableInspectorAbortHandler",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-observableinspectoraborthandler"
+      },
+      "ObservableInspector": {
+        "fragment": "dictionary ObservableInspector {\n  ObservableSubscriptionCallback next;\n  ObservableSubscriptionCallback error;\n  VoidFunction complete;\n\n  VoidFunction subscribe;\n  ObservableInspectorAbortHandler abort;\n};",
+        "type": "dictionary",
+        "name": "ObservableInspector",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "next",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableSubscriptionCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-observableinspector-next"
+          },
+          {
+            "type": "field",
+            "name": "error",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableSubscriptionCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-observableinspector-error"
+          },
+          {
+            "type": "field",
+            "name": "complete",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "VoidFunction"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-observableinspector-complete"
+          },
+          {
+            "type": "field",
+            "name": "subscribe",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "VoidFunction"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-observableinspector-subscribe"
+          },
+          {
+            "type": "field",
+            "name": "abort",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableInspectorAbortHandler"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-observableinspector-abort"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/observable/#dictdef-observableinspector"
+      },
+      "ObserverUnion": {
+        "fragment": "typedef (ObservableSubscriptionCallback or SubscriptionObserver) ObserverUnion;",
+        "type": "typedef",
+        "name": "ObserverUnion",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableSubscriptionCallback"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SubscriptionObserver"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#typedefdef-observerunion"
+      },
+      "ObservableInspectorUnion": {
+        "fragment": "typedef (ObservableSubscriptionCallback or ObservableInspector) ObservableInspectorUnion;",
+        "type": "typedef",
+        "name": "ObservableInspectorUnion",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableSubscriptionCallback"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ObservableInspector"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#typedefdef-observableinspectorunion"
+      },
+      "SubscribeOptions": {
+        "fragment": "dictionary SubscribeOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "SubscribeOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-subscribeoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/observable/#dictdef-subscribeoptions"
+      },
+      "Predicate": {
+        "fragment": "callback Predicate = boolean (any value, unsigned long long index);",
+        "type": "callback",
+        "name": "Predicate",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "boolean"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "index",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-predicate"
+      },
+      "Reducer": {
+        "fragment": "callback Reducer = any (any accumulator, any currentValue, unsigned long long index);",
+        "type": "callback",
+        "name": "Reducer",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "accumulator",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "currentValue",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "index",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-reducer"
+      },
+      "Mapper": {
+        "fragment": "callback Mapper = any (any value, unsigned long long index);",
+        "type": "callback",
+        "name": "Mapper",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "index",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-mapper"
+      },
+      "Visitor": {
+        "fragment": "// Differs from Mapper only in return type, since this callback is exclusively\n// used to visit each element in a sequence, not transform it.\ncallback Visitor = undefined (any value, unsigned long long index);",
+        "type": "callback",
+        "name": "Visitor",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "index",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-visitor"
+      },
+      "CatchCallback": {
+        "fragment": "// This callback returns an `any` that must convert into an `Observable`, via\n// the `Observable` conversion semantics.\ncallback CatchCallback = any (any value);",
+        "type": "callback",
+        "name": "CatchCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/observable/#callbackdef-catchcallback"
+      },
+      "Observable": {
+        "fragment": "[Exposed=*]\ninterface Observable {\n  constructor(SubscribeCallback callback);\n  undefined subscribe(optional ObserverUnion observer = {}, optional SubscribeOptions options = {});\n\n  // Constructs a native Observable from value if it's any of the following:\n  //   - Observable\n  //   - AsyncIterable\n  //   - Iterable\n  //   - Promise\n  static Observable from(any value);\n\n  // Observable-returning operators. See \"Operators\" section in the spec.\n  //\n  // takeUntil() can consume promises, iterables, async iterables, and other\n  // observables.\n  Observable takeUntil(any value);\n  Observable map(Mapper mapper);\n  Observable filter(Predicate predicate);\n  Observable take(unsigned long long amount);\n  Observable drop(unsigned long long amount);\n  Observable flatMap(Mapper mapper);\n  Observable switchMap(Mapper mapper);\n  Observable inspect(optional ObservableInspectorUnion inspectorUnion = {});\n  Observable catch(CatchCallback callback);\n  Observable finally(VoidFunction callback);\n\n  // Promise-returning operators.\n  Promise<sequence<any>> toArray(optional SubscribeOptions options = {});\n  Promise<undefined> forEach(Visitor callback, optional SubscribeOptions options = {});\n  Promise<boolean> every(Predicate predicate, optional SubscribeOptions options = {});\n  Promise<any> first(optional SubscribeOptions options = {});\n  Promise<any> last(optional SubscribeOptions options = {});\n  Promise<any> find(Predicate predicate, optional SubscribeOptions options = {});\n  Promise<boolean> some(Predicate predicate, optional SubscribeOptions options = {});\n  Promise<any> reduce(Reducer reducer, optional any initialValue, optional SubscribeOptions options = {});\n};",
+        "type": "interface",
+        "name": "Observable",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/observable/#dom-observable-observable"
+          },
+          {
+            "type": "operation",
+            "name": "subscribe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "observer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ObserverUnion"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-subscribe"
+          },
+          {
+            "type": "operation",
+            "name": "from",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://wicg.github.io/observable/#dom-observable-from"
+          },
+          {
+            "type": "operation",
+            "name": "takeUntil",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-takeuntil"
+          },
+          {
+            "type": "operation",
+            "name": "map",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "mapper",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Mapper"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-map"
+          },
+          {
+            "type": "operation",
+            "name": "filter",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "predicate",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Predicate"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-filter"
+          },
+          {
+            "type": "operation",
+            "name": "take",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "amount",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-take"
+          },
+          {
+            "type": "operation",
+            "name": "drop",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "amount",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-drop"
+          },
+          {
+            "type": "operation",
+            "name": "flatMap",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "mapper",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Mapper"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-flatmap"
+          },
+          {
+            "type": "operation",
+            "name": "switchMap",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "mapper",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Mapper"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-switchmap"
+          },
+          {
+            "type": "operation",
+            "name": "inspect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "inspectorUnion",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ObservableInspectorUnion"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-inspect"
+          },
+          {
+            "type": "operation",
+            "name": "catch",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CatchCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-catch"
+          },
+          {
+            "type": "operation",
+            "name": "finally",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Observable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "VoidFunction"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-finally"
+          },
+          {
+            "type": "operation",
+            "name": "toArray",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "any"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-toarray"
+          },
+          {
+            "type": "operation",
+            "name": "forEach",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Visitor"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-foreach"
+          },
+          {
+            "type": "operation",
+            "name": "every",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "predicate",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Predicate"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-every"
+          },
+          {
+            "type": "operation",
+            "name": "first",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-first"
+          },
+          {
+            "type": "operation",
+            "name": "last",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-last"
+          },
+          {
+            "type": "operation",
+            "name": "find",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "predicate",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Predicate"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-find"
+          },
+          {
+            "type": "operation",
+            "name": "some",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "predicate",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Predicate"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-some"
+          },
+          {
+            "type": "operation",
+            "name": "reduce",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reducer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Reducer"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "initialValue",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SubscribeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/observable/#dom-observable-reduce"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/observable/#observable"
+      },
+      "ObservableEventListenerOptions": {
+        "fragment": "dictionary ObservableEventListenerOptions {\n  boolean capture = false;\n  boolean passive;\n};",
+        "type": "dictionary",
+        "name": "ObservableEventListenerOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "capture",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-observableeventlisteneroptions-capture"
+          },
+          {
+            "type": "field",
+            "name": "passive",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/observable/#dom-observableeventlisteneroptions-passive"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/observable/#dictdef-observableeventlisteneroptions"
+      }
+    },
+    "idlExtendedNames": {
+      "EventTarget": [
+        {
+          "fragment": "partial interface EventTarget {\n  Observable when(DOMString type, optional ObservableEventListenerOptions options = {});\n};",
+          "type": "interface",
+          "name": "EventTarget",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "when",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Observable"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "type",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "ObservableEventListenerOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/observable/#dom-eventtarget-when"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "*": [
+        "Subscriber",
+        "Observable"
+      ]
+    },
+    "dependencies": {
+      "Subscriber": [
+        "VoidFunction",
+        "AbortSignal"
+      ],
+      "SubscriptionObserver": [
+        "ObservableSubscriptionCallback",
+        "VoidFunction"
+      ],
+      "ObservableInspector": [
+        "ObservableSubscriptionCallback",
+        "VoidFunction",
+        "ObservableInspectorAbortHandler"
+      ],
+      "SubscribeOptions": [
+        "AbortSignal"
+      ],
+      "Observable": [
+        "SubscribeCallback",
+        "ObserverUnion",
+        "SubscribeOptions",
+        "Observable",
+        "Mapper",
+        "Predicate",
+        "ObservableInspectorUnion",
+        "CatchCallback",
+        "VoidFunction",
+        "Visitor",
+        "Reducer"
+      ],
+      "ObservableEventListenerOptions": [],
+      "EventTarget": [
+        "Observable",
+        "ObservableEventListenerOptions"
+      ]
+    },
+    "externalDependencies": [
+      "VoidFunction",
+      "AbortSignal",
+      "EventTarget"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

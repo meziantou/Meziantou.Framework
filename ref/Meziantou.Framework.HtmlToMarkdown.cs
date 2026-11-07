@@ -7,26 +7,26 @@ namespace Meziantou.Framework
     public enum CodeBlockStyle
     {
         Fenced = 0,
-        Indented = 1
+        Indented = 1,
     }
 
     public enum EmojiShortcodeMode
     {
         None = 0,
         GitHub = 1,
-        Unicode = 2
+        Unicode = 2,
     }
 
     public enum EmphasisMarker
     {
         Asterisk = 0,
-        Underscore = 1
+        Underscore = 1,
     }
 
     public enum HeadingStyle
     {
         Atx = 0,
-        Setext = 1
+        Setext = 1,
     }
 
     public static class HtmlToMarkdown
@@ -37,28 +37,28 @@ namespace Meziantou.Framework
 
     public sealed class HtmlToMarkdownOptions
     {
+        public char CodeBlockFenceCharacter { get => throw null; set { } }
+        public Meziantou.Framework.CodeBlockStyle CodeBlockStyle { get => throw null; set { } }
+        public Meziantou.Framework.EmojiShortcodeMode EmojiShortcodeMode { get => throw null; set { } }
         public Meziantou.Framework.EmphasisMarker EmphasisMarker { get => throw null; set { } }
         public Meziantou.Framework.HeadingStyle HeadingStyle { get => throw null; set { } }
-        public Meziantou.Framework.CodeBlockStyle CodeBlockStyle { get => throw null; set { } }
-        public char CodeBlockFenceCharacter { get => throw null; set { } }
-        public char UnorderedListMarker { get => throw null; set { } }
-        public string ThematicBreak { get => throw null; set { } }
         public Meziantou.Framework.LineBreakStyle LineBreakStyle { get => throw null; set { } }
-        public bool UseSimplePunctuation { get => throw null; set { } }
-        public Meziantou.Framework.EmojiShortcodeMode EmojiShortcodeMode { get => throw null; set { } }
+        public string ThematicBreak { get => throw null; set { } }
         public Meziantou.Framework.UnknownElementHandling UnknownElementHandling { get => throw null; set { } }
+        public char UnorderedListMarker { get => throw null; set { } }
+        public bool UseSimplePunctuation { get => throw null; set { } }
     }
 
     public enum LineBreakStyle
     {
         TrailingSpaces = 0,
-        Backslash = 1
+        Backslash = 1,
     }
 
     public enum UnknownElementHandling
     {
         PassThrough = 0,
         Strip = 1,
-        StripKeepContent = 2
+        StripKeepContent = 2,
     }
 }

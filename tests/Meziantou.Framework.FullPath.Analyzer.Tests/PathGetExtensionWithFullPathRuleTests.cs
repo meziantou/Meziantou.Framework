@@ -43,6 +43,48 @@ public sealed class PathGetExtensionWithFullPathRuleTests : FullPathAnalyzerTest
         await CreateCodeFixTest<PathGetExtensionWithFullPathAnalyzerType, PathGetExtensionWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
+    [Theory]
+    [InlineData("fullPath.Value")]
+    [InlineData("fullPath.RawValue")]
+    [InlineData("fullPath.ToString()")]
+    [InlineData("(string)fullPath")]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForPathGetExtensionOnFullPathStringRepresentation(string expression)
+    {
+        var source = $$"""
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return {|MFFP0007:Path.GetExtension({{expression}})|};
+                    }
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return fullPath.Extension;
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathGetExtensionWithFullPathAnalyzerType, PathGetExtensionWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
     [Fact]
     public async Task Analyzer_DoesNotReportDiagnostic_ForPathGetExtensionOnString()
     {

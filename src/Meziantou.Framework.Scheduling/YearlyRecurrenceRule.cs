@@ -2,277 +2,39 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a yearly recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new YearlyRecurrenceRule { ByMonths = { 1 }, ByMonthDays = { 1 } };
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="YearlyRecurrenceRule_Example" ref:dedent="true">
+/// // Every January 1st
+/// var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 06, 01, 09, 00, 00)).Take(2).ToArray();
+///
+/// Assert.Equal(
+///     [
+///         new DateTime(2025, 01, 01, 09, 00, 00),
+///         new DateTime(2026, 01, 01, 09, 00, 00),
+///     ],
+///     nextOccurrences);
 /// </code>
 /// </example>
 internal sealed class YearlyRecurrenceRule : RecurrenceRule
 {
-    /// <summary>Limits occurrences to specific days of the month.</summary>
-    public new IList<int>? ByMonthDays { get; set; }
-
     /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
     public IList<ByDay>? ByWeekDays { get; set; }
 
-    /// <summary>Limits occurrences to specific months.</summary>
-    public new IList<int>? ByMonths { get; set; }
-    //public IList<int> ByWeekNo { get; set; }
+    /// <summary>Limits occurrences to specific weeks of the year (1-53, -53 to -1), numbered as RFC 5545 defines using <see cref="RecurrenceRule.WeekStart"/>.</summary>
+    public IList<int>? ByWeekNumbers { get; set; }
 
     /// <summary>Limits occurrences to specific days of the year (1-366).</summary>
     public IList<int>? ByYearDays { get; set; }
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
-
-        if (IsEmpty(ByMonthDays) && IsEmpty(ByWeekDays) && IsEmpty(ByMonths) && /*IsEmpty(ByWeekNo) && */IsEmpty(ByYearDays))
-        {
-            while (true)
-            {
-                if (hasTimeFilters)
-                {
-                    foreach (var occurrence in ExpandByTime(startDate))
-                    {
-                        yield return occurrence;
-                    }
-                }
-                else
-                {
-                    yield return startDate;
-                }
-                startDate = startDate.AddYears(Interval);
-            }
-        }
-
-        var startOfYear = Extensions.StartOfYear(startDate, keepTime: true);
-        while (true)
-        {
-            var resultByMonthDays = ResultByMonthDays(startDate, startOfYear);
-            var resultByWeekDays = ResultByWeekDays(startOfYear);
-            var resultByYearDays = ResultByYearDays(startOfYear);
-            var resultByMonths = ResultByMonths(startOfYear);
-            List<DateTime>? resultByWeekNo = null;// ResultByWeekNo(startDate, startOfYear);
-
-            var result = Intersect(resultByMonths, resultByWeekNo, resultByYearDays, resultByMonthDays, resultByWeekDays);
-            result = FilterBySetPosition(result.Distinct().Order().ToList(), BySetPositions);
-
-            foreach (var date in result.Where(d => d >= startDate))
-            {
-                if (hasTimeFilters)
-                {
-                    foreach (var occurrence in ExpandByTime(date))
-                    {
-                        yield return occurrence;
-                    }
-                }
-                else
-                {
-                    yield return date;
-                }
-            }
-
-            startOfYear = startOfYear.AddYears(Interval);
-        }
+        return GetNextOccurrencesInternal(startDate, endBound: null);
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
     {
-        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
-        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
-        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
-
-        var dateOnly = date.Date;
-        foreach (var hour in hours)
-        {
-            foreach (var minute in minutes)
-            {
-                foreach (var second in seconds)
-                {
-                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= date)
-                    {
-                        yield return result;
-                    }
-                }
-            }
-        }
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Yearly, this, startDate, endBound, byDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays, yearDays: ByYearDays, weekNumbers: ByWeekNumbers);
     }
-
-    private List<DateTime>? ResultByWeekDays(DateTime startOfYear)
-    {
-        List<DateTime>? result = null;
-        if (!IsEmpty(ByWeekDays))
-        {
-            result = [];
-
-            if (IsEmpty(ByMonths))
-            {
-                // 1) Find all dates that match the day of month contraint
-                var potentialResults = new Dictionary<ByDay, IList<DateTime>>();
-                foreach (var byDay in ByWeekDays)
-                {
-                    potentialResults.Add(byDay, new List<DateTime>());
-                }
-
-                for (var day = startOfYear; day.Year == startOfYear.Year; day = day.AddDays(1))
-                {
-                    foreach (var byDay in ByWeekDays)
-                    {
-                        if (byDay.DayOfWeek == day.DayOfWeek)
-                        {
-                            potentialResults[byDay].Add(day);
-                        }
-                    }
-                }
-
-                // 2) Filter by ordinal
-                foreach (var potentialResult in potentialResults)
-                {
-                    if (potentialResult.Key.Ordinal.HasValue)
-                    {
-                        int index;
-                        if (potentialResult.Key.Ordinal > 0)
-                        {
-                            index = potentialResult.Key.Ordinal.Value - 1;
-                        }
-                        else
-                        {
-                            index = potentialResult.Value.Count + potentialResult.Key.Ordinal.Value;
-                        }
-
-                        if (index >= 0 && index < potentialResult.Value.Count)
-                        {
-                            result.Add(potentialResult.Value[index]);
-                        }
-                    }
-                    else
-                    {
-                        result.AddRange(potentialResult.Value);
-                    }
-                }
-            }
-            else
-            {
-                for (var dt = startOfYear; dt.Year == startOfYear.Year; dt = dt.AddMonths(1))
-                {
-                    var resultByWeekDaysInMonth = ResultByWeekDaysInMonth(dt, ByWeekDays);
-                    if (resultByWeekDaysInMonth is not null)
-                    {
-                        result.AddRange(resultByWeekDaysInMonth);
-                    }
-                }
-            }
-
-            result.Sort();
-        }
-
-        return result;
-    }
-
-    private List<DateTime>? ResultByMonthDays(DateTime startDate, DateTime startOfYear)
-    {
-        List<DateTime>? result = null;
-
-        var monthDays = ByMonthDays;
-        if (IsEmpty(ByMonthDays) && IsEmpty(ByWeekDays) && /*IsEmpty(ByWeekNo) &&*/ IsEmpty(ByYearDays))
-        {
-            monthDays = new List<int> { startDate.Day };
-        }
-
-        if (!IsEmpty(monthDays))
-        {
-            result = [];
-            for (var i = 0; i < 12; i++)
-            {
-                var startOfMonth = startOfYear.AddMonths(i);
-                var daysInMonth = DateTime.DaysInMonth(startOfMonth.Year, startOfMonth.Month);
-                foreach (var day in monthDays)
-                {
-                    if (day >= 1 && day <= daysInMonth)
-                    {
-                        result.Add(startOfMonth.AddDays(day - 1));
-                    }
-                    else if (day <= -1 && day >= -daysInMonth)
-                    {
-                        result.Add(startOfMonth.AddDays(daysInMonth + day));
-                    }
-                }
-            }
-
-            result.Sort();
-            //result = FilterBySetPosition(result, BySetPositions).ToList();
-        }
-
-        return result;
-    }
-
-    private List<DateTime>? ResultByYearDays(DateTime startOfYear)
-    {
-        List<DateTime>? result = null;
-        if (!IsEmpty(ByYearDays))
-        {
-            result = [];
-            var daysInYear = DateTime.IsLeapYear(startOfYear.Year) ? 366 : 365;
-            foreach (var day in ByYearDays)
-            {
-                if (day >= 1 && day <= daysInYear)
-                {
-                    result.Add(startOfYear.AddDays(day - 1));
-                }
-                else if (day <= -1 && day >= -daysInYear)
-                {
-                    result.Add(startOfYear.AddDays(daysInYear + day));
-                }
-            }
-
-            result.Sort();
-            //result = FilterBySetPosition(result, BySetPositions).ToList();
-        }
-
-        return result;
-    }
-
-    private List<DateTime>? ResultByMonths(DateTime startOfYear)
-    {
-        List<DateTime>? result = null;
-        if (!IsEmpty(ByMonths))
-        {
-            result = [];
-            foreach (var month in ByMonths.Distinct().Order())
-            {
-                if (month is >= 1 and <= 12)
-                {
-                    for (var dt = startOfYear.AddMonths(month - 1); dt.Month == month; dt = dt.AddDays(1))
-                    {
-                        result.Add(dt);
-                    }
-                }
-            }
-
-            //result.Sort();
-            //result = FilterBySetPosition(result, BySetPositions).ToList();
-        }
-
-        return result;
-    }
-
-    //private List<DateTime> ResultByWeekNo(DateTime startDate, DateTime startOfYear)
-    //{
-    //    List<DateTime> result = null;
-    //    if (!IsEmpty(ByWeekNo))
-    //    {
-    //        //result = new List<DateTime>();
-
-    //        //DateTime week = DateTimeExtensions.FirstDateOfWeekISO8601(startDate.Year, startDate.Month);
-
-    //        ////CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(startDate, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Sunday);
-
-    //        //result.Sort();
-    //        //result = FilterBySetPosition(result, BySetPositions).ToList();
-    //    }
-    //    return result;
-    //}
 
     /// <inheritdoc />
     public override string Text
@@ -285,19 +47,19 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
             if (Interval != 1)
             {
                 sb.Append(";INTERVAL=");
-                sb.Append(Interval);
+                sb.Append(Interval.ToString(CultureInfo.InvariantCulture));
             }
 
             if (EndDate.HasValue)
             {
                 sb.Append(";UNTIL=");
-                sb.Append(Utilities.DateTimeToString(EndDate.Value));
+                sb.Append(EndDateText);
             }
 
             if (Occurrences.HasValue)
             {
                 sb.Append(";COUNT=");
-                sb.Append(Occurrences.Value);
+                sb.Append(Occurrences.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             if (WeekStart != DefaultFirstDayOfWeek)
@@ -309,25 +71,25 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByMonths))
             {
                 sb.Append(";BYMONTH=");
-                sb.AppendJoin(',', ByMonths);
+                AppendValues(sb, ByMonths);
             }
 
-            //if (!IsEmpty(ByWeekNo))
-            //{
-            //    sb.Append(";BYWEEKNO=");
-            //    sb.Append(string.Join(",", ByWeekNo));
-            //}
+            if (!IsEmpty(ByWeekNumbers))
+            {
+                sb.Append(";BYWEEKNO=");
+                AppendValues(sb, ByWeekNumbers);
+            }
 
             if (!IsEmpty(ByYearDays))
             {
                 sb.Append(";BYYEARDAY=");
-                sb.AppendJoin(',', ByYearDays);
+                AppendValues(sb, ByYearDays);
             }
 
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
-                sb.AppendJoin(',', ByMonthDays);
+                AppendValues(sb, ByMonthDays);
             }
 
             if (!IsEmpty(ByWeekDays))
@@ -339,27 +101,28 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByHours))
             {
                 sb.Append(";BYHOUR=");
-                sb.AppendJoin(',', ByHours);
+                AppendValues(sb, ByHours);
             }
 
             if (!IsEmpty(ByMinutes))
             {
                 sb.Append(";BYMINUTE=");
-                sb.AppendJoin(',', ByMinutes);
+                AppendValues(sb, ByMinutes);
             }
 
             if (!IsEmpty(BySeconds))
             {
                 sb.Append(";BYSECOND=");
-                sb.AppendJoin(',', BySeconds);
+                AppendValues(sb, BySeconds);
             }
 
             if (!IsEmpty(BySetPositions))
             {
                 sb.Append(";BYSETPOS=");
-                sb.AppendJoin(',', BySetPositions);
+                AppendValues(sb, BySetPositions);
             }
 
+            AppendExtensionParts(sb);
             return sb.ToString();
         }
     }

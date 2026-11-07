@@ -1,0 +1,585 @@
+{
+  "spec": {
+    "title": "Window Management",
+    "url": "https://w3c.github.io/window-management/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "ScreenDetails",
+          "ScreenDetailed"
+        ]
+      }
+    },
+    "idlNames": {
+      "ScreenDetails": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface ScreenDetails : EventTarget {\n  readonly attribute FrozenArray<ScreenDetailed> screens;\n  readonly attribute ScreenDetailed currentScreen;\n\n  attribute EventHandler onscreenschange;\n  attribute EventHandler oncurrentscreenchange;\n};",
+        "type": "interface",
+        "name": "ScreenDetails",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "screens",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ScreenDetailed"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetails-screens"
+          },
+          {
+            "type": "attribute",
+            "name": "currentScreen",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ScreenDetailed"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetails-currentscreen"
+          },
+          {
+            "type": "attribute",
+            "name": "onscreenschange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/window-management/#dom-screendetails-onscreenschange"
+          },
+          {
+            "type": "attribute",
+            "name": "oncurrentscreenchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/window-management/#dom-screendetails-oncurrentscreenchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/window-management/#screendetails"
+      },
+      "ScreenDetailed": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface ScreenDetailed : Screen {\n  readonly attribute long availLeft;\n  readonly attribute long availTop;\n  readonly attribute long left;\n  readonly attribute long top;\n  readonly attribute boolean isPrimary;\n  readonly attribute boolean isInternal;\n  readonly attribute float devicePixelRatio;\n  readonly attribute DOMString label;\n};",
+        "type": "interface",
+        "name": "ScreenDetailed",
+        "inheritance": "Screen",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "availLeft",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-availleft"
+          },
+          {
+            "type": "attribute",
+            "name": "availTop",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-availtop"
+          },
+          {
+            "type": "attribute",
+            "name": "left",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-left"
+          },
+          {
+            "type": "attribute",
+            "name": "top",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-top"
+          },
+          {
+            "type": "attribute",
+            "name": "isPrimary",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-isprimary"
+          },
+          {
+            "type": "attribute",
+            "name": "isInternal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-isinternal"
+          },
+          {
+            "type": "attribute",
+            "name": "devicePixelRatio",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-devicepixelratio"
+          },
+          {
+            "type": "attribute",
+            "name": "label",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/window-management/#dom-screendetailed-label"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/window-management/#screendetailed"
+      }
+    },
+    "idlExtendedNames": {
+      "Screen": [
+        {
+          "fragment": "partial interface Screen /* : EventTarget */ {\n  [SecureContext]\n  readonly attribute boolean isExtended;\n\n  [SecureContext]\n  attribute EventHandler onchange;\n};",
+          "type": "interface",
+          "name": "Screen",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "isExtended",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/window-management/#dom-screen-isextended"
+            },
+            {
+              "type": "attribute",
+              "name": "onchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/window-management/#dom-screen-onchange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  [SecureContext]\n  Promise<ScreenDetails> getScreenDetails();\n\n  [SecureContext]\n  Promise<undefined> minimize();\n\n  [SecureContext]\n  Promise<undefined> maximize();\n\n  [SecureContext]\n  Promise<undefined> restore();\n\n  [SecureContext]\n  Promise<undefined> setResizable(boolean resizable);\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getScreenDetails",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "ScreenDetails"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/window-management/#dom-window-getscreendetails"
+            },
+            {
+              "type": "operation",
+              "name": "minimize",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/window-management/#dom-window-minimize"
+            },
+            {
+              "type": "operation",
+              "name": "maximize",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/window-management/#dom-window-maximize"
+            },
+            {
+              "type": "operation",
+              "name": "restore",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/window-management/#dom-window-restore"
+            },
+            {
+              "type": "operation",
+              "name": "setResizable",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "resizable",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/window-management/#dom-window-setresizable"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "FullscreenOptions": [
+        {
+          "fragment": "partial dictionary FullscreenOptions {\n  ScreenDetailed screen;\n};",
+          "type": "dictionary",
+          "name": "FullscreenOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "screen",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ScreenDetailed"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/window-management/#dom-fullscreenoptions-screen"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ScreenDetails",
+        "ScreenDetailed"
+      ]
+    },
+    "dependencies": {
+      "Screen": [
+        "EventHandler"
+      ],
+      "Window": [
+        "ScreenDetails"
+      ],
+      "ScreenDetails": [
+        "EventTarget",
+        "ScreenDetailed",
+        "EventHandler"
+      ],
+      "ScreenDetailed": [
+        "Screen"
+      ],
+      "FullscreenOptions": [
+        "ScreenDetailed"
+      ]
+    },
+    "externalDependencies": [
+      "Screen",
+      "EventHandler",
+      "Window",
+      "EventTarget",
+      "FullscreenOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

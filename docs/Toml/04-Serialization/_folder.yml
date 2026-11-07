@@ -1,0 +1,2 @@
+title: Serialization
+description: Map TOML documents to .NET objects and back, configure the output, and handle invalid input.

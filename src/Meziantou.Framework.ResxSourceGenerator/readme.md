@@ -12,12 +12,28 @@ Generate code to access the content of resx files. It does provides more methods
 </root>
 ````
 
-````c#
-_ = Sample.Hello; // Hello {0}
-_ = Sample.FormatHello("meziantou"); // Hello meziantou
-````
+<!-- ref:../../tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/ResxGeneratorTests.cs;region=ResxSourceGenerator_Format;format=md-fenced-code-block;dedent=true -->
+```csharp
+Assert.Equal("Hello {0}!", Sample.Hello);
+Assert.Equal("Hello meziantou!", Sample.FormatHello("meziantou"));
+```
+<!-- endref -->
 
 The generator also supports binary resources and expose them as `byte[]`.
+
+You can customize generated format method parameter names, types, and XML documentation comments by adding metadata in the `https://meziantou.net/meziantou.framework/resxgenerator` namespace:
+
+````xml
+<root xmlns:mfrg="https://meziantou.net/meziantou.framework/resxgenerator">
+  <data name="Location" xml:space="preserve">
+    <value>I live in country {0}, city {1}</value>
+    <mfrg:parameter name="country" comment="Country name." />
+    <mfrg:parameter name="city" typename="global::System.String" comment="City name." />
+  </data>
+</root>
+````
+
+The parameter elements are matched to composite format placeholders by their order in the `.resx` file. When `typename` is omitted, the generated parameter type is `object?`.
 
 ## How to configure the source generator
 

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cop": {
+      "identity": {
+        "language": "cop"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

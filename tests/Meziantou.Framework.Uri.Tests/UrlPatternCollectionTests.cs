@@ -3,6 +3,60 @@ namespace Meziantou.Framework.Tests;
 public sealed class UrlPatternCollectionTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region UrlPatternCollection_Usage
+        var docsPattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/docs/*" });
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" }),
+            docsPattern,
+        };
+
+        // Test if any pattern matches
+        Assert.True(collection.IsMatch("https://example.com/api/users"));
+
+        // Get the first matching pattern
+        UrlPattern? match = collection.FindPattern("https://example.com/docs/guide");
+        Assert.Same(docsPattern, match);
+
+        // Match and capture groups from the first matching pattern
+        var apiCollection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/api/:version/*" }),
+        };
+        UrlPatternResult? apiResult = apiCollection.Match("https://example.com/api/v2/users");
+        Assert.NotNull(apiResult);
+        Assert.Equal("v2", apiResult.Pathname.Groups["version"]);
+        #endregion
+    }
+
+    [Fact]
+    public void UrlPatternCollection_Example()
+    {
+        #region UrlPatternCollection_Example
+        // Create a collection of patterns for routing
+        var patterns = new UrlPatternCollection();
+        patterns.Add("https://example.com/api/users/:id");
+        patterns.Add("https://example.com/api/products/:id");
+        patterns.Add("https://example.com/static/*");
+
+        // Check if any pattern matches
+        Assert.True(patterns.IsMatch("https://example.com/api/users/123"));
+
+        // Find the first matching pattern
+        var matchingPattern = patterns.FindPattern("https://example.com/api/products/456");
+        Assert.NotNull(matchingPattern);
+        Assert.Equal("/api/products/:id", matchingPattern.Pathname);
+
+        // Get match result with captured groups
+        var result = patterns.Match("https://example.com/api/users/789");
+        Assert.NotNull(result);
+        Assert.Equal("789", result.Pathname.Groups["id"]);
+        #endregion
+    }
+
+    [Fact]
     public void Add_WithPatternObject_ShouldAddToCollection()
     {
         var collection = new UrlPatternCollection();
@@ -791,5 +845,20 @@ public sealed class UrlPatternCollectionTests
         Assert.Equal("api", result.Hostname.Groups["subdomain"]);
         Assert.Equal("users", result.Pathname.Groups["resource"]);
         Assert.Equal("42", result.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void Documentation_FirstMatchWins()
+    {
+        #region UrlPatternCollection_FirstMatchWins
+        // Patterns are tried in the order they were added: put the specific ones first
+        var routes = new UrlPatternCollection();
+        var newBook = routes.Add("https://example.com/books/new");
+        var bookById = routes.Add("https://example.com/books/:id");
+
+        Assert.Same(newBook, routes.FindPattern("https://example.com/books/new"));
+        Assert.Same(bookById, routes.FindPattern("https://example.com/books/123"));
+        Assert.Null(routes.FindPattern("https://example.com/authors/123"));
+        #endregion
     }
 }

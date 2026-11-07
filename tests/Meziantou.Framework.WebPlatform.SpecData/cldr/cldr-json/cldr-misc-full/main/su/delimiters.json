@@ -1,0 +1,15 @@
+{
+  "main": {
+    "su": {
+      "identity": {
+        "language": "su"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

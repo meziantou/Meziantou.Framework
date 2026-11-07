@@ -1,0 +1,137 @@
+{
+  "title": "TOML \"example\" é",
+  "literal": "C:\\Users\\path",
+  "multiline": "Roses are red\n  Violets are blue",
+  "integers": [
+    99,
+    42,
+    0,
+    -17,
+    1000,
+    3735928559,
+    493,
+    13
+  ],
+  "floats": [
+    3.1415,
+    -0.01,
+    5e+22,
+    1000000,
+    -0.02,
+    6.626e-34,
+    "Infinity",
+    "-Infinity",
+    "NaN"
+  ],
+  "dates": [
+    "1979-05-27T07:32:00.000Z",
+    "1979-05-27T00:32:00.999-07:00",
+    "1979-05-27T07:32:00.000",
+    "1979-05-27",
+    "07:32:00.000"
+  ],
+  "inline": {
+    "x": 1,
+    "y": {
+      "z": [
+        1,
+        2
+      ]
+    }
+  },
+  "quoted key": true,
+  "dotted": {
+    "key": {
+      "path": "v"
+    }
+  },
+  "owner": {
+    "name": "Tom"
+  },
+  "database": {
+    "enabled": true,
+    "ports": [
+      8000,
+      8001,
+      8002
+    ],
+    "temp_targets": {
+      "cpu": 79.5,
+      "case": 72
+    }
+  },
+  "servers": {
+    "alpha": {
+      "ip": "10.0.0.1"
+    }
+  },
+  "products": [
+    {
+      "name": "Hammer",
+      "sku": 738594937
+    },
+    {},
+    {
+      "name": "Nail",
+      "color": "gray"
+    }
+  ]
+}
+----
+true 1979-05-27T07:32:00.000Z 1979-05-27T00:32:00.999-07:00 1979-05-27T07:32:00.000 1979-05-27 07:32:00.000
+----
+title = "TOML \"example\" é"
+literal = "C:\\Users\\path"
+multiline = "Roses are red\n  Violets are blue"
+integers = [ 99, 42, 0, -17, 1000, 3735928559, 493, 13 ]
+floats = [ 3.1415, -0.01, 5e+22, 1000000, -0.02, 6.626e-34, inf, -inf, nan ]
+dates = [ 1979-05-27T07:32:00.000Z, 1979-05-27T00:32:00.999-07:00, 1979-05-27T07:32:00.000, 1979-05-27, 07:32:00.000 ]
+"quoted key" = true
+
+[inline]
+x = 1
+
+[inline.y]
+z = [ 1, 2 ]
+
+[dotted.key]
+path = "v"
+
+[owner]
+name = "Tom"
+
+[database]
+enabled = true
+ports = [ 8000, 8001, 8002 ]
+
+[database.temp_targets]
+cpu = 79.5
+case = 72
+
+[servers.alpha]
+ip = "10.0.0.1"
+
+[[products]]
+name = "Hammer"
+sku = 738594937
+
+[[products]]
+
+[[products]]
+name = "Nail"
+color = "gray"
+
+----
+{"big":"9223372036854775807n"}
+----
+Error 1:5 Invalid TOML document: invalid value
+----
+Error 2:1 Invalid TOML document: trying to redefine an already defined table or value
+----
+Error 2:2 Invalid TOML document: trying to redefine an already defined table or value
+----
+Error 1:5 Invalid TOML document: invalid date
+----
+Error 1:5 Invalid TOML document: unfinished string
+----
+Error 1:17 Invalid TOML document: each key-value declaration must be followed by an end-of-line

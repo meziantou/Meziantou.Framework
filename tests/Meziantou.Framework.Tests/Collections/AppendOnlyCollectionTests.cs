@@ -56,6 +56,36 @@ public sealed class AppendOnlyCollectionTests
         }
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(16)]
+    [InlineData(10_000)]
+    public void Indexer_ReturnsAllItems_AcrossSegments(int capacity)
+    {
+        var collection = new AppendOnlyCollection<int>(capacity);
+        const int Count = 30_000;
+        for (var i = 0; i < Count; i++)
+        {
+            collection.Add(i);
+        }
+
+        for (var i = 0; i < Count; i++)
+        {
+            Assert.Equal(i, collection[i]);
+        }
+
+        // Non-sequential access order to ensure the lookup does not depend on the previous access
+        for (var i = 0; i < Count; i++)
+        {
+            var index = (int)((long)i * 7919 % Count);
+            Assert.Equal(index, collection[index]);
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => collection[Count]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => collection[-1]);
+    }
+
     [Fact]
     public void CopyTo_CopiesAllItems()
     {
@@ -200,5 +230,22 @@ public sealed class AppendOnlyCollectionTests
         await Task.WhenAll(readers);
 
         Assert.HasCount(Count, collection);
+    }
+
+    [Fact]
+    public async Task Documentation_Usage()
+    {
+        #region AppendOnlyCollection_Usage
+        var log = new AppendOnlyCollection<string>();
+
+        // Add items from several threads, and read them at the same time
+        await Task.WhenAll(
+            Task.Run(() => log.Add("from task 1")),
+            Task.Run(() => log.Add("from task 2")));
+
+        Assert.HasCount(2, log);
+        Assert.True(log.Contains(item => item == "from task 1"));
+        Assert.Equal("from task 2", log.Find(item => item.EndsWith("2", StringComparison.Ordinal)));
+        #endregion
     }
 }

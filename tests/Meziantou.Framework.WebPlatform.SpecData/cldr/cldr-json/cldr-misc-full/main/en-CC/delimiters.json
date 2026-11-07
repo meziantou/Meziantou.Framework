@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-CC": {
+      "identity": {
+        "language": "en",
+        "territory": "CC"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

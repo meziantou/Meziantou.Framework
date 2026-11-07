@@ -16,12 +16,13 @@ internal sealed class DnsTlsTransport : IDnsTransport
         _endpoint = endpoint;
     }
 
-    public async Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+    public async Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
     {
         using var client = new TcpClient();
         await client.ConnectAsync(_endpoint.Address, _endpoint.Port, cancellationToken).ConfigureAwait(false);
 
-        await using var sslStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false);
+        var sslStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false);
+        await using var sslStreamScope = sslStream.ConfigureAwait(false);
         var sslOptions = new SslClientAuthenticationOptions
         {
             TargetHost = _host,
@@ -43,7 +44,7 @@ internal sealed class DnsTlsTransport : IDnsTransport
         var response = new byte[responseLength];
         await sslStream.ReadExactlyAsync(response, cancellationToken).ConfigureAwait(false);
 
-        return response;
+        return new DnsTransportResponse(response);
     }
 
     public void Dispose()

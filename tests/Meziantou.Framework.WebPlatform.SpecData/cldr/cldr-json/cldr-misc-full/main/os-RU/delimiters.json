@@ -1,0 +1,16 @@
+{
+  "main": {
+    "os-RU": {
+      "identity": {
+        "language": "os",
+        "territory": "RU"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

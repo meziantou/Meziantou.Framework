@@ -1,0 +1,33 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.0		TRUE	FALSE	FALSE		[Catalog]			Table 29
+Version	name	1.4		FALSE	FALSE	FALSE		[1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,2.0]			
+Extensions	dictionary	1.7		FALSE	fn:MustBeDirect()	FALSE				[Extensions]	
+Pages	dictionary	1.0		TRUE	TRUE	FALSE				[PageTreeNodeRoot]	
+PageLabels	number-tree	1.3		FALSE	FALSE	FALSE				[PageLabel]	
+Names	dictionary	1.2		FALSE	FALSE	FALSE				[Name]	
+Dests	dictionary	1.1		FALSE	fn:MustBeIndirect(fn:BeforeVersion(2.0))	FALSE				[DestsMap]	https://github.com/pdf-association/pdf-issues/issues/106
+ViewerPreferences	dictionary	1.2		FALSE	FALSE	FALSE				[ViewerPreferences]	
+PageLayout	name	1.0		FALSE	FALSE	FALSE	SinglePage	[SinglePage,OneColumn,TwoColumnLeft,TwoColumnRight,TwoPageLeft,TwoPageRight]			
+PageMode	name	1.0		FALSE	FALSE	FALSE	UseNone	[UseNone,UseOutlines,UseThumbs,FullScreen,UseOC,UseAttachments]			
+Outlines	dictionary	1.0		FALSE	fn:MustBeIndirect(fn:BeforeVersion(2.0))	FALSE				[Outline]	https://github.com/pdf-association/pdf-issues/issues/106
+Threads	array	1.1		FALSE	fn:MustBeIndirect(fn:BeforeVersion(2.0))	FALSE				[ArrayOfThreads]	https://github.com/pdf-association/pdf-issues/issues/106
+OpenAction	array;dictionary	1.1		FALSE	FALSE	FALSE				[DestXYZArray,Dest0Array,Dest1Array,Dest4Array];[ActionGoTo,ActionGoToR,fn:SinceVersion(1.6,ActionGoToE),fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,fn:IsPDFVersion(1.2,ActionNOP),fn:IsPDFVersion(1.2,ActionSetState),ActionThread,ActionURI,fn:SinceVersion(1.2,ActionSound),fn:SinceVersion(1.2,ActionMovie),fn:SinceVersion(1.2,ActionHide),fn:SinceVersion(1.2,ActionNamed),fn:SinceVersion(1.2,ActionSubmitForm),fn:SinceVersion(1.2,ActionResetForm),fn:SinceVersion(1.2,ActionImportData),fn:SinceVersion(1.5,ActionSetOCGState),fn:SinceVersion(1.5,ActionRendition),fn:SinceVersion(1.5,ActionTransition),fn:SinceVersion(1.6,ActionGoTo3DView),fn:SinceVersion(1.3,ActionECMAScript),fn:SinceVersion(2.0,ActionRichMediaExecute)]	
+AA	dictionary	1.4		FALSE	FALSE	FALSE				[AddActionCatalog]	
+URI	dictionary	1.1		FALSE	FALSE	FALSE				[URI]	
+AcroForm	dictionary	1.2		FALSE	FALSE	FALSE				[InteractiveForm]	
+Metadata	stream	1.4		FALSE	TRUE	FALSE				[Metadata]	
+StructTreeRoot	dictionary	1.3		FALSE	TRUE	FALSE				[StructTreeRoot]	https://github.com/pdf-association/pdf-issues/issues/348
+MarkInfo	dictionary	1.4		FALSE	FALSE	FALSE				[MarkInfo]	
+Lang	string-text	1.4		FALSE	FALSE	FALSE					
+SpiderInfo	dictionary	1.3	2.0	FALSE	FALSE	FALSE				[WebCaptureInfo]	https://github.com/pdf-association/pdf-issues/issues/672
+OutputIntents	array	1.4		FALSE	FALSE	FALSE				[ArrayOfOutputIntents]	
+PieceInfo	dictionary	1.4		FALSE	FALSE	FALSE				[PagePiece]	
+OCProperties	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentProperties]	
+Perms	dictionary	1.5		FALSE	FALSE	FALSE				[Permissions]	
+Legal	dictionary	1.5		FALSE	FALSE	FALSE				[LegalAttestation]	
+Requirements	array	1.7		FALSE	FALSE	FALSE				[ArrayOfRequirements]	
+Collection	dictionary	1.7		FALSE	FALSE	FALSE				[Collection]	
+NeedsRendering	boolean	1.0	2.0	FALSE	FALSE	FALSE	false				
+DSS	dictionary	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE				[DSS]	see ETSI EN 319 142-1 (PAdES) https://github.com/pdf-association/arlington-pdf-model/issues/121
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+DPartRoot	dictionary	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		FALSE	TRUE	FALSE				[DPartRoot]	https://github.com/pdf-association/pdf-issues/issues/614

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kab": {
+      "identity": {
+        "language": "kab"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

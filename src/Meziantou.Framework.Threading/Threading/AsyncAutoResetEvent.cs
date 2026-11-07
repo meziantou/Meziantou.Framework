@@ -4,21 +4,26 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Represents an asynchronous auto-reset event that signals a single waiting task when set.</summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/AsyncAutoResetEventTests.cs" ref:region="AsyncAutoResetEvent_Usage" ref:dedent="true">
 /// var autoResetEvent = new AsyncAutoResetEvent(initialState: false);
-/// 
+///
 /// // In one task
-/// await autoResetEvent.WaitAsync();
-/// Console.WriteLine("Event was set!");
-/// 
+/// var waitingTask = Task.Run(async () =&gt;
+/// {
+///     await autoResetEvent.WaitAsync();
+///     return "Event was set!";
+/// });
+///
 /// // In another task
 /// autoResetEvent.Set();
-/// ]]></code>
+/// Assert.Equal("Event was set!", await waitingTask);
+/// </code>
 /// </example>
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncAutoResetEvent
 {
-    private readonly Queue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly WaiterQueue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly Lock _lock = new();
     private readonly bool _allowInliningAwaiters;
     internal readonly Action<object> _onCancellationRequestHandler;
     private bool _signaled;
@@ -55,42 +60,45 @@ public sealed class AsyncAutoResetEvent
         if (cancellationToken.IsCancellationRequested)
             return Task.FromCanceled(cancellationToken);
 
-        lock (_signalAwaiters)
+        WaiterCompletionSource waiter;
+        bool canceled;
+        lock (_lock)
         {
             if (_signaled)
             {
                 _signaled = false;
                 return Task.CompletedTask;
             }
-            else
-            {
-                var waiter = new WaiterCompletionSource(this, _allowInliningAwaiters, cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    waiter.TrySetCanceled(cancellationToken);
-                    waiter.Registration.Dispose();
-                }
-                else
-                {
-                    _signalAwaiters.Enqueue(waiter);
-                }
 
-                return waiter.Task;
+            waiter = new WaiterCompletionSource(this, _allowInliningAwaiters, cancellationToken);
+            canceled = cancellationToken.IsCancellationRequested;
+            if (!canceled)
+            {
+                _signalAwaiters.Enqueue(waiter);
             }
         }
+
+        // The token was canceled between the registration and this check, so the waiter was never
+        // queued and must be completed here. This has to happen outside the lock: TrySetCanceled can
+        // inline continuations, and Registration.Dispose blocks until a callback running on another
+        // thread completes. That callback is OnCancellationRequest, which takes this same lock.
+        if (canceled)
+        {
+            waiter.TrySetCanceled(cancellationToken);
+            waiter.Registration.Dispose();
+        }
+
+        return waiter.Task;
     }
 
     /// <summary>Sets the state of the event to signaled, allowing one waiting task to proceed.</summary>
     public void Set()
     {
-        WaiterCompletionSource? toRelease = null;
-        lock (_signalAwaiters)
+        WaiterCompletionSource? toRelease;
+        lock (_lock)
         {
-            if (_signalAwaiters.Count > 0)
-            {
-                toRelease = _signalAwaiters.Dequeue();
-            }
-            else if (!_signaled)
+            toRelease = _signalAwaiters.Dequeue();
+            if (toRelease is null && !_signaled)
             {
                 _signaled = true;
             }
@@ -107,9 +115,9 @@ public sealed class AsyncAutoResetEvent
     {
         var tcs = (WaiterCompletionSource)state;
         bool removed;
-        lock (_signalAwaiters)
+        lock (_lock)
         {
-            removed = RemoveMidQueue(_signalAwaiters, tcs);
+            removed = _signalAwaiters.Remove(tcs);
         }
 
         // We only cancel the task if we removed it from the queue.
@@ -124,30 +132,7 @@ public sealed class AsyncAutoResetEvent
         }
     }
 
-    private static bool RemoveMidQueue<T>(Queue<T> queue, T valueToRemove)
-        where T : class
-    {
-        var originalCount = queue.Count;
-        var dequeueCounter = 0;
-        var found = false;
-        while (dequeueCounter < originalCount)
-        {
-            dequeueCounter++;
-            var dequeued = queue.Dequeue();
-            if (!found && dequeued == valueToRemove)
-            { // only find 1 match
-                found = true;
-            }
-            else
-            {
-                queue.Enqueue(dequeued);
-            }
-        }
-
-        return found;
-    }
-
-    private sealed class WaiterCompletionSource : TaskCompletionSource
+    private sealed class WaiterCompletionSource : TaskCompletionSource, IWaiterQueueNode<WaiterCompletionSource>
     {
         internal WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
             : base(GetOptions(allowInliningContinuations))
@@ -158,6 +143,10 @@ public sealed class AsyncAutoResetEvent
 
         internal CancellationToken CancellationToken { get; }
         internal CancellationTokenRegistration Registration { get; }
+
+        public WaiterCompletionSource? Previous { get; set; }
+        public WaiterCompletionSource? Next { get; set; }
+        public int QueueGeneration { get; set; }
 
         private static TaskCreationOptions GetOptions(bool allowInliningContinuations)
         {

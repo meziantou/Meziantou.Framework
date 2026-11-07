@@ -1,0 +1,3939 @@
+{
+  "spec": {
+    "title": "Indexed Database API 3.0",
+    "url": "https://w3c.github.io/IndexedDB/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "IDBVersionChangeEvent"
+        ],
+        "Worker": [
+          "IDBVersionChangeEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "IDBRequest",
+          "IDBOpenDBRequest",
+          "IDBFactory",
+          "IDBDatabase",
+          "IDBObjectStore",
+          "IDBIndex",
+          "IDBKeyRange",
+          "IDBRecord",
+          "IDBCursor",
+          "IDBCursorWithValue",
+          "IDBTransaction"
+        ],
+        "Worker": [
+          "IDBRequest",
+          "IDBOpenDBRequest",
+          "IDBFactory",
+          "IDBDatabase",
+          "IDBObjectStore",
+          "IDBIndex",
+          "IDBKeyRange",
+          "IDBRecord",
+          "IDBCursor",
+          "IDBCursorWithValue",
+          "IDBTransaction"
+        ]
+      }
+    },
+    "idlNames": {
+      "IDBRequest": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBRequest : EventTarget {\n  readonly attribute any result;\n  readonly attribute DOMException? error;\n  readonly attribute (IDBObjectStore or IDBIndex or IDBCursor)? source;\n  readonly attribute IDBTransaction? transaction;\n  readonly attribute IDBRequestReadyState readyState;\n\n  // Event handlers:\n  attribute EventHandler onsuccess;\n  attribute EventHandler onerror;\n};",
+        "type": "interface",
+        "name": "IDBRequest",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "result",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequest-result"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMException"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequest-error"
+          },
+          {
+            "type": "attribute",
+            "name": "source",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBObjectStore"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBIndex"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBCursor"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequest-source"
+          },
+          {
+            "type": "attribute",
+            "name": "transaction",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "IDBTransaction"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequest-transaction"
+          },
+          {
+            "type": "attribute",
+            "name": "readyState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequestReadyState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequest-readystate"
+          },
+          {
+            "type": "attribute",
+            "name": "onsuccess",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequest-onsuccess"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequest-onerror"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbrequest"
+      },
+      "IDBRequestReadyState": {
+        "fragment": "enum IDBRequestReadyState {\n  \"pending\",\n  \"done\"\n};",
+        "type": "enum",
+        "name": "IDBRequestReadyState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "pending",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequestreadystate-pending"
+          },
+          {
+            "type": "enum-value",
+            "value": "done",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrequestreadystate-done"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/IndexedDB/#enumdef-idbrequestreadystate"
+      },
+      "IDBOpenDBRequest": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBOpenDBRequest : IDBRequest {\n  // Event handlers:\n  attribute EventHandler onblocked;\n  attribute EventHandler onupgradeneeded;\n};",
+        "type": "interface",
+        "name": "IDBOpenDBRequest",
+        "inheritance": "IDBRequest",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onblocked",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbopendbrequest-onblocked"
+          },
+          {
+            "type": "attribute",
+            "name": "onupgradeneeded",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbopendbrequest-onupgradeneeded"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbopendbrequest"
+      },
+      "IDBVersionChangeEvent": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBVersionChangeEvent : Event {\n  constructor(DOMString type, optional IDBVersionChangeEventInit eventInitDict = {});\n  readonly attribute unsigned long long oldVersion;\n  readonly attribute unsigned long long? newVersion;\n};",
+        "type": "interface",
+        "name": "IDBVersionChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBVersionChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbversionchangeevent-idbversionchangeevent"
+          },
+          {
+            "type": "attribute",
+            "name": "oldVersion",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbversionchangeevent-oldversion"
+          },
+          {
+            "type": "attribute",
+            "name": "newVersion",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbversionchangeevent-newversion"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbversionchangeevent"
+      },
+      "IDBVersionChangeEventInit": {
+        "fragment": "dictionary IDBVersionChangeEventInit : EventInit {\n  unsigned long long oldVersion = 0;\n  unsigned long long? newVersion = null;\n};",
+        "type": "dictionary",
+        "name": "IDBVersionChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "oldVersion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbversionchangeeventinit-oldversion"
+          },
+          {
+            "type": "field",
+            "name": "newVersion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbversionchangeeventinit-newversion"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#dictdef-idbversionchangeeventinit"
+      },
+      "IDBFactory": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBFactory {\n  [NewObject] IDBOpenDBRequest open(DOMString name,\n                                    optional [EnforceRange] unsigned long long version);\n  [NewObject] IDBOpenDBRequest deleteDatabase(DOMString name);\n\n  Promise<sequence<IDBDatabaseInfo>> databases();\n\n  short cmp(any first, any second);\n};",
+        "type": "interface",
+        "name": "IDBFactory",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBOpenDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "version",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "EnforceRange",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbfactory-open"
+          },
+          {
+            "type": "operation",
+            "name": "deleteDatabase",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBOpenDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbfactory-deletedatabase"
+          },
+          {
+            "type": "operation",
+            "name": "databases",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "IDBDatabaseInfo"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbfactory-databases"
+          },
+          {
+            "type": "operation",
+            "name": "cmp",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "short"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "first",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "second",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbfactory-cmp"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbfactory"
+      },
+      "IDBDatabaseInfo": {
+        "fragment": "dictionary IDBDatabaseInfo {\n  DOMString name;\n  unsigned long long version;\n};",
+        "type": "dictionary",
+        "name": "IDBDatabaseInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabaseinfo-name"
+          },
+          {
+            "type": "field",
+            "name": "version",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabaseinfo-version"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#dictdef-idbdatabaseinfo"
+      },
+      "IDBDatabase": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBDatabase : EventTarget {\n  readonly attribute DOMString name;\n  readonly attribute unsigned long long version;\n  readonly attribute DOMStringList objectStoreNames;\n\n  [NewObject] IDBTransaction transaction((DOMString or sequence<DOMString>) storeNames,\n                                         optional IDBTransactionMode mode = \"readonly\",\n                                         optional IDBTransactionOptions options = {});\n  undefined close();\n\n  [NewObject] IDBObjectStore createObjectStore(\n    DOMString name,\n    optional IDBObjectStoreParameters options = {});\n  undefined deleteObjectStore(DOMString name);\n\n  // Event handlers:\n  attribute EventHandler onabort;\n  attribute EventHandler onclose;\n  attribute EventHandler onerror;\n  attribute EventHandler onversionchange;\n};",
+        "type": "interface",
+        "name": "IDBDatabase",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-name"
+          },
+          {
+            "type": "attribute",
+            "name": "version",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-version"
+          },
+          {
+            "type": "attribute",
+            "name": "objectStoreNames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMStringList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-objectstorenames"
+          },
+          {
+            "type": "operation",
+            "name": "transaction",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBTransaction"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "storeNames",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "DOMString"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "mode",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBTransactionMode"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "readonly"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBTransactionOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-transaction"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-close"
+          },
+          {
+            "type": "operation",
+            "name": "createObjectStore",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBObjectStore"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBObjectStoreParameters"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-createobjectstore"
+          },
+          {
+            "type": "operation",
+            "name": "deleteObjectStore",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-deleteobjectstore"
+          },
+          {
+            "type": "attribute",
+            "name": "onabort",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onabort"
+          },
+          {
+            "type": "attribute",
+            "name": "onclose",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onclose"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "onversionchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onversionchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbdatabase"
+      },
+      "IDBTransactionDurability": {
+        "fragment": "enum IDBTransactionDurability { \"default\", \"strict\", \"relaxed\" };",
+        "type": "enum",
+        "name": "IDBTransactionDurability",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransactiondurability-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "strict",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransactiondurability-strict"
+          },
+          {
+            "type": "enum-value",
+            "value": "relaxed",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransactiondurability-relaxed"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/IndexedDB/#enumdef-idbtransactiondurability"
+      },
+      "IDBTransactionOptions": {
+        "fragment": "dictionary IDBTransactionOptions {\n  IDBTransactionDurability durability = \"default\";\n};",
+        "type": "dictionary",
+        "name": "IDBTransactionOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "durability",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBTransactionDurability"
+            },
+            "default": {
+              "type": "string",
+              "value": "default"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransactionoptions-durability"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#dictdef-idbtransactionoptions"
+      },
+      "IDBObjectStoreParameters": {
+        "fragment": "dictionary IDBObjectStoreParameters {\n  (DOMString or sequence<DOMString>)? keyPath = null;\n  boolean autoIncrement = false;\n};",
+        "type": "dictionary",
+        "name": "IDBObjectStoreParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "keyPath",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstoreparameters-keypath"
+          },
+          {
+            "type": "field",
+            "name": "autoIncrement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstoreparameters-autoincrement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#dictdef-idbobjectstoreparameters"
+      },
+      "IDBObjectStore": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBObjectStore {\n  attribute DOMString name;\n  readonly attribute any keyPath;\n  readonly attribute DOMStringList indexNames;\n  [SameObject] readonly attribute IDBTransaction transaction;\n  readonly attribute boolean autoIncrement;\n\n  [NewObject] IDBRequest put(any value, optional any key);\n  [NewObject] IDBRequest add(any value, optional any key);\n  [NewObject] IDBRequest delete(any query);\n  [NewObject] IDBRequest clear();\n  [NewObject] IDBRequest get(any query);\n  [NewObject] IDBRequest getKey(any query);\n  [NewObject] IDBRequest getAll(optional any queryOrOptions,\n                                optional [EnforceRange] unsigned long count);\n  [NewObject] IDBRequest getAllKeys(optional any queryOrOptions,\n                                    optional [EnforceRange] unsigned long count);\n  [NewObject] IDBRequest getAllRecords(optional IDBGetAllOptions options = {});\n  [NewObject] IDBRequest count(optional any query);\n\n  [NewObject] IDBRequest openCursor(optional any query,\n                                    optional IDBCursorDirection direction = \"next\");\n  [NewObject] IDBRequest openKeyCursor(optional any query,\n                                       optional IDBCursorDirection direction = \"next\");\n\n  IDBIndex index(DOMString name);\n\n  [NewObject] IDBIndex createIndex(DOMString name,\n                                   (DOMString or sequence<DOMString>) keyPath,\n                                   optional IDBIndexParameters options = {});\n  undefined deleteIndex(DOMString name);\n};",
+        "type": "interface",
+        "name": "IDBObjectStore",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-name"
+          },
+          {
+            "type": "attribute",
+            "name": "keyPath",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-keypath"
+          },
+          {
+            "type": "attribute",
+            "name": "indexNames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMStringList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-indexnames"
+          },
+          {
+            "type": "attribute",
+            "name": "transaction",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBTransaction"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-transaction"
+          },
+          {
+            "type": "attribute",
+            "name": "autoIncrement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-autoincrement"
+          },
+          {
+            "type": "operation",
+            "name": "put",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-put"
+          },
+          {
+            "type": "operation",
+            "name": "add",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-add"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-delete"
+          },
+          {
+            "type": "operation",
+            "name": "clear",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-clear"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-get"
+          },
+          {
+            "type": "operation",
+            "name": "getKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getkey"
+          },
+          {
+            "type": "operation",
+            "name": "getAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "queryOrOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "count",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "EnforceRange",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getall"
+          },
+          {
+            "type": "operation",
+            "name": "getAllKeys",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "queryOrOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "count",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "EnforceRange",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallkeys"
+          },
+          {
+            "type": "operation",
+            "name": "getAllRecords",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBGetAllOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallrecords"
+          },
+          {
+            "type": "operation",
+            "name": "count",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-count"
+          },
+          {
+            "type": "operation",
+            "name": "openCursor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "direction",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBCursorDirection"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "next"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-opencursor"
+          },
+          {
+            "type": "operation",
+            "name": "openKeyCursor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "direction",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBCursorDirection"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "next"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-openkeycursor"
+          },
+          {
+            "type": "operation",
+            "name": "index",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBIndex"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-index"
+          },
+          {
+            "type": "operation",
+            "name": "createIndex",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBIndex"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "keyPath",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "DOMString"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBIndexParameters"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-createindex"
+          },
+          {
+            "type": "operation",
+            "name": "deleteIndex",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-deleteindex"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbobjectstore"
+      },
+      "IDBIndexParameters": {
+        "fragment": "dictionary IDBIndexParameters {\n  boolean unique = false;\n  boolean multiEntry = false;\n};",
+        "type": "dictionary",
+        "name": "IDBIndexParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "unique",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindexparameters-unique"
+          },
+          {
+            "type": "field",
+            "name": "multiEntry",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindexparameters-multientry"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#dictdef-idbindexparameters"
+      },
+      "IDBGetAllOptions": {
+        "fragment": "dictionary IDBGetAllOptions {\n  any query = null;\n  [EnforceRange] unsigned long count;\n  IDBCursorDirection direction = \"next\";\n};",
+        "type": "dictionary",
+        "name": "IDBGetAllOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "query",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbgetalloptions-query"
+          },
+          {
+            "type": "field",
+            "name": "count",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbgetalloptions-count"
+          },
+          {
+            "type": "field",
+            "name": "direction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBCursorDirection"
+            },
+            "default": {
+              "type": "string",
+              "value": "next"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbgetalloptions-direction"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#dictdef-idbgetalloptions"
+      },
+      "IDBIndex": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBIndex {\n  attribute DOMString name;\n  [SameObject] readonly attribute IDBObjectStore objectStore;\n  readonly attribute any keyPath;\n  readonly attribute boolean multiEntry;\n  readonly attribute boolean unique;\n\n  [NewObject] IDBRequest get(any query);\n  [NewObject] IDBRequest getKey(any query);\n  [NewObject] IDBRequest getAll(optional any queryOrOptions,\n                                optional [EnforceRange] unsigned long count);\n  [NewObject] IDBRequest getAllKeys(optional any queryOrOptions,\n                                    optional [EnforceRange] unsigned long count);\n  [NewObject] IDBRequest getAllRecords(optional IDBGetAllOptions options = {});\n  [NewObject] IDBRequest count(optional any query);\n\n  [NewObject] IDBRequest openCursor(optional any query,\n                                    optional IDBCursorDirection direction = \"next\");\n  [NewObject] IDBRequest openKeyCursor(optional any query,\n                                       optional IDBCursorDirection direction = \"next\");\n};",
+        "type": "interface",
+        "name": "IDBIndex",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-name"
+          },
+          {
+            "type": "attribute",
+            "name": "objectStore",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBObjectStore"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-objectstore"
+          },
+          {
+            "type": "attribute",
+            "name": "keyPath",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-keypath"
+          },
+          {
+            "type": "attribute",
+            "name": "multiEntry",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-multientry"
+          },
+          {
+            "type": "attribute",
+            "name": "unique",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-unique"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-get"
+          },
+          {
+            "type": "operation",
+            "name": "getKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-getkey"
+          },
+          {
+            "type": "operation",
+            "name": "getAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "queryOrOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "count",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "EnforceRange",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-getall"
+          },
+          {
+            "type": "operation",
+            "name": "getAllKeys",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "queryOrOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "count",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "EnforceRange",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-getallkeys"
+          },
+          {
+            "type": "operation",
+            "name": "getAllRecords",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBGetAllOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-getallrecords"
+          },
+          {
+            "type": "operation",
+            "name": "count",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-count"
+          },
+          {
+            "type": "operation",
+            "name": "openCursor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "direction",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBCursorDirection"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "next"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-opencursor"
+          },
+          {
+            "type": "operation",
+            "name": "openKeyCursor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "query",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "direction",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBCursorDirection"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "next"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbindex-openkeycursor"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbindex"
+      },
+      "IDBKeyRange": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBKeyRange {\n  readonly attribute any lower;\n  readonly attribute any upper;\n  readonly attribute boolean lowerOpen;\n  readonly attribute boolean upperOpen;\n\n  // Static construction methods:\n  [NewObject] static IDBKeyRange only(any value);\n  [NewObject] static IDBKeyRange lowerBound(any lower, optional boolean open = false);\n  [NewObject] static IDBKeyRange upperBound(any upper, optional boolean open = false);\n  [NewObject] static IDBKeyRange bound(any lower,\n                                       any upper,\n                                       optional boolean lowerOpen = false,\n                                       optional boolean upperOpen = false);\n\n  boolean includes(any key);\n};",
+        "type": "interface",
+        "name": "IDBKeyRange",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "lower",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-lower"
+          },
+          {
+            "type": "attribute",
+            "name": "upper",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upper"
+          },
+          {
+            "type": "attribute",
+            "name": "lowerOpen",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-loweropen"
+          },
+          {
+            "type": "attribute",
+            "name": "upperOpen",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upperopen"
+          },
+          {
+            "type": "operation",
+            "name": "only",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBKeyRange"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-only"
+          },
+          {
+            "type": "operation",
+            "name": "lowerBound",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBKeyRange"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "lower",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "open",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": {
+                  "type": "boolean",
+                  "value": false
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-lowerbound"
+          },
+          {
+            "type": "operation",
+            "name": "upperBound",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBKeyRange"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "upper",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "open",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": {
+                  "type": "boolean",
+                  "value": false
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upperbound"
+          },
+          {
+            "type": "operation",
+            "name": "bound",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBKeyRange"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "lower",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "upper",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "lowerOpen",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": {
+                  "type": "boolean",
+                  "value": false
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "upperOpen",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": {
+                  "type": "boolean",
+                  "value": false
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-bound"
+          },
+          {
+            "type": "operation",
+            "name": "includes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-includes"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbkeyrange"
+      },
+      "IDBRecord": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBRecord {\n  readonly attribute any key;\n  readonly attribute any primaryKey;\n  readonly attribute any value;\n};",
+        "type": "interface",
+        "name": "IDBRecord",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "key",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrecord-key"
+          },
+          {
+            "type": "attribute",
+            "name": "primaryKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrecord-primarykey"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbrecord-value"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbrecord"
+      },
+      "IDBCursor": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBCursor {\n  readonly attribute (IDBObjectStore or IDBIndex) source;\n  readonly attribute IDBCursorDirection direction;\n  readonly attribute any key;\n  readonly attribute any primaryKey;\n  [SameObject] readonly attribute IDBRequest request;\n\n  undefined advance([EnforceRange] unsigned long count);\n  undefined continue(optional any key);\n  undefined continuePrimaryKey(any key, any primaryKey);\n\n  [NewObject] IDBRequest update(any value);\n  [NewObject] IDBRequest delete();\n};",
+        "type": "interface",
+        "name": "IDBCursor",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "source",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBObjectStore"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IDBIndex"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-source"
+          },
+          {
+            "type": "attribute",
+            "name": "direction",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBCursorDirection"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-direction"
+          },
+          {
+            "type": "attribute",
+            "name": "key",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-key"
+          },
+          {
+            "type": "attribute",
+            "name": "primaryKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-primarykey"
+          },
+          {
+            "type": "attribute",
+            "name": "request",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-request"
+          },
+          {
+            "type": "operation",
+            "name": "advance",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "count",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "EnforceRange",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-advance"
+          },
+          {
+            "type": "operation",
+            "name": "continue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-continue"
+          },
+          {
+            "type": "operation",
+            "name": "continuePrimaryKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "primaryKey",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-continueprimarykey"
+          },
+          {
+            "type": "operation",
+            "name": "update",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-update"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBRequest"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursor-delete"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbcursor"
+      },
+      "IDBCursorDirection": {
+        "fragment": "enum IDBCursorDirection {\n  \"next\",\n  \"nextunique\",\n  \"prev\",\n  \"prevunique\"\n};",
+        "type": "enum",
+        "name": "IDBCursorDirection",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "next",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursordirection-next"
+          },
+          {
+            "type": "enum-value",
+            "value": "nextunique",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursordirection-nextunique"
+          },
+          {
+            "type": "enum-value",
+            "value": "prev",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursordirection-prev"
+          },
+          {
+            "type": "enum-value",
+            "value": "prevunique",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursordirection-prevunique"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/IndexedDB/#enumdef-idbcursordirection"
+      },
+      "IDBCursorWithValue": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBCursorWithValue : IDBCursor {\n  readonly attribute any value;\n};",
+        "type": "interface",
+        "name": "IDBCursorWithValue",
+        "inheritance": "IDBCursor",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbcursorwithvalue-value"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbcursorwithvalue"
+      },
+      "IDBTransaction": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface IDBTransaction : EventTarget {\n  readonly attribute DOMStringList objectStoreNames;\n  readonly attribute IDBTransactionMode mode;\n  readonly attribute IDBTransactionDurability durability;\n  [SameObject] readonly attribute IDBDatabase db;\n  readonly attribute DOMException? error;\n\n  IDBObjectStore objectStore(DOMString name);\n  undefined commit();\n  undefined abort();\n\n  // Event handlers:\n  attribute EventHandler onabort;\n  attribute EventHandler oncomplete;\n  attribute EventHandler onerror;\n};",
+        "type": "interface",
+        "name": "IDBTransaction",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "objectStoreNames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMStringList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-objectstorenames"
+          },
+          {
+            "type": "attribute",
+            "name": "mode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBTransactionMode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-mode"
+          },
+          {
+            "type": "attribute",
+            "name": "durability",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBTransactionDurability"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-durability"
+          },
+          {
+            "type": "attribute",
+            "name": "db",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBDatabase"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-db"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMException"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-error"
+          },
+          {
+            "type": "operation",
+            "name": "objectStore",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBObjectStore"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-objectstore"
+          },
+          {
+            "type": "operation",
+            "name": "commit",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-commit"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-abort"
+          },
+          {
+            "type": "attribute",
+            "name": "onabort",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-onabort"
+          },
+          {
+            "type": "attribute",
+            "name": "oncomplete",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-oncomplete"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransaction-onerror"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IndexedDB/#idbtransaction"
+      },
+      "IDBTransactionMode": {
+        "fragment": "enum IDBTransactionMode {\n  \"readonly\",\n  \"readwrite\",\n  \"versionchange\"\n};",
+        "type": "enum",
+        "name": "IDBTransactionMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "readonly",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransactionmode-readonly"
+          },
+          {
+            "type": "enum-value",
+            "value": "readwrite",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransactionmode-readwrite"
+          },
+          {
+            "type": "enum-value",
+            "value": "versionchange",
+            "href": "https://w3c.github.io/IndexedDB/#dom-idbtransactionmode-versionchange"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/IndexedDB/#enumdef-idbtransactionmode"
+      }
+    },
+    "idlExtendedNames": {
+      "WindowOrWorkerGlobalScope": [
+        {
+          "fragment": "partial interface mixin WindowOrWorkerGlobalScope {\n  [SameObject] readonly attribute IDBFactory indexedDB;\n};",
+          "type": "interface mixin",
+          "name": "WindowOrWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "indexedDB",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "IDBFactory"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/IndexedDB/#dom-windoworworkerglobalscope-indexeddb"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "IDBRequest",
+        "IDBOpenDBRequest",
+        "IDBVersionChangeEvent",
+        "IDBFactory",
+        "IDBDatabase",
+        "IDBObjectStore",
+        "IDBIndex",
+        "IDBKeyRange",
+        "IDBRecord",
+        "IDBCursor",
+        "IDBCursorWithValue",
+        "IDBTransaction"
+      ],
+      "Worker": [
+        "IDBRequest",
+        "IDBOpenDBRequest",
+        "IDBVersionChangeEvent",
+        "IDBFactory",
+        "IDBDatabase",
+        "IDBObjectStore",
+        "IDBIndex",
+        "IDBKeyRange",
+        "IDBRecord",
+        "IDBCursor",
+        "IDBCursorWithValue",
+        "IDBTransaction"
+      ]
+    },
+    "dependencies": {
+      "IDBRequest": [
+        "EventTarget",
+        "DOMException",
+        "IDBObjectStore",
+        "IDBIndex",
+        "IDBCursor",
+        "IDBTransaction",
+        "IDBRequestReadyState",
+        "EventHandler"
+      ],
+      "IDBOpenDBRequest": [
+        "IDBRequest",
+        "EventHandler"
+      ],
+      "IDBVersionChangeEvent": [
+        "Event",
+        "IDBVersionChangeEventInit"
+      ],
+      "IDBVersionChangeEventInit": [
+        "EventInit"
+      ],
+      "WindowOrWorkerGlobalScope": [
+        "IDBFactory"
+      ],
+      "IDBFactory": [
+        "IDBOpenDBRequest",
+        "IDBDatabaseInfo"
+      ],
+      "IDBDatabaseInfo": [],
+      "IDBDatabase": [
+        "EventTarget",
+        "DOMStringList",
+        "IDBTransaction",
+        "IDBTransactionMode",
+        "IDBTransactionOptions",
+        "IDBObjectStore",
+        "IDBObjectStoreParameters",
+        "EventHandler"
+      ],
+      "IDBTransactionOptions": [
+        "IDBTransactionDurability"
+      ],
+      "IDBObjectStoreParameters": [],
+      "IDBObjectStore": [
+        "DOMStringList",
+        "IDBTransaction",
+        "IDBRequest",
+        "IDBGetAllOptions",
+        "IDBCursorDirection",
+        "IDBIndex",
+        "IDBIndexParameters"
+      ],
+      "IDBIndexParameters": [],
+      "IDBGetAllOptions": [
+        "IDBCursorDirection"
+      ],
+      "IDBIndex": [
+        "IDBObjectStore",
+        "IDBRequest",
+        "IDBGetAllOptions",
+        "IDBCursorDirection"
+      ],
+      "IDBKeyRange": [
+        "IDBKeyRange"
+      ],
+      "IDBRecord": [],
+      "IDBCursor": [
+        "IDBObjectStore",
+        "IDBIndex",
+        "IDBCursorDirection",
+        "IDBRequest"
+      ],
+      "IDBCursorWithValue": [
+        "IDBCursor"
+      ],
+      "IDBTransaction": [
+        "EventTarget",
+        "DOMStringList",
+        "IDBTransactionMode",
+        "IDBTransactionDurability",
+        "IDBDatabase",
+        "DOMException",
+        "IDBObjectStore",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "DOMException",
+      "EventHandler",
+      "Event",
+      "EventInit",
+      "WindowOrWorkerGlobalScope",
+      "DOMStringList"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -22,14 +22,14 @@ public class Output
     /// <param name="value">The object to write.</param>
     public virtual void Write(object? value)
     {
-        Write("{0}", value);
+        Writer.Write(value);
     }
 
     /// <summary>Writes a string to the output.</summary>
     /// <param name="value">The string to write.</param>
     public virtual void Write(string? value)
     {
-        Write("{0}", value);
+        Writer.Write(value);
     }
 
     /// <summary>Writes a formatted string to the output.</summary>

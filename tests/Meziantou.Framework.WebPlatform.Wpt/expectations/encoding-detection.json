@@ -1,0 +1,227 @@
+{
+  "encoding-detection/ar-ISO-8859-6-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ar-ISO-8859-6.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ar-windows-1256-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ar-windows-1256.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ca-windows-1252-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ca-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/el-ISO-8859-7-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/el-ISO-8859-7.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/el-windows-1253-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/el-windows-1253.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/en-copyright-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/en-euro-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/en-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/es-maria-windows-1252.html": {
+    "total": 1
+  },
+  "encoding-detection/es-nuestra-senora-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/es-number-one-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/es-ordinal-windows-1252.html": {
+    "total": 1
+  },
+  "encoding-detection/fa-windows-1256-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/fa-windows-1256.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/fi-windows-1252-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/fi-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/he-ISO-8859-8-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/he-ISO-8859-8.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/he-windows-1255-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/he-windows-1255.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/is-windows-1252-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/is-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/it-number-one-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/it-ordinal-windows-1252.html": {
+    "total": 1
+  },
+  "encoding-detection/it-roman-ordinal-windows-1252.html": {
+    "total": 1
+  },
+  "encoding-detection/it-windows-1252-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/it-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-EUC-JP-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-EUC-JP.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-ISO-2022-JP-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-ISO-2022-JP.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-Shift_JIS-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-Shift_JIS.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-half-width-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ja-half-width.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ko-EUC-KR-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ko-EUC-KR.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/lt-windows-1257-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/lt-windows-1257.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/lv-windows-1257-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/lv-windows-1257.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/nbsp-even-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/nbsp-odd-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/pl-ISO-8859-2-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/pl-ISO-8859-2.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/pl-windows-1250-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/pl-windows-1250.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/pt-windows-1252-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/pt-windows-1252.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ru-IBM866-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ru-IBM866.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ru-ISO-8859-5-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/ru-ISO-8859-5.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/th-windows-874-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/th-windows-874.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/tr-windows-1254-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/tr-windows-1254.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/uk-KOI8-U-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/uk-KOI8-U.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/uk-windows-1251-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/uk-windows-1251.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/utf-8.html": {
+    "total": 1
+  },
+  "encoding-detection/vi-windows-1258-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/vi-windows-1258.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/yi-windows-1255-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/yi-windows-1255.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/zh-Big5-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/zh-Big5.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/zh-GBK-late.tentative.html": {
+    "total": 1
+  },
+  "encoding-detection/zh-GBK.tentative.html": {
+    "total": 1
+  }
+}

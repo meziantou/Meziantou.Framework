@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE		[RichMediaInstance]			Table 343
+Subtype	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE		[3D,Sound,Video,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,Flash))]			
+Asset	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE				[FileSpecification]	
+Params	dictionary	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE			[fn:Eval(@Subtype==Flash)]	[RichMediaParams]	Adobe Extension Level 3, Table 9.51b
+Scene	integer	fn:Extension(ISO_TS_32007,2.0)		FALSE	FALSE	FALSE		[fn:Eval(@Scene>=0)]			ISO/TS 32007

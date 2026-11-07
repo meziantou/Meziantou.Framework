@@ -36,6 +36,32 @@ public sealed class HttpJsonSerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void MaxDepthViolationIsNotSwallowedAsAFormattingFailure()
+    {
+        var options = new HumanReadableSerializerOptions { MaxDepth = 4 }
+            .AddJsonFormatter(new JsonFormatterOptions { FormatAsStandardObject = true });
+
+        using var httpContent = new StringContent("""{"a":{"b":{"c":{"d":1}}}}""", encoding: null, "application/json");
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(httpContent, options));
+    }
+
+    [Fact]
+    public void UnparsableJsonStillFallsBackToTheRawValue()
+    {
+        var options = new HumanReadableSerializerOptions()
+            .AddJsonFormatter(new JsonFormatterOptions { FormatAsStandardObject = true });
+
+        using var httpContent = new StringContent("{not json", encoding: null, "application/json");
+
+        AssertSerialization(httpContent, options, """
+            Headers:
+              Content-Type: application/json; charset=utf-8
+            Value: {not json
+            """);
+    }
+
+    [Fact]
     public void Indented_Ordered_NullValue()
     {
         using var httpContent = new StringContent("null", encoding: null, "application/json");
@@ -180,5 +206,41 @@ public sealed class HttpJsonSerializerTests : SerializerTestsBase
         {
             writer.WriteValue("custom-" + value);
         }
+    }
+
+    [Fact]
+    public void TextJsonMediaType()
+    {
+        using var httpContent = new StringContent("""{"b":1,"a":2}""", encoding: null, "text/json");
+        AssertSerialization(httpContent, IndentedAndOrderedOptions, """
+            Headers:
+              Content-Type: text/json; charset=utf-8
+            Value:
+              {
+                "a": 2,
+                "b": 1
+              }
+            """);
+    }
+
+    [Fact]
+    public void SerializeAsClassicObject_NumbersArePreserved()
+    {
+        var options = new HumanReadableSerializerOptions().AddJsonFormatter(new JsonFormatterOptions { FormatAsStandardObject = true });
+
+        using var httpContent = new StringContent("""{"big":123456789012345678901234567890,"tiny":1e-30,"huge":1.5e300,"precise":0.12345678901234567890123456789012,"decimal":1.50,"exponent":1e2,"negative":-12.5,"zero":-0}""", encoding: null, "application/json");
+        AssertSerialization(httpContent, options, """
+            Headers:
+              Content-Type: application/json; charset=utf-8
+            Value:
+              big: 123456789012345678901234567890
+              tiny: 1e-30
+              huge: 1.5e300
+              precise: 0.12345678901234567890123456789012
+              decimal: 1.50
+              exponent: 100
+              negative: -12.5
+              zero: 0
+            """);
     }
 }

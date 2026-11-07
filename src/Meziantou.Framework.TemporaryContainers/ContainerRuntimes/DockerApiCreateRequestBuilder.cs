@@ -1,37 +1,57 @@
 using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal static class DockerApiCreateRequestBuilder
 {
-    public static DockerApiModels.CreateContainerRequest Build(ContainerDefinition definition, string imageRef)
+    /// <param name="definition">The container definition.</param>
+    /// <param name="imageRef">The image to create the container from.</param>
+    /// <param name="hostIpSupported">Whether the daemon can publish a port on a specific host address, which a daemon running Windows containers cannot.</param>
+    public static DockerApiModels.CreateContainerRequest Build(ContainerDefinition definition, string imageRef, bool hostIpSupported = true)
     {
-        var labels = definition.Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
-        if (definition.ReuseId is { } reuseId)
-            labels[DockerCreateArgumentBuilder.ReuseLabel] = reuseId;
+        var labels = ResourceLabels.Build(definition);
 
         var hostConfig = new DockerApiModels.HostConfig
         {
             ReadonlyRootfs = definition.Resources.ReadOnlyRootFilesystem,
             Memory = definition.Resources.MemoryLimit,
             NanoCpus = definition.Resources.CpuLimit is { } cpu ? checked((long)(cpu * 1_000_000_000d)) : null,
-            NetworkMode = definition.Network.Network,
+            Privileged = definition.Privileged,
+            CapAdd = definition.CapAdd.Count > 0 ? [.. definition.CapAdd] : null,
+            CapDrop = definition.CapDrop.Count > 0 ? [.. definition.CapDrop] : null,
+            ExtraHosts = definition.ExtraHosts.Count > 0 ? [.. definition.ExtraHosts.Select(static host => host.Format())] : null,
+            ShmSize = definition.Resources.SharedMemorySize,
+            Ulimits = definition.Resources.Ulimits.Count > 0
+                ? [.. definition.Resources.Ulimits.Select(static ulimit => new DockerApiModels.Ulimit { Name = ulimit.Name, Soft = ulimit.Soft, Hard = ulimit.Hard })]
+                : null,
         };
+
+        var (primaryNetwork, _) = definition.Network.GetNetworkPlan();
+        hostConfig.NetworkMode = primaryNetwork?.Name;
 
         Dictionary<string, DockerApiModels.EmptyObject>? exposedPorts = null;
         Dictionary<string, List<DockerPortBindingDto>?>? portBindings = null;
+        foreach (var exposedPort in definition.ExposedPorts)
+        {
+            exposedPorts ??= new Dictionary<string, DockerApiModels.EmptyObject>(StringComparer.Ordinal);
+            exposedPorts[string.Create(CultureInfo.InvariantCulture, $"{exposedPort.Port}/{ContainerPort.GetProtocolName(exposedPort.Protocol)}")] = DockerApiModels.EmptyObject.Instance;
+        }
+
         if (definition.Ports.Count > 0)
         {
-            exposedPorts = new Dictionary<string, DockerApiModels.EmptyObject>(definition.Ports.Count, StringComparer.Ordinal);
+            exposedPorts ??= new Dictionary<string, DockerApiModels.EmptyObject>(definition.Ports.Count, StringComparer.Ordinal);
             portBindings = new Dictionary<string, List<DockerPortBindingDto>?>(definition.Ports.Count, StringComparer.Ordinal);
             foreach (var port in definition.Ports)
             {
-                var key = string.Create(CultureInfo.InvariantCulture, $"{port.Port}/tcp");
+                var key = string.Create(CultureInfo.InvariantCulture, $"{port.Port}/{port.ProtocolName}");
                 exposedPorts[key] = DockerApiModels.EmptyObject.Instance;
                 portBindings[key] =
                 [
                     new DockerPortBindingDto
                     {
+                        HostIp = hostIpSupported ? port.HostIp : null,
                         HostPort = port.HostPort?.ToString(CultureInfo.InvariantCulture) ?? "",
                     },
                 ];
@@ -64,12 +84,24 @@ internal static class DockerApiCreateRequestBuilder
                         Type = "volume",
                         Source = volume.Name,
                         Target = volume.Target,
+                        ReadOnly = volume.ReadOnly,
+                    });
+                    break;
+
+                case OwnedVolumeMount owned:
+                    mounts ??= [];
+                    mounts.Add(new DockerApiModels.Mount
+                    {
+                        Type = "volume",
+                        Source = owned.Volume.Name,
+                        Target = owned.Target,
+                        ReadOnly = owned.ReadOnly,
                     });
                     break;
 
                 case TmpfsMount tmpfsMount:
                     tmpfs ??= new Dictionary<string, string>(StringComparer.Ordinal);
-                    tmpfs[tmpfsMount.Target] = string.Empty;
+                    tmpfs[tmpfsMount.Target] = tmpfsMount.FormatOptions();
                     break;
 
                 default:
@@ -88,21 +120,30 @@ internal static class DockerApiCreateRequestBuilder
         command.AddRange(definition.Command);
 
         DockerApiModels.NetworkingConfig? networkingConfig = null;
-        if (!string.IsNullOrEmpty(definition.Network.Alias))
+        if (primaryNetwork is { Aliases.Count: > 0 } endpoint)
         {
-            var network = definition.Network.Network ?? "bridge";
             networkingConfig = new DockerApiModels.NetworkingConfig
             {
                 EndpointsConfig = new Dictionary<string, DockerApiModels.EndpointSettings>(StringComparer.Ordinal)
                 {
-                    [network] = new DockerApiModels.EndpointSettings
+                    [endpoint.Name ?? "bridge"] = new DockerApiModels.EndpointSettings
                     {
-                        Aliases =
-                        [
-                            definition.Network.Alias,
-                        ],
+                        Aliases = [.. endpoint.Aliases],
                     },
                 },
+            };
+        }
+
+        DockerApiModels.Healthcheck? healthcheck = null;
+        if (definition.Healthcheck is { } containerHealthcheck)
+        {
+            healthcheck = new DockerApiModels.Healthcheck
+            {
+                Test = containerHealthcheck.GetTest(),
+                Interval = ToNanoseconds(containerHealthcheck.Interval),
+                Timeout = ToNanoseconds(containerHealthcheck.Timeout),
+                StartPeriod = ToNanoseconds(containerHealthcheck.StartPeriod),
+                Retries = containerHealthcheck.Retries,
             };
         }
 
@@ -119,6 +160,24 @@ internal static class DockerApiCreateRequestBuilder
             ExposedPorts = exposedPorts,
             HostConfig = hostConfig,
             NetworkingConfig = networkingConfig,
+            Healthcheck = healthcheck,
+            StopTimeout = definition.StopTimeout is { } stopTimeout ? checked((int)stopTimeout.TotalSeconds) : null,
+            StopSignal = definition.StopSignal,
         };
     }
+
+    /// <summary>Serializes the request, and lets <see cref="ContainerDefinition.DockerApiCreateRequestCustomizer"/> change it.</summary>
+    public static string Serialize(ContainerDefinition definition, DockerApiModels.CreateContainerRequest request)
+    {
+        if (definition.DockerApiCreateRequestCustomizer is not { } customizer)
+            return JsonSerializer.Serialize(request, DockerApiJsonContext.Default.CreateContainerRequest);
+
+        var json = JsonSerializer.SerializeToNode(request, DockerApiJsonContext.Default.CreateContainerRequest) as JsonObject
+            ?? throw new InvalidOperationException("The create request did not serialize to a JSON object.");
+
+        customizer(json);
+        return json.ToJsonString();
+    }
+
+    private static long? ToNanoseconds(TimeSpan? value) => value is { } duration ? checked(duration.Ticks * 100) : null;
 }

@@ -208,4 +208,20 @@ public sealed class DoubleEndedQueueTests
 
         Assert.Throws<InvalidOperationException>(() => _ = enumerator.Current);
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region DoubleEndedQueue_Usage
+        var queue = new DoubleEndedQueue<string>(capacity: 4); // Grows when needed
+        queue.AddLast("b");
+        queue.AddLast("c");
+        queue.AddFirst("a");
+
+        Assert.Equal(["a", "b", "c"], queue);
+        Assert.Equal("c", queue[2]);
+        Assert.Equal("a", queue.RemoveFirst());
+        Assert.Equal("c", queue.RemoveLast());
+        #endregion
+    }
 }

@@ -6,24 +6,29 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Defines a file's perceived type based on its extension.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.PerceivedType.Tests/PerceivedTests.cs" ref:region="Perceived_GetPerceivedType" ref:dedent="true">
 /// // Get perceived type for a file
 /// var perceived = Perceived.GetPerceivedType(".txt");
-/// Console.WriteLine(perceived.PerceivedType); // Output: Text
-/// Console.WriteLine(perceived.PerceivedTypeSource); // Output: SoftCoded or HardCoded
+/// Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+/// Assert.NotEqual(PerceivedTypeSource.Undefined, perceived.PerceivedTypeSource); // e.g. SoftCoded, NativeSupport
 ///
 /// // Add custom perceived types
 /// Perceived.AddPerceived(".myext", PerceivedType.Text);
+/// Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("file.myext").PerceivedType);
 ///
 /// // Add default perceived types for common development file extensions
 /// Perceived.AddDefaultPerceivedTypes();
+/// Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("Program.cs").PerceivedType);
 /// </code>
 /// </example>
 public sealed class Perceived
 {
     private static readonly ConcurrentDictionary<string, Perceived> PerceivedTypes = new(StringComparer.OrdinalIgnoreCase);
 
-    private static object SyncObject { get; } = new object();
+    // The cache is keyed by a value derived from the caller's argument, and file names often come from untrusted
+    // sources. Without these limits a process that classifies arbitrary file names grows the cache forever.
+    private const int MaximumCachedExtensionLength = 24;
+    private const int MaximumCacheSize = 4096;
 
     private Perceived(string extension, PerceivedType perceivedType, PerceivedTypeSource perceivedTypeSource)
     {
@@ -41,7 +46,7 @@ public sealed class Perceived
         AddPerceived(".ashx", PerceivedType.Text);
         AddPerceived(".asmx", PerceivedType.Text);
         AddPerceived(".bat", PerceivedType.Text);
-        AddPerceived(".class", PerceivedType.Text);
+        AddPerceived(".class", PerceivedType.Application);
         AddPerceived(".cmd", PerceivedType.Text);
         AddPerceived(".cs", PerceivedType.Text);
         AddPerceived(".cshtml", PerceivedType.Text);
@@ -93,10 +98,7 @@ public sealed class Perceived
         ArgumentNullException.ThrowIfNull(extension);
 
         var perceived = new Perceived(extension, type, PerceivedTypeSource.HardCoded);
-        lock (SyncObject)
-        {
-            PerceivedTypes[perceived.Extension] = perceived;
-        }
+        PerceivedTypes[perceived.Extension] = perceived;
 
         return perceived;
     }
@@ -114,47 +116,29 @@ public sealed class Perceived
     public PerceivedTypeSource PerceivedTypeSource { get; }
 
     /// <summary>Gets a file's perceived type based on its extension.</summary>
-    /// <param name="fileName">The file name. May not be null..</param>
+    /// <param name="fileName">The file name. May not be null.</param>
     /// <returns>An instance of the PerceivedType type.</returns>
     [SupportedOSPlatform("windows5.1.2600")]
-    public static unsafe Perceived GetPerceivedType(string fileName)
+    public static Perceived GetPerceivedType(string fileName)
     {
         ArgumentNullException.ThrowIfNull(fileName);
 
-        var extension = Path.GetExtension(fileName) ?? throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
-
-        extension = extension.ToUpperInvariant();
+        var extension = Path.GetExtension(fileName);
         if (PerceivedTypes.TryGetValue(extension, out var ptype))
             return ptype;
 
         if (!IsSupportedPlatform())
             throw new PlatformNotSupportedException("PerceivedType is only supported on Windows");
 
-        lock (SyncObject)
-        {
-            var type = PerceivedType.Unknown;
-            var source = PerceivedTypeSource.Undefined;
-            if (!PerceivedTypes.TryGetValue(extension, out ptype))
-            {
-                source = PerceivedTypeSource.Undefined;
-                var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag, out _);
-                if (hr.Failed)
-                {
-                    type = PerceivedType.Unspecified;
-                    source = PerceivedTypeSource.Undefined;
-                }
-                else
-                {
-                    type = (PerceivedType)perceivedType;
-                    source = (PerceivedTypeSource)flag;
-                }
+        var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag);
+        var perceived = hr.Failed
+            ? new Perceived(extension, PerceivedType.Unspecified, PerceivedTypeSource.Undefined)
+            : new Perceived(extension, (PerceivedType)perceivedType, (PerceivedTypeSource)flag);
 
-                ptype = new Perceived(extension, type, source);
-                PerceivedTypes.TryAdd(extension, ptype);
-            }
+        if (!ShouldCache(extension, PerceivedTypes.Count))
+            return perceived;
 
-            return ptype;
-        }
+        return PerceivedTypes.GetOrAdd(extension, perceived);
     }
 
     /// <summary>
@@ -171,5 +155,20 @@ public sealed class Perceived
     private static bool IsSupportedPlatform()
     {
         return OperatingSystem.IsWindows();
+    }
+
+    /// <summary>Determines whether a type resolved through the operating system is worth remembering.</summary>
+    /// <remarks>
+    /// Extensions registered explicitly through <see cref="AddPerceived(string, PerceivedType)"/> are never subject
+    /// to these limits. Refusing to cache only makes a later lookup slower; it never changes the result.
+    /// </remarks>
+    internal static bool ShouldCache(string extension, int currentCount)
+    {
+        return extension.Length <= MaximumCachedExtensionLength && currentCount < MaximumCacheSize;
+    }
+
+    internal static bool IsExtensionCached(string extension)
+    {
+        return PerceivedTypes.ContainsKey(extension);
     }
 }

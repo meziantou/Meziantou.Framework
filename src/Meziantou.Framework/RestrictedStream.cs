@@ -5,6 +5,8 @@ namespace Meziantou.Framework;
 /// <param name="options">The options that control which operations are allowed.</param>
 public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions options) : Stream
 {
+    private bool _disposed;
+
     /// <inheritdoc />
     public override bool CanRead => stream.CanRead && options.AllowReading;
 
@@ -15,12 +17,24 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     public override bool CanWrite => stream.CanWrite && options.AllowWriting;
 
     /// <inheritdoc />
-    public override long Length => stream.Length;
+    public override long Length
+    {
+        get
+        {
+            ThrowIfSeekingNotAllowed();
+            return stream.Length;
+        }
+    }
 
     /// <inheritdoc />
     public override long Position
     {
-        get => stream.Position;
+        get
+        {
+            ThrowIfSeekingNotAllowed();
+            return stream.Position;
+        }
+
         set
         {
             ThrowIfSeekingNotAllowed();
@@ -32,7 +46,12 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     public override void Flush()
     {
         ThrowIfSynchronousCallNotAllowed();
-        ThrowIfWritingNotAllowed();
+
+        // Flushing a stream that cannot be written is a no-op, as for FileStream. Wrappers such as
+        // BufferedStream flush the inner stream unconditionally.
+        if (!options.AllowWriting)
+            return;
+
         stream.Flush();
     }
 
@@ -55,6 +74,8 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     /// <inheritdoc />
     public override void SetLength(long value)
     {
+        ThrowIfSynchronousCallNotAllowed();
+        ThrowIfSeekingNotAllowed();
         ThrowIfWritingNotAllowed();
         stream.SetLength(value);
     }
@@ -89,6 +110,15 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
+
+        // Copying through the base implementation routes every read through this stream, so the
+        // per-read cap still applies. Delegating to the wrapped stream would bypass it.
+        if (options.MaxReadLength > 0)
+        {
+            base.CopyTo(destination, bufferSize);
+            return;
+        }
+
         stream.CopyTo(destination, bufferSize);
     }
 
@@ -97,6 +127,11 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
+
+        // See CopyTo: the base implementation reads through this stream so the cap is honored
+        if (options.MaxReadLength > 0)
+            return base.CopyToAsync(destination, bufferSize, cancellationToken);
+
         return stream.CopyToAsync(destination, bufferSize, cancellationToken);
     }
 
@@ -104,13 +139,25 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        stream.Dispose();
+
+        if (!_disposed)
+        {
+            _disposed = true;
+            stream.Dispose();
+        }
     }
 
     /// <inheritdoc />
     public async override ValueTask DisposeAsync()
     {
-        await stream.DisposeAsync().ConfigureAwait(false);
+        // Stream.DisposeAsync calls Dispose, so the flag keeps the wrapped stream from being
+        // disposed a second time through that path.
+        if (!_disposed)
+        {
+            _disposed = true;
+            await stream.DisposeAsync().ConfigureAwait(false);
+        }
+
         await base.DisposeAsync().ConfigureAwait(false);
     }
 
@@ -134,7 +181,11 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     public override Task FlushAsync(CancellationToken cancellationToken)
     {
         ThrowIfAsynchronousCallNotAllowed();
-        ThrowIfWritingNotAllowed();
+
+        // See Flush
+        if (!options.AllowWriting)
+            return Task.CompletedTask;
+
         return stream.FlushAsync(cancellationToken);
     }
 

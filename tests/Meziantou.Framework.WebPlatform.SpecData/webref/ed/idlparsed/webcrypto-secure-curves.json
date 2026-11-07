@@ -1,0 +1,55 @@
+{
+  "spec": {
+    "title": "Secure Curves in the Web Cryptography API",
+    "url": "https://wicg.github.io/webcrypto-secure-curves/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "Ed448Params": {
+        "fragment": "dictionary Ed448Params : Algorithm {\n  BufferSource context;\n};",
+        "type": "dictionary",
+        "name": "Ed448Params",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "context",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-secure-curves/#dfn-Ed448Params-context"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-secure-curves/#dfn-Ed448Params"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Ed448Params": [
+        "Algorithm",
+        "BufferSource"
+      ]
+    },
+    "externalDependencies": [
+      "Algorithm",
+      "BufferSource"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

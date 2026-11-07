@@ -1,15 +1,18 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <!-- The initials are computed from the normalized name -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.1</Version>
+    <Version>2.1.5</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Generate deterministic avatar SVG images from names and bigrams</Description>
+    <PackageTags>avatar, identicon, initials, svg, image</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Hashing" Version="10.0.10" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.13" />
   </ItemGroup>
 
 </Project>

@@ -5,40 +5,33 @@ namespace Meziantou.Framework;
 
 /// <summary>
 /// Provides a powerful type converter that extends the capabilities of System.Convert with support for culture-specific formatting, byte arrays, enums, nullable types, and custom TypeConverters.
+/// </summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TypeConverter.Tests/DefaultConverterTests_ConversionType.cs" ref:region="DefaultConverter_Example" ref:dedent="true">
 /// var converter = new DefaultConverter();
 ///
 /// // Convert string to int
-/// converter.TryChangeType("42", typeof(int), null, out var result);
+/// Assert.True(converter.TryChangeType("42", typeof(int), CultureInfo.InvariantCulture, out var result));
+/// Assert.Equal(42, result);
 ///
 /// // Convert byte array to hex string
 /// converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed;
-/// converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, typeof(string), null, out var hex);
-/// Console.WriteLine(hex); // "0x01020304"
+/// Assert.True(converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, typeof(string), CultureInfo.InvariantCulture, out var hex));
+/// Assert.Equal("0x01020304", hex);
 ///
 /// // Convert hex string to byte array
-/// converter.TryChangeType("0x01020304", typeof(byte[]), null, out var bytes);
+/// Assert.True(converter.TryChangeType("0x01020304", typeof(byte[]), CultureInfo.InvariantCulture, out var bytes));
+/// Assert.Equal(new byte[] { 1, 2, 3, 4 }, (byte[]?)bytes);
 ///
 /// // Parse enum with flags
-/// converter.TryChangeType("Option1, Option2", typeof(MyEnum), null, out var enumValue);
-/// ]]></code>
+/// Assert.True(converter.TryChangeType("ReadOnly, Hidden", typeof(FileAttributes), CultureInfo.InvariantCulture, out var enumValue));
+/// Assert.Equal(FileAttributes.ReadOnly | FileAttributes.Hidden, enumValue);
+/// </code>
 /// </example>
-/// </summary>
 public class DefaultConverter : IConverter
 {
-    private static readonly MethodInfo EnumTryParseMethodInfo = GetEnumTryParseMethodInfo();
-
     /// <summary>Gets or sets the format to use when converting byte arrays to strings.</summary>
     public ByteArrayToStringFormat ByteArrayToStringFormat { get; set; } = ByteArrayToStringFormat.Base64;
-
-    private static MethodInfo GetEnumTryParseMethodInfo()
-    {
-        // Enum.TryParse<T>(string value, bool ignoreCase, out T value)
-        return typeof(Enum)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .First(m => string.Equals(m.Name, nameof(Enum.TryParse), StringComparison.Ordinal) && m.IsGenericMethod && m.GetParameters().Length == 3);
-    }
 
     /// <summary>Attempts to convert an input value to the specified type.</summary>
     /// <param name="input">The value to convert.</param>
@@ -51,37 +44,15 @@ public class DefaultConverter : IConverter
         return TryConvert(input, conversionType, provider, out value);
     }
 
-    private static byte GetHexaByte(char c)
-    {
-        if (c is >= '0' and <= '9')
-            return (byte)(c - '0');
-
-        if (c is >= 'A' and <= 'F')
-            return (byte)(c - 'A' + 10);
-
-        if (c is >= 'a' and <= 'f')
-            return (byte)(c - 'a' + 10);
-
-        return 0xFF;
-    }
-
     private static bool NormalizeHexString(ref string? s)
     {
-        if (s is null)
-            return false;
-
-        switch (s)
+        if (s is ['0', 'x' or 'X', .. var rest])
         {
-            case ['x' or 'X', .. var rest]:
-                s = rest;
-                return true;
-            case ['0', 'x' or 'X', .. var rest]:
-                s = rest;
-                return true;
-
-            default:
-                return false;
+            s = rest;
+            return true;
         }
+
+        return false;
     }
 
     private static void GetBytes(decimal d, byte[] buffer)
@@ -127,36 +98,12 @@ public class DefaultConverter : IConverter
         return false;
     }
 
-    private static bool EnumTryParse(Type type, string? input, out object? value)
-    {
-        var mi = EnumTryParseMethodInfo.MakeGenericMethod(type);
-        object?[] args = [input, true, Enum.ToObject(type, 0)];
-        var b = (bool)mi.Invoke(null, args)!;
-        value = args[2];
-        return b;
-    }
-
     private static string ToHexa(byte[]? bytes)
     {
         if (bytes is null)
             return "";
 
-        return ToHexa(bytes, 0, bytes.Length);
-    }
-
-    private static string ToHexa(byte[]? bytes, int offset, int count)
-    {
-        if (bytes is null)
-            return "";
-
-        ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        ArgumentOutOfRangeException.ThrowIfNegative(count);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, bytes.Length);
-
-        if (offset >= bytes.Length)
-            return "";
-
-        return Convert.ToHexString(bytes, offset, count);
+        return Convert.ToHexString(bytes);
     }
 
     private static byte[]? FromHexa(string hex)
@@ -294,7 +241,7 @@ public class DefaultConverter : IConverter
     /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvertEnum(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
-        return EnumTryParse(conversionType, Convert.ToString(input, provider), out value);
+        return Enum.TryParse(conversionType, Convert.ToString(input, provider), ignoreCase: true, out value);
     }
 
     /// <summary>Converts a string to a byte array, supporting Base64 and hexadecimal formats.</summary>
@@ -468,12 +415,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return ulong.TryParse(s, styles, provider, out value);
     }
@@ -501,12 +444,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return ushort.TryParse(s, styles, provider, out value);
     }
@@ -534,14 +473,15 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
         if (NormalizeHexString(ref s))
         {
-            styles |= NumberStyles.AllowHexSpecifier;
+            // Hexadecimal notation is not supported by floating-point types
+            value = 0;
+            return false;
         }
 
-        return decimal.TryParse(s, styles, provider, out value);
+        return decimal.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out value);
     }
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out float value)
@@ -567,14 +507,15 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
         if (NormalizeHexString(ref s))
         {
-            styles |= NumberStyles.AllowHexSpecifier;
+            // Hexadecimal notation is not supported by floating-point types
+            value = 0;
+            return false;
         }
 
-        return float.TryParse(s, styles, provider, out value);
+        return float.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out value);
     }
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out double value)
@@ -600,14 +541,15 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
         if (NormalizeHexString(ref s))
         {
-            styles |= NumberStyles.AllowHexSpecifier;
+            // Hexadecimal notation is not supported by floating-point types
+            value = 0;
+            return false;
         }
 
-        return double.TryParse(s, styles, provider, out value);
+        return double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out value);
     }
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out char value)
@@ -687,12 +629,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return uint.TryParse(s, styles, provider, out value);
     }
@@ -720,12 +658,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return byte.TryParse(s, styles, provider, out value);
     }
@@ -753,12 +687,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return sbyte.TryParse(s, styles, provider, out value);
     }
@@ -798,12 +728,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return short.TryParse(s, styles, provider, out value);
     }
@@ -843,12 +769,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return int.TryParse(s, styles, provider, out value);
     }
@@ -888,12 +810,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return long.TryParse(s, styles, provider, out value);
     }
@@ -941,6 +859,13 @@ public class DefaultConverter : IConverter
     protected virtual bool TryConvert(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
         ArgumentNullException.ThrowIfNull(conversionType);
+
+        // No instance of these types can be created, so there is nothing to convert to
+        if (!ConvertUtilities.IsInstantiable(conversionType))
+        {
+            value = null;
+            return false;
+        }
 
         if (conversionType == typeof(object))
         {
@@ -1123,11 +1048,18 @@ public class DefaultConverter : IConverter
                     return true;
                 }
 
-                var tc = TypeDescriptor.GetConverter(inputType);
-                if (tc is not null && tc.CanConvertTo(typeof(string)))
+                try
                 {
-                    value = (string?)tc.ConvertTo(input, typeof(string));
-                    return true;
+                    var tc = TypeDescriptor.GetConverter(inputType);
+                    if (tc is not null && tc.CanConvertTo(typeof(string)))
+                    {
+                        value = (string?)tc.ConvertTo(context: null, provider as CultureInfo, input, typeof(string));
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // The TypeConverter cannot handle the value, fall back to Convert.ToString
                 }
 
                 value = Convert.ToString(input, provider);

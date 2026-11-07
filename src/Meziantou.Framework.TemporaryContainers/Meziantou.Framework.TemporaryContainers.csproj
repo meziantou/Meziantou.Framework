@@ -2,19 +2,21 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.3</Version>
+    <Version>1.1.12</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Manage temporary containers for integration tests using the docker, podman, apple/container, or wslc CLI.</Description>
+    <Description>Manage temporary containers for integration tests using the Docker Engine API, or the docker, podman, apple/container, or wslc CLI.</Description>
+    <PackageTags>docker, podman, containers, integration-tests, testing</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.CommandLine/CommandLineBuilder.cs" Link="Utils/CommandLineBuilder.cs" />
     <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>

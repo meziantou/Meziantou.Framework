@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<title>Images</title>
+<style>
+  body { margin: 16px; background: #eee }
+  img, .bg { width: 128px; height: 96px; margin: 8px; border: 1px solid #888; vertical-align: top }
+  .pixelated { image-rendering: pixelated }
+  .contain { object-fit: contain; background: #fff }
+  .cover { object-fit: cover }
+  .bg { display: inline-block }
+  .tile { background: url(resources/alpha.png) 0 0 / 32px 32px }
+  .norepeat { background: #fff url(resources/alpha.png) no-repeat center / 48px 48px }
+  .round { border-radius: 50%; }
+</style>
+<img src="resources/alpha.png" alt="">
+<img class="pixelated" src="resources/alpha.png" alt="">
+<img class="contain" src="resources/alpha.png" alt="">
+<img class="cover round" src="resources/alpha.png" alt="">
+<img src="resources/shapes.svg" alt="">
+<img class="contain" src="resources/shapes.svg" alt="">
+<span class="bg tile"></span>
+<span class="bg norepeat"></span>

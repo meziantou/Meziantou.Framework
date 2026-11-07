@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -7,24 +8,28 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 
 /// <summary>Provides an implementation of <see cref="ILoggerProvider"/> that creates loggers writing to xUnit.net's <see cref="ITestOutputHelper"/>.</summary>
 /// <example>
-/// <code>
-/// using Microsoft.Extensions.Hosting;
-/// using Microsoft.Extensions.Logging;
-///
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs" ref:region="XUnitLoggerProvider_Example" ref:dedent="true">
+/// var testOutputHelper = TestContext.Current.TestOutputHelper;
 /// using var provider = new XUnitLoggerProvider(testOutputHelper);
-/// var host = new HostBuilder()
-///     .ConfigureLogging(builder =>
+/// using var host = new HostBuilder()
+///     .ConfigureLogging(builder =&gt;
 ///     {
 ///         builder.Services.AddSingleton&lt;ILoggerProvider&gt;(provider);
 ///     })
 ///     .Build();
+///
+/// var logger = host.Services.GetRequiredService&lt;ILoggerFactory&gt;().CreateLogger("MyCategory");
+/// logger.LogInformation("This message will appear in the test output");
 /// </code>
 /// </example>
-public sealed class XUnitLoggerProvider : ILoggerProvider
+[ProviderAlias("XUnit")]
+public sealed class XUnitLoggerProvider : ILoggerProvider, ISupportExternalScope
 {
     private readonly ITestOutputHelper? _testOutputHelper;
     private readonly XUnitLoggerOptions _options;
-    private readonly LoggerExternalScopeProvider _scopeProvider = new();
+    private readonly ConcurrentDictionary<string, XUnitLogger> _loggers = new(StringComparer.Ordinal);
+
+    private readonly MutableExternalScopeProvider _scopeProvider = new(new LoggerExternalScopeProvider());
 
     /// <summary>Initializes a new instance of the <see cref="XUnitLoggerProvider"/> class.</summary>
     public XUnitLoggerProvider()
@@ -66,7 +71,19 @@ public sealed class XUnitLoggerProvider : ILoggerProvider
     /// <inheritdoc/>
     public ILogger CreateLogger(string categoryName)
     {
-        return new XUnitLogger(_testOutputHelper, _scopeProvider, categoryName, _options);
+        return _loggers.GetOrAdd(categoryName, static (name, state) => new XUnitLogger(state._testOutputHelper, state._scopeProvider, name, state._options), this);
+    }
+
+    /// <summary>Sets the external scope provider supplied by the logger factory.</summary>
+    /// <param name="scopeProvider">The scope provider the factory uses to track scopes.</param>
+    /// <remarks>
+    /// Implementing <see cref="ISupportExternalScope"/> is what makes the factory route its scopes
+    /// through this provider, including the ones it synthesises from the current activity when
+    /// <c>LoggerFactoryOptions.ActivityTrackingOptions</c> is set.
+    /// </remarks>
+    public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+    {
+        _scopeProvider.Current = scopeProvider;
     }
 
     /// <inheritdoc/>

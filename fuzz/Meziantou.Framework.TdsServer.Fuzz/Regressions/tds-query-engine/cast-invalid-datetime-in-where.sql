@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE CAST('<garbage>' AS datetime) > CAST('2020-01-01' AS datetime)

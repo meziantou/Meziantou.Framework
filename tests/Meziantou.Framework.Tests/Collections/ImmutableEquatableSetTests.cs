@@ -14,6 +14,14 @@ public sealed class ImmutableEquatableSetTests
     }
 
     [Fact]
+    public void Create_FromEmptyCollection_ShouldReturnEmpty()
+    {
+        var empty = ImmutableEquatableSet.Create(new List<string>());
+
+        Assert.Same(ImmutableEquatableSet<string>.Empty, empty);
+    }
+
+    [Fact]
     public void Constructor_ShouldCreateSetWithUniqueItems()
     {
         var values = new HashSet<string>(StringComparer.Ordinal) { "a", "b", "c" };
@@ -87,9 +95,9 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a" });
 
         Assert.False(set.Equals(null));
+#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.False(set == null);
         Assert.False(null == set);
-#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.True(set != null);
         Assert.True(null != set);
 #pragma warning restore MFAS0007
@@ -107,11 +115,36 @@ public sealed class ImmutableEquatableSetTests
     }
 
     [Fact]
-    public void GetHashCode_ShouldReturnCount()
+    public void GetHashCode_SameItemsInAnyOrder_ShouldReturnSameValue()
     {
-        var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b", "c" });
+        var set1 = ImmutableEquatableSet.Create(new[] { "a", "b", "c" });
+        var set2 = ImmutableEquatableSet.Create(new[] { "c", "a", "b" });
 
-        Assert.Equal(3, set.GetHashCode());
+        Assert.Equal(set1.GetHashCode(), set2.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_SameCountDifferentItems_ShouldReturnDifferentValues()
+    {
+        var hashCodes = Enumerable.Range(0, 100).Select(i => ImmutableEquatableSet.Create(new[] { i, i + 1000 }).GetHashCode()).Distinct().Count();
+
+        Assert.True(hashCodes > 90);
+    }
+
+    [Fact]
+    public void IReadOnlySet_ShouldForwardToSet()
+    {
+        IReadOnlySet<string> set = ImmutableEquatableSet.Create(new[] { "a", "b" });
+
+        Assert.True(set.Contains("a"));
+        Assert.False(set.Contains("c"));
+        Assert.True(set.IsSubsetOf(["a", "b", "c"]));
+        Assert.True(set.IsProperSubsetOf(["a", "b", "c"]));
+        Assert.True(set.IsSupersetOf(["a"]));
+        Assert.True(set.IsProperSupersetOf(["a"]));
+        Assert.True(set.Overlaps(["b", "c"]));
+        Assert.True(set.SetEquals(["b", "a"]));
+        Assert.False(set.SetEquals(["a"]));
     }
 
     [Fact]
@@ -225,9 +258,11 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b" });
         var iset = (ISet<string>)set;
 
+#pragma warning disable MFAS0041, MFAS0042 // The test validates IsProperSubsetOf itself
         Assert.True(iset.IsProperSubsetOf(new[] { "a", "b", "c" }));
         Assert.False(iset.IsProperSubsetOf(new[] { "a", "b" }));
         Assert.False(iset.IsProperSubsetOf(new[] { "a" }));
+#pragma warning restore MFAS0041, MFAS0042
     }
 
     [Fact]
@@ -236,9 +271,11 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b", "c" });
         var iset = (ISet<string>)set;
 
+#pragma warning disable MFAS0043, MFAS0044 // The test validates IsProperSupersetOf itself
         Assert.True(iset.IsProperSupersetOf(new[] { "a", "b" }));
         Assert.False(iset.IsProperSupersetOf(new[] { "a", "b", "c" }));
         Assert.False(iset.IsProperSupersetOf(new[] { "a", "b", "c", "d" }));
+#pragma warning restore MFAS0043, MFAS0044
     }
 
     [Fact]
@@ -266,20 +303,20 @@ public sealed class ImmutableEquatableSetTests
     }
 
     [Fact]
-    public void MutatingOperations_ShouldThrowInvalidOperationException()
+    public void MutatingOperations_ShouldThrowNotSupportedException()
     {
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b" });
         var collection = (ICollection<string>)set;
         var iset = (ISet<string>)set;
 
-        Assert.Throws<InvalidOperationException>(() => collection.Add("c"));
-        Assert.Throws<InvalidOperationException>(() => collection.Remove("a"));
-        Assert.Throws<InvalidOperationException>(() => collection.Clear());
-        Assert.Throws<InvalidOperationException>(() => iset.Add("c"));
-        Assert.Throws<InvalidOperationException>(() => iset.UnionWith(new[] { "c" }));
-        Assert.Throws<InvalidOperationException>(() => iset.IntersectWith(new[] { "a" }));
-        Assert.Throws<InvalidOperationException>(() => iset.ExceptWith(new[] { "a" }));
-        Assert.Throws<InvalidOperationException>(() => iset.SymmetricExceptWith(new[] { "c" }));
+        Assert.Throws<NotSupportedException>(() => collection.Add("c"));
+        Assert.Throws<NotSupportedException>(() => collection.Remove("a"));
+        Assert.Throws<NotSupportedException>(() => collection.Clear());
+        Assert.Throws<NotSupportedException>(() => iset.Add("c"));
+        Assert.Throws<NotSupportedException>(() => iset.UnionWith(new[] { "c" }));
+        Assert.Throws<NotSupportedException>(() => iset.IntersectWith(new[] { "a" }));
+        Assert.Throws<NotSupportedException>(() => iset.ExceptWith(new[] { "a" }));
+        Assert.Throws<NotSupportedException>(() => iset.SymmetricExceptWith(new[] { "c" }));
     }
 
     [Fact]

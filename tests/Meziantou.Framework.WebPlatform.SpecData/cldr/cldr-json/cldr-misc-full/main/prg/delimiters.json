@@ -1,0 +1,15 @@
+{
+  "main": {
+    "prg": {
+      "identity": {
+        "language": "prg"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

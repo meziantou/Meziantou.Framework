@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kam": {
+      "identity": {
+        "language": "kam"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

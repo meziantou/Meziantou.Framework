@@ -1,12 +1,498 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
+
 namespace Meziantou.Framework.Templating.Tests;
 
 public class TemplateTest
 {
     [Fact]
+    public void ReadmeExample_Basic()
+    {
+        #region Template_Basic
+        using var template = new Template();
+        template.Load("Hello World!");
+        var result = template.Run();
+        Assert.Equal("Hello World!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Parameters()
+    {
+        #region Template_Parameters
+        using var template = new Template();
+        template.Load("Hello <%=Name%>!");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        var result = template.Run("Meziantou");
+        Assert.Equal("Hello Meziantou!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_NamedParameters()
+    {
+        #region Template_NamedParameters
+        using var template = new Template();
+        template.Load("Hello <%=Name%>!");
+        var arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            { "Name", "Meziantou" },
+        };
+        foreach (var argument in arguments)
+        {
+            template.Arguments.Add(new TemplateArgument(argument.Key, argument.Value?.GetType()));
+        }
+
+        var result = template.Run(arguments);
+        Assert.Equal("Hello Meziantou!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ThrowOnMissingArgument()
+    {
+        #region Template_ThrowOnMissingArgument
+        using var template = new Template { ThrowOnMissingArgument = true };
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        template.Load("Hello <%=Name%>!");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Run(new Dictionary<string, object?>(StringComparer.Ordinal)));
+        Assert.Equal("No value was provided for the argument 'Name'.", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EvaluationBlock()
+    {
+        #region Template_EvaluationBlock
+        using var template = new Template();
+        template.Load("2 + 2 = <%= 2 + 2 %>");
+        var result = template.Run();
+        Assert.Equal("2 + 2 = 4", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_StatementBlock()
+    {
+        #region Template_StatementBlock
+        using var template = new Template();
+        template.Load("Numbers: <% for(int i = 1; i <= 5; i++) { %><%= i %><% } %>");
+        var result = template.Run();
+        Assert.Equal("Numbers: 12345", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ClassMemberBlock()
+    {
+        #region Template_ClassMemberBlock
+        using var template = new Template();
+        template.Load("""
+            <%+private static string Prefix() => "Item"; %>
+            <%= Prefix() %> 1
+            """);
+        var result = template.Run();
+        Assert.Equal("Item 1", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_MixedContent()
+    {
+        #region Template_MixedContent
+        using var template = new Template();
+        template.Load("""
+            <% for(int i = 1; i <= 3; i++) { %>
+              Item <%= i %>: <%= i * 10 %>
+            <% } %>
+            """);
+        var result = template.Run();
+        Assert.Equal("""
+              Item 1: 10
+              Item 2: 20
+              Item 3: 30
+
+            """, result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Directives()
+    {
+        #region Template_Directives
+        using var template = new Template();
+        template.Load("""
+            <%@ reference alias=MyAlias c:\libs\my-library.dll %>
+            <%@ include c:\templates\shared-helpers.cs %>
+            """);
+
+        var directives = template.Blocks.OfType<DirectiveBlock>().ToList();
+        Assert.Equal("reference", directives[0].Name);
+        Assert.Equal(@"alias=MyAlias c:\libs\my-library.dll", directives[0].Value);
+        Assert.Equal("include", directives[1].Name);
+        Assert.Equal(@"c:\templates\shared-helpers.cs", directives[1].Value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AssemblyReferences()
+    {
+        #region Template_AssemblyReferences
+        using var template = new Template();
+        template.AssemblyReferences.Add(typeof(string));
+        template.AssemblyReferences.Add(typeof(Template).Assembly, "TemplatingAlias");
+        template.AssemblyReferences.Add(typeof(Template).Module);
+        template.AssemblyReferences.Add(@"c:\libs\other-library.dll");
+        template.IncludedSourceFiles.Add(@"c:\templates\shared-helpers.cs");
+        #endregion
+
+        Assert.HasCount(4, template.AssemblyReferences);
+        Assert.Single(template.IncludedSourceFiles);
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomDelimiters()
+    {
+        #region Template_CustomDelimiters
+        using var template = new Template
+        {
+            StartCodeBlockDelimiter = "{{",
+            EndCodeBlockDelimiter = "}}",
+        };
+        template.Load("Hello {{=Name}}!");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        var result = template.Run("World");
+        Assert.Equal("Hello World!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_DefaultUsings()
+    {
+        #region Template_DefaultUsings
+        using var template = new Template();
+        template.Load("<%= Enumerable.Range(1, 5).Sum() %>");
+        var result = template.Run();
+        Assert.Equal("15", result);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_DefaultUsings_TypesOutsideCoreLibAreAvailable()
+    {
+        using var template = new Template();
+        template.Load("""
+            <%
+            var queue = new Queue<int>([1, 2]);
+            var stack = new Stack<int>([3]);
+            var uri = new Uri("https://example.com/path");
+            var writer = Console.Out;
+            %><%= queue.Sum() + stack.Peek() %>|<%= uri.AbsolutePath %>|<%= writer is not null %>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("6|/path|True", result);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Template_DefaultUsing_CanBeImportedExplicitly(bool useDirective)
+    {
+        using var template = new Template();
+        if (useDirective)
+        {
+            template.Load("<%@ using System.Linq %><%= Enumerable.Range(1, 5).Sum() %>");
+        }
+        else
+        {
+            template.Usings.Add("System.Linq");
+            template.Load("<%= Enumerable.Range(1, 5).Sum() %>");
+        }
+
+        var result = template.Run();
+        Assert.Equal("15", result);
+        Assert.Single(template.SourceCode!.Split('\n'), line => string.Equals(line.Trim(), "using System.Linq;", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReadmeExample_Usings()
+    {
+        #region Template_Usings
+        using var template = new Template();
+        template.Usings.Add("System.IO");
+        template.Load("<%= Path.GetExtension(\"report.txt\") %>");
+        var result = template.Run();
+        Assert.Equal(".txt", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_UsingAlias()
+    {
+        #region Template_UsingAlias
+        using var template = new Template();
+        template.Usings.Add("SB = System.Text.StringBuilder");
+        template.Load("<% var sb = new SB(); sb.Append(\"Hello\"); %><%= sb.ToString() %>");
+        var result = template.Run();
+        Assert.Equal("Hello", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomOutputType()
+    {
+        #region Template_CustomOutputType
+        using var template = new Template();
+        template.OutputType = typeof(Output);
+        template.Load("<%__output__.Write(\"Custom output\");%>");
+        var result = template.Run();
+        Assert.Equal("Custom output", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_DynamicParameters()
+    {
+        #region Template_DynamicParameters
+        using var template = new Template();
+        template.Load("Value: <%=Value%>");
+        template.Arguments.Add(new TemplateArgument("Value", type: null)); // No type specified = dynamic
+        var result = template.Run(42);
+        Assert.Equal("Value: 42", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Build()
+    {
+        #region Template_Build
+        using var template = new Template();
+        template.Load("Hello <%=Name%>");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+
+        // Compile the template
+        template.Build(CancellationToken.None);
+
+        // Run multiple times (compiled code is reused)
+        var result1 = template.Run("Alice");
+        var result2 = template.Run("Bob");
+        Assert.Equal("Hello Alice", result1);
+        Assert.Equal("Hello Bob", result2);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Debug()
+    {
+        #region Template_Debug
+        using var template = new Template
+        {
+            Debug = true,
+        };
+        template.Load("<%=Value%>");
+        template.Arguments.Add(new TemplateArgument("Value", typeof(int)));
+        var result = template.Run(42);
+        Assert.Equal("42", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SourceCode()
+    {
+        #region Template_SourceCode
+        using var template = new Template();
+        template.Load("Hello <%=Name%>");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        template.Build(CancellationToken.None);
+
+        // The generated C# class
+        var sourceCode = template.SourceCode;
+        Assert.Contains("public static void Run(dynamic __output__, System.String Name)", sourceCode);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Dispose()
+    {
+        #region Template_Dispose
+        using var template = new Template { OutputType = typeof(Output) };
+        template.Load("Hello <%=Name%>!");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        var result = template.Run("Meziantou");
+        Assert.Equal("Hello Meziantou!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Unloadable()
+    {
+        #region Template_Unloadable
+        using var template = new Template { OutputType = typeof(Output) };
+        template.Load("Hello <%=Name%>!");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        #endregion
+
+        Assert.Equal("Hello Meziantou!", template.Run("Meziantou"));
+    }
+
+    [Fact]
+    public void ReadmeExample_ErrorHandling()
+    {
+        #region Template_ErrorHandling
+        using var template = new Template();
+        template.Load("<%=InvalidExpression%>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Contains("InvalidExpression", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_Example()
+    {
+        #region Template_Example
+        using var template = new Template();
+        template.Load("Hello <%=Name%>!");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        var result = template.Run("Meziantou");
+        Assert.Equal("Hello Meziantou!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_LineOnlyBlocks()
+    {
+        #region Template_LineOnlyBlocks
+        using var template = new Template();
+        template.Load("""
+            <ul>
+            <% foreach (var item in new[] { "Apples", "Pears" }) { %>
+              <li><%= item %></li>
+            <% } %>
+            </ul>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("""
+            <ul>
+              <li>Apples</li>
+              <li>Pears</li>
+            </ul>
+            """, result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_RunWithWriter()
+    {
+        #region Template_RunWithWriter
+        using var template = new Template();
+        template.Arguments.Add(new TemplateArgument("Total", typeof(decimal)));
+        template.Load("Total: <%= Total %>");
+
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        template.Run(writer, 1234.5m);
+        Assert.Equal("Total: 1234.5", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ModelArgument()
+    {
+        #region Template_ModelArgument
+        using var template = new Template();
+        template.AssemblyReferences.Add(typeof(Invoice));
+        template.Arguments.Add(new TemplateArgument("Invoice", typeof(Invoice)));
+        template.Load("Invoice for <%= Invoice.Customer %>: <%= Invoice.ItemCount %> items");
+
+        var result = template.Run(new Invoice("Contoso", 3));
+        Assert.Equal("Invoice for Contoso: 3 items", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UsingDirective()
+    {
+        #region Template_UsingDirective
+        using var template = new Template();
+        template.Load("""
+            <%@ using System.IO %>
+            <%= Path.GetFileNameWithoutExtension("report.txt") %>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("report", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CustomDirective()
+    {
+        #region Template_CustomDirective
+        using var template = new Template();
+        template.Load("""
+            <%@ outputextension .cs %>
+            public class Generated { }
+            """);
+
+        var directive = template.Blocks.OfType<DirectiveBlock>()
+            .Single(block => string.Equals(block.Name, "outputextension", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(".cs", directive.Value);
+        Assert.Equal("public class Generated { }", template.Run());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_BaseClass()
+    {
+        #region Template_BaseClass
+        using var template = new Template();
+        template.AssemblyReferences.Add(typeof(ReportTemplateBase));
+        template.BaseClassFullTypeName = typeof(ReportTemplateBase).FullName;
+        template.Load("<%= Bullet(\"Apples\") %>");
+
+        var result = template.Run();
+        Assert.Equal("- Apples", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SourceFileName()
+    {
+        #region Template_SourceFileName
+        using var template = new Template { SourceFileName = "welcome.txt" };
+        template.Load("""
+            Hello
+            <%= Nmae %>
+            """);
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Contains("welcome.txt(2,5)", exception.Message);
+        Assert.Contains("CS0103", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_RuntimeError()
+    {
+        #region Template_RuntimeError
+        using var template = new Template();
+        template.Load("<% throw new InvalidOperationException(\"Out of stock\"); %>");
+
+        var exception = Assert.Throws<TargetInvocationException>(() => template.Run());
+        var innerException = Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.Equal("Out of stock", innerException.Message);
+        #endregion
+    }
+
+    [Fact]
     public void Template_TextOnly()
     {
         // Arrange
-        var template = new Template();
+        using var template = new Template();
         template.Load("Sample");
         template.OutputType = typeof(Output);
 
@@ -19,7 +505,7 @@ public class TemplateTest
     public void Template_CodeOnly()
     {
         // Arrange
-        var template = new Template();
+        using var template = new Template();
         template.Load("<% " + template.OutputParameterName + ".Write(\"Sample\"); %>");
 
         // Act
@@ -31,7 +517,7 @@ public class TemplateTest
     public void Template_CodeEval()
     {
         // Arrange
-        var template = new Template();
+        using var template = new Template();
         template.Load("<%= \"Sample\" %>");
 
         // Act
@@ -42,7 +528,7 @@ public class TemplateTest
     [Fact]
     public void Template_CodeEval_VerbatimString()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("<%= @\"Sample\" %>");
 
         var result = template.Run();
@@ -54,7 +540,7 @@ public class TemplateTest
     public void Template_CodeEvalParameter01()
     {
         // Arrange
-        var template = new Template();
+        using var template = new Template();
         template.Load("Hello <%=Name%>!");
         template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 
@@ -67,7 +553,7 @@ public class TemplateTest
     public void Template_CodeEvalParameter02()
     {
         // Arrange
-        var template = new Template();
+        using var template = new Template();
         template.Load("Hello <%=Name%>!");
         var arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -87,7 +573,7 @@ public class TemplateTest
     public void Template_Loop01()
     {
         // Arrange
-        var template = new Template();
+        using var template = new Template();
         template.Load("Hello <% for(int i = 1; i <= 5; i++ ) { %><%= i %><% } %>!");
 
         // Act
@@ -98,7 +584,7 @@ public class TemplateTest
     [Fact]
     public void Template_ClassMemberBlock_IsParsed()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("<%+ private static string Sample() => \"Sample\"; %>");
 
         var block = Assert.Single(template.Blocks.OfType<ClassMemberBlock>());
@@ -108,7 +594,7 @@ public class TemplateTest
     [Fact]
     public void Template_CodeEvalBlock_IsParsedWithoutPrefix()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("<%= 1 %>");
 
         var block = Assert.Single(template.Blocks.OfType<CodeBlock>(), codeBlock => codeBlock.IsExpression);
@@ -118,7 +604,7 @@ public class TemplateTest
     [Fact]
     public void Template_DirectiveBlock_IsParsedWithoutPrefix()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("<%@ outputextension .cs %>");
 
         var block = Assert.Single(template.Blocks.OfType<DirectiveBlock>());
@@ -128,7 +614,7 @@ public class TemplateTest
     [Fact]
     public void Template_ClassMemberBlock_CanBeInvokedFromTemplate()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("""
             <%+ private static string Sample() => "Sample"; %>
             <%= Sample() %>
@@ -142,7 +628,7 @@ public class TemplateTest
     [Fact]
     public void Template_ClassMemberBlock_StrictSyntaxOnly()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("<% + private static string Sample() => \"Sample\"; %>");
 
         Assert.Empty(template.Blocks.OfType<ClassMemberBlock>());
@@ -152,7 +638,7 @@ public class TemplateTest
     [Fact]
     public void Template_ClassMemberBlock_IsGeneratedAtClassScope()
     {
-        var template = new TemplateWithoutCompilation();
+        using var template = new TemplateWithoutCompilation();
         template.Load("""
             <%+private static string Sample() => "Sample"; %>
             <%= Sample() %>
@@ -167,7 +653,7 @@ public class TemplateTest
     [Fact]
     public void Template_OverlappingStartDelimiter_ExpressionBlockIsParsed()
     {
-        var template = new Template
+        using var template = new Template
         {
             StartCodeBlockDelimiter = "<#",
             EndCodeBlockDelimiter = "#>",
@@ -182,7 +668,7 @@ public class TemplateTest
     [Fact]
     public void Template_LineOnlyCodeBlock_DoesNotCreateTrailingTextNewLineBlock()
     {
-        var template = new Template
+        using var template = new Template
         {
             StartCodeBlockDelimiter = "<#",
             EndCodeBlockDelimiter = "#>",
@@ -200,7 +686,7 @@ public class TemplateTest
     [Fact]
     public void Template_LineOnlyDirective_DoesNotCreateTrailingTextNewLineBlock()
     {
-        var template = new Template
+        using var template = new Template
         {
             StartCodeBlockDelimiter = "<#",
             EndCodeBlockDelimiter = "#>",
@@ -219,7 +705,7 @@ public class TemplateTest
     public void Template_UntypedArgument()
     {
         // Arrange
-        var template = new Template();
+        using var template = new Template();
         template.Arguments.Add(new TemplateArgument("Name", type: null));
         template.Load("Hello <%= Name %>!");
 
@@ -232,7 +718,7 @@ public class TemplateTest
     public void Template_Debug()
     {
         // Arrange
-        var template = new Template
+        using var template = new Template
         {
             Debug = true,
         };
@@ -255,7 +741,7 @@ public class TemplateTest
     public void Template_Release()
     {
         // Arrange
-        var template = new Template
+        using var template = new Template
         {
             Debug = false,
         };
@@ -277,7 +763,7 @@ public class TemplateTest
     [Fact]
     public void Template_Directives_AreParsed_AndWellKnownDirectivesAreApplied()
     {
-        var template = new TemplateWithoutCompilation();
+        using var template = new TemplateWithoutCompilation();
         template.Load("""
             <%@ USING System.Linq %>
             <%@ InHeRiTs CustomBase %>
@@ -349,7 +835,7 @@ public class TemplateTest
 
         try
         {
-            var template = new Template();
+            using var template = new Template();
             template.Load($"""
                 <%@ include {sourceFilePath} %>
                 <%= IncludedHelper.GetValue() %>
@@ -373,7 +859,7 @@ public class TemplateTest
             <%@ outputextension .cs %>
             line3
             """;
-        var template = new Template();
+        using var template = new Template();
         template.Load(Source);
 
         var directive = Assert.Single(template.Blocks!.OfType<DirectiveBlock>());
@@ -389,7 +875,7 @@ public class TemplateTest
     [Fact]
     public void Template_UnknownDirective_DoesNotEmitCode()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("Hello <%@ outputextension .cs %> World");
 
         var result = template.Run();
@@ -402,7 +888,7 @@ public class TemplateTest
     public void Template_Blocks_HaveSpanMatchingOriginalText()
     {
         const string Source = "A<%= 1 %>B";
-        var template = new Template();
+        using var template = new Template();
         template.Load(Source);
 
         foreach (var block in template.Blocks!)
@@ -416,7 +902,7 @@ public class TemplateTest
     public void Template_Blocks_HaveCorrectSpanWithCRLF()
     {
         const string Source = "line1\r\n<%= 1 %>\r\nline3";
-        var template = new Template();
+        using var template = new Template();
         template.Load(Source);
 
         var codeBlock = Assert.Single(template.Blocks!.OfType<CodeBlock>(), codeBlock => codeBlock.IsExpression);
@@ -429,7 +915,7 @@ public class TemplateTest
     [Fact]
     public void Template_CodeBlocks_EmitLineDirectivesWithoutFileName()
     {
-        var template = new TemplateWithoutCompilation();
+        using var template = new TemplateWithoutCompilation();
         template.Load("<% var value = 0; %>");
 
         template.Build(CancellationToken.None);
@@ -441,7 +927,7 @@ public class TemplateTest
     [Fact]
     public void Template_ExpressionAndClassMemberBlocks_EmitLineDirectivesWithFileName()
     {
-        var template = new TemplateWithoutCompilation
+        using var template = new TemplateWithoutCompilation
         {
             SourceFileName = "template.cs",
         };
@@ -449,7 +935,7 @@ public class TemplateTest
 
         template.Build(CancellationToken.None);
 
-        Assert.Contains("#line (1, 4) - (1, 11) 32 \"template.cs\"", template.SourceCode);
+        Assert.Contains("#line (1, 4) - (1, 11) 25 \"template.cs\"", template.SourceCode);
         Assert.Contains("#line (1, 16) - (1, 36) 4 \"template.cs\"", template.SourceCode);
     }
 
@@ -461,7 +947,7 @@ public class TemplateTest
     public void Template_LineDirectives_MapCompilerDiagnosticToTemplate(string source)
     {
         const string SourceFileName = "template.cs";
-        var template = new Template
+        using var template = new Template
         {
             SourceFileName = SourceFileName,
         };
@@ -514,7 +1000,7 @@ public class TemplateTest
     [Fact]
     public void Template_Collections_CanBeModifiedBeforeBuild()
     {
-        var template = new Template();
+        using var template = new Template();
         var argument = new TemplateArgument("Value", typeof(int));
         template.Arguments.Add(argument);
         template.Usings.Add("System");
@@ -562,7 +1048,7 @@ public class TemplateTest
     [Fact]
     public void Template_Load_ThrowsOnceBuilt()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Load("text");
         template.Build(CancellationToken.None);
 
@@ -572,7 +1058,7 @@ public class TemplateTest
     [Fact]
     public void Template_Collections_ValidateNullAndEmptyItems()
     {
-        var template = new Template();
+        using var template = new Template();
 
         Assert.Throws<ArgumentNullException>(() => template.Arguments.Add(null!));
         Assert.Throws<ArgumentNullException>(() => template.Usings.Add(null!));
@@ -592,7 +1078,7 @@ public class TemplateTest
     [Fact]
     public void Template_Collections_AreFrozenAfterBuild()
     {
-        var template = new Template();
+        using var template = new Template();
         template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
         template.Load("Hello <%= Name %>!");
 
@@ -616,7 +1102,7 @@ public class TemplateTest
     [Fact]
     public void Template_ManualInterfaces_AreNotClearedByDirectiveApplication()
     {
-        var template = new TemplateWithoutCompilation();
+        using var template = new TemplateWithoutCompilation();
         template.ImplementedInterfaces.Add("IManual");
         template.Load("<%@implements IDirective %>");
 
@@ -628,7 +1114,7 @@ public class TemplateTest
     [Fact]
     public void Template_ImplementsDirective_IsAddedToClassSignature()
     {
-        var template = new TemplateWithoutCompilation
+        using var template = new TemplateWithoutCompilation
         {
             BaseClassFullTypeName = "BaseClass",
         };
@@ -639,10 +1125,480 @@ public class TemplateTest
         Assert.Contains("public class Template : BaseClass, IFoo, IBar", template.SourceCode);
     }
 
+    [Fact]
+    public async Task Template_DifferentInstances_CanBuildConcurrently()
+    {
+        const int TemplateCount = 8;
+
+        var templates = new Template[TemplateCount];
+        try
+        {
+            for (var i = 0; i < templates.Length; i++)
+            {
+                var template = new Template();
+                template.Load($"value: <%= {i} %>");
+                templates[i] = template;
+            }
+
+            var results = await Task.WhenAll(templates.Select(template => Task.Run(() =>
+            {
+                template.Build(CancellationToken.None);
+                return template.Run();
+            })));
+
+            for (var i = 0; i < results.Length; i++)
+            {
+                Assert.Equal($"value: {i}", results[i]);
+            }
+        }
+        finally
+        {
+            foreach (var template in templates)
+            {
+                template?.Dispose();
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Template_SameInstance_BuiltOnceWhenRunConcurrently()
+    {
+        using var template = new Template();
+        template.Load("Hello <%= 1 + 1 %>");
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() => template.Run())));
+
+        Assert.All(results, result => Assert.Equal("Hello 2", result));
+        Assert.True(template.IsBuilt);
+    }
+
+    [Fact]
+    public void Template_LoadFromTextReader_ProducesSameBlocksAsLoadFromString()
+    {
+        const string Source = "line1\r\n  <% var a = 0; %>  \r\ntext <%= a %>\ntail";
+
+        using var fromString = new Template();
+        fromString.Load(Source);
+
+        using var fromReader = new Template();
+        using (var reader = new StringReader(Source))
+        {
+            fromReader.Load(reader);
+        }
+
+        var expected = fromString.Blocks.Select(block => $"{block.GetType().Name}|{block.Text}|{block.Span}");
+        var actual = fromReader.Blocks.Select(block => $"{block.GetType().Name}|{block.Text}|{block.Span}");
+        Assert.Equal(expected, actual);
+    }
+
+    // The indentation in front of the block is kept; only the whitespace and the line break after it are swallowed.
+    [Theory]
+    [InlineData("a\n  <% var x = 0; %>  \nb", "a\n  b")]
+    [InlineData("a\r\n  <% var x = 0; %>  \r\nb", "a\r\n  b")]
+    [InlineData("a\r  <% var x = 0; %>  \rb", "a\r  b")]
+    [InlineData("a\n  <% var x = 0; %>  ", "a\n  ")]
+    [InlineData("a\n  <% var x = 0; %>", "a\n  ")]
+    [InlineData("a\n<%@ using System.Text %>\nb", "a\nb")]
+    [InlineData("a\n<%+ private int _f; %>\nb", "a\nb")]
+    public void Template_LineOnlyCodeBlock_SwallowsRestOfItsLine(string source, string expected)
+    {
+        using var template = new Template();
+        template.Load(source);
+
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Fact]
+    public void Template_LineOnlyCodeBlock_KeepsWhitespaceWhenTextFollowsOnTheSameLine()
+    {
+        using var template = new Template();
+        template.Load("a\n  <% var x = 0; %>  b\n");
+
+        Assert.Equal("a\n    b\n", template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlockAloneOnLine_DoesNotSwallowItsLine()
+    {
+        using var template = new Template();
+        template.Load("a\n  <%= 1 %>  \nb");
+
+        Assert.Equal("a\n  1  \nb", template.Run());
+    }
+
+    [Fact]
+    public void Template_UnterminatedCodeBlock_IsParsedAsTextKeepingTheStartDelimiter()
+    {
+        using var template = new Template();
+        template.Load("a<% var x = 0;");
+
+        Assert.Collection(
+            template.Blocks,
+            block => Assert.Equal("a", Assert.IsType<TextBlock>(block).Text),
+            block => Assert.Equal("<% var x = 0;", Assert.IsType<TextBlock>(block).Text));
+
+        Assert.Equal("a<% var x = 0;", template.Run());
+    }
+
+    [Fact]
+    public void Template_UnterminatedCodeBlockAfterATerminatedOne_KeepsTheStartDelimiter()
+    {
+        using var template = new Template();
+        template.Load("a<%= 1 %>b<% var x = 0;");
+
+        Assert.Equal("a1b<% var x = 0;", template.Run());
+    }
+
+    [Fact]
+    public void Template_UnterminatedCodeBlock_ReportsThePositionOfTheStartDelimiter()
+    {
+        using var template = new Template();
+        template.Load("a\n<% var x = 0;");
+
+        var block = Assert.IsType<TextBlock>(template.Blocks[^1]);
+        Assert.Equal(new TextPosition(line: 2, column: 1, index: 2), block.Start);
+    }
+
+    [Fact]
+    public void Template_SelfOverlappingDelimiter_IsMatched()
+    {
+        using var template = new Template
+        {
+            StartCodeBlockDelimiter = "aab",
+            EndCodeBlockDelimiter = "zzy",
+        };
+        template.Load("Xaaab= 1 zzzy!");
+
+        Assert.Collection(
+            template.Blocks,
+            block => Assert.Equal("Xa", Assert.IsType<TextBlock>(block).Text),
+            block => Assert.Equal(" 1 z", Assert.IsType<CodeBlock>(block).Text),
+            block => Assert.Equal("!", Assert.IsType<TextBlock>(block).Text));
+    }
+
     private sealed class TemplateWithoutCompilation : Template
     {
         protected override void Compile(string source, CancellationToken cancellationToken)
         {
         }
     }
+    [Fact]
+    public void Template_ExpressionBlock_WritesNullAsEmptyString()
+    {
+        using var template = new Template();
+        template.Load("a<%= null %>b");
+
+        Assert.Equal("ab", template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlock_FormatsFormattableValueUsingWriterFormatProvider()
+    {
+        using var template = new Template();
+        template.Load("<%= 1.5 %>|<%= 42 %>|<%= new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc) %>");
+
+        var expected = string.Create(CultureInfo.CurrentCulture, $"{1.5}|{42}|{new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc)}");
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlock_WritesArrayValueWithoutTreatingItAsFormatArguments()
+    {
+        using var template = new Template();
+        template.Load("<%= new object[] { 1, 2 } %>");
+
+        Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run());
+    }
+
+    [Fact]
+    public void Template_FailedBuild_ProducesTheSameDiagnosticsWhenRetried()
+    {
+        using var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+
+        var first = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        var second = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.Equal(first.Message, second.Message);
+        Assert.DoesNotContain("CS0528", second.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void Template_FailedBuild_RollsBackTheDirectivesItApplied()
+    {
+        using var template = new Template();
+        template.Load("<%@ using System.Globalization %><%@ implements System.IDisposable %><%= Missing %>");
+
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.DoesNotContain("System.Globalization", template.Usings);
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
+    public void Template_LoadAfterFailedBuild_AppliesOnlyTheNewDirectives()
+    {
+        using var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        template.Load("<%= \"ok\" %>");
+
+        Assert.Equal("ok", template.Run());
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_DoesNotBreakTheMethodLookup()
+    {
+        using var template = new Template();
+        template.Load("<%+ public static void Run(int value) { } %>hi");
+
+        Assert.Equal("hi", template.Run());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_StillInvokesTheGeneratedMethod()
+    {
+        using var template = new Template();
+        template.Arguments.Add(new TemplateArgument("value", typeof(int)));
+        template.Load("<%+ public static void Run(int value) { } %><%= value %>");
+
+        Assert.Equal("42", template.Run(42));
+    }
+
+    // "__output__" also occurs in the generated "__output__.Write(" prefix, so searching forwards
+    // pointed the #line directive at the prefix instead of at the expression.
+    [Fact]
+    public void Template_ExpressionBlockMatchingTheGeneratedPrefix_EmitsTheColumnOfTheExpression()
+    {
+        using var template = new Template();
+        template.Load("<%=__output__%>");
+        template.Build(CancellationToken.None);
+
+        var lines = template.SourceCode!.ReplaceLineEndings("\n").Split('\n');
+        var directiveIndex = Array.FindIndex(lines, line => line.StartsWith("#line (", StringComparison.Ordinal));
+        Assert.True(directiveIndex >= 0, "No #line directive was emitted");
+
+        var columnOffset = int.Parse(lines[directiveIndex].Split(' ')[^2], CultureInfo.InvariantCulture);
+        Assert.Equal("__output__);", lines[directiveIndex + 1][columnOffset..]);
+    }
+
+    [Fact]
+    public void Template_RunWithPositionalParameters_UsesCreateStringWriter()
+    {
+        using var template = new TemplateWithCountingStringWriter();
+        template.Load("a");
+
+        Assert.Equal("a", template.Run());
+        Assert.Equal(1, template.CreateStringWriterCallCount);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_UsesCreateStringWriter()
+    {
+        using var template = new TemplateWithCountingStringWriter();
+        template.Load("a");
+
+        Assert.Equal("a", template.Run(new Dictionary<string, object?>()));
+        Assert.Equal(1, template.CreateStringWriterCallCount);
+    }
+
+    [Fact]
+    public void Template_RunWithPositionalParameters_ThrowsOnNullWriterWithoutBuilding()
+    {
+        using var template = new Template();
+        template.Load("a");
+
+        Assert.Throws<ArgumentNullException>(() => template.Run(writer: null!));
+        Assert.False(template.IsBuilt);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_ThrowsOnNullWriterWithoutBuilding()
+    {
+        using var template = new Template();
+        template.Load("a");
+
+        Assert.Throws<ArgumentNullException>(() => template.Run(writer: null!, new Dictionary<string, object?>()));
+        Assert.False(template.IsBuilt);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_MissingArgumentUsesDefaultValue()
+    {
+        using var template = new Template();
+        template.Arguments.Add(new TemplateArgument("n", typeof(int)));
+        template.Load("<%= n %>");
+
+        Assert.Equal("0", template.Run(new Dictionary<string, object?>(StringComparer.Ordinal)));
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_MissingArgumentThrowsWhenEnabled()
+    {
+        using var template = new Template { ThrowOnMissingArgument = true };
+        template.Arguments.Add(new TemplateArgument("n", typeof(int)));
+        template.Load("<%= n %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Run(new Dictionary<string, object?>(StringComparer.Ordinal)));
+        Assert.Contains("'n'", exception.Message);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_ProvidedArgumentDoesNotThrowWhenEnabled()
+    {
+        using var template = new Template { ThrowOnMissingArgument = true };
+        template.Arguments.Add(new TemplateArgument("n", typeof(int)));
+        template.Load("<%= n %>");
+
+        Assert.Equal("42", template.Run(new Dictionary<string, object?>(StringComparer.Ordinal) { { "n", 42 } }));
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_NullArgumentValueDoesNotThrowWhenEnabled()
+    {
+        using var template = new Template { ThrowOnMissingArgument = true };
+        template.Arguments.Add(new TemplateArgument("name", typeof(string)));
+        template.Load("<%= name is null ? \"<null>\" : name %>");
+
+        Assert.Equal("<null>", template.Run(new Dictionary<string, object?>(StringComparer.Ordinal) { { "name", null } }));
+    }
+
+    [Fact]
+    public void Template_Dispose_UnloadsTheCompiledAssembly()
+    {
+        var loadContext = BuildAndDisposeTemplate(typeof(Output));
+        AssertUnloaded(loadContext);
+    }
+
+    [Fact]
+    public void Template_UnloadsTheCompiledAssembly_WhenNotDisposed()
+    {
+        var loadContext = BuildAndAbandonTemplate(typeof(Output));
+        AssertUnloaded(loadContext);
+    }
+
+    [Fact]
+    public void Template_DynamicTemplate_IsNeverUnloaded()
+    {
+        // Known limitation, documented in the readme: executing a dynamic call site registers the
+        // type that contains it in a process-wide cache held by the C# runtime binder, which roots
+        // the generated assembly for good. A template only unloads when it declares its types.
+        // If this test starts failing, the runtime has fixed the leak and the readme is stale.
+        var loadContext = BuildAndDisposeTemplate(outputType: null);
+
+        for (var i = 0; i < 20; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.True(loadContext.IsAlive, "A dynamic template is now unloadable");
+    }
+
+    [Fact]
+    public void Template_Build_ThrowsWhenDisposed()
+    {
+        var template = new Template();
+        template.Load("a");
+        template.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => template.Build(CancellationToken.None));
+        Assert.Throws<ObjectDisposedException>(() => template.Run());
+        Assert.Throws<ObjectDisposedException>(() => template.Run(new Dictionary<string, object?>()));
+    }
+
+    [Fact]
+    public void Template_Dispose_IsIdempotent()
+    {
+        var template = new Template();
+        template.Load("a");
+        Assert.Equal("a", template.Run());
+
+        template.Dispose();
+        template.Dispose();
+
+        Assert.False(template.IsBuilt);
+    }
+
+    // The template must not be reachable from the caller frame when the collection runs, so keep it
+    // in a non-inlined method and only return a weak reference to the load context it created.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference BuildAndDisposeTemplate(Type? outputType)
+    {
+        using var template = new TemplateTrackingItsLoadContext { OutputType = outputType };
+        return RunAndGetLoadContext(template);
+    }
+
+    // The template is deliberately left undisposed: unloading must also happen once it becomes unreachable.
+#pragma warning disable CA2000
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference BuildAndAbandonTemplate(Type? outputType)
+    {
+        var template = new TemplateTrackingItsLoadContext { OutputType = outputType };
+        return RunAndGetLoadContext(template);
+    }
+#pragma warning restore CA2000
+
+    private static WeakReference RunAndGetLoadContext(TemplateTrackingItsLoadContext template)
+    {
+        template.Load("Hello <%= 40 + 2 %>");
+        Assert.Equal("Hello 42", template.Run());
+
+        var loadContext = template.LoadContext!;
+        Assert.True(loadContext.IsAlive, "The template was not loaded in its own load context");
+        return loadContext;
+    }
+
+    private static void AssertUnloaded(WeakReference loadContext)
+    {
+        // Unloading is not synchronous: it completes on a later collection, once the runtime has
+        // finished walking everything that referenced the assembly.
+        for (var i = 0; i < 20 && loadContext.IsAlive; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(loadContext.IsAlive, "The compiled assembly was not unloaded");
+    }
+
+    private sealed class TemplateTrackingItsLoadContext : Template
+    {
+        public WeakReference? LoadContext { get; private set; }
+
+        protected override Assembly LoadAssembly(MemoryStream peStream, MemoryStream pdbStream)
+        {
+            var assembly = base.LoadAssembly(peStream, pdbStream);
+            LoadContext = new WeakReference(AssemblyLoadContext.GetLoadContext(assembly));
+            return assembly;
+        }
+    }
+
+    private sealed class TemplateWithCountingStringWriter : Template
+    {
+        public int CreateStringWriterCallCount { get; private set; }
+
+        protected override StringWriter CreateStringWriter()
+        {
+            CreateStringWriterCallCount++;
+            return base.CreateStringWriter();
+        }
+    }
 }
+
+// The types used by the templates of the documentation. A template references types by their full name, so they must
+// be public and not nested in another type. They stay next to the examples that use them.
+#pragma warning disable MA0048 // File name must match type name
+#region Template_InvoiceType
+public sealed record Invoice(string Customer, int ItemCount);
+#endregion
+
+#region Template_ReportTemplateBase
+public abstract class ReportTemplateBase
+{
+    protected static string Bullet(string text) => "- " + text;
+}
+#endregion
+#pragma warning restore MA0048

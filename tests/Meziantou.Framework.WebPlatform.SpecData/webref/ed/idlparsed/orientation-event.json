@@ -1,0 +1,949 @@
+{
+  "spec": {
+    "title": "Device Orientation and Motion",
+    "url": "https://w3c.github.io/deviceorientation/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "DeviceOrientationEvent",
+          "DeviceMotionEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "DeviceMotionEventAcceleration",
+          "DeviceMotionEventRotationRate"
+        ]
+      }
+    },
+    "idlNames": {
+      "DeviceOrientationEvent": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface DeviceOrientationEvent : Event {\n    constructor(DOMString type, optional DeviceOrientationEventInit eventInitDict = {});\n    readonly attribute double? alpha;\n    readonly attribute double? beta;\n    readonly attribute double? gamma;\n    readonly attribute boolean absolute;\n\n    static Promise<PermissionState> requestPermission(optional boolean absolute = false);\n};",
+        "type": "interface",
+        "name": "DeviceOrientationEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DeviceOrientationEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationevent-deviceorientationevent"
+          },
+          {
+            "type": "attribute",
+            "name": "alpha",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationevent-alpha"
+          },
+          {
+            "type": "attribute",
+            "name": "beta",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationevent-beta"
+          },
+          {
+            "type": "attribute",
+            "name": "gamma",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationevent-gamma"
+          },
+          {
+            "type": "attribute",
+            "name": "absolute",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationevent-absolute"
+          },
+          {
+            "type": "operation",
+            "name": "requestPermission",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PermissionState"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "absolute",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": {
+                  "type": "boolean",
+                  "value": false
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationevent-requestpermission"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#deviceorientationevent"
+      },
+      "DeviceOrientationEventInit": {
+        "fragment": "dictionary DeviceOrientationEventInit : EventInit {\n    double? alpha = null;\n    double? beta = null;\n    double? gamma = null;\n    boolean absolute = false;\n};",
+        "type": "dictionary",
+        "name": "DeviceOrientationEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "alpha",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationeventinit-alpha"
+          },
+          {
+            "type": "field",
+            "name": "beta",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationeventinit-beta"
+          },
+          {
+            "type": "field",
+            "name": "gamma",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationeventinit-gamma"
+          },
+          {
+            "type": "field",
+            "name": "absolute",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-deviceorientationeventinit-absolute"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#dictdef-deviceorientationeventinit"
+      },
+      "DeviceMotionEventAcceleration": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface DeviceMotionEventAcceleration {\n    readonly attribute double? x;\n    readonly attribute double? y;\n    readonly attribute double? z;\n};",
+        "type": "interface",
+        "name": "DeviceMotionEventAcceleration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventacceleration-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventacceleration-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventacceleration-z"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#devicemotioneventacceleration"
+      },
+      "DeviceMotionEventRotationRate": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface DeviceMotionEventRotationRate {\n    readonly attribute double? alpha;\n    readonly attribute double? beta;\n    readonly attribute double? gamma;\n};",
+        "type": "interface",
+        "name": "DeviceMotionEventRotationRate",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "alpha",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventrotationrate-alpha"
+          },
+          {
+            "type": "attribute",
+            "name": "beta",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventrotationrate-beta"
+          },
+          {
+            "type": "attribute",
+            "name": "gamma",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventrotationrate-gamma"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#devicemotioneventrotationrate"
+      },
+      "DeviceMotionEvent": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface DeviceMotionEvent : Event {\n    constructor(DOMString type, optional DeviceMotionEventInit eventInitDict = {});\n    readonly attribute DeviceMotionEventAcceleration? acceleration;\n    readonly attribute DeviceMotionEventAcceleration? accelerationIncludingGravity;\n    readonly attribute DeviceMotionEventRotationRate? rotationRate;\n    readonly attribute double interval;\n\n    static Promise<PermissionState> requestPermission();\n};",
+        "type": "interface",
+        "name": "DeviceMotionEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DeviceMotionEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotionevent-devicemotionevent"
+          },
+          {
+            "type": "attribute",
+            "name": "acceleration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DeviceMotionEventAcceleration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotionevent-acceleration"
+          },
+          {
+            "type": "attribute",
+            "name": "accelerationIncludingGravity",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DeviceMotionEventAcceleration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotionevent-accelerationincludinggravity"
+          },
+          {
+            "type": "attribute",
+            "name": "rotationRate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DeviceMotionEventRotationRate"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotionevent-rotationrate"
+          },
+          {
+            "type": "attribute",
+            "name": "interval",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotionevent-interval"
+          },
+          {
+            "type": "operation",
+            "name": "requestPermission",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PermissionState"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotionevent-requestpermission"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#devicemotionevent"
+      },
+      "DeviceMotionEventAccelerationInit": {
+        "fragment": "dictionary DeviceMotionEventAccelerationInit {\n    double? x = null;\n    double? y = null;\n    double? z = null;\n};",
+        "type": "dictionary",
+        "name": "DeviceMotionEventAccelerationInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "x",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventaccelerationinit-x"
+          },
+          {
+            "type": "field",
+            "name": "y",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventaccelerationinit-y"
+          },
+          {
+            "type": "field",
+            "name": "z",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventaccelerationinit-z"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#dictdef-devicemotioneventaccelerationinit"
+      },
+      "DeviceMotionEventRotationRateInit": {
+        "fragment": "dictionary DeviceMotionEventRotationRateInit {\n    double? alpha = null;\n    double? beta = null;\n    double? gamma = null;\n};",
+        "type": "dictionary",
+        "name": "DeviceMotionEventRotationRateInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "alpha",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventrotationrateinit-alpha"
+          },
+          {
+            "type": "field",
+            "name": "beta",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventrotationrateinit-beta"
+          },
+          {
+            "type": "field",
+            "name": "gamma",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventrotationrateinit-gamma"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#dictdef-devicemotioneventrotationrateinit"
+      },
+      "DeviceMotionEventInit": {
+        "fragment": "dictionary DeviceMotionEventInit : EventInit {\n    DeviceMotionEventAccelerationInit acceleration;\n    DeviceMotionEventAccelerationInit accelerationIncludingGravity;\n    DeviceMotionEventRotationRateInit rotationRate;\n    double interval = 0;\n};",
+        "type": "dictionary",
+        "name": "DeviceMotionEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "acceleration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DeviceMotionEventAccelerationInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventinit-acceleration"
+          },
+          {
+            "type": "field",
+            "name": "accelerationIncludingGravity",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DeviceMotionEventAccelerationInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventinit-accelerationincludinggravity"
+          },
+          {
+            "type": "field",
+            "name": "rotationRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DeviceMotionEventRotationRateInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventinit-rotationrate"
+          },
+          {
+            "type": "field",
+            "name": "interval",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/deviceorientation/#dom-devicemotioneventinit-interval"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/deviceorientation/#dictdef-devicemotioneventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n    [SecureContext] attribute EventHandler ondeviceorientation;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "ondeviceorientation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/deviceorientation/#dom-window-ondeviceorientation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface Window {\n    [SecureContext] attribute EventHandler ondeviceorientationabsolute;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "ondeviceorientationabsolute",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/deviceorientation/#dom-window-ondeviceorientationabsolute"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface Window {\n    [SecureContext] attribute EventHandler ondevicemotion;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "ondevicemotion",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/deviceorientation/#dom-window-ondevicemotion"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "DeviceOrientationEvent",
+        "DeviceMotionEventAcceleration",
+        "DeviceMotionEventRotationRate",
+        "DeviceMotionEvent"
+      ]
+    },
+    "dependencies": {
+      "Window": [
+        "EventHandler"
+      ],
+      "DeviceOrientationEvent": [
+        "Event",
+        "DeviceOrientationEventInit",
+        "PermissionState"
+      ],
+      "DeviceOrientationEventInit": [
+        "EventInit"
+      ],
+      "DeviceMotionEventAcceleration": [],
+      "DeviceMotionEventRotationRate": [],
+      "DeviceMotionEvent": [
+        "Event",
+        "DeviceMotionEventInit",
+        "DeviceMotionEventAcceleration",
+        "DeviceMotionEventRotationRate",
+        "PermissionState"
+      ],
+      "DeviceMotionEventAccelerationInit": [],
+      "DeviceMotionEventRotationRateInit": [],
+      "DeviceMotionEventInit": [
+        "EventInit",
+        "DeviceMotionEventAccelerationInit",
+        "DeviceMotionEventRotationRateInit"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "EventHandler",
+      "Event",
+      "PermissionState",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

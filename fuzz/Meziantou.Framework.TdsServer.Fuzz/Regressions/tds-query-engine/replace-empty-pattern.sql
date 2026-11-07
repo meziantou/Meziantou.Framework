@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE REPLACE(Name, '', 'xx') = 'Axxce' AND Id = 1

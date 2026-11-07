@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ru-KG": {
+      "identity": {
+        "language": "ru",
+        "territory": "KG"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+msub > :not(:first-child),
+msup > :not(:first-child),
+msubsup > :not(:first-child),
+mmultiscripts > :not(:first-child),
+munder > :not(:first-child),
+mover > :not(:first-child),
+munderover > :not(:first-child) {
+  math-depth: add(1);
+  math-style: compact;
+}
+munder[accentunder="true" i] > :nth-child(2),
+mover[accent="true" i] > :nth-child(2),
+munderover[accentunder="true" i] > :nth-child(2),
+munderover[accent="true" i] > :nth-child(3) {
+  font-size: inherit;
+}
+msub > :nth-child(2),
+msubsup > :nth-child(2),
+mmultiscripts > :nth-child(even),
+mmultiscripts > mprescripts ~ :nth-child(odd),
+mover[accent="true" i] > :first-child,
+munderover[accent="true" i] > :first-child {
+  math-shift: compact;
+}
+mmultiscripts > mprescripts ~ :nth-child(even) {
+  math-shift: inherit;
+}

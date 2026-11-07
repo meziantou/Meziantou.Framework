@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-IL": {
+      "identity": {
+        "language": "en",
+        "territory": "IL"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

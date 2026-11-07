@@ -125,7 +125,9 @@ internal static class PowerShell
             Scope = "built_in",
             Variants =
             [
-                new Mode { Begin = "(" + ValidVerbs + @")+(-)[\w\d]+" },
+                // At most three concatenated verbs (hljs allows any number): a long run of verbs that is not
+                // followed by `-` would otherwise be rescanned from each of its characters.
+                new Mode { Begin = "(" + ValidVerbs + @"){1,3}(-)[\w\d]+" },
             ],
         };
 
@@ -142,7 +144,7 @@ internal static class PowerShell
         {
             Scope = "function",
             Begin = @"function\s+",
-            End = @"\s*\{|$",
+            End = CommonModes.RunStart(@"\s") + @"\s*\{|$",
             ExcludeEnd = true,
             ReturnBegin = true,
             Contains =
@@ -188,7 +190,8 @@ internal static class PowerShell
         var psMethods = new Mode
         {
             Scope = "function",
-            Begin = @"\[.*\]\s*[\w]+[ ]??\(",
+            // A later `[` of the same line can only see fewer `]`, so only the first one may start a match.
+            Begin = @"\[(?<=(?:\G|^)[^\[\n]*\[).*\]\s*[\w]+[ ]??\(",
             End = "$",
             ReturnBegin = true,
             Contains =
@@ -249,7 +252,10 @@ internal static class PowerShell
         {
             CaseInsensitive = true,
             Keywords = keywords,
-            KeywordPattern = @"-?[A-z\.\-]+\b",
+            // highlight.js uses `[A-z]`, which also contains ``[\]^_` ``. Underscores are part of identifiers
+            // and backslashes separate path segments (`.\data\users.csv` must not highlight `data`), so they
+            // are kept; brackets, carets and backticks are not part of a word.
+            KeywordPattern = CommonModes.RunStart(@"A-Za-z_\\.\-") + @"-?[A-Za-z_\\.\-]+\b",
             Contains = rootContains,
         };
     }

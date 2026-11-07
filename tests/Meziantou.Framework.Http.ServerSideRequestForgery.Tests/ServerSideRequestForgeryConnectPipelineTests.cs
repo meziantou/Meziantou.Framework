@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using Meziantou.Extensions.Logging.InMemory;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
@@ -15,6 +17,613 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         using var handler = new SocketsHttpHandler();
         handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]));
         Assert.NotNull(handler.ConnectCallback);
+    }
+
+    [Fact]
+    public void ConfigureSsrf_ThrowsWhenTheHandlerAlreadyHasAConnectCallback()
+    {
+        using var handler = new SocketsHttpHandler
+        {
+            ConnectCallback = (context, cancellationToken) => throw new InvalidOperationException("should never run"),
+        };
+
+        Assert.Throws<InvalidOperationException>(() => handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")])));
+    }
+
+    [Fact]
+    public void ConfigureSsrf_ThrowsWhenCalledTwiceOnTheSameHandler()
+    {
+        using var handler = new SocketsHttpHandler();
+        var resolver = new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]);
+        handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), resolver);
+
+        Assert.Throws<InvalidOperationException>(() => handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), resolver));
+    }
+
+    [Theory]
+    [InlineData(AddressFamily.InterNetwork)]
+    [InlineData(AddressFamily.InterNetworkV6)]
+    public void CreateConnectSocket_DisablesNagleAlgorithm(AddressFamily addressFamily)
+    {
+        using var socket = ServerSideRequestForgeryConnectPipeline.CreateConnectSocket(addressFamily);
+
+        Assert.True(socket.NoDelay);
+        Assert.Equal(addressFamily, socket.AddressFamily);
+        Assert.Equal(SocketType.Stream, socket.SocketType);
+        Assert.Equal(ProtocolType.Tcp, socket.ProtocolType);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_SendsRequestToTheValidatedAddress()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // 'example.invalid' cannot be resolved by real DNS (RFC2606), so a response can only come back if the
+        // connection used the address the resolver returned instead of resolving the host again.
+        var response = await httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("ok", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ConnectCallback_FallsBackToAnotherValidatedAddressWhenTheConnectFails()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            // Picks the first remaining address, so the unreachable IPv6 loopback is tried before the live server.
+            ResolutionStrategy = new FirstAddressStrategy(),
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // The server listens on the IPv4 loopback only, so the IPv6 attempt on the same port cannot succeed.
+        var response = await httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(1, server.AcceptedConnectionCount);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_AsksTheStrategyAgainWithoutTheAddressThatFailed()
+    {
+        using var server = new LoopbackHttpServer();
+        var strategy = new RecordingStrategy();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = strategy,
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        _ = await httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken);
+
+        Assert.Collection(
+            strategy.Calls,
+            firstCall => Assert.Equal([IPAddress.IPv6Loopback, IPAddress.Loopback], firstCall),
+            secondCall => Assert.Equal([IPAddress.Loopback], secondCall));
+    }
+
+    [Fact]
+    public async Task ConnectCallback_DoesNotFallBackToAnAddressTheStrategyExcludes()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Ipv6Only,
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // The live server is on the IPv4 loopback, which Ipv6Only must never fall back to even though the
+        // address passed validation and is reachable.
+        await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken));
+
+        Assert.Equal(0, server.AcceptedConnectionCount);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_DoesNotReportAnSsrfRejectionWhenTheStrategyRunsOutAfterAConnectFailure()
+    {
+        using var server = new LoopbackHttpServer();
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Ipv6Only,
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // Both addresses passed validation. Ipv6Only picks ::1, the server listens on the IPv4 loopback only so
+        // that connect fails, and the strategy is then asked again over the IPv4 address it excludes. Running out
+        // of candidates there is an unreachable host, not an SSRF rejection.
+        var rejectedRequestCount = await CountRejectedRequestsAsync(
+            "resolution_strategy_failure",
+            () => Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken)));
+
+        Assert.Equal(0, rejectedRequestCount);
+        Assert.Empty(loggerProvider.Logs.Warnings);
+        Assert.Equal(0, server.AcceptedConnectionCount);
+    }
+
+    private static async Task<long> CountRejectedRequestsAsync(string expectedReasonTag, Func<Task> action)
+    {
+        var context = Guid.NewGuid();
+        var rejectedRequestCount = 0L;
+        var previousContext = MeterTestContext.Value;
+        MeterTestContext.Value = context;
+        try
+        {
+            using var listener = new MeterListener();
+            listener.InstrumentPublished = (instrument, meterListener) =>
+            {
+                if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
+                {
+                    meterListener.EnableMeasurementEvents(instrument);
+                }
+            };
+            listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+            {
+                _ = instrument;
+                _ = state;
+                if (MeterTestContext.Value != context)
+                {
+                    return;
+                }
+
+                foreach (var tag in tags)
+                {
+                    if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal) && string.Equals(tag.Value?.ToString(), expectedReasonTag, StringComparison.Ordinal))
+                    {
+                        Interlocked.Add(ref rejectedRequestCount, measurement);
+                        break;
+                    }
+                }
+            });
+            listener.Start();
+
+            await action();
+        }
+        finally
+        {
+            MeterTestContext.Value = previousContext;
+        }
+
+        return rejectedRequestCount;
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The HttpClient disposes the handlers")]
+    public async Task ReadmeExample_CatchRejection()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var options = new ServerSideRequestForgeryOptions();
+        using var httpClient = new HttpClient(new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options), disposeHandler: true);
+
+        #region ServerSideRequestForgery_CatchRejection
+        ServerSideRequestForgeryException? rejection = null;
+        try
+        {
+            // 127.0.0.1 is in the default UnsafeIpNetworks
+            using var response = await httpClient.GetAsync(new Uri("https://127.0.0.1/"), cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is ServerSideRequestForgeryException ssrf)
+        {
+            rejection = ssrf;
+        }
+
+        Assert.NotNull(rejection);
+        #endregion
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The HttpClient disposes the handlers")]
+    public async Task Documentation_Logging()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var logger = loggerProvider.CreateLogger("Ssrf");
+
+        #region ServerSideRequestForgery_Logging
+        var options = new ServerSideRequestForgeryOptions
+        {
+            // Every rejection is logged as a warning
+            Logger = logger,
+        };
+        #endregion
+
+        using var httpClient = new HttpClient(new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options), disposeHandler: true);
+        await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://127.0.0.1/?token=secret")));
+
+        var warning = Assert.Single(loggerProvider.Logs.Warnings);
+        Assert.Equal("Rejected request to https://127.0.0.1:443. All resolved IP addresses were unsafe.", warning.Message);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The HttpClient disposes the handlers")]
+    public async Task Documentation_Metrics()
+    {
+        #region ServerSideRequestForgery_Metrics
+        var reasons = new ConcurrentQueue<string?>();
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name is "Meziantou.Framework.Http.ServerSideRequestForgery")
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((_, _, tags, _) =>
+        {
+            foreach (var tag in tags)
+            {
+                if (tag.Key is "reason")
+                {
+                    reasons.Enqueue(tag.Value as string);
+                }
+            }
+        });
+        listener.Start();
+
+        var options = new ServerSideRequestForgeryOptions();
+        using var httpClient = new HttpClient(new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options), disposeHandler: true);
+        await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://127.0.0.1/")));
+
+        Assert.Contains("all_resolved_addresses_unsafe", reasons);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ConfigureSsrf()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+
+        #region ServerSideRequestForgery_ConfigureSsrf
+        var handler = new SocketsHttpHandler { UseProxy = false };
+        handler.ConfigureSsrf(options);
+        #endregion
+
+        Assert.NotNull(handler.ConnectCallback);
+        handler.Dispose();
+    }
+
+    [Fact]
+    public async Task ConnectCallback_SurfacesRejectionAsInnerExceptionOfHttpRequestException()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("http://example.invalid/"), TestContext.Current.CancellationToken));
+
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_DoesNotConnectWhenTheSchemeIsRejected()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken));
+
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+        Assert.Equal(0, server.AcceptedConnectionCount);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_RejectsConnectionThroughAProxy()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://127.0.0.1:9", BypassOnLocal: false),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://example.invalid/"), TestContext.Current.CancellationToken));
+
+        // Without the guard this reaches the proxy and fails with a socket error instead.
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_AllowsDirectConnectionWhenTheProxyBypassesTheTarget()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://127.0.0.1:9", BypassOnLocal: false, BypassList: ["example\\.invalid"]),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("http://example.invalid:1/"), TestContext.Current.CancellationToken));
+
+        // The connection is direct, so validation passes and the request fails only because nothing is listening.
+        Assert.IsType<SocketException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_AllowsConnectionWhenUseProxyIsFalse()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = false,
+            Proxy = new WebProxy("http://127.0.0.1:9", BypassOnLocal: false),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("http://example.invalid:1/"), TestContext.Current.CancellationToken));
+
+        Assert.IsType<SocketException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_RejectsATunnelToAProxyThatOnlyAppliesToTheTarget()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new DestinationSpecificWebProxy(new Uri("http://127.0.0.1:9"), proxiedHost: "example.invalid"),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://example.invalid/"), TestContext.Current.CancellationToken));
+
+        // The proxy applies to the target only, so it reports DIRECT for every destination this callback can ask
+        // about - including the proxy URI the pool substitutes for the request. Without the tunnel check the
+        // connection to the proxy is validated as a direct one and the request fails with a socket error.
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_RejectsATunnelRequestNoDestinationReportsTheProxyFor()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new DestinationSpecificWebProxy(new Uri("http://proxy.invalid:8080"), proxiedHost: "hidden.invalid");
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        // What the pool builds to open an https tunnel: the proxy's own URI, the real destination only in Host.
+        using var tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, "http://proxy.invalid:8080/");
+        tunnelRequest.Headers.Host = "hidden.invalid:443";
+
+        var exception = Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            tunnelRequest,
+            new DnsEndPoint("proxy.invalid", 8080),
+            options));
+
+        Assert.Contains("targets a proxy", exception.Message);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_DoesNotThrowOnAConnectRequestWhenNoProxyIsConfigured()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = false,
+            Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
+        };
+
+        using var request = new HttpRequestMessage(HttpMethod.Connect, "https://example.com/");
+
+        // No proxy can tunnel this connection, so the request URI is the real destination and gets validated.
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("example.com", 443),
+            options);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_LogsRejectionReason()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
+        };
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+
+        Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("proxy.invalid", 8080),
+            options));
+
+        Assert.Contains(loggerProvider.Logs.Warnings, entry => entry.EventId.Id == 7);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_DoesNotThrowWhenTheEndPointIsNotTheProxy()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
+        };
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("example.com", 443),
+            options);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_ProbesTheProxyOnceForABurstOfConnections()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+        for (var i = 0; i < 5; i++)
+        {
+            ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+                handler,
+                request,
+                new DnsEndPoint("example.com", 443),
+                options);
+        }
+
+        // The two reserved probe destinations are resolved once and reused; only the real request URI is asked every time.
+        Assert.Equal(2, proxy.ProbeQueryCount);
+        Assert.Equal(5, proxy.RequestQueryCount);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_StillDetectsTheProxyOnACachedProbeResult()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+
+        // Populate the cache with a connection that is not to the proxy.
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("example.com", 443),
+            options);
+
+        // A later connection that does target the proxy must still be rejected off the cached probe result.
+        var exception = Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("proxy.invalid", 8080),
+            options));
+
+        Assert.Contains("targets a proxy", exception.Message);
+        Assert.Equal(2, proxy.ProbeQueryCount);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_DoesNotShareProbeResultsBetweenProxies()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var first = new CountingWebProxy(new Uri("http://proxy-one.invalid:8080"));
+        var second = new CountingWebProxy(new Uri("http://proxy-two.invalid:9090"));
+
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = first };
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("example.com", 443),
+            options);
+
+        handler.Proxy = second;
+        Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("proxy-two.invalid", 9090),
+            options));
+
+        Assert.Equal(2, first.ProbeQueryCount);
+        Assert.Equal(2, second.ProbeQueryCount);
+    }
+
+    // A proxy that applies to one destination only. Everything else - the probe destinations and the proxy URI the
+    // pool substitutes for a tunnelled request - is reported as bypassed.
+    private sealed class DestinationSpecificWebProxy(Uri proxyUri, string proxiedHost) : IWebProxy
+    {
+        public ICredentials? Credentials { get; set; }
+
+        public Uri? GetProxy(Uri destination) => IsBypassed(destination) ? destination : proxyUri;
+
+        public bool IsBypassed(Uri host) => !string.Equals(host.Host, proxiedHost, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class CountingWebProxy(Uri proxyUri) : IWebProxy
+    {
+        private int _probeQueryCount;
+        private int _requestQueryCount;
+
+        public ICredentials? Credentials { get; set; }
+
+        public int ProbeQueryCount => _probeQueryCount;
+
+        public int RequestQueryCount => _requestQueryCount;
+
+        public Uri? GetProxy(Uri destination)
+        {
+            if (destination.Host.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase))
+            {
+                Interlocked.Increment(ref _probeQueryCount);
+                return proxyUri;
+            }
+
+            // Mirrors the case the probes exist for: the proxy reports nothing for the real destination, so its
+            // own address is only visible through a destination that is certainly not it.
+            Interlocked.Increment(ref _requestQueryCount);
+            return null;
+        }
+
+        public bool IsBypassed(Uri host) => false;
+    }
+
+    private static ServerSideRequestForgeryOptions CreateProxyTestOptions()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+        return options;
     }
 
     [Fact]
@@ -61,6 +670,74 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             options: options,
             dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]),
             cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Theory]
+    // IPv4 ranges that are reserved but were not covered by the original default list.
+    [InlineData("192.0.0.170")]
+    [InlineData("192.88.99.1")]
+    // IPv6 forms that embed an unsafe IPv4 address. Each of these reaches 127.0.0.1 or 169.254.169.254
+    // on a network that routes the corresponding transition mechanism.
+    [InlineData("::ffff:127.0.0.1")]
+    [InlineData("::ffff:169.254.169.254")]
+    [InlineData("::127.0.0.1")]
+    [InlineData("::169.254.169.254")]
+    [InlineData("64:ff9b::7f00:1")]
+    [InlineData("64:ff9b::a9fe:a9fe")]
+    [InlineData("2002:7f00:0001::")]
+    [InlineData("2002:a9fe:a9fe::")]
+    [InlineData("2001::1")]
+    [InlineData("64:ff9b:1::7f00:1")]
+    [InlineData("64:ff9b:1::a9fe:a9fe")]
+    [InlineData("::ffff:0:7f00:1")]
+    [InlineData("::ffff:0:a9fe:a9fe")]
+    public async Task ResolveAndSelectIpAddressAsync_RejectsAddressEmbeddingUnsafeIpv4Target(string address)
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Theory]
+    // Deprecated IPv6 site-local addresses (RFC3879) sit between fc00::/7 and fe80::/10 and are private scope.
+    [InlineData("fec0::1")]
+    [InlineData("feff::1")]
+    public async Task ResolveAndSelectIpAddressAsync_RejectsSiteLocalAddress(string address)
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Theory]
+    // Global unicast addresses that sit close to the newly blocked ranges and must stay reachable.
+    [InlineData("2001:4860:4860::8888")]
+    [InlineData("2003::1")]
+    [InlineData("192.1.0.1")]
+    [InlineData("192.89.0.1")]
+    [InlineData("64:ff9b:2::1")]
+    [InlineData("2001:db8::1")]
+    public async Task ResolveAndSelectIpAddressAsync_AllowsGlobalUnicastAddressNearBlockedRange(string address)
+    {
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Random,
+        };
+
+        var selectedAddress = await ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(IPAddress.Parse(address), selectedAddress);
     }
 
     [Fact]
@@ -211,6 +888,38 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             cancellationToken: CancellationToken.None).AsTask());
 
         Assert.Contains(loggerProvider.Logs.Warnings, entry => entry.EventId.Id == 1 && entry.Message.Contains("Scheme", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_DoesNotLogUserInfoOrQueryString()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://alice:s3cr3t@example.com/path?token=abcdef"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Loopback]),
+            cancellationToken: CancellationToken.None).AsTask());
+
+        var warning = Assert.Single(loggerProvider.Logs.Warnings);
+        Assert.DoesNotContain("s3cr3t", warning.Message);
+        Assert.DoesNotContain("alice", warning.Message);
+        Assert.DoesNotContain("abcdef", warning.Message);
+        Assert.DoesNotContain("token", warning.Message);
+        Assert.Contains("https://example.com:443", warning.Message);
+    }
+
+    [Fact]
+    public void FormatRequestOrigin_KeepsOnlyTheDestination()
+    {
+        Assert.Equal("https://example.com:443", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("https://alice:s3cr3t@example.com/path?token=abcdef")));
+        Assert.Equal("http://example.com:8080", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("http://example.com:8080/")));
+        Assert.Equal("https://xn--dj-kia8a.example:443", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("https://déjà.example/")));
     }
 
     [Fact]
@@ -378,13 +1087,32 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         }
     }
 
-    private sealed class FakeDnsIpAddressResolver(IReadOnlyList<IPAddress> addresses) : IDnsIpAddressResolver
+    private sealed class FirstAddressStrategy : IpAddressResolutionStrategy
     {
-        public ValueTask<IReadOnlyList<IPAddress>> ResolveAsync(string host, CancellationToken cancellationToken)
+        protected internal override ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
         {
-            _ = host;
+            _ = options;
             _ = cancellationToken;
-            return ValueTask.FromResult(addresses);
+            if (addresses.Count == 0)
+                throw new ServerSideRequestForgeryException("No safe IP addresses available after validation.");
+
+            return ValueTask.FromResult(addresses[0]);
+        }
+    }
+
+    private sealed class RecordingStrategy : IpAddressResolutionStrategy
+    {
+        public List<IPAddress[]> Calls { get; } = [];
+
+        protected internal override ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+        {
+            _ = options;
+            _ = cancellationToken;
+            Calls.Add([.. addresses]);
+            if (addresses.Count == 0)
+                throw new ServerSideRequestForgeryException("No safe IP addresses available after validation.");
+
+            return ValueTask.FromResult(addresses[0]);
         }
     }
 
@@ -421,5 +1149,4 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             return ValueTask.FromResult(addresses[0]);
         }
     }
-
 }

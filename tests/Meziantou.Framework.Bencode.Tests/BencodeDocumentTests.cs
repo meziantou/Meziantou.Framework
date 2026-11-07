@@ -6,6 +6,129 @@ namespace Meziantou.Framework.Bencode.Tests;
 public sealed class BencodeDocumentTests
 {
     [Fact]
+    public async Task ReadmeExample_ParseAndWrite()
+    {
+        #region BencodeDocument_ParseAndWrite
+        var data = "d3:cow3:moo4:spam4:eggse"u8.ToArray();
+        var document = BencodeDocument.Parse(data);
+
+        // Parse from a stream, such as File.OpenRead("input.bencode")
+        await using var input = new MemoryStream(data);
+        var pipeReader = PipeReader.Create(input);
+        var streamedDocument = await BencodeDocument.ParseAsync(pipeReader);
+        await pipeReader.CompleteAsync();
+        Assert.IsType<BencodeDictionary>(streamedDocument.Root);
+
+        var dictionary = (BencodeDictionary)document.Root;
+        var cow = (BencodeString)dictionary[new BencodeString("cow"u8.ToArray())];
+        Assert.Equal("moo", cow.ToUtf8String());
+
+        var encoded = dictionary.ToUtf8ByteArray();
+        Assert.Equal("d3:cow3:moo4:spam4:eggse"u8.ToArray(), encoded);
+
+        // Write to a stream, such as File.Create("output.bencode")
+        await using var stream = new MemoryStream();
+        await dictionary.WriteToAsync(stream);
+        #endregion
+
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public void ReadmeExample_Writer()
+    {
+        #region BencodeWriter_Write
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+
+        writer.WriteStartDictionary();
+        writer.WriteUtf8Key("cow");
+        writer.WriteUtf8String("moo");
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        var data = buffer.WrittenSpan.ToArray();
+        Assert.Equal("d3:cow3:mooe"u8.ToArray(), data);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ReadValues()
+    {
+        #region BencodeDocument_ReadValues
+        var document = BencodeDocument.Parse("d4:name5:Alice3:agei30e4:tagsl3:dev3:opsee"u8);
+        var root = (BencodeDictionary)document.Root;
+
+        var name = (BencodeString)root[new BencodeString("name"u8.ToArray())];
+        Assert.Equal("Alice", name.ToUtf8String());
+
+        Assert.True(root.TryGetValue(new BencodeString("age"u8.ToArray()), out var age));
+        Assert.Equal(30, ((BencodeInteger)age).Value);
+
+        var tags = (BencodeList)root[new BencodeString("tags"u8.ToArray())];
+        Assert.Equal(["dev", "ops"], tags.Cast<BencodeString>().Select(tag => tag.ToUtf8String()));
+
+        // The entries keep the order of the data
+        Assert.Equal(["string Alice", "integer 30", "list of 2"], root.Values.Select(Describe));
+
+        static string Describe(BencodeValue value) => value switch
+        {
+            BencodeInteger integer => $"integer {integer.Value}",
+            BencodeString text => $"string {text}",
+            BencodeList list => $"list of {list.Count}",
+            BencodeDictionary dictionary => $"dictionary of {dictionary.Count}",
+            _ => throw new ArgumentOutOfRangeException(nameof(value)),
+        };
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BuildValues()
+    {
+        #region BencodeValue_Build
+        var dictionary = new BencodeDictionary
+        {
+            { new BencodeString("zebra"u8.ToArray()), new BencodeInteger(1) },
+            { new BencodeString("apple"u8.ToArray()), new BencodeList([new BencodeString("x"u8.ToArray()), new BencodeInteger(-2)]) },
+        };
+
+        // By default, the keys are sorted by their bytes (canonical bencode)
+        Assert.Equal("d5:applel1:xi-2ee5:zebrai1ee"u8.ToArray(), dictionary.ToUtf8ByteArray());
+
+        // canonical: false keeps the insertion order
+        Assert.Equal("d5:zebrai1e5:applel1:xi-2eee"u8.ToArray(), dictionary.ToUtf8ByteArray(canonical: false));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BinaryStrings()
+    {
+        #region BencodeString_BinaryData
+        var value = new BencodeString(new byte[] { 0xFF, 0x00, 0x10 });
+
+        // The bytes are always available
+        Assert.Equal([0xFF, 0x00, 0x10], value.Value.ToArray());
+
+        // ToString is for diagnostics: it shows bytes that are not UTF-8 as hexadecimal
+        Assert.Equal("0xFF0010", value.ToString());
+
+        // ToUtf8String throws when the bytes are not valid UTF-8
+        Assert.Throws<DecoderFallbackException>(() => value.ToUtf8String());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_InvalidData()
+    {
+        #region BencodeDocument_InvalidData
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("d3:cow3:moo"u8));   // unterminated dictionary
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("i03e"u8));          // leading zero
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("i1ei2e"u8));        // two root values
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("d1:ai1e1:ai2ee"u8)); // duplicate key
+        #endregion
+    }
+
+    [Fact]
     public void Parse_Dictionary()
     {
         var data = Encoding.ASCII.GetBytes("d3:cow3:moo4:spam4:eggse");
@@ -102,6 +225,20 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void ReadmeSample_ParseThenEncodeADictionary()
+    {
+        var data = "d3:cow3:moo4:spam4:eggse"u8.ToArray();
+        var document = BencodeDocument.Parse(data);
+
+        var dictionary = (BencodeDictionary)document.Root;
+        var cow = (BencodeString)dictionary[new BencodeString("cow"u8.ToArray())];
+        Assert.Equal("moo", cow.ToUtf8String());
+
+        var encoded = dictionary.ToUtf8ByteArray();
+        Assert.Equal("d3:cow3:moo4:spam4:eggse", Encoding.ASCII.GetString(encoded));
+    }
+
+    [Fact]
     public void BencodeValueToArray_CanonicalFalse_PreservesInsertionOrder()
     {
         BencodeValue value = new BencodeDictionary
@@ -127,6 +264,205 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void Parse_DeeplyNestedLists_ThrowsInsteadOfOverflowingTheStack()
+    {
+        var data = new byte[200_000];
+        Array.Fill(data, (byte)'l');
+
+        var exception = Assert.Throws<FormatException>(() => BencodeDocument.Parse(data));
+        Assert.Contains("nested too deeply", exception.Message);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DeeplyNestedLists_ThrowsInsteadOfOverflowingTheStack()
+    {
+        var data = new byte[200_000];
+        Array.Fill(data, (byte)'l');
+
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+        await pipe.Writer.WriteAsync(data);
+        await pipe.Writer.CompleteAsync();
+
+        var exception = await Assert.ThrowsAsync<FormatException>(() => parseTask);
+        Assert.Contains("nested too deeply", exception.Message);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DeclaredStringLengthIsNotAllocatedBeforeTheDataArrives()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("2000000000:"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        // Every byte is already buffered, so the parse runs synchronously on this thread and the counter is reliable.
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        try
+        {
+            await BencodeDocument.ParseAsync(pipe.Reader);
+            Assert.Fail("Expected a FormatException.");
+        }
+        catch (FormatException)
+        {
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(allocated < 1024 * 1024, $"An 11-byte document allocated {allocated} bytes.");
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Theory]
+    [InlineData(64, true)]
+    [InlineData(65, false)]
+    public void Parse_NestingDepthBoundary(int depth, bool expectedSuccess)
+    {
+        var data = Encoding.ASCII.GetBytes(new string('l', depth) + new string('e', depth));
+
+        if (expectedSuccess)
+        {
+            Assert.IsType<BencodeList>(BencodeDocument.Parse(data).Root);
+        }
+        else
+        {
+            Assert.Throws<FormatException>(() => BencodeDocument.Parse(data));
+        }
+    }
+
+    [Theory]
+    [InlineData(64, true)]
+    [InlineData(65, false)]
+    public async Task ParseAsync_NestingDepthBoundary(int depth, bool expectedSuccess)
+    {
+        var data = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("d1:a", depth)) + "1:b" + new string('e', depth));
+
+        await using var stream = new MemoryStream(data);
+        if (expectedSuccess)
+        {
+            Assert.IsType<BencodeDictionary>((await BencodeDocument.ParseAsync(stream)).Root);
+        }
+        else
+        {
+            await Assert.ThrowsAsync<FormatException>(async () => await BencodeDocument.ParseAsync(stream));
+        }
+    }
+
+    [Fact]
+    public async Task ParseAsync_CancelPendingRead_StopsTheParse()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+        await pipe.Writer.WriteAsync("l"u8.ToArray());
+
+        pipe.Reader.CancelPendingRead();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_UnterminatedIntegerDigits_AreRejectedInsteadOfBuffered()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+
+        var digits = new byte[1024];
+        Array.Fill(digits, (byte)'1');
+        await pipe.Writer.WriteAsync("i"u8.ToArray());
+        await pipe.Writer.WriteAsync(digits);
+
+        await Assert.ThrowsAsync<FormatException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_CancellationToken_StopsTheParse()
+    {
+        using var cts = new CancellationTokenSource();
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader, cts.Token).AsTask();
+        await pipe.Writer.WriteAsync("l"u8.ToArray());
+
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_UnterminatedStringLengthDigits_AreRejectedInsteadOfBuffered()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+
+        var digits = new byte[1024];
+        Array.Fill(digits, (byte)'1');
+        await pipe.Writer.WriteAsync(digits);
+
+        await Assert.ThrowsAsync<FormatException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_StringSpanningMultipleReads_IsReadCompletely()
+    {
+        var payload = new byte[300_000];
+        for (var i = 0; i < payload.Length; i++)
+        {
+            payload[i] = (byte)(i % 256);
+        }
+
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+
+        await pipe.Writer.WriteAsync(Encoding.ASCII.GetBytes(payload.Length + ":"));
+        for (var offset = 0; offset < payload.Length; offset += 10_000)
+        {
+            await pipe.Writer.WriteAsync(payload.AsMemory(offset, Math.Min(10_000, payload.Length - offset)));
+        }
+
+        await pipe.Writer.CompleteAsync();
+
+        var value = Assert.IsType<BencodeString>((await parseTask).Root);
+        Assert.True(value.Value.Span.SequenceEqual(payload));
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_TruncatedStringData_Throws()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("10:abc"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        await Assert.ThrowsAsync<FormatException>(async () => await BencodeDocument.ParseAsync(pipe.Reader));
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_EmptyString_IsSupported()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("0:"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        var value = Assert.IsType<BencodeString>((await BencodeDocument.ParseAsync(pipe.Reader)).Root);
+        Assert.True(value.Value.IsEmpty);
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
     public void Parse_InvalidData_Throws()
     {
         var data = Encoding.ASCII.GetBytes("i-0e");
@@ -141,12 +477,78 @@ public sealed class BencodeDocumentTests
         var equal = new BencodeInteger(42);
         var different = new BencodeInteger(-1);
 
+#pragma warning disable MFAS0033, MFAS0034 // Preserve the Equals overload validation
         Assert.True(left.Equals(equal));
         Assert.True(left.Equals((object)equal));
         Assert.False(left.Equals(different));
+#pragma warning restore MFAS0033, MFAS0034
         Assert.Equal(left.GetHashCode(), equal.GetHashCode());
         Assert.Equal("42", left.ToString());
         Assert.Equal("-1", different.ToString());
+    }
+
+    [Fact]
+    public void BencodeString_ToString_ValidUtf8_ReturnsTheText()
+    {
+        var value = new BencodeString("caf\u00e9"u8.ToArray());
+
+        Assert.Equal("caf\u00e9", value.ToString());
+    }
+
+    [Fact]
+    public void BencodeString_ToString_NonUtf8_ReturnsHexadecimalInsteadOfThrowing()
+    {
+        var value = new BencodeString(new byte[] { 0xFF, 0x00, 0x9A });
+
+        Assert.Equal("0xFF009A", value.ToString());
+    }
+
+    [Fact]
+    public void BencodeString_ToString_LongBinaryValue_IsTruncated()
+    {
+        var bytes = new byte[100];
+        Array.Fill(bytes, (byte)0xFF);
+
+        var text = new BencodeString(bytes).ToString();
+
+        Assert.Equal("0x" + new string('F', 64) + "... (100 bytes)", text);
+    }
+
+    [Fact]
+    public void BencodeString_ToUtf8String_NonUtf8_StillThrows()
+    {
+        var value = new BencodeString(new byte[] { 0xFF });
+
+        Assert.Throws<DecoderFallbackException>(() => value.ToUtf8String());
+    }
+
+    [Fact]
+    public void BencodeString_ToString_ParsedBinaryValue_DoesNotThrow()
+    {
+        var data = new List<byte>("d6:pieces20:"u8.ToArray());
+        data.AddRange([0x00, 0x01, 0x02, 0xFF, 0xFE]);
+        data.AddRange("0123456789abcde"u8.ToArray());
+        data.Add((byte)'e');
+
+        var dictionary = Assert.IsType<BencodeDictionary>(BencodeDocument.Parse(data.ToArray()).Root);
+        var pieces = dictionary[new BencodeString("pieces"u8.ToArray())];
+
+        Assert.Equal("0x000102FFFE303132333435363738396162636465", pieces.ToString());
+    }
+
+    [Fact]
+    public void BencodeDictionary_TryGetValue_MissingKey_ReportsNoValue()
+    {
+        var dictionary = new BencodeDictionary
+        {
+            { Utf8Key("a"), new BencodeInteger(1) },
+        };
+
+        Assert.False(dictionary.TryGetValue(Utf8Key("b"), out var missing));
+        Assert.Null(missing);
+
+        Assert.True(dictionary.TryGetValue(Utf8Key("a"), out var found));
+        Assert.Equal(BencodeValueKind.Integer, found.Kind);
     }
 
     [Fact]
@@ -213,6 +615,48 @@ public sealed class BencodeDocumentTests
         var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
         writer.WriteStartDictionary();
         writer.WriteUtf8Key("a");
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteEndDictionary());
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteEndDictionaryWhileExpectingValue_LeavesTheDictionaryOpen()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+        writer.WriteStartDictionary();
+        writer.WriteUtf8Key("a");
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteEndDictionary());
+
+        writer.WriteInteger(1);
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        Assert.Equal("d1:ai1ee", Encoding.ASCII.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteEndListWhileInsideADictionary_LeavesTheDictionaryOpen()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+        writer.WriteStartDictionary();
+        writer.WriteUtf8Key("a");
+        writer.WriteInteger(1);
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteEndList());
+
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        Assert.Equal("d1:ai1ee", Encoding.ASCII.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteEndDictionaryWithoutAnOpenContainer_Throws()
+    {
+        var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
 
         Assert.Throws<InvalidOperationException>(() => writer.WriteEndDictionary());
     }

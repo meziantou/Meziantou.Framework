@@ -1,0 +1,19 @@
+Welcome, Alice!
+1 item
+5 items
+22nd
+13th
+A girlfriend
+Welcome, {{name}}! You have 3 items
+Price: €1,234.50
+On Monday, January 15, 2024
+3 days ago
+a, b, and c
+1,234.00
+&lt;b&gt;&amp;&lt;&#x2F;b&gt; vs <b>&</b>
+Other namespace
+missing.key
+default
+fr: 0 élément | 1 élément | 2 éléments | 3 éléments | 5 éléments | 11 éléments | 22 éléments | 102 éléments | fallback | Prix : 9,99 €
+ar: لا عناصر | عنصر واحد | عنصران | 3 عناصر | 5 عناصر | 11 عنصرًا | 22 عنصرًا | 102 عنصر | fallback | Price: ‏9.99 €
+pl: 0 plików | 1 plik | 2 pliki | 3 pliki | 5 plików | 11 plików | 22 pliki | 102 pliki | fallback | Price: 9,99 €

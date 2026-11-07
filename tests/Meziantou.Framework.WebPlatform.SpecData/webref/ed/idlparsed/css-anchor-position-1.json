@@ -1,0 +1,1254 @@
+{
+  "spec": {
+    "title": "CSS Anchor Positioning Module Level 1",
+    "url": "https://drafts.csswg.org/css-anchor-position-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSPositionTryRule",
+          "CSSPositionTryDescriptors"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSPositionTryRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSPositionTryRule : CSSRule {\n  readonly attribute CSSOMString name;\n  [SameObject, PutForwards=cssText] readonly attribute CSSPositionTryDescriptors style;\n};",
+        "type": "interface",
+        "name": "CSSPositionTryRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontryrule-name"
+          },
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSPositionTryDescriptors"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontryrule-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-anchor-position-1/#csspositiontryrule"
+      },
+      "CSSPositionTryDescriptors": {
+        "fragment": "[Exposed=Window]\ninterface CSSPositionTryDescriptors : CSSStyleDeclaration {\n  attribute CSSOMString margin;\n  attribute CSSOMString marginTop;\n  attribute CSSOMString marginRight;\n  attribute CSSOMString marginBottom;\n  attribute CSSOMString marginLeft;\n  attribute CSSOMString marginBlock;\n  attribute CSSOMString marginBlockStart;\n  attribute CSSOMString marginBlockEnd;\n  attribute CSSOMString marginInline;\n  attribute CSSOMString marginInlineStart;\n  attribute CSSOMString marginInlineEnd;\n  attribute CSSOMString margin-top;\n  attribute CSSOMString margin-right;\n  attribute CSSOMString margin-bottom;\n  attribute CSSOMString margin-left;\n  attribute CSSOMString margin-block;\n  attribute CSSOMString margin-block-start;\n  attribute CSSOMString margin-block-end;\n  attribute CSSOMString margin-inline;\n  attribute CSSOMString margin-inline-start;\n  attribute CSSOMString margin-inline-end;\n  attribute CSSOMString inset;\n  attribute CSSOMString insetBlock;\n  attribute CSSOMString insetBlockStart;\n  attribute CSSOMString insetBlockEnd;\n  attribute CSSOMString insetInline;\n  attribute CSSOMString insetInlineStart;\n  attribute CSSOMString insetInlineEnd;\n  attribute CSSOMString top;\n  attribute CSSOMString left;\n  attribute CSSOMString right;\n  attribute CSSOMString bottom;\n  attribute CSSOMString inset-block;\n  attribute CSSOMString inset-block-start;\n  attribute CSSOMString inset-block-end;\n  attribute CSSOMString inset-inline;\n  attribute CSSOMString inset-inline-start;\n  attribute CSSOMString inset-inline-end;\n  attribute CSSOMString width;\n  attribute CSSOMString minWidth;\n  attribute CSSOMString maxWidth;\n  attribute CSSOMString height;\n  attribute CSSOMString minHeight;\n  attribute CSSOMString maxHeight;\n  attribute CSSOMString blockSize;\n  attribute CSSOMString minBlockSize;\n  attribute CSSOMString maxBlockSize;\n  attribute CSSOMString inlineSize;\n  attribute CSSOMString minInlineSize;\n  attribute CSSOMString maxInlineSize;\n  attribute CSSOMString min-width;\n  attribute CSSOMString max-width;\n  attribute CSSOMString min-height;\n  attribute CSSOMString max-height;\n  attribute CSSOMString block-size;\n  attribute CSSOMString min-block-size;\n  attribute CSSOMString max-block-size;\n  attribute CSSOMString inline-size;\n  attribute CSSOMString min-inline-size;\n  attribute CSSOMString max-inline-size;\n  attribute CSSOMString placeSelf;\n  attribute CSSOMString alignSelf;\n  attribute CSSOMString justifySelf;\n  attribute CSSOMString place-self;\n  attribute CSSOMString align-self;\n  attribute CSSOMString justify-self;\n  attribute CSSOMString positionAnchor;\n  attribute CSSOMString position-anchor;\n  attribute CSSOMString positionArea;\n  attribute CSSOMString position-area;\n};",
+        "type": "interface",
+        "name": "CSSPositionTryDescriptors",
+        "inheritance": "CSSStyleDeclaration",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "margin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin"
+          },
+          {
+            "type": "attribute",
+            "name": "marginTop",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margintop"
+          },
+          {
+            "type": "attribute",
+            "name": "marginRight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-marginright"
+          },
+          {
+            "type": "attribute",
+            "name": "marginBottom",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-marginbottom"
+          },
+          {
+            "type": "attribute",
+            "name": "marginLeft",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-marginleft"
+          },
+          {
+            "type": "attribute",
+            "name": "marginBlock",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-marginblock"
+          },
+          {
+            "type": "attribute",
+            "name": "marginBlockStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-marginblockstart"
+          },
+          {
+            "type": "attribute",
+            "name": "marginBlockEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-marginblockend"
+          },
+          {
+            "type": "attribute",
+            "name": "marginInline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margininline"
+          },
+          {
+            "type": "attribute",
+            "name": "marginInlineStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margininlinestart"
+          },
+          {
+            "type": "attribute",
+            "name": "marginInlineEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margininlineend"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-top",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-top"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-right",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-right"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-bottom",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-bottom"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-left",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-left"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-block",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-block"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-block-start",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-block-start"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-block-end",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-block-end"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-inline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-inline"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-inline-start",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-inline-start"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-inline-end",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-margin-inline-end"
+          },
+          {
+            "type": "attribute",
+            "name": "inset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inset"
+          },
+          {
+            "type": "attribute",
+            "name": "insetBlock",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-insetblock"
+          },
+          {
+            "type": "attribute",
+            "name": "insetBlockStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-insetblockstart"
+          },
+          {
+            "type": "attribute",
+            "name": "insetBlockEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-insetblockend"
+          },
+          {
+            "type": "attribute",
+            "name": "insetInline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-insetinline"
+          },
+          {
+            "type": "attribute",
+            "name": "insetInlineStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-insetinlinestart"
+          },
+          {
+            "type": "attribute",
+            "name": "insetInlineEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-insetinlineend"
+          },
+          {
+            "type": "attribute",
+            "name": "top",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-top"
+          },
+          {
+            "type": "attribute",
+            "name": "left",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-left"
+          },
+          {
+            "type": "attribute",
+            "name": "right",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-right"
+          },
+          {
+            "type": "attribute",
+            "name": "bottom",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-bottom"
+          },
+          {
+            "type": "attribute",
+            "name": "inset-block",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inset-block"
+          },
+          {
+            "type": "attribute",
+            "name": "inset-block-start",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inset-block-start"
+          },
+          {
+            "type": "attribute",
+            "name": "inset-block-end",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inset-block-end"
+          },
+          {
+            "type": "attribute",
+            "name": "inset-inline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inset-inline"
+          },
+          {
+            "type": "attribute",
+            "name": "inset-inline-start",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inset-inline-start"
+          },
+          {
+            "type": "attribute",
+            "name": "inset-inline-end",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inset-inline-end"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-width"
+          },
+          {
+            "type": "attribute",
+            "name": "minWidth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-minwidth"
+          },
+          {
+            "type": "attribute",
+            "name": "maxWidth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-maxwidth"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-height"
+          },
+          {
+            "type": "attribute",
+            "name": "minHeight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-minheight"
+          },
+          {
+            "type": "attribute",
+            "name": "maxHeight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-maxheight"
+          },
+          {
+            "type": "attribute",
+            "name": "blockSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-blocksize"
+          },
+          {
+            "type": "attribute",
+            "name": "minBlockSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-minblocksize"
+          },
+          {
+            "type": "attribute",
+            "name": "maxBlockSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-maxblocksize"
+          },
+          {
+            "type": "attribute",
+            "name": "inlineSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inlinesize"
+          },
+          {
+            "type": "attribute",
+            "name": "minInlineSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-mininlinesize"
+          },
+          {
+            "type": "attribute",
+            "name": "maxInlineSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-maxinlinesize"
+          },
+          {
+            "type": "attribute",
+            "name": "min-width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-min-width"
+          },
+          {
+            "type": "attribute",
+            "name": "max-width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-max-width"
+          },
+          {
+            "type": "attribute",
+            "name": "min-height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-min-height"
+          },
+          {
+            "type": "attribute",
+            "name": "max-height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-max-height"
+          },
+          {
+            "type": "attribute",
+            "name": "block-size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-block-size"
+          },
+          {
+            "type": "attribute",
+            "name": "min-block-size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-min-block-size"
+          },
+          {
+            "type": "attribute",
+            "name": "max-block-size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-max-block-size"
+          },
+          {
+            "type": "attribute",
+            "name": "inline-size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-inline-size"
+          },
+          {
+            "type": "attribute",
+            "name": "min-inline-size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-min-inline-size"
+          },
+          {
+            "type": "attribute",
+            "name": "max-inline-size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-max-inline-size"
+          },
+          {
+            "type": "attribute",
+            "name": "placeSelf",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-placeself"
+          },
+          {
+            "type": "attribute",
+            "name": "alignSelf",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-alignself"
+          },
+          {
+            "type": "attribute",
+            "name": "justifySelf",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-justifyself"
+          },
+          {
+            "type": "attribute",
+            "name": "place-self",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-place-self"
+          },
+          {
+            "type": "attribute",
+            "name": "align-self",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-align-self"
+          },
+          {
+            "type": "attribute",
+            "name": "justify-self",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-justify-self"
+          },
+          {
+            "type": "attribute",
+            "name": "positionAnchor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-positionanchor"
+          },
+          {
+            "type": "attribute",
+            "name": "position-anchor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-position-anchor"
+          },
+          {
+            "type": "attribute",
+            "name": "positionArea",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-positionarea"
+          },
+          {
+            "type": "attribute",
+            "name": "position-area",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-anchor-position-1/#dom-csspositiontrydescriptors-position-area"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-anchor-position-1/#csspositiontrydescriptors"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSPositionTryRule",
+        "CSSPositionTryDescriptors"
+      ]
+    },
+    "dependencies": {
+      "CSSPositionTryRule": [
+        "CSSRule",
+        "CSSOMString",
+        "CSSPositionTryDescriptors"
+      ],
+      "CSSPositionTryDescriptors": [
+        "CSSStyleDeclaration",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSRule",
+      "CSSOMString",
+      "CSSStyleDeclaration"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

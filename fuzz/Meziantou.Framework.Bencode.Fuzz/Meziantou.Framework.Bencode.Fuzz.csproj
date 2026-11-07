@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Bencode. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The documents of the unit tests and the sample torrent are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Bencode.Tests\*Tests.cs" LogicalName="%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Bencode.Tests\files\ubuntu.torrent" LogicalName="ubuntu.torrent" Link="Seeds\ubuntu.torrent" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Bencode\Meziantou.Framework.Bencode.csproj" />
+  </ItemGroup>
+</Project>

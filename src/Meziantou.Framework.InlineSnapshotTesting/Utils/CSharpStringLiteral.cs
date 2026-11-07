@@ -1,42 +1,129 @@
 using Meziantou.Framework.HumanReadable.Utils;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
 internal static class CSharpStringLiteral
 {
-    public static string Create(string? value, CSharpStringFormats formats, string indentationString, int startPosition, string eol)
+    public static string Create(string? value, CSharpStringFormats formats, string indentationString, int startPosition, string eol, SnapshotComparer? comparer = null)
     {
         if (value is null)
             return "null";
 
+        comparer ??= SnapshotComparer.Default;
         var isMultiline = IsMultiline(value);
+        var hasCharactersRequiringEscaping = HasCharactersRequiringEscaping(value);
+        var allowsQuoted = formats.HasFlag(CSharpStringFormats.Quoted);
 
-        if (formats.HasFlag(CSharpStringFormats.Quoted) && !isMultiline && !HasQuotedStringEscapableCharacters(value))
+        if (allowsQuoted && !isMultiline && !HasQuotedStringEscapableCharacters(value))
             return CreateQuotedString(value);
 
-        if (formats.HasFlag(CSharpStringFormats.Verbatim) && !isMultiline && !HasVerbatimStringEscapableCharacters(value))
+        if (formats.HasFlag(CSharpStringFormats.Verbatim) && !isMultiline && !HasVerbatimStringEscapableCharacters(value) && !hasCharactersRequiringEscaping)
             return CreateVerbatimString(value);
 
+        // Only a quoted string can escape invisible characters. Verbatim and raw strings would write them as-is, and a
+        // raw string would also turn the newline characters other than CR and LF into the end-of-line of the file.
+        if (hasCharactersRequiringEscaping && allowsQuoted)
+            return CreateQuotedString(value);
+
+        // No encoding can store an unpaired surrogate: writing it literally would save U+FFFD instead of the value
+        if (HasUnpairedSurrogates(value))
+            throw new InlineSnapshotException($"The snapshot contains an unpaired UTF-16 surrogate, which only a quoted string can represent (as a \\uXXXX escape sequence). Add '{nameof(CSharpStringFormats.Quoted)}' to the allowed string formats.");
+
+        // A raw string normalizes the line endings to the end-of-line of the file and drops the content of
+        // whitespace-only lines. Use it only when the comparer cannot tell the difference.
         if (formats.HasFlag(CSharpStringFormats.LeftAlignedRaw))
-            return CreateRawString(value, "", startPosition: -1, eol);
+        {
+            var result = CreateRawString(value, "", startPosition: -1, eol);
+            if (IsLossless(result, value, eol, comparer))
+                return result;
+        }
 
         if (formats.HasFlag(CSharpStringFormats.Raw))
-            return CreateRawString(value, indentationString, startPosition, eol);
+        {
+            var result = CreateRawString(value, indentationString, startPosition, eol);
+            if (IsLossless(result, value, eol, comparer))
+                return result;
+        }
 
         if (formats.HasFlag(CSharpStringFormats.Verbatim))
-            return CreateVerbatimString(value);
+        {
+            var result = CreateVerbatimString(value);
+            if (IsLossless(result, value, eol, comparer))
+                return result;
+        }
 
-        if (formats.HasFlag(CSharpStringFormats.Quoted))
+        if (allowsQuoted)
             return CreateQuotedString(value);
 
+        if (formats.HasFlag(CSharpStringFormats.LeftAlignedRaw) || formats.HasFlag(CSharpStringFormats.Raw) || formats.HasFlag(CSharpStringFormats.Verbatim))
+            throw new InlineSnapshotException($"The allowed string formats cannot represent the snapshot in a way the snapshot comparer considers equal to the actual value, for instance because of its line endings or whitespace-only lines. Add '{nameof(CSharpStringFormats.Quoted)}' to the allowed string formats.");
+
         throw new InlineSnapshotException("Allowed C# string format doesn't allow any value. Update the configuration to allow at least one format.");
+    }
+
+    /// <summary>
+    /// Reports whether compiling the literal gives back a value the comparer considers equal to the original one.
+    /// Git and editors may convert the line endings of the file, so the line breaks of the literal are first
+    /// converted to the end-of-line of the file: a verbatim string must not depend on its line endings.
+    /// </summary>
+    private static bool IsLossless(string literal, string value, string eol, SnapshotComparer comparer)
+    {
+        if (SyntaxFactory.ParseExpression(ReplaceLineEndings(literal, eol)) is not LiteralExpressionSyntax expression || expression.ContainsDiagnostics)
+            return false;
+
+        var compiledValue = expression.Token.ValueText;
+        if (compiledValue == value)
+            return true;
+
+        return comparer.AreEqual(comparer.NormalizeValue(value), comparer.NormalizeValue(compiledValue));
+    }
+
+    private static string ReplaceLineEndings(string value, string eol)
+    {
+        if (value.AsSpan().IndexOfAny('\r', '\n') < 0)
+            return value;
+
+        var sb = new StringBuilder(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (c is '\r' or '\n')
+            {
+                if (c is '\r' && i + 1 < value.Length && value[i + 1] is '\n')
+                {
+                    i++;
+                }
+
+                sb.Append(eol);
+            }
+            else
+            {
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static bool HasUnpairedSurrogates(string value)
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (char.IsSurrogate(value[i]) && RequiresEscaping(value, i))
+                return true;
+        }
+
+        return false;
     }
 
     private static string CreateQuotedString(string value)
     {
         var sb = new StringBuilder();
         sb.Append('"');
-        foreach (var c in value)
+        for (var i = 0; i < value.Length; i++)
         {
+            var c = value[i];
             switch (c)
             {
                 case '"':
@@ -79,8 +166,30 @@ internal static class CSharpStringLiteral
                     sb.Append(@"\\");
                     break;
 
+                // NEL, LS and PS are C# newline characters (ECMA-334, 6.3.2): a regular string literal
+                // cannot contain them literally, so they must be escaped to keep the source valid.
+                case '\u0085':
+                    sb.Append(@"\u0085");
+                    break;
+
+                case '\u2028':
+                    sb.Append(@"\u2028");
+                    break;
+
+                case '\u2029':
+                    sb.Append(@"\u2029");
+                    break;
+
                 default:
-                    sb.Append(c);
+                    if (RequiresEscaping(value, i))
+                    {
+                        sb.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:X4}");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+
                     break;
             }
         }
@@ -173,7 +282,38 @@ internal static class CSharpStringLiteral
                 return true;
         }
 
+        return HasCharactersRequiringEscaping(value);
+    }
+
+    /// <summary>
+    /// Reports whether the value contains characters that cannot be written literally in a source file without being
+    /// invisible or altered: control characters other than tab, CR and LF, format characters such as zero-width
+    /// characters or the byte order mark, the Unicode newline characters, and unpaired surrogates that no encoding can store.
+    /// </summary>
+    private static bool HasCharactersRequiringEscaping(string value)
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (RequiresEscaping(value, i))
+                return true;
+        }
+
         return false;
+    }
+
+    private static bool RequiresEscaping(string value, int index)
+    {
+        var c = value[index];
+        if (c is '\t' or '\r' or '\n')
+            return false;
+
+        if (char.IsHighSurrogate(c))
+            return index + 1 >= value.Length || !char.IsLowSurrogate(value[index + 1]);
+
+        if (char.IsLowSurrogate(c))
+            return index == 0 || !char.IsHighSurrogate(value[index - 1]);
+
+        return char.GetUnicodeCategory(c) is UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator;
     }
 
     private static bool HasVerbatimStringEscapableCharacters(string value)

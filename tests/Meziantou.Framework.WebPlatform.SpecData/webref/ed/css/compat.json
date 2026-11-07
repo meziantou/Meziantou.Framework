@@ -1,0 +1,911 @@
+{
+  "spec": {
+    "title": "Compatibility Standard",
+    "url": "https://compat.spec.whatwg.org/"
+  },
+  "properties": [
+    {
+      "name": "-webkit-text-fill-color",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-text-fill-color",
+      "value": "<color>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "an RGBA color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "media": "visual",
+      "styleDeclaration": [
+        "-webkit-text-fill-color",
+        "WebkitTextFillColor",
+        "webkitTextFillColor"
+      ]
+    },
+    {
+      "name": "-webkit-text-stroke-color",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-text-stroke-color",
+      "value": "<color>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "an RGBA color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "media": "visual",
+      "styleDeclaration": [
+        "-webkit-text-stroke-color",
+        "WebkitTextStrokeColor",
+        "webkitTextStrokeColor"
+      ]
+    },
+    {
+      "name": "-webkit-text-stroke-width",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-text-stroke-width",
+      "value": "<line-width>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "-webkit-text-stroke-width",
+        "WebkitTextStrokeWidth",
+        "webkitTextStrokeWidth"
+      ]
+    },
+    {
+      "name": "-webkit-text-stroke",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-text-stroke",
+      "value": "<line-width> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "See individual properties",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "See individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "See individual properties",
+      "media": "visual",
+      "styleDeclaration": [
+        "-webkit-text-stroke",
+        "WebkitTextStroke",
+        "webkitTextStroke"
+      ],
+      "longhands": [
+        "-webkit-text-stroke-width",
+        "-webkit-text-stroke-color"
+      ]
+    },
+    {
+      "name": "touch-action",
+      "href": "https://compat.spec.whatwg.org/#propdef-touch-action",
+      "value": "auto | none | [ [ pan-x | pan-left | pan-right ] || [ pan-y | pan-up | pan-down ] || pinch-zoom ] | manipulation",
+      "initial": "auto",
+      "appliesTo": "all elements except: non-replaced inline elements, table rows, row groups, table columns, and column groups.",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "Same as specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "media": "visual",
+      "styleDeclaration": [
+        "touch-action",
+        "touchAction"
+      ]
+    },
+    {
+      "name": "-webkit-align-items",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-align-items",
+      "legacyAliasOf": "align-items",
+      "styleDeclaration": [
+        "-webkit-align-items",
+        "WebkitAlignItems",
+        "webkitAlignItems"
+      ],
+      "value": "normal | stretch | <baseline-position> | <overflow-position>? <self-position>"
+    },
+    {
+      "name": "-webkit-align-content",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-align-content",
+      "legacyAliasOf": "align-content",
+      "styleDeclaration": [
+        "-webkit-align-content",
+        "WebkitAlignContent",
+        "webkitAlignContent"
+      ],
+      "value": "normal | <baseline-position> | <content-distribution> | <overflow-position>? <content-position>"
+    },
+    {
+      "name": "-webkit-align-self",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-align-self",
+      "legacyAliasOf": "align-self",
+      "styleDeclaration": [
+        "-webkit-align-self",
+        "WebkitAlignSelf",
+        "webkitAlignSelf"
+      ],
+      "value": "auto | <overflow-position>? [ normal | <self-position> ]| stretch | <baseline-position>"
+    },
+    {
+      "name": "-webkit-animation-name",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-name",
+      "legacyAliasOf": "animation-name",
+      "styleDeclaration": [
+        "-webkit-animation-name",
+        "WebkitAnimationName",
+        "webkitAnimationName"
+      ],
+      "value": "[ none | <keyframes-name> ]#"
+    },
+    {
+      "name": "-webkit-animation-duration",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-duration",
+      "legacyAliasOf": "animation-duration",
+      "styleDeclaration": [
+        "-webkit-animation-duration",
+        "WebkitAnimationDuration",
+        "webkitAnimationDuration"
+      ],
+      "value": "<time [0s,∞]>#"
+    },
+    {
+      "name": "-webkit-animation-timing-function",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-timing-function",
+      "legacyAliasOf": "animation-timing-function",
+      "styleDeclaration": [
+        "-webkit-animation-timing-function",
+        "WebkitAnimationTimingFunction",
+        "webkitAnimationTimingFunction"
+      ],
+      "value": "<easing-function>#"
+    },
+    {
+      "name": "-webkit-animation-iteration-count",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-iteration-count",
+      "legacyAliasOf": "animation-iteration-count",
+      "styleDeclaration": [
+        "-webkit-animation-iteration-count",
+        "WebkitAnimationIterationCount",
+        "webkitAnimationIterationCount"
+      ],
+      "value": "<single-animation-iteration-count>#"
+    },
+    {
+      "name": "-webkit-animation-direction",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-direction",
+      "legacyAliasOf": "animation-direction",
+      "styleDeclaration": [
+        "-webkit-animation-direction",
+        "WebkitAnimationDirection",
+        "webkitAnimationDirection"
+      ],
+      "value": "<single-animation-direction>#"
+    },
+    {
+      "name": "-webkit-animation-play-state",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-play-state",
+      "legacyAliasOf": "animation-play-state",
+      "styleDeclaration": [
+        "-webkit-animation-play-state",
+        "WebkitAnimationPlayState",
+        "webkitAnimationPlayState"
+      ],
+      "value": "<single-animation-play-state>#"
+    },
+    {
+      "name": "-webkit-animation-delay",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-delay",
+      "legacyAliasOf": "animation-delay",
+      "styleDeclaration": [
+        "-webkit-animation-delay",
+        "WebkitAnimationDelay",
+        "webkitAnimationDelay"
+      ],
+      "value": "<time>#"
+    },
+    {
+      "name": "-webkit-animation-fill-mode",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation-fill-mode",
+      "legacyAliasOf": "animation-fill-mode",
+      "styleDeclaration": [
+        "-webkit-animation-fill-mode",
+        "WebkitAnimationFillMode",
+        "webkitAnimationFillMode"
+      ],
+      "value": "<single-animation-fill-mode>#"
+    },
+    {
+      "name": "-webkit-animation",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-animation",
+      "legacyAliasOf": "animation",
+      "styleDeclaration": [
+        "-webkit-animation",
+        "WebkitAnimation",
+        "webkitAnimation"
+      ],
+      "value": "<single-animation>#",
+      "longhands": [
+        "animation-name",
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-timeline"
+      ],
+      "resetLonghands": [
+        "animation-range",
+        "animation-trigger"
+      ]
+    },
+    {
+      "name": "-webkit-backface-visibility",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-backface-visibility",
+      "legacyAliasOf": "backface-visibility",
+      "styleDeclaration": [
+        "-webkit-backface-visibility",
+        "WebkitBackfaceVisibility",
+        "webkitBackfaceVisibility"
+      ],
+      "value": "visible | hidden"
+    },
+    {
+      "name": "-webkit-background-clip",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-background-clip",
+      "legacyAliasOf": "background-clip",
+      "styleDeclaration": [
+        "-webkit-background-clip",
+        "WebkitBackgroundClip",
+        "webkitBackgroundClip"
+      ],
+      "value": "<visual-box>#"
+    },
+    {
+      "name": "-webkit-background-origin",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-background-origin",
+      "legacyAliasOf": "background-origin",
+      "styleDeclaration": [
+        "-webkit-background-origin",
+        "WebkitBackgroundOrigin",
+        "webkitBackgroundOrigin"
+      ],
+      "value": "<visual-box>#"
+    },
+    {
+      "name": "-webkit-background-size",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-background-size",
+      "legacyAliasOf": "background-size",
+      "styleDeclaration": [
+        "-webkit-background-size",
+        "WebkitBackgroundSize",
+        "webkitBackgroundSize"
+      ],
+      "value": "<bg-size>#"
+    },
+    {
+      "name": "-webkit-border-bottom-left-radius",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-border-bottom-left-radius",
+      "legacyAliasOf": "border-bottom-left-radius",
+      "styleDeclaration": [
+        "-webkit-border-bottom-left-radius",
+        "WebkitBorderBottomLeftRadius",
+        "webkitBorderBottomLeftRadius"
+      ],
+      "value": "<border-radius>"
+    },
+    {
+      "name": "-webkit-border-bottom-right-radius",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-border-bottom-right-radius",
+      "legacyAliasOf": "border-bottom-right-radius",
+      "styleDeclaration": [
+        "-webkit-border-bottom-right-radius",
+        "WebkitBorderBottomRightRadius",
+        "webkitBorderBottomRightRadius"
+      ],
+      "value": "<border-radius>"
+    },
+    {
+      "name": "-webkit-border-top-left-radius",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-border-top-left-radius",
+      "legacyAliasOf": "border-top-left-radius",
+      "styleDeclaration": [
+        "-webkit-border-top-left-radius",
+        "WebkitBorderTopLeftRadius",
+        "webkitBorderTopLeftRadius"
+      ],
+      "value": "<border-radius>"
+    },
+    {
+      "name": "-webkit-border-top-right-radius",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-border-top-right-radius",
+      "legacyAliasOf": "border-top-right-radius",
+      "styleDeclaration": [
+        "-webkit-border-top-right-radius",
+        "WebkitBorderTopRightRadius",
+        "webkitBorderTopRightRadius"
+      ],
+      "value": "<border-radius>"
+    },
+    {
+      "name": "-webkit-border-radius",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-border-radius",
+      "legacyAliasOf": "border-radius",
+      "styleDeclaration": [
+        "-webkit-border-radius",
+        "WebkitBorderRadius",
+        "webkitBorderRadius"
+      ],
+      "value": "<length-percentage [0,∞]>{1,4} [ / <length-percentage [0,∞]>{1,4} ]?",
+      "longhands": [
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius"
+      ]
+    },
+    {
+      "name": "-webkit-box-shadow",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-box-shadow",
+      "legacyAliasOf": "box-shadow",
+      "styleDeclaration": [
+        "-webkit-box-shadow",
+        "WebkitBoxShadow",
+        "webkitBoxShadow"
+      ],
+      "value": "<spread-shadow>#",
+      "longhands": [
+        "box-shadow-color",
+        "box-shadow-offset",
+        "box-shadow-blur",
+        "box-shadow-spread",
+        "box-shadow-position"
+      ]
+    },
+    {
+      "name": "-webkit-box-sizing",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-box-sizing",
+      "legacyAliasOf": "box-sizing",
+      "styleDeclaration": [
+        "-webkit-box-sizing",
+        "WebkitBoxSizing",
+        "webkitBoxSizing"
+      ],
+      "value": "content-box | border-box"
+    },
+    {
+      "name": "-webkit-flex",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-flex-propdef",
+      "legacyAliasOf": "flex",
+      "styleDeclaration": [
+        "-webkit-flex",
+        "WebkitFlex",
+        "webkitFlex"
+      ],
+      "value": "none | [ <'flex-grow'> <'flex-shrink'>? || <'flex-basis'> ]",
+      "longhands": [
+        "flex-grow",
+        "flex-shrink",
+        "flex-basis"
+      ]
+    },
+    {
+      "name": "-webkit-flex-basis",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-flex-basis",
+      "legacyAliasOf": "flex-basis",
+      "styleDeclaration": [
+        "-webkit-flex-basis",
+        "WebkitFlexBasis",
+        "webkitFlexBasis"
+      ],
+      "value": "content | <'width'>"
+    },
+    {
+      "name": "-webkit-flex-direction",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-flex-direction",
+      "legacyAliasOf": "flex-direction",
+      "styleDeclaration": [
+        "-webkit-flex-direction",
+        "WebkitFlexDirection",
+        "webkitFlexDirection"
+      ],
+      "value": "row | row-reverse | column | column-reverse"
+    },
+    {
+      "name": "-webkit-flex-flow",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-flex-flow",
+      "legacyAliasOf": "flex-flow",
+      "styleDeclaration": [
+        "-webkit-flex-flow",
+        "WebkitFlexFlow",
+        "webkitFlexFlow"
+      ],
+      "value": "<'flex-direction'> || <'flex-wrap'>",
+      "longhands": [
+        "flex-direction",
+        "flex-wrap"
+      ]
+    },
+    {
+      "name": "-webkit-flex-grow",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-flex-grow",
+      "legacyAliasOf": "flex-grow",
+      "styleDeclaration": [
+        "-webkit-flex-grow",
+        "WebkitFlexGrow",
+        "webkitFlexGrow"
+      ],
+      "value": "<number [0,∞]>"
+    },
+    {
+      "name": "-webkit-flex-shrink",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-flex-shrink",
+      "legacyAliasOf": "flex-shrink",
+      "styleDeclaration": [
+        "-webkit-flex-shrink",
+        "WebkitFlexShrink",
+        "webkitFlexShrink"
+      ],
+      "value": "<number [0,∞]>"
+    },
+    {
+      "name": "-webkit-flex-wrap",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-flex-wrap",
+      "legacyAliasOf": "flex-wrap",
+      "styleDeclaration": [
+        "-webkit-flex-wrap",
+        "WebkitFlexWrap",
+        "webkitFlexWrap"
+      ],
+      "value": "nowrap | [ wrap | wrap-reverse ] || balance"
+    },
+    {
+      "name": "-webkit-filter",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-filter",
+      "legacyAliasOf": "filter",
+      "styleDeclaration": [
+        "-webkit-filter",
+        "WebkitFilter",
+        "webkitFilter"
+      ],
+      "value": "none | <filter-value-list>"
+    },
+    {
+      "name": "-webkit-justify-content",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-justify-content",
+      "legacyAliasOf": "justify-content",
+      "styleDeclaration": [
+        "-webkit-justify-content",
+        "WebkitJustifyContent",
+        "webkitJustifyContent"
+      ],
+      "value": "normal | <content-distribution> | <overflow-position>? [ <content-position> | left | right ]"
+    },
+    {
+      "name": "-webkit-mask",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask",
+      "legacyAliasOf": "mask",
+      "styleDeclaration": [
+        "-webkit-mask",
+        "WebkitMask",
+        "webkitMask"
+      ],
+      "value": "<mask-layer>#",
+      "longhands": [
+        "mask-image",
+        "mask-position",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode"
+      ],
+      "resetLonghands": [
+        "mask-border"
+      ]
+    },
+    {
+      "name": "-webkit-mask-box-image",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-box-image",
+      "legacyAliasOf": "mask-border",
+      "styleDeclaration": [
+        "-webkit-mask-box-image",
+        "WebkitMaskBoxImage",
+        "webkitMaskBoxImage"
+      ],
+      "value": "<'mask-border-source'> || <'mask-border-slice'> [ / <'mask-border-width'>? [ / <'mask-border-outset'> ]? ]? || <'mask-border-repeat'> || <'mask-border-mode'>",
+      "longhands": [
+        "mask-border-source",
+        "mask-border-slice",
+        "mask-border-width",
+        "mask-border-outset",
+        "mask-border-repeat",
+        "mask-border-mode"
+      ]
+    },
+    {
+      "name": "-webkit-mask-box-image-outset",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-box-image-outset",
+      "legacyAliasOf": "mask-border-outset",
+      "styleDeclaration": [
+        "-webkit-mask-box-image-outset",
+        "WebkitMaskBoxImageOutset",
+        "webkitMaskBoxImageOutset"
+      ],
+      "value": "<'border-image-outset'>"
+    },
+    {
+      "name": "-webkit-mask-box-image-repeat",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-box-image-repeat",
+      "legacyAliasOf": "mask-border-repeat",
+      "styleDeclaration": [
+        "-webkit-mask-box-image-repeat",
+        "WebkitMaskBoxImageRepeat",
+        "webkitMaskBoxImageRepeat"
+      ],
+      "value": "<'border-image-repeat'>"
+    },
+    {
+      "name": "-webkit-mask-box-image-slice",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-box-image-slice",
+      "legacyAliasOf": "mask-border-slice",
+      "styleDeclaration": [
+        "-webkit-mask-box-image-slice",
+        "WebkitMaskBoxImageSlice",
+        "webkitMaskBoxImageSlice"
+      ],
+      "value": "<'border-image-slice'>"
+    },
+    {
+      "name": "-webkit-mask-box-image-source",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-box-image-source",
+      "legacyAliasOf": "mask-border-source",
+      "styleDeclaration": [
+        "-webkit-mask-box-image-source",
+        "WebkitMaskBoxImageSource",
+        "webkitMaskBoxImageSource"
+      ],
+      "value": "<'border-image-source'>"
+    },
+    {
+      "name": "-webkit-mask-box-image-width",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-box-image-width",
+      "legacyAliasOf": "mask-border-width",
+      "styleDeclaration": [
+        "-webkit-mask-box-image-width",
+        "WebkitMaskBoxImageWidth",
+        "webkitMaskBoxImageWidth"
+      ],
+      "value": "<'border-image-width'>"
+    },
+    {
+      "name": "-webkit-mask-clip",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-clip",
+      "legacyAliasOf": "mask-clip",
+      "styleDeclaration": [
+        "-webkit-mask-clip",
+        "WebkitMaskClip",
+        "webkitMaskClip"
+      ],
+      "value": "[ <coord-box> | no-clip ]#"
+    },
+    {
+      "name": "-webkit-mask-composite",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-composite",
+      "legacyAliasOf": "mask-composite",
+      "styleDeclaration": [
+        "-webkit-mask-composite",
+        "WebkitMaskComposite",
+        "webkitMaskComposite"
+      ],
+      "value": "<compositing-operator>#"
+    },
+    {
+      "name": "-webkit-mask-image",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-image",
+      "legacyAliasOf": "mask-image",
+      "styleDeclaration": [
+        "-webkit-mask-image",
+        "WebkitMaskImage",
+        "webkitMaskImage"
+      ],
+      "value": "<mask-reference>#"
+    },
+    {
+      "name": "-webkit-mask-origin",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-origin",
+      "legacyAliasOf": "mask-origin",
+      "styleDeclaration": [
+        "-webkit-mask-origin",
+        "WebkitMaskOrigin",
+        "webkitMaskOrigin"
+      ],
+      "value": "<coord-box>#"
+    },
+    {
+      "name": "-webkit-mask-position",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-position",
+      "legacyAliasOf": "mask-position",
+      "styleDeclaration": [
+        "-webkit-mask-position",
+        "WebkitMaskPosition",
+        "webkitMaskPosition"
+      ],
+      "value": "<position>#"
+    },
+    {
+      "name": "-webkit-mask-repeat",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-repeat",
+      "legacyAliasOf": "mask-repeat",
+      "styleDeclaration": [
+        "-webkit-mask-repeat",
+        "WebkitMaskRepeat",
+        "webkitMaskRepeat"
+      ],
+      "value": "<repeat-style>#"
+    },
+    {
+      "name": "-webkit-mask-size",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-mask-size",
+      "legacyAliasOf": "mask-size",
+      "styleDeclaration": [
+        "-webkit-mask-size",
+        "WebkitMaskSize",
+        "webkitMaskSize"
+      ],
+      "value": "<bg-size>#"
+    },
+    {
+      "name": "-webkit-order",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-order",
+      "legacyAliasOf": "order",
+      "styleDeclaration": [
+        "-webkit-order",
+        "WebkitOrder",
+        "webkitOrder"
+      ],
+      "value": "<integer>"
+    },
+    {
+      "name": "-webkit-perspective",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-perspective",
+      "legacyAliasOf": "perspective",
+      "styleDeclaration": [
+        "-webkit-perspective",
+        "WebkitPerspective",
+        "webkitPerspective"
+      ],
+      "value": "none | <length [0,∞]>"
+    },
+    {
+      "name": "-webkit-perspective-origin",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-perspective-origin",
+      "legacyAliasOf": "perspective-origin",
+      "styleDeclaration": [
+        "-webkit-perspective-origin",
+        "WebkitPerspectiveOrigin",
+        "webkitPerspectiveOrigin"
+      ],
+      "value": "<position>"
+    },
+    {
+      "name": "-webkit-transform-origin",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transform-origin",
+      "legacyAliasOf": "transform-origin",
+      "styleDeclaration": [
+        "-webkit-transform-origin",
+        "WebkitTransformOrigin",
+        "webkitTransformOrigin"
+      ],
+      "value": "[ left | center | right | top | bottom | <length-percentage> ] | [ left | center | right | <length-percentage> ] [ top | center | bottom | <length-percentage> ] <length>? | [ [ center | left | right ] && [ center | top | bottom ] ] <length>?"
+    },
+    {
+      "name": "-webkit-transform-style",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transform-style",
+      "legacyAliasOf": "transform-style",
+      "styleDeclaration": [
+        "-webkit-transform-style",
+        "WebkitTransformStyle",
+        "webkitTransformStyle"
+      ],
+      "value": "flat | preserve-3d"
+    },
+    {
+      "name": "-webkit-transform",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transform",
+      "legacyAliasOf": "transform",
+      "styleDeclaration": [
+        "-webkit-transform",
+        "WebkitTransform",
+        "webkitTransform"
+      ],
+      "value": "none | <transform-list>"
+    },
+    {
+      "name": "-webkit-transition-delay",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transition-delay",
+      "legacyAliasOf": "transition-delay",
+      "styleDeclaration": [
+        "-webkit-transition-delay",
+        "WebkitTransitionDelay",
+        "webkitTransitionDelay"
+      ],
+      "value": "<time>#"
+    },
+    {
+      "name": "-webkit-transition-duration",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transition-duration",
+      "legacyAliasOf": "transition-duration",
+      "styleDeclaration": [
+        "-webkit-transition-duration",
+        "WebkitTransitionDuration",
+        "webkitTransitionDuration"
+      ],
+      "value": "<time [0s,∞]>#"
+    },
+    {
+      "name": "-webkit-transition-property",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transition-property",
+      "legacyAliasOf": "transition-property",
+      "styleDeclaration": [
+        "-webkit-transition-property",
+        "WebkitTransitionProperty",
+        "webkitTransitionProperty"
+      ],
+      "value": "none | <single-transition-property>#"
+    },
+    {
+      "name": "-webkit-transition-timing-function",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transition-timing-function",
+      "legacyAliasOf": "transition-timing-function",
+      "styleDeclaration": [
+        "-webkit-transition-timing-function",
+        "WebkitTransitionTimingFunction",
+        "webkitTransitionTimingFunction"
+      ],
+      "value": "<easing-function>#"
+    },
+    {
+      "name": "-webkit-transition",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-transition",
+      "legacyAliasOf": "transition",
+      "styleDeclaration": [
+        "-webkit-transition",
+        "WebkitTransition",
+        "webkitTransition"
+      ],
+      "value": "<single-transition>#",
+      "longhands": [
+        "transition-property",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-behavior"
+      ]
+    },
+    {
+      "name": "-webkit-text-size-adjust",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-text-size-adjust",
+      "legacyAliasOf": "text-size-adjust",
+      "styleDeclaration": [
+        "-webkit-text-size-adjust",
+        "WebkitTextSizeAdjust",
+        "webkitTextSizeAdjust"
+      ],
+      "value": "auto | none | <percentage [0,∞]>"
+    },
+    {
+      "name": "-webkit-box-align",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-box-align",
+      "styleDeclaration": [
+        "-webkit-box-align",
+        "WebkitBoxAlign",
+        "webkitBoxAlign"
+      ]
+    },
+    {
+      "name": "-webkit-box-flex",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-box-flex",
+      "styleDeclaration": [
+        "-webkit-box-flex",
+        "WebkitBoxFlex",
+        "webkitBoxFlex"
+      ]
+    },
+    {
+      "name": "-webkit-box-ordinal-group",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-box-ordinal-group",
+      "styleDeclaration": [
+        "-webkit-box-ordinal-group",
+        "WebkitBoxOrdinalGroup",
+        "webkitBoxOrdinalGroup"
+      ]
+    },
+    {
+      "name": "-webkit-box-orient",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-box-orient",
+      "styleDeclaration": [
+        "-webkit-box-orient",
+        "WebkitBoxOrient",
+        "webkitBoxOrient"
+      ]
+    },
+    {
+      "name": "-webkit-box-pack",
+      "href": "https://compat.spec.whatwg.org/#propdef--webkit-box-pack",
+      "styleDeclaration": [
+        "-webkit-box-pack",
+        "WebkitBoxPack",
+        "webkitBoxPack"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@-webkit-keyframes",
+      "href": "https://compat.spec.whatwg.org/#at-ruledef--webkit-keyframes",
+      "descriptors": []
+    },
+    {
+      "name": "@media",
+      "descriptors": [
+        {
+          "name": "-webkit-device-pixel-ratio",
+          "href": "https://compat.spec.whatwg.org/#descdef-media--webkit-device-pixel-ratio",
+          "for": "@media",
+          "value": "<number>",
+          "type": "range"
+        },
+        {
+          "name": "-webkit-transform-3d",
+          "href": "https://compat.spec.whatwg.org/#descdef-media--webkit-transform-3d",
+          "for": "@media",
+          "value": "<mq-boolean>",
+          "type": "discrete"
+        }
+      ]
+    }
+  ],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "-webkit-box",
+      "href": "https://compat.spec.whatwg.org/#valdef-flex--webkit-box",
+      "type": "value",
+      "value": "-webkit-box",
+      "for": "flex"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "-webkit-flex",
+      "href": "https://compat.spec.whatwg.org/#valdef-flex--webkit-flex-valdef",
+      "type": "value",
+      "value": "-webkit-flex",
+      "for": "flex"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "-webkit-inline-box",
+      "href": "https://compat.spec.whatwg.org/#valdef-flex--webkit-inline-box",
+      "type": "value",
+      "value": "-webkit-inline-box",
+      "for": "flex"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "-webkit-inline-flex",
+      "href": "https://compat.spec.whatwg.org/#valdef-flex--webkit-inline-flex",
+      "type": "value",
+      "value": "-webkit-inline-flex",
+      "for": "flex"
+    }
+  ]
+}

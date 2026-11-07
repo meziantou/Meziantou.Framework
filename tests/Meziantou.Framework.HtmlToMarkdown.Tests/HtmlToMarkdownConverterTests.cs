@@ -1,3 +1,7 @@
+using System.Collections.Concurrent;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
+
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
 public sealed class HtmlToMarkdownConverterTests
@@ -8,6 +12,378 @@ public sealed class HtmlToMarkdownConverterTests
             ? HtmlToMarkdown.Convert(html)
             : HtmlToMarkdown.Convert(html, options);
         Assert.Equal(expectedMarkdown, actual);
+    }
+
+    [Fact]
+    public void ReadmeExample_Convert()
+    {
+        #region HtmlToMarkdown_Convert
+        var html = "<h1>Title</h1><p>Hello <strong>world</strong></p>";
+        var markdown = HtmlToMarkdown.Convert(html);
+        Assert.Equal("""
+            # Title
+
+            Hello **world**
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Options()
+    {
+        #region HtmlToMarkdown_Options
+        var html = "<h1>Title</h1><p>Line 1<br>Line 2</p>";
+
+        var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
+        {
+            HeadingStyle = HeadingStyle.Setext,
+            EmphasisMarker = EmphasisMarker.Underscore,
+            CodeBlockStyle = CodeBlockStyle.Fenced,
+            CodeBlockFenceCharacter = '~',
+            UnorderedListMarker = '*',
+            ThematicBreak = "***",
+            LineBreakStyle = LineBreakStyle.Backslash,
+            UseSimplePunctuation = true,
+            EmojiShortcodeMode = EmojiShortcodeMode.GitHub,
+            UnknownElementHandling = UnknownElementHandling.StripKeepContent,
+        });
+        Assert.Equal("""
+            Title
+            =====
+
+            Line 1\
+            Line 2
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SimplePunctuation()
+    {
+        #region HtmlToMarkdown_SimplePunctuation
+        var markdown = HtmlToMarkdown.Convert(
+            "<p>“Hello” ‘Hello’ — – … « »</p>",
+            new HtmlToMarkdownOptions { UseSimplePunctuation = true });
+        Assert.Equal("""
+            "Hello" 'Hello' \-\-\- \-\- ... \<\< \>\>
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EmojiShortcodes()
+    {
+        #region HtmlToMarkdown_EmojiShortcodes
+        var markdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
+        {
+            EmojiShortcodeMode = EmojiShortcodeMode.GitHub,
+        });
+        Assert.Equal("I :heart: Markdown", markdown);
+
+        var unicodeMarkdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
+        {
+            EmojiShortcodeMode = EmojiShortcodeMode.Unicode,
+        });
+        Assert.Equal("I :red_heart: Markdown", unicodeMarkdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Blocks()
+    {
+        #region HtmlToMarkdown_Blocks
+        var markdown = HtmlToMarkdown.Convert("""
+            <h2>Release notes</h2>
+            <p>This version adds two features.</p>
+            <blockquote><p>Upgrade before the end of the year.</p></blockquote>
+            <hr>
+            <h3>Changes</h3>
+            """);
+        Assert.Equal("""
+            ## Release notes
+
+            This version adds two features.
+
+            > Upgrade before the end of the year.
+
+            ---
+
+            ### Changes
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Inlines()
+    {
+        #region HtmlToMarkdown_Inlines
+        var markdown = HtmlToMarkdown.Convert("""
+            <p>
+              <strong>Bold</strong>, <em>italic</em>, <del>deleted</del> and <code>code</code>.
+              Read <a href="https://example.com/docs" title="Documentation">the docs</a>.
+              <img src="logo.png" alt="Logo">
+            </p>
+            """);
+        Assert.Equal("""
+            **Bold**, *italic*, ~~deleted~~ and `code`. Read [the docs](https://example.com/docs "Documentation"). ![Logo](logo.png)
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_LineBreaks()
+    {
+        #region HtmlToMarkdown_LineBreaks
+        var html = "<p>Line 1<br>Line 2</p>";
+
+        // Two trailing spaces by default
+        var markdown = HtmlToMarkdown.Convert(html);
+        Assert.Equal("Line 1  \nLine 2", markdown);
+
+        var backslash = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { LineBreakStyle = LineBreakStyle.Backslash });
+        Assert.Equal("Line 1\\\nLine 2", backslash);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Escaping()
+    {
+        #region HtmlToMarkdown_Escaping
+        var markdown = HtmlToMarkdown.Convert("""
+            <p>1. Use *.txt files</p>
+            <p># is not a heading, and [this] is not a link</p>
+            """);
+        Assert.Equal("""
+            1\. Use \*.txt files
+
+            \# is not a heading, and \[this\] is not a link
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Lists()
+    {
+        #region HtmlToMarkdown_Lists
+        var markdown = HtmlToMarkdown.Convert("""
+            <ul>
+              <li>Fruits
+                <ol start="3">
+                  <li>Apple</li>
+                  <li>Banana</li>
+                </ol>
+              </li>
+              <li><input type="checkbox" checked> Done</li>
+              <li><input type="checkbox"> To do</li>
+            </ul>
+            """);
+        Assert.Equal("""
+            - Fruits
+              3. Apple
+              4. Banana
+            - [x] Done
+            - [ ] To do
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CodeBlocks()
+    {
+        #region HtmlToMarkdown_CodeBlocks
+        var html = """
+            <pre><code class="language-csharp">var x = 1;
+            Console.WriteLine(x);
+            </code></pre>
+            """;
+
+        var fenced = HtmlToMarkdown.Convert(html);
+        Assert.Equal("""
+            ```csharp
+            var x = 1;
+            Console.WriteLine(x);
+            ```
+            """, fenced);
+
+        var indented = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { CodeBlockStyle = CodeBlockStyle.Indented });
+        Assert.Equal("""
+                var x = 1;
+                Console.WriteLine(x);
+            """, indented);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Tables()
+    {
+        #region HtmlToMarkdown_Tables
+        var markdown = HtmlToMarkdown.Convert("""
+            <table>
+              <thead>
+                <tr><th>Name</th><th style="text-align: right">Price</th><th align="center">Stock</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Apple</td><td>$1.20</td><td>Yes</td></tr>
+                <tr><td>Banana<br>(organic)</td><td>$0.80</td><td>No</td></tr>
+              </tbody>
+            </table>
+            """);
+        Assert.Equal("""
+            | Name | Price | Stock |
+            | --- | ---: | :---: |
+            | Apple | $1.20 | Yes |
+            | Banana<br>(organic) | $0.80 | No |
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_DefinitionLists()
+    {
+        #region HtmlToMarkdown_DefinitionLists
+        var markdown = HtmlToMarkdown.Convert("""
+            <dl>
+              <dt>HTML</dt>
+              <dd>The markup language of the web.</dd>
+              <dt>CSS</dt>
+              <dd>The style sheet language of the web.</dd>
+            </dl>
+            """);
+        Assert.Equal("""
+            HTML
+            :   The markup language of the web.
+
+            CSS
+            :   The style sheet language of the web.
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Containers()
+    {
+        #region HtmlToMarkdown_Containers
+        var markdown = HtmlToMarkdown.Convert("""
+            <article>
+              <header><h1>Title</h1></header>
+              <section><p>Some <span class="highlight">text</span>.</p></section>
+              <script>alert('removed')</script>
+            </article>
+            """);
+        Assert.Equal("""
+            # Title
+
+            Some text.
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UnknownElements()
+    {
+        #region HtmlToMarkdown_UnknownElements
+        var html = "<p>Water is H<sub>2</sub>O</p>";
+
+        var passThrough = HtmlToMarkdown.Convert(html);
+        Assert.Equal("Water is H<sub>2</sub>O", passThrough);
+
+        var strip = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { UnknownElementHandling = UnknownElementHandling.Strip });
+        Assert.Equal("Water is HO", strip);
+
+        var keepContent = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { UnknownElementHandling = UnknownElementHandling.StripKeepContent });
+        Assert.Equal("Water is H2O", keepContent);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UntrustedHtml()
+    {
+        #region HtmlToMarkdown_UntrustedHtml
+        var untrustedHtml = """<p>Hello <u onclick="steal()">world</u></p>""";
+
+        // With the default options, the unknown element is copied with its attributes
+        var unsafeMarkdown = HtmlToMarkdown.Convert(untrustedHtml);
+        Assert.Equal("""Hello <u onclick="steal()">world</u>""", unsafeMarkdown);
+
+        // Sanitize the HTML first: the event handlers, scripts and javascript: URLs are removed
+        var sanitizedHtml = Document.ParseHtml(untrustedHtml).Body!.InnerHtml;
+        var markdown = HtmlToMarkdown.Convert(sanitizedHtml);
+        Assert.Equal("Hello <u>world</u>", markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CompleteDocument()
+    {
+        #region HtmlToMarkdown_CompleteDocument
+        var html = """
+            <!DOCTYPE html>
+            <html>
+            <head><title>Page title</title></head>
+            <body><h1>Title</h1><p>Content</p></body>
+            </html>
+            """;
+
+        // Convert the content of the body, not the whole document
+        var document = HtmlDocumentParser.ParseDocument(html);
+        var markdown = HtmlToMarkdown.Convert(document.Body!.InnerHtml);
+        Assert.Equal("""
+            # Title
+
+            Content
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SetextHeadings()
+    {
+        #region HtmlToMarkdown_SetextHeadings
+        var markdown = HtmlToMarkdown.Convert("<h1>Title</h1><h2>Section</h2><h3>Subsection</h3>", new HtmlToMarkdownOptions
+        {
+            HeadingStyle = HeadingStyle.Setext,
+        });
+        Assert.Equal("""
+            Title
+            =====
+
+            Section
+            -------
+
+            ### Subsection
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_MarkdownStyle()
+    {
+        #region HtmlToMarkdown_MarkdownStyle
+        var markdown = HtmlToMarkdown.Convert("<p><strong>Note</strong>: <em>read</em> this.</p><hr><ul><li>One</li><li>Two</li></ul>", new HtmlToMarkdownOptions
+        {
+            EmphasisMarker = EmphasisMarker.Underscore,
+            ThematicBreak = "* * *",
+            UnorderedListMarker = '+',
+        });
+        Assert.Equal("""
+            __Note__: _read_ this.
+
+            * * *
+
+            + One
+            + Two
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_InvalidOptionValue()
+    {
+        #region HtmlToMarkdown_InvalidOptionValue
+        var options = new HtmlToMarkdownOptions();
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => options.UnorderedListMarker = '#');
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => options.CodeBlockFenceCharacter = '"');
+        #endregion
     }
 
     // --- Empty / trivial inputs ---
@@ -3618,5 +3994,668 @@ public sealed class HtmlToMarkdownConverterTests
             <div class="foo">bar</div>
             ```
             """);
+    }
+
+    // --- Stripped elements inside passed-through unknown elements ---
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<foo><script>alert(1)</script></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsDeeplyNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<custom-el><div><script>alert(1)</script></div></custom-el>",
+            "<custom-el><div></div></custom-el>");
+    }
+
+    [Theory]
+    [InlineData("style", "body{color:red}")]
+    [InlineData("noscript", "<b>no js</b>")]
+    public void UnknownElement_PassThrough_StripsNestedStyleAndNoscript(string tagName, string content)
+    {
+        AssertHtmlToMarkdown(
+            $"<foo><{tagName}>{content}</{tagName}></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_KeepsSurroundingContent()
+    {
+        AssertHtmlToMarkdown(
+            "<foo>before<script>alert(1)</script>after</foo>",
+            "<foo>beforeafter</foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_WithoutStrippedElementsIsUnchanged()
+    {
+        AssertHtmlToMarkdown(
+            """<foo bar="baz">content</foo>""",
+            """<foo bar="baz">content</foo>""");
+    }
+
+    // --- Link and image escaping ---
+
+    [Fact]
+    public void Link_UrlWithUnbalancedClosingParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a)b">text</a>""",
+            """[text](https://example.com/a\)b)""");
+    }
+
+    [Fact]
+    public void Link_UrlWithUnbalancedOpeningParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a(b">text</a>""",
+            """[text](https://example.com/a\(b)""");
+    }
+
+    [Fact]
+    public void Link_UrlWithSpaceUsesAngleBrackets()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a b">text</a>""",
+            "[text](<https://example.com/a b>)");
+    }
+
+    [Fact]
+    public void Link_UrlWithNewlineIsPercentEncoded()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/&#10;evil">text</a>""",
+            "[text](https://example.com/%0Aevil)");
+    }
+
+    [Fact]
+    public void Link_UrlWithAngleBrackets()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a<b>c">text</a>""",
+            """[text](https://example.com/a\<b\>c)""");
+    }
+
+    [Fact]
+    public void Image_AltTextWithBracketsCannotHijackTheSource()
+    {
+        AssertHtmlToMarkdown(
+            """<img src="safe.png" alt="a](https://attacker.example/evil.png)b">""",
+            """![a\](https://attacker.example/evil.png)b](safe.png)""");
+    }
+
+    [Fact]
+    public void Image_UrlWithUnbalancedParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<img src="a)b.png" alt="x">""",
+            """![x](a\)b.png)""");
+    }
+
+    [Fact]
+    public void Link_BalancedParenthesesAreNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/path_(with_parens)">text</a>""",
+            "[text](https://example.com/path_(with_parens))");
+    }
+
+    // --- Code block info string validation ---
+
+    [Fact]
+    public void CodeBlock_DataLanguageWithNewlineCannotEscapeTheFence()
+    {
+        AssertHtmlToMarkdown(
+            "<pre><code data-language=\"x&#10;```&#10;# PWNED\">hi</code></pre>",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_ClassLanguageWithNewlineCannotEscapeTheFence()
+    {
+        // A newline separates class names, so the class list here is
+        // "language-c", "```" and "evil": the language is c and nothing escapes the fence.
+        AssertHtmlToMarkdown(
+            "<pre><code class=\"language-c&#10;```&#10;evil\">hi</code></pre>",
+            """
+            ```c
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_ClassLanguageWithBacktickIsDropped()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code class="language-a`b">hi</code></pre>""",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_NonAsciiLanguageIsPreserved()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code class="language-föö">hi</code></pre>""",
+            """
+            ```föö
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_LanguageWithBacktickIsDropped()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code data-language="a`b">hi</code></pre>""",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Theory]
+    [InlineData("go")]
+    [InlineData("c#")]
+    [InlineData("f#")]
+    [InlineData("c++")]
+    [InlineData("objective-c")]
+    [InlineData("asp.net")]
+    [InlineData("shell_session")]
+    [InlineData("html5")]
+    public void CodeBlock_ValidLanguagesArePreserved(string language)
+    {
+        AssertHtmlToMarkdown(
+            $"""<pre><code data-language="{language}">hi</code></pre>""",
+            $"""
+            ```{language}
+            hi
+            ```
+            """);
+    }
+
+    // --- Ampersand escaping ---
+
+    [Fact]
+    public void Text_LiteralEntityIsEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&amp;copy; and &amp;#65;</p>",
+            "&amp;copy; and &amp;#65;");
+    }
+
+    [Fact]
+    public void Text_LiteralEntityForTagIsEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&amp;lt;b&amp;gt;</p>",
+            "&amp;lt;b&amp;gt;");
+    }
+
+    [Fact]
+    public void Text_StandaloneAmpersandIsNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a &amp; b</p>",
+            "a & b");
+    }
+
+    [Fact]
+    public void Text_DecodedEntityStaysDecoded()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&copy; 2026</p>",
+            "© 2026");
+    }
+
+    // --- Line start escaping ---
+
+    [Fact]
+    public void Paragraph_StartingWithPlusIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>+ item</p>",
+            "\\+ item");
+    }
+
+    [Fact]
+    public void Paragraph_StartingWithParenthesizedNumberIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>4) item</p>",
+            "4\\) item");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithPlusIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>+ b</p>",
+            "a  \n\\+ b");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithOrderedMarkerIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>1. b</p>",
+            "a  \n1\\. b");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithParenthesizedNumberIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>4) b</p>",
+            "a  \n4\\) b");
+    }
+
+    [Fact]
+    public void Paragraph_LineOfEqualSignsIsNotASetextHeading()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>=</p>",
+            "a  \n\\=");
+    }
+
+    [Fact]
+    public void Paragraph_EqualSignFollowedByTextIsNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>= b</p>",
+            "a  \n= b");
+    }
+
+
+    // --- Table cell content ---
+
+    [Fact]
+    public void Table_CellWithMultipleParagraphs()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><p>a</p><p>b</p></td><td>y</td></tr></table>",
+            """
+            | a<br>b | y |
+            | --- | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithRawHtmlContainingNewline()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><foo>a\nb</foo></td><td>y</td></tr></table>",
+            """
+            | <foo>a<br>b</foo> | y |
+            | --- | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithHeadingAndParagraph()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><h2>t</h2><p>b</p></td></tr></table>",
+            """
+            | ## t<br>b |
+            | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithBreakStaysOnOneLine()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td>a<br>b</td></tr></table>",
+            """
+            | a<br>b |
+            | --- |
+            """);
+    }
+
+    // --- Headings stay on a single line ---
+
+    [Fact]
+    public void Heading_WithBreakStaysOnOneLine()
+    {
+        AssertHtmlToMarkdown(
+            "<h1>a<br>b</h1>",
+            "# a b");
+    }
+
+    [Fact]
+    public void Heading_WithBreakStaysOnOneLine_Setext()
+    {
+        AssertHtmlToMarkdown(
+            "<h1>a<br>b</h1>",
+            """
+            a b
+            ===
+            """,
+            new HtmlToMarkdownOptions { HeadingStyle = HeadingStyle.Setext });
+    }
+
+    [Fact]
+    public void Heading_WithBreakStaysOnOneLine_BackslashLineBreak()
+    {
+        AssertHtmlToMarkdown(
+            "<h2>a<br>b</h2>",
+            "## a b",
+            new HtmlToMarkdownOptions { LineBreakStyle = LineBreakStyle.Backslash });
+    }
+
+
+    // --- Definition list blocks ---
+
+    [Fact]
+    public void DefinitionList_DefinitionWithMultipleParagraphs()
+    {
+        AssertHtmlToMarkdown(
+            "<dl><dt>t</dt><dd><p>a</p><p>b</p></dd></dl>",
+            """
+            t
+            :   a
+
+                b
+            """);
+    }
+
+    [Fact]
+    public void DefinitionList_DefinitionWithList()
+    {
+        AssertHtmlToMarkdown(
+            "<dl><dt>t</dt><dd><ul><li>a</li><li>b</li></ul></dd></dl>",
+            """
+            t
+            :   - a
+                - b
+            """);
+    }
+
+
+    // --- Pre content is not dropped ---
+
+    [Fact]
+    public void Pre_KeepsTextBeforeCode()
+    {
+        AssertHtmlToMarkdown(
+            "<pre>before<code>inside</code></pre>",
+            """
+            ```
+            beforeinside
+            ```
+            """);
+    }
+
+    [Fact]
+    public void Pre_KeepsTextAroundCode()
+    {
+        AssertHtmlToMarkdown(
+            "<pre>before<code>inside</code>after</pre>",
+            """
+            ```
+            beforeinsideafter
+            ```
+            """);
+    }
+
+    [Fact]
+    public void Pre_WithWrappedCodeKeepsSurroundingContent()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><span class="gutter">1</span><code>x = 1;</code></pre>""",
+            """
+            ```
+            1x = 1;
+            ```
+            """);
+    }
+
+    [Fact]
+    public void Pre_LanguageStillFoundOnNestedCode()
+    {
+        AssertHtmlToMarkdown(
+            """<pre>before<code class="language-go">inside</code></pre>""",
+            """
+            ```go
+            beforeinside
+            ```
+            """);
+    }
+
+    // --- Ordered list start attribute ---
+
+    [Fact]
+    public void OrderedList_StartAtIntMaxValueDoesNotOverflow()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="2147483647"><li>a</li><li>b</li></ol>""",
+            """
+            1. a
+            2. b
+            """);
+    }
+
+    [Fact]
+    public void OrderedList_NegativeStartFallsBackToOne()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="-3"><li>a</li><li>b</li></ol>""",
+            """
+            1. a
+            2. b
+            """);
+    }
+
+    [Fact]
+    public void OrderedList_StartAtMaximumMarkerSaturates()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="999999999"><li>a</li><li>b</li></ol>""",
+            """
+            999999999. a
+            999999999. b
+            """);
+    }
+
+    [Fact]
+    public void OrderedList_ValidStartIsPreserved()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="5"><li>a</li><li>b</li></ol>""",
+            """
+            5. a
+            6. b
+            """);
+    }
+
+    // --- Code span spacing ---
+
+    [Fact]
+    public void InlineCode_SurroundingSpacesArePreserved()
+    {
+        AssertHtmlToMarkdown(
+            "<p>x<code> a </code>y</p>",
+            "x`  a  `y");
+    }
+
+    [Fact]
+    public void InlineCode_LeadingSpaceOnlyIsNotPadded()
+    {
+        AssertHtmlToMarkdown(
+            "<p><code> a</code></p>",
+            "` a`");
+    }
+
+    [Fact]
+    public void InlineCode_TrailingSpaceOnlyIsNotPadded()
+    {
+        AssertHtmlToMarkdown(
+            "<p><code>a </code></p>",
+            "`a `");
+    }
+
+    [Fact]
+    public void InlineCode_AllSpacesIsNotPadded()
+    {
+        AssertHtmlToMarkdown(
+            "<p><code>   </code></p>",
+            "`   `");
+    }
+
+    // --- Option validation ---
+
+    [Theory]
+    [InlineData('`')]
+    [InlineData('~')]
+    public void Options_ValidCodeBlockFenceCharacterIsAccepted(char value)
+    {
+        var options = new HtmlToMarkdownOptions { CodeBlockFenceCharacter = value };
+
+        Assert.Equal(value, options.CodeBlockFenceCharacter);
+    }
+
+    [Theory]
+    [InlineData('x')]
+    [InlineData('\'')]
+    [InlineData(' ')]
+    public void Options_InvalidCodeBlockFenceCharacterThrows(char value)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HtmlToMarkdownOptions { CodeBlockFenceCharacter = value });
+    }
+
+    [Theory]
+    [InlineData('-')]
+    [InlineData('*')]
+    [InlineData('+')]
+    public void Options_ValidUnorderedListMarkerIsAccepted(char value)
+    {
+        var options = new HtmlToMarkdownOptions { UnorderedListMarker = value };
+
+        Assert.Equal(value, options.UnorderedListMarker);
+    }
+
+    [Theory]
+    [InlineData('Z')]
+    [InlineData('.')]
+    [InlineData(' ')]
+    public void Options_InvalidUnorderedListMarkerThrows(char value)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HtmlToMarkdownOptions { UnorderedListMarker = value });
+    }
+
+    // --- Emoji grapheme cluster handling ---
+
+    [Fact]
+    public void Emoji_KeycapWithVariationSelector()
+    {
+        AssertHtmlToMarkdown(
+            "<p>8\uFE0F\u20E3</p>",
+            ":eight:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_KeycapWithoutVariationSelector()
+    {
+        AssertHtmlToMarkdown(
+            "<p>8\u20E3</p>",
+            ":eight:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_SingleNonAsciiCharacter()
+    {
+        AssertHtmlToMarkdown(
+            "<p>\u00A9</p>",
+            ":copyright:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_AsciiTextIsUnchanged()
+    {
+        AssertHtmlToMarkdown(
+            "<p>hello 123 #8</p>",
+            "hello 123 #8",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_ZeroWidthJoinerSequence()
+    {
+        AssertHtmlToMarkdown(
+            "<p>\U0001F468\u200D\U0001F469\u200D\U0001F466</p>",
+            ":family_man_woman_boy:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.Unicode });
+    }
+
+    // --- Concurrency ---
+
+    [Fact]
+    public void Convert_IsSafeToCallConcurrently()
+    {
+        var inputs = Enumerable.Range(0, 32)
+            .Select(i => $"<div><p>item {i}</p><ul><li>a{i}</li></ul><table><tr><td>c{i}</td></tr></table></div>")
+            .ToArray();
+        var expected = inputs.Select(HtmlToMarkdown.Convert).ToArray();
+
+        var failures = new ConcurrentBag<string>();
+        Parallel.For(0, Environment.ProcessorCount * 2, worker =>
+        {
+            for (var i = 0; i < 200; i++)
+            {
+                var index = ((worker * 7) + i) % inputs.Length;
+                var actual = HtmlToMarkdown.Convert(inputs[index]);
+                if (!string.Equals(actual, expected[index], StringComparison.Ordinal))
+                    failures.Add(actual);
+            }
+        });
+
+        Assert.Empty(failures);
+    }
+
+    // --- Deeply nested documents (must not overflow the call stack) ---
+
+    // The recursive traversal this replaced overflowed the stack at a nesting depth of
+    // about 10,000. The depth here stays well past that while keeping the test cheap:
+    // the cost of these cases is dominated by the parsing of deep documents.
+    private const int NestingDepthBeyondStackLimit = 20_000;
+
+    [Fact]
+    public void DeeplyNestedElements_DoesNotOverflowTheStack()
+    {
+        var html = string.Concat(Enumerable.Repeat("<div>", NestingDepthBeyondStackLimit))
+            + "text"
+            + string.Concat(Enumerable.Repeat("</div>", NestingDepthBeyondStackLimit));
+
+        AssertHtmlToMarkdown(html, "text");
+    }
+
+    [Fact]
+    public void DeeplyNestedEmphasis_DoesNotOverflowTheStack()
+    {
+        var html = string.Concat(Enumerable.Repeat("<b>", NestingDepthBeyondStackLimit))
+            + "text"
+            + string.Concat(Enumerable.Repeat("</b>", NestingDepthBeyondStackLimit));
+
+        AssertHtmlToMarkdown(html, "**text**");
     }
 }

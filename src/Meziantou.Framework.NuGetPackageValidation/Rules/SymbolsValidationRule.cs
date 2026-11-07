@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Data;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -10,8 +11,6 @@ namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
 internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 {
-    private const ushort PortableCodeViewVersionMagic = 0x504d;
-
     private static readonly Guid SourceLinkId = new(0xCC110556, 0xA091, 0x4D38, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A);
     private static readonly Guid EmbeddedSourceId = new(0x0E8A571B, 0x6926, 0x466E, 0xB4, 0xAD, 0x8A, 0xB0, 0x46, 0x11, 0xF5, 0xFE);
     private static readonly Guid CompilerFlagsId = new(0xB5FEEC05, 0x8CD0, 0x4A83, 0x96, 0xDA, 0x46, 0x62, 0x84, 0xBB, 0x4B, 0xD8);
@@ -53,6 +52,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                 Stream? pdbStreamSeekable = null;
                 PEReader? peReader = null;
                 MetadataReaderProvider? metadataReaderProvider = null;
+                List<string>? symbolServerErrors = null;
                 try
                 {
                     dllStream = await context.Package.GetStreamAsync(item, context.CancellationToken).ConfigureAwait(false);
@@ -108,44 +108,58 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         {
                             // Portable PDBs, see: https://github.com/dotnet/symstore/blob/83032682c049a2b879790c615c27fbc785b254eb/src/Microsoft.SymbolStore/KeyGenerators/PortablePDBFileKeyGenerator.cs#L84
                             // Windows PDBs, see: https://github.com/dotnet/symstore/blob/83032682c049a2b879790c615c27fbc785b254eb/src/Microsoft.SymbolStore/KeyGenerators/PDBFileKeyGenerator.cs#L52
+                            // codeViewEntry was selected with IsPortableCodeView, so the key always uses the portable form
                             var data = peReader.ReadCodeViewDebugDirectoryData(codeViewEntry);
-                            var isPortable = codeViewEntry.MinorVersion == PortableCodeViewVersionMagic;
-                            var signature = data.Guid;
-                            var age = data.Age;
-
-                            var symbolId = isPortable
-                                ? signature.ToString("N", CultureInfo.InvariantCulture) + "FFFFFFFF"
-                                : string.Format(CultureInfo.InvariantCulture, "{0}{1:x}", signature.ToString("N", CultureInfo.InvariantCulture), age);
+                            var symbolId = data.Guid.ToString("N", CultureInfo.InvariantCulture) + "FFFFFFFF";
+                            var pdbFileName = Path.GetFileName(pdbPath);
+                            var checksumHeaders = GetSymbolChecksumHeaders(pdbChecksums.Select(checksum => (checksum.AlgorithmName, checksum.Checksum)));
 
                             foreach (var symbolServer in context.SymbolServers)
                             {
-                                foreach (var checksum in pdbChecksums)
+                                foreach (var checksumHeader in checksumHeaders)
                                 {
-                                    var url = symbolServer + Path.GetFileName(pdbPath) + "/" + symbolId + "/" + Path.GetFileName(pdbPath);
-                                    var checksumHeader = checksum.AlgorithmName + ":" + Convert.ToHexString(checksum.Checksum.AsSpan());
-                                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                                    request.Headers.Add("SymbolChecksum", checksumHeader);
-
-                                    using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
-                                    if (response.IsSuccessStatusCode)
+                                    var url = symbolServer + pdbFileName + "/" + symbolId + "/" + pdbFileName;
+                                    try
                                     {
-                                        var pdbData = await response.Content.ReadAsStreamAsync(context.CancellationToken).ConfigureAwait(false);
-                                        await using (pdbData.ConfigureAwait(false))
+                                        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                                        if (checksumHeader is not null)
                                         {
-                                            if (pdbData.CanSeek)
-                                            {
-                                                metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbData, MetadataStreamOptions.PrefetchMetadata);
-                                            }
-                                            else
-                                            {
-                                                using var ms = new MemoryStream();
-                                                await pdbData.CopyToAsync(ms, context.CancellationToken).ConfigureAwait(false);
-                                                ms.Seek(0, SeekOrigin.Begin);
-                                                metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(ms, MetadataStreamOptions.PrefetchMetadata);
-                                            }
-
-                                            break;
+                                            request.Headers.Add("SymbolChecksum", checksumHeader);
                                         }
+
+                                        using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
+                                        if (response.IsSuccessStatusCode)
+                                        {
+                                            var pdbData = await response.Content.ReadAsStreamAsync(context.CancellationToken).ConfigureAwait(false);
+                                            await using (pdbData.ConfigureAwait(false))
+                                            {
+                                                if (pdbData.CanSeek)
+                                                {
+                                                    metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbData, MetadataStreamOptions.PrefetchMetadata);
+                                                }
+                                                else
+                                                {
+                                                    using var ms = new MemoryStream();
+                                                    await pdbData.CopyToAsync(ms, context.CancellationToken).ConfigureAwait(false);
+                                                    ms.Seek(0, SeekOrigin.Begin);
+                                                    metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(ms, MetadataStreamOptions.PrefetchMetadata);
+                                                }
+
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+                                    {
+                                        throw;
+                                    }
+                                    catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException)
+                                    {
+                                        // HttpClient reports its own timeout with an OperationCanceledException.
+                                        // The symbols may be on the next server, and this server would fail the same way with another checksum.
+                                        symbolServerErrors ??= [];
+                                        symbolServerErrors.Add($"'{url}': {ex.Message}");
+                                        break;
                                     }
                                 }
 
@@ -186,7 +200,10 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                             continue;
                         }
 
-                        context.ReportError(ErrorCodes.SymbolsNotFound, "Symbol file not found", fileName: item);
+                        var symbolsNotFoundMessage = symbolServerErrors is null
+                            ? "Symbol file not found"
+                            : "Symbol file not found (cannot query the symbol server " + string.Join(", ", symbolServerErrors) + ")";
+                        context.ReportError(ErrorCodes.SymbolsNotFound, symbolsNotFoundMessage, fileName: item);
                         continue;
                     }
 
@@ -286,9 +303,13 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                         }
                                     }
                                 }
+                                catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+                                {
+                                    throw;
+                                }
                                 catch (Exception ex)
                                 {
-                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible: {ex}", fileName: item);
+                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible: {ex.Message}", fileName: item);
                                 }
                             }
                         }
@@ -316,6 +337,24 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                 }
             }
         }
+    }
+
+    /// <summary>Builds the SymbolChecksum header values to try for one assembly. The symbol server URL does not depend on
+    /// the checksum, so an assembly without any PdbChecksum debug directory entry must still be looked up, with no header.</summary>
+    internal static List<string?> GetSymbolChecksumHeaders(IEnumerable<(string AlgorithmName, ImmutableArray<byte> Checksum)> checksums)
+    {
+        var headers = new List<string?>();
+        foreach (var (algorithmName, checksum) in checksums)
+        {
+            headers.Add(algorithmName + ":" + Convert.ToHexString(checksum.AsSpan()));
+        }
+
+        if (headers.Count == 0)
+        {
+            headers.Add(null);
+        }
+
+        return headers;
     }
 
     private static async Task<bool> IsDotNetAssembly(NuGetPackageValidationContext context, string fileName)
@@ -463,40 +502,53 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
     private sealed record CompilerData(string? Version);
 
     [JsonSerializable(typeof(SourceLinkJson))]
+    [JsonSourceGenerationOptions(RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
     private sealed partial class SourceLinkContext : JsonSerializerContext
     {
     }
 
-    private sealed class SourceLinkJson
+    internal sealed class SourceLinkJson
     {
         [JsonPropertyName("documents")]
         public Dictionary<string, string>? Documents { get; set; }
 
+        /// <summary>Maps a document path to its URL. A key may contain a single '*' standing for any sequence of characters,
+        /// and the matched text replaces the first '*' of the URL.</summary>
         public string? GetUrl(string file)
         {
             if (Documents is null)
                 return null;
 
-            foreach (var key in Documents.Keys)
+            foreach (var (key, url) in Documents)
             {
-                if (key.Contains('*', StringComparison.Ordinal))
+                var wildcardIndex = key.IndexOf('*', StringComparison.Ordinal);
+                if (wildcardIndex < 0)
                 {
-                    var pattern = Regex.Escape(key).Replace(@"\*", "(.+)", StringComparison.Ordinal);
-                    var m = Regex.Match(file, pattern, RegexOptions.None, Timeout.InfiniteTimeSpan);
-                    if (!m.Success)
-                        continue;
+                    if (string.Equals(key, file, StringComparison.Ordinal))
+                        return url;
 
-                    var url = Documents[key];
-                    var path = m.Groups[1].Value.Replace('\\', '/');
-                    return url.Replace("*", path, StringComparison.Ordinal);
+                    continue;
                 }
-                else
-                {
-                    if (!key.Equals(file, StringComparison.Ordinal))
-                        continue;
 
-                    return Documents[key];
-                }
+                // The Source Link specification allows a single wildcard per key
+                if (key.AsSpan(wildcardIndex + 1).Contains('*'))
+                    continue;
+
+                var prefix = key.AsSpan(0, wildcardIndex);
+                var suffix = key.AsSpan(wildcardIndex + 1);
+                if (file.Length < prefix.Length + suffix.Length)
+                    continue;
+
+                var fileSpan = file.AsSpan();
+                if (!fileSpan.StartsWith(prefix, StringComparison.Ordinal) || !fileSpan.EndsWith(suffix, StringComparison.Ordinal))
+                    continue;
+
+                var matchedValue = file[prefix.Length..(file.Length - suffix.Length)].Replace('\\', '/');
+                var urlWildcardIndex = url.IndexOf('*', StringComparison.Ordinal);
+                if (urlWildcardIndex < 0)
+                    return url;
+
+                return string.Concat(url.AsSpan(0, urlWildcardIndex), matchedValue, url.AsSpan(urlWildcardIndex + 1));
             }
 
             return null;

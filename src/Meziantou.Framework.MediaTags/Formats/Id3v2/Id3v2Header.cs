@@ -14,6 +14,9 @@ internal readonly struct Id3v2Header
     public bool FooterPresent { get; init; }
     public int TagSize { get; init; }
 
+    /// <summary>The largest number of bytes a complete tag can occupy: header, content and footer.</summary>
+    public const int MaxTotalSize = 10 + 0x0FFFFFFF + 10;
+
     public static bool TryParse(ReadOnlySpan<byte> data, out Id3v2Header header)
     {
         header = default;
@@ -51,6 +54,29 @@ internal readonly struct Id3v2Header
             FooterPresent = majorVersion == 4 && (flags & 0x10) != 0,
             TagSize = size,
         };
+        return true;
+    }
+
+    /// <summary>
+    /// Gets whether the first bytes of a header, cut short, can be completed into a header that <see cref="TryParse"/> accepts.
+    /// </summary>
+    public static bool IsPossiblePrefix(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 3)
+            return false;
+
+        if (data[0] != 'I' || data[1] != 'D' || data[2] != '3')
+            return false;
+
+        if (data.Length > 3 && data[3] is not (2 or 3 or 4))
+            return false;
+
+        for (var i = 6; i < data.Length && i < 10; i++)
+        {
+            if (data[i] > 0x7F)
+                return false;
+        }
+
         return true;
     }
 }

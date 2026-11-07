@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ig": {
+      "identity": {
+        "language": "ig"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

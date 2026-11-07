@@ -3,13 +3,14 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Sanitizers</RootNamespace>
-    <Version>3.0.0</Version>
+    <Version>3.1.12</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Provide helpers to sanitize HTML fragment</Description>
+    <PackageTags>html, sanitizer, sanitize, xss, security</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../Meziantou.Framework.Html/*.cs" LinkBase="Html" Exclude="../Meziantou.Framework.Html/HtmlXmlWriter.cs;../Meziantou.Framework.Html/HtmlNodeExtensions.cs;../Meziantou.Framework.Html/HtmlMicroDataExtensions.cs" />
+    <ProjectReference Include="../Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
   </ItemGroup>
 
 </Project>

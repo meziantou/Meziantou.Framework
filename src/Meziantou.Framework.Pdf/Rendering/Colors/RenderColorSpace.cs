@@ -1,0 +1,479 @@
+using System.Buffers;
+using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Rendering.Functions;
+
+namespace Meziantou.Framework.Pdf.Rendering.Colors;
+
+/// <summary>A color space of a document (ISO 32000-2, 8.6), which converts its colors to sRGB.</summary>
+internal abstract class RenderColorSpace
+{
+    private const int MaxDepth = 8;
+
+    public static RenderColorSpace Gray { get; } = new DeviceGraySpace();
+
+    public static RenderColorSpace Rgb { get; } = new DeviceRgbSpace();
+
+    public static RenderColorSpace Cmyk { get; } = new DeviceCmykSpace();
+
+    public abstract int ComponentCount { get; }
+
+    /// <summary>Gets whether the color space paints nothing (a <c>Separation</c> named <c>None</c>).</summary>
+    public virtual bool PaintsNothing => false;
+
+    /// <summary>Gets whether <see cref="ToRgb(ReadOnlySpan{double}, Span{byte})"/> converts many colors faster than one color at a time (an ICC profile).</summary>
+    public virtual bool ConvertsInBatches => false;
+
+    /// <summary>Gets the initial color of the color space (8.6.4, 8.6.5, 8.6.6).</summary>
+    public virtual double[] GetInitialColor() => new double[ComponentCount];
+
+    /// <summary>Gets the default decode array of the samples of an image (table 90).</summary>
+    public virtual double[] GetDefaultDecode(int bitsPerComponent)
+    {
+        var result = new double[ComponentCount * 2];
+        for (var i = 0; i < ComponentCount; i++)
+        {
+            result[(2 * i) + 1] = 1;
+        }
+
+        return result;
+    }
+
+    /// <summary>Converts a color to sRGB, components from 0 to 1.</summary>
+    public abstract RgbColor ToRgb(ReadOnlySpan<double> components);
+
+    /// <summary>Converts colors to 8-bit sRGB: <see cref="ComponentCount"/> components per color, three bytes per color.</summary>
+    public virtual void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
+    {
+        var count = ComponentCount;
+        for (int i = 0, j = 0; i + count <= components.Length && j + 3 <= rgb.Length; i += count, j += 3)
+        {
+            var color = ToRgb(components.Slice(i, count));
+            rgb[j] = ToByte(color.R);
+            rgb[j + 1] = ToByte(color.G);
+            rgb[j + 2] = ToByte(color.B);
+        }
+    }
+
+    public static byte ToByte(double value) => (byte)Math.Clamp((int)Math.Round(value * 255, MidpointRounding.AwayFromZero), 0, 255);
+
+    /// <summary>Reads a color space: a name (of a family or of the resources), or an array.</summary>
+    public static RenderColorSpace Read(PdfObject? value, PdfDictionary? resources, RenderCache cache, int depth = 0)
+    {
+        if (depth > MaxDepth)
+            throw new InvalidPdfContentException("The color spaces are nested too deeply");
+
+        value = value is null ? null : PdfReference.ResolveIfReference(value);
+        switch (value)
+        {
+            case PdfName name:
+                switch (name.Value)
+                {
+                    case "DeviceGray" or "G":
+                        return GetDefault(resources, "DefaultGray", Gray, cache, depth);
+                    case "DeviceRGB" or "RGB":
+                        return GetDefault(resources, "DefaultRGB", Rgb, cache, depth);
+                    case "DeviceCMYK" or "CMYK":
+                        return GetDefault(resources, "DefaultCMYK", Cmyk, cache, depth);
+                    case "Pattern":
+                        return new PatternSpace(underlying: null);
+                }
+
+                if (resources?.Get<PdfDictionary>(PdfNames.ColorSpace)?.GetResolved(name) is { } named)
+                    return Read(named, resources, cache, depth + 1);
+
+                throw new InvalidPdfContentException($"Unknown color space '{name.Value}'");
+
+            case PdfArray { Count: > 0 } array:
+                return cache.GetColorSpace(array, resources, () => ReadArray(array, resources, cache, depth));
+
+            default:
+                throw new InvalidPdfContentException("A color space is not a name or an array");
+        }
+    }
+
+    /// <summary>Gets the color space a device color space is in resources: itself, or the default color space that replaces it (8.6.5.6).</summary>
+    public static RenderColorSpace ResolveDevice(RenderColorSpace device, PdfDictionary? resources, RenderCache cache)
+    {
+        if (resources?.Get<PdfDictionary>(PdfNames.ColorSpace) is null)
+            return device;
+
+        var defaultName = device.ComponentCount switch { 1 => "DefaultGray", 3 => "DefaultRGB", _ => "DefaultCMYK" };
+        return GetDefault(resources, defaultName, device, cache, depth: 0);
+    }
+
+    /// <summary>Converts components to bytes and converts the bytes through an ICC transform, without a temporary array for the colors of a row.</summary>
+    private static void ConvertBytes(IccColorTransform transform, int channels, ReadOnlySpan<double> components, Span<byte> rgb)
+    {
+        const int MaxStackBytes = 1024;
+        var count = Math.Min(components.Length / channels, rgb.Length / 3);
+        var length = count * channels;
+        byte[]? rented = null;
+        var source = length <= MaxStackBytes ? stackalloc byte[MaxStackBytes] : (rented = ArrayPool<byte>.Shared.Rent(length));
+        try
+        {
+            source = source[..length];
+            for (var i = 0; i < source.Length; i++)
+            {
+                source[i] = ToByte(components[i]);
+            }
+
+            transform.Convert(source, rgb[..(count * 3)]);
+        }
+        finally
+        {
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+    }
+
+    private static RenderColorSpace GetDefault(PdfDictionary? resources, string defaultName, RenderColorSpace device, RenderCache cache, int depth)
+    {
+        // The default color spaces of the resources replace the device color spaces (8.6.5.6)
+        if (resources?.Get<PdfDictionary>(PdfNames.ColorSpace)?.GetResolved(PdfName.Create(defaultName)) is { } replacement && depth < MaxDepth)
+        {
+            try
+            {
+                var space = Read(replacement, resources: null, cache, depth + 1);
+                if (space.ComponentCount == device.ComponentCount)
+                    return space;
+            }
+            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
+            {
+                // A default color space that is invalid or not supported: the device color space is used (a limit of the
+                // work, PdfResourceLimitException, still stops the page)
+            }
+        }
+
+        return device;
+    }
+
+    private static RenderColorSpace ReadArray(PdfArray array, PdfDictionary? resources, RenderCache cache, int depth)
+    {
+        var family = array.GetResolved(0) is PdfName name ? name.Value : "";
+        switch (family)
+        {
+            case "DeviceGray" or "G":
+                return Gray;
+            case "DeviceRGB" or "RGB":
+                return Rgb;
+            case "DeviceCMYK" or "CMYK":
+                return Cmyk;
+            case "CalGray":
+                return new CalGraySpace(array.Count > 1 ? array.GetResolved(1) as PdfDictionary : null);
+            case "CalRGB":
+                return new CalRgbSpace(array.Count > 1 ? array.GetResolved(1) as PdfDictionary : null);
+            case "Lab":
+                return new LabSpace(array.Count > 1 ? array.GetResolved(1) as PdfDictionary : null);
+            case "ICCBased":
+                return ReadIccBased(array.Count > 1 ? array.GetResolved(1) as PdfStream : null, resources, cache, depth);
+            case "Indexed" or "I":
+                {
+                    if (array.Count < 4)
+                        throw new InvalidPdfContentException("An indexed color space is incomplete");
+
+                    var baseSpace = Read(array.GetResolved(1), resources, cache, depth + 1);
+                    var high = (int)Math.Clamp(array.GetNumber(2), 0, 255);
+                    var lookup = array.GetResolved(3) switch
+                    {
+                        PdfString text => text.Bytes.ToArray(),
+                        PdfStream stream => stream.GetDecodedData(),
+                        _ => throw new InvalidPdfContentException("The lookup table of an indexed color space is invalid"),
+                    };
+                    return new IndexedSpace(baseSpace, high, lookup);
+                }
+
+            case "Separation":
+                {
+                    if (array.Count < 4)
+                        throw new InvalidPdfContentException("A separation color space is incomplete");
+
+                    var colorant = array.GetResolved(1) is PdfName colorantName ? colorantName.Value : "";
+                    var alternate = Read(array.GetResolved(2), resources, cache, depth + 1);
+                    return new DeviceNSpace(1, alternate, RenderFunction.Read(array.GetResolved(3)), paintsNothing: colorant == "None");
+                }
+
+            case "DeviceN":
+                {
+                    if (array.Count < 4 || array.GetResolved(1) is not PdfArray names)
+                        throw new InvalidPdfContentException("A DeviceN color space is incomplete");
+
+                    if (names.Count > RenderFunction.MaxComponents)
+                        throw new InvalidPdfContentException("A DeviceN color space has too many colorants");
+
+                    var alternate = Read(array.GetResolved(2), resources, cache, depth + 1);
+                    var paintsNothing = names.Count > 0 && names.All(item => PdfReference.ResolveIfReference(item) is PdfName { Value: "None" });
+                    return new DeviceNSpace(Math.Max(1, names.Count), alternate, RenderFunction.Read(array.GetResolved(3)), paintsNothing);
+                }
+
+            case "Pattern":
+                return new PatternSpace(array.Count > 1 ? Read(array.GetResolved(1), resources, cache, depth + 1) : null);
+            default:
+                throw new UnsupportedPdfFeatureException($"The color space '{family}' is not supported");
+        }
+    }
+
+    private static RenderColorSpace ReadIccBased(PdfStream? stream, PdfDictionary? resources, RenderCache cache, int depth)
+    {
+        if (stream is null)
+            throw new InvalidPdfContentException("An ICC-based color space has no profile");
+
+        var count = (int)stream.Dictionary.GetInteger(PdfNames.N, 0);
+        RenderColorSpace? alternate = null;
+        if (stream.Dictionary.GetResolved(PdfNames.Alternate) is { } alternateValue)
+        {
+            try
+            {
+                alternate = Read(alternateValue, resources, cache, depth + 1);
+            }
+            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
+            {
+            }
+        }
+
+        try
+        {
+            var profile = new IccProfile(new MetadataBlob(stream.GetDecodedData()));
+            var transform = IccColorTransform.Create(profile, IccProfile.Srgb);
+            if (count == 0 || transform.SourceChannelCount == count)
+                return new IccSpace(transform, ReadRange(stream.Dictionary, transform.SourceChannelCount));
+        }
+        catch (Exception ex) when (ex is InvalidImageContentException or UnsupportedImageFeatureException or InvalidPdfContentException or ArgumentException)
+        {
+        }
+
+        // A profile that cannot be read: the alternate color space, or the device color space of its number of components
+        if (alternate is not null && (count == 0 || alternate.ComponentCount == count))
+            return alternate;
+
+        return count switch
+        {
+            1 => Gray,
+            4 => Cmyk,
+            _ => Rgb,
+        };
+    }
+
+    /// <summary>Reads the <c>/Range</c> of an ICC-based color space: the minimum and maximum of each component, 0 and 1 by default (8.6.5.5).</summary>
+    private static double[] ReadRange(PdfDictionary dictionary, int count)
+    {
+        var range = RenderFunction.ReadNumbers(dictionary.Get<PdfArray>(PdfName.Create("Range")));
+        var result = new double[count * 2];
+        for (var i = 0; i < count; i++)
+        {
+            var (min, max) = range is not null && range.Length >= 2 * count && double.IsFinite(range[2 * i]) && double.IsFinite(range[(2 * i) + 1]) && range[(2 * i) + 1] > range[2 * i] ? (range[2 * i], range[(2 * i) + 1]) : (0, 1);
+            result[2 * i] = min;
+            result[(2 * i) + 1] = max;
+        }
+
+        return result;
+    }
+
+    private sealed class DeviceGraySpace : RenderColorSpace
+    {
+        public override int ComponentCount => 1;
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components)
+        {
+            var gray = components.Length > 0 ? components[0] : 0;
+            return new RgbColor(gray, gray, gray);
+        }
+    }
+
+    private sealed class DeviceRgbSpace : RenderColorSpace
+    {
+        public override int ComponentCount => 3;
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components) => components.Length >= 3 ? new RgbColor(components[0], components[1], components[2]) : default;
+    }
+
+    /// <summary>DeviceCMYK, converted with the CMYK profile Imaging has (CGATS 001, close to the conversion of print viewers).</summary>
+    private sealed class DeviceCmykSpace : RenderColorSpace
+    {
+        private static readonly Lazy<IccColorTransform> Transform = new(() => IccColorTransform.Create(IccProfile.Cgats001CompatibleCmyk, IccProfile.Srgb));
+        private static readonly Lazy<IccColorCache> Colors = new(() => new IccColorCache(Transform.Value));
+
+        public override int ComponentCount => 4;
+
+        public override bool ConvertsInBatches => true;
+
+        public override double[] GetInitialColor() => [0, 0, 0, 1];
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components)
+        {
+            if (components.Length < 4)
+                return default;
+
+            return Colors.Value.ToRgb(components);
+        }
+
+        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb) => ConvertBytes(Transform.Value, 4, components, rgb);
+    }
+
+    /// <summary>
+    /// An ICC-based color space (8.6.5.5): the components, within the <c>/Range</c> of the color space, are mapped to the
+    /// 0 to 1 of the encoding of the profile (the L*a*b* values of a profile whose data color space is Lab, for instance),
+    /// then converted by the profile.
+    /// </summary>
+    private sealed class IccSpace(IccColorTransform transform, double[] range) : RenderColorSpace
+    {
+        private readonly IccColorCache _colors = new(transform);
+        private readonly bool _isDefaultRange = range.Select((value, index) => value == index % 2).All(value => value);
+
+        public override int ComponentCount => transform.SourceChannelCount;
+
+        public override bool ConvertsInBatches => true;
+
+        public override double[] GetInitialColor()
+        {
+            // All the components 0, or the nearest value of the range; no ink for CMYK
+            var result = new double[ComponentCount];
+            for (var i = 0; i < result.Length; i++)
+            {
+                result[i] = Math.Clamp(ComponentCount == 4 && i == 3 ? 1 : 0, range[2 * i], range[(2 * i) + 1]);
+            }
+
+            return result;
+        }
+
+        public override double[] GetDefaultDecode(int bitsPerComponent) => [.. range];
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components)
+        {
+            if (_isDefaultRange)
+                return _colors.ToRgb(components);
+
+            Span<double> normalized = stackalloc double[ComponentCount];
+            Normalize(components, normalized);
+            return _colors.ToRgb(normalized);
+        }
+
+        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
+        {
+            if (_isDefaultRange)
+            {
+                ConvertBytes(transform, ComponentCount, components, rgb);
+                return;
+            }
+
+            // The components mapped to the 0 to 1 of the profile first
+            var normalized = ArrayPool<double>.Shared.Rent(components.Length);
+            try
+            {
+                var channels = ComponentCount;
+                for (var i = 0; i < components.Length; i++)
+                {
+                    normalized[i] = Normalize(components[i], i % channels);
+                }
+
+                ConvertBytes(transform, channels, normalized.AsSpan(0, components.Length), rgb);
+            }
+            finally
+            {
+                ArrayPool<double>.Shared.Return(normalized);
+            }
+        }
+
+        private void Normalize(ReadOnlySpan<double> components, Span<double> normalized)
+        {
+            for (var i = 0; i < normalized.Length; i++)
+            {
+                normalized[i] = Normalize(i < components.Length ? components[i] : 0, i);
+            }
+        }
+
+        private double Normalize(double value, int component) => (value - range[2 * component]) / (range[(2 * component) + 1] - range[2 * component]);
+    }
+
+    private sealed class IndexedSpace(RenderColorSpace baseSpace, int high, byte[] lookup) : RenderColorSpace
+    {
+        // The bytes of the table are scaled to the range of the components of the base color space (8.6.6.3)
+        private readonly double[] _baseRange = baseSpace.GetDefaultDecode(8);
+
+        public override int ComponentCount => 1;
+
+        public override double[] GetDefaultDecode(int bitsPerComponent) => [0, (1 << bitsPerComponent) - 1];
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components)
+        {
+            var index = (int)Math.Clamp(Math.Round(components.Length > 0 ? components[0] : 0, MidpointRounding.AwayFromZero), 0, high);
+            var count = baseSpace.ComponentCount;
+            Span<double> values = stackalloc double[count];
+            for (var i = 0; i < count; i++)
+            {
+                var position = (index * count) + i;
+                var min = (2 * i) + 1 < _baseRange.Length ? _baseRange[2 * i] : 0;
+                var max = (2 * i) + 1 < _baseRange.Length ? _baseRange[(2 * i) + 1] : 1;
+                values[i] = min + ((position < lookup.Length ? lookup[position] : 0) / 255.0 * (max - min));
+            }
+
+            return baseSpace.ToRgb(values);
+        }
+    }
+
+    /// <summary>Separation and DeviceN: the tint transform converts the colorants to the alternate color space (8.6.6.4, 8.6.6.5).</summary>
+    private sealed class DeviceNSpace(int count, RenderColorSpace alternate, RenderFunction tintTransform, bool paintsNothing) : RenderColorSpace
+    {
+        public override int ComponentCount => count;
+
+        public override bool PaintsNothing => paintsNothing;
+
+        public override bool ConvertsInBatches => alternate.ConvertsInBatches;
+
+        public override double[] GetInitialColor()
+        {
+            var result = new double[count];
+            result.AsSpan().Fill(1);
+            return result;
+        }
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components)
+        {
+            Span<double> values = stackalloc double[Math.Max(alternate.ComponentCount, tintTransform.OutputCount)];
+            tintTransform.Evaluate(components, values);
+            return alternate.ToRgb(values[..alternate.ComponentCount]);
+        }
+
+        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
+        {
+            var alternateCount = alternate.ComponentCount;
+            if (alternateCount == 0)
+            {
+                base.ToRgb(components, rgb);
+                return;
+            }
+
+            // The tint transform of each color, then the colors of the alternate color space converted together
+            var colors = Math.Min(components.Length / count, rgb.Length / 3);
+            var converted = ArrayPool<double>.Shared.Rent(colors * alternateCount);
+            try
+            {
+                Span<double> values = stackalloc double[Math.Max(alternateCount, tintTransform.OutputCount)];
+                for (var i = 0; i < colors; i++)
+                {
+                    values.Clear();
+                    tintTransform.Evaluate(components.Slice(i * count, count), values);
+                    values[..alternateCount].CopyTo(converted.AsSpan(i * alternateCount));
+                }
+
+                alternate.ToRgb(converted.AsSpan(0, colors * alternateCount), rgb[..(colors * 3)]);
+            }
+            finally
+            {
+                ArrayPool<double>.Shared.Return(converted);
+            }
+        }
+    }
+
+    internal sealed class PatternSpace(RenderColorSpace? underlying) : RenderColorSpace
+    {
+        public RenderColorSpace? Underlying { get; } = underlying;
+
+        public override int ComponentCount => Underlying?.ComponentCount ?? 0;
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components) => Underlying?.ToRgb(components) ?? default;
+    }
+}

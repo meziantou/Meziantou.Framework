@@ -1,0 +1,110 @@
+0
+----
+import { useCssVars as _useCssVars, unref as _unref, defineComponent as _defineComponent } from 'vue'
+import { ref, computed } from "vue";
+
+export default /*@__PURE__*/_defineComponent({
+  __name: 'List',
+  props: {
+    title: { type: String, required: true },
+    items: { type: Array, required: true }
+  },
+  emits: ["toggle"],
+  setup(__props: any, { expose: __expose, emit: __emit }) {
+  __expose();
+
+_useCssVars(_ctx => ({
+  "123-color": (_ctx.color)
+}))
+
+const props = __props;
+const emit = __emit;
+const isActive = ref(false);
+const query = ref("");
+const count = computed(() => props.items.length);
+function toggle() { isActive.value = !isActive.value; emit("toggle", isActive.value); }
+
+const __returned__ = { props, emit, isActive, query, count, toggle }
+Object.defineProperty(__returned__, '__isScriptSetup', { enumerable: false, value: true })
+return __returned__
+}
+
+})
+----
+import { toDisplayString as _toDisplayString, createElementVNode as _createElementVNode, renderList as _renderList, Fragment as _Fragment, openBlock as _openBlock, createElementBlock as _createElementBlock, createCommentVNode as _createCommentVNode, renderSlot as _renderSlot, createTextVNode as _createTextVNode, vModelText as _vModelText, withDirectives as _withDirectives, normalizeClass as _normalizeClass } from "vue"
+
+const _hoisted_1 = { key: 0 }
+const _hoisted_2 = { key: 1 }
+
+export function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (_openBlock(), _createElementBlock("div", {
+    class: _normalizeClass({ active: $setup.isActive }),
+    onClick: $setup.toggle
+  }, [
+    _createElementVNode("h1", null, _toDisplayString($props.title.toUpperCase()), 1 /* TEXT */),
+    ($props.items.length)
+      ? (_openBlock(), _createElementBlock("ul", _hoisted_1, [
+          (_openBlock(true), _createElementBlock(_Fragment, null, _renderList($props.items, (item, index) => {
+            return (_openBlock(), _createElementBlock("li", {
+              key: item.id
+            }, _toDisplayString(index) + ": " + _toDisplayString(item.name), 1 /* TEXT */))
+          }), 128 /* KEYED_FRAGMENT */))
+        ]))
+      : (_openBlock(), _createElementBlock("p", _hoisted_2, "Empty")),
+    _renderSlot(_ctx.$slots, "footer", {
+      count: $props.items.length
+    }, () => [
+      _cache[1] || (_cache[1] = _createTextVNode("Default footer", -1 /* CACHED */))
+    ]),
+    _withDirectives(_createElementVNode("input", {
+      "onUpdate:modelValue": _cache[0] || (_cache[0] = $event => (($setup.query) = $event))
+    }, null, 512 /* NEED_PATCH */), [
+      [_vModelText, $setup.query]
+    ])
+  ], 2 /* CLASS */))
+}
+----
+
+.active h1[data-v-123] { color: var(--123-color);
+}
+li + li[data-v-123] { margin-top: 4px;
+}
+
+----
+import { mergeProps as _mergeProps } from "vue"
+import { ssrRenderSlot as _ssrRenderSlot, ssrRenderAttr as _ssrRenderAttr, ssrRenderAttrs as _ssrRenderAttrs, ssrInterpolate as _ssrInterpolate, ssrRenderList as _ssrRenderList } from "vue/server-renderer"
+
+export function ssrRender(_ctx, _push, _parent, _attrs) {
+  _push(`<div${
+    _ssrRenderAttrs(_mergeProps({
+      class: { active: _ctx.isActive }
+    }, _attrs))
+  }><h1>${
+    _ssrInterpolate(_ctx.title.toUpperCase())
+  }</h1>`)
+  if (_ctx.items.length) {
+    _push(`<ul><!--[-->`)
+    _ssrRenderList(_ctx.items, (item, index) => {
+      _push(`<li>${
+        _ssrInterpolate(index)
+      }: ${
+        _ssrInterpolate(item.name)
+      }</li>`)
+    })
+    _push(`<!--]--></ul>`)
+  } else {
+    _push(`<p>Empty</p>`)
+  }
+  _ssrRenderSlot(_ctx.$slots, "footer", {
+    count: _ctx.items.length
+  }, () => {
+    _push(`Default footer`)
+  }, _push, _parent)
+  _push(`<input${_ssrRenderAttr("value", _ctx.query)}></div>`)
+}
+----
+<section><p data-count="21">21 x 2 = 42</p><input><ul><li>a</li><li>&lt;b&gt;</li><li>c</li></ul><em class="x y" style="color: red;">hi slot &lt;content&gt;</em><!----></section>
+----
+<section><p data-count="22">22 x 2 = 44</p><input><ul><li>d</li></ul><em class="x y" style="color: red;">hi slot &lt;content&gt;</em><p>big</p></section>
+----
+""

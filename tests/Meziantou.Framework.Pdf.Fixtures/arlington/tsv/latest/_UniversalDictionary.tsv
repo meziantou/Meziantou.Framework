@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	array;boolean;dictionary;name;null;number;stream;string	1.2		FALSE	[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[TRUE];[FALSE]	FALSE				[_UniversalArray];[];[_UniversalDictionary];[];[];[];[Stream];[]	

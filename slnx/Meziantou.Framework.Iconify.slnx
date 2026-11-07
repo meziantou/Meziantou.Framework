@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Iconify.SourceGenerator/Meziantou.Framework.Iconify.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.Iconify/Meziantou.Framework.Iconify.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Iconify.AotTests/Meziantou.Framework.Iconify.AotTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Iconify.Tests/Meziantou.Framework.Iconify.Tests.csproj" />
+  </Folder>
+</Solution>

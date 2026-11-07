@@ -1,0 +1,32 @@
+{
+  "ambient-light/AmbientLightSensor-disabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "ambient-light/AmbientLightSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 2
+  },
+  "ambient-light/AmbientLightSensor-enabled-by-permissions-policy-attribute.https.html": {
+    "total": 2
+  },
+  "ambient-light/AmbientLightSensor-enabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "ambient-light/AmbientLightSensor-enabled-on-self-origin-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "ambient-light/AmbientLightSensor-iframe-access.https.html": {
+    "total": 4
+  },
+  "ambient-light/AmbientLightSensor-supported-by-permissions-policy.html": {
+    "total": 1
+  },
+  "ambient-light/AmbientLightSensor.https.html": {
+    "total": 19
+  },
+  "ambient-light/AmbientLightSensor_insecure_context.html": {
+    "total": 1
+  },
+  "ambient-light/idlharness.https.window.js": {
+    "total": 12
+  }
+}

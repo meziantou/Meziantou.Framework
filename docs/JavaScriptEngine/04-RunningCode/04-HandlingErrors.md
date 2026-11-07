@@ -1,0 +1,243 @@
+---
+title: Handling errors
+description: Catch the errors of the scripts, find where they were thrown, and throw JavaScript errors from .NET functions.
+---
+
+## Catch the errors of a script
+
+An error that a script does not catch is thrown to .NET as a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException):
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_CatchErrors;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+
+var exception = Assert.Throws<JsException>(() => realm.Execute("function check(order) {\n  if (!order.id) throw new RangeError('The order has no id');\n}\ncheck({});", "orders.js"));
+
+// The thrown value, and where it was thrown
+Assert.Equal("RangeError: The order has no id", exception.Message);
+Assert.Equal(new JsSourceLocation("orders.js", 2, 18), exception.Location);
+using (engine.Enter())
+{
+    var error = exception.Value.AsObject();
+    Assert.Equal("RangeError", error.GetProperty("name").AsString());
+    Assert.Equal("The order has no id", error.GetProperty("message").AsString());
+    Assert.Equal("RangeError: The order has no id\n    at check (orders.js:2:28)\n    at orders.js:4:1", error.GetErrorStack());
+}
+
+// A script can throw any value
+exception = Assert.Throws<JsException>(() => realm.Execute("throw 42;"));
+Assert.Equal(42, exception.Value.AsNumber());
+```
+<!-- endref -->
+
+- [Value](cref:Meziantou.Framework.JavaScriptEngine.JsException.Value) is the thrown value. A script can throw any value, not only errors: check its kind before you read it.
+- `Message` describes the thrown value without running code of the script: the `name` and the `message` of an error
+  (`RangeError: The order has no id`), or `Uncaught` and the value for anything else (`Uncaught 42`).
+- [Location](cref:Meziantou.Framework.JavaScriptEngine.JsException.Location) is the position of the `throw` (or of the operation that failed), with the URL given to [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute). Lines
+  and columns are 1-based.
+- [GetErrorStack](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetErrorStack) returns the `stack` of an error object. Its first frame is where the error object was created
+  (`new RangeError(...)`), which can differ from the position of the `throw`.
+
+The same exception comes from [JsEngine.Call](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Call), [JsEngine.Construct](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Construct), and from the conversions that run code of the
+script, such as `engine.ToString` calling a `toString` method that throws.
+
+## Read the JavaScript stack trace
+
+The `StackTrace` of a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) is the one of .NET. [JavaScriptStackTrace](cref:Meziantou.Framework.JavaScriptEngine.JsException.JavaScriptStackTrace) gives the frames of the script, one per
+line, the innermost first, and `ToString()` includes them for your logs:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_ExceptionStackTrace;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+var exception = Assert.Throws<JsException>(() => realm.Execute("""
+    function parse(text) {
+      throw new SyntaxError('Unexpected ' + text);
+    }
+    function load() {
+      return parse('}');
+    }
+    load();
+    """, "loader.js"));
+
+// The JavaScript frames, the innermost first: the first one is where the error was created
+Assert.Equal("""
+        at parse (loader.js:2:13)
+        at load (loader.js:5:10)
+        at loader.js:7:1
+    """, exception.JavaScriptStackTrace);
+```
+<!-- endref -->
+
+- The frames are the ones of the code that created the error object, which can differ from the code that threw it.
+- It is null when the thrown value is not an error with a stack trace, such as `throw 42`: use
+  [Location](cref:Meziantou.Framework.JavaScriptEngine.JsException.Location) then. It is empty for an error created when no script runs.
+- A stack trace has at most 10 frames, or `Error.stackTraceLimit` frames (see below).
+
+## Error.captureStackTrace
+
+Some npm packages call `Error.captureStackTrace`, the stack trace API of V8, to give a `stack` to their own error
+objects. It is not part of ECMAScript, so it is disabled by default; [EnableV8StackTraceApi](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.EnableV8StackTraceApi) adds it to the realms:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_CaptureStackTrace;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine(new JsEngineOptions { EnableV8StackTraceApi = true });
+var realm = engine.CreateRealm();
+var stack = realm.Execute("""
+    class HttpError {
+      constructor(status) {
+        this.name = 'HttpError';
+        this.message = 'Status ' + status;
+        // Omit the frames of the constructor
+        Error.captureStackTrace(this, HttpError);
+      }
+    }
+    function request() { return new HttpError(404); }
+    request().stack
+    """, "http.js").AsString();
+
+Assert.Equal("HttpError: Status 404\n    at request (http.js:9:33)\n    at http.js:10:1", stack);
+```
+<!-- endref -->
+
+- `Error.captureStackTrace(object, constructorOpt)` defines the `stack` property of any object: writable,
+  configurable and not enumerable. The frames above the innermost call of `constructorOpt`, and this call, are left
+  out; when `constructorOpt` is not on the stack, there is no frame. The first line is `name: message`, as
+  `Error.prototype.toString` builds it.
+- `Error.stackTraceLimit` sets the number of frames of the stack traces of the realm, including the ones of the errors
+  created afterwards. It is 10 by default, and a value that is not a number gives no frame.
+- `Error.prepareStackTrace` is not supported: the stack traces are always strings.
+
+## Map errors to the original sources
+
+A script generated by a bundler or a compiler (TypeScript...) throws errors at positions of the generated code. A
+[JsSourceMapper](cref:Meziantou.Framework.JavaScriptEngine.JsSourceMapper) maps them to the original sources with the source maps of the scripts:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_SourceMaps;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A bundle generated from src/check.ts and src/run.ts, and its source map
+var bundle = """
+    function check(order) {
+      if (!order.id) throw new RangeError('The order has no id');
+    }
+    function run() { check({}); }
+    run();
+    """;
+var sourceMap = JsSourceMap.Parse("""
+    {
+      "version": 3,
+      "file": "bundle.js",
+      "sourceRoot": "src",
+      "sources": ["check.ts", "run.ts"],
+      "mappings": "AAAA;AAGA,EAAE;AAEF;ACIA,iBACE;AAEF"
+    }
+    """, "dist/bundle.js.map");
+
+var mapper = new JsSourceMapper();
+mapper.Add("bundle.js", sourceMap);
+
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+var exception = Assert.Throws<JsException>(() => realm.Execute(bundle, "bundle.js"));
+
+// The positions in the original sources
+Assert.Equal(new JsSourceLocation("bundle.js", 2, 18), exception.Location);
+Assert.Equal(new JsSourceLocation("dist/src/check.ts", 4, 3), mapper.MapLocation(exception.Location));
+using (engine.Enter())
+{
+    var stack = exception.Value.AsObject().GetErrorStack();
+    Assert.Equal("RangeError: The order has no id\n    at check (dist/src/check.ts:4:3)\n    at run (dist/src/run.ts:11:3)\n    at dist/src/run.ts:13:1", mapper.MapStackTrace(stack!));
+}
+```
+<!-- endref -->
+
+- [JsSourceMap.Parse](cref:Meziantou.Framework.JavaScriptEngine.JsSourceMap.Parse) reads a source map of version 3, including the index maps (`sections`). It throws a
+  `FormatException` for a map that is not valid; [TryParse](cref:Meziantou.Framework.JavaScriptEngine.JsSourceMap.TryParse) returns false instead. Give it the URL of the map: the
+  relative URLs of the sources (after `sourceRoot`) are resolved against it.
+- A source map belongs to the URL of the generated script, the URL given to `realm.Execute` or `realm.ParseModule`. Add
+  it with [Add](cref:Meziantou.Framework.JavaScriptEngine.JsSourceMapper.Add), or give the constructor a resolver that loads the map of a URL on first use (for instance from
+  the `//# sourceMappingURL=` comment of the script) and returns null when there is none.
+- [MapLocation](cref:Meziantou.Framework.JavaScriptEngine.JsSourceMapper.MapLocation) maps [JsException.Location](cref:Meziantou.Framework.JavaScriptEngine.JsException.Location); [MapStackTrace](cref:Meziantou.Framework.JavaScriptEngine.JsSourceMapper.MapStackTrace) maps the frames of a stack trace, such as the `stack` of an
+  error or the result of `engine.CaptureStackTrace()`. A position is mapped to the start of the mapping that contains
+  it. A position without source map, or that no mapping contains, is kept.
+- The mapping is done by your code when it reports an error: the scripts still see the generated positions in the
+  `stack` of their errors.
+
+## The exceptions of the engine
+
+| Exception | When |
+| --- | --- |
+| [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) | A script threw a value that it did not catch, or the code is not valid (a [SyntaxError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.SyntaxError)). |
+| [JsSyntaxErrorException](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException) | [JsPreparedScript.Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) got a script that is not valid. See [Scripts](02-Scripts.md#check-the-syntax-of-a-script). |
+| [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException) | A limit stopped the script, or it was canceled. See [Limits and sandboxing](../07-LimitsAndSandboxing.md). |
+
+## Throw a JavaScript error from .NET
+
+A .NET function called by a script throws a JavaScript error with `realm.CreateException`. The script can catch it
+like any error:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_ThrowFromDotNet;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+using (engine.Enter())
+{
+    realm.GlobalObject.SetProperty("parseAge", realm.CreateFunction("parseAge", 1, (_, arguments) =>
+    {
+        var text = arguments.Length > 0 ? engine.ToString(arguments[0]) : "";
+        if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var age))
+        {
+            // A JavaScript error, which the scripts can catch
+            throw realm.CreateException(JsErrorType.TypeError, "Invalid age: " + text);
+        }
+
+        return age;
+    }));
+}
+
+Assert.Equal(42, realm.Execute("parseAge('42')").AsNumber());
+Assert.Equal("TypeError: Invalid age: abc", realm.Execute("try { parseAge('abc'); } catch (e) { `${e}` }").AsString());
+```
+<!-- endref -->
+
+- [JsErrorType](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType) gives the native error types: [Error](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.Error), [TypeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.TypeError), [RangeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.RangeError), [SyntaxError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.SyntaxError), [ReferenceError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.ReferenceError),
+  [EvalError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.EvalError) and [UriError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.UriError). Prefer the type that a built-in would throw: [TypeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.TypeError) for an argument of the wrong
+  type, [RangeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.RangeError) for a value out of range.
+- `realm.CreateError` creates the error object without throwing it, for instance to reject a promise.
+- To throw any other value, throw `new JsException(value)`.
+- `new JsException("message")` throws an `Error` whose `message` is the message of the exception. The error is
+  created in the current realm when the script catches it. Use `realm.CreateException` for the other error types.
+
+## Exceptions that are not JavaScript errors
+
+Any other .NET exception thrown by a .NET function is not a JavaScript error. The script cannot catch it: it goes
+through the script, without running its `catch` blocks, to the code that called [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute):
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_DotNetExceptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+using (engine.Enter())
+{
+    realm.GlobalObject.SetProperty("fail", realm.CreateFunction("fail", 0, (_, _) => throw new InvalidOperationException("Unexpected state")));
+}
+
+// A .NET exception is not a JavaScript error: the script cannot catch it, and it goes to the caller
+Assert.Throws<InvalidOperationException>(() => realm.Execute("try { fail(); } catch { }"));
+```
+<!-- endref -->
+
+Convert the failures that a script should handle, such as invalid input, to JavaScript errors. Let the other ones
+propagate: they are bugs or failures of your application.
+
+Like a [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException), such an exception leaves the code it goes through, without running its `catch`
+and `finally` blocks, and the engine can run code afterwards:
+
+- A generator that it stops is completed: its next `next()` call returns `{ done: true }`.
+- An async function or an async generator that it stops is completed, and its promise (the promise of the current
+  request for an async generator) is rejected with an error such as `Error: The execution was stopped by a .NET
+  exception: System.InvalidOperationException: Unexpected state`, so the code that awaits it does not wait forever.
+  When the exception is thrown by the continuation of an `await`, it goes to the caller of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs); the other
+  jobs stay in the queue.
+- A module that it stops is evaluated with this error. See [Modules](03-Modules.md#handle-the-errors-of-a-module).

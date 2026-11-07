@@ -31,4 +31,136 @@ public sealed class DebounceExtensionsTests
         Assert.Equal(1, count);
         Assert.Equal(2, lastArg);
     }
+
+    [Fact]
+    public void Debounce_ReusesASingleTimerAcrossCalls()
+    {
+        var fakeTimeProvider = new FakeTimeProvider();
+        var timeProvider = new CountingTimeProvider(fakeTimeProvider);
+        var callCount = 0;
+        var debounced = ((Action)(() => Interlocked.Increment(ref callCount))).Debounce(TimeSpan.FromSeconds(1), timeProvider);
+
+        for (var i = 0; i < 10_000; i++)
+        {
+            debounced();
+        }
+
+        // One reused timer, not one pending delay per call
+        Assert.Equal(1, timeProvider.TimersCreated);
+
+        fakeTimeProvider.Advance(TimeSpan.FromSeconds(2));
+        SpinWait.SpinUntil(() => Volatile.Read(ref callCount) > 0, TimeSpan.FromSeconds(5));
+        Assert.Equal(1, Volatile.Read(ref callCount));
+    }
+
+    [Fact]
+    public void Debounce_InvokesWithTheArgumentsOfTheLastCall()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var observed = new List<(int First, int Second)>();
+        var debounced = ((Action<int, int>)((first, second) => observed.Add((first, second))))
+            .Debounce(TimeSpan.FromSeconds(1), timeProvider);
+
+        debounced(1, 1);
+        debounced(2, 2);
+        debounced(3, 3);
+
+        timeProvider.Advance(TimeSpan.FromSeconds(2));
+        SpinWait.SpinUntil(() => observed.Count > 0, TimeSpan.FromSeconds(5));
+
+        Assert.Equal([(3, 3)], observed);
+    }
+
+    [Fact]
+    public void Debounce_CanFireAgainAfterAnInvocation()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var callCount = 0;
+        var debounced = ((Action)(() => Interlocked.Increment(ref callCount))).Debounce(TimeSpan.FromSeconds(1), timeProvider);
+
+        debounced();
+        timeProvider.Advance(TimeSpan.FromSeconds(2));
+        SpinWait.SpinUntil(() => Volatile.Read(ref callCount) >= 1, TimeSpan.FromSeconds(5));
+
+        debounced();
+        timeProvider.Advance(TimeSpan.FromSeconds(2));
+        SpinWait.SpinUntil(() => Volatile.Read(ref callCount) >= 2, TimeSpan.FromSeconds(5));
+
+        Assert.Equal(2, Volatile.Read(ref callCount));
+    }
+
+    [Fact]
+    public void Debounce_ErrorHandlerReceivesTheException()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var callCount = 0;
+        var errors = new List<Exception>();
+        var debounced = ((Action)(() =>
+        {
+            callCount++;
+            throw new InvalidOperationException("boom");
+        })).Debounce(TimeSpan.FromSeconds(1), timeProvider, errors.Add);
+
+        // FakeTimeProvider invokes the timer callback synchronously from Advance
+        debounced();
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        debounced();
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(2, callCount);
+        Assert.HasCount(2, errors);
+        Assert.All(errors, error => Assert.Equal("boom", error.Message));
+    }
+
+    [Fact]
+    public void Debounce_WithoutErrorHandler_ExceptionIsUnhandled()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var debounced = ((Action)(() => throw new InvalidOperationException("boom"))).Debounce(TimeSpan.FromSeconds(1), timeProvider);
+
+        debounced();
+
+        // The exception propagates to the timer callback: with FakeTimeProvider, to Advance
+        Assert.Equal("boom", Assert.Throws<InvalidOperationException>(() => timeProvider.Advance(TimeSpan.FromSeconds(1))).Message);
+    }
+
+    private sealed class CountingTimeProvider(TimeProvider inner) : TimeProvider
+    {
+        private int _timersCreated;
+
+        public int TimersCreated => Volatile.Read(ref _timersCreated);
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Interlocked.Increment(ref _timersCreated);
+            return inner.CreateTimer(callback, state, dueTime, period);
+        }
+
+        public override DateTimeOffset GetUtcNow() => inner.GetUtcNow();
+        public override long GetTimestamp() => inner.GetTimestamp();
+        public override TimeZoneInfo LocalTimeZone => inner.LocalTimeZone;
+        public override long TimestampFrequency => inner.TimestampFrequency;
+    }
+
+    [Fact]
+    public void Documentation_Debounce()
+    {
+        #region DebounceExtensions_Debounce
+        var timeProvider = new FakeTimeProvider();
+        var searches = new List<string>();
+        var search = DebounceExtensions.Debounce<string>(text => searches.Add(text), TimeSpan.FromMilliseconds(300), timeProvider);
+
+        // The user types quickly: each call restarts the countdown
+        search("m");
+        timeProvider.Advance(TimeSpan.FromMilliseconds(100));
+        search("me");
+        timeProvider.Advance(TimeSpan.FromMilliseconds(100));
+        search("mez");
+        Assert.Empty(searches);
+
+        // 300 ms after the last call, the action runs once, with the last arguments
+        timeProvider.Advance(TimeSpan.FromMilliseconds(300));
+        Assert.Equal(["mez"], searches);
+        #endregion
+    }
 }

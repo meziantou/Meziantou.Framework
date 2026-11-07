@@ -1,0 +1,16 @@
+{
+  "main": {
+    "nb-SJ": {
+      "identity": {
+        "language": "nb",
+        "territory": "SJ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

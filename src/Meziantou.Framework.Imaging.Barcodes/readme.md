@@ -1,0 +1,145 @@
+# Meziantou.Framework.Imaging.Barcodes
+
+Renders the QR codes and barcodes of [`Meziantou.Framework.Barcodes`](https://www.nuget.org/packages/Meziantou.Framework.Barcodes) as [`Meziantou.Framework.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.Imaging) images. The resulting `Image<Rgba32>` can be saved in any format the library supports (PNG, WebP, JPEG, GIF, AVIF, ...), resized, or drawn onto another image.
+
+`Meziantou.Framework.Barcodes` already writes PNG files on its own (`ToPng`), with no dependency. Use this package when you need another format or want to process the image further.
+
+## Usage
+
+The types are in the `Meziantou.Framework.Imaging.Barcodes` namespace. The examples also use the
+`Meziantou.Framework.Barcodes` (QR codes and barcodes), `Meziantou.Framework.Imaging` (images) and
+`Meziantou.Framework.Imaging.Formats` (encoders) namespaces.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_QRCodeToImage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.M);
+
+// Default options: 10 pixels per module, a 4-module quiet zone, black on white
+using var image = qrCode.ToImage();
+Assert.Equal((330, 330), (image.Width, image.Height));
+
+// Save to a file (image.Save("qrcode.webp", new WebPEncoder())) or to a stream
+using var webp = new MemoryStream();
+image.Save(webp, new WebPEncoder());
+
+// Custom options, the same as the canvas drawing takes: any brush, and no background
+using var customImage = qrCode.ToImage(new QRCodeDrawingOptions
+{
+    ModuleSize = 4,
+    QuietZoneModules = 2,
+    DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+    LightBrush = null,
+});
+Assert.Equal((116, 116), (customImage.Width, customImage.Height));
+Assert.Equal(Colors.Transparent, customImage.Frames[0][0, 0]);
+Assert.Equal(new Rgba32(0x00, 0x33, 0x66), customImage.Frames[0][8, 8]);
+
+// An indexed PNG stores the two colors in a palette, as ToPng does
+using var png = new MemoryStream();
+customImage.Save(png, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
+```
+<!-- endref -->
+
+Barcodes work the same way:
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_BarcodeToImage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode.CreateEan13("5901234123457");
+using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, ModuleHeight = 100 });
+Assert.Equal((345, 100), (image.Width, image.Height));
+```
+<!-- endref -->
+
+## Drawing on a canvas
+
+`DrawQRCode` and `DrawBarcode` draw on the `DrawingCanvas` of `Image.Draw`, as vector shapes: the transform, the clip and
+the layers of the canvas apply, and any `Brush` (solid, gradient, image, pattern) paints the modules. `MeasureQRCode` and
+`MeasureBarcode` give the size of the drawing beforehand, to lay out the page. With `SnapToPixels` (the default), the
+module sizes and the position are rounded to whole pixels, so that every module has the same size and sharp edges.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawQRCode;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var ticket = new Image<Rgba32>(400, 200, Colors.White); // or Image.Load<Rgba32>("ticket.png")
+var qrCode = QRCode.Create("TICKET-0042");
+var options = new QRCodeDrawingOptions { ModuleSize = 4, QuietZoneModules = 2 };
+
+// The size of the drawing, quiet zone included, to lay out the page before drawing
+var size = QRCodeImageRenderer.MeasureQRCode(qrCode, options);
+Assert.Equal((100, 100), (size.Width, size.Height)); // (21 modules + 2 x 2) x 4 pixels
+
+// Drawn as a vector shape: the transform and the clip of the canvas apply, any brush works
+ticket.Draw(canvas => canvas.DrawQRCode(qrCode, new PointD(400 - 16 - size.Width, 16), options));
+Assert.Equal(Colors.Black, ticket.Frames[0][284 + 8, 16 + 8]); // the top-left finder pattern, after the 8-pixel quiet zone
+
+// Save to a file (ticket.Save("ticket-with-qrcode.png")) or to a stream
+using var png = new MemoryStream();
+ticket.Save(png, new PngEncoder());
+```
+<!-- endref -->
+
+`DrawBarcode` draws the bars, and the human-readable text (`Barcode.Text`, with its check digit) under them when
+`BarcodeDrawingOptions.Font` is set, for example to the bundled OCR-B font:
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawBarcode;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode.CreateEan13("590123412345");
+var options = new BarcodeDrawingOptions
+{
+    ModuleWidth = 2,
+    ModuleHeight = 60,
+    QuietZoneModules = 9,
+    DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+    Font = BarcodeFonts.OcrB, // prints barcode.Text, "5901234123457", under the bars
+    FontSize = 24,
+};
+
+var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+Assert.Equal(226, size.Width); // (95 modules + 2 x 9) x 2 pixels
+
+using var label = new Image<Rgba32>(300, 140, Colors.White);
+label.Draw(canvas => canvas.DrawBarcode(barcode, new PointD(20, 20), options));
+Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the first guard bar
+```
+<!-- endref -->
+
+## Fonts
+
+`BarcodeFonts.OcrA` and `BarcodeFonts.OcrB` are the two fonts of optical character recognition, the ones usually
+printed under barcodes (OCR-B under EAN and UPC). They are generated from the character shapes of the standards, at their
+Size I and with their nominal stroke width, by `tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator`:
+
+- OCR-A from the dimensioned drawings of ANSI X3.17-1981: the centerlines in fractions of the character height and
+  width, painted with a round pen, with the sharp corners the drawings show. The 2 degree lean of the stems of some
+  small letters is not reproduced.
+- OCR-B from the 4:1 illustrations of ANSI X3.49-1975 (the American counterpart of ECMA-11 and ISO 1073-2): the
+  centerlines are traced from the illustrations, so they follow them within a few hundredths of a millimeter.
+
+Both are monospaced (an advance of 0.6 em, the 0.1 inch pitch of the standards), map the printable ASCII characters,
+and are licensed with this package. OCR-A also maps the Hook, Chair and Fork (U+2440 to U+2442), which stand for the
+Tilde, the Grave Accent and the Underline; OCR-B also maps the letters of its extended repertoire (Ä, Å, Æ, Ö, Ø, Ü, Ñ,
+IJ, å, æ, ø, ij, ß) and §, ¤, £, ¥, ¨ and ´. The preferred shapes of the punctuation are drawn, not the alternate ones.
+
+## Options
+
+`ToImage` and the canvas drawing take the same options: `ToImage` renders the drawing on an image of its size.
+
+| `QRCodeDrawingOptions` | Default | Description |
+|------------------------|---------|-------------|
+| `ModuleSize` | 10 | Size of each module, in canvas units |
+| `QuietZoneModules` | 4 | Number of quiet zone modules around the QR code |
+| `DarkBrush` | black | Brush of dark modules, in canvas coordinates |
+| `LightBrush` | white | Brush of light modules and of the quiet zone; `null` keeps the background (transparent for `ToImage`) |
+| `SnapToPixels` | `true` | Round the module size and the position to whole units |
+
+| `BarcodeDrawingOptions` | Default | Description |
+|-------------------------|---------|-------------|
+| `ModuleWidth` | 2 | Width of each module, in canvas units |
+| `ModuleHeight` | 80 | Height of the bars, in canvas units |
+| `QuietZoneModules` | 10 | Number of quiet zone modules on the left and right sides |
+| `DarkBrush` | black | Brush of the bars, in canvas coordinates |
+| `LightBrush` | white | Brush of the spaces, of the quiet zone and of the text background; `null` keeps the background |
+| `SnapToPixels` | `true` | Round the module sizes and the position to whole units |
+| `Font` | `null` | Font of the human-readable text under the bars; `null` draws no text |
+| `FontSize` | 14 | Size of the text, in units per em |
+| `TextBrush` | `null` | Brush of the text; `null` uses `DarkBrush` |
+| `TextSpacing` | 2 | Space between the bars and the text |

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "yrl-VE": {
+      "identity": {
+        "language": "yrl",
+        "territory": "VE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

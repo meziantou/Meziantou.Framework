@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Data.Sqlite;
 using Meziantou.Framework.Http.Caching.InMemory;
 using Meziantou.Framework.Http.Caching.Redis;
@@ -13,6 +16,166 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 
 public class PersistenceProvidersTests
 {
+    [Fact]
+    public async Task ReadmeExample_DependencyInjection()
+    {
+        var services = new ServiceCollection();
+
+        #region HttpCachingDelegateHandler_DependencyInjection
+        services.AddSingleton<IHttpCacheStore, InMemoryHttpCacheStore>();
+        services.AddTransient<HttpCachingDelegateHandler>();
+
+        services.AddHttpClient("MyApi")
+            .AddHttpMessageHandler<HttpCachingDelegateHandler>();
+        #endregion
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        using var httpClient = serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("MyApi");
+        Assert.NotNull(httpClient);
+    }
+
+    [Fact]
+    public async Task Documentation_GettingStarted()
+    {
+        var originRequestCount = 0;
+        using var originHandler = new MockResponseHandler(_ =>
+        {
+            originRequestCount++;
+            return CreateCacheableResponse("Hello");
+        });
+
+        #region HttpCaching_GettingStarted
+        // originHandler sends the requests to the server, for instance a SocketsHttpHandler.
+        // The server answers with Cache-Control: max-age=600
+        var cacheStore = new InMemoryHttpCacheStore();
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+        using var httpClient = new HttpClient(cachingHandler);
+
+        using var response1 = await httpClient.GetAsync("https://example.com/data");
+        using var response2 = await httpClient.GetAsync("https://example.com/data");
+
+        Assert.Equal("Hello", await response2.Content.ReadAsStringAsync());
+        Assert.Null(response1.Headers.Age);    // Sent by the server
+        Assert.NotNull(response2.Headers.Age); // Served from the cache
+        #endregion
+
+        Assert.Equal(1, originRequestCount);
+    }
+
+    [Fact]
+    public async Task Documentation_InMemorySaveAndLoad()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var cacheFilePath = Path.Combine(tempDirectory, "http-cache.json");
+        try
+        {
+            using (var originHandler = new MockResponseHandler(_ => CreateCacheableResponse("Hello")))
+            {
+                #region HttpCaching_InMemorySaveAndLoad
+                var cacheStore = new InMemoryHttpCacheStore();
+
+                // Restore the entries saved by a previous run. A missing file leaves the store empty.
+                await cacheStore.LoadFromFileAsync(cacheFilePath);
+
+                using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+                using var httpClient = new HttpClient(cachingHandler);
+                using var response = await httpClient.GetAsync("https://example.com/data");
+
+                // Drop the entries that can no longer be used, then save the others for the next run
+                await cacheStore.PruneObsoleteEntriesAsync();
+                await cacheStore.SaveToFileAsync(cacheFilePath);
+                #endregion
+            }
+
+            var nextRunStore = new InMemoryHttpCacheStore();
+            await nextRunStore.LoadFromFileAsync(cacheFilePath, CancellationToken.None);
+            using var failingOriginHandler = new MockResponseHandler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+            using var nextRunCachingHandler = new HttpCachingDelegateHandler(failingOriginHandler, nextRunStore);
+            using var nextRunClient = new HttpClient(nextRunCachingHandler);
+            using var nextRunResponse = await nextRunClient.GetAsync("https://example.com/data", CancellationToken.None);
+            Assert.Equal("Hello", await nextRunResponse.Content.ReadAsStringAsync(CancellationToken.None));
+            Assert.NotNull(nextRunResponse.Headers.Age);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_SqliteStore()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        Directory.CreateDirectory(tempDirectory);
+        var databasePath = Path.Combine(tempDirectory, "http-cache.db");
+        try
+        {
+            var originRequestCount = 0;
+            using var originHandler = new MockResponseHandler(_ =>
+            {
+                originRequestCount++;
+                return CreateCacheableResponse("Hello");
+            });
+
+            #region HttpCaching_SqliteStore
+            var connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadWriteCreate,
+                Pooling = false,
+            }.ToString();
+
+            using var cacheStore = new SqliteHttpCacheStore(connectionString);
+
+            // Remove the entries that can no longer be used, for instance when the application starts
+            await cacheStore.PruneObsoleteEntriesAsync();
+
+            using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+            using var httpClient = new HttpClient(cachingHandler);
+            using var response = await httpClient.GetAsync("https://example.com/data");
+            #endregion
+
+            using var secondResponse = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+            Assert.NotNull(secondResponse.Headers.Age);
+            Assert.Equal(1, originRequestCount);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_CustomStore()
+    {
+        var originRequestCount = 0;
+        using var originHandler = new MockResponseHandler(_ =>
+        {
+            originRequestCount++;
+            return CreateCacheableResponse("Hello");
+        });
+
+        var cacheStore = new DictionaryHttpCacheStore();
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+        using var httpClient = new HttpClient(cachingHandler);
+
+        using var response1 = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+        using var response2 = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+        Assert.NotNull(response2.Headers.Age);
+        Assert.Equal(1, originRequestCount);
+
+        using var postResponse = await httpClient.PostAsync("https://example.com/data", content: null, CancellationToken.None);
+        using var response3 = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+        Assert.Null(response3.Headers.Age);
+        Assert.Equal(3, originRequestCount);
+    }
+
     [Fact]
     public async Task CustomPersistenceProviderCanBeConfiguredUsingCachingOptions()
     {
@@ -208,6 +371,43 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
+    public async Task SqliteProviderPersistsNoVarySearchSecondaryKey()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
+        using var provider = new SqliteHttpCacheStore(connectionString);
+
+        var primaryKey = "GET http://example.com/users no-vary-search";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        var first = CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(5), mustRevalidate: false);
+        first.NoVarySearch = "params=(\"utm_source\")";
+        first.NormalizedQuery = "id=1";
+        await provider.SetEntryAsync(primaryKey, first, CancellationToken.None);
+
+        var second = CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(5), mustRevalidate: false);
+        second.NoVarySearch = "params=(\"utm_source\")";
+        second.NormalizedQuery = "id=2";
+        await provider.SetEntryAsync(primaryKey, second, CancellationToken.None);
+
+        var entries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+
+        // The queries take part in the secondary key, so both entries are kept
+        Assert.Equal(2, entries.Count);
+        Assert.All(entries, entry => Assert.Equal("params=(\"utm_source\")", entry.NoVarySearch));
+        Assert.Equal(["id=1", "id=2"], entries.Select(entry => entry.NormalizedQuery).Order(StringComparer.Ordinal));
+
+        // Storing an entry with the same secondary key replaces it
+        var replacement = CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(5), mustRevalidate: false);
+        replacement.NoVarySearch = "params=(\"utm_source\")";
+        replacement.NormalizedQuery = "id=1";
+        await provider.SetEntryAsync(primaryKey, replacement, CancellationToken.None);
+
+        entries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+        Assert.Equal(2, entries.Count);
+    }
+
+    [Fact]
     public async Task SqliteProviderSupportsConcurrentOperations()
     {
         var connectionString = CreateInMemorySqliteConnectionString();
@@ -359,6 +559,148 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
+    public async Task InMemoryProviderPruneRemovesExpiredEntriesWithoutAnyRevalidateDirective()
+    {
+        var provider = new InMemoryHttpCacheStore();
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // A plain max-age entry with no validator can only be discarded once it is stale, so a store must be
+        // able to reclaim it even though it carries no must-revalidate directive.
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: false), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+
+        Assert.Empty(await provider.GetEntriesAsync(primaryKey, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task InMemoryProviderPruneKeepsExpiredEntriesWithinTheirStaleIfErrorWindow()
+    {
+        var provider = new InMemoryHttpCacheStore();
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // RFC 5861: the entry can still be served while the origin is failing, so it must be kept.
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: false, staleIfError: TimeSpan.FromHours(1)), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync(primaryKey, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task InMemoryProviderPruneKeepsExpiredEntriesWithALastModifiedValidator()
+    {
+        var provider = new InMemoryHttpCacheStore();
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: false);
+        entry.LastModified = now - TimeSpan.FromDays(1);
+        await provider.SetEntryAsync(primaryKey, entry, CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync(primaryKey, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task InMemoryProviderPruneKeepsFreshEntries()
+    {
+        var provider = new InMemoryHttpCacheStore();
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync(primaryKey, CancellationToken.None));
+    }
+
+    [Fact]
+    public void PersistenceEntryWithAnExtremeAgeSaturatesInsteadOfOverflowing()
+    {
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        entry.AgeValue = TimeSpan.MaxValue;
+
+        Assert.Equal(TimeSpan.MaxValue, entry.GetCurrentAge(now));
+        Assert.True(entry.IsObsolete(now));
+        Assert.Equal(DateTimeOffset.MinValue, entry.GetStaleTime());
+    }
+
+    [Fact]
+    public void PersistenceEntryStaleTimeIsExactWhenTheFreshnessLifetimeAloneWouldOverflow()
+    {
+        var responseTime = DateTimeOffset.MaxValue - TimeSpan.FromDays(1);
+        var entry = new HttpCachePersistenceEntry
+        {
+            RequestTime = responseTime,
+            ResponseTime = responseTime,
+            ResponseDate = responseTime,
+            AgeValue = TimeSpan.MaxValue - TimeSpan.FromHours(12),
+            MaxAge = TimeSpan.MaxValue,
+        };
+
+        Assert.Equal(responseTime + TimeSpan.FromHours(12), entry.GetStaleTime());
+    }
+
+    [Fact]
+    public void PersistenceEntryWithAResponseTimeInTheFutureHasNoNegativeAge()
+    {
+        // A store shared with a machine whose clock is ahead
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now + TimeSpan.FromHours(1), maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+
+        Assert.Equal(TimeSpan.Zero, entry.GetCurrentAge(now));
+    }
+
+    [Fact]
+    public void PersistenceEntryWithANegativeMaxAgeHasNoFreshness()
+    {
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromSeconds(-1), mustRevalidate: false);
+
+        Assert.Equal(TimeSpan.Zero, entry.GetFreshnessLifetime());
+        Assert.True(entry.IsObsolete(now));
+    }
+
+    [Fact]
+    public void PersistenceEntryCloneKeepsHeaderNamesThatOnlyDifferByCase()
+    {
+        // The dictionary of an entry deserialized by a store is case-sensitive
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        entry.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Accept-Language"] = "en",
+            ["accept-language"] = "fr",
+        };
+
+        var clone = entry.Clone();
+
+        Assert.HasCount(2, clone.SecondaryKeyHeaders!);
+        Assert.True(HttpCachePersistenceEntry.HasSameSecondaryKey(entry, clone));
+        Assert.Equal(entry.ComputeSecondaryKeyHash(), clone.ComputeSecondaryKeyHash());
+    }
+
+    [Fact]
+    public void PersistenceEntrySecondaryKeyIgnoresTheCaseOfHeaderNames()
+    {
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var stored = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        stored.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Accept-Language"] = "en" };
+        var deserialized = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        deserialized.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.Ordinal) { ["accept-language"] = "en" };
+
+        Assert.True(HttpCachePersistenceEntry.HasSameSecondaryKey(stored, deserialized));
+        Assert.True(HttpCachePersistenceEntry.HasSameSecondaryKey(deserialized, stored));
+        Assert.Equal(stored.ComputeSecondaryKeyHash(), deserialized.ComputeSecondaryKeyHash());
+    }
+
+    [Fact]
     public async Task SqliteProviderPruneRemovesExpiredUnusableEntries()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
@@ -387,6 +729,24 @@ public class PersistenceProvidersTests
                 Directory.Delete(tempDirectory, recursive: true);
             }
         }
+    }
+
+    [Fact]
+    public async Task SqliteProviderPruneRemovesExpiredEntriesWithoutAnyRevalidateDirective()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
+        using var provider = new SqliteHttpCacheStore(connectionString);
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // The store persists IsUnusableWhenStale as DeleteWhenExpired and reclaims the row through the
+        // indexed fast path, so the new rule has to reach that column too.
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: false), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+
+        Assert.Empty(await provider.GetEntriesAsync(primaryKey, CancellationToken.None));
     }
 
     [Fact]
@@ -486,11 +846,128 @@ public class PersistenceProvidersTests
         }
     }
 
+    [Fact]
+    public async Task InMemoryProviderConcurrentWritesToTheSameKeyKeepOneEntryPerSecondaryKey()
+    {
+        var provider = new InMemoryHttpCacheStore();
+        var primaryKey = "http://example.com/concurrent";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // Every write replaces the stored array, so the read-modify-write has to survive contention.
+        var writes = Enumerable.Range(0, 64).Select(i => Task.Run(async () =>
+        {
+            var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+            entry.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Accept-Language"] = "lang-" + (i % 4).ToString(CultureInfo.InvariantCulture),
+            };
+
+            await provider.SetEntryAsync(primaryKey, entry, CancellationToken.None);
+        }));
+
+        await Task.WhenAll(writes);
+
+        var entries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+        Assert.HasCount(4, entries);
+    }
+
+    [Fact]
+    public async Task SqliteProviderKeepsAnInMemoryDatabaseAliveWithoutAnExternalConnection()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // No anchor connection held by the caller: the store keeps the in-memory database alive itself.
+        using var provider = new SqliteHttpCacheStore(connectionString);
+        await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SqliteProviderThrowsAfterDispose()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        var provider = new SqliteHttpCacheStore(connectionString);
+        await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        provider.Dispose();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await provider.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+    }
+
+    [Fact]
+    public void SqliteProviderDisposeIsIdempotent()
+    {
+        var provider = new SqliteHttpCacheStore(CreateInMemorySqliteConnectionString());
+        provider.Dispose();
+        provider.Dispose();
+    }
+
+    [Fact]
+    public async Task InMemoryProviderConcurrentSavesToTheSamePathAllSucceed()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var filePath = Path.Combine(tempDirectory, "http-cache.json");
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        try
+        {
+            Directory.CreateDirectory(tempDirectory);
+
+            var provider = new InMemoryHttpCacheStore();
+            await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+            // A fixed ".tmp" name made two concurrent saves collide on FileShare.None.
+            var saves = Enumerable.Range(0, 8).Select(_ => provider.SaveToFileAsync(filePath, CancellationToken.None).AsTask());
+            await Task.WhenAll(saves);
+
+            var reloaded = new InMemoryHttpCacheStore();
+            await reloaded.LoadFromFileAsync(filePath, CancellationToken.None);
+            Assert.Single(await reloaded.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task InMemoryProviderSaveLeavesNoTemporaryFileBehind()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var filePath = Path.Combine(tempDirectory, "http-cache.json");
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        try
+        {
+            Directory.CreateDirectory(tempDirectory);
+
+            var provider = new InMemoryHttpCacheStore();
+            await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+            await provider.SaveToFileAsync(filePath, CancellationToken.None);
+
+            Assert.Equal([filePath], Directory.GetFiles(tempDirectory));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
     private static HttpCachePersistenceEntry CreatePersistenceEntry(
         DateTimeOffset now,
         TimeSpan maxAge,
         bool mustRevalidate,
-        string? eTag = null)
+        string? eTag = null,
+        TimeSpan? staleIfError = null)
     {
         var requestTime = now - TimeSpan.FromMinutes(3);
         var responseTime = now - TimeSpan.FromMinutes(2);
@@ -504,6 +981,7 @@ public class PersistenceProvidersTests
             MaxAge = maxAge,
             MustRevalidate = mustRevalidate,
             ETag = eTag,
+            StaleIfError = staleIfError,
             SerializedResponse = new byte[] { 1, 2, 3 },
         };
     }
@@ -561,6 +1039,47 @@ public class PersistenceProvidersTests
             }
         }
     }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
+    private static HttpResponseMessage CreateCacheableResponse(string content)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(content),
+        };
+
+        response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+        return response;
+    }
+
+    #region HttpCaching_CustomStore
+    private sealed class DictionaryHttpCacheStore : IHttpCacheStore
+    {
+        private readonly ConcurrentDictionary<string, ImmutableArray<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
+
+        public ValueTask<IReadOnlyCollection<HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, CancellationToken cancellationToken)
+        {
+            IReadOnlyCollection<HttpCachePersistenceEntry> entries = _entries.TryGetValue(primaryKey, out var value) ? value : [];
+            return ValueTask.FromResult(entries);
+        }
+
+        public ValueTask SetEntryAsync(string primaryKey, HttpCachePersistenceEntry entry, CancellationToken cancellationToken)
+        {
+            // An entry replaces the one stored for the same variant of the response (same Vary headers and query)
+            _entries.AddOrUpdate(
+                primaryKey,
+                _ => [entry],
+                (_, existing) => [.. existing.Where(item => !HttpCachePersistenceEntry.HasSameSecondaryKey(item, entry)), entry]);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask RemoveEntriesAsync(string primaryKey, CancellationToken cancellationToken)
+        {
+            _entries.TryRemove(primaryKey, out _);
+            return ValueTask.CompletedTask;
+        }
+    }
+    #endregion
 
     private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler
     {

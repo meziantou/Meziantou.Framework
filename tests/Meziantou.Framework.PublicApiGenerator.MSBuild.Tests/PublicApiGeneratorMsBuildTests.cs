@@ -163,6 +163,45 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
     }
 
     [Fact]
+    public async Task GenerateOnBuild_MultiTarget_ConsumerDefinesMinimumTargetFramework()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("multi-minimum-tfm");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        // MinimumTargetFramework is defined by several custom SDKs. The task must be resolved regardless of its value.
+        temporaryDirectory.CreateTextFile("multi-minimum-tfm/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+                <MinimumTargetFramework>net10.0</MinimumTargetFramework>
+                <PublicApiGeneratorOutputPath>obj/PublicApi/PublicApi.g.cs</PublicApiGeneratorOutputPath>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="Meziantou.Framework.PublicApiGenerator.MSBuild" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("multi-minimum-tfm/Sample.cs", """
+            public class Sample
+            {
+                public void A()
+                {
+                }
+            }
+            """);
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        var generatedFilePath = projectDirectory / "obj" / "PublicApi" / "PublicApi.g.cs";
+        Assert.True(File.Exists(generatedFilePath));
+        Assert.Contains("public void A() { }", await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken));
+    }
+
+    [Fact]
     public async Task GenerateOnBuild_MissingOutputPath_FailsBuild()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();

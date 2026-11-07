@@ -1,0 +1,290 @@
+{
+  "spec": {
+    "title": "WebXR Plane Detection Module",
+    "url": "https://immersive-web.github.io/plane-detection/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "XRPlane",
+          "XRPlaneSet"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRPlaneOrientation": {
+        "fragment": "enum XRPlaneOrientation {\n    \"horizontal\",\n    \"vertical\"\n};",
+        "type": "enum",
+        "name": "XRPlaneOrientation",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "horizontal",
+            "href": "https://immersive-web.github.io/plane-detection/#dom-xrplaneorientation-horizontal"
+          },
+          {
+            "type": "enum-value",
+            "value": "vertical",
+            "href": "https://immersive-web.github.io/plane-detection/#dom-xrplaneorientation-vertical"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/plane-detection/#enumdef-xrplaneorientation"
+      },
+      "XRPlane": {
+        "fragment": "[Exposed=Window]\ninterface XRPlane {\n    [SameObject] readonly attribute XRSpace planeSpace;\n\n    readonly attribute FrozenArray<DOMPointReadOnly> polygon;\n    readonly attribute XRPlaneOrientation? orientation;\n    readonly attribute DOMHighResTimeStamp lastChangedTime;\n    readonly attribute DOMString? semanticLabel;\n};",
+        "type": "interface",
+        "name": "XRPlane",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "planeSpace",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/plane-detection/#dom-xrplane-planespace"
+          },
+          {
+            "type": "attribute",
+            "name": "polygon",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointReadOnly"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/plane-detection/#dom-xrplane-polygon"
+          },
+          {
+            "type": "attribute",
+            "name": "orientation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRPlaneOrientation"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/plane-detection/#dom-xrplane-orientation"
+          },
+          {
+            "type": "attribute",
+            "name": "lastChangedTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/plane-detection/#dom-xrplane-lastchangedtime"
+          },
+          {
+            "type": "attribute",
+            "name": "semanticLabel",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/plane-detection/#dom-xrplane-semanticlabel"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/plane-detection/#xrplane"
+      },
+      "XRPlaneSet": {
+        "fragment": "[Exposed=Window]\ninterface XRPlaneSet {\n  readonly setlike<XRPlane>;\n};",
+        "type": "interface",
+        "name": "XRPlaneSet",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "setlike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRPlane"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/plane-detection/#xrplaneset"
+      }
+    },
+    "idlExtendedNames": {
+      "XRFrame": [
+        {
+          "fragment": "partial interface XRFrame {\n  readonly attribute XRPlaneSet detectedPlanes;\n};",
+          "type": "interface",
+          "name": "XRFrame",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "detectedPlanes",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRPlaneSet"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/plane-detection/#dom-xrframe-detectedplanes"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRSession": [
+        {
+          "fragment": "partial interface XRSession {\n  Promise<undefined> initiateRoomCapture();\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "initiateRoomCapture",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/plane-detection/#dom-xrsession-initiateroomcapture"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRPlane",
+        "XRPlaneSet"
+      ]
+    },
+    "dependencies": {
+      "XRPlane": [
+        "XRSpace",
+        "DOMPointReadOnly",
+        "XRPlaneOrientation",
+        "DOMHighResTimeStamp"
+      ],
+      "XRPlaneSet": [
+        "XRPlane"
+      ],
+      "XRFrame": [
+        "XRPlaneSet"
+      ],
+      "XRSession": []
+    },
+    "externalDependencies": [
+      "XRSpace",
+      "DOMPointReadOnly",
+      "DOMHighResTimeStamp",
+      "XRFrame",
+      "XRSession"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

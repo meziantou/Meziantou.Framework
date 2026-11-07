@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Image	stream	1.3		TRUE	TRUE	FALSE				[XObjectImage]	Table 89
+DefaultForPrinting	boolean	1.3		FALSE	FALSE	FALSE	false				
+OC	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	

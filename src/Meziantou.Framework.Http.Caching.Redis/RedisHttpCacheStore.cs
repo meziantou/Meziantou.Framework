@@ -1,5 +1,4 @@
 using System.Buffers.Text;
-using System.Security.Cryptography;
 using System.Text.Json;
 using StackExchange.Redis;
 
@@ -68,7 +67,7 @@ public sealed class RedisHttpCacheStore : IHttpCacheStore
 
         var storageKey = GetPrimaryStorageKey(primaryKey);
         var storageKeyValue = storageKey.ToString();
-        var secondaryKey = ComputeSecondaryKey(entry);
+        var secondaryKey = entry.ComputeSecondaryKeyHash();
         var payload = JsonSerializer.SerializeToUtf8Bytes(entry, RedisSerializationContext.Default.HttpCachePersistenceEntry);
 
         var indexTask = _database.SetAddAsync(_primaryKeysSetKey, storageKeyValue);
@@ -132,7 +131,7 @@ public sealed class RedisHttpCacheStore : IHttpCacheStore
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var entry = TryDeserializeEntry(hashEntry.Value);
-                if (entry is null || ShouldDelete(entry, now))
+                if (entry is null || entry.IsObsolete(now))
                 {
                     fieldsToDelete ??= new List<RedisValue>();
                     fieldsToDelete.Add(hashEntry.Name);
@@ -184,97 +183,5 @@ public sealed class RedisHttpCacheStore : IHttpCacheStore
     {
         var bytes = Encoding.UTF8.GetBytes(primaryKey);
         return Base64Url.EncodeToString(bytes);
-    }
-
-    private static string ComputeSecondaryKey(HttpCachePersistenceEntry entry)
-    {
-        var stringBuilder = new StringBuilder();
-        stringBuilder.Append(entry.SecondaryKeyMatchNone ? '1' : '0');
-
-        var headers = entry.SecondaryKeyHeaders;
-        if (headers is not null)
-        {
-            foreach (var (key, value) in headers.OrderBy(static item => item.Key, StringComparer.OrdinalIgnoreCase))
-            {
-                stringBuilder.Append('\u001f');
-                stringBuilder.Append(key);
-                stringBuilder.Append('\u001e');
-                stringBuilder.Append(value);
-            }
-        }
-
-        var bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
-        Span<byte> hash = stackalloc byte[32];
-        SHA256.HashData(bytes, hash);
-        return Convert.ToHexString(hash);
-    }
-
-    private static bool ShouldDelete(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        return IsExpired(entry, now) && ShouldDeleteWhenExpired(entry);
-    }
-
-    private static bool ShouldDeleteWhenExpired(HttpCachePersistenceEntry entry)
-    {
-        var cannotBeUsedStale = entry.MustRevalidate || entry.ProxyRevalidate || entry.ResponseNoCache;
-        if (!cannotBeUsedStale)
-            return false;
-
-        return string.IsNullOrEmpty(entry.ETag) && entry.LastModified is null;
-    }
-
-    private static bool IsExpired(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        var freshnessLifetime = GetFreshnessLifetime(entry);
-        var currentAge = CalculateCurrentAge(entry, now);
-        return currentAge >= freshnessLifetime;
-    }
-
-    private static TimeSpan GetFreshnessLifetime(HttpCachePersistenceEntry entry)
-    {
-        if (entry.SharedMaxAge.HasValue)
-            return entry.SharedMaxAge.Value;
-
-        if (entry.MaxAge.HasValue)
-            return entry.MaxAge.Value;
-
-        if (entry.Expires.HasValue)
-        {
-            var expiresTime = entry.Expires.Value;
-            if (expiresTime == DateTimeOffset.MinValue)
-                return TimeSpan.Zero;
-
-            var freshness = expiresTime - entry.ResponseDate;
-            return freshness > TimeSpan.Zero ? freshness : TimeSpan.Zero;
-        }
-
-        if (entry.LastModified.HasValue)
-        {
-            var age = entry.ResponseDate - entry.LastModified.Value;
-            if (age > TimeSpan.Zero)
-            {
-                return TimeSpan.FromSeconds(age.TotalSeconds * 0.1);
-            }
-        }
-
-        return TimeSpan.Zero;
-    }
-
-    private static TimeSpan CalculateCurrentAge(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        var correctedInitialAge = CalculateCorrectedInitialAge(entry);
-        var residentTime = now - entry.ResponseTime;
-        return correctedInitialAge + residentTime;
-    }
-
-    private static TimeSpan CalculateCorrectedInitialAge(HttpCachePersistenceEntry entry)
-    {
-        var apparentAge = entry.ResponseTime - entry.ResponseDate;
-        if (apparentAge < TimeSpan.Zero)
-            apparentAge = TimeSpan.Zero;
-
-        var responseDelay = entry.ResponseTime - entry.RequestTime;
-        var correctedAgeValue = entry.AgeValue + responseDelay;
-        return apparentAge > correctedAgeValue ? apparentAge : correctedAgeValue;
     }
 }

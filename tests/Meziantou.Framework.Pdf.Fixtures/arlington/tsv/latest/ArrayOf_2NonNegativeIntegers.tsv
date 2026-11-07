@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	integer	1.5		TRUE	FALSE	FALSE			[fn:Eval(@0>=0)]		
+1	integer	1.5		TRUE	FALSE	FALSE			[fn:Eval(@1>=0)]		

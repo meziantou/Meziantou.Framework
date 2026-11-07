@@ -1,0 +1,16 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		FALSE	FALSE	FALSE		[Halftone]			Table 5 and Table 131
+HalftoneType	integer	1.3		TRUE	FALSE	FALSE		[16]			
+HalftoneName	string-byte	1.3		FALSE	FALSE	FALSE					
+Width	integer	1.3		TRUE	FALSE	FALSE		[fn:Eval(@Width>0)]			
+Height	integer	1.3		TRUE	FALSE	FALSE		[fn:Eval(@Height>0)]			
+Width2	integer	1.3		FALSE	FALSE	FALSE		[fn:Eval(@Width2>0)]			
+Height2	integer	1.3		FALSE	FALSE	FALSE		[fn:Eval(@Height2>0)]	[fn:IsPresent(Width2)]		
+TransferFunction	dictionary;name;stream	1.3		fn:IsRequired(parent::@HalftoneType==5)	[FALSE];[FALSE];[TRUE]	FALSE		[];[Identity];[]		[FunctionType2,FunctionType3];[];[FunctionType0,FunctionType4]	
+Length	integer	1.3		TRUE	FALSE	FALSE					
+Filter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfCompressionFilterNames];[]	
+DecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+F	dictionary;string	1.3		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfCompressionFilterNames];[]	
+FDecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+DL	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DL==(2 * (@Width * @Height)+(@Width2 * @Height2)))]		

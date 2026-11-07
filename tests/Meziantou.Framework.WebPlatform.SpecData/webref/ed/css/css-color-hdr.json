@@ -1,0 +1,183 @@
+{
+  "spec": {
+    "title": "CSS Color HDR Module Level 1",
+    "url": "https://drafts.csswg.org/css-color-hdr-1/"
+  },
+  "properties": [
+    {
+      "name": "dynamic-range-limit",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#propdef-dynamic-range-limit",
+      "value": "standard | no-limit | constrained | <dynamic-range-limit-mix()>",
+      "initial": "no-limit",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "see Computed Value for dynamic-range-limit",
+      "canonicalOrder": "per grammar",
+      "animationType": "by dynamic-range-limit-mix()",
+      "values": [
+        {
+          "name": "standard",
+          "prose": "The highest luminance color that is displayed is the same as HDR Reference White, i.e. the CSS color white.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-dynamic-range-limit-standard",
+          "type": "value",
+          "value": "standard"
+        },
+        {
+          "name": "no-limit",
+          "prose": "The highest peak luminance that is displayed is much greater than HDR Reference White, i.e. the CSS color white; the precise level is not specified.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-dynamic-range-limit-no-limit",
+          "type": "value",
+          "value": "no-limit"
+        },
+        {
+          "name": "constrained",
+          "prose": "The highest peak luminance that is displayed is somewhat greater than HDR Reference White, i.e. the CSS color white, such that a mix of SDR and HDR content can be comfortably viewed together.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-dynamic-range-limit-constrained",
+          "type": "value",
+          "value": "constrained"
+        }
+      ],
+      "styleDeclaration": [
+        "dynamic-range-limit",
+        "dynamicRangeLimit"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "dynamic-range-limit-mix()",
+      "value": "dynamic-range-limit-mix( [ <'dynamic-range-limit'> && <percentage [0,100]> ]# )",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#funcdef-dynamic-range-limit-mix",
+      "type": "function"
+    },
+    {
+      "name": "<color-function>",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#typedef-color-function",
+      "type": "type",
+      "value": "<rgb()> | <rgba()> | <hsl()> | <hsla()> | <hwb()> | <lab()> | <lch()> | <oklab()> | <oklch()> | <ictcp()> | <jzazbz()> | <jzczhz()> | <alpha()> | <color()> | <hdr-color()>"
+    },
+    {
+      "name": "ictcp()",
+      "value": "ictcp([from <color>]? [<percentage> | <number> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#funcdef-ictcp",
+      "type": "function",
+      "values": [
+        {
+          "name": "i",
+          "prose": "i is a <number> that corresponds to the origin color’s I (Lightness) after conversion, if required, to ictcp. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-ictcp-i",
+          "type": "value",
+          "value": "i"
+        },
+        {
+          "name": "ct",
+          "prose": "ct and cp are <number>s that correspond to the origin color’s ct and cp axes after conversion, if required, to ictcp. 0.5 is equivalent to 100%, while -0.5 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-ictcp-ct",
+          "type": "value",
+          "value": "ct"
+        },
+        {
+          "name": "cp",
+          "prose": "ct and cp are <number>s that correspond to the origin color’s ct and cp axes after conversion, if required, to ictcp. 0.5 is equivalent to 100%, while -0.5 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-ictcp-cp",
+          "type": "value",
+          "value": "cp"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-ictcp-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "jzazbz()",
+      "value": "jzazbz([from <color>]? [<percentage> | <number> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#funcdef-jzazbz",
+      "type": "function",
+      "values": [
+        {
+          "name": "j",
+          "prose": "j is a <number> that corresponds to the origin color’s Jz (Lightness) after conversion, if required, to jzazbz. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzazbz-j",
+          "type": "value",
+          "value": "j"
+        },
+        {
+          "name": "a",
+          "prose": "a and b are <number>s that correspond to the origin color’s az and bz axes after conversion, if required, to jzazbz. 0.21 is equivalent to 100%, while -0.21 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzazbz-a",
+          "type": "value",
+          "value": "a"
+        },
+        {
+          "name": "b",
+          "prose": "a and b are <number>s that correspond to the origin color’s az and bz axes after conversion, if required, to jzazbz. 0.21 is equivalent to 100%, while -0.21 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzazbz-b",
+          "type": "value",
+          "value": "b"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzazbz-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "jzczhz()",
+      "value": "jzczhz([from <color>]? [<percentage> | <number> | none] [<percentage> | <number> | none] [<hue> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#funcdef-jzczhz",
+      "type": "function",
+      "values": [
+        {
+          "name": "j",
+          "prose": "j is a <number> that corresponds to the origin color’s Jz (Lightness) after conversion, if required, to jzczhz. 100 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzczhz-j",
+          "type": "value",
+          "value": "j"
+        },
+        {
+          "name": "c",
+          "prose": "c is a <number> that corresponds to the origin color’s Cz (chroma) after conversion, if required, to jzczhz. 0.26 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzczhz-c",
+          "type": "value",
+          "value": "c"
+        },
+        {
+          "name": "h",
+          "prose": "h is a <number> that corresponds to the origin color’s hz (hue), in degrees, after conversion, if required, to jzczhz, normalized to a [0, 360] range. 90 is equivalent to 90deg.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzczhz-h",
+          "type": "value",
+          "value": "h"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-hdr-1/#valdef-jzczhz-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "hdr-color()",
+      "value": "color-hdr([ <color> && <number [0,∞]>? ]#{2})",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#funcdef-hdr-color",
+      "type": "function"
+    },
+    {
+      "name": "<predefined-rgb>",
+      "href": "https://drafts.csswg.org/css-color-hdr-1/#typedef-predefined-rgb",
+      "type": "type",
+      "value": "srgb | srgb-linear | display-p3 | display-p3-linear | a98-rgb | prophoto-rgb | rec2020 | rec2100-pq | rec2100-hlg | rec2100-linear"
+    }
+  ]
+}

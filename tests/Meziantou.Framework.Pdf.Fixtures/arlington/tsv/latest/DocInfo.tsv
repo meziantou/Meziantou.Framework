@@ -1,0 +1,13 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Title	string-text	1.1	2.0	FALSE	FALSE	FALSE					Table 349
+Author	string-text	1.0	2.0	FALSE	FALSE	FALSE					
+Subject	string-text	1.1	2.0	FALSE	FALSE	FALSE					
+Keywords	string-text	1.1	2.0	FALSE	FALSE	FALSE					
+Creator	string-text	1.0	2.0	FALSE	FALSE	FALSE					
+Producer	string-text	1.0	2.0	FALSE	FALSE	FALSE					
+CreationDate	date	1.0		FALSE	FALSE	FALSE					
+ModDate	date	1.1		FALSE	FALSE	FALSE					
+Trapped	name	1.3	2.0	FALSE	FALSE	FALSE	Unknown	[True,False,Unknown]			
+AAPL:Keywords	array	fn:Extension(AAPL)		FALSE	FALSE	FALSE				[ArrayOfStringsText]	
+GTS_PDFXVersion	string-text	fn:Extension(PDF_X)		FALSE	FALSE	FALSE					
+*	string-text	1.1	2.0	FALSE	FALSE	FALSE					Annex E, 2nd class names

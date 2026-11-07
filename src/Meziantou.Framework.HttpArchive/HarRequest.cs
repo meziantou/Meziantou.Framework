@@ -8,31 +8,31 @@ public sealed class HarRequest
 {
     /// <summary>Gets or sets the request method (GET, POST, ...).</summary>
     [JsonPropertyName("method")]
-    public string Method { get; set; } = "";
+    public string? Method { get; set; } = "";
 
     /// <summary>Gets or sets the absolute URL of the request (fragments are not included).</summary>
     [JsonPropertyName("url")]
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings")]
-    public string Url { get; set; } = "";
+    public string? Url { get; set; } = "";
 
     /// <summary>Gets or sets the request HTTP version.</summary>
     [JsonPropertyName("httpVersion")]
-    public string HttpVersion { get; set; } = "";
+    public string? HttpVersion { get; set; } = "";
 
     /// <summary>Gets or sets the list of cookie objects.</summary>
     [JsonPropertyName("cookies")]
     [SuppressMessage("Design", "CA1002:Do not expose generic lists")]
-    public List<HarCookie> Cookies { get; set; } = [];
+    public List<HarCookie>? Cookies { get; set; } = [];
 
     /// <summary>Gets or sets the list of header objects.</summary>
     [JsonPropertyName("headers")]
     [SuppressMessage("Design", "CA1002:Do not expose generic lists")]
-    public List<HarHeader> Headers { get; set; } = [];
+    public List<HarHeader>? Headers { get; set; } = [];
 
     /// <summary>Gets or sets the list of query string parameter objects.</summary>
     [JsonPropertyName("queryString")]
     [SuppressMessage("Design", "CA1002:Do not expose generic lists")]
-    public List<HarQueryParameter> QueryString { get; set; } = [];
+    public List<HarQueryParameter>? QueryString { get; set; } = [];
 
     /// <summary>Gets or sets the posted data info.</summary>
     [JsonPropertyName("postData")]

@@ -1,0 +1,254 @@
+{
+  "html-ruby-extensions/html-ruby-001.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-002.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-003.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-004.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-005.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-006.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-007.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-008.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-009.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-010.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-011.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-012.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-013.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-014.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-015.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-016.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-101.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-102.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-103.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-104.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-105.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-106.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-107.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-108.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-109.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-110.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-111.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-112.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-201.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-202.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-203.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-204.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-205.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-206.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-207.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-208.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-209.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-210.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-211.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-212.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-301.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-302.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-303.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-304.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-305.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-306.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-307.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-308.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-309.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-310.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-311.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-312.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-313.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-314.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-315.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-316.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-401.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-402.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-403.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-404.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-405.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-406.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-407.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-408.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-409.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-410.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-411.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-412.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-413.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-414.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-415.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-416.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-501.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-502.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-503.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-504.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-601.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-602.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-603.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-604.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-701.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-702.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-703.html": {
+    "reftest": "PASS"
+  },
+  "html-ruby-extensions/html-ruby-704.html": {
+    "reftest": "PASS"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "tr-CY": {
+      "identity": {
+        "language": "tr",
+        "territory": "CY"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

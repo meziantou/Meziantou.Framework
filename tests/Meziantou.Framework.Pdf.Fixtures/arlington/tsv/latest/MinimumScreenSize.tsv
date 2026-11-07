@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MinScreenSize]			Table 281
+V	array	1.5		TRUE	FALSE	FALSE				[ArrayOf_2Integers]	2 non-negative integers of screen: width, height
+M	integer	1.5		FALSE	FALSE	FALSE	0	[0,1,2,3,4,5,6]			Table 304

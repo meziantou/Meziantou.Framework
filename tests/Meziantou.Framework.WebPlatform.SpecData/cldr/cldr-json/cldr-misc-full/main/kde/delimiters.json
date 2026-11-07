@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kde": {
+      "identity": {
+        "language": "kde"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

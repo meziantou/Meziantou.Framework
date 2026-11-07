@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Distribution by group</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="38.35" y1="369.83" x2="630" y2="369.83" stroke="#e3e6ea"/>
+<line x1="38.35" y1="339.19" x2="630" y2="339.19" stroke="#e3e6ea"/>
+<line x1="38.35" y1="308.55" x2="630" y2="308.55" stroke="#e3e6ea"/>
+<line x1="38.35" y1="277.91" x2="630" y2="277.91" stroke="#e3e6ea"/>
+<line x1="38.35" y1="247.27" x2="630" y2="247.27" stroke="#e3e6ea"/>
+<line x1="38.35" y1="216.63" x2="630" y2="216.63" stroke="#e3e6ea"/>
+<line x1="38.35" y1="185.99" x2="630" y2="185.99" stroke="#e3e6ea"/>
+<line x1="38.35" y1="155.35" x2="630" y2="155.35" stroke="#e3e6ea"/>
+<line x1="38.35" y1="124.72" x2="630" y2="124.72" stroke="#e3e6ea"/>
+<line x1="38.35" y1="94.08" x2="630" y2="94.08" stroke="#e3e6ea"/>
+<line x1="38.35" y1="63.44" x2="630" y2="63.44" stroke="#e3e6ea"/>
+<line x1="38.35" y1="32.8" x2="630" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<g>
+<title>A: median 51.315</title>
+<line x1="143.32" y1="247.55" x2="143.32" y2="202.2" stroke="#4269d0"/>
+<line x1="143.32" y1="162.55" x2="143.32" y2="109.55" stroke="#4269d0"/>
+<line x1="117.55" y1="247.55" x2="169.08" y2="247.55" stroke="#4269d0"/>
+<line x1="117.55" y1="109.55" x2="169.08" y2="109.55" stroke="#4269d0"/>
+<rect x="91.79" y="162.55" width="103.06" height="39.65" fill="#4269d0" fill-opacity="0.349" stroke="#4269d0"/>
+<line x1="91.79" y1="181.96" x2="194.85" y2="181.96" stroke="#4269d0" stroke-width="2"/>
+<circle cx="143.32" cy="268.38" r="2.5" fill="none" stroke="#4269d0"/>
+</g>
+<g>
+<title>B: median 64.805</title>
+<line x1="334.17" y1="171.19" x2="334.17" y2="149.89" stroke="#efb118"/>
+<line x1="334.17" y1="129.32" x2="334.17" y2="98.46" stroke="#efb118"/>
+<line x1="308.41" y1="171.19" x2="359.94" y2="171.19" stroke="#efb118"/>
+<line x1="308.41" y1="98.46" x2="359.94" y2="98.46" stroke="#efb118"/>
+<rect x="282.64" y="129.32" width="103.06" height="20.57" fill="#efb118" fill-opacity="0.349" stroke="#efb118"/>
+<line x1="282.64" y1="140.63" x2="385.7" y2="140.63" stroke="#efb118" stroke-width="2"/>
+<circle cx="334.17" cy="247.27" r="2.5" fill="none" stroke="#efb118"/>
+<circle cx="334.17" cy="184.09" r="2.5" fill="none" stroke="#efb118"/>
+<circle cx="334.17" cy="48.12" r="2.5" fill="none" stroke="#efb118"/>
+</g>
+<g>
+<title>C: median 40.245</title>
+<line x1="525.03" y1="296.17" x2="525.03" y2="248.47" stroke="#ff725c"/>
+<line x1="525.03" y1="186.99" x2="525.03" y2="100.91" stroke="#ff725c"/>
+<line x1="499.26" y1="296.17" x2="550.79" y2="296.17" stroke="#ff725c"/>
+<line x1="499.26" y1="100.91" x2="550.79" y2="100.91" stroke="#ff725c"/>
+<rect x="473.5" y="186.99" width="103.06" height="61.48" fill="#ff725c" fill-opacity="0.349" stroke="#ff725c"/>
+<line x1="473.5" y1="215.88" x2="576.56" y2="215.88" stroke="#ff725c" stroke-width="2"/>
+<circle cx="525.03" cy="357.91" r="2.5" fill="none" stroke="#ff725c"/>
+<circle cx="525.03" cy="90.55" r="2.5" fill="none" stroke="#ff725c"/>
+<circle cx="525.03" cy="81.42" r="2.5" fill="none" stroke="#ff725c"/>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="33.35" y1="369.83" x2="38.35" y2="369.83" stroke="#8c959f"/>
+<text x="30.35" y="372.64" text-anchor="end" font-size="11" fill="#59636e">-10</text>
+<line x1="33.35" y1="339.19" x2="38.35" y2="339.19" stroke="#8c959f"/>
+<text x="30.35" y="342" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="33.35" y1="308.55" x2="38.35" y2="308.55" stroke="#8c959f"/>
+<text x="30.35" y="311.36" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="33.35" y1="277.91" x2="38.35" y2="277.91" stroke="#8c959f"/>
+<text x="30.35" y="280.72" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="33.35" y1="247.27" x2="38.35" y2="247.27" stroke="#8c959f"/>
+<text x="30.35" y="250.08" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="33.35" y1="216.63" x2="38.35" y2="216.63" stroke="#8c959f"/>
+<text x="30.35" y="219.44" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="33.35" y1="185.99" x2="38.35" y2="185.99" stroke="#8c959f"/>
+<text x="30.35" y="188.8" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="33.35" y1="155.35" x2="38.35" y2="155.35" stroke="#8c959f"/>
+<text x="30.35" y="158.17" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<line x1="33.35" y1="124.72" x2="38.35" y2="124.72" stroke="#8c959f"/>
+<text x="30.35" y="127.53" text-anchor="end" font-size="11" fill="#59636e">70</text>
+<line x1="33.35" y1="94.08" x2="38.35" y2="94.08" stroke="#8c959f"/>
+<text x="30.35" y="96.89" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<line x1="33.35" y1="63.44" x2="38.35" y2="63.44" stroke="#8c959f"/>
+<text x="30.35" y="66.25" text-anchor="end" font-size="11" fill="#59636e">90</text>
+<line x1="33.35" y1="32.8" x2="38.35" y2="32.8" stroke="#8c959f"/>
+<text x="30.35" y="35.61" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="143.32" y1="369.83" x2="143.32" y2="374.83" stroke="#8c959f"/>
+<text x="143.32" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">A</text>
+<line x1="334.17" y1="369.83" x2="334.17" y2="374.83" stroke="#8c959f"/>
+<text x="334.17" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">B</text>
+<line x1="525.03" y1="369.83" x2="525.03" y2="374.83" stroke="#8c959f"/>
+<text x="525.03" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">C</text>
+<line x1="38.35" y1="369.83" x2="630" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Distribution by group</text>
+</svg>

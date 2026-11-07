@@ -16,7 +16,7 @@ internal static class Constants
 
     public static bool IsSupportedYamlVersion(Version version)
     {
-        return version.Major == 1 && (version.Minor == 1 || version.Minor == 2);
+        return version.Major == 1 && version.Minor >= 1;
     }
 
     public const char HandleCharacter = '!';

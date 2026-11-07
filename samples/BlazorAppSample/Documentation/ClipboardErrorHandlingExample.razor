@@ -1,0 +1,22 @@
+@inject ClipboardService ClipboardService
+
+<button @onclick="CopyAsync">Copy the invitation link</button>
+<span>@status</span>
+
+@code {
+    private string? status;
+
+    private async Task CopyAsync()
+    {
+        try
+        {
+            await ClipboardService.WriteTextAsync("https://example.com/invite/1234");
+            status = "Copied";
+        }
+        catch (JSException)
+        {
+            // Not a secure (HTTPS) context, permission denied, or not called from a user gesture
+            status = "Copy the link manually: https://example.com/invite/1234";
+        }
+    }
+}

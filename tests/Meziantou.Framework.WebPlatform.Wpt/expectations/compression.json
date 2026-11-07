@@ -1,0 +1,188 @@
+{
+  "compression/compression-bad-chunks.any.js": {
+    "total": 28
+  },
+  "compression/compression-bad-chunks.any.js#dedicatedworker": {
+    "total": 28
+  },
+  "compression/compression-bad-chunks.any.js#sharedworker": {
+    "total": 28
+  },
+  "compression/compression-constructor-error.any.js": {
+    "total": 3
+  },
+  "compression/compression-constructor-error.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "compression/compression-constructor-error.any.js#sharedworker": {
+    "total": 3
+  },
+  "compression/compression-including-empty-chunk.any.js": {
+    "total": 12
+  },
+  "compression/compression-including-empty-chunk.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "compression/compression-including-empty-chunk.any.js#sharedworker": {
+    "total": 12
+  },
+  "compression/compression-large-flush-output.any.js": {
+    "total": 4
+  },
+  "compression/compression-large-flush-output.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "compression/compression-large-flush-output.any.js#sharedworker": {
+    "total": 4
+  },
+  "compression/compression-multiple-chunks.any.js": {
+    "total": 60
+  },
+  "compression/compression-multiple-chunks.any.js#dedicatedworker": {
+    "total": 60
+  },
+  "compression/compression-multiple-chunks.any.js#sharedworker": {
+    "total": 60
+  },
+  "compression/compression-output-length.any.js": {
+    "total": 4
+  },
+  "compression/compression-output-length.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "compression/compression-output-length.any.js#sharedworker": {
+    "total": 4
+  },
+  "compression/compression-stream.any.js": {
+    "total": 13
+  },
+  "compression/compression-stream.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "compression/compression-stream.any.js#sharedworker": {
+    "total": 13
+  },
+  "compression/compression-with-detach.any.js": {
+    "total": 1
+  },
+  "compression/compression-with-detach.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "compression/compression-with-detach.any.js#sharedworker": {
+    "total": 1
+  },
+  "compression/decompression-bad-chunks.any.js": {
+    "total": 36
+  },
+  "compression/decompression-bad-chunks.any.js#dedicatedworker": {
+    "total": 36
+  },
+  "compression/decompression-bad-chunks.any.js#sharedworker": {
+    "total": 36
+  },
+  "compression/decompression-brotli-large-window.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "DecompressionStream should support brotli large window": "FAIL"
+    }
+  },
+  "compression/decompression-brotli-large-window.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "DecompressionStream should support brotli large window": "FAIL"
+    }
+  },
+  "compression/decompression-brotli-large-window.tentative.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "DecompressionStream should support brotli large window": "FAIL"
+    }
+  },
+  "compression/decompression-buffersource.any.js": {
+    "total": 48
+  },
+  "compression/decompression-buffersource.any.js#dedicatedworker": {
+    "total": 48
+  },
+  "compression/decompression-buffersource.any.js#sharedworker": {
+    "total": 48
+  },
+  "compression/decompression-constructor-error.any.js": {
+    "total": 3
+  },
+  "compression/decompression-constructor-error.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "compression/decompression-constructor-error.any.js#sharedworker": {
+    "total": 3
+  },
+  "compression/decompression-correct-input.any.js": {
+    "total": 4
+  },
+  "compression/decompression-correct-input.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "compression/decompression-correct-input.any.js#sharedworker": {
+    "total": 4
+  },
+  "compression/decompression-corrupt-input.any.js": {
+    "total": 29
+  },
+  "compression/decompression-corrupt-input.any.js#dedicatedworker": {
+    "total": 29
+  },
+  "compression/decompression-corrupt-input.any.js#sharedworker": {
+    "total": 29
+  },
+  "compression/decompression-empty-input.any.js": {
+    "total": 4
+  },
+  "compression/decompression-empty-input.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "compression/decompression-empty-input.any.js#sharedworker": {
+    "total": 4
+  },
+  "compression/decompression-extra-input.any.js": {
+    "total": 4
+  },
+  "compression/decompression-extra-input.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "compression/decompression-extra-input.any.js#sharedworker": {
+    "total": 4
+  },
+  "compression/decompression-split-chunk.any.js": {
+    "total": 60
+  },
+  "compression/decompression-split-chunk.any.js#dedicatedworker": {
+    "total": 60
+  },
+  "compression/decompression-split-chunk.any.js#sharedworker": {
+    "total": 60
+  },
+  "compression/decompression-uint8array-output.any.js": {
+    "total": 4
+  },
+  "compression/decompression-uint8array-output.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "compression/decompression-uint8array-output.any.js#sharedworker": {
+    "total": 4
+  },
+  "compression/decompression-with-detach.any.js": {
+    "total": 1
+  },
+  "compression/decompression-with-detach.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "compression/decompression-with-detach.any.js#sharedworker": {
+    "total": 1
+  },
+  "compression/idlharness.https.any.js": {
+    "total": 20
+  },
+  "compression/idlharness.https.any.js#dedicatedworker": {
+    "total": 20
+  }
+}

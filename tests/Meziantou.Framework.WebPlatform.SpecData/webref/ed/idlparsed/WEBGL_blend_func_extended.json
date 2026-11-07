@@ -1,0 +1,154 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_blend_func_extended Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_blend_func_extended/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_blend_func_extended"
+        ],
+        "Worker": [
+          "WEBGL_blend_func_extended"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_blend_func_extended": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_blend_func_extended {\n    const GLenum SRC1_COLOR_WEBGL                   = 0x88F9;\n    const GLenum SRC1_ALPHA_WEBGL                   = 0x8589;\n    const GLenum ONE_MINUS_SRC1_COLOR_WEBGL         = 0x88FA;\n    const GLenum ONE_MINUS_SRC1_ALPHA_WEBGL         = 0x88FB;\n    const GLenum MAX_DUAL_SOURCE_DRAW_BUFFERS_WEBGL = 0x88FC;\n};",
+        "type": "interface",
+        "name": "WEBGL_blend_func_extended",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "SRC1_COLOR_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x88F9"
+            }
+          },
+          {
+            "type": "const",
+            "name": "SRC1_ALPHA_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8589"
+            }
+          },
+          {
+            "type": "const",
+            "name": "ONE_MINUS_SRC1_COLOR_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x88FA"
+            }
+          },
+          {
+            "type": "const",
+            "name": "ONE_MINUS_SRC1_ALPHA_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x88FB"
+            }
+          },
+          {
+            "type": "const",
+            "name": "MAX_DUAL_SOURCE_DRAW_BUFFERS_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x88FC"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_blend_func_extended"
+      ],
+      "Worker": [
+        "WEBGL_blend_func_extended"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_blend_func_extended": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

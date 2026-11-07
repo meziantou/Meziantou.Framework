@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!--
+    A fuzz campaign can run longer than the 10-minute hang dump of the SDK, so eng/run-fuzz-tests.ps1 sets FuzzHangDumpTimeout
+    from the time budget of the campaign. The testing platform rejects a second hang-dump-timeout argument, so the one of
+    the SDK is replaced.
+  -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' AND '$(FuzzHangDumpTimeout)' != ''">
+    <TestingPlatformCommandLineArguments>$([System.Text.RegularExpressions.Regex]::Replace('$(TestingPlatformCommandLineArguments)', '--hangdump-timeout \S+', '--hangdump-timeout $(FuzzHangDumpTimeout)'))</TestingPlatformCommandLineArguments>
+  </PropertyGroup>
+</Project>

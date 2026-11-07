@@ -37,13 +37,13 @@ public static class DateTimeExtensions
             return dt.AddDays(-dt.Day + 1);
         }
 
-        return new DateTime(dt.Year, dt.Month, 1);
+        return new DateTime(dt.Year, dt.Month, 1, 0, 0, 0, dt.Kind);
     }
 
     /// <summary>Returns the last day of the month for the specified date at midnight.</summary>
     public static DateTime EndOfMonth(this DateTime dt)
     {
-        return new DateTime(dt.Year, dt.Month, DateTime.DaysInMonth(dt.Year, dt.Month));
+        return new DateTime(dt.Year, dt.Month, DateTime.DaysInMonth(dt.Year, dt.Month), 0, 0, 0, dt.Kind);
     }
 
     /// <summary>Returns the first day of the year for the specified date at midnight.</summary>
@@ -61,7 +61,7 @@ public static class DateTimeExtensions
         }
         else
         {
-            return new DateTime(dt.Year, 1, 1);
+            return new DateTime(dt.Year, 1, 1, 0, 0, 0, dt.Kind);
         }
     }
 

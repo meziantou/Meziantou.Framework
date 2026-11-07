@@ -1,0 +1,16 @@
+{
+  "main": {
+    "yue-Hant": {
+      "identity": {
+        "language": "yue",
+        "script": "Hant"
+      },
+      "delimiters": {
+        "quotationStart": "「",
+        "quotationEnd": "」",
+        "alternateQuotationStart": "『",
+        "alternateQuotationEnd": "』"
+      }
+    }
+  }
+}

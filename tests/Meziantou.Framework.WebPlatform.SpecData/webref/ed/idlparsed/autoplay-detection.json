@@ -1,0 +1,204 @@
+{
+  "spec": {
+    "title": "Autoplay Policy Detection",
+    "url": "https://w3c.github.io/autoplay/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator"
+        ]
+      }
+    },
+    "idlNames": {
+      "AutoplayPolicy": {
+        "fragment": "enum AutoplayPolicy {\n  \"allowed\",\n  \"allowed-muted\",\n  \"disallowed\"\n};",
+        "type": "enum",
+        "name": "AutoplayPolicy",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "allowed",
+            "href": "https://w3c.github.io/autoplay/#dom-autoplaypolicy-allowed"
+          },
+          {
+            "type": "enum-value",
+            "value": "allowed-muted",
+            "href": "https://w3c.github.io/autoplay/#dom-autoplaypolicy-allowed-muted"
+          },
+          {
+            "type": "enum-value",
+            "value": "disallowed",
+            "href": "https://w3c.github.io/autoplay/#dom-autoplaypolicy-disallowed"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/autoplay/#enumdef-autoplaypolicy"
+      },
+      "AutoplayPolicyMediaType": {
+        "fragment": "enum AutoplayPolicyMediaType { \"mediaelement\", \"audiocontext\" };",
+        "type": "enum",
+        "name": "AutoplayPolicyMediaType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "mediaelement",
+            "href": "https://w3c.github.io/autoplay/#dom-autoplaypolicymediatype-mediaelement"
+          },
+          {
+            "type": "enum-value",
+            "value": "audiocontext",
+            "href": "https://w3c.github.io/autoplay/#dom-autoplaypolicymediatype-audiocontext"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/autoplay/#enumdef-autoplaypolicymediatype"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Navigator {\n  AutoplayPolicy getAutoplayPolicy(AutoplayPolicyMediaType type);\n  AutoplayPolicy getAutoplayPolicy(HTMLMediaElement element);\n  AutoplayPolicy getAutoplayPolicy(AudioContext context);\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getAutoplayPolicy",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AutoplayPolicy"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "type",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AutoplayPolicyMediaType"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/autoplay/#dom-navigator-getautoplaypolicy"
+            },
+            {
+              "type": "operation",
+              "name": "getAutoplayPolicy",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AutoplayPolicy"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "element",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "HTMLMediaElement"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/autoplay/#dom-navigator-getautoplaypolicy-element"
+            },
+            {
+              "type": "operation",
+              "name": "getAutoplayPolicy",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AutoplayPolicy"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "context",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AudioContext"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/autoplay/#dom-navigator-getautoplaypolicy-context"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "AutoplayPolicy",
+        "AutoplayPolicyMediaType",
+        "HTMLMediaElement",
+        "AudioContext"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "HTMLMediaElement",
+      "AudioContext"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -13,17 +13,20 @@ internal sealed class OrSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        var copy = pathReader;
-        var result = MatchCore(ref copy);
-        if (_inverse)
-        {
-            result = !result;
-            if (result)
-                return true;
-        }
+        if (!_inverse)
+            return MatchCore(ref pathReader);
 
-        pathReader = copy;
-        return result;
+        // A bracket expression matches exactly one character, negated or not. The end-of-segment check also keeps
+        // the inverse from consuming a path separator.
+        if (pathReader.IsEndOfCurrentSegment)
+            return false;
+
+        var copy = pathReader;
+        if (MatchCore(ref copy))
+            return false;
+
+        pathReader.ConsumeInSegment(1);
+        return true;
     }
 
     private bool MatchCore(ref PathReader pathReader)

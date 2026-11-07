@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_AssemblingIntent]			ISO 21812-1:2019 Table 7
+CIP4_Container	dictionary	fn:Extension(ISO_21812,1.7)		TRUE	TRUE	FALSE				[DPart]	
+CIP4_AssemblyItem	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_AssemblyItem]	
+CIP4_BindIn	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_BindIn]	
+CIP4_BlowIn	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_BlowIn]	
+CIP4_StickOn	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_StickOn]	

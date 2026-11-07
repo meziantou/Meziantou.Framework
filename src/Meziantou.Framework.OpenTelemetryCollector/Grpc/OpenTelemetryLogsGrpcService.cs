@@ -9,9 +9,10 @@ internal sealed class OpenTelemetryLogsGrpcService(OpenTelemetryRequestPipeline 
 
     public override async Task<ExportLogsServiceResponse> Export(ExportLogsServiceRequest request, ServerCallContext context)
     {
-        var receiverContext = OpenTelemetryHandlerContext.CreateGrpc(context.Method);
+        var partialSuccess = new OpenTelemetryPartialSuccess();
+        var receiverContext = OpenTelemetryHandlerContext.CreateGrpc(context.Method, partialSuccess);
         await _pipeline.HandleLogsAsync(receiverContext, request, context.CancellationToken);
 
-        return new ExportLogsServiceResponse();
+        return OpenTelemetryResponseFactory.CreateLogsResponse(partialSuccess);
     }
 }

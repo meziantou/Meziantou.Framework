@@ -1,0 +1,16 @@
+{
+  "main": {
+    "nl-CW": {
+      "identity": {
+        "language": "nl",
+        "territory": "CW"
+      },
+      "delimiters": {
+        "quotationStart": "‘",
+        "quotationEnd": "’",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

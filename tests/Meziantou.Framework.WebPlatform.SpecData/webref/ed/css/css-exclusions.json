@@ -1,0 +1,110 @@
+{
+  "spec": {
+    "title": "CSS Exclusions Module Level 1",
+    "url": "https://drafts.csswg.org/css-exclusions-1/"
+  },
+  "properties": [
+    {
+      "name": "wrap-flow",
+      "href": "https://drafts.csswg.org/css-exclusions-1/#propdef-wrap-flow",
+      "value": "auto | both | start | end | minimum | maximum | clear",
+      "initial": "auto",
+      "appliesTo": "block-level elements.",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified except for element’s whose float computed value is not none, in which case the computed value is auto.",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "No exclusion is created. Inline flow content interacts with the element as usual. In particular, if the element is a float (see [CSS2]), the behavior is unchanged.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-flow-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "both",
+          "prose": "Inline flow content can flow on all sides of the exclusion.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-flow-both",
+          "type": "value",
+          "value": "both"
+        },
+        {
+          "name": "start",
+          "prose": "Inline flow content can flow around the start edge of the exclusion area but must leave the area next to the end edge of the exclusion empty.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-flow-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "Inline flow content can flow around the end edge of the exclusion area but must leave the area next to the start edge of the exclusion empty.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-flow-end",
+          "type": "value",
+          "value": "end"
+        },
+        {
+          "name": "minimum",
+          "prose": "Inline flow content can flow around the edge of the exclusion with the smallest available space within the flow content’s containing block, and must leave the other edge of the exclusion empty.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-flow-minimum",
+          "type": "value",
+          "value": "minimum"
+        },
+        {
+          "name": "maximum",
+          "prose": "Inline flow content can flow around the edge of the exclusion with the largest available space within the flow content’s containing block, and must leave the other edge of the exclusion empty.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-flow-maximum",
+          "type": "value",
+          "value": "maximum"
+        },
+        {
+          "name": "clear",
+          "prose": "Inline flow content can only flow before and after the exclusion in the flow content’s block direction and must leave the areas next to the start and end edges of the exclusion empty.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-flow-clear",
+          "type": "value",
+          "value": "clear"
+        }
+      ],
+      "styleDeclaration": [
+        "wrap-flow",
+        "wrapFlow"
+      ]
+    },
+    {
+      "name": "wrap-through",
+      "href": "https://drafts.csswg.org/css-exclusions-1/#propdef-wrap-through",
+      "value": "wrap | none",
+      "initial": "wrap",
+      "appliesTo": "block-level elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "wrap",
+          "prose": "The element inherits its parent node’s wrapping context. Its descendant inline content wraps around exclusions defined outside the element.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-through-wrap",
+          "type": "value",
+          "value": "wrap"
+        },
+        {
+          "name": "none",
+          "prose": "The element does not inherit its parent node’s wrapping context. Its descendants are only subject to exclusion areas defined inside the element.",
+          "href": "https://drafts.csswg.org/css-exclusions-1/#valdef-wrap-through-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "wrap-through",
+        "wrapThrough"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

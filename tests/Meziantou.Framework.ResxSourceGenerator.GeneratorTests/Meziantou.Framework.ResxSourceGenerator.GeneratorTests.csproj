@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Reads the localized resources of named cultures -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>True</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
@@ -9,6 +11,12 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     <AdditionalFiles Include="**/*.resx" />
+
+    <!-- The metadata name must match the CompilerVisibleItemMetadata declared in the props file -->
+    <AdditionalFiles Update="Resource3.resx" GenerateKeyNamesType="false" />
   </ItemGroup>
+
+  <!-- Use the props shipped in the package, so the MSBuild logic computing the resource names is also tested -->
+  <Import Project="../../src/Meziantou.Framework.ResxSourceGenerator/build/Meziantou.Framework.ResxSourceGenerator.props" />
 
 </Project>

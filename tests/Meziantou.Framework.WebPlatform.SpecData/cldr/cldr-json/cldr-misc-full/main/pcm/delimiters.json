@@ -1,0 +1,15 @@
+{
+  "main": {
+    "pcm": {
+      "identity": {
+        "language": "pcm"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

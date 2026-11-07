@@ -1,0 +1,1 @@
+SELECT CAST('abc' AS int) AS X FROM customers

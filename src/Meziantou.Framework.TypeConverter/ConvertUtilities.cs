@@ -4,25 +4,31 @@ namespace Meziantou.Framework;
 
 /// <summary>
 /// Provides utility methods for converting values between types with more flexibility than System.Convert.
+/// </summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TypeConverter.Tests/ConvertUtilitiesTests.cs" ref:region="ConvertUtilities_Example" ref:dedent="true">
 /// // Using TryChangeType
-/// if (ConvertUtilities.TryChangeType("42", out int value))
-/// {
-///     Console.WriteLine(value); // 42
-/// }
+/// Assert.True(ConvertUtilities.TryChangeType("42", CultureInfo.InvariantCulture, out int value));
+/// Assert.Equal(42, value);
 ///
 /// // Using ChangeType with default value
-/// var result = ConvertUtilities.ChangeType<int>("invalid", defaultValue: 0);
+/// var result = ConvertUtilities.ChangeType&lt;int&gt;("invalid", defaultValue: 0, CultureInfo.InvariantCulture);
+/// Assert.Equal(0, result);
 ///
 /// // Convert with culture-specific formatting
 /// var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
-/// var number = ConvertUtilities.ChangeType<decimal>("1234,56", provider: cultureInfo);
-/// ]]></code>
+/// var number = ConvertUtilities.ChangeType&lt;decimal&gt;("1234,56", defaultValue: 0m, provider: cultureInfo);
+/// Assert.Equal(1234.56m, number);
+/// </code>
 /// </example>
-/// </summary>
 public static class ConvertUtilities
 {
+    /// <summary>Gets a value indicating whether an instance of the type can be created.</summary>
+    internal static bool IsInstantiable(Type type)
+    {
+        return type != typeof(void) && !type.ContainsGenericParameters && !type.IsByRef && !type.IsPointer;
+    }
+
     /// <summary>Gets the default converter instance used by the utility methods.</summary>
     public static IConverter DefaultConverter { get; } = new DefaultConverter();
 
@@ -51,20 +57,18 @@ public static class ConvertUtilities
         var b = converter.TryChangeType(input, typeof(T), provider, out var v);
         if (!b)
         {
-            if (v is null)
+            // A custom IConverter may report a failure with a value that is not assignable to T
+            if (v is T failureValue)
             {
-                if (typeof(T).IsValueType)
-                {
-                    value = Activator.CreateInstance<T>()!;
-                }
-                else
-                {
-                    value = default!;
-                }
+                value = failureValue;
+            }
+            else if (typeof(T).IsValueType)
+            {
+                value = Activator.CreateInstance<T>()!;
             }
             else
             {
-                value = (T)v;
+                value = default!;
             }
 
             return false;
@@ -217,7 +221,7 @@ public static class ConvertUtilities
 
         ArgumentNullException.ThrowIfNull(conversionType);
 
-        if (defaultValue is null && conversionType.IsValueType)
+        if (defaultValue is null && conversionType.IsValueType && IsInstantiable(conversionType))
         {
             defaultValue = Activator.CreateInstance(conversionType);
         }

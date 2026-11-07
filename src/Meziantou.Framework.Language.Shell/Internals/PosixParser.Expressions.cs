@@ -1,0 +1,583 @@
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
+
+/// <summary>
+/// The two expression grammars the POSIX family has: arithmetic, used by <c>$(( ))</c> and <c>(( ))</c>, and the
+/// conditional used by <c>[[ ]]</c>.
+/// </summary>
+/// <remarks>
+/// Both entry points parse the text between the delimiters and check that the whole of it was consumed. Anything
+/// left over means the grammar did not fit, and the caller falls back to keeping the text verbatim, so a construct
+/// this file does not understand still round-trips.
+/// </remarks>
+internal sealed partial class PosixParser
+{
+    /// <summary>Binary arithmetic operators, longest first so that <c>&lt;&lt;=</c> wins over <c>&lt;&lt;</c> and <c>&lt;</c>.</summary>
+    private static readonly (string Text, int Precedence, bool RightAssociative)[] ArithmeticOperators =
+    [
+        ("<<=", 1, true), (">>=", 1, true),
+        ("+=", 1, true), ("-=", 1, true), ("*=", 1, true), ("/=", 1, true), ("%=", 1, true),
+        ("&=", 1, true), ("^=", 1, true), ("|=", 1, true),
+        ("||", 3, false), ("&&", 4, false),
+        ("==", 8, false), ("!=", 8, false),
+        ("<<", 10, false), (">>", 10, false),
+        ("<=", 9, false), (">=", 9, false),
+        ("**", 13, true),
+        ("=", 1, true),
+        ("|", 5, false), ("^", 6, false), ("&", 7, false),
+        ("<", 9, false), (">", 9, false),
+        ("+", 11, false), ("-", 11, false),
+        ("*", 12, false), ("/", 12, false), ("%", 12, false),
+        (",", 0, false),
+    ];
+
+    private const int TernaryPrecedence = 2;
+
+    /// <summary>
+    /// Set when the grammar does not fit, for instance an operator with nothing to operate on. The partial tree is
+    /// then thrown away and the caller keeps the text verbatim, so a half-built node never reaches the tree.
+    /// </summary>
+    private bool _expressionFailed;
+
+    /// <summary>Where <see cref="_expressionFailed"/> was first set.</summary>
+    private int _expressionFailurePosition;
+
+    /// <summary>Unary tests in a conditional expression, such as <c>-f</c> in <c>[[ -f path ]]</c>.</summary>
+    private static readonly string[] ConditionalUnaryOperators =
+    [
+        "-a", "-b", "-c", "-d", "-e", "-f", "-g", "-h", "-k", "-p", "-r", "-s", "-t", "-u", "-w", "-x",
+        "-G", "-L", "-N", "-O", "-S", "-R", "-o", "-v", "-z", "-n",
+    ];
+
+    /// <summary>Comparisons in a conditional expression. Longest first so <c>==</c> wins over <c>=</c>.</summary>
+    private static readonly string[] ConditionalBinaryOperators =
+    [
+        "==", "!=", "=~", "<=", ">=", "=", "<", ">",
+        "-eq", "-ne", "-lt", "-le", "-gt", "-ge", "-nt", "-ot", "-ef",
+    ];
+
+    // ---- entry points ----
+
+    /// <summary>Parses the text up to <paramref name="end"/> as an arithmetic expression, or returns null.</summary>
+    private ShellExpressionSyntax? TryParseArithmeticExpression(int end)
+    {
+        return TryParseDelimited(end, () => ParseArithmetic(minimumPrecedence: 0), out _);
+    }
+
+    /// <summary>Parses the text up to <paramref name="end"/> as a conditional expression, or returns null.</summary>
+    /// <param name="end">Where the expression ends.</param>
+    /// <param name="failurePosition">When the grammar does not fit, the position where it stopped fitting.</param>
+    private ShellExpressionSyntax? TryParseConditionalExpression(int end, out int failurePosition)
+    {
+        return TryParseDelimited(end, ParseConditionalOr, out failurePosition);
+    }
+
+    /// <summary>Records that the grammar does not fit, and where; the first failure is the one worth reporting.</summary>
+    private void MarkExpressionFailed()
+    {
+        if (!_expressionFailed)
+        {
+            _expressionFailurePosition = _lexer.Position;
+        }
+
+        _expressionFailed = true;
+    }
+
+    /// <summary>
+    /// Runs <paramref name="parse"/> and keeps the result only if it consumed everything up to <paramref name="end"/>.
+    /// On anything else the lexer, the pending trivia, and the diagnostics are rolled back to where they were.
+    /// </summary>
+    private ShellExpressionSyntax? TryParseDelimited(int end, Func<ShellExpressionSyntax> parse, out int failurePosition)
+    {
+        var startPosition = _lexer.Position;
+        var startTrivia = _pendingTrivia.ToArray();
+        var startTriviaStart = _pendingTriviaStart;
+        var startDiagnostics = _diagnostics.Count;
+
+        failurePosition = startPosition;
+        if (startPosition >= end)
+            return null;
+
+        // A nested `$(( ))` runs this same method, so the outer attempt's flag has to survive the inner one.
+        var enclosingFailed = _expressionFailed;
+        var enclosingFailurePosition = _expressionFailurePosition;
+        _expressionFailed = false;
+        _patternDepth++;
+        var expression = parse();
+        _patternDepth--;
+        AccumulateStatementTrivia();
+
+        var succeeded = !_expressionFailed && _lexer.Position == end && _diagnostics.Count == startDiagnostics;
+        failurePosition = _expressionFailed ? _expressionFailurePosition : _lexer.Position;
+        _expressionFailed = enclosingFailed;
+        _expressionFailurePosition = enclosingFailurePosition;
+
+        // Trailing trivia belongs to the closing delimiter, so only real text left over is a failure.
+        if (succeeded)
+            return expression;
+
+        _lexer.Position = startPosition;
+        _pendingTrivia.Clear();
+        _pendingTrivia.AddRange(startTrivia);
+        _pendingTriviaStart = startTriviaStart;
+        _diagnostics.RemoveRange(startDiagnostics, _diagnostics.Count - startDiagnostics);
+
+        return null;
+    }
+
+    /// <summary>
+    /// Bounds the recursive descent of both expression grammars. Nesting past the limit marks the parse as failed,
+    /// so the caller keeps the text verbatim instead of the stack running out.
+    /// </summary>
+    private bool TryEnterExpressionRecursion()
+    {
+        if (_depth >= _options.MaxRecursionDepth)
+        {
+            MarkExpressionFailed();
+
+            return false;
+        }
+
+        _depth++;
+
+        return true;
+    }
+
+    /// <summary>A zero-width placeholder for an abandoned subtree; the whole parse is discarded anyway.</summary>
+    private ShellRawExpressionSyntax AbandonedExpression() =>
+        new ShellRawExpressionSyntax(new ScannedToken(SyntaxKind.BareTextToken, string.Empty, string.Empty, fullStart: _lexer.Position));
+
+    private ShellExpressionSyntax ParseArithmetic(int minimumPrecedence)
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseArithmeticCore(minimumPrecedence);
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseArithmeticUnary()
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseArithmeticUnaryCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseConditionalOr()
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseConditionalOrCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseConditionalUnary()
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseConditionalUnaryCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    // ---- arithmetic ----
+
+    private ShellExpressionSyntax ParseArithmeticCore(int minimumPrecedence)
+    {
+        var left = ParseArithmeticUnary();
+
+        while (true)
+        {
+            AccumulateStatementTrivia();
+
+            if (_lexer.Current == '?' && TernaryPrecedence >= minimumPrecedence)
+            {
+                var questionToken = ReadOperatorToken(SyntaxKind.QuestionToken, length: 1);
+                var whenTrue = ParseArithmetic(0);
+                AccumulateStatementTrivia();
+                if (_lexer.Current != ':')
+                {
+                    MarkExpressionFailed();
+
+                    return left;
+                }
+
+                var colonToken = ReadOperatorToken(SyntaxKind.ColonToken, length: 1);
+                left = new ShellConditionalExpressionSyntax(left, questionToken, whenTrue, colonToken, ParseArithmetic(TernaryPrecedence));
+                continue;
+            }
+
+            var op = PeekArithmeticOperator();
+            if (op is null || op.Value.Precedence < minimumPrecedence)
+                break;
+
+            var operatorToken = ReadOperatorToken(SyntaxKind.OperatorToken, op.Value.Text.Length);
+            var next = op.Value.RightAssociative ? op.Value.Precedence : op.Value.Precedence + 1;
+            left = new ShellBinaryExpressionSyntax(left, operatorToken, ParseArithmetic(next));
+        }
+
+        return left;
+    }
+
+    private (string Text, int Precedence, bool RightAssociative)? PeekArithmeticOperator()
+    {
+        foreach (var candidate in ArithmeticOperators)
+        {
+            if (!MatchesAt(_lexer.Position, candidate.Text))
+                continue;
+
+            // Exponentiation is a bash and zsh extension; in sh the text is not arithmetic this grammar fits.
+            if (candidate.Text == "**" && !_options.Dialect.HasFeature(ShellDialectFeatures.ArithmeticExponentiation))
+                return null;
+
+            // `=` is assignment, but `==` is equality; the table is ordered so the longer one is seen first.
+            return candidate;
+        }
+
+        return null;
+    }
+
+    private ShellExpressionSyntax ParseArithmeticUnaryCore()
+    {
+        AccumulateStatementTrivia();
+
+        foreach (var prefix in new[] { "++", "--" })
+        {
+            if (MatchesAt(_lexer.Position, prefix))
+            {
+                var token = ReadOperatorToken(SyntaxKind.OperatorToken, prefix.Length);
+
+                return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseArithmeticUnary(), postfixOperatorToken: null);
+            }
+        }
+
+        if (_lexer.Current is '!' or '~' or '+' or '-')
+        {
+            var token = ReadOperatorToken(SyntaxKind.OperatorToken, length: 1);
+
+            return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseArithmeticUnary(), postfixOperatorToken: null);
+        }
+
+        return ParseArithmeticPostfix();
+    }
+
+    private ShellExpressionSyntax ParseArithmeticPostfix()
+    {
+        var operand = ParseArithmeticPrimary();
+
+        AccumulateStatementTrivia();
+        foreach (var postfix in new[] { "++", "--" })
+        {
+            if (MatchesAt(_lexer.Position, postfix))
+            {
+                var token = ReadOperatorToken(SyntaxKind.OperatorToken, postfix.Length);
+
+                return new ShellUnaryExpressionSyntax(SyntaxKind.PostfixUnaryExpression, prefixOperatorToken: null, operand, token);
+            }
+        }
+
+        return operand;
+    }
+
+    private ShellExpressionSyntax ParseArithmeticPrimary()
+    {
+        AccumulateStatementTrivia();
+
+        if (_lexer.Current == '(')
+        {
+            var openParenToken = ReadOperatorToken(SyntaxKind.OpenParenToken, length: 1);
+            var inner = ParseArithmetic(0);
+            AccumulateStatementTrivia();
+            if (_lexer.Current != ')')
+            {
+                MarkExpressionFailed();
+
+                return inner;
+            }
+
+            var closeParenToken = ReadOperatorToken(SyntaxKind.CloseParenToken, length: 1);
+
+            return new ShellGroupedExpressionSyntax(openParenToken, inner, closeParenToken);
+        }
+
+        var operand = ParseArithmeticOperand();
+        if (operand.PartCount() == 0)
+        {
+            // An operator with nothing to operate on: the text is not arithmetic.
+            MarkExpressionFailed();
+        }
+
+        return new ShellOperandExpressionSyntax(operand);
+    }
+
+    /// <summary>
+    /// Reads one arithmetic operand. A bare name is a variable in arithmetic, so the run stops at any operator
+    /// character rather than at the usual word boundaries.
+    /// </summary>
+    private ShellWordSyntax ParseArithmeticOperand()
+    {
+        var parts = new List<ShellWordPartSyntax>();
+        var isFirst = true;
+
+        while (!_lexer.IsAtEnd && !IsArithmeticOperandBoundary(_lexer.Current))
+        {
+            var (trivia, fullStart) = isFirst ? TakeTrivia() : (null, _lexer.Position);
+            isFirst = false;
+
+            var positionBefore = _lexer.Position;
+            parts.Add(_lexer.Current switch
+            {
+                '$' => ParseDollarPart(trivia, fullStart),
+                '\'' => ParseSingleQuotedString(trivia, fullStart),
+                '"' => ParseDoubleQuotedString(trivia, fullStart),
+                '`' => ParseBackquoteSubstitution(trivia, fullStart),
+                _ => ParseArithmeticLiteralRun(trivia, fullStart),
+            });
+
+            if (_lexer.Position == positionBefore)
+            {
+                _lexer.Position++;
+            }
+        }
+
+        return new ShellWordSyntax(ParserHelpers.List(parts));
+    }
+
+    private ShellLiteralWordPartSyntax ParseArithmeticLiteralRun(GreenNode? leadingTrivia, int fullStart)
+    {
+        var start = _lexer.Position;
+        while (!_lexer.IsAtEnd && !IsArithmeticOperandBoundary(_lexer.Current) && _lexer.Current is not '$' and not '\'' and not '"' and not '`')
+        {
+            _lexer.Position++;
+        }
+
+        if (_lexer.Position == start)
+        {
+            _lexer.Position++;
+        }
+
+        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart));
+    }
+
+    private static bool IsArithmeticOperandBoundary(char value) =>
+        value is ' ' or '\t' or '\r' or '\n' or '\0'
+            or '+' or '-' or '*' or '/' or '%' or '=' or '!' or '~' or '<' or '>' or '&' or '|' or '^'
+            or '?' or ':' or ',' or '(' or ')';
+
+    // ---- conditional ----
+
+    private ShellExpressionSyntax ParseConditionalOrCore()
+    {
+        var left = ParseConditionalAnd();
+
+        while (true)
+        {
+            AccumulateStatementTrivia();
+            if (!MatchesAt(_lexer.Position, "||"))
+                break;
+
+            var operatorToken = ReadOperatorToken(SyntaxKind.PipePipeToken, length: 2);
+            left = new ShellBinaryExpressionSyntax(left, operatorToken, ParseConditionalAnd());
+        }
+
+        return left;
+    }
+
+    private ShellExpressionSyntax ParseConditionalAnd()
+    {
+        var left = ParseConditionalUnary();
+
+        while (true)
+        {
+            AccumulateStatementTrivia();
+            if (!MatchesAt(_lexer.Position, "&&"))
+                break;
+
+            var operatorToken = ReadOperatorToken(SyntaxKind.AmpersandAmpersandToken, length: 2);
+            left = new ShellBinaryExpressionSyntax(left, operatorToken, ParseConditionalUnary());
+        }
+
+        return left;
+    }
+
+    private ShellExpressionSyntax ParseConditionalUnaryCore()
+    {
+        AccumulateStatementTrivia();
+
+        if (_lexer.Current == '!')
+        {
+            var token = ReadOperatorToken(SyntaxKind.ExclamationToken, length: 1);
+
+            return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseConditionalUnary(), postfixOperatorToken: null);
+        }
+
+        if (_lexer.Current == '(')
+        {
+            var openParenToken = ReadOperatorToken(SyntaxKind.OpenParenToken, length: 1);
+            var inner = ParseConditionalOr();
+            AccumulateStatementTrivia();
+            if (_lexer.Current != ')')
+            {
+                MarkExpressionFailed();
+
+                return inner;
+            }
+
+            var closeParenToken = ReadOperatorToken(SyntaxKind.CloseParenToken, length: 1);
+
+            return new ShellGroupedExpressionSyntax(openParenToken, inner, closeParenToken);
+        }
+
+        // zsh reads a unary operator with nothing after it as a plain string, so `[[ -f ]]` tests that `-f` is not empty.
+        // zsh modules add condition codes of their own, such as `-prefix` in completion functions.
+        if (PeekConditionalWord() is { } unary
+            && (Array.IndexOf(ConditionalUnaryOperators, unary) >= 0 || (IsZsh && unary.Length > 2 && unary[0] == '-' && !IsConditionalBinaryOperator(unary)))
+            && !(IsZsh && IsAtConditionalOperandEnd(_lexer.Position + unary.Length)))
+        {
+            var token = ReadOperatorToken(SyntaxKind.OperatorToken, unary.Length);
+
+            return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseConditionalOperand(), postfixOperatorToken: null);
+        }
+
+        var left = ParseConditionalOperand();
+
+        AccumulateInlineTrivia();
+        foreach (var candidate in ConditionalBinaryOperators)
+        {
+            if (!MatchesAt(_lexer.Position, candidate))
+                continue;
+
+            // A `-eq` style operator has to be a whole word; `-eqx` is not one.
+            if (candidate[0] == '-' && !IsConditionalWordEnd(_lexer.Position + candidate.Length))
+                continue;
+
+            var operatorToken = ReadOperatorToken(SyntaxKind.OperatorToken, candidate.Length);
+            var right = candidate is "=~" ? ParseConditionalRegexOperand() : ParseConditionalOperand();
+
+            return new ShellBinaryExpressionSyntax(left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private static bool IsConditionalBinaryOperator(string word) => Array.IndexOf(ConditionalBinaryOperators, word) >= 0;
+
+    /// <summary>Returns whether nothing but blanks separates <paramref name="position"/> from the end of an operand list.</summary>
+    private bool IsAtConditionalOperandEnd(int position)
+    {
+        var text = _lexer.Text;
+        while (position < text.Length && text[position] is ' ' or '\t')
+        {
+            position++;
+        }
+
+        return position >= text.Length || MatchesAt(position, "]]") || MatchesAt(position, "&&") || MatchesAt(position, "||") || text[position] == ')';
+    }
+
+    private ShellOperandExpressionSyntax ParseConditionalOperand()
+    {
+        AccumulateInlineTrivia();
+
+        var word = _lexer.IsAtEnd || (PosixLexer.IsWordBoundary(_lexer.Current) && !IsAtZshGlobGroup() && FindZshNumericRangeEnd(_lexer.Position) < 0)
+            ? new ShellWordSyntax(null)
+            : ParseWord();
+
+        if (word.PartCount() == 0)
+        {
+            MarkExpressionFailed();
+        }
+
+        return new ShellOperandExpressionSyntax(word);
+    }
+
+    /// <summary>
+    /// Reads the pattern on the right of <c>=~</c>. It is an extended regular expression, so <c>(</c>, <c>|</c>, and
+    /// the <c>)</c> that closes an open group are part of it rather than word boundaries. A <c>)</c> that closes
+    /// nothing ends it, and a group left open means the text is not a conditional expression after all.
+    /// </summary>
+    private ShellOperandExpressionSyntax ParseConditionalRegexOperand()
+    {
+        AccumulateInlineTrivia();
+
+        var enclosingDepth = _regexParenDepth;
+        _regexParenDepth = 0;
+        try
+        {
+            var word = _lexer.IsAtEnd || IsWordTerminator(_lexer.Current)
+                ? new ShellWordSyntax(null)
+                : ParseWord();
+
+            if (word.PartCount() == 0 || _regexParenDepth != 0)
+            {
+                MarkExpressionFailed();
+            }
+
+            return new ShellOperandExpressionSyntax(word);
+        }
+        finally
+        {
+            _regexParenDepth = enclosingDepth;
+        }
+    }
+
+    private string? PeekConditionalWord()
+    {
+        var text = _lexer.Text;
+        var start = _lexer.Position;
+        var scan = start;
+        if (scan < text.Length && text[scan] == '-')
+        {
+            scan++;
+        }
+
+        while (scan < text.Length && char.IsAsciiLetter(text[scan]))
+        {
+            scan++;
+        }
+
+        return scan == start || !IsConditionalWordEnd(scan) ? null : text[start..scan];
+    }
+
+    private bool IsConditionalWordEnd(int position) =>
+        position >= _lexer.Text.Length || PosixLexer.IsWordBoundary(_lexer.Text[position]);
+
+    private bool MatchesAt(int position, string value)
+    {
+        var text = _lexer.Text;
+        if (position + value.Length > text.Length)
+            return false;
+
+        return text.AsSpan(position, value.Length).SequenceEqual(value);
+    }
+}

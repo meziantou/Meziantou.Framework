@@ -56,14 +56,24 @@ public static class StreamExtensions
     {
         if (stream.CanSeek)
         {
-            var length = stream.Length - stream.Position;
+            var length = GetRemainingLength(stream);
             if (length == 0)
-                return [];
+            {
+                // The stream may still have data, for instance when the length is not known yet
+                return ReadToEndUsingMemoryStream(stream, []);
+            }
 
             var buffer = new byte[length];
             var actualLength = TryReadAll(stream, buffer, 0, buffer.Length);
-            Array.Resize(ref buffer, actualLength);
-            return buffer;
+            if (actualLength < buffer.Length)
+            {
+                Array.Resize(ref buffer, actualLength);
+                return buffer;
+            }
+
+            // The stream may have grown while reading (e.g. a file being appended), so the length is
+            // only a hint and the rest of the data must be read until the end of the stream
+            return ReadToEndUsingMemoryStream(stream, buffer);
         }
 
         using var memoryStream = new MemoryStream();
@@ -76,17 +86,58 @@ public static class StreamExtensions
     {
         if (stream.CanSeek)
         {
-            var length = stream.Length - stream.Position;
+            var length = GetRemainingLength(stream);
             if (length == 0)
-                return [];
+                return await ReadToEndUsingMemoryStreamAsync(stream, [], cancellationToken).ConfigureAwait(false);
 
             var buffer = new byte[length];
             var actualLength = await TryReadAllAsync(stream, buffer, cancellationToken).ConfigureAwait(false);
-            Array.Resize(ref buffer, actualLength);
-            return buffer;
+            if (actualLength < buffer.Length)
+            {
+                Array.Resize(ref buffer, actualLength);
+                return buffer;
+            }
+
+            // See ReadToEnd
+            return await ReadToEndUsingMemoryStreamAsync(stream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+        return memoryStream.ToArray();
+    }
+
+    private static int GetRemainingLength(Stream stream)
+    {
+        // The position can be past the end of the stream, in which case nothing remains
+        var length = stream.Length - stream.Position;
+        return (int)Math.Clamp(length, 0, Array.MaxLength);
+    }
+
+    private static byte[] ReadToEndUsingMemoryStream(Stream stream, byte[] prefix)
+    {
+        // Reading one byte first avoids a MemoryStream and a copy in the common case where the stream is at its end
+        var nextByte = stream.ReadByte();
+        if (nextByte < 0)
+            return prefix;
+
+        using var memoryStream = new MemoryStream();
+        memoryStream.Write(prefix);
+        memoryStream.WriteByte((byte)nextByte);
+        stream.CopyTo(memoryStream);
+        return memoryStream.ToArray();
+    }
+
+    private static async Task<byte[]> ReadToEndUsingMemoryStreamAsync(Stream stream, byte[] prefix, CancellationToken cancellationToken)
+    {
+        var nextByte = new byte[1];
+        var read = await stream.ReadAsync(nextByte, cancellationToken).ConfigureAwait(false);
+        if (read is 0)
+            return prefix;
+
+        using var memoryStream = new MemoryStream();
+        memoryStream.Write(prefix);
+        memoryStream.Write(nextByte);
         await stream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
         return memoryStream.ToArray();
     }

@@ -1,0 +1,223 @@
+{
+  "spec": {
+    "title": "WebAssembly Web API",
+    "url": "https://webassembly.github.io/spec/web-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "WebAssembly": [
+        {
+          "fragment": "[Exposed=(Window,Worker)]\npartial namespace WebAssembly {\n  Promise<Module> compileStreaming(Promise<Response> source, optional WebAssemblyCompileOptions options = {});\n  Promise<WebAssemblyInstantiatedSource> instantiateStreaming(\n      Promise<Response> source, optional object importObject, optional WebAssemblyCompileOptions options = {});\n};",
+          "type": "namespace",
+          "name": "WebAssembly",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "compileStreaming",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Module"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "source",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "Promise",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "Response"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "WebAssemblyCompileOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://webassembly.github.io/spec/web-api/#dom-webassembly-compilestreaming"
+            },
+            {
+              "type": "operation",
+              "name": "instantiateStreaming",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "WebAssemblyInstantiatedSource"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "source",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "Promise",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "Response"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "importObject",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "object"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "WebAssemblyCompileOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://webassembly.github.io/spec/web-api/#dom-webassembly-instantiatestreaming"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "Worker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WebAssembly"
+      ],
+      "Worker": [
+        "WebAssembly"
+      ]
+    },
+    "dependencies": {
+      "WebAssembly": [
+        "Module",
+        "Response",
+        "WebAssemblyCompileOptions",
+        "WebAssemblyInstantiatedSource"
+      ]
+    },
+    "externalDependencies": [
+      "WebAssembly",
+      "Module",
+      "Response",
+      "WebAssemblyCompileOptions",
+      "WebAssemblyInstantiatedSource"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

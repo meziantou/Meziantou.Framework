@@ -11,6 +11,9 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     private const int MaxVersionNumberLength = 9;
 
     private readonly Stack<int> _indents = new Stack<int>();
+
+    // Tracks, for each indentation level, whether a block mapping has an explicit key ('?') waiting for its value.
+    private readonly Stack<bool> _explicitKeyPendings = new Stack<bool>();
     private readonly InsertionQueue<Token> _tokens = new InsertionQueue<Token>();
     private readonly Stack<SimpleKey> _simpleKeys = new Stack<SimpleKey>();
 
@@ -24,11 +27,22 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     private bool _streamStartProduced;
     private bool _streamEndProduced;
     private int _indent = -1;
+    private bool _explicitKeyPending;
     private bool _simpleKeyAllowed;
 
     private int _index;
+    private int _characterIndex;
     private int _line;
     private int _column;
+    private char _previousCharacter;
+    private int _firstTabColumn = -1;
+    private bool _nonBlankOnLine;
+
+    // A byte order mark may start a document prefix, which only exists before the first document and after a
+    // document end marker. Inside a document, it may only precede the "---" marker of the next document.
+    private bool _documentPrefixAllowed = true;
+    private bool _inQuotedScalar;
+    private bool _adjacentValueAllowed;
 
     /// <summary>Gets the current position inside the input stream.</summary>
     /// <value>The current position.</value>
@@ -41,6 +55,8 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     public const int MaxBufferLength = 12; // Number of characters in two 8 bit unicode codepoints.
     private readonly TBuffer _analyzer;
     private bool _tokenAvailable;
+
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     private static readonly SortedDictionary<char, char> SimpleEscapeCodes = InitializeSimpleEscapeCodes();
 
@@ -59,7 +75,6 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         codes.Add('e', '\x1B');
         codes.Add(' ', '\x20');
         codes.Add('"', '"');
-        codes.Add('\'', '\'');
         codes.Add('\\', '\\');
         codes.Add('/', '/');
         codes.Add('N', '\x85');
@@ -78,13 +93,15 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
     private char ReadLine()
     {
-        if (_analyzer.Check("\r\n\x85")) // CR LF -> LF  --- CR|LF|NEL -> LF
+        if (_analyzer.IsBreak())
         {
+            // CR LF -> LF --- CR|LF -> LF
             SkipLine();
             return '\n';
         }
 
-        char nextChar = _analyzer.Peek(0); // LS|PS -> LS|PS
+        // Only reached at the end of the input, where the character is NUL and there is no line to skip.
+        char nextChar = _analyzer.Peek(0);
         SkipLine();
         return nextChar;
     }
@@ -203,10 +220,10 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             // The specification requires that a simple key
 
             //  - is limited to a single line,
-            //  - is shorter than 1024 characters.
+            //  - contains at most 1024 Unicode characters.
 
 
-            if (key.IsPossible && (key.Mark.Line < _line || key.Mark.Index + 1024 < _index))
+            if (key.IsPossible && (key.Mark.Line < _line || key.CharacterIndex + 1024 < _characterIndex))
             {
                 // Check if the potential simple key to be removed is required.
 
@@ -233,6 +250,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         // Eat whitespaces and comments until we reach the next token.
 
         ScanToNextToken();
+        var adjacentValueAllowed = _adjacentValueAllowed;
+        _adjacentValueAllowed = false;
+
+        if (_flowLevel > 0 && !_analyzer.IsZero() && (_column <= _indent || (_firstTabColumn >= 0 && _firstTabColumn <= _indent)))
+            throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Flow content is not sufficiently indented.");
 
         // Remove obsolete potential simple keys.
 
@@ -256,6 +278,8 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             FetchStreamEnd();
             return;
         }
+
+        _documentPrefixAllowed = false;
 
         // Is it a directive?
 
@@ -294,6 +318,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             FetchDocumentIndicator(false);
             return;
         }
+
+        // In the block context, the indentation of a node that starts a line must be made of spaces.
+
+        if (_flowLevel == 0 && !_nonBlankOnLine && _firstTabColumn >= 0 && _firstTabColumn <= _indent)
+            throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "A tab cannot be used for indentation.");
 
         // Is it the flow sequence start indicator?
 
@@ -345,7 +374,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the key indicator?
 
-        if (_analyzer.Check('?') && (_flowLevel > 0 || _analyzer.IsBlankOrBreakOrZero(1)))
+        if (_analyzer.Check('?') && _analyzer.IsBlankOrBreakOrZero(1))
         {
             FetchKey();
             return;
@@ -353,7 +382,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the value indicator?
 
-        if (_analyzer.Check(':') && (_flowLevel > 0 || _analyzer.IsBlankOrBreakOrZero(1)))
+        if (_analyzer.Check(':') && (_analyzer.IsBlankOrBreakOrZero(1) || (_flowLevel > 0 && (_analyzer.Check(",[]{}", 1) || adjacentValueAllowed))))
         {
             FetchValue();
             return;
@@ -438,8 +467,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         bool isPlainScalar =
             !isInvalidPlainScalarCharacter ||
-            (_analyzer.Check('-') && !_analyzer.IsBlank(1)) ||
-            (_flowLevel == 0 && (_analyzer.Check("?:")) && !_analyzer.IsBlankOrBreakOrZero(1));
+            (_analyzer.Check("-?:") && !_analyzer.IsBlankOrBreakOrZero(1) && (_flowLevel == 0 || !_analyzer.Check(",[]{}", 1)));
 
         if (isPlainScalar)
         {
@@ -453,26 +481,60 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
     private bool CheckWhiteSpace()
     {
-        return _analyzer.Check(' ') || ((_flowLevel > 0 || !_simpleKeyAllowed) && _analyzer.Check('\t'));
+        return _analyzer.IsBlank();
     }
 
+    /// <remarks>A byte order mark followed by "---" also ends a document, as it starts the next one.</remarks>
     private bool IsDocumentIndicator()
     {
-        if (_column == 0 && _analyzer.IsBlankOrBreakOrZero(3))
-        {
-            bool isDocumentStart = _analyzer.Check('-', 0) && _analyzer.Check('-', 1) && _analyzer.Check('-', 2);
-            bool isDocumentEnd = _analyzer.Check('.', 0) && _analyzer.Check('.', 1) && _analyzer.Check('.', 2);
-
-            return isDocumentStart || isDocumentEnd;
-        }
-        else
+        if (_column != 0)
         {
             return false;
         }
+
+        var offset = _analyzer.Check('\uFEFF') ? 1 : 0;
+        if (!_analyzer.IsBlankOrBreakOrZero(offset + 3))
+        {
+            return false;
+        }
+
+        bool isDocumentStart = _analyzer.Check('-', offset) && _analyzer.Check('-', offset + 1) && _analyzer.Check('-', offset + 2);
+        bool isDocumentEnd = offset == 0 && _analyzer.Check('.', 0) && _analyzer.Check('.', 1) && _analyzer.Check('.', 2);
+
+        return isDocumentStart || isDocumentEnd;
     }
 
     private void Skip()
     {
+        var character = _analyzer.Peek(0);
+        if (char.IsHighSurrogate(character))
+        {
+            if (!char.IsLowSurrogate(_analyzer.Peek(1)))
+                throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Unpaired UTF-16 surrogate in input.");
+        }
+        else if (char.IsLowSurrogate(character))
+        {
+            if (!char.IsHighSurrogate(_previousCharacter))
+                throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Unpaired UTF-16 surrogate in input.");
+        }
+        else if (character is not ('\t' or '\r' or '\n') && !Emitter.IsPrintable(character) && !(_inQuotedScalar && character >= '\x20'))
+        {
+            throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Non-printable character in input.");
+        }
+
+        _previousCharacter = character;
+        if (!char.IsLowSurrogate(character))
+            _characterIndex++;
+
+        if (character is '\t')
+        {
+            if (_firstTabColumn < 0)
+                _firstTabColumn = _column;
+        }
+        else if (character is not ' ')
+        {
+            _nonBlankOnLine = true;
+        }
         ++_index;
         ++_column;
         _analyzer.Skip(1);
@@ -480,9 +542,12 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
     private void SkipLine()
     {
+        _firstTabColumn = -1;
+        _nonBlankOnLine = false;
         if (_analyzer.IsCrLf())
         {
             _index += 2;
+            _characterIndex += 2;
             _column = 0;
             ++_line;
             _analyzer.Skip(2);
@@ -490,6 +555,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         else if (_analyzer.IsBreak())
         {
             ++_index;
+            ++_characterIndex;
             _column = 0;
             ++_line;
             _analyzer.Skip(1);
@@ -506,6 +572,16 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         for (; ; )
         {
+            if (_column == 0 && _analyzer.Check('\uFEFF'))
+            {
+                if (!_documentPrefixAllowed && !IsDocumentIndicator())
+                    throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "A byte order mark cannot appear inside a document.");
+
+                Skip();
+                _column = 0;
+                _nonBlankOnLine = false;
+            }
+
             // Eat whitespaces.
 
             // Tabs are allowed:
@@ -524,6 +600,9 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
             if (_analyzer.Check('#'))
             {
+                if (_column > 0 && _previousCharacter is not (' ' or '\t'))
+                    throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Expected separation before comment.");
+
                 while (!_analyzer.IsBreakOrZero())
                 {
                     Skip();
@@ -596,6 +675,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             // Pop the indentation level.
 
             _indent = _indents.Pop();
+            _explicitKeyPending = _explicitKeyPendings.Pop();
         }
     }
 
@@ -682,7 +762,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
                 break;
 
             default:
-                throw new SyntaxErrorException(start, CurrentPosition, "While scanning a directive, find uknown directive name.");
+                while (!_analyzer.IsBreakOrZero())
+                    Skip();
+
+                directive = new ReservedDirective(start, CurrentPosition);
+                break;
         }
 
         // Eat the rest of the line including any comments.
@@ -738,8 +822,16 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         Skip();
         Skip();
 
+        if (!isStartToken)
+        {
+            SkipWhitespaces();
+            if (!_analyzer.IsBreakOrZero() && !_analyzer.Check('#'))
+                throw new SyntaxErrorException(start, CurrentPosition, "Unexpected content after document end marker.");
+        }
+
         var token = isStartToken ? (Token)new DocumentStart(start, CurrentPosition) : new DocumentEnd(start, start);
         _tokens.Enqueue(token);
+        _documentPrefixAllowed = !isStartToken;
     }
 
     /// <summary>Produce the FLOW-SEQUENCE-START or FLOW-MAPPING-START token.</summary>
@@ -792,6 +884,10 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     /// <summary>Produce the FLOW-SEQUENCE-END or FLOW-MAPPING-END token.</summary>
     private void FetchFlowCollectionEnd(bool isSequenceToken)
     {
+        _adjacentValueAllowed = true;
+        if (_flowLevel == 0)
+            throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Unexpected flow collection end.");
+
         // Reset any potential simple key on the current flow level.
 
         RemoveSimpleKey();
@@ -913,6 +1009,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             // Add the BLOCK-MAPPING-START token if needed.
 
             RollIndent(_column, -1, false, CurrentPosition);
+            _explicitKeyPending = true;
         }
 
         // Reset any potential simple keys on the current flow level.
@@ -949,6 +1046,10 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             // In the block context, we may need to add the BLOCK-MAPPING-START token.
 
             RollIndent(simpleKey.Mark.Column, simpleKey.TokenNumber, false, simpleKey.Mark);
+            if (_flowLevel == 0)
+            {
+                _explicitKeyPending = false;
+            }
 
             // Remove the simple key.
 
@@ -976,11 +1077,17 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
                 // Add the BLOCK-MAPPING-START token if needed.
 
                 RollIndent(_column, -1, false, CurrentPosition);
+
+                // A value that follows an explicit key may be a compact sequence or mapping. The value of an empty
+                // implicit key (": value") must start on the next line when it is a block collection.
+
+                _simpleKeyAllowed = _explicitKeyPending;
+                _explicitKeyPending = false;
             }
-
-            // Simple keys after ':' are allowed in the block context.
-
-            _simpleKeyAllowed = _flowLevel == 0;
+            else
+            {
+                _simpleKeyAllowed = false;
+            }
         }
 
         // Consume the token.
@@ -1009,11 +1116,16 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         if (_indent < column)
         {
+            if (position.Line == _line && _firstTabColumn >= 0 && _firstTabColumn < column)
+                throw new SyntaxErrorException(position, CurrentPosition, "A tab cannot be used for block collection indentation.");
+
             // Push the current indentation level to the stack and set the new
             // indentation level.
 
 
             _indents.Push(_indent);
+            _explicitKeyPendings.Push(_explicitKeyPending);
+            _explicitKeyPending = false;
 
             _indent = column;
 
@@ -1067,19 +1179,21 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         // Consume the value.
 
         var value = new StringBuilder();
-        while (_analyzer.IsAlpha())
+        while (_analyzer.IsAnchorChar())
         {
             value.Append(ReadCurrentCharacter());
         }
 
 
         // Check if length of the anchor is greater than 0 and it is followed by
-        // a whitespace character or one of the indicators:
+        // a whitespace character or one of the indicators that end a flow node:
 
-        //      '?', ':', ',', ']', '}', '%', '@', '`'.
+        //      ',', ']', '}'.
+
+        // Node content cannot follow an anchor without a separation, so '[' and '{' are not allowed.
 
 
-        if (value.Length == 0 || !(_analyzer.IsBlankOrBreakOrZero() || _analyzer.Check("?:,]}%@`")))
+        if (value.Length == 0 || !(_analyzer.IsBlankOrBreakOrZero() || _analyzer.Check(",]}")))
         {
             throw new SyntaxErrorException(start, CurrentPosition, "While scanning an anchor or alias, did not find expected alphabetic or numeric character.");
         }
@@ -1112,6 +1226,25 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         _tokens.Enqueue(ScanTag());
     }
 
+    /// <summary>Determines whether the value starts with a URI scheme, as defined by RFC 3986: <c>ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":"</c>.</summary>
+    private static bool HasUriScheme(string value)
+    {
+        if (value.Length == 0 || !char.IsAsciiLetter(value[0]))
+            return false;
+
+        for (var i = 1; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (c == ':')
+                return true;
+
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('+' or '-' or '.'))
+                return false;
+        }
+
+        return false;
+    }
+
     /// <summary>Scan a TAG token.</summary>
     private Tag ScanTag()
     {
@@ -1121,6 +1254,12 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         string handle;
         string suffix;
+
+        if (_analyzer.IsBlankOrBreakOrZero(1) || (_flowLevel > 0 && _analyzer.Check(",]}", 1)))
+        {
+            Skip();
+            return new Tag(string.Empty, "!", start, CurrentPosition);
+        }
 
         if (_analyzer.Check('<', 1))
         {
@@ -1135,13 +1274,19 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
             // Consume the tag value.
 
-            suffix = ScanTagUri(null, start);
+            suffix = ScanTagUri(null, start, allowFlowIndicators: true);
 
             // Check for '>' and eat it.
 
             if (!_analyzer.Check('>'))
             {
                 throw new SyntaxErrorException(start, CurrentPosition, "While scanning a tag, did not find the expected '>'.");
+            }
+
+            // A verbatim tag is either a local tag or a global tag, which is a URI (YAML 1.2 §6.9.1, example 6.25).
+            if (suffix == "!" || (suffix[0] != '!' && !HasUriScheme(suffix)))
+            {
+                throw new SyntaxErrorException(start, CurrentPosition, "While scanning a verbatim tag, the tag is neither a local tag nor a URI.");
             }
 
             Skip();
@@ -1189,7 +1334,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Check the character which ends the tag.
 
-        if (!_analyzer.IsBlankOrBreakOrZero())
+        if (!_analyzer.IsBlankOrBreakOrZero() && !(_flowLevel > 0 && _analyzer.Check(",]}")))
         {
             throw new SyntaxErrorException(start, CurrentPosition, "While scanning a tag, did not find expected whitespace or line break.");
         }
@@ -1202,6 +1347,13 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     /// <summary>Produce the SCALAR(...,literal) or SCALAR(...,folded) tokens.</summary>
     private void FetchBlockScalar(bool isLiteral)
     {
+        // A block scalar that starts a line must be more indented than its parent collection.
+
+        if (_column <= _indent)
+        {
+            throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "A block scalar must be more indented than its parent collection.");
+        }
+
         // Remove any potential simple keys.
 
         RemoveSimpleKey();
@@ -1224,7 +1376,9 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         int chomping = 0;
         int increment = 0;
-        int currentIndent = 0;
+
+        // -1 means the indentation is not determined yet: a root block scalar can have its content at column 0.
+        int currentIndent = -1;
         bool leadingBlank = false;
 
         // Eat the indicator '|' or '>'.
@@ -1285,6 +1439,9 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Eat whitespaces and comments to the end of the line.
 
+        if (_analyzer.Check('#'))
+            throw new SyntaxErrorException(start, CurrentPosition, "Expected separation before block scalar comment.");
+
         while (_analyzer.IsBlank())
         {
             Skip();
@@ -1327,7 +1484,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Scan the block scalar content.
 
-        while (_column == currentIndent && !_analyzer.IsZero())
+        while (_column == currentIndent && !_analyzer.IsZero() && !IsDocumentIndicator())
         {
             // We are at the beginning of a non-empty line.
 
@@ -1368,12 +1525,18 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
             while (!_analyzer.IsBreakOrZero())
             {
+                if (_analyzer.Check('\uFEFF'))
+                    throw new SyntaxErrorException(start, CurrentPosition, "A content byte order mark must be quoted.");
+
                 value.Append(ReadCurrentCharacter());
             }
 
             // Consume the line break.
 
-            leadingBreak.Append(ReadLine());
+            if (_analyzer.IsBreak())
+                leadingBreak.Append(ReadLine());
+            else
+                leadingBreak.Append('\n');
 
             // Eat the following intendation spaces and line breaks.
 
@@ -1405,6 +1568,10 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     {
         int maxIndent = 0;
 
+        // Only a line made of indentation spaces ends with an implicit line break at the end of the input. A content
+        // line that reaches the end of the input already added its own break.
+        bool atLineStart = _column == 0;
+
         end = CurrentPosition;
 
         // Eat the intendation spaces and line breaks.
@@ -1413,7 +1580,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         {
             // Eat the intendation spaces.
 
-            while ((currentIndent == 0 || _column < currentIndent) && _analyzer.IsSpace())
+            while ((currentIndent < 0 || _column < currentIndent) && _analyzer.IsSpace())
             {
                 Skip();
             }
@@ -1425,7 +1592,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
             // Check for a tab character messing the intendation.
 
-            if ((currentIndent == 0 || _column < currentIndent) && _analyzer.IsTab())
+            if (_column < (currentIndent < 0 ? _indent + 1 : currentIndent) && _analyzer.IsTab())
             {
                 throw new SyntaxErrorException(start, CurrentPosition, "While scanning a block scalar, find a tab character where an intendation space is expected.");
             }
@@ -1440,15 +1607,25 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             // Consume the line break.
 
             breaks.Append(ReadLine());
+            atLineStart = true;
 
             end = CurrentPosition;
         }
 
+        if (atLineStart && _analyzer.EndOfInput && _column > 0)
+            breaks.Append('\n');
+
         // Determine the indentation level if needed.
 
-        if (currentIndent == 0)
+        if (currentIndent < 0)
         {
-            currentIndent = Math.Max(maxIndent, Math.Max(_indent + 1, 1));
+            // Leading empty lines cannot be more indented than the first content line. A line that is not more
+            // indented than the parent collection is not content: the block scalar is empty.
+
+            if (!_analyzer.IsZero() && _column < maxIndent && _column > _indent)
+                throw new SyntaxErrorException(start, CurrentPosition, "Leading empty lines are more indented than block scalar content.");
+
+            currentIndent = Math.Max(maxIndent, Math.Max(_indent + 1, 0));
         }
 
         return currentIndent;
@@ -1467,7 +1644,18 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Create the SCALAR token and append it to the queue.
 
-        _tokens.Enqueue(ScanFlowScalar(isSingleQuoted));
+        // Quoted scalars may contain any non-C0 character (YAML 1.2 §5.1), such as DEL or the C1 controls.
+        _inQuotedScalar = true;
+        try
+        {
+            _tokens.Enqueue(ScanFlowScalar(isSingleQuoted));
+        }
+        finally
+        {
+            _inQuotedScalar = false;
+        }
+
+        _adjacentValueAllowed = true;
     }
 
     /// <summary>Scan a quoted scalar.</summary>
@@ -1590,13 +1778,16 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
                         // Check the value and write the character.
 
-                        if ((character >= 0xD800 && character <= 0xDFFF) || character > 0x10FFFF)
+                        if (character < 0 || character > 0x10FFFF)
+                            throw new SyntaxErrorException(start, CurrentPosition, "Invalid Unicode character escape code.");
+
+                        if (character >= 0xD800 && character <= 0xDFFF)
                         {
                             var foundNextCharacter = true;
                             int nextCharacter = 0;
 
                             // We might be dealing with a surrogate pair - try to read the next unicode character.
-                            if (codeLength == 4 && _analyzer.Check('\\', codeLength) && _analyzer.Check('u', codeLength + 1))
+                            if (character <= 0xDBFF && codeLength == 4 && _analyzer.Check('\\', codeLength) && _analyzer.Check('u', codeLength + 1))
                             {
                                 for (int k = 0; k < codeLength; ++k)
                                 {
@@ -1608,6 +1799,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
                                     nextCharacter = (nextCharacter << 4) + _analyzer.AsHex(k + codeLength + 2);
                                 }
 
+                                foundNextCharacter &= nextCharacter >= 0xDC00 && nextCharacter <= 0xDFFF;
                                 if (foundNextCharacter)
                                 {
                                     for (int k = 0; k < codeLength + 2; ++k)
@@ -1644,7 +1836,14 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             // Check if we are at the end of the scalar.
 
             if (_analyzer.Check(isSingleQuoted ? '\'' : '"'))
+            {
+                // The closing quote can directly follow an escaped line break.
+
+                if (hasLeadingBlanks)
+                    CheckQuotedScalarContinuationIndentation(start);
+
                 break;
+            }
 
             // Consume blank characters.
 
@@ -1675,10 +1874,16 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
                     }
                     else
                     {
+                        if (_firstTabColumn >= 0 && _firstTabColumn <= _indent)
+                            throw new SyntaxErrorException(start, CurrentPosition, "A tab cannot be used for indentation.");
+
                         _scanScalarTrailingBreaks.Append(ReadLine());
                     }
                 }
             }
+
+            if (hasLeadingBlanks)
+                CheckQuotedScalarContinuationIndentation(start);
 
             // Join the whitespaces or fold line breaks.
 
@@ -1717,6 +1922,12 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         var end = CurrentPosition;
         return new Scalar(_scanScalarValue.ToString(), isSingleQuoted ? ScalarStyle.SingleQuoted : ScalarStyle.DoubleQuoted, start, end);
+    }
+
+    private void CheckQuotedScalarContinuationIndentation(Mark start)
+    {
+        if (_column <= _indent || (_firstTabColumn >= 0 && _firstTabColumn <= _indent))
+            throw new SyntaxErrorException(start, CurrentPosition, "Quoted scalar continuation is not sufficiently indented.");
     }
 
     /// <summary>Produce the SCALAR(...,plain) token.</summary>
@@ -1772,7 +1983,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             {
                 // Check for indicators that may end a plain scalar.
 
-                if ((_analyzer.Check(':') && _analyzer.IsBlankOrBreakOrZero(1)) || (_flowLevel > 0 && _analyzer.Check(",?[]{}")))
+                if ((_analyzer.Check(':') && (_analyzer.IsBlankOrBreakOrZero(1) || (_flowLevel > 0 && _analyzer.Check(",[]{}", 1)))) || (_flowLevel > 0 && _analyzer.Check(",[]{}")))
                 {
                     break;
                 }
@@ -1816,6 +2027,9 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
                 // Copy the character.
 
+                if (_analyzer.Check('\uFEFF'))
+                    throw new SyntaxErrorException(start, CurrentPosition, "A content byte order mark must be quoted.");
+
                 _scanScalarValue.Append(ReadCurrentCharacter());
 
                 end = CurrentPosition;
@@ -1830,17 +2044,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
             // Consume blank characters.
 
+            bool hasTabIndentedEmptyLine = false;
             while (_analyzer.IsBlank() || _analyzer.IsBreak())
             {
                 if (_analyzer.IsBlank())
                 {
-                    // Check for tab character that abuse intendation.
-
-                    if (hasLeadingBlanks && _column < currentIndent && _analyzer.IsTab())
-                    {
-                        throw new SyntaxErrorException(start, CurrentPosition, "While scanning a plain scalar, find a tab character that violate intendation.");
-                    }
-
                     // Consume a space or a tab character.
 
                     if (!hasLeadingBlanks)
@@ -1864,12 +2072,28 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
                     }
                     else
                     {
+                        hasTabIndentedEmptyLine |= _firstTabColumn >= 0 && _firstTabColumn <= _indent;
                         _scanScalarTrailingBreaks.Append(ReadLine());
                     }
                 }
             }
 
+            // An empty line inside the scalar cannot be indented with a tab. The empty lines only belong to the
+            // scalar when it continues on a following line.
+
+            if (hasTabIndentedEmptyLine && !_analyzer.IsZero() && !_analyzer.Check('#') && !IsDocumentIndicator() && (_flowLevel > 0 || _column >= currentIndent))
+                throw new SyntaxErrorException(start, CurrentPosition, "A tab cannot be used for indentation.");
+
             // Check intendation level.
+
+            if (!_analyzer.IsZero() && !_analyzer.Check('#') && _firstTabColumn >= 0 && _firstTabColumn <= _indent)
+                throw new SyntaxErrorException(start, CurrentPosition, "A tab cannot be used for indentation.");
+
+            // A comment line may start at any column, but the continuation of a flow scalar must be more indented
+            // than the enclosing block collection.
+
+            if (_flowLevel > 0 && hasLeadingBlanks && _column <= _indent && !_analyzer.IsZero() && !_analyzer.Check('#'))
+                throw new SyntaxErrorException(start, CurrentPosition, "Flow content is not sufficiently indented.");
 
             if (_flowLevel == 0 && _column < currentIndent)
             {
@@ -1922,7 +2146,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Consume the directive name.
 
-        while (_analyzer.IsAlpha())
+        while (!_analyzer.IsBlankOrBreakOrZero())
         {
             name.Append(ReadCurrentCharacter());
         }
@@ -1981,6 +2205,8 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         // Consume the minor version number.
 
         int minor = ScanVersionDirectiveNumber(start);
+        if (!_analyzer.IsBlankOrBreakOrZero())
+            throw new SyntaxErrorException(start, CurrentPosition, "Expected separation after YAML version.");
 
         return new VersionDirective(new Version(major, minor), start, start);
     }
@@ -2011,7 +2237,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Scan a prefix.
 
-        var prefix = ScanTagUri(null, start);
+        var prefix = ScanTagUri(null, start, allowFlowIndicators: true);
 
         // Expect a whitespace or line break.
 
@@ -2024,7 +2250,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     }
 
     /// <summary>Scan a tag.</summary>
-    private string ScanTagUri(string head, Mark start)
+    private string ScanTagUri(string head, Mark start, bool allowFlowIndicators = false)
     {
         var tag = new StringBuilder();
         if (head != null && head.Length > 1)
@@ -2036,12 +2262,12 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // The set of characters that may appear in URI is as follows:
 
-        //      '0'-'9', 'A'-'Z', 'a'-'z', '_', '-', ';', '/', '?', ':', '@', '&',
+        //      '0'-'9', 'A'-'Z', 'a'-'z', '_', '-', '#', ';', '/', '?', ':', '@', '&',
         //      '=', '+', '$', ',', '.', '!', '~', '*', '\'', '(', ')', '[', ']',
         //      '%'.
 
 
-        while (_analyzer.IsAlpha() || _analyzer.Check(";/?:@&=+$,.!~*'()[]%"))
+        while (_analyzer.IsAlpha() || _analyzer.Check("#;/?:@&=+$.~*'()%") || (allowFlowIndicators && _analyzer.Check(",![]")))
         {
             // Check if it is a URI-escape sequence.
 
@@ -2119,7 +2345,15 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             Skip();
         } while (--width > 0);
 
-        var str = Encoding.UTF8.GetString(charBytes, 0, index);
+        string str;
+        try
+        {
+            str = StrictUtf8.GetString(charBytes, 0, index);
+        }
+        catch (DecoderFallbackException)
+        {
+            throw new SyntaxErrorException(start, CurrentPosition, "Invalid UTF-8 sequence in tag escape.");
+        }
 
         if (str.Length == 0 || str.Length > 2)
         {
@@ -2239,7 +2473,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         if (_simpleKeyAllowed)
         {
-            var key = new SimpleKey(true, isRequired, _tokensParsed + _tokens.Count, CurrentPosition);
+            var key = new SimpleKey(true, isRequired, _tokensParsed + _tokens.Count, CurrentPosition, _characterIndex);
 
             RemoveSimpleKey();
 

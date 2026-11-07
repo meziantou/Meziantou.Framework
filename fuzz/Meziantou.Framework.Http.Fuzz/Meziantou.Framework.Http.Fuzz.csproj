@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of the HTTP header parsers of Meziantou.Framework.Http and Meziantou.Framework.Http.Hsts. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Hsts\Meziantou.Framework.Http.Hsts.csproj" />
+  </ItemGroup>
+</Project>

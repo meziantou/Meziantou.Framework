@@ -9,48 +9,52 @@ It supports:
 - path authorization checks
 - lenient parsing with non-fatal parse errors
 
+The types are in the `Meziantou.Framework.RobotsTxt` namespace.
+
+<!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.RobotsTxt;
-
 var robots = RobotsFile.Parse("""
-User-agent: *
-Disallow: /private/
-Allow: /private/public/
-Crawl-delay: 1.5
+    User-agent: *
+    Disallow: /private/
+    Allow: /private/public/
+    Crawl-delay: 1.5
 
-Sitemap: https://example.com/sitemap.xml
-""");
+    Sitemap: https://example.com/sitemap.xml
+    """);
 
-var allowed = robots.IsAllowed("Googlebot", "/private/public/page"); // true
-var blocked = robots.IsAllowed("Googlebot", "/private/secret"); // false
-var delay = robots.GetCrawlDelay("Googlebot"); // 00:00:01.5000000
-var sitemaps = robots.Sitemaps;
+Assert.True(robots.IsAllowed("Googlebot", "/private/public/page"));
+Assert.False(robots.IsAllowed("Googlebot", "/private/secret"));
+Assert.Equal(TimeSpan.FromSeconds(1.5), robots.GetCrawlDelay("Googlebot"));
+Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
 ```
+<!-- endref -->
 
 Path rules support wildcards:
 
+<!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_Wildcards;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var robots = RobotsFile.Parse("""
-User-agent: *
-Disallow: /*.php$
-Allow: /index.php
-""");
+    User-agent: *
+    Disallow: /*.php$
+    Allow: /index.php
+    """);
 
-robots.IsAllowed("AnyBot", "/index.php"); // true
-robots.IsAllowed("AnyBot", "/admin.php"); // false
+Assert.True(robots.IsAllowed("AnyBot", "/index.php"));
+Assert.False(robots.IsAllowed("AnyBot", "/admin.php"));
 ```
+<!-- endref -->
 
 Invalid or unsupported lines do not throw. They are reported in `ParseErrors`:
 
+<!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_ParseErrors;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var robots = RobotsFile.Parse("""
-User-agent: *
-Host: example.com
-this line has no colon
-""");
+    User-agent: *
+    Host: example.com
+    this line has no colon
+    """);
 
-foreach (var error in robots.ParseErrors)
-{
-    Console.WriteLine($"{error.LineNumber}: {error.Kind} => {error.Line}");
-}
+var errors = robots.ParseErrors.Select(error => $"{error.LineNumber}: {error.Kind} => {error.Line}");
+Assert.Equal(["2: UnknownDirective => Host: example.com", "3: MalformedLine => this line has no colon"], errors);
 ```
+<!-- endref -->

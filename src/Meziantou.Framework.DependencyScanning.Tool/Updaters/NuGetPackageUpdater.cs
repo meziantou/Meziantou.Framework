@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using NuGet.Common;
+using NuGet.Configuration;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
@@ -8,10 +9,10 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal sealed class NuGetPackageUpdater : PackageUpdater
 {
-    private const string NuGetOrgSource = "https://api.nuget.org/v3/index.json";
+    private static readonly PackageSource NuGetOrgSource = new("https://api.nuget.org/v3/index.json");
     public override VersioningStrategy VersioningStrategy { get; set; } = NuGetVersioningStrategy.Instance;
 
-    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.NuGet;
+    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.NuGet && dependency.Name is not null;
 
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -20,7 +21,7 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
             yield break;
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(dependencyLocation), dependency.Name);
-        IReadOnlyList<string> sources;
+        IReadOnlyList<PackageSource> sources;
         if (resolution.PackageSources.Count > 0)
         {
             sources = resolution.PackageSources;
@@ -52,29 +53,42 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
         if (!updatedDependencies.Any(dep => dep.Type is DependencyType.NuGet))
             return;
 
-        var lockFiles = Directory.GetFiles(rootDirectory, "packages.lock.json", SearchOption.AllDirectories).Select(FullPath.FromPath);
-        foreach (var lockFile in lockFiles)
+        // Enumerated lazily and tolerantly: Directory.GetFiles materializes the whole tree eagerly and throws
+        // on the first directory it cannot read, which aborted the restore pass over a single bad permission.
+        var enumerationOptions = new EnumerationOptions
         {
-            var csprojs = Directory.GetFiles(lockFile.Parent, "*.csproj", SearchOption.TopDirectoryOnly);
-            foreach (var csproj in csprojs)
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            AttributesToSkip = FileAttributes.None,
+        };
+
+        foreach (var lockFilePath in Directory.EnumerateFiles(rootDirectory, "packages.lock.json", enumerationOptions))
+        {
+            var lockFile = FullPath.FromPath(lockFilePath);
+
+            // '*.*proj' rather than '*.csproj': F#, VB and the other MSBuild project types use lock files too.
+            foreach (var project in Directory.EnumerateFiles(lockFile.Parent, "*.*proj", SearchOption.TopDirectoryOnly))
             {
                 var result = await ProcessWrapper.Create("dotnet")
-                    .WithArguments("restore", csproj, "--no-cache")
+                    .WithArguments("restore", project, "--no-cache")
                     .WithValidation(ProcessValidationMode.None)
                     .ExecuteBufferedAsync(cancellationToken);
 
                 if (!result.ExitCode.IsSuccess)
                 {
-                    Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
+                    Console.Error.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }
             }
         }
     }
 
-    private static async IAsyncEnumerable<PackageVersion> GetVersionsFromSourceWithMetadataAsync(string sourceUrl, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<PackageVersion> GetVersionsFromSourceWithMetadataAsync(PackageSource source, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using var cache = new SourceCacheContext { NoCache = true };
-        var repository = Repository.Factory.GetCoreV3(sourceUrl);
+
+        // The PackageSource overload carries the credentials, client certificates and protocol settings
+        // declared in the configuration file, so authenticated private feeds work.
+        var repository = Repository.Factory.GetCoreV3(source);
         var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken).ConfigureAwait(false);
 
         if (metadataResource is null)
@@ -98,9 +112,11 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
         {
             metadata = await metadataResource.GetMetadataAsync(packageName, includePrerelease: true, includeUnlisted: false, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
         }
-        catch
+        catch (FatalProtocolException)
         {
-            // If metadata retrieval fails, fallback to non-metadata version retrieval
+            // The source has no usable metadata resource (a V2 feed, typically): fall back to the plain
+            // version list. Narrow on purpose - a bare catch also swallowed cancellation, and it turned a
+            // transient failure into a silent loss of publication dates, which disables --minimum-age.
         }
 
         if (metadata is null)

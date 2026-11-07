@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
+// Each test starts its own container. Running them all at once saturates the CI agents and makes the container
+// runtimes fail transiently (image pull races, port collisions), so this class does not run in parallel.
+[TestClass(DisableParallelization = true)]
 public sealed class SqlServerContainerTests
 {
     private static void SkipOnNonCompatibleEnvironments()
@@ -28,7 +31,7 @@ public sealed class SqlServerContainerTests
         Assert.Equal("Y", definition.Environment.GetValue("ACCEPT_EULA"));
         Assert.Equal(password, definition.Environment.GetValue("MSSQL_SA_PASSWORD"));
         Assert.Equal(password, definition.Environment.GetValue("SA_PASSWORD"));
-        Assert.Equal(24, password.Length);
+        Assert.HasCount(24, password);
         Assert.Contains(password, static c => char.IsUpper(c));
         Assert.Contains(password, static c => char.IsLower(c));
         Assert.Contains(password, static c => char.IsDigit(c));
@@ -77,24 +80,32 @@ public sealed class SqlServerContainerTests
         Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
     }
 
-    private static async Task<SqlServerContainer> StartWithRetryAsync(SqlServerContainerDefinition definition)
+    [Fact]
+    public async Task StartAsync_ConnectionStringWorksWhenThePasswordContainsASeparator()
     {
-        const int MaxRetries = 3;
-        for (var i = 0; ; i++)
-        {
-            var container = definition.CreateContainer();
-            try
-            {
-                await container.StartAsync(XunitCancellationToken);
-                return container;
-            }
-            catch when (i < MaxRetries)
-            {
-                await container.DisposeAsync();
-                await Task.Delay(1000, XunitCancellationToken);
-            }
-        }
+        SkipOnNonCompatibleEnvironments();
+
+        var definition = ContainerDefinition.CreateSqlServer();
+        definition.SaPassword = "Pa;ss=w0rd!";
+        await using var container = await StartWithRetryAsync(definition);
+
+        await using var connection = await OpenConnectionWithRetryAsync(container.GetConnectionString());
+        await using var command = new SqlCommand("SELECT 1", connection);
+        var result = await command.ExecuteScalarAsync(XunitCancellationToken);
+
+        Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
     }
+
+    private static Task<SqlServerContainer> StartWithRetryAsync(SqlServerContainerDefinition definition)
+    {
+        return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken, isTransientFailure: IsStartupThatDiedOnTheAgent);
+    }
+
+    /// <summary>Recognizes a SQL Server that exited while starting up. The image needs a couple of gigabytes and a while
+    /// to start, and gives up on a CI agent that is busy running the containers of the other tests. A defect of the
+    /// library fails every attempt, so retrying only hides the agent.</summary>
+    private static bool IsStartupThatDiedOnTheAgent(Exception exception)
+        => exception is InvalidOperationException && exception.Message.Contains("The container is Exited", StringComparison.Ordinal);
 
     private static async Task<SqlConnection> OpenConnectionWithRetryAsync(string connectionString)
     {

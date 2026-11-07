@@ -1,0 +1,98 @@
+:root{--brand:#36c}.card{color:#2784d5;color:color(display-p3 .266393 .50861 .812114);color:lab(52.8659% -4.50641 -50.4063);-webkit-user-select:none;user-select:none;background:#4d00b3;transition:transform .2s ease-in-out;top:0;bottom:auto;left:0;right:auto}.card:hover{color:#ab5a9a;color:color(display-p3 .628643 .370809 .592078);color:lab(50% 40 -20)}.card .title{font:700 1.5rem/1.2 system-ui,sans-serif}@media not (min-width:640px){.card{padding:4px 8px}}.grid{grid-template-areas:"a b""c d";margin:0;display:grid}@media (min-width:640px) and (max-width:1024px){.grid{gap:8px}}.button{composes:card;width:max(10px,min(50%,200px))}
+----
+
+----
+true
+----
+:root {
+  --brand: #36c;
+}
+
+.card {
+  color: oklch(60% .15 250);
+  user-select: none;
+  background: #4d00b3;
+  transition: transform .2s ease-in-out;
+  inset: 0 auto auto 0;
+
+  &:hover {
+    color: lab(50% 40 -20);
+  }
+
+  & .title {
+    font: bold 1.5rem / 1.2 system-ui, sans-serif;
+  }
+
+  @media (width < 640px) {
+    padding: 4px 8px;
+  }
+}
+
+.grid {
+  grid-template-areas: "a b"
+                       "c d";
+  margin: 0;
+  display: grid;
+}
+
+@media (width >= 640px) and (width <= 1024px) {
+  .grid {
+    gap: 8px;
+  }
+}
+
+.button {
+  composes: card;
+  width: clamp(10px, 50%, 200px);
+}
+
+----
+.card-Jkj98W {
+  color: red;
+}
+
+.button-Jkj98W {
+  color: #00f;
+}
+
+#id-Jkj98W {
+  color: green;
+}
+
+----
+{"button":{"name":"button-Jkj98W","composes":[{"type":"local","name":"card-Jkj98W"}],"isReferenced":false},"card":{"name":"card-Jkj98W","composes":[],"isReferenced":false},"id":{"name":"id-Jkj98W","composes":[],"isReferenced":false}}
+----
+.a {
+  color: green;
+  width: .75rem;
+  margin: .125rem;
+}
+
+.b {
+  width: .0625rem;
+}
+
+----
+a b
+----
+color:red;background:url(a.png);margin:1px
+----
+@layer theme{html{margin:0}:root{--text:#222}}@media print{body{color:#000}}.main{color:var(--text)}
+----
+.a {
+  color:  ;
+}
+ | 
+----
+.a {
+  width: 1px;
+}
+ | 
+----
+
+ | Invalid media query at 1:18
+----
+
+ | 'unknown-pseudo' is not recognized as a valid pseudo-class. Did you mean '::unknown-pseudo' (pseudo-element) or is this a typo? at 1:4
+----
+Unexpected end of input at 1:8

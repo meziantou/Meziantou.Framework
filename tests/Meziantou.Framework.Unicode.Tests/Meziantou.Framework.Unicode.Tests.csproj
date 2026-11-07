@@ -6,6 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The conformance files of the pinned Unicode version, written by tools/Meziantou.Framework.Unicode.Generator -->
+    <EmbeddedResource Include="files/*.txt.gz" LogicalName="%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
   </ItemGroup>
 

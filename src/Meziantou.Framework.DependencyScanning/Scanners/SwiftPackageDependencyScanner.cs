@@ -6,58 +6,53 @@ using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans Swift Package Manager files (Package.resolved and Package.swift) for dependencies.</summary>
+/// <summary>Scans Swift Package Manager manifests (Package.swift and Package@swift-X.Y.swift) for dependencies.</summary>
 public sealed class SwiftPackageDependencyScanner : DependencyScanner
 {
-    private const string PackageResolvedFileName = "Package.resolved";
     private const string PackageSwiftFileName = "Package.swift";
+    private const string VersionSpecificPackageSwiftFileNamePrefix = "Package@swift-";
+    private const string SwiftFileExtension = ".swift";
+
+    private static readonly string[] SourceLabels = ["name", "id", "url", "location", "path"];
+    private static readonly string[] RequirementLabels = ["from", "exact", "branch", "revision"];
+    private static readonly string[] RequirementFactoryMethods = ["upToNextMajor", "upToNextMinor", "exact", "branch", "revision"];
+    private static readonly string[] RequirementTypeQualifiers = ["Package", "Dependency", "Requirement"];
 
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.SwiftPackage];
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.HasFileName(PackageResolvedFileName, ignoreCase: false) ||
-               context.HasFileName(PackageSwiftFileName, ignoreCase: false);
+        return IsPackageManifestFileName(context.FileName);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
-        var fileName = Path.GetFileName(context.FullPath);
-        if (string.Equals(fileName, PackageResolvedFileName, StringComparison.Ordinal))
-        {
-            await ScanPackageResolvedAsync(context).ConfigureAwait(false);
-            return;
-        }
-
-        if (string.Equals(fileName, PackageSwiftFileName, StringComparison.Ordinal))
+        if (IsPackageManifestFileName(Path.GetFileName(context.FullPath)))
         {
             await ScanPackageSwiftAsync(context).ConfigureAwait(false);
         }
     }
 
-    private async ValueTask ScanPackageResolvedAsync(ScanFileContext context)
+    private static bool IsPackageManifestFileName(ReadOnlySpan<char> fileName)
     {
-        try
-        {
-            var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            if (doc.GetRootObject() is not JsonObject root)
-                return;
+        if (fileName.Equals(PackageSwiftFileName, StringComparison.Ordinal))
+            return true;
 
-            foreach (var pin in EnumeratePins(root))
-            {
-                var dependencyName = GetDependencyName(pin, out var dependencyNamePath);
-                var dependencyVersion = GetDependencyVersion(pin, out var dependencyVersionPath);
-                if (dependencyName is null && dependencyVersion is null)
-                    continue;
+        // Version-specific manifest, such as Package@swift-5.9.swift
+        if (!fileName.StartsWith(VersionSpecificPackageSwiftFileNamePrefix, StringComparison.Ordinal) || !fileName.EndsWith(SwiftFileExtension, StringComparison.Ordinal))
+            return false;
 
-                context.ReportDependency(this, dependencyName, dependencyVersion, DependencyType.SwiftPackage,
-                    nameLocation: dependencyNamePath is null ? null : new JsonLocation(context, dependencyNamePath),
-                    versionLocation: dependencyVersionPath is null ? null : new JsonLocation(context, dependencyVersionPath));
-            }
-        }
-        catch (JsonException)
+        var version = fileName[VersionSpecificPackageSwiftFileNamePrefix.Length..^SwiftFileExtension.Length];
+        if (version.IsEmpty || !char.IsAsciiDigit(version[0]) || !char.IsAsciiDigit(version[^1]))
+            return false;
+
+        foreach (var c in version)
         {
+            if (!char.IsAsciiDigit(c) && c != '.')
+                return false;
         }
+
+        return true;
     }
 
     private async ValueTask ScanPackageSwiftAsync(ScanFileContext context)
@@ -65,43 +60,83 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
         using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var text = await sr.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
 
-        foreach (var packageCall in EnumeratePackageCalls(text))
-        {
-            var segments = SplitTopLevelArguments(text, packageCall.ArgumentsStart, packageCall.ArgumentsEnd);
+        var tokens = SwiftLexer.Tokenize(text);
+        var matchingParentheses = ComputeMatchingParentheses(text, tokens);
 
-            var dependencyName = GetDependencyName(text, segments, out var dependencyNameRange);
-            var dependencyVersion = GetDependencyVersion(text, segments, out var dependencyVersionRange);
-            if (dependencyName is null && dependencyVersion is null)
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            if (!IsPackageCall(text, tokens, i))
                 continue;
 
-            context.ReportDependency(this, dependencyName, dependencyVersion, DependencyType.SwiftPackage,
-                nameLocation: dependencyNameRange is { } nameRange ? CreateLocation(context, text, nameRange) : null,
-                versionLocation: dependencyVersionRange is { } versionRange ? CreateLocation(context, text, versionRange) : null);
+            var openParenthesisIndex = i + 2;
+            var closeParenthesisIndex = matchingParentheses[openParenthesisIndex];
+            if (closeParenthesisIndex < 0)
+                continue;
+
+            var segments = SplitTopLevelArguments(text, tokens, openParenthesisIndex + 1, closeParenthesisIndex);
+
+            var dependencyName = GetDependencyName(text, tokens, segments, out var dependencyNameRange);
+            var dependencyVersion = GetDependencyVersion(text, tokens, segments, out var dependencyVersionRange);
+            if (dependencyName is not null || dependencyVersion is not null)
+            {
+                context.ReportDependency(this, dependencyName, dependencyVersion, DependencyType.SwiftPackage,
+                    nameLocation: dependencyNameRange is { } nameRange ? CreateLocation(context, text, nameRange) : null,
+                    versionLocation: dependencyVersionRange is { } versionRange ? CreateLocation(context, text, versionRange) : null);
+            }
+
+            // Nested .package calls are part of the arguments of this call
+            i = closeParenthesisIndex;
         }
+    }
+
+    private static bool IsPackageCall(string text, List<SwiftToken> tokens, int index)
+    {
+        if (index + 2 >= tokens.Count ||
+            !tokens[index].Is(text, SwiftTokenKind.Punctuation, ".") ||
+            !tokens[index + 1].Is(text, SwiftTokenKind.Identifier, "package") ||
+            !tokens[index + 2].Is(text, SwiftTokenKind.Punctuation, "("))
+        {
+            return false;
+        }
+
+        // `foo.package(` is a member of something else, but `Package.Dependency.package(` is the fully qualified factory method
+        if (index > 0)
+        {
+            var previous = tokens[index - 1];
+            if (previous.Kind is SwiftTokenKind.Identifier && previous.End == tokens[index].Start)
+                return previous.Is(text, SwiftTokenKind.Identifier, "Dependency");
+        }
+
+        return true;
+    }
+
+    private static int[] ComputeMatchingParentheses(string text, List<SwiftToken> tokens)
+    {
+        var result = new int[tokens.Count];
+        var openParentheses = new Stack<int>();
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            result[i] = -1;
+            var token = tokens[i];
+            if (token.Is(text, SwiftTokenKind.Punctuation, "("))
+            {
+                openParentheses.Push(i);
+            }
+            else if (token.Is(text, SwiftTokenKind.Punctuation, ")") && openParentheses.TryPop(out var openIndex))
+            {
+                result[openIndex] = i;
+            }
+        }
+
+        return result;
     }
 
     private static Location CreateLocation(ScanFileContext context, string text, TextRange range)
     {
-        if (range.Length <= 0 || ContainsNewLine(text, range))
+        if (!range.IsVerbatim || range.Length <= 0 || ContainsNewLine(text, range))
             return new NonUpdatableLocation(context);
 
-        return CreateTextLocation(context, text, range);
-    }
-
-    private static TextLocation CreateTextLocation(ScanFileContext context, string text, TextRange range)
-    {
-        var line = 1;
-        var lineStart = 0;
-        for (var i = 0; i < range.Start; i++)
-        {
-            if (text[i] == '\n')
-            {
-                line++;
-                lineStart = i + 1;
-            }
-        }
-
-        return new TextLocation(context.FileSystem, context.FullPath, line, range.Start - lineStart + 1, range.Length);
+        return TextLocation.FromIndex(context.FileSystem, context.FullPath, text, range.Start, range.Length);
     }
 
     private static bool ContainsNewLine(string text, TextRange range)
@@ -115,395 +150,66 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
         return false;
     }
 
-    private static IEnumerable<JsonObject> EnumeratePins(JsonObject root)
+    private static List<TokenRange> SplitTopLevelArguments(string text, List<SwiftToken> tokens, int start, int end)
     {
-        if (JsonNodeDocument.TryGetArray(root, "pins", out var pinsV2))
-        {
-            foreach (var pin in JsonNodeDocument.GetArray(pinsV2).OfType<JsonObject>())
-            {
-                yield return pin;
-            }
-        }
-
-        if (JsonNodeDocument.TryGetObject(root, "object", out var rootObject) &&
-            JsonNodeDocument.TryGetArray(rootObject, "pins", out var pinsV1))
-        {
-            foreach (var pin in JsonNodeDocument.GetArray(pinsV1).OfType<JsonObject>())
-            {
-                yield return pin;
-            }
-        }
-    }
-
-    private static string? GetDependencyName(JsonObject pin, out string? dependencyNamePath)
-    {
-        if (TryGetString(pin, "identity", out var dependencyName, out dependencyNamePath))
-            return dependencyName;
-
-        if (TryGetString(pin, "package", out dependencyName, out dependencyNamePath))
-            return dependencyName;
-
-        if (TryGetString(pin, "location", out dependencyName, out dependencyNamePath))
-            return dependencyName;
-
-        if (TryGetString(pin, "repositoryURL", out dependencyName, out dependencyNamePath))
-            return dependencyName;
-
-        dependencyNamePath = null;
-        return null;
-    }
-
-    private static string? GetDependencyVersion(JsonObject pin, out string? dependencyVersionPath)
-    {
-        dependencyVersionPath = null;
-
-        if (!JsonNodeDocument.TryGetObject(pin, "state", out var state))
-            return null;
-
-        if (TryGetString(state, "version", out var version, out dependencyVersionPath))
-            return version;
-
-        if (TryGetString(state, "branch", out version, out dependencyVersionPath))
-            return version;
-
-        if (TryGetString(state, "revision", out version, out dependencyVersionPath))
-            return version;
-
-        return null;
-    }
-
-    private static bool TryGetString(JsonObject jsonObject, string propertyName, out string? value, out string? valuePath)
-    {
-        if (JsonNodeDocument.TryGetProperty(jsonObject, propertyName, out var node) &&
-            node is not null &&
-            JsonNodeDocument.TryGetString(node, out var stringValue))
-        {
-            value = stringValue;
-            valuePath = JsonNodeDocument.GetPath(node);
-            return true;
-        }
-
-        value = null;
-        valuePath = null;
-        return false;
-    }
-
-    private static IEnumerable<PackageCall> EnumeratePackageCalls(string text)
-    {
-        var inString = false;
-        var inLineComment = false;
-        var inBlockComment = false;
-
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            var next = i + 1 < text.Length ? text[i + 1] : '\0';
-
-            if (inLineComment)
-            {
-                if (c == '\n')
-                {
-                    inLineComment = false;
-                }
-
-                continue;
-            }
-
-            if (inBlockComment)
-            {
-                if (c == '*' && next == '/')
-                {
-                    inBlockComment = false;
-                    i++;
-                }
-
-                continue;
-            }
-
-            if (inString)
-            {
-                if (c == '\\')
-                {
-                    i++;
-                    continue;
-                }
-
-                if (c == '"')
-                {
-                    inString = false;
-                }
-
-                continue;
-            }
-
-            if (c == '/' && next == '/')
-            {
-                inLineComment = true;
-                i++;
-                continue;
-            }
-
-            if (c == '/' && next == '*')
-            {
-                inBlockComment = true;
-                i++;
-                continue;
-            }
-
-            if (c == '"')
-            {
-                inString = true;
-                continue;
-            }
-
-            if (c != '.' || !text.AsSpan(i).StartsWith(".package", StringComparison.Ordinal))
-                continue;
-
-            if (i > 0 && IsIdentifierCharacter(text[i - 1]))
-                continue;
-
-            var openParenthesisIndex = i + ".package".Length;
-            while (openParenthesisIndex < text.Length && char.IsWhiteSpace(text[openParenthesisIndex]))
-            {
-                openParenthesisIndex++;
-            }
-
-            if (openParenthesisIndex >= text.Length || text[openParenthesisIndex] != '(')
-                continue;
-
-            if (!TryFindMatchingParenthesis(text, openParenthesisIndex, out var closeParenthesisIndex))
-                continue;
-
-            yield return new PackageCall(openParenthesisIndex + 1, closeParenthesisIndex);
-            i = closeParenthesisIndex;
-        }
-    }
-
-    private static bool TryFindMatchingParenthesis(string text, int openingParenthesisIndex, out int closingParenthesisIndex)
-    {
-        var inString = false;
-        var inLineComment = false;
-        var inBlockComment = false;
-        var depth = 1;
-
-        for (var i = openingParenthesisIndex + 1; i < text.Length; i++)
-        {
-            var c = text[i];
-            var next = i + 1 < text.Length ? text[i + 1] : '\0';
-
-            if (inLineComment)
-            {
-                if (c == '\n')
-                {
-                    inLineComment = false;
-                }
-
-                continue;
-            }
-
-            if (inBlockComment)
-            {
-                if (c == '*' && next == '/')
-                {
-                    inBlockComment = false;
-                    i++;
-                }
-
-                continue;
-            }
-
-            if (inString)
-            {
-                if (c == '\\')
-                {
-                    i++;
-                    continue;
-                }
-
-                if (c == '"')
-                {
-                    inString = false;
-                }
-
-                continue;
-            }
-
-            if (c == '/' && next == '/')
-            {
-                inLineComment = true;
-                i++;
-                continue;
-            }
-
-            if (c == '/' && next == '*')
-            {
-                inBlockComment = true;
-                i++;
-                continue;
-            }
-
-            if (c == '"')
-            {
-                inString = true;
-                continue;
-            }
-
-            if (c == '(')
-            {
-                depth++;
-                continue;
-            }
-
-            if (c == ')')
-            {
-                depth--;
-                if (depth == 0)
-                {
-                    closingParenthesisIndex = i;
-                    return true;
-                }
-            }
-        }
-
-        closingParenthesisIndex = -1;
-        return false;
-    }
-
-    private static List<TextRange> SplitTopLevelArguments(string text, int start, int end)
-    {
-        var result = new List<TextRange>();
-        var inString = false;
-        var inLineComment = false;
-        var inBlockComment = false;
-        var parenthesisDepth = 0;
-        var bracketDepth = 0;
-        var braceDepth = 0;
+        var result = new List<TokenRange>();
+        var depth = 0;
         var segmentStart = start;
 
         for (var i = start; i < end; i++)
         {
-            var c = text[i];
-            var next = i + 1 < end ? text[i + 1] : '\0';
-
-            if (inLineComment)
-            {
-                if (c == '\n')
-                {
-                    inLineComment = false;
-                }
-
+            var token = tokens[i];
+            if (token.Kind is not SwiftTokenKind.Punctuation)
                 continue;
-            }
 
-            if (inBlockComment)
+            switch (text[token.Start])
             {
-                if (c == '*' && next == '/')
-                {
-                    inBlockComment = false;
-                    i++;
-                }
-
-                continue;
-            }
-
-            if (inString)
-            {
-                if (c == '\\')
-                {
-                    i++;
-                    continue;
-                }
-
-                if (c == '"')
-                {
-                    inString = false;
-                }
-
-                continue;
-            }
-
-            if (c == '/' && next == '/')
-            {
-                inLineComment = true;
-                i++;
-                continue;
-            }
-
-            if (c == '/' && next == '*')
-            {
-                inBlockComment = true;
-                i++;
-                continue;
-            }
-
-            if (c == '"')
-            {
-                inString = true;
-                continue;
-            }
-
-            switch (c)
-            {
-                case '(':
-                    parenthesisDepth++;
+                case '(' or '[' or '{':
+                    depth++;
                     break;
-                case ')':
-                    if (parenthesisDepth > 0)
+
+                case ')' or ']' or '}':
+                    if (depth > 0)
                     {
-                        parenthesisDepth--;
+                        depth--;
                     }
 
                     break;
-                case '[':
-                    bracketDepth++;
-                    break;
-                case ']':
-                    if (bracketDepth > 0)
-                    {
-                        bracketDepth--;
-                    }
 
-                    break;
-                case '{':
-                    braceDepth++;
-                    break;
-                case '}':
-                    if (braceDepth > 0)
-                    {
-                        braceDepth--;
-                    }
-
-                    break;
-                case ',' when parenthesisDepth == 0 && bracketDepth == 0 && braceDepth == 0:
-                    result.Add(new TextRange(segmentStart, i));
+                case ',' when depth == 0:
+                    result.Add(new TokenRange(segmentStart, i));
                     segmentStart = i + 1;
                     break;
             }
         }
 
-        if (segmentStart <= end)
-        {
-            result.Add(new TextRange(segmentStart, end));
-        }
-
+        result.Add(new TokenRange(segmentStart, end));
         return result;
     }
 
-    private static string? GetDependencyName(string text, List<TextRange> segments, out TextRange? dependencyNameRange)
+    private static string? GetDependencyName(string text, List<SwiftToken> tokens, List<TokenRange> segments, out TextRange? dependencyNameRange)
     {
-        foreach (var label in new[] { "name", "id", "url", "location", "path" })
+        foreach (var label in SourceLabels)
         {
             foreach (var segment in segments)
             {
-                if (TryGetLabeledStringArgument(text, segment, label, out var value, out var valueRange))
+                if (!TryGetLabel(text, tokens, segment, out var segmentLabel) || segmentLabel != label || segment.Length <= 2)
+                    continue;
+
+                if (TryGetStringLiteral(text, tokens, segment.Start + 2, segment.End, out var value, out var valueRange))
                 {
                     dependencyNameRange = valueRange;
                     return value;
                 }
+
+                // An expression, such as a variable or a concatenation, is reported as written, and cannot be updated
+                var expressionRange = new TextRange(tokens[segment.Start + 2].Start, tokens[segment.End - 1].End, IsVerbatim: false);
+                dependencyNameRange = expressionRange;
+                return text[expressionRange.Start..expressionRange.End];
             }
         }
 
-        if (segments.Count > 0 && TryGetUnlabeledStringArgument(text, segments[0], out var unlabeledValue, out var unlabeledValueRange))
+        if (segments.Count > 0 && TryGetStringLiteral(text, tokens, segments[0].Start, segments[0].End, out var unlabeledValue, out var unlabeledValueRange))
         {
             dependencyNameRange = unlabeledValueRange;
             return unlabeledValue;
@@ -513,108 +219,136 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
         return null;
     }
 
-    private static string? GetDependencyVersion(string text, List<TextRange> segments, out TextRange? dependencyVersionRange)
+    private static string? GetDependencyVersion(string text, List<SwiftToken> tokens, List<TokenRange> segments, out TextRange? dependencyVersionRange)
     {
-        for (var i = segments.Count - 1; i >= 0; i--)
+        foreach (var segment in segments)
         {
-            var trimmed = Trim(text, segments[i]);
-            if (trimmed.Length == 0 || IsSourceArgument(text, trimmed))
+            if (segment.Length == 0 || !IsRequirementArgument(text, tokens, segment))
                 continue;
 
-            dependencyVersionRange = trimmed;
-            return text[trimmed.Start..trimmed.End];
+            // The whole requirement (e.g. `from: "1.0.0"`) is the version, so the kind of requirement can be changed on update.
+            // The range starts at the first token and ends at the last one, so surrounding comments are not included.
+            // A requirement that uses a variable, such as `from: version`, is reported as written, and cannot be updated
+            var range = new TextRange(tokens[segment.Start].Start, tokens[segment.End - 1].End, IsLiteralRequirement(text, tokens, segment));
+            dependencyVersionRange = range;
+            return text[range.Start..range.End];
         }
 
         dependencyVersionRange = null;
         return null;
     }
 
-    private static bool IsSourceArgument(string text, TextRange range)
+    private static bool IsRequirementArgument(string text, List<SwiftToken> tokens, TokenRange segment)
     {
-        return HasLabel(text, range, "name") ||
-               HasLabel(text, range, "id") ||
-               HasLabel(text, range, "url") ||
-               HasLabel(text, range, "location") ||
-               HasLabel(text, range, "path");
-    }
+        if (TryGetLabel(text, tokens, segment, out var label))
+            return segment.Length > 2 && RequirementLabels.Contains(label, StringComparer.Ordinal);
 
-    private static bool HasLabel(string text, TextRange range, string label)
-    {
-        var start = range.Start;
-        var end = range.End;
-        if (end - start <= label.Length || !text.AsSpan(start).StartsWith(label, StringComparison.Ordinal))
-            return false;
+        // .upToNextMajor(from: "1.0.0"), .exact("1.0.0"), Package.Dependency.Requirement.branch("main")
+        var index = segment.Start;
+        while (index + 1 < segment.End &&
+               tokens[index].Kind is SwiftTokenKind.Identifier &&
+               RequirementTypeQualifiers.Contains(text[tokens[index].Start..tokens[index].End], StringComparer.Ordinal) &&
+               tokens[index + 1].Is(text, SwiftTokenKind.Punctuation, "."))
+        {
+            index += 2;
+        }
 
-        var index = start + label.Length;
-        while (index < end && char.IsWhiteSpace(text[index]))
+        if (index == segment.Start && index < segment.End && tokens[index].Is(text, SwiftTokenKind.Punctuation, "."))
         {
             index++;
         }
 
-        return index < end && text[index] == ':';
-    }
-
-    private static bool TryGetLabeledStringArgument(string text, TextRange range, string label, out string? value, out TextRange valueRange)
-    {
-        var trimmed = Trim(text, range);
-        if (!HasLabel(text, trimmed, label))
+        if (index > segment.Start &&
+            index + 1 < segment.End &&
+            tokens[index].Kind is SwiftTokenKind.Identifier &&
+            RequirementFactoryMethods.Contains(text[tokens[index].Start..tokens[index].End], StringComparer.Ordinal) &&
+            tokens[index + 1].Is(text, SwiftTokenKind.Punctuation, "("))
         {
-            value = null;
-            valueRange = default;
-            return false;
+            return true;
         }
 
-        var valueStart = trimmed.Start + label.Length;
-        while (valueStart < trimmed.End && char.IsWhiteSpace(text[valueStart]))
+        // "1.0.0"..<"2.0.0" or "1.0.0"..."2.0.0"
+        var depth = 0;
+        for (var i = segment.Start; i < segment.End; i++)
         {
-            valueStart++;
-        }
-
-        if (valueStart >= trimmed.End || text[valueStart] != ':')
-        {
-            value = null;
-            valueRange = default;
-            return false;
-        }
-
-        valueStart++;
-        while (valueStart < trimmed.End && char.IsWhiteSpace(text[valueStart]))
-        {
-            valueStart++;
-        }
-
-        return TryReadStringLiteral(text, valueStart, trimmed.End, out value, out valueRange);
-    }
-
-    private static bool TryGetUnlabeledStringArgument(string text, TextRange range, out string? value, out TextRange valueRange)
-    {
-        var trimmed = Trim(text, range);
-        return TryReadStringLiteral(text, trimmed.Start, trimmed.End, out value, out valueRange);
-    }
-
-    private static bool TryReadStringLiteral(string text, int start, int end, out string? value, out TextRange valueRange)
-    {
-        if (start >= end || text[start] != '"')
-        {
-            value = null;
-            valueRange = default;
-            return false;
-        }
-
-        for (var i = start + 1; i < end; i++)
-        {
-            if (text[i] == '\\')
+            var token = tokens[i];
+            if (token.Kind is SwiftTokenKind.Punctuation)
             {
-                i++;
-                continue;
+                switch (text[token.Start])
+                {
+                    case '(' or '[' or '{':
+                        depth++;
+                        break;
+                    case ')' or ']' or '}':
+                        depth--;
+                        break;
+                }
             }
-
-            if (text[i] == '"')
+            else if (depth == 0 && (token.Is(text, SwiftTokenKind.Operator, "..<") || token.Is(text, SwiftTokenKind.Operator, "...")))
             {
-                value = text[(start + 1)..i];
-                valueRange = new TextRange(start + 1, i);
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether a requirement is made of string literals only, such as <c>.upToNextMajor(from: "1.0.0")</c>, and no variable.</summary>
+    private static bool IsLiteralRequirement(string text, List<SwiftToken> tokens, TokenRange segment)
+    {
+        for (var i = segment.Start; i < segment.End; i++)
+        {
+            var token = tokens[i];
+            var isLiteral = token.Kind switch
+            {
+                SwiftTokenKind.StringLiteral => token.IsTerminated && IsVerbatim(text, token),
+                SwiftTokenKind.Identifier => IsRequirementKeyword(text[token.Start..token.End]),
+                SwiftTokenKind.Punctuation or SwiftTokenKind.Operator => true,
+                _ => false,
+            };
+
+            if (!isLiteral)
+                return false;
+        }
+
+        return true;
+
+        static bool IsRequirementKeyword(string identifier)
+        {
+            return RequirementLabels.Contains(identifier, StringComparer.Ordinal)
+                || RequirementFactoryMethods.Contains(identifier, StringComparer.Ordinal)
+                || RequirementTypeQualifiers.Contains(identifier, StringComparer.Ordinal);
+        }
+    }
+
+    /// <summary>Whether the value of a string literal is exactly its text, so that the text can be replaced by another value.</summary>
+    private static bool IsVerbatim(string text, SwiftToken token)
+    {
+        return !token.HasInterpolation && text.AsSpan(token.ContentStart, token.ContentEnd - token.ContentStart).SequenceEqual(SwiftLexer.GetStringValue(text, token));
+    }
+
+    private static bool TryGetLabel(string text, List<SwiftToken> tokens, TokenRange segment, out string label)
+    {
+        if (segment.Length >= 2 &&
+            tokens[segment.Start].Kind is SwiftTokenKind.Identifier &&
+            tokens[segment.Start + 1].Is(text, SwiftTokenKind.Punctuation, ":"))
+        {
+            label = text[tokens[segment.Start].Start..tokens[segment.Start].End];
+            return true;
+        }
+
+        label = "";
+        return false;
+    }
+
+    private static bool TryGetStringLiteral(string text, List<SwiftToken> tokens, int start, int end, out string? value, out TextRange valueRange)
+    {
+        // The value must be the literal alone: "https://" + host is not the URL "https://"
+        if (start + 1 == end && tokens[start] is { Kind: SwiftTokenKind.StringLiteral, IsTerminated: true } token)
+        {
+            value = SwiftLexer.GetStringValue(text, token);
+            valueRange = new TextRange(token.ContentStart, token.ContentEnd, IsVerbatim(text, token));
+            return true;
         }
 
         value = null;
@@ -622,52 +356,15 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
         return false;
     }
 
-    private static TextRange Trim(string text, TextRange range)
-    {
-        var start = range.Start;
-        var end = range.End;
-        while (start < end && char.IsWhiteSpace(text[start]))
-        {
-            start++;
-        }
-
-        while (end > start && char.IsWhiteSpace(text[end - 1]))
-        {
-            end--;
-        }
-
-        return new TextRange(start, end);
-    }
-
-    private static bool IsIdentifierCharacter(char c)
-    {
-        return char.IsLetterOrDigit(c) || c == '_';
-    }
-
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct TextRange
+    private readonly record struct TextRange(int Start, int End, bool IsVerbatim = true)
     {
-        public TextRange(int start, int end)
-        {
-            Start = start;
-            End = end;
-        }
-
-        public int Start { get; }
-        public int End { get; }
         public int Length => End - Start;
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct PackageCall
+    private readonly record struct TokenRange(int Start, int End)
     {
-        public PackageCall(int argumentsStart, int argumentsEnd)
-        {
-            ArgumentsStart = argumentsStart;
-            ArgumentsEnd = argumentsEnd;
-        }
-
-        public int ArgumentsStart { get; }
-        public int ArgumentsEnd { get; }
+        public int Length => End - Start;
     }
 }

@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AMinuteAgo" xml:space="preserve">
+    <value>1分钟前</value>
+  </data>
+  <data name="AnHourAgo" xml:space="preserve">
+    <value>1小时前</value>
+  </data>
+  <data name="InAMinute" xml:space="preserve">
+    <value>1分钟后</value>
+  </data>
+  <data name="InAnHour" xml:space="preserve">
+    <value>1小时后</value>
+  </data>
+  <data name="InManyDays" xml:space="preserve">
+    <value>{0}天后</value>
+  </data>
+  <data name="InManyHours" xml:space="preserve">
+    <value>{0}小时后</value>
+  </data>
+  <data name="InManyMinutes" xml:space="preserve">
+    <value>{0}分钟后</value>
+  </data>
+  <data name="InManyMonths" xml:space="preserve">
+    <value>{0}个月后</value>
+  </data>
+  <data name="InManySeconds" xml:space="preserve">
+    <value>{0}秒后</value>
+  </data>
+  <data name="InManyYears" xml:space="preserve">
+    <value>{0}年后</value>
+  </data>
+  <data name="InOneMonth" xml:space="preserve">
+    <value>1个月后</value>
+  </data>
+  <data name="InOneSecond" xml:space="preserve">
+    <value>1秒后</value>
+  </data>
+  <data name="InOneYear" xml:space="preserve">
+    <value>1年后</value>
+  </data>
+  <data name="ManyDaysAgo" xml:space="preserve">
+    <value>{0}天前</value>
+  </data>
+  <data name="ManyHoursAgo" xml:space="preserve">
+    <value>{0}小时前</value>
+  </data>
+  <data name="ManyMinutesAgo" xml:space="preserve">
+    <value>{0}分钟前</value>
+  </data>
+  <data name="ManyMonthsAgo" xml:space="preserve">
+    <value>{0}个月前</value>
+  </data>
+  <data name="ManySecondsAgo" xml:space="preserve">
+    <value>{0}秒前</value>
+  </data>
+  <data name="ManyYearsAgo" xml:space="preserve">
+    <value>{0}年前</value>
+  </data>
+  <data name="Now" xml:space="preserve">
+    <value>现在</value>
+  </data>
+  <data name="OneMonthAgo" xml:space="preserve">
+    <value>1个月前</value>
+  </data>
+  <data name="OneSecondAgo" xml:space="preserve">
+    <value>1秒前</value>
+  </data>
+  <data name="OneYearAgo" xml:space="preserve">
+    <value>1年前</value>
+  </data>
+  <data name="Tomorrow" xml:space="preserve">
+    <value>明天</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>昨天</value>
+  </data>
+</root>

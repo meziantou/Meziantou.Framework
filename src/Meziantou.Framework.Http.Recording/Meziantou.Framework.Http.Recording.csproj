@@ -2,9 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.1</Version>
+    <Version>3.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>HTTP record and replay for testing, using DelegatingHandler with HAR format support</Description>
+    <PackageTags>http, record, replay, har, httpclient, testing</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

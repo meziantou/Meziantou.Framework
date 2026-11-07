@@ -1,0 +1,459 @@
+{
+  "spec": {
+    "title": "Media Queries Level 5",
+    "url": "https://drafts.csswg.org/mediaqueries-5/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSCustomMediaRule",
+          "Navigator",
+          "PreferenceManager",
+          "PreferenceObject"
+        ]
+      }
+    },
+    "idlNames": {
+      "CustomMediaQuery": {
+        "fragment": "typedef (MediaList or boolean) CustomMediaQuery;",
+        "type": "typedef",
+        "name": "CustomMediaQuery",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaList"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/mediaqueries-5/#typedefdef-custommediaquery"
+      },
+      "CSSCustomMediaRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSCustomMediaRule : CSSRule {\n  readonly attribute CSSOMString name;\n  readonly attribute CustomMediaQuery query;\n};",
+        "type": "interface",
+        "name": "CSSCustomMediaRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-csscustommediarule-name"
+          },
+          {
+            "type": "attribute",
+            "name": "query",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CustomMediaQuery"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-csscustommediarule-query"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/mediaqueries-5/#csscustommediarule"
+      },
+      "PreferenceManager": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface PreferenceManager {\n  readonly attribute PreferenceObject colorScheme;\n  readonly attribute PreferenceObject contrast;\n  readonly attribute PreferenceObject reducedMotion;\n  readonly attribute PreferenceObject reducedTransparency;\n  readonly attribute PreferenceObject reducedData;\n};",
+        "type": "interface",
+        "name": "PreferenceManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "colorScheme",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PreferenceObject"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferencemanager-colorscheme"
+          },
+          {
+            "type": "attribute",
+            "name": "contrast",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PreferenceObject"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferencemanager-contrast"
+          },
+          {
+            "type": "attribute",
+            "name": "reducedMotion",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PreferenceObject"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferencemanager-reducedmotion"
+          },
+          {
+            "type": "attribute",
+            "name": "reducedTransparency",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PreferenceObject"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferencemanager-reducedtransparency"
+          },
+          {
+            "type": "attribute",
+            "name": "reducedData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PreferenceObject"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferencemanager-reduceddata"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/mediaqueries-5/#preferencemanager"
+      },
+      "PreferenceObject": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface PreferenceObject : EventTarget {\n  readonly attribute DOMString? override;\n  readonly attribute DOMString value;\n  readonly attribute FrozenArray<DOMString> validValues;\n\n  undefined clearOverride();\n  Promise<undefined> requestOverride(DOMString? value);\n\n  attribute EventHandler onchange;\n};",
+        "type": "interface",
+        "name": "PreferenceObject",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferenceobject-override"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferenceobject-value"
+          },
+          {
+            "type": "attribute",
+            "name": "validValues",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferenceobject-validvalues"
+          },
+          {
+            "type": "operation",
+            "name": "clearOverride",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferenceobject-clearoverride"
+          },
+          {
+            "type": "operation",
+            "name": "requestOverride",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferenceobject-requestoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/mediaqueries-5/#dom-preferenceobject-onchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/mediaqueries-5/#preferenceobject"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window, SecureContext]\npartial interface Navigator {\n  [SameObject] readonly attribute PreferenceManager preferences;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "preferences",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PreferenceManager"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/mediaqueries-5/#dom-navigator-preferences"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSCustomMediaRule",
+        "Navigator",
+        "PreferenceManager",
+        "PreferenceObject"
+      ]
+    },
+    "dependencies": {
+      "CSSCustomMediaRule": [
+        "CSSRule",
+        "CSSOMString",
+        "CustomMediaQuery"
+      ],
+      "Navigator": [
+        "PreferenceManager"
+      ],
+      "PreferenceManager": [
+        "PreferenceObject"
+      ],
+      "PreferenceObject": [
+        "EventTarget",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "MediaList",
+      "CSSRule",
+      "CSSOMString",
+      "Navigator",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

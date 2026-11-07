@@ -1,0 +1,83 @@
+{
+  "spec": {
+    "title": "AV1 WebCodecs Registration",
+    "url": "https://w3c.github.io/webcodecs/av1_codec_registration.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "VideoEncoderEncodeOptionsForAv1": {
+        "fragment": "dictionary VideoEncoderEncodeOptionsForAv1 {\n  unsigned short? quantizer;\n};",
+        "type": "dictionary",
+        "name": "VideoEncoderEncodeOptionsForAv1",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "quantizer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/av1_codec_registration.html#dom-videoencoderencodeoptionsforav1-quantizer"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/av1_codec_registration.html#dictdef-videoencoderencodeoptionsforav1"
+      }
+    },
+    "idlExtendedNames": {
+      "VideoEncoderEncodeOptions": [
+        {
+          "fragment": "partial dictionary VideoEncoderEncodeOptions {\n  VideoEncoderEncodeOptionsForAv1 av1;\n};",
+          "type": "dictionary",
+          "name": "VideoEncoderEncodeOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "av1",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "VideoEncoderEncodeOptionsForAv1"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/av1_codec_registration.html#dom-videoencoderencodeoptions-av1"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "VideoEncoderEncodeOptions": [
+        "VideoEncoderEncodeOptionsForAv1"
+      ],
+      "VideoEncoderEncodeOptionsForAv1": []
+    },
+    "externalDependencies": [
+      "VideoEncoderEncodeOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

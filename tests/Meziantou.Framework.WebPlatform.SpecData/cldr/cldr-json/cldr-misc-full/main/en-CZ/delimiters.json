@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-CZ": {
+      "identity": {
+        "language": "en",
+        "territory": "CZ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

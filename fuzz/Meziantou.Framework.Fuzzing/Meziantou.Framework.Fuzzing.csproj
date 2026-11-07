@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!--
+    The host shared by the SharpFuzz fuzz projects (fuzz/*.Fuzz): the target registry, the libFuzzer entry point, the
+    replay of inputs, the export of the seeds and dictionaries, and the text decoding of the inputs. See fuzz/README.md.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpFuzz" Version="2.3.0" />
+  </ItemGroup>
+</Project>

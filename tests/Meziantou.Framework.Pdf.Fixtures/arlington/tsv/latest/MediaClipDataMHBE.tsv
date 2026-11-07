@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+BU	string-ascii	1.5		FALSE	FALSE	FALSE					Table 287 - absolute URL as base URL

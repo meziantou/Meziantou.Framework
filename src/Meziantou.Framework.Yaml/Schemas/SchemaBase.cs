@@ -72,7 +72,7 @@ public abstract class SchemaBase : IYamlSchema
 
         if (nodeEvent is Scalar scalar)
         {
-            TryParse(scalar, false, out var tag, out _);
+            _ = TryParse(scalar, decodeValue: false, out var tag, out _);
             return tag;
         }
 
@@ -140,8 +140,8 @@ public abstract class SchemaBase : IYamlSchema
         defaultTag = null;
         value = null;
 
-        // DoubleQuoted and SingleQuoted string are always decoded
-        if (scalar.Style == ScalarStyle.DoubleQuoted || scalar.Style == ScalarStyle.SingleQuoted)
+        // Implicit tag resolution only applies to plain scalars: an untagged quoted, literal, or folded scalar is a string.
+        if (!IsPlainStyle(scalar.Style))
         {
             defaultTag = StrShortTag;
             if (decodeValue)
@@ -188,9 +188,14 @@ public abstract class SchemaBase : IYamlSchema
 
         value = null;
 
-        // DoubleQuoted and SingleQuoted string are always decoded
-        if (type == typeof(string) && (scalar.Style == ScalarStyle.DoubleQuoted || scalar.Style == ScalarStyle.SingleQuoted))
+        // Implicit tag resolution only applies to plain scalars: an untagged quoted, literal, or folded scalar is a string.
+        if (!IsPlainStyle(scalar.Style))
         {
+            if (type != typeof(string))
+            {
+                return false;
+            }
+
             value = scalar.Value;
             return true;
         }
@@ -233,6 +238,8 @@ public abstract class SchemaBase : IYamlSchema
     {
     }
 
+    private static bool IsPlainStyle(ScalarStyle style) => style is ScalarStyle.Any or ScalarStyle.Plain;
+
     /// <summary>
     /// Add a tag resolution rule that is invoked when <paramref name="regex" /> matches
     /// the <see cref="Scalar">Value of</see> a <see cref="Scalar" /> node.
@@ -246,14 +253,20 @@ public abstract class SchemaBase : IYamlSchema
     /// <param name="decode">The decode function.</param>
     /// <param name="encode">The encode function.</param>
     /// <example>
-    ///   <code>
-    /// BeginUpdate(); // to avoid invoking slow internal calculation method many times.
-    /// Add( ... );
-    /// Add( ... );
-    /// Add( ... );
-    /// Add( ... );
-    /// EndUpdate();   // automaticall invoke internal calculation method
-    ///   </code></example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Yaml.Tests/SchemaTests.cs" ref:region="SchemaBase_AddScalarRule" ref:dedent="true">
+    /// private sealed class OnOffSchema : CoreSchema
+    /// {
+    ///     protected override void PrepareScalarRules()
+    ///     {
+    ///         base.PrepareScalarRules();
+    ///
+    ///         // Resolve on/off as booleans, in addition to the rules of the core schema
+    ///         AddScalarRule("!!bool", "on|On|ON", _ =&gt; true, null);
+    ///         AddScalarRule("!!bool", "off|Off|OFF", _ =&gt; false, null);
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
     protected void AddScalarRule<T>(string tag, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<Match, T?> decode, Func<T, string>? encode)
     {
         // Make sure the tag is expanded to its long form
@@ -324,7 +337,7 @@ public abstract class SchemaBase : IYamlSchema
         {
             _algorithms.Add(
                 entry.Key,
-                new Regex("^(" + entry.Value + ")$", RegexOptions.None, Timeout.InfiniteTimeSpan)
+                new Regex(@"\A(" + entry.Value + @")\z", RegexOptions.None, Timeout.InfiniteTimeSpan)
             );
         }
 
@@ -359,7 +372,7 @@ public abstract class SchemaBase : IYamlSchema
         {
             Tag = shortTag;
             PatternSource = regex;
-            Pattern = new Regex("^(?:" + regex + ")$", RegexOptions.None, Timeout.InfiniteTimeSpan);
+            Pattern = new Regex(@"\A(?:" + regex + @")\z", RegexOptions.None, Timeout.InfiniteTimeSpan);
             this._types = types;
             _decoder = decoder;
             _encoder = encoder;

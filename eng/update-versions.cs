@@ -2,6 +2,7 @@
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -9,19 +10,19 @@ using Meziantou.Framework;
 
 var createPullRequest = false;
 var forceBumpAll = false;
-var numberOfCommits = 50;
+var since = "2 weeks ago";
 
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
     {
         case "--help" or "-h":
-            Console.WriteLine("Usage: dotnet run update-versions.cs [-- --create-pull-request --force-bump-all --number-of-commits <N>]");
+            Console.WriteLine("Usage: dotnet run update-versions.cs [-- --create-pull-request --force-bump-all --since <date>]");
             Console.WriteLine("Bumps package versions based on git commit history.");
             Console.WriteLine("Options:");
             Console.WriteLine("  --create-pull-request      Create or update a GitHub pull request");
             Console.WriteLine("  --force-bump-all           Bump all packable package versions");
-            Console.WriteLine("  --number-of-commits <N>    Number of commits to analyze (default: 50)");
+            Console.WriteLine("  --since <date>             Analyze every commit newer than <date> (default: 2 weeks ago)");
             return 0;
         case "--create-pull-request":
             createPullRequest = true;
@@ -29,8 +30,8 @@ for (var i = 0; i < args.Length; i++)
         case "--force-bump-all":
             forceBumpAll = true;
             break;
-        case "--number-of-commits" when i + 1 < args.Length:
-            numberOfCommits = int.Parse(args[++i], CultureInfo.InvariantCulture);
+        case "--since" when i + 1 < args.Length:
+            since = args[++i];
             break;
     }
 }
@@ -44,8 +45,8 @@ var skippedCommits = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 var rootPath = GetRepositoryRoot();
 var srcPath = rootPath / "src";
 
-// Get recent commits
-var commits = RunAndCapture("git", ["log", $"--pretty=format:%H", "-n", numberOfCommits.ToString(CultureInfo.InvariantCulture)])
+// Get the commits made in the time window, from the newest to the oldest
+var commits = RunAndCapture("git", ["log", "--pretty=format:%H", $"--since={since}"])
     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
     .Select(c => c.Trim().Trim('\''))
     .ToArray();
@@ -56,19 +57,22 @@ var changesPerCsproj = new Dictionary<string, CsprojInfo>(StringComparer.Ordinal
 var allCsprojFiles = new List<string>();
 var packableProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-foreach (var file in Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories))
+// Evaluating a project starts a dotnet process, which is by far the slowest step of the script, so evaluate them concurrently
+var projectEvaluations = Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories)
+    .AsParallel()
+    .AsOrdered()
+    .WithDegreeOfParallelism(Environment.ProcessorCount)
+    .Select(EvaluateProject)
+    .ToArray();
+
+var projectReferences = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+foreach (var (file, isPackable, references) in projectEvaluations)
 {
-    var isPackable = IsPackableProject(file);
-    if (isPackable)
-    {
-        _ = packableProjects.Add(file);
-    }
-
+    projectReferences[file] = references;
     if (!isPackable)
-    {
         continue;
-    }
 
+    _ = packableProjects.Add(file);
     Console.WriteLine($"Project file detected: {file}");
     allCsprojFiles.Add(file);
     changesPerCsproj[file] = new CsprojInfo();
@@ -81,7 +85,7 @@ var reverseDependencyGraph = new Dictionary<string, List<string>>(StringComparer
 
 foreach (var csproj in allCsprojFiles)
 {
-    dependencyGraph[csproj] = GetProjectReferences(csproj);
+    dependencyGraph[csproj] = projectReferences[csproj];
     reverseDependencyGraph[csproj] = [];
 }
 
@@ -93,6 +97,27 @@ foreach (var csproj in allCsprojFiles)
         {
             list.Add(csproj);
         }
+    }
+}
+
+// A project that is not packable (an analyzer, a code fix, a source generator) carries no version of its own: it
+// ships inside the packable projects that reference it with ProjectReference/ReferenceOutputAssembly=false. Map it
+// to those packages so that a change confined to it still bumps the version of the package that ships it.
+var shippedByPackages = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+foreach (var csproj in allCsprojFiles)
+{
+    foreach (var dependency in dependencyGraph[csproj])
+    {
+        if (packableProjects.Contains(dependency))
+            continue;
+
+        if (!shippedByPackages.TryGetValue(dependency, out var packages))
+        {
+            packages = [];
+            shippedByPackages[dependency] = packages;
+        }
+
+        packages.Add(csproj);
     }
 }
 
@@ -113,6 +138,40 @@ foreach (var csproj in dependencyGraph.Keys.OrderBy(k => k, StringComparer.Ordin
 
 Console.WriteLine();
 
+// Load the git data of all commits concurrently. The commits are still processed sequentially below because the
+// processing depends on the order: a version change stops the processing of the older commits of a project.
+// Note that the work must be done in Select: ParallelEnumerable.ToDictionary runs its selectors sequentially.
+var changesPerCommit = commits
+    .Where(commit => !skippedCommits.Contains(commit))
+    .AsParallel()
+    .WithDegreeOfParallelism(Environment.ProcessorCount)
+    .Select(commit => (Commit: commit, Changes: RunAndCapture("git", ["diff", "--name-only", commit, $"{commit}~1"])
+        .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        .Where(c => c.StartsWith("src/", StringComparison.Ordinal))
+        .ToArray()))
+    .ToDictionary(item => item.Commit, item => item.Changes, StringComparer.Ordinal);
+
+var projectFileContents = changesPerCommit
+    .SelectMany(kv => kv.Value.Where(c => c.EndsWith(".csproj", StringComparison.Ordinal)).Select(change => (Commit: kv.Key, Change: change)))
+    .AsParallel()
+    .WithDegreeOfParallelism(Environment.ProcessorCount)
+    .Select(item =>
+    {
+        string previousContent;
+        try
+        {
+            previousContent = RunAndCapture("git", ["show", $"{item.Commit}~1:{item.Change}"]);
+        }
+        catch
+        {
+            previousContent = "";
+        }
+
+        var currentContent = RunAndCapture("git", ["show", $"{item.Commit}:{item.Change}"]);
+        return (Key: item, Contents: (PreviousContent: previousContent, CurrentContent: currentContent));
+    })
+    .ToDictionary(item => item.Key, item => item.Contents);
+
 // Process commits
 var i2 = 0;
 foreach (var commit in commits)
@@ -126,28 +185,16 @@ foreach (var commit in commits)
     i2++;
     Console.WriteLine($"Processing commit {i2}/{commits.Length}: {commit}");
 
-    var changes = RunAndCapture("git", ["diff", "--name-only", commit, $"{commit}~1"])
-        .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-        .Where(c => c.StartsWith("src/", StringComparison.Ordinal))
-        .ToArray();
+    var changes = changesPerCommit[commit];
 
     // Process csproj files first to check for version changes
     foreach (var change in changes.Where(c => c.EndsWith(".csproj", StringComparison.Ordinal)))
     {
-        string previousContent;
-        try
-        {
-            previousContent = RunAndCapture("git", ["show", $"{commit}~1:{change}"]);
-        }
-        catch
-        {
-            previousContent = "";
-        }
+        var (previousContent, currentContent) = projectFileContents[(commit, change)];
 
         Console.WriteLine($"Getting previous version of {change}");
         var previousVersion = GetVersion(previousContent);
 
-        var currentContent = RunAndCapture("git", ["show", $"{commit}:{change}"]);
         Console.WriteLine($"Getting current version of {change}");
         var currentVersion = GetVersion(currentContent);
 
@@ -157,16 +204,16 @@ foreach (var commit in commits)
             if (csproj is null)
                 continue;
 
-            if (!changesPerCsproj.TryGetValue(csproj, out var info))
+            foreach (var versionedProject in GetVersionedProjects(csproj))
             {
-                if (!packableProjects.Contains(csproj))
-                    continue;
+                if (!changesPerCsproj.TryGetValue(versionedProject, out var info))
+                {
+                    info = new CsprojInfo();
+                    changesPerCsproj[versionedProject] = info;
+                }
 
-                info = new CsprojInfo();
-                changesPerCsproj[csproj] = info;
+                info.StopProcessing = true;
             }
-
-            info.StopProcessing = true;
         }
     }
 
@@ -176,19 +223,19 @@ foreach (var commit in commits)
         if (csproj is null)
             continue;
 
-        if (!changesPerCsproj.TryGetValue(csproj, out var info))
+        foreach (var versionedProject in GetVersionedProjects(csproj))
         {
-            if (!packableProjects.Contains(csproj))
+            if (!changesPerCsproj.TryGetValue(versionedProject, out var info))
+            {
+                info = new CsprojInfo();
+                changesPerCsproj[versionedProject] = info;
+            }
+
+            if (info.StopProcessing)
                 continue;
 
-            info = new CsprojInfo();
-            changesPerCsproj[csproj] = info;
+            info.Commits.Add(commit);
         }
-
-        if (info.StopProcessing)
-            continue;
-
-        info.Commits.Add(commit);
     }
 }
 
@@ -261,11 +308,9 @@ foreach (var (csproj, info) in projectsToUpdate.OrderBy(kv => kv.Key, StringComp
         {
             foreach (var commit in info.Commits.Distinct(StringComparer.Ordinal))
             {
-                var message = RunAndCapture("git", ["log", "--format=%B", "-n", "1", commit]);
-                message = Regex.Replace(message, @"\r?\n", "\n", RegexOptions.NonBacktracking);
-                message = Regex.Replace(message, @"\s+", " ", RegexOptions.NonBacktracking);
-                message = message.Replace("Co-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>", "", StringComparison.OrdinalIgnoreCase);
-                message = message.Trim();
+                // Only the subject: commit bodies are long enough that including them blows past the pull request body limit
+                var message = RunAndCapture("git", ["log", "--format=%s", "-n", "1", commit]);
+                message = Regex.Replace(message, @"\s+", " ", RegexOptions.NonBacktracking).Trim();
                 prMessage.Append($"- {commit}: {message}\n");
             }
         }
@@ -274,7 +319,7 @@ foreach (var (csproj, info) in projectsToUpdate.OrderBy(kv => kv.Key, StringComp
 
 if (updated)
 {
-    var prBody = prMessage.ToString();
+    var prBody = TruncatePullRequestBody(prMessage.ToString());
     Console.WriteLine(prBody);
 
     if (createPullRequest)
@@ -403,31 +448,27 @@ string? GetCsproj(string relativePath)
     return null;
 }
 
-List<string> GetProjectReferences(string csprojPath)
+// Returns the projects whose version a change to csproj must bump: the project itself when it is packable,
+// otherwise the packable projects that ship it through an explicit ProjectReference.
+List<string> GetVersionedProjects(string csproj, HashSet<string>? visited = null)
 {
-    try
-    {
-        var doc = XDocument.Load(csprojPath);
-        var result = new List<string>();
-        foreach (var projRef in doc.Descendants("ProjectReference"))
-        {
-            var include = projRef.Attribute("Include")?.Value;
-            if (string.IsNullOrEmpty(include))
-                continue;
+    if (packableProjects.Contains(csproj))
+        return [csproj];
 
-            string referencedProject = FullPath.FromPath(csprojPath).Parent / include;
-            if (File.Exists(referencedProject) && referencedProject.StartsWith(srcPath, StringComparison.OrdinalIgnoreCase))
-            {
-                result.Add(referencedProject);
-            }
-        }
-
-        return result;
-    }
-    catch
-    {
+    if (!shippedByPackages.TryGetValue(csproj, out var packages))
         return [];
+
+    visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    if (!visited.Add(csproj))
+        return [];
+
+    var result = new List<string>();
+    foreach (var package in packages)
+    {
+        result.AddRange(GetVersionedProjects(package, visited));
     }
+
+    return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 }
 
 List<string> GetTransitiveDependents(string csproj, HashSet<string>? visited = null)
@@ -469,15 +510,39 @@ static string RunAndCapture(string fileName, string[] arguments)
     return output;
 }
 
-static bool IsPackableProject(string csprojPath)
+// Uses the evaluation of MSBuild rather than the XML of the project file: it resolves the paths of the references
+// (written with backslashes in some project files, which are not directory separators on the Linux agent that runs the
+// script) and includes the references added by imported files.
+ProjectEvaluation EvaluateProject(string csprojPath)
 {
-    var output = RunAndCapture("dotnet", ["msbuild", csprojPath, "-nologo", "-v:q", "-getProperty:IsPackable"]).Trim();
-    if (!bool.TryParse(output, out var result))
+    var output = RunAndCapture("dotnet", ["msbuild", csprojPath, "-nologo", "-v:q", "-getProperty:IsPackable", "-getItem:ProjectReference"]);
+    var jsonStart = output.IndexOf('{', StringComparison.Ordinal);
+    if (jsonStart < 0)
+        throw new InvalidOperationException($"Failed to evaluate '{csprojPath}'. Output: '{output}'");
+
+    using var document = JsonDocument.Parse(output[jsonStart..]);
+    var root = document.RootElement;
+
+    var isPackableValue = root.GetProperty("Properties").GetProperty("IsPackable").GetString();
+    if (!bool.TryParse(isPackableValue, out var isPackable))
+        throw new InvalidOperationException($"Failed to evaluate IsPackable for '{csprojPath}'. Value: '{isPackableValue}'");
+
+    var references = new List<string>();
+    if (root.TryGetProperty("Items", out var items) && items.TryGetProperty("ProjectReference", out var projectReferenceItems))
     {
-        throw new InvalidOperationException($"Failed to evaluate IsPackable for '{csprojPath}'. Value: '{output}'");
+        foreach (var item in projectReferenceItems.EnumerateArray())
+        {
+            if (item.GetProperty("FullPath").GetString() is not { } referencedProject)
+                continue;
+
+            if (File.Exists(referencedProject) && FullPath.FromPath(referencedProject).IsChildOf(srcPath))
+            {
+                references.Add(FullPath.FromPath(referencedProject));
+            }
+        }
     }
 
-    return result;
+    return new ProjectEvaluation(csprojPath, isPackable, references);
 }
 
 static void RunProcess(string fileName, string[] arguments)
@@ -501,6 +566,22 @@ static void RunProcess(string fileName, string[] arguments)
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
 
+static string TruncatePullRequestBody(string body)
+{
+    // GitHub rejects a pull request body longer than 65536 characters
+    const int MaximumLength = 65536;
+    const string TruncationNotice = "\n_The list of commits is truncated because the pull request body exceeds the maximum length allowed by GitHub._\n";
+
+    if (body.Length <= MaximumLength)
+        return body;
+
+    var length = MaximumLength - TruncationNotice.Length;
+    var lastLineBreak = body.AsSpan(0, length).LastIndexOf('\n');
+    length = lastLineBreak > 0 ? lastLineBreak + 1 : char.IsHighSurrogate(body[length - 1]) ? length - 1 : length;
+
+    return string.Concat(body[..length], TruncationNotice);
+}
+
 internal sealed class CsprojInfo
 {
     public List<string> Commits { get; } = [];
@@ -514,3 +595,5 @@ internal sealed class ProjectUpdateInfo
     public bool UpdatedDueToDependency { get; init; }
     public string? DependencySource { get; init; }
 }
+
+internal sealed record ProjectEvaluation(string File, bool IsPackable, List<string> References);

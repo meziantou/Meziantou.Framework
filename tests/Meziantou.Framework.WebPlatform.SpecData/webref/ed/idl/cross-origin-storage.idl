@@ -1,0 +1,28 @@
+// GENERATED CONTENT - DO NOT EDIT
+// Content was automatically extracted by Reffy into webref
+// (https://github.com/w3c/webref)
+// Source: Cross-Origin Storage (https://wicg.github.io/cross-origin-storage/)
+
+[Exposed=(Window,DedicatedWorker,SharedWorker), SecureContext]
+interface CrossOriginStorageManager {
+  Promise<FileSystemFileHandle> getFileHandle(
+      CrossOriginStorageGetFileHandleHash hash,
+      optional CrossOriginStorageGetFileHandleOptions options = {});
+};
+
+dictionary CrossOriginStorageGetFileHandleHash {
+  required DOMString value;
+  required DOMString algorithm;
+};
+
+dictionary CrossOriginStorageGetFileHandleOptions {
+  boolean create = false;
+  (DOMString or sequence<DOMString>) origins;
+};
+
+interface mixin NavigatorCrossOriginStorage {
+  [Exposed=(Window,DedicatedWorker,SharedWorker), SameObject, SecureContext]
+  readonly attribute CrossOriginStorageManager crossOriginStorage;
+};
+Navigator includes NavigatorCrossOriginStorage;
+WorkerNavigator includes NavigatorCrossOriginStorage;

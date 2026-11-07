@@ -1,0 +1,431 @@
+{
+  "spec": {
+    "title": "Picture-in-Picture",
+    "url": "https://w3c.github.io/picture-in-picture/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "PictureInPictureEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "PictureInPictureWindow"
+        ]
+      }
+    },
+    "idlNames": {
+      "PictureInPictureWindow": {
+        "fragment": "[Exposed=Window]\ninterface PictureInPictureWindow : EventTarget {\n  readonly attribute long width;\n  readonly attribute long height;\n\n  attribute EventHandler onresize;\n};",
+        "type": "interface",
+        "name": "PictureInPictureWindow",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/picture-in-picture/#dom-pictureinpicturewindow-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/picture-in-picture/#dom-pictureinpicturewindow-height"
+          },
+          {
+            "type": "attribute",
+            "name": "onresize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/picture-in-picture/#dom-pictureinpicturewindow-onresize"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/picture-in-picture/#pictureinpicturewindow"
+      },
+      "PictureInPictureEvent": {
+        "fragment": "[Exposed=Window]\ninterface PictureInPictureEvent : Event {\n    constructor(DOMString type, PictureInPictureEventInit eventInitDict);\n    [SameObject] readonly attribute PictureInPictureWindow pictureInPictureWindow;\n};",
+        "type": "interface",
+        "name": "PictureInPictureEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PictureInPictureEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/picture-in-picture/#dom-pictureinpictureevent-pictureinpictureevent"
+          },
+          {
+            "type": "attribute",
+            "name": "pictureInPictureWindow",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PictureInPictureWindow"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/picture-in-picture/#dom-pictureinpictureevent-pictureinpicturewindow"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/picture-in-picture/#pictureinpictureevent"
+      },
+      "PictureInPictureEventInit": {
+        "fragment": "dictionary PictureInPictureEventInit : EventInit {\n    required PictureInPictureWindow pictureInPictureWindow;\n};",
+        "type": "dictionary",
+        "name": "PictureInPictureEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "pictureInPictureWindow",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PictureInPictureWindow"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/picture-in-picture/#dom-pictureinpictureeventinit-pictureinpicturewindow"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/picture-in-picture/#dictdef-pictureinpictureeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLVideoElement": [
+        {
+          "fragment": "partial interface HTMLVideoElement {\n  [NewObject] Promise<PictureInPictureWindow> requestPictureInPicture();\n\n  attribute EventHandler onenterpictureinpicture;\n  attribute EventHandler onleavepictureinpicture;\n\n  [CEReactions] attribute boolean disablePictureInPicture;\n};",
+          "type": "interface",
+          "name": "HTMLVideoElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestPictureInPicture",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PictureInPictureWindow"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/picture-in-picture/#dom-htmlvideoelement-requestpictureinpicture"
+            },
+            {
+              "type": "attribute",
+              "name": "onenterpictureinpicture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/picture-in-picture/#dom-htmlvideoelement-onenterpictureinpicture"
+            },
+            {
+              "type": "attribute",
+              "name": "onleavepictureinpicture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/picture-in-picture/#dom-htmlvideoelement-onleavepictureinpicture"
+            },
+            {
+              "type": "attribute",
+              "name": "disablePictureInPicture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/picture-in-picture/#dom-htmlvideoelement-disablepictureinpicture"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n  readonly attribute boolean pictureInPictureEnabled;\n\n  [NewObject] Promise<undefined> exitPictureInPicture();\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "pictureInPictureEnabled",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/picture-in-picture/#dom-document-pictureinpictureenabled"
+            },
+            {
+              "type": "operation",
+              "name": "exitPictureInPicture",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://w3c.github.io/picture-in-picture/#dom-document-exitpictureinpicture"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "DocumentOrShadowRoot": [
+        {
+          "fragment": "partial interface mixin DocumentOrShadowRoot {\n  readonly attribute Element? pictureInPictureElement;\n};",
+          "type": "interface mixin",
+          "name": "DocumentOrShadowRoot",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "pictureInPictureElement",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "Element"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/picture-in-picture/#dom-documentorshadowroot-pictureinpictureelement"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PictureInPictureWindow",
+        "PictureInPictureEvent"
+      ]
+    },
+    "dependencies": {
+      "HTMLVideoElement": [
+        "PictureInPictureWindow",
+        "EventHandler"
+      ],
+      "Document": [],
+      "DocumentOrShadowRoot": [
+        "Element"
+      ],
+      "PictureInPictureWindow": [
+        "EventTarget",
+        "EventHandler"
+      ],
+      "PictureInPictureEvent": [
+        "Event",
+        "PictureInPictureEventInit",
+        "PictureInPictureWindow"
+      ],
+      "PictureInPictureEventInit": [
+        "EventInit",
+        "PictureInPictureWindow"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLVideoElement",
+      "EventHandler",
+      "Document",
+      "DocumentOrShadowRoot",
+      "Element",
+      "EventTarget",
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

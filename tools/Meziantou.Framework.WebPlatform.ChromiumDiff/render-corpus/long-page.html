@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<title>Long page</title>
+<style>
+  body { margin: 0 }
+  header { position: fixed; top: 0; left: 0; right: 0; height: 48px; background: rgba(20, 20, 60, .9); color: white; padding: 12px; box-sizing: border-box }
+  .hero { height: 100vh; background: linear-gradient(#9cf, #fff); padding-top: 64px; box-sizing: border-box; font-size: 32px; text-align: center }
+  .sticky { position: sticky; top: 48px; background: #fc0; padding: 8px }
+  section { height: 600px; border-top: 4px solid #333; padding: 16px }
+  section:nth-child(odd) { background: #eef }
+  .wide { width: 1600px; height: 40px; background: repeating-linear-gradient(90deg, #c33 0 100px, #33c 100px 200px) }
+</style>
+<header>Fixed header</header>
+<div class="hero">Hero (100vh)</div>
+<div class="sticky">Sticky bar</div>
+<main>
+<section>Section 1 <div class="wide"></div></section>
+<section>Section 2</section>
+<section>Section 3</section>
+<section>Section 4</section>
+</main>

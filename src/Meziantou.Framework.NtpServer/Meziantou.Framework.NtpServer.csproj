@@ -2,9 +2,22 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.0</Version>
+    <Version>3.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>An NTP server that responds to NTP time queries (supports NTPv3 and NTPv4)</Description>
+    <PackageTags>ntp, sntp, time, server, networking</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.NtpServer.Tests" />
+  </ItemGroup>
+
+  <!-- The wire format is defined once, in the client project, and shared as source. These types are
+       internal, so compiling them into both assemblies does not create duplicate public API for a
+       consumer that references both packages. -->
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework.NtpClient/NtpTimestamp.cs" Link="NtpTimestamp.cs" />
+    <Compile Include="../Meziantou.Framework.NtpClient/NtpMode.cs" Link="NtpMode.cs" />
+  </ItemGroup>
 
 </Project>

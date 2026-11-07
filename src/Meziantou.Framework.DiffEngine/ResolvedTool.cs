@@ -16,7 +16,7 @@ public sealed class ResolvedTool
         ExePath = exePath;
         _launchArguments = launchArguments;
         SupportsText = supportsText;
-        BinaryExtensions = new ReadOnlyCollection<string>(binaryExtensions.Select(static extension => NormalizeExtension(extension)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
+        BinaryExtensions = new ReadOnlyCollection<string>(binaryExtensions.Select(static extension => FileExtension.Normalize(extension)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
     }
 
     public string Name { get; }
@@ -33,11 +33,5 @@ public sealed class ResolvedTool
         return TargetPosition.TargetOnLeft
             ? _launchArguments.Left(tempFile, targetFile)
             : _launchArguments.Right(tempFile, targetFile);
-    }
-
-    private static string NormalizeExtension(string extension)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(extension);
-        return extension[0] == '.' ? extension : "." + extension;
     }
 }

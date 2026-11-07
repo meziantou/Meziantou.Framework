@@ -1,0 +1,216 @@
+{
+  "spec": {
+    "title": "Captured Mouse Events",
+    "url": "https://screen-share.github.io/captured-mouse-events/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "CapturedMouseEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "CapturedMouseEvent": {
+        "fragment": "[Exposed=Window]\ninterface CapturedMouseEvent : Event {\n  constructor(DOMString type, optional CapturedMouseEventInit eventInitDict = {});\n  readonly attribute long surfaceX;\n  readonly attribute long surfaceY;\n};",
+        "type": "interface",
+        "name": "CapturedMouseEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CapturedMouseEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturedmouseevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "surfaceX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturedmouseevent-surfacex"
+          },
+          {
+            "type": "attribute",
+            "name": "surfaceY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturedmouseevent-surfacey"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturedmouseevent"
+      },
+      "CapturedMouseEventInit": {
+        "fragment": "dictionary CapturedMouseEventInit : EventInit {\n  long surfaceX = -1;\n  long surfaceY = -1;\n};",
+        "type": "dictionary",
+        "name": "CapturedMouseEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "surfaceX",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "-1"
+            },
+            "required": false,
+            "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturedmouseeventinit-surfacex"
+          },
+          {
+            "type": "field",
+            "name": "surfaceY",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "-1"
+            },
+            "required": false,
+            "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturedmouseeventinit-surfacey"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturedmouseeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "CaptureController": [
+        {
+          "fragment": "partial interface CaptureController {\n  attribute EventHandler oncapturedmousechange;\n};",
+          "type": "interface",
+          "name": "CaptureController",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "oncapturedmousechange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://screen-share.github.io/captured-mouse-events/#dom-capturecontroller-oncapturedmousechange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CapturedMouseEvent"
+      ]
+    },
+    "dependencies": {
+      "CapturedMouseEvent": [
+        "Event",
+        "CapturedMouseEventInit"
+      ],
+      "CapturedMouseEventInit": [
+        "EventInit"
+      ],
+      "CaptureController": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Event",
+      "EventInit",
+      "CaptureController",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

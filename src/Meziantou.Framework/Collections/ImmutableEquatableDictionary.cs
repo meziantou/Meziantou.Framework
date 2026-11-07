@@ -14,6 +14,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
     public static ImmutableEquatableDictionary<TKey, TValue> Empty { get; } = new([]);
 
     private readonly Dictionary<TKey, TValue> _values;
+    private int _hashCode;
 
     internal ImmutableEquatableDictionary(Dictionary<TKey, TValue> values)
     {
@@ -41,7 +42,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
 
         foreach (var entry in thisDict)
         {
-            if (!otherDict.TryGetValue(entry.Key, out var otherValue) || !entry.Value.Equals(otherValue))
+            if (!otherDict.TryGetValue(entry.Key, out var otherValue) || !EqualityComparer<TValue>.Default.Equals(entry.Value, otherValue))
                 return false;
         }
 
@@ -50,7 +51,30 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImmutableEquatableDictionary<TKey, TValue> other && Equals(other);
 
-    public override int GetHashCode() => _values.Count;
+    public override int GetHashCode()
+    {
+        // The instance is immutable, so the hash code is computed once. 0 means "not computed yet".
+        var hashCode = _hashCode;
+        if (hashCode is 0)
+        {
+            // Sum the hash codes of the entries, so the result does not depend on the enumeration order
+            var sum = 0;
+            foreach (var entry in _values)
+            {
+                sum = unchecked(sum + HashCode.Combine(entry.Key, entry.Value));
+            }
+
+            hashCode = HashCode.Combine(_values.Count, sum);
+            if (hashCode is 0)
+            {
+                hashCode = 1;
+            }
+
+            _hashCode = hashCode;
+        }
+
+        return hashCode;
+    }
 
     public static bool operator ==(ImmutableEquatableDictionary<TKey, TValue>? left, ImmutableEquatableDictionary<TKey, TValue>? right)
     {
@@ -90,22 +114,22 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
     bool ICollection.IsSynchronized => false;
     object ICollection.SyncRoot => this;
 
-    TValue IDictionary<TKey, TValue>.this[TKey key] { get => _values[key]; set => throw new InvalidOperationException(); }
-    object? IDictionary.this[object key] { get => ((IDictionary)_values)[key]; set => throw new InvalidOperationException(); }
+    TValue IDictionary<TKey, TValue>.this[TKey key] { get => _values[key]; set => throw new NotSupportedException(); }
+    object? IDictionary.this[object key] { get => ((IDictionary)_values)[key]; set => throw new NotSupportedException(); }
     bool IDictionary.Contains(object key) => ((IDictionary)_values).Contains(key);
     void ICollection.CopyTo(Array array, int index) => ((IDictionary)_values).CopyTo(array, index);
     bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) => _values.Contains(item);
     void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         => ((ICollection<KeyValuePair<TKey, TValue>>)_values).CopyTo(array, arrayIndex);
 
-    void IDictionary<TKey, TValue>.Add(TKey key, TValue value) => throw new InvalidOperationException();
-    bool IDictionary<TKey, TValue>.Remove(TKey key) => throw new InvalidOperationException();
-    void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) => throw new InvalidOperationException();
-    bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item) => throw new InvalidOperationException();
-    void ICollection<KeyValuePair<TKey, TValue>>.Clear() => throw new InvalidOperationException();
-    void IDictionary.Add(object key, object? value) => throw new InvalidOperationException();
-    void IDictionary.Remove(object key) => throw new InvalidOperationException();
-    void IDictionary.Clear() => throw new InvalidOperationException();
+    void IDictionary<TKey, TValue>.Add(TKey key, TValue value) => throw new NotSupportedException();
+    bool IDictionary<TKey, TValue>.Remove(TKey key) => throw new NotSupportedException();
+    void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) => throw new NotSupportedException();
+    bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item) => throw new NotSupportedException();
+    void ICollection<KeyValuePair<TKey, TValue>>.Clear() => throw new NotSupportedException();
+    void IDictionary.Add(object key, object? value) => throw new NotSupportedException();
+    void IDictionary.Remove(object key) => throw new NotSupportedException();
+    void IDictionary.Clear() => throw new NotSupportedException();
 
     private sealed class DebugView(ImmutableEquatableDictionary<TKey, TValue> collection)
     {
@@ -136,7 +160,7 @@ public static class ImmutableEquatableDictionary
         where TKey : IEquatable<TKey>
         where TValue : IEquatable<TValue>
     {
-        return values is ICollection<KeyValuePair<TKey, TValue>> { Count: 0 }
+        return values is ICollection<TValue> { Count: 0 }
             ? ImmutableEquatableDictionary<TKey, TValue>.Empty
             : new ImmutableEquatableDictionary<TKey, TValue>(values.ToDictionary(keySelector));
     }
@@ -168,8 +192,7 @@ public static class ImmutableEquatableDictionary
     {
         return values switch
         {
-            ICollection<KeyValuePair<TKey, TValue>> { Count: 0 } => ImmutableEquatableDictionary<TKey, TValue>.Empty,
-            IDictionary<TKey, TValue> dict => new ImmutableEquatableDictionary<TKey, TValue>(new(dict)),
+            ICollection<(TKey, TValue)> { Count: 0 } => ImmutableEquatableDictionary<TKey, TValue>.Empty,
             _ => new ImmutableEquatableDictionary<TKey, TValue>(values.ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2)),
         };
     }

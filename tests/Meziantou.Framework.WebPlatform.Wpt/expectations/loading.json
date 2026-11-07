@@ -1,0 +1,224 @@
+{
+  "loading/early-hints/404-with-early-hints.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/arbitrary-header-in-early-hints.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/coep-early-hints-none-final-require-corp.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/coep-early-hints-require-corp-final-none.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-absent-final-absent.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-absent-final-allowed.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-absent-final-disallowed.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-allowed-final-absent.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-allowed-final-allowed.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-allowed-final-disallowed.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-disallowed-final-absent.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-disallowed-final-allowed.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/csp-early-hints-disallowed-final-disallowed.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/early-hints-response-time.h2.html": {
+    "total": 1,
+    "failures": {
+      "Interim response times should correspond to delays (h2)": "FAIL"
+    }
+  },
+  "loading/early-hints/embed-object.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Early hints for an object element should be ignored.": "TIMEOUT"
+    }
+  },
+  "loading/early-hints/iframe-coep-disallow.h2.html": {
+    "total": 1
+  },
+  "loading/early-hints/iframe-pdf.h2.window.js": {
+    "total": 1
+  },
+  "loading/early-hints/iframe-x-frame-options-deny.h2.window.js": {
+    "total": 1
+  },
+  "loading/early-hints/invalid-headers-in-early-hints.h2.window.js": {
+    "total": 2
+  },
+  "loading/early-hints/modulepreload-as-worker-cross-origin.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/modulepreload-as-worker.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/modulepreload-cross-origin.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/modulepreload-in-early-hints.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/multiple-early-hints-responses.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preconnect-in-early-hints.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-fetch.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-fetchpriority.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-finished-before-final-response.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-finished-while-receiving-final-response-body.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-in-flight-when-consumed.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-initiator-type.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-integrity-mismatch.h2.window.js": {
+    "total": 1
+  },
+  "loading/early-hints/preload-integrity.h2.window.js": {
+    "total": 1
+  },
+  "loading/early-hints/preload-with-csp-document-disallow.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-with-invalid-as.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-without-as.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/preload-without-csp-document-disallow.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/redirect-cross-origin-between-early-hints.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/redirect-cross-origin.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/redirect-same-origin-between-early-hints.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/redirect-same-origin.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/referrer-policy-no-referrer.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/referrer-policy-origin-when-cross-origin.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/referrer-policy-origin.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/referrer-policy-same-origin.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/early-hints/referrer-policy-unsafe-url.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "loading/preloader-css-import-no-quote.html": {
+    "total": 1,
+    "failures": {
+      "Imported inline CSS with no quote is not blocked on pending CSS": "FAIL"
+    }
+  },
+  "loading/preloader-css-import-no-semicolon.html": {
+    "total": 1,
+    "failures": {
+      "Imported inline CSS with no semicolon is not blocked on pending CSS": "FAIL"
+    }
+  },
+  "loading/preloader-css-import-no-space.html": {
+    "total": 1,
+    "failures": {
+      "Imported inline CSS with no quote is not blocked on pending CSS": "FAIL"
+    }
+  },
+  "loading/preloader-css-import-single-quote.html": {
+    "total": 1,
+    "failures": {
+      "Imported inline CSS is not blocked on pending CSS": "FAIL"
+    }
+  },
+  "loading/preloader-css-import.html": {
+    "total": 1,
+    "failures": {
+      "Imported inline CSS is not blocked on pending CSS": "FAIL"
+    }
+  },
+  "loading/preloader-link-media.html": {
+    "total": 1,
+    "failures": {
+      "Non-matching link media is not preloaded": "FAIL"
+    }
+  },
+  "loading/preloader-template.html": {
+    "total": 1
+  }
+}

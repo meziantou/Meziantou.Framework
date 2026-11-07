@@ -7,27 +7,27 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers
     public sealed class InlineImgTagHelper : Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
     {
         public string? Src { get => throw null; set { } }
-        public InlineImgTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache)) { }
+        public InlineImgTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.Logging.ILogger<Meziantou.AspNetCore.Mvc.TagHelpers.InlineImgTagHelper> logger) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache), default(Microsoft.Extensions.Logging.ILogger)) { }
         public override System.Threading.Tasks.Task ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput output) => throw null;
     }
 
     public sealed class InlineScriptTagHelper : Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
     {
         public string? Src { get => throw null; set { } }
-        public InlineScriptTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache)) { }
+        public InlineScriptTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.Logging.ILogger<Meziantou.AspNetCore.Mvc.TagHelpers.InlineScriptTagHelper> logger) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache), default(Microsoft.Extensions.Logging.ILogger)) { }
         public override System.Threading.Tasks.Task ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput output) => throw null;
     }
 
     public sealed class InlineStyleTagHelper : Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
     {
         public string? Href { get => throw null; set { } }
-        public InlineStyleTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache)) { }
+        public InlineStyleTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.Logging.ILogger<Meziantou.AspNetCore.Mvc.TagHelpers.InlineStyleTagHelper> logger) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache), default(Microsoft.Extensions.Logging.ILogger)) { }
         public override System.Threading.Tasks.Task ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput output) => throw null;
     }
 
     public abstract class InlineTagHelper : Microsoft.AspNetCore.Razor.TagHelpers.TagHelper
     {
-        protected InlineTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache) { }
+        protected InlineTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.Logging.ILogger logger) { }
         protected System.Threading.Tasks.Task<string?> GetFileContentAsync(string? path) => throw null;
         protected System.Threading.Tasks.Task<string?> GetFileContentBase64Async(string? path) => throw null;
     }

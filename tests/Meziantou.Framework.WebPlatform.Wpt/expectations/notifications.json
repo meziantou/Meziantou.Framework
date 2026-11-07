@@ -1,0 +1,175 @@
+{
+  "notifications/constructor-basic.https.html": {
+    "total": 4
+  },
+  "notifications/constructor-invalid.https.html": {
+    "total": 1
+  },
+  "notifications/constructor-non-secure.html": {
+    "total": 1
+  },
+  "notifications/cross-origin-nested.tentative.https.sub.html": {
+    "total": 4
+  },
+  "notifications/cross-origin-same-site-request.tentative.https.sub.html": {
+    "total": 1
+  },
+  "notifications/cross-origin-serviceworker.tentative.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "third party serviceworker": "TIMEOUT"
+    }
+  },
+  "notifications/event-onclose.https.html": {
+    "total": 2
+  },
+  "notifications/event-onshow.https.html": {
+    "total": 1
+  },
+  "notifications/fetch-url-resolve.https.window.js": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "getNotifications() should give a resolved icon URL": "FAIL"
+    }
+  },
+  "notifications/getnotifications-across-processes.https.window.js": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Create and get notification within service worker": "NOTRUN",
+      "Get notification created from window": "TIMEOUT",
+      "Service worker test setup": "TIMEOUT"
+    }
+  },
+  "notifications/historical.any.js": {
+    "total": 2
+  },
+  "notifications/historical.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "notifications/icon-fetch.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Icon fetch should cause a corresponding fetch event in the service worker": "FAIL"
+    }
+  },
+  "notifications/icon-url-encoding-euc-kr.https.html": {
+    "total": 1
+  },
+  "notifications/idlharness.https.any.js": {
+    "total": 65,
+    "failures": {
+      "ServiceWorkerRegistration interface: operation getNotifications(optional GetNotificationOptions)": "FAIL",
+      "ServiceWorkerRegistration interface: operation showNotification(DOMString, optional NotificationOptions)": "FAIL"
+    }
+  },
+  "notifications/idlharness.https.any.js#dedicatedworker": {
+    "total": 64,
+    "failures": {
+      "ServiceWorkerRegistration interface: operation getNotifications(optional GetNotificationOptions)": "FAIL",
+      "ServiceWorkerRegistration interface: operation showNotification(DOMString, optional NotificationOptions)": "FAIL"
+    }
+  },
+  "notifications/idlharness.https.any.js#sharedworker": {
+    "total": 64,
+    "failures": {
+      "ServiceWorkerRegistration interface: operation getNotifications(optional GetNotificationOptions)": "FAIL",
+      "ServiceWorkerRegistration interface: operation showNotification(DOMString, optional NotificationOptions)": "FAIL"
+    }
+  },
+  "notifications/instance.https.window.js": {
+    "harness": "ERROR",
+    "total": 34,
+    "failures": {
+      "getNotifications(): Attribute exists with expected value: actions": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: body": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: data": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: dir": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: icon": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: lang": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: requireInteraction": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: silent": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: tag": "NOTRUN",
+      "getNotifications(): Attribute exists with expected value: title": "NOTRUN",
+      "getNotifications(): Setup": "FAIL",
+      "new Notification(): Attribute exists with expected value: actions": "FAIL",
+      "new Notification(): Attribute exists with expected value: body": "FAIL",
+      "new Notification(): Attribute exists with expected value: data": "FAIL",
+      "new Notification(): Attribute exists with expected value: dir": "FAIL",
+      "new Notification(): Attribute exists with expected value: icon": "FAIL",
+      "new Notification(): Attribute exists with expected value: lang": "FAIL",
+      "new Notification(): Attribute exists with expected value: requireInteraction": "FAIL",
+      "new Notification(): Attribute exists with expected value: silent": "FAIL",
+      "new Notification(): Attribute exists with expected value: tag": "FAIL",
+      "new Notification(): Attribute exists with expected value: title": "FAIL",
+      "new Notification(): Setup": "FAIL",
+      "notificationclose: Attribute exists with expected value: actions": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: body": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: data": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: dir": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: icon": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: lang": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: requireInteraction": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: silent": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: tag": "NOTRUN",
+      "notificationclose: Attribute exists with expected value: title": "NOTRUN",
+      "notificationclose: Setup": "NOTRUN"
+    }
+  },
+  "notifications/lang.https.html": {
+    "total": 37
+  },
+  "notifications/permission.html": {
+    "total": 1
+  },
+  "notifications/permissions-non-secure.html": {
+    "total": 3
+  },
+  "notifications/registration-association.https.window.js": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "A new SW registration gets no previous notification": "FAIL",
+      "An unregistered SW registration gets no previous notification": "NOTRUN"
+    }
+  },
+  "notifications/shownotification-window.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Refreshing window does not clear persistent notifications": "NOTRUN"
+    }
+  },
+  "notifications/shownotification-without-permission.https.window.js": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "showNotificaiton should not be listed with permission=default": "NOTRUN"
+    }
+  },
+  "notifications/shownotification.https.window.js": {
+    "harness": "ERROR",
+    "total": 11,
+    "failures": {
+      "fetching a notification with custom data": "NOTRUN",
+      "fetching a notification with invalid navigate URL": "NOTRUN",
+      "fetching a notification with navigate URL": "NOTRUN",
+      "fetching a notification with no navigate URL": "NOTRUN",
+      "fetching from another registration": "NOTRUN",
+      "fetching multiple notifications": "NOTRUN",
+      "fetching no notifications": "FAIL",
+      "fetching notification by tag filter": "NOTRUN",
+      "fetching notification with an empty title": "FAIL",
+      "fetching only persistent notifications": "NOTRUN",
+      "fetching same-tagged notification by tag filter": "NOTRUN"
+    }
+  },
+  "notifications/tag.https.html": {
+    "total": 2
+  },
+  "notifications/worker-gc.https.window.js": {
+    "total": 1
+  }
+}

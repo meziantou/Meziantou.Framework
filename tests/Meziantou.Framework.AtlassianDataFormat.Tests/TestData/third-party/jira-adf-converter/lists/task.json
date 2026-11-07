@@ -1,0 +1,1 @@
+{"version":1,"type":"doc","content":[{"type":"taskList","content":[{"type":"taskItem","content":[{"type":"text","text":"Incomplete task"}],"attrs":{"state":"TODO"}},{"type":"taskItem","content":[{"type":"text","text":"Completed task"}],"attrs":{"state":"DONE"}},{"type":"taskItem","content":[{"type":"text","text":"Another incomplete task"}],"attrs":{"state":"TODO"}}]}]}

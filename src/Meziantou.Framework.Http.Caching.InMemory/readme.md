@@ -10,10 +10,10 @@ dotnet add package Meziantou.Framework.Http.Caching.InMemory
 
 ## Usage
 
-```csharp
-using Meziantou.Framework.Http.Caching;
-using Meziantou.Framework.Http.Caching.InMemory;
+`InMemoryHttpCacheStore` is in the `Meziantou.Framework.Http.Caching.InMemory` namespace.
 
+<!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=InMemoryHttpCacheStore_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var persistenceProvider = new InMemoryHttpCacheStore();
 
 // Optional: restore data from a previous session
@@ -28,3 +28,4 @@ await persistenceProvider.PruneObsoleteEntriesAsync();
 // Persist cache to disk when needed
 await persistenceProvider.SaveToFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
 ```
+<!-- endref -->

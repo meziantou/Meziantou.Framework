@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-VC": {
+      "identity": {
+        "language": "en",
+        "territory": "VC"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

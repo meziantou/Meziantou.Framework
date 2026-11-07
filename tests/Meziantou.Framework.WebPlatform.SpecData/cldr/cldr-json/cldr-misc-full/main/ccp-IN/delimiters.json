@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ccp-IN": {
+      "identity": {
+        "language": "ccp",
+        "territory": "IN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

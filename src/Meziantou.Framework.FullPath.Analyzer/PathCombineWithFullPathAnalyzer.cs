@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -11,7 +12,7 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathCombineWithFullPathDiagnosticId,
         title: "Use '/' operator instead of Path.Combine",
-        messageFormat: "Use FullPath '/' operations instead of calling Path.Combine",
+        messageFormat: "Use FullPath '/' operations instead of calling Path.{0}",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
@@ -35,18 +36,20 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
     private static void Analyze(OperationAnalysisContext context, FullPathContext analyzerContext)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
+        // Path.Join is deliberately NOT included: it concatenates unconditionally, while the '/' operator
+        // (like Path.Combine) discards everything before a rooted segment
         if (invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" } targetMethod)
             return;
 
         if (!SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, analyzerContext.PathType))
             return;
 
-        foreach (var argument in invocationOperation.Arguments)
+        foreach (var argumentValue in FullPathAnalyzerCommon.GetArgumentValues(invocationOperation))
         {
-            if (!analyzerContext.IsFullPathType(argument.Value))
+            if (!analyzerContext.IsFullPathType(argumentValue))
                 continue;
 
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+            context.ReportDiagnostic(Descriptor, invocationOperation, targetMethod.Name);
             return;
         }
     }

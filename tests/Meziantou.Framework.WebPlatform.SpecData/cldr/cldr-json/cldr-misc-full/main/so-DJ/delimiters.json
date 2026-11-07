@@ -1,0 +1,16 @@
+{
+  "main": {
+    "so-DJ": {
+      "identity": {
+        "language": "so",
+        "territory": "DJ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

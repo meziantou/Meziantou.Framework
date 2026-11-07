@@ -1,12 +1,42 @@
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace Meziantou.Framework.Tests;
 
 public sealed class SensitiveDataTests
 {
+    [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region SensitiveData_Usage
+        // Create sensitive data from a string
+        using var secret = SensitiveData.Create("secret");
+
+        // Reveal the data
+        string str = secret.RevealToString();
+        char[] chars = secret.RevealToArray();
+        Assert.Equal("secret", str);
+        Assert.Equal("secret".ToCharArray(), chars);
+
+        var buffer = new char[secret.GetLength()];
+        secret.RevealInto(buffer);
+
+        // Or use it without keeping a copy of your own
+        var lengths = new List<int>();
+        secret.RevealAndUse(arg: lengths, static (span, list) => list.Add(span.Length));
+        Assert.Equal([6], lengths);
+
+        // Create sensitive data from a buffer of any unmanaged type
+        using var key = SensitiveData.Create(new byte[] { 1, 2, 3, 4, 5 });
+        byte[] revealedKey = key.RevealToArray();
+        Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, revealedKey);
+        #endregion
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -21,6 +51,54 @@ public sealed class SensitiveDataTests
         using var data = SensitiveData.Create(expected);
         Assert.Equal(length, data.GetLength());
         Assert.Equal(expected, data.RevealToString());
+    }
+
+    [Fact]
+    public void SensitiveDataExample()
+    {
+        #region SensitiveData_Create
+        // Create sensitive data from a string
+        using var secret = SensitiveData.Create("my-password");
+
+        // Reveal the data when needed
+        string password = secret.RevealToString();
+        Assert.Equal("my-password", password);
+
+        // Create sensitive data from a byte array
+        byte[] key = [1, 2, 3, 4, 5];
+        using var sensitiveKey = SensitiveData.Create(key);
+        byte[] revealedKey = sensitiveKey.RevealToArray();
+        Assert.Equal(key, revealedKey);
+        #endregion
+    }
+
+    [Fact]
+    public void SensitiveDataOfTExample()
+    {
+        #region SensitiveDataOfT_Reveal
+        // Create and use sensitive data
+        using var secret = SensitiveData.Create("my-secret-password");
+
+        // Get the length without revealing the data
+        int length = secret.GetLength();
+        Assert.Equal(18, length);
+
+        // Reveal data into an existing buffer
+        char[] buffer = new char[length];
+        secret.RevealInto(buffer);
+        Assert.Equal("my-secret-password", new string(buffer));
+
+        // Or reveal to a new array
+        char[] revealed = secret.RevealToArray();
+        Assert.Equal("my-secret-password", new string(revealed));
+
+        // Use the data with a callback to avoid keeping it in memory
+        secret.RevealAndUse(arg: length, static (span, expectedLength) =>
+        {
+            // Process the sensitive data here
+            Assert.HasCount(expectedLength, span);
+        });
+        #endregion
     }
 
     [Fact]
@@ -60,12 +138,291 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void RevealToArray_BufferLargerThanOneMegabyte()
+    {
+        var expected = new byte[8 * 1024 * 1024];
+        RandomNumberGenerator.Fill(expected);
+
+        using var data = SensitiveData.Create(expected);
+        Assert.Equal(expected, data.RevealToArray());
+    }
+
+    [Fact]
     public void RevealAndUse_CallbackThrows_DoesNotPreventLaterReveal()
     {
         using var data = SensitiveData.Create("foo");
 
         Assert.Throws<InvalidOperationException>(() => data.RevealAndUse(arg: "", static (span, arg) => throw new InvalidOperationException()));
         Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
+    public void RevealAndUse_CallbackThrowsAndProtectFails_ReportsBothExceptions()
+    {
+        using var data = SensitiveData.Create("foo");
+        data.FailNextProtectForTesting();
+
+        var exception = Assert.Throws<AggregateException>(() => data.RevealAndUse(arg: "", static (span, arg) => throw new InvalidOperationException()));
+
+        Assert.Collection(exception.InnerExceptions,
+            inner => Assert.IsType<InvalidOperationException>(inner),
+            inner => Assert.IsType<Win32Exception>(inner));
+        Assert.Equal("foo", data.RevealToString());
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void RevealToString_Null_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => SensitiveData.RevealToString(null!));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Reveal_AfterProtectFailed_AppliesTheProtectionAgain(bool xorProtection)
+    {
+        using var data = xorProtection ? SensitiveData<char>.CreateWithXorProtection("foo") : SensitiveData.Create("foo");
+        data.FailNextProtectForTesting();
+
+        Assert.Throws<Win32Exception>(() => data.RevealToString());
+        Assert.False(data.IsProtected);
+
+        Assert.Equal("foo", data.RevealToString());
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void XorProtection_AfterProtectFailed_StoresTransformedBytesAtRestAgain()
+    {
+        var plaintext = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        using var data = SensitiveData<byte>.CreateWithXorProtection(plaintext);
+        data.FailNextProtectForTesting();
+
+        Assert.Throws<Win32Exception>(() => data.RevealToArray());
+        Assert.True(data.TryGetBytesAtRest(out var afterFailure));
+        Assert.Equal(plaintext, afterFailure);
+
+        Assert.Equal(plaintext, data.RevealToArray());
+        Assert.True(data.TryGetBytesAtRest(out var atRest));
+        Assert.NotEqual(plaintext, atRest);
+    }
+
+    [Fact]
+    public void UnixErrors_ReportTheErrnoValue()
+    {
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+            return;
+
+        const int EINVAL = 22;
+
+        // mprotect requires a page-aligned address.
+        Assert.False(SensitiveData.UnixMemoryProtection.TryProtect(1, (nuint)Environment.SystemPageSize, SensitiveData.UnixMemoryProtection.PROT_NONE));
+        var exception = Assert.Throws<Win32Exception>(SensitiveData.UnixMemoryProtection.ThrowLastError);
+
+        Assert.Equal(EINVAL, exception.NativeErrorCode);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the callback")]
+    public void RevealAndUse_DisposeInsideCallback_KeepsTheSpanReadableUntilTheRevealEnds(bool xorProtection)
+    {
+        var data = xorProtection ? SensitiveData<char>.CreateWithXorProtection("foo") : SensitiveData.Create("foo");
+
+        string? revealedAfterDispose = null;
+        data.RevealAndUse(arg: data, (span, secret) =>
+        {
+            secret.Dispose();
+            revealedAfterDispose = new string(span);
+        });
+
+        Assert.Equal("foo", revealedAfterDispose);
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the callback")]
+    public void RevealAndUse_DisposeInsideNestedCallback_ReleasesOnceTheOutermostRevealEnds(bool xorProtection)
+    {
+        var data = xorProtection ? SensitiveData<char>.CreateWithXorProtection("foo") : SensitiveData.Create("foo");
+
+        string? outerAfterDispose = null;
+        data.RevealAndUse(arg: data, (outerSpan, secret) =>
+        {
+            secret.RevealAndUse(arg: secret, static (innerSpan, inner) => inner.Dispose());
+            Assert.Throws<ObjectDisposedException>(() => secret.RevealToString());
+            outerAfterDispose = new string(outerSpan);
+        });
+
+        Assert.Equal("foo", outerAfterDispose);
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Fact]
+    public void ProtectionIsAppliedAtRestAndLiftedWhileRevealing()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        Assert.True(data.IsProtected);
+        data.RevealAndUse(arg: data, static (span, secret) => Assert.False(secret.IsProtected));
+        Assert.True(data.IsProtected);
+
+        data.RevealToArray();
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void RevealAndUse_NestedRevealLeavesTheOuterSpanReadable()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        string? nested = null;
+        string? outerAfterNested = null;
+        data.RevealAndUse(arg: data, (span, secret) =>
+        {
+            nested = secret.RevealToString();
+            outerAfterNested = new string(span);
+        });
+
+        Assert.Equal("foo", nested);
+        Assert.Equal("foo", outerAfterNested);
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void RevealInto_NestedInsideRevealAndUse_CopiesTheSecret()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        var buffer = new char[3];
+        data.RevealAndUse(arg: data, (span, secret) => secret.RevealInto(buffer));
+
+        Assert.Equal("foo", new string(buffer));
+    }
+
+    [Fact]
+    public void RevealAndUse_NestedReveals_RestoreProtectionOnlyAtTheOutermostLevel()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        data.RevealAndUse(arg: data, (outerSpan, secret) =>
+        {
+            Assert.False(secret.IsProtected);
+            secret.RevealAndUse(arg: secret, (middleSpan, middle) =>
+            {
+                middle.RevealAndUse(arg: middle, static (innerSpan, inner) =>
+                {
+                    Assert.False(inner.IsProtected);
+                    Assert.Equal("foo", new string(innerSpan));
+                });
+
+                Assert.False(middle.IsProtected);
+                Assert.Equal("foo", new string(middleSpan));
+            });
+
+            Assert.False(secret.IsProtected);
+            Assert.Equal("foo", new string(outerSpan));
+        });
+
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
+    public void Clone_InsideRevealAndUse_ProducesAnIndependentCopy()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        SensitiveData<char>? clone = null;
+        data.RevealAndUse(arg: data, (span, secret) =>
+        {
+            clone = secret.Clone();
+            Assert.Equal("foo", new string(span));
+        });
+
+        Assert.NotNull(clone);
+        using (clone)
+        {
+            Assert.Equal("foo", clone.RevealToString());
+        }
+
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
+    public void Documentation_CloneAndDispose()
+    {
+        #region SensitiveData_CloneAndDispose
+        var secret = SensitiveData.Create("my-password");
+
+        // A clone holds its own copy of the contents
+        using var copy = secret.Clone();
+
+        // Disposing clears the contents; the instance can no longer be revealed
+        secret.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => secret.RevealToString());
+        Assert.Equal("my-password", copy.RevealToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NoAccidentalDisclosure()
+    {
+#pragma warning disable MA0150 // The example shows what an accidental ToString gives
+        #region SensitiveData_NoAccidentalDisclosure
+        using var secret = SensitiveData.Create("my-password");
+
+        // Formatting the instance gives its type name, not its contents
+        var message = $"Connecting with {secret}";
+        Assert.DoesNotContain("my-password", message, StringComparison.Ordinal);
+
+        // Serializing it gives an empty object
+        var json = JsonSerializer.Serialize(secret);
+        Assert.Equal("{}", json);
+        #endregion
+#pragma warning restore MA0150
+    }
+
+    [Fact]
+    public void Documentation_Configuration()
+    {
+        #region SensitiveData_Configuration
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["Payment:ApiKey"] = "my-api-key",
+            })
+            .Build();
+
+        var options = configuration.GetSection("Payment").Get<PaymentOptions>();
+        Assert.NotNull(options);
+        Assert.NotNull(options.ApiKey);
+        Assert.Equal("my-api-key", options.ApiKey.RevealToString());
+        #endregion
+
+        options.ApiKey.Dispose();
+    }
+
+    [Fact]
+    public void Documentation_TypeConverter()
+    {
+        #region SensitiveData_TypeConverter
+        var converter = TypeDescriptor.GetConverter(typeof(SensitiveData<char>));
+
+        // A string converts to SensitiveData<char>...
+        using var secret = (SensitiveData<char>)converter.ConvertFromInvariantString("my-password")!;
+        Assert.Equal("my-password", secret.RevealToString());
+
+        // ...but SensitiveData<char> never converts back to a string
+        Assert.Throws<NotSupportedException>(() => converter.ConvertToInvariantString(secret));
+        #endregion
     }
 
     [Fact]
@@ -80,6 +437,62 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the other thread the test starts")]
+    public void Dispose_DuringRevealOnAnotherThread_LetsTheRevealFinish()
+    {
+        var expected = new string('a', 4096);
+        var data = SensitiveData.Create(expected);
+        using var revealStarted = new ManualResetEventSlim();
+
+        var disposeThread = new Thread(() =>
+        {
+            revealStarted.Wait();
+            data.Dispose();
+        });
+
+        disposeThread.Start();
+
+        string? revealed = null;
+        data.RevealAndUse(arg: 0, (span, _) =>
+        {
+            revealStarted.Set();
+
+            // Give the other thread time to reach Dispose while this span is still alive.
+            Thread.Sleep(100);
+            revealed = new string(span);
+        });
+
+        Assert.True(disposeThread.Join(TimeSpan.FromSeconds(30)));
+        Assert.Equal(expected, revealed);
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the threads the test starts")]
+    public void Dispose_ConcurrentCalls_ReleaseTheBufferExactlyOnce()
+    {
+        var data = SensitiveData.Create("foo");
+
+        var threads = new Thread[8];
+        for (var i = 0; i < threads.Length; i++)
+        {
+            threads[i] = new Thread(data.Dispose);
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Start();
+        }
+
+        foreach (var thread in threads)
+        {
+            Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
+        }
+
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Fact]
     public void UnixPaths_CanRevealStringAndByteArray()
     {
         if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
@@ -90,6 +503,130 @@ public sealed class SensitiveDataTests
 
         Assert.Equal("unix", text.RevealToString());
         Assert.Equal(new byte[] { 1, 2, 3, 4 }, bytes.RevealToArray());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(31)]
+    [InlineData(33)]
+    [InlineData(64)]
+    [InlineData(65)]
+    [InlineData(1000)]
+    public void XorProtection_RoundTripsVariousLengths(int length)
+    {
+        var expected = new byte[length];
+        for (var i = 0; i < expected.Length; i++)
+        {
+            expected[i] = (byte)i;
+        }
+
+        using var data = SensitiveData<byte>.CreateWithXorProtection(expected);
+        Assert.True(data.IsProtected);
+        Assert.Equal(expected, data.RevealToArray());
+        Assert.True(data.IsProtected);
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(65)]
+    [InlineData(1000)]
+    public void XorProtection_StoresTransformedBytesAtRest(int length)
+    {
+        var plaintext = new byte[length];
+        for (var i = 0; i < plaintext.Length; i++)
+        {
+            plaintext[i] = (byte)(i + 1);
+        }
+
+        using var data = SensitiveData<byte>.CreateWithXorProtection(plaintext);
+
+        // A random key byte leaves about one byte in 256 unchanged, so a byte range the transformation
+        // skipped shows up as a large number of unchanged bytes rather than as any single match.
+        Assert.True(data.TryGetBytesAtRest(out var atRest));
+        var unchanged = 0;
+        for (var i = 0; i < length; i++)
+        {
+            if (atRest[i] == plaintext[i])
+            {
+                unchanged++;
+            }
+        }
+
+        Assert.True(unchanged <= length / 2, $"{unchanged} of {length} bytes are stored unchanged");
+        Assert.Equal(plaintext, data.RevealToArray());
+    }
+
+    [Fact]
+    public void DefaultProtection_StoresTransformedBytesAtRest()
+    {
+        var plaintext = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+
+        using var data = SensitiveData.Create(plaintext);
+
+        // The Unix protection makes the pages unreadable, so there is nothing to compare against.
+        if (!data.TryGetBytesAtRest(out var atRest))
+            return;
+
+        Assert.NotEqual(plaintext, atRest);
+        Assert.Equal(plaintext, data.RevealToArray());
+    }
+
+    [Fact]
+    public void RevealInto_DestinationTooSmall_ThrowsAndLeavesTheInstanceUsable()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        Assert.Throws<ArgumentException>(() => data.RevealInto(new char[2]));
+
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
+    public void Create_FromReadOnlySpan()
+    {
+        ReadOnlySpan<byte> buffer = [1, 2, 3, 4, 5];
+
+        using var data = SensitiveData.Create(buffer);
+
+        Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, data.RevealToArray());
+    }
+
+    [Fact]
+    public void ConcurrentReveals_AllReturnTheSecret()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        var results = new string[8];
+        var threads = new Thread[results.Length];
+        for (var i = 0; i < threads.Length; i++)
+        {
+            var index = i;
+            threads[index] = new Thread(() =>
+            {
+                for (var iteration = 0; iteration < 200; iteration++)
+                {
+                    results[index] = data.RevealToString();
+                }
+            });
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Start();
+        }
+
+        foreach (var thread in threads)
+        {
+            Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
+        }
+
+        Assert.All(results, result => Assert.Equal("foo", result));
+        Assert.True(data.IsProtected);
     }
 
     [Fact]
@@ -114,7 +651,7 @@ public sealed class SensitiveDataTests
     public void SystemTestJsonDoesNotRevealValue_Field()
     {
         using var data = SensitiveData.Create("foo");
-        var text = JsonSerializer.Serialize(data, new JsonSerializerOptions { IncludeFields = true });
+        var text = JsonSerializer.Serialize(data, new JsonSerializerOptions { IncludeFields = true, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true });
         Assert.DoesNotContain("foo", text, ignoreCase: true);
     }
 
@@ -141,6 +678,33 @@ public sealed class SensitiveDataTests
     public void TypeConverterToStringDoesNotRevealValue()
     {
         using var data = SensitiveData.Create("foo");
-        Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertToString(data));
+        var exception = Assert.Throws<NotSupportedException>(() => TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertToString(data));
+        Assert.DoesNotContain("foo", exception.Message, ignoreCase: true);
+    }
+
+    [Fact]
+    public void ConverterActivatedWithoutADescribedType_RefusesToGuessTheElementType()
+    {
+        var converter = new SensitiveDataTypeConverter();
+
+        Assert.False(converter.CanConvertFrom(typeof(string)));
+        Assert.Throws<NotSupportedException>(() => converter.ConvertFromString("bar"));
+    }
+
+    [Fact]
+    public void CannotConvertFromStringToNonCharElementType()
+    {
+        var converter = TypeDescriptor.GetConverter(typeof(SensitiveData<byte>));
+        Assert.False(converter.CanConvertFrom(typeof(string)));
+        Assert.Throws<NotSupportedException>(() => converter.ConvertFromString("bar"));
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name
+#region SensitiveData_ConfigurationOptions
+public sealed class PaymentOptions
+{
+    public SensitiveData<char>? ApiKey { get; set; }
+}
+#endregion
+#pragma warning restore MA0048

@@ -9,10 +9,14 @@ internal sealed class CacheEntry
         SerializedResponse = serializedResponse;
     }
 
-    public static async Task<CacheEntry> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
-        DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
+    /// <summary>Creates an entry, or returns <see langword="null"/> when the response exceeds <paramref name="maximumSize"/>.</summary>
+    public static async Task<CacheEntry?> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
+        DateTimeOffset requestTime, DateTimeOffset responseTime, long? maximumSize, CancellationToken cancellationToken)
     {
-        var serializedResponse = await ResponseSerializer.SerializeAsync(response, cancellationToken).ConfigureAwait(false);
+        var serializedResponse = await ResponseSerializer.SerializeAsync(response, maximumSize, cancellationToken).ConfigureAwait(false);
+        if (serializedResponse is null)
+            return null;
+
         var entry = new CacheEntry(serializedResponse)
         {
             RequestTime = requestTime,
@@ -66,7 +70,23 @@ internal sealed class CacheEntry
         // Handle Vary header for secondary key
         entry.SecondaryKey = BuildSecondaryKey(request, response);
 
+        // draft-ietf-httpbis-no-vary-search Section 5.2
+        entry.VariationConfig = ParseVariationConfig(response);
+        if (!entry.VariationConfig.IsDefault)
+        {
+            entry.NormalizedQuery = entry.VariationConfig.NormalizeQuery(request.RequestUri?.Query ?? string.Empty);
+        }
+
         return entry;
+    }
+
+    private static UrlVariationConfig ParseVariationConfig(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("No-Vary-Search", out var values))
+            return UrlVariationConfig.Default;
+
+        // RFC 8941 Section 4.2: the field lines of a dictionary field combine into a single value
+        return UrlVariationConfig.Parse(string.Join(", ", values));
     }
 
     private static bool HasImmutableDirective(CacheControlHeaderValue cacheControl)
@@ -104,7 +124,7 @@ internal sealed class CacheEntry
         return null;
     }
 
-    private static DateTimeOffset? ParseExpiresHeader(HttpResponseMessage response)
+    internal static DateTimeOffset? ParseExpiresHeader(HttpResponseMessage response)
     {
         if (!response.Content.Headers.TryGetValues("Expires", out var values))
         {
@@ -164,12 +184,17 @@ internal sealed class CacheEntry
 
             if (request.Headers.TryGetValues(headerName, out var values))
             {
-                // Sort values to ensure consistent ordering for cache matching
-                // RFC 7234: Order of header values shouldn't affect cache matching
-                foreach (var value in values.Order(StringComparer.Ordinal))
+                // Values can only be reordered when their field specification says that ordering does not
+                // affect semantics. A generic Vary implementation must preserve the received order.
+                foreach (var value in values)
                 {
                     secondaryKey.Add(headerName, value);
                 }
+            }
+            else
+            {
+                // RFC 9111 Section 4.1: the field being absent is part of the key, not the absence of a key.
+                secondaryKey.AddAbsent(headerName);
             }
         }
 
@@ -177,6 +202,18 @@ internal sealed class CacheEntry
     }
 
     public CacheEntrySecondaryKey SecondaryKey { get; private set; }
+
+    /// <summary>Gets the <c>No-Vary-Search</c> config declared by the stored response.</summary>
+    /// <remarks>
+    /// The config decides the storage key, which cannot be rewritten afterwards, so it is captured when the
+    /// response is stored and is not updated from a later 304 response.
+    /// </remarks>
+    public UrlVariationConfig VariationConfig { get; private set; } = UrlVariationConfig.Default;
+
+    /// <summary>Gets the query of the request the response was stored for, canonicalized with <see cref="VariationConfig"/>.</summary>
+    /// <remarks>Only set for a non-default config: otherwise the query is already part of the primary key.</remarks>
+    public string? NormalizedQuery { get; private set; }
+
     public DateTimeOffset RequestTime { get; private set; }
     public DateTimeOffset ResponseTime { get; private set; }
     public DateTimeOffset ResponseDate { get; private set; }
@@ -207,6 +244,8 @@ internal sealed class CacheEntry
         {
             SecondaryKeyMatchNone = SecondaryKey.IsMatchNone,
             SecondaryKeyHeaders = SecondaryKey.Headers is null ? null : new Dictionary<string, string>(SecondaryKey.Headers, StringComparer.OrdinalIgnoreCase),
+            NoVarySearch = VariationConfig.IsDefault ? null : VariationConfig.ToHeaderValue(),
+            NormalizedQuery = NormalizedQuery,
             RequestTime = RequestTime,
             ResponseTime = ResponseTime,
             ResponseDate = ResponseDate,
@@ -232,9 +271,14 @@ internal sealed class CacheEntry
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var cacheEntry = new CacheEntry(entry.SerializedResponse.ToArray())
+        var serializedResponse = entry.SerializedResponse.ToArray();
+        ResponseSerializer.EnsureValid(serializedResponse);
+
+        var cacheEntry = new CacheEntry(serializedResponse)
         {
             SecondaryKey = CacheEntrySecondaryKey.Create(entry.SecondaryKeyMatchNone, entry.SecondaryKeyHeaders),
+            VariationConfig = UrlVariationConfig.Parse(entry.NoVarySearch),
+            NormalizedQuery = entry.NormalizedQuery,
             RequestTime = entry.RequestTime,
             ResponseTime = entry.ResponseTime,
             ResponseDate = entry.ResponseDate,
@@ -257,44 +301,22 @@ internal sealed class CacheEntry
         return cacheEntry;
     }
 
-    /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
-    public TimeSpan FreshnessLifetime
+    /// <summary>Indicates whether an entry stored under a query-independent key can answer a request for <paramref name="uri"/>.</summary>
+    /// <remarks>
+    /// draft-ietf-httpbis-no-vary-search Section 6: the scheme, host, port, and path are already part of the
+    /// storage key, so only the queries remain to be compared. An entry whose config is the default one does
+    /// not belong to that key, and never matches.
+    /// </remarks>
+    public bool MatchesQuery(Uri uri)
     {
-        get
-        {
-            // 1. Use s-maxage if present (takes precedence for shared caches), otherwise max-age
-            if (SharedMaxAge.HasValue)
-                return SharedMaxAge.Value;
+        if (VariationConfig.IsDefault)
+            return false;
 
-            if (MaxAge.HasValue)
-                return MaxAge.Value;
-
-            // 2. Use Expires - Date if present
-            if (Expires.HasValue)
-            {
-                var expiresTime = Expires.Value;
-                if (expiresTime == DateTimeOffset.MinValue)
-                    return TimeSpan.Zero; // Already expired
-
-                var freshness = expiresTime - ResponseDate;
-                return freshness > TimeSpan.Zero ? freshness : TimeSpan.Zero;
-            }
-
-            // 3. Heuristic freshness (RFC 7234 Section 4.2.2)
-            // Use 10% of time since Last-Modified
-            if (LastModified.HasValue)
-            {
-                var age = ResponseDate - LastModified.Value;
-                if (age > TimeSpan.Zero)
-                {
-                    return TimeSpan.FromSeconds(age.TotalSeconds * 0.1);
-                }
-            }
-
-            // No explicit expiration and no heuristic available
-            return TimeSpan.Zero;
-        }
+        return string.Equals(VariationConfig.NormalizeQuery(uri.Query), NormalizedQuery, StringComparison.Ordinal);
     }
+
+    /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
+    public TimeSpan FreshnessLifetime => CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
 
     /// <summary>Gets whether heuristic expiration was used to calculate the freshness lifetime.</summary>
     public bool UsesHeuristicExpiration
@@ -310,25 +332,7 @@ internal sealed class CacheEntry
     /// <summary>Calculates the current age per RFC 7234 Section 4.2.3.</summary>
     public TimeSpan CalculateCurrentAge(DateTimeOffset now)
     {
-        // apparent_age = max(0, response_time - date_value)
-        var apparentAge = ResponseTime - ResponseDate;
-        if (apparentAge < TimeSpan.Zero)
-            apparentAge = TimeSpan.Zero;
-
-        // response_delay = response_time - request_time
-        var responseDelay = ResponseTime - RequestTime;
-
-        // corrected_age_value = age_value + response_delay
-        var correctedAgeValue = AgeValue + responseDelay;
-
-        // corrected_initial_age = max(apparent_age, corrected_age_value)
-        var correctedInitialAge = apparentAge > correctedAgeValue ? apparentAge : correctedAgeValue;
-
-        // resident_time = now - response_time
-        var residentTime = now - ResponseTime;
-
-        // current_age = corrected_initial_age + resident_time
-        return correctedInitialAge + residentTime;
+        return CacheFreshness.GetCurrentAge(RequestTime, ResponseTime, ResponseDate, AgeValue, now);
     }
 
     /// <summary>Updates this cache entry from a 304 Not Modified validation response.</summary>
@@ -336,29 +340,27 @@ internal sealed class CacheEntry
     {
         // RFC 7234 Section 4.3.4: Update metadata from 304 response
 
-        // Update cache control if provided
+        // Update cache control if provided.
+        // RFC 7234 Section 4.3.4: the 304 replaces the stored Cache-Control header, so every directive
+        // derived from it is re-read from the new value. A directive missing from it is gone, not retained:
+        // a server that stops sending `immutable` or `stale-if-error` has to be able to take that back.
+        // A 304 that carries no Cache-Control at all leaves the stored directives untouched.
         var cacheControl = validationResponse.Headers.CacheControl;
         var updatedMaxAge = false;
         if (cacheControl is not null)
         {
-            if (cacheControl.MaxAge is not null && cacheControl.MaxAge != MaxAge)
-            {
-                MaxAge = cacheControl.MaxAge;
-                updatedMaxAge = true;
-            }
+            updatedMaxAge = cacheControl.MaxAge != MaxAge || cacheControl.SharedMaxAge != SharedMaxAge;
 
-            if (cacheControl.SharedMaxAge is not null && cacheControl.SharedMaxAge != SharedMaxAge)
-            {
-                SharedMaxAge = cacheControl.SharedMaxAge;
-                updatedMaxAge = true;
-            }
-
+            MaxAge = cacheControl.MaxAge;
+            SharedMaxAge = cacheControl.SharedMaxAge;
             MustRevalidate = cacheControl.MustRevalidate;
             ProxyRevalidate = cacheControl.ProxyRevalidate;
             ResponseNoCache = cacheControl.NoCache;
             Public = cacheControl.Public;
             Private = cacheControl.Private;
             NoTransform = cacheControl.NoTransform;
+            Immutable = HasImmutableDirective(cacheControl);
+            StaleIfError = ParseStaleIfErrorDirective(cacheControl);
         }
 
         // If the 304 response provides a new max-age, treat it as a fresh revalidation
@@ -398,8 +400,7 @@ internal sealed class CacheEntry
             Expires = newExpires;
         }
 
-        // RFC 7234 Section 4.3.4: Update stored response headers with headers from 304 response
-        // The cache MUST update the stored response with header fields provided in the 304 response
+        // RFC 9111 Section 4.3.4: Update stored response headers with headers from 304 response.
         await UpdateSerializedResponseHeaders(validationResponse, cancellationToken);
     }
 
@@ -408,17 +409,13 @@ internal sealed class CacheEntry
         // Deserialize the stored response
         var storedResponse = ResponseSerializer.Deserialize(SerializedResponse);
 
-        // Collect headers to update from the 304 response
-        // RFC 7234 Section 4.3.4: Update stored response headers, but exclude headers
-        // that are managed as metadata properties (Cache-Control, Date, ETag, Expires, Last-Modified)
+        // RFC 9111 Section 3.2: every response field supplied by the 304 replaces the stored value,
+        // except Content-Length. Age is regenerated when the cached response is returned.
         var headersToUpdate = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in validationResponse.Headers)
         {
-            // Skip headers managed separately via properties
-            if (string.Equals(header.Key, "Cache-Control", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(header.Key, "Date", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(header.Key, "ETag", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(header.Key, "Expires", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(header.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(header.Key, "Age", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -428,8 +425,8 @@ internal sealed class CacheEntry
 
         foreach (var header in validationResponse.Content.Headers)
         {
-            // Skip headers managed separately via properties
-            if (string.Equals(header.Key, "Last-Modified", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(header.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(header.Key, "Age", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -484,4 +481,3 @@ internal sealed class CacheEntry
         storedResponse.Dispose();
     }
 }
-

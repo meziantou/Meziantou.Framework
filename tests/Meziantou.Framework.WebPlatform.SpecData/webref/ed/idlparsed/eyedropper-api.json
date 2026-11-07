@@ -1,0 +1,170 @@
+{
+  "spec": {
+    "title": "EyeDropper API",
+    "url": "https://wicg.github.io/eyedropper-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "EyeDropper"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "ColorSelectionResult": {
+        "fragment": "dictionary ColorSelectionResult {\n  DOMString sRGBHex;\n};",
+        "type": "dictionary",
+        "name": "ColorSelectionResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sRGBHex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/eyedropper-api/#dom-colorselectionresult-srgbhex"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/eyedropper-api/#dom-colorselectionresult"
+      },
+      "ColorSelectionOptions": {
+        "fragment": "dictionary ColorSelectionOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "ColorSelectionOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/eyedropper-api/#dom-colorselectionoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/eyedropper-api/#dom-colorselectionoptions"
+      },
+      "EyeDropper": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface EyeDropper {\n    constructor();\n    Promise<ColorSelectionResult> open(optional ColorSelectionOptions options = {});\n};",
+        "type": "interface",
+        "name": "EyeDropper",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/eyedropper-api/#dom-eyedropper-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ColorSelectionResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ColorSelectionOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/eyedropper-api/#dom-eyedropper-open"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/eyedropper-api/#dom-eyedropper"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EyeDropper"
+      ]
+    },
+    "dependencies": {
+      "ColorSelectionResult": [],
+      "ColorSelectionOptions": [
+        "AbortSignal"
+      ],
+      "EyeDropper": [
+        "ColorSelectionResult",
+        "ColorSelectionOptions"
+      ]
+    },
+    "externalDependencies": [
+      "AbortSignal"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

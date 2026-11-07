@@ -1,0 +1,3514 @@
+{
+  "spec": {
+    "title": "WebUSB API",
+    "url": "https://usb.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Worker": [
+          "USBConnectionEvent",
+          "USBInTransferResult",
+          "USBOutTransferResult",
+          "USBIsochronousInTransferPacket",
+          "USBIsochronousInTransferResult",
+          "USBIsochronousOutTransferPacket",
+          "USBIsochronousOutTransferResult",
+          "USBConfiguration",
+          "USBInterface",
+          "USBAlternateInterface",
+          "USBEndpoint"
+        ],
+        "Window": [
+          "USBConnectionEvent",
+          "USBInTransferResult",
+          "USBOutTransferResult",
+          "USBIsochronousInTransferPacket",
+          "USBIsochronousInTransferResult",
+          "USBIsochronousOutTransferPacket",
+          "USBIsochronousOutTransferResult",
+          "USBConfiguration",
+          "USBInterface",
+          "USBAlternateInterface",
+          "USBEndpoint"
+        ]
+      },
+      "functions": {
+        "Worker": [
+          "USB",
+          "WorkerNavigator",
+          "USBDevice",
+          "USBPermissionResult"
+        ],
+        "Window": [
+          "USB",
+          "Navigator",
+          "USBDevice",
+          "USBPermissionResult"
+        ]
+      }
+    },
+    "idlNames": {
+      "USBDeviceFilter": {
+        "fragment": "dictionary USBDeviceFilter {\n  unsigned short vendorId;\n  unsigned short productId;\n  octet classCode;\n  octet subclassCode;\n  octet protocolCode;\n  DOMString serialNumber;\n};",
+        "type": "dictionary",
+        "name": "USBDeviceFilter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "vendorId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicefilter-vendorid"
+          },
+          {
+            "type": "field",
+            "name": "productId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicefilter-productid"
+          },
+          {
+            "type": "field",
+            "name": "classCode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicefilter-classcode"
+          },
+          {
+            "type": "field",
+            "name": "subclassCode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicefilter-subclasscode"
+          },
+          {
+            "type": "field",
+            "name": "protocolCode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicefilter-protocolcode"
+          },
+          {
+            "type": "field",
+            "name": "serialNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicefilter-serialnumber"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-usbdevicefilter"
+      },
+      "USBDeviceRequestOptions": {
+        "fragment": "dictionary USBDeviceRequestOptions {\n  required sequence<USBDeviceFilter> filters;\n  sequence<USBDeviceFilter> exclusionFilters = [];\n};",
+        "type": "dictionary",
+        "name": "USBDeviceRequestOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDeviceFilter"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicerequestoptions-filters"
+          },
+          {
+            "type": "field",
+            "name": "exclusionFilters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDeviceFilter"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevicerequestoptions-exclusionfilters"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-usbdevicerequestoptions"
+      },
+      "USB": {
+        "fragment": "[Exposed=(Worker,Window), SecureContext]\ninterface USB : EventTarget {\n  attribute EventHandler onconnect;\n  attribute EventHandler ondisconnect;\n  Promise<sequence<USBDevice>> getDevices();\n  [Exposed=Window] Promise<USBDevice> requestDevice(USBDeviceRequestOptions options);\n};",
+        "type": "interface",
+        "name": "USB",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usb-onconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "ondisconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usb-ondisconnect"
+          },
+          {
+            "type": "operation",
+            "name": "getDevices",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USBDevice"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usb-getdevices"
+          },
+          {
+            "type": "operation",
+            "name": "requestDevice",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDevice"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDeviceRequestOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usb-requestdevice"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usb"
+      },
+      "USBConnectionEventInit": {
+        "fragment": "dictionary USBConnectionEventInit : EventInit {\n    required USBDevice device;\n};",
+        "type": "dictionary",
+        "name": "USBConnectionEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "device",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBDevice"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbconnectioneventinit-device"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-usbconnectioneventinit"
+      },
+      "USBConnectionEvent": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBConnectionEvent : Event {\n  constructor(DOMString type, USBConnectionEventInit eventInitDict);\n  [SameObject] readonly attribute USBDevice device;\n};",
+        "type": "interface",
+        "name": "USBConnectionEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBConnectionEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbconnectionevent-usbconnectionevent"
+          },
+          {
+            "type": "attribute",
+            "name": "device",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBDevice"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbconnectionevent-device"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbconnectionevent"
+      },
+      "USBTransferStatus": {
+        "fragment": "enum USBTransferStatus {\n  \"ok\",\n  \"stall\",\n  \"babble\"\n};",
+        "type": "enum",
+        "name": "USBTransferStatus",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "ok",
+            "href": "https://usb.spec.whatwg.org/#dom-usbtransferstatus-ok"
+          },
+          {
+            "type": "enum-value",
+            "value": "stall",
+            "href": "https://usb.spec.whatwg.org/#dom-usbtransferstatus-stall"
+          },
+          {
+            "type": "enum-value",
+            "value": "babble",
+            "href": "https://usb.spec.whatwg.org/#dom-usbtransferstatus-babble"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://usb.spec.whatwg.org/#enumdef-usbtransferstatus"
+      },
+      "USBInTransferResult": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBInTransferResult {\n  constructor(USBTransferStatus status, optional DataView? data);\n  readonly attribute DataView? data;\n  readonly attribute USBTransferStatus status;\n};",
+        "type": "interface",
+        "name": "USBInTransferResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "status",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBTransferStatus"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DataView"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbintransferresult-usbintransferresult"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbintransferresult-data"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBTransferStatus"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbintransferresult-status"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbintransferresult"
+      },
+      "USBOutTransferResult": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBOutTransferResult {\n  constructor(USBTransferStatus status, optional unsigned long bytesWritten = 0);\n  readonly attribute unsigned long bytesWritten;\n  readonly attribute USBTransferStatus status;\n};",
+        "type": "interface",
+        "name": "USBOutTransferResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "status",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBTransferStatus"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "bytesWritten",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbouttransferresult-usbouttransferresult"
+          },
+          {
+            "type": "attribute",
+            "name": "bytesWritten",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbouttransferresult-byteswritten"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBTransferStatus"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbouttransferresult-status"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbouttransferresult"
+      },
+      "USBIsochronousInTransferPacket": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBIsochronousInTransferPacket {\n  constructor(USBTransferStatus status, optional DataView? data);\n  readonly attribute DataView? data;\n  readonly attribute USBTransferStatus status;\n};",
+        "type": "interface",
+        "name": "USBIsochronousInTransferPacket",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "status",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBTransferStatus"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DataView"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousintransferpacket-usbisochronousintransferpacket"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousintransferpacket-data"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBTransferStatus"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousintransferpacket-status"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbisochronousintransferpacket"
+      },
+      "USBIsochronousInTransferResult": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBIsochronousInTransferResult {\n  constructor(sequence<USBIsochronousInTransferPacket> packets, optional DataView? data);\n  readonly attribute DataView? data;\n  readonly attribute FrozenArray<USBIsochronousInTransferPacket> packets;\n};",
+        "type": "interface",
+        "name": "USBIsochronousInTransferResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "packets",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USBIsochronousInTransferPacket"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DataView"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousintransferresult-usbisochronousintransferresult"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousintransferresult-data"
+          },
+          {
+            "type": "attribute",
+            "name": "packets",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBIsochronousInTransferPacket"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousintransferresult-packets"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbisochronousintransferresult"
+      },
+      "USBIsochronousOutTransferPacket": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBIsochronousOutTransferPacket {\n  constructor(USBTransferStatus status, optional unsigned long bytesWritten = 0);\n  readonly attribute unsigned long bytesWritten;\n  readonly attribute USBTransferStatus status;\n};",
+        "type": "interface",
+        "name": "USBIsochronousOutTransferPacket",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "status",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBTransferStatus"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "bytesWritten",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousouttransferpacket-usbisochronousouttransferpacket"
+          },
+          {
+            "type": "attribute",
+            "name": "bytesWritten",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousouttransferpacket-byteswritten"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBTransferStatus"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousouttransferpacket-status"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbisochronousouttransferpacket"
+      },
+      "USBIsochronousOutTransferResult": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBIsochronousOutTransferResult {\n  constructor(sequence<USBIsochronousOutTransferPacket> packets);\n  readonly attribute FrozenArray<USBIsochronousOutTransferPacket> packets;\n};",
+        "type": "interface",
+        "name": "USBIsochronousOutTransferResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "packets",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USBIsochronousOutTransferPacket"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousouttransferresult-usbisochronousouttransferresult"
+          },
+          {
+            "type": "attribute",
+            "name": "packets",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBIsochronousOutTransferPacket"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbisochronousouttransferresult-packets"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbisochronousouttransferresult"
+      },
+      "USBDevice": {
+        "fragment": "[Exposed=(Worker,Window), SecureContext]\ninterface USBDevice {\n  readonly attribute octet usbVersionMajor;\n  readonly attribute octet usbVersionMinor;\n  readonly attribute octet usbVersionSubminor;\n  readonly attribute octet deviceClass;\n  readonly attribute octet deviceSubclass;\n  readonly attribute octet deviceProtocol;\n  readonly attribute unsigned short vendorId;\n  readonly attribute unsigned short productId;\n  readonly attribute octet deviceVersionMajor;\n  readonly attribute octet deviceVersionMinor;\n  readonly attribute octet deviceVersionSubminor;\n  readonly attribute DOMString? manufacturerName;\n  readonly attribute DOMString? productName;\n  readonly attribute DOMString? serialNumber;\n  readonly attribute USBConfiguration? configuration;\n  readonly attribute FrozenArray<USBConfiguration> configurations;\n  readonly attribute boolean opened;\n  Promise<undefined> open();\n  Promise<undefined> close();\n  Promise<undefined> forget();\n  Promise<undefined> selectConfiguration(octet configurationValue);\n  Promise<undefined> claimInterface(octet interfaceNumber);\n  Promise<undefined> releaseInterface(octet interfaceNumber);\n  Promise<undefined> selectAlternateInterface(octet interfaceNumber, octet alternateSetting);\n  Promise<USBInTransferResult> controlTransferIn(USBControlTransferParameters setup, unsigned short length);\n  Promise<USBOutTransferResult> controlTransferOut(USBControlTransferParameters setup, optional BufferSource data);\n  Promise<undefined> clearHalt(USBDirection direction, octet endpointNumber);\n  Promise<USBInTransferResult> transferIn(octet endpointNumber, unsigned long length);\n  Promise<USBOutTransferResult> transferOut(octet endpointNumber, BufferSource data);\n  Promise<USBIsochronousInTransferResult> isochronousTransferIn(octet endpointNumber, sequence<unsigned long> packetLengths);\n  Promise<USBIsochronousOutTransferResult> isochronousTransferOut(octet endpointNumber, BufferSource data, sequence<unsigned long> packetLengths);\n  Promise<undefined> reset();\n};",
+        "type": "interface",
+        "name": "USBDevice",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "usbVersionMajor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-usbversionmajor"
+          },
+          {
+            "type": "attribute",
+            "name": "usbVersionMinor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-usbversionminor"
+          },
+          {
+            "type": "attribute",
+            "name": "usbVersionSubminor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-usbversionsubminor"
+          },
+          {
+            "type": "attribute",
+            "name": "deviceClass",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-deviceclass"
+          },
+          {
+            "type": "attribute",
+            "name": "deviceSubclass",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-devicesubclass"
+          },
+          {
+            "type": "attribute",
+            "name": "deviceProtocol",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-deviceprotocol"
+          },
+          {
+            "type": "attribute",
+            "name": "vendorId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-vendorid"
+          },
+          {
+            "type": "attribute",
+            "name": "productId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-productid"
+          },
+          {
+            "type": "attribute",
+            "name": "deviceVersionMajor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-deviceversionmajor"
+          },
+          {
+            "type": "attribute",
+            "name": "deviceVersionMinor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-deviceversionminor"
+          },
+          {
+            "type": "attribute",
+            "name": "deviceVersionSubminor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-deviceversionsubminor"
+          },
+          {
+            "type": "attribute",
+            "name": "manufacturerName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-manufacturername"
+          },
+          {
+            "type": "attribute",
+            "name": "productName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-productname"
+          },
+          {
+            "type": "attribute",
+            "name": "serialNumber",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-serialnumber"
+          },
+          {
+            "type": "attribute",
+            "name": "configuration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USBConfiguration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-configuration"
+          },
+          {
+            "type": "attribute",
+            "name": "configurations",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBConfiguration"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-configurations"
+          },
+          {
+            "type": "attribute",
+            "name": "opened",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-opened"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-open"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-close"
+          },
+          {
+            "type": "operation",
+            "name": "forget",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-forget"
+          },
+          {
+            "type": "operation",
+            "name": "selectConfiguration",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "configurationValue",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-selectconfiguration"
+          },
+          {
+            "type": "operation",
+            "name": "claimInterface",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "interfaceNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-claiminterface"
+          },
+          {
+            "type": "operation",
+            "name": "releaseInterface",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "interfaceNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-releaseinterface"
+          },
+          {
+            "type": "operation",
+            "name": "selectAlternateInterface",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "interfaceNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "alternateSetting",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-selectalternateinterface"
+          },
+          {
+            "type": "operation",
+            "name": "controlTransferIn",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBInTransferResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "setup",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBControlTransferParameters"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "length",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned short"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-controltransferin"
+          },
+          {
+            "type": "operation",
+            "name": "controlTransferOut",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBOutTransferResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "setup",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBControlTransferParameters"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-controltransferout"
+          },
+          {
+            "type": "operation",
+            "name": "clearHalt",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "direction",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDirection"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "endpointNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-clearhalt"
+          },
+          {
+            "type": "operation",
+            "name": "transferIn",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBInTransferResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "endpointNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "length",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-transferin"
+          },
+          {
+            "type": "operation",
+            "name": "transferOut",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBOutTransferResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "endpointNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-transferout"
+          },
+          {
+            "type": "operation",
+            "name": "isochronousTransferIn",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBIsochronousInTransferResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "endpointNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "packetLengths",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unsigned long"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-isochronoustransferin"
+          },
+          {
+            "type": "operation",
+            "name": "isochronousTransferOut",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBIsochronousOutTransferResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "endpointNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "packetLengths",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unsigned long"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-isochronoustransferout"
+          },
+          {
+            "type": "operation",
+            "name": "reset",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdevice-reset"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbdevice"
+      },
+      "USBRequestType": {
+        "fragment": "enum USBRequestType {\n  \"standard\",\n  \"class\",\n  \"vendor\"\n};",
+        "type": "enum",
+        "name": "USBRequestType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "standard",
+            "href": "https://usb.spec.whatwg.org/#dom-usbrequesttype-standard"
+          },
+          {
+            "type": "enum-value",
+            "value": "class",
+            "href": "https://usb.spec.whatwg.org/#dom-usbrequesttype-class"
+          },
+          {
+            "type": "enum-value",
+            "value": "vendor",
+            "href": "https://usb.spec.whatwg.org/#dom-usbrequesttype-vendor"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://usb.spec.whatwg.org/#enumdef-usbrequesttype"
+      },
+      "USBRecipient": {
+        "fragment": "enum USBRecipient {\n  \"device\",\n  \"interface\",\n  \"endpoint\",\n  \"other\"\n};",
+        "type": "enum",
+        "name": "USBRecipient",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "device",
+            "href": "https://usb.spec.whatwg.org/#dom-usbrecipient-device"
+          },
+          {
+            "type": "enum-value",
+            "value": "interface",
+            "href": "https://usb.spec.whatwg.org/#dom-usbrecipient-interface"
+          },
+          {
+            "type": "enum-value",
+            "value": "endpoint",
+            "href": "https://usb.spec.whatwg.org/#dom-usbrecipient-endpoint"
+          },
+          {
+            "type": "enum-value",
+            "value": "other",
+            "href": "https://usb.spec.whatwg.org/#dom-usbrecipient-other"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://usb.spec.whatwg.org/#enumdef-usbrecipient"
+      },
+      "USBControlTransferParameters": {
+        "fragment": "dictionary USBControlTransferParameters {\n  required USBRequestType requestType;\n  required USBRecipient recipient;\n  required octet request;\n  required unsigned short value;\n  required unsigned short index;\n};",
+        "type": "dictionary",
+        "name": "USBControlTransferParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "requestType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBRequestType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbcontroltransferparameters-requesttype"
+          },
+          {
+            "type": "field",
+            "name": "recipient",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBRecipient"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbcontroltransferparameters-recipient"
+          },
+          {
+            "type": "field",
+            "name": "request",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbcontroltransferparameters-request"
+          },
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbcontroltransferparameters-value"
+          },
+          {
+            "type": "field",
+            "name": "index",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbcontroltransferparameters-index"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-usbcontroltransferparameters"
+      },
+      "USBConfiguration": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBConfiguration {\n  constructor(USBDevice device, octet configurationValue);\n  readonly attribute octet configurationValue;\n  readonly attribute DOMString? configurationName;\n  readonly attribute FrozenArray<USBInterface> interfaces;\n};",
+        "type": "interface",
+        "name": "USBConfiguration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "device",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDevice"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "configurationValue",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbconfiguration-usbconfiguration"
+          },
+          {
+            "type": "attribute",
+            "name": "configurationValue",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbconfiguration-configurationvalue"
+          },
+          {
+            "type": "attribute",
+            "name": "configurationName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbconfiguration-configurationname"
+          },
+          {
+            "type": "attribute",
+            "name": "interfaces",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBInterface"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbconfiguration-interfaces"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbconfiguration"
+      },
+      "USBInterface": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBInterface {\n  constructor(USBConfiguration configuration, octet interfaceNumber);\n  readonly attribute octet interfaceNumber;\n  readonly attribute USBAlternateInterface alternate;\n  readonly attribute FrozenArray<USBAlternateInterface> alternates;\n  readonly attribute boolean claimed;\n};",
+        "type": "interface",
+        "name": "USBInterface",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "configuration",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBConfiguration"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "interfaceNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbinterface-usbinterface"
+          },
+          {
+            "type": "attribute",
+            "name": "interfaceNumber",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbinterface-interfacenumber"
+          },
+          {
+            "type": "attribute",
+            "name": "alternate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBAlternateInterface"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbinterface-alternate"
+          },
+          {
+            "type": "attribute",
+            "name": "alternates",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBAlternateInterface"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbinterface-alternates"
+          },
+          {
+            "type": "attribute",
+            "name": "claimed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbinterface-claimed"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbinterface"
+      },
+      "USBAlternateInterface": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBAlternateInterface {\n  constructor(USBInterface deviceInterface, octet alternateSetting);\n  readonly attribute octet alternateSetting;\n  readonly attribute octet interfaceClass;\n  readonly attribute octet interfaceSubclass;\n  readonly attribute octet interfaceProtocol;\n  readonly attribute DOMString? interfaceName;\n  readonly attribute FrozenArray<USBEndpoint> endpoints;\n};",
+        "type": "interface",
+        "name": "USBAlternateInterface",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "deviceInterface",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBInterface"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "alternateSetting",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbalternateinterface-usbalternateinterface"
+          },
+          {
+            "type": "attribute",
+            "name": "alternateSetting",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbalternateinterface-alternatesetting"
+          },
+          {
+            "type": "attribute",
+            "name": "interfaceClass",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbalternateinterface-interfaceclass"
+          },
+          {
+            "type": "attribute",
+            "name": "interfaceSubclass",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbalternateinterface-interfacesubclass"
+          },
+          {
+            "type": "attribute",
+            "name": "interfaceProtocol",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbalternateinterface-interfaceprotocol"
+          },
+          {
+            "type": "attribute",
+            "name": "interfaceName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbalternateinterface-interfacename"
+          },
+          {
+            "type": "attribute",
+            "name": "endpoints",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBEndpoint"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbalternateinterface-endpoints"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbalternateinterface"
+      },
+      "USBDirection": {
+        "fragment": "enum USBDirection {\n  \"in\",\n  \"out\"\n};",
+        "type": "enum",
+        "name": "USBDirection",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "in",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdirection-in"
+          },
+          {
+            "type": "enum-value",
+            "value": "out",
+            "href": "https://usb.spec.whatwg.org/#dom-usbdirection-out"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://usb.spec.whatwg.org/#enumdef-usbdirection"
+      },
+      "USBEndpointType": {
+        "fragment": "enum USBEndpointType {\n  \"bulk\",\n  \"interrupt\",\n  \"isochronous\"\n};",
+        "type": "enum",
+        "name": "USBEndpointType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "bulk",
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpointtype-bulk"
+          },
+          {
+            "type": "enum-value",
+            "value": "interrupt",
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpointtype-interrupt"
+          },
+          {
+            "type": "enum-value",
+            "value": "isochronous",
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpointtype-isochronous"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://usb.spec.whatwg.org/#enumdef-usbendpointtype"
+      },
+      "USBEndpoint": {
+        "fragment": "[\n  Exposed=(Worker,Window),\n  SecureContext\n]\ninterface USBEndpoint {\n  constructor(USBAlternateInterface alternate, octet endpointNumber, USBDirection direction);\n  readonly attribute octet endpointNumber;\n  readonly attribute USBDirection direction;\n  readonly attribute USBEndpointType type;\n  readonly attribute unsigned long packetSize;\n};",
+        "type": "interface",
+        "name": "USBEndpoint",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "alternate",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBAlternateInterface"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "endpointNumber",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "direction",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDirection"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpoint-usbendpoint"
+          },
+          {
+            "type": "attribute",
+            "name": "endpointNumber",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpoint-endpointnumber"
+          },
+          {
+            "type": "attribute",
+            "name": "direction",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBDirection"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpoint-direction"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USBEndpointType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpoint-type"
+          },
+          {
+            "type": "attribute",
+            "name": "packetSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbendpoint-packetsize"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbendpoint"
+      },
+      "USBBlocklistEntry": {
+        "fragment": "// USBBlocklistEntry is never exposed.\ndictionary USBBlocklistEntry {\n  required unsigned short idVendor;\n  required unsigned short idProduct;\n  required unsigned short bcdDevice;\n};",
+        "type": "dictionary",
+        "name": "USBBlocklistEntry",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "idVendor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbblocklistentry-idvendor"
+          },
+          {
+            "type": "field",
+            "name": "idProduct",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbblocklistentry-idproduct"
+          },
+          {
+            "type": "field",
+            "name": "bcdDevice",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-usbblocklistentry-bcddevice"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-usbblocklistentry"
+      },
+      "USBPermissionDescriptor": {
+        "fragment": "dictionary USBPermissionDescriptor : PermissionDescriptor {\n  sequence<USBDeviceFilter> filters;\n  sequence<USBDeviceFilter> exclusionFilters;\n};",
+        "type": "dictionary",
+        "name": "USBPermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDeviceFilter"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbpermissiondescriptor-filters"
+          },
+          {
+            "type": "field",
+            "name": "exclusionFilters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDeviceFilter"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbpermissiondescriptor-exclusionfilters"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-usbpermissiondescriptor"
+      },
+      "AllowedUSBDevice": {
+        "fragment": "dictionary AllowedUSBDevice {\n  required octet vendorId;\n  required octet productId;\n  DOMString serialNumber;\n};",
+        "type": "dictionary",
+        "name": "AllowedUSBDevice",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "vendorId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-allowedusbdevice-vendorid"
+          },
+          {
+            "type": "field",
+            "name": "productId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://usb.spec.whatwg.org/#dom-allowedusbdevice-productid"
+          },
+          {
+            "type": "field",
+            "name": "serialNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-allowedusbdevice-serialnumber"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-allowedusbdevice"
+      },
+      "USBPermissionStorage": {
+        "fragment": "dictionary USBPermissionStorage {\n  sequence<AllowedUSBDevice> allowedDevices = [];\n};",
+        "type": "dictionary",
+        "name": "USBPermissionStorage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "allowedDevices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AllowedUSBDevice"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbpermissionstorage-alloweddevices"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#dictdef-usbpermissionstorage"
+      },
+      "USBPermissionResult": {
+        "fragment": "[Exposed=(Worker,Window)]\ninterface USBPermissionResult : PermissionStatus {\n  attribute FrozenArray<USBDevice> devices;\n};",
+        "type": "interface",
+        "name": "USBPermissionResult",
+        "inheritance": "PermissionStatus",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "devices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USBDevice"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://usb.spec.whatwg.org/#dom-usbpermissionresult-devices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://usb.spec.whatwg.org/#usbpermissionresult"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window, SecureContext]\npartial interface Navigator {\n  [SameObject] readonly attribute USB usb;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "usb",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "USB"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://usb.spec.whatwg.org/#dom-navigator-usb"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "[Exposed=Worker, SecureContext]\npartial interface WorkerNavigator {\n  [SameObject] readonly attribute USB usb;\n};",
+          "type": "interface",
+          "name": "WorkerNavigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "usb",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "USB"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://usb.spec.whatwg.org/#dom-workernavigator-usb"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Worker"
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Worker": [
+        "USB",
+        "WorkerNavigator",
+        "USBConnectionEvent",
+        "USBInTransferResult",
+        "USBOutTransferResult",
+        "USBIsochronousInTransferPacket",
+        "USBIsochronousInTransferResult",
+        "USBIsochronousOutTransferPacket",
+        "USBIsochronousOutTransferResult",
+        "USBDevice",
+        "USBConfiguration",
+        "USBInterface",
+        "USBAlternateInterface",
+        "USBEndpoint",
+        "USBPermissionResult"
+      ],
+      "Window": [
+        "USB",
+        "Navigator",
+        "USBConnectionEvent",
+        "USBInTransferResult",
+        "USBOutTransferResult",
+        "USBIsochronousInTransferPacket",
+        "USBIsochronousInTransferResult",
+        "USBIsochronousOutTransferPacket",
+        "USBIsochronousOutTransferResult",
+        "USBDevice",
+        "USBConfiguration",
+        "USBInterface",
+        "USBAlternateInterface",
+        "USBEndpoint",
+        "USBPermissionResult"
+      ]
+    },
+    "dependencies": {
+      "USBDeviceFilter": [],
+      "USBDeviceRequestOptions": [
+        "USBDeviceFilter"
+      ],
+      "USB": [
+        "EventTarget",
+        "EventHandler",
+        "USBDevice",
+        "USBDeviceRequestOptions"
+      ],
+      "Navigator": [
+        "USB"
+      ],
+      "WorkerNavigator": [
+        "USB"
+      ],
+      "USBConnectionEventInit": [
+        "EventInit",
+        "USBDevice"
+      ],
+      "USBConnectionEvent": [
+        "Event",
+        "USBConnectionEventInit",
+        "USBDevice"
+      ],
+      "USBInTransferResult": [
+        "USBTransferStatus",
+        "DataView"
+      ],
+      "USBOutTransferResult": [
+        "USBTransferStatus"
+      ],
+      "USBIsochronousInTransferPacket": [
+        "USBTransferStatus",
+        "DataView"
+      ],
+      "USBIsochronousInTransferResult": [
+        "USBIsochronousInTransferPacket",
+        "DataView"
+      ],
+      "USBIsochronousOutTransferPacket": [
+        "USBTransferStatus"
+      ],
+      "USBIsochronousOutTransferResult": [
+        "USBIsochronousOutTransferPacket"
+      ],
+      "USBDevice": [
+        "USBConfiguration",
+        "USBInTransferResult",
+        "USBControlTransferParameters",
+        "USBOutTransferResult",
+        "BufferSource",
+        "USBDirection",
+        "USBIsochronousInTransferResult",
+        "USBIsochronousOutTransferResult"
+      ],
+      "USBControlTransferParameters": [
+        "USBRequestType",
+        "USBRecipient"
+      ],
+      "USBConfiguration": [
+        "USBDevice",
+        "USBInterface"
+      ],
+      "USBInterface": [
+        "USBConfiguration",
+        "USBAlternateInterface"
+      ],
+      "USBAlternateInterface": [
+        "USBInterface",
+        "USBEndpoint"
+      ],
+      "USBEndpoint": [
+        "USBAlternateInterface",
+        "USBDirection",
+        "USBEndpointType"
+      ],
+      "USBBlocklistEntry": [],
+      "USBPermissionDescriptor": [
+        "PermissionDescriptor",
+        "USBDeviceFilter"
+      ],
+      "AllowedUSBDevice": [],
+      "USBPermissionStorage": [
+        "AllowedUSBDevice"
+      ],
+      "USBPermissionResult": [
+        "PermissionStatus",
+        "USBDevice"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "Navigator",
+      "WorkerNavigator",
+      "EventInit",
+      "Event",
+      "DataView",
+      "BufferSource",
+      "PermissionDescriptor",
+      "PermissionStatus"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,2 +1,7 @@
 GetActiveWindow
 SHCreateItemFromParsingName
+FileOpenDialog
+IFileOpenDialog
+IShellItem
+FILEOPENDIALOGOPTIONS
+SIGDN

@@ -1,7 +1,31 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup>
+    <IsTraversal>true</IsTraversal>
+    <!-- Removes the projects that cannot run on the current OS. Jobs that only build, or that
+         only enumerate the projects for other jobs to run, set it to false. -->
+    <SkipUnsupportedPlatforms Condition="'$(SkipUnsupportedPlatforms)' == ''">true</SkipUnsupportedPlatforms>
+  </PropertyGroup>
+
+  <!-- eng holds the build infrastructure, including the trimming harnesses that the
+       test_trimming jobs publish directly -->
   <ItemGroup>
-    <ProjectReference Include="../**/*.*proj" Exclude="../eng/*.*proj" />
+    <ProjectReference Include="../**/*.*proj" Exclude="../eng/**/*.*proj" />
   </ItemGroup>
 
-  <Import Project="build.platform-exclusions.proj" />
+  <!-- The WPF and Windows Forms tests need the Microsoft.WindowsDesktop.App runtime, which only
+       ships for Windows. They still compile everywhere, so only the traversals that run tests
+       drop them. -->
+  <ItemGroup Condition="'$(SkipUnsupportedPlatforms)' == 'true' AND $([MSBuild]::IsOsPlatform('Windows')) == false">
+    <ProjectReference Remove="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
+    <ProjectReference Remove="../tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
+  </ItemGroup>
+
+  <!-- The database server tests drive a real client (Microsoft.Data.SqlClient, Npgsql), which
+       needs globalization data, so every test class in these projects is skipped in invariant
+       globalization mode. A traversal left with only these projects runs zero tests, which the
+       test runner reports as a failure, so the traversals that run tests drop them. -->
+  <ItemGroup Condition="'$(SkipUnsupportedPlatforms)' == 'true' AND '$(InvariantGlobalization)' == 'true'">
+    <ProjectReference Remove="../tests/Meziantou.Framework.TdsServer.Tests/Meziantou.Framework.TdsServer.Tests.csproj" />
+    <ProjectReference Remove="../tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />
+  </ItemGroup>
 </Project>

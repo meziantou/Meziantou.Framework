@@ -6,39 +6,69 @@ internal sealed class HtmlEmitter
 {
     private static readonly SearchValues<char> EscapeChars = SearchValues.Create("&<>\"'");
 
-    private readonly StringBuilder _buffer = new();
-    private readonly HighlightOptions _options;
-    private readonly IReadOnlyDictionary<string, string>? _aliases;
+    private readonly StringBuilder _buffer;
+    private readonly string _classPrefix;
+
+    // Keyed by the scope after alias resolution: grammars embedded as sub-languages share this
+    // emitter but each resolves its own aliases.
     private readonly Dictionary<string, string> _tagCache = new(StringComparer.Ordinal);
 
-    public HtmlEmitter(HighlightOptions options, IReadOnlyDictionary<string, string>? aliases)
+    // The index in the buffer of a high surrogate that ended the last text, or -1. Grammar boundaries are UTF-16 indexes,
+    // so a pattern such as `\\.` can end between the two halves of a character; markup between them would make the
+    // output invalid UTF-16. When the next text starts with the low surrogate, it is moved before the markup, so the
+    // character belongs to the token its first half started.
+    private int _trailingHighSurrogateIndex = -1;
+
+    public HtmlEmitter(HighlightOptions options, int capacity)
     {
-        _options = options;
-        _aliases = aliases;
+        _classPrefix = options.ClassPrefix;
+        _buffer = new StringBuilder(capacity);
     }
 
-    public void OpenScope(string scope) => _buffer.Append(GetOpenTag(scope));
+    public void OpenScope(string scope, IReadOnlyDictionary<string, string>? aliases)
+    {
+        var resolved = aliases is not null && aliases.TryGetValue(scope, out var aliased) ? aliased : scope;
+        _buffer.Append(GetOpenTag(resolved));
+    }
 
     public void CloseScope() => _buffer.Append("</span>");
 
-    public void AddText(string text) => AppendEscaped(text.AsSpan());
+    public void AddText(ReadOnlySpan<char> text)
+    {
+        if (text.IsEmpty)
+            return;
 
-    public void AddText(ReadOnlySpan<char> text) => AppendEscaped(text);
+        if (_trailingHighSurrogateIndex >= 0 && _trailingHighSurrogateIndex != _buffer.Length - 1 && char.IsLowSurrogate(text[0]))
+        {
+            _buffer.Insert(_trailingHighSurrogateIndex + 1, text[0]);
+            text = text[1..];
+            _trailingHighSurrogateIndex = -1;
+            if (text.IsEmpty)
+                return;
+        }
+
+        AppendEscaped(text);
+
+        // Surrogates are never escaped, so the last character of the text is the last character of the buffer.
+        _trailingHighSurrogateIndex = char.IsHighSurrogate(text[^1]) ? _buffer.Length - 1 : -1;
+    }
+
+    public void OpenSubLanguage(string name) => _buffer.Append("<span class=\"language-").Append(name).Append("\">");
+
+    public void Clear()
+    {
+        _buffer.Clear();
+        _trailingHighSurrogateIndex = -1;
+    }
 
     public string ToHtml() => _buffer.ToString();
-
-    public void OpenSubLanguage(string name) =>
-        _buffer.Append("<span class=\"language-").Append(name).Append("\">");
-
-    public void AppendRaw(string html) => _buffer.Append(html);
 
     private string GetOpenTag(string scope)
     {
         if (_tagCache.TryGetValue(scope, out var cached))
             return cached;
 
-        var resolved = _aliases is not null && _aliases.TryGetValue(scope, out var aliased) ? aliased : scope;
-        var tag = string.Concat("<span class=\"", ScopeToCssClass(resolved, _options.ClassPrefix), "\">");
+        var tag = string.Concat("<span class=\"", ScopeToCssClass(scope, _classPrefix), "\">");
         _tagCache[scope] = tag;
         return tag;
     }

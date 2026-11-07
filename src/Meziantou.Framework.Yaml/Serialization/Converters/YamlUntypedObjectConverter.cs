@@ -49,11 +49,11 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
             case YamlTokenType.StartMapping:
                 var mappingAnchor = reader.Anchor;
                 reader.Read();
-                var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-                var dict = new Dictionary<string, object?>(comparer);
-                var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
-                HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
-                HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
+                var comparer = options.PropertyNameCaseInsensitive ? UntypedKeyComparer.IgnoreCase : UntypedKeyComparer.Ordinal;
+                var dict = new Dictionary<object, object?>(comparer);
+                var mergeEnabled = YamlMergeKey.IsEnabled(options);
+                HashSet<object>? explicitKeys = mergeEnabled ? new HashSet<object>(comparer) : null;
+                HashSet<object>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<object>(comparer);
                 if (reader.ReferenceReader is not null && mappingAnchor is not null)
                 {
                     reader.ReferenceReader.Register(mappingAnchor, dict);
@@ -66,21 +66,25 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
                         throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
                     }
 
-                    var key = reader.ScalarValue ?? string.Empty;
-                    reader.Read();
-
-                    if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+                    if (YamlMergeKey.IsMergeKey(reader))
                     {
+                        reader.Read();
                         ReadAndApplyMerge(reader, dict, explicitKeys);
                         continue;
                     }
+
+                    // Keys are resolved like values, so "1" and "'1'" are distinct keys, while "1" and "0x1" are
+                    // the same integer.
+                    var keyText = reader.ScalarValue ?? string.Empty;
+                    var key = YamlScalar.ResolveObject(reader) ?? throw YamlThrowHelper.ThrowNotSupported(reader, "A null mapping key cannot be deserialized into 'object'.");
+                    reader.Read();
 
                     explicitKeys?.Add(key);
 
                     var wasSeen = seenKeys is not null && !seenKeys.Add(key);
                     if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
                     {
-                        throw YamlThrowHelper.ThrowDuplicateMappingKey(reader, key);
+                        throw YamlThrowHelper.ThrowDuplicateMappingKey(reader, keyText);
                     }
 
                     if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
@@ -111,7 +115,16 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
             return;
         }
 
-        var converter = writer.GetConverter(value.GetType());
+        var runtimeType = value.GetType();
+        if (runtimeType == typeof(object))
+        {
+            // A plain System.Object carries no state, and resolving its runtime type leads back to this converter.
+            writer.WriteStartMapping();
+            writer.WriteEndMapping();
+            return;
+        }
+
+        var converter = writer.GetConverter(runtimeType);
         converter.Write(writer, value);
     }
 
@@ -143,7 +156,7 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
         return converter.Read(reader, type);
     }
 
-    private void ReadAndApplyMerge(YamlReader reader, Dictionary<string, object?> dictionary, HashSet<string>? explicitKeys)
+    private void ReadAndApplyMerge(YamlReader reader, Dictionary<object, object?> dictionary, HashSet<object>? explicitKeys)
     {
         if (reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
         {
@@ -151,10 +164,11 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
             return;
         }
 
-        if (reader.TokenType == YamlTokenType.StartMapping || reader.TokenType == YamlTokenType.Alias)
+        YamlMergeKey.ReplayAlias(reader, typeof(object));
+        if (reader.TokenType == YamlTokenType.StartMapping)
         {
             var merged = Read(reader, typeof(object));
-            if (merged is Dictionary<string, object?> mergedDict)
+            if (merged is Dictionary<object, object?> mergedDict)
             {
                 ApplyMergeDictionary(dictionary, mergedDict, explicitKeys);
                 return;
@@ -168,8 +182,14 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
             reader.Read();
             while (reader.TokenType != YamlTokenType.EndSequence)
             {
+                YamlMergeKey.ReplayAlias(reader, typeof(object));
+                if (reader.TokenType != YamlTokenType.StartMapping)
+                {
+                    throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge sequence entries must be mappings.");
+                }
+
                 var merged = Read(reader, typeof(object));
-                if (merged is not Dictionary<string, object?> mergedDict)
+                if (merged is not Dictionary<object, object?> mergedDict)
                 {
                     throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge sequence entries must be mappings.");
                 }
@@ -184,16 +204,85 @@ internal sealed class YamlUntypedObjectConverter : YamlConverter
         throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge key value must be a mapping or a sequence of mappings.");
     }
 
-    private static void ApplyMergeDictionary(Dictionary<string, object?> target, Dictionary<string, object?> merged, HashSet<string>? explicitKeys)
+    /// <remarks>
+    /// A key an earlier mapping of the merge already provided keeps its value, so the merged key is recorded
+    /// alongside the explicitly declared ones.
+    /// </remarks>
+    private static void ApplyMergeDictionary(Dictionary<object, object?> target, Dictionary<object, object?> merged, HashSet<object>? explicitKeys)
     {
         foreach (var pair in merged)
         {
-            if (explicitKeys is not null && explicitKeys.Contains(pair.Key))
+            if (explicitKeys is not null && !explicitKeys.Add(pair.Key))
             {
                 continue;
             }
 
             target[pair.Key] = pair.Value;
+        }
+    }
+
+    /// <summary>Compares the keys of an untyped mapping by the value they resolve to.</summary>
+    /// <remarks>
+    /// An integer resolves to <see cref="int"/>, <see cref="long"/>, or <see cref="ulong"/> depending on its magnitude
+    /// and on the resolution path, so integers are compared by value whatever their CLR type.
+    /// </remarks>
+    private sealed class UntypedKeyComparer : IEqualityComparer<object>
+    {
+        public static UntypedKeyComparer Ordinal { get; } = new(StringComparer.Ordinal);
+
+        public static UntypedKeyComparer IgnoreCase { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        private readonly StringComparer _stringComparer;
+
+        private UntypedKeyComparer(StringComparer stringComparer) => _stringComparer = stringComparer;
+
+        public new bool Equals(object? x, object? y)
+        {
+            if (x is string xs && y is string ys)
+            {
+                return _stringComparer.Equals(xs, ys);
+            }
+
+            if (TryGetInteger(x, out var xi) && TryGetInteger(y, out var yi))
+            {
+                return xi == yi;
+            }
+
+            return object.Equals(x, y);
+        }
+
+        public int GetHashCode(object obj)
+        {
+            if (obj is string s)
+            {
+                return _stringComparer.GetHashCode(s);
+            }
+
+            if (TryGetInteger(obj, out var integer))
+            {
+                return integer.GetHashCode();
+            }
+
+            return obj.GetHashCode();
+        }
+
+        private static bool TryGetInteger(object? value, out Int128 result)
+        {
+            switch (value)
+            {
+                case int i:
+                    result = i;
+                    return true;
+                case long l:
+                    result = l;
+                    return true;
+                case ulong u:
+                    result = u;
+                    return true;
+                default:
+                    result = default;
+                    return false;
+            }
         }
     }
 }

@@ -1,0 +1,86 @@
+{
+  "spec": {
+    "title": "WebGL EXT_texture_mirror_clamp_to_edge Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_texture_mirror_clamp_to_edge/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_texture_mirror_clamp_to_edge"
+        ],
+        "Worker": [
+          "EXT_texture_mirror_clamp_to_edge"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_texture_mirror_clamp_to_edge": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_texture_mirror_clamp_to_edge {\n    const GLenum MIRROR_CLAMP_TO_EDGE_EXT = 0x8743;\n};",
+        "type": "interface",
+        "name": "EXT_texture_mirror_clamp_to_edge",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "MIRROR_CLAMP_TO_EDGE_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8743"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_texture_mirror_clamp_to_edge"
+      ],
+      "Worker": [
+        "EXT_texture_mirror_clamp_to_edge"
+      ]
+    },
+    "dependencies": {
+      "EXT_texture_mirror_clamp_to_edge": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

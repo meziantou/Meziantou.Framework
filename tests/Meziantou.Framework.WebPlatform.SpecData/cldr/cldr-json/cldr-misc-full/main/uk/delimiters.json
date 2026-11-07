@@ -1,0 +1,15 @@
+{
+  "main": {
+    "uk": {
+      "identity": {
+        "language": "uk"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

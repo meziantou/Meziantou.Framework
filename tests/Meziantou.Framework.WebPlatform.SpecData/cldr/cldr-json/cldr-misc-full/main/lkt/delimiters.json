@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lkt": {
+      "identity": {
+        "language": "lkt"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -6,42 +6,50 @@ A .NET library for determining a file's perceived type based on its extension us
 
 This library provides functionality to get a file's perceived type (text, image, audio, video, etc.) based on its extension by querying the Windows registry and using the `AssocGetPerceivedType` Win32 API.
 
+The types are in the `Meziantou.Framework.Win32` namespace.
+
 ### Get Perceived Type
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.PerceivedType.Tests/PerceivedTests.cs;region=Perceived_GetPerceivedTypes;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
 // Get perceived type for a file extension
 var perceived = Perceived.GetPerceivedType(".txt");
-Console.WriteLine(perceived.PerceivedType); // Text
-Console.WriteLine(perceived.PerceivedTypeSource); // SoftCoded or HardCoded
+Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+Assert.NotEqual(PerceivedTypeSource.Undefined, perceived.PerceivedTypeSource); // e.g. SoftCoded, NativeSupport
 
 // Works with various file types
 var image = Perceived.GetPerceivedType(".jpg");
-Console.WriteLine(image.PerceivedType); // Image
+Assert.Equal(PerceivedType.Image, image.PerceivedType);
 
 var video = Perceived.GetPerceivedType(".mp4");
-Console.WriteLine(video.PerceivedType); // Video
+Assert.Equal(PerceivedType.Video, video.PerceivedType);
 
 var audio = Perceived.GetPerceivedType(".mp3");
-Console.WriteLine(audio.PerceivedType); // Audio
+Assert.Equal(PerceivedType.Audio, audio.PerceivedType);
 ```
+<!-- endref -->
 
 ### Add Custom Perceived Types
 
-You can add custom perceived types or override system-defined types:
+You can add custom perceived types or override system-defined types. They are stored in memory, for the current process:
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.PerceivedType.Tests/PerceivedTests.cs;region=Perceived_AddPerceived;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Add a custom perceived type
 Perceived.AddPerceived(".myext", PerceivedType.Text);
+Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("file.myext").PerceivedType);
 
 // Add default perceived types for common extensions
 Perceived.AddDefaultPerceivedTypes();
 ```
+<!-- endref -->
 
 ### Perceived Types
 
-The library supports the following perceived types:
+The library supports the following perceived types. Which extension maps to which type is
+decided by Windows and by the file associations registered on the machine, so the examples
+below are illustrative rather than guaranteed: an extension with no registered handler
+reports `Unspecified`.
 
 - `Text` - Text files (.txt, .cs, .html, .xml, etc.)
 - `Image` - Image files (.jpg, .png, .gif, etc.)
@@ -68,7 +76,6 @@ The `PerceivedTypeSource` enum indicates where the perceived type information co
 - `GdiPlus` - Supported by GDI+
 - `WmSdk` - Supported by Windows Media SDK
 - `ZipFolder` - Supported by Windows compressed folders
-- `Mime` - Determined through MIME content types
 
 ## Platform Support
 

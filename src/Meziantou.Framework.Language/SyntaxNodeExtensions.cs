@@ -1,0 +1,641 @@
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Syntax;
+
+namespace Meziantou.Framework.Language;
+
+/// <summary>Operations that return the same node type they were given.</summary>
+/// <remarks>
+/// These are extensions rather than members so that the result keeps its type: editing a document returns a document,
+/// not the abstract node type, and no cast is needed at the call site.
+/// </remarks>
+public static class SyntaxNodeExtensions
+{
+    /// <summary>Returns <paramref name="root"/> with <paramref name="newNode"/> in place of <paramref name="oldNode"/>.</summary>
+    /// <remarks>
+    /// The result is a new tree that shares every part of the old one that did not change, and it is the same type as
+    /// <paramref name="root"/>, so editing a document gives back a document. Nothing is re-parsed.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="oldNode"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot ReplaceNode<TRoot>(this TRoot root, SyntaxNode oldNode, SyntaxNode newNode)
+        where TRoot : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(newNode);
+
+        return root.ReplaceNodes([oldNode], (_, _) => newNode);
+    }
+
+    /// <summary>Returns <paramref name="root"/> with each of <paramref name="nodes"/> replaced by what <paramref name="computeReplacement"/> returns for it.</summary>
+    /// <remarks>An empty sequence asks for nothing, and gives <paramref name="root"/> back unchanged.</remarks>
+    /// <param name="root">The tree to rebuild.</param>
+    /// <param name="nodes">The nodes to replace.</param>
+    /// <param name="computeReplacement">Given the original node twice, returns what to put in its place.</param>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">One of <paramref name="nodes"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot ReplaceNodes<TRoot, TNode>(this TRoot root, IEnumerable<TNode> nodes, Func<TNode, TNode, SyntaxNode> computeReplacement)
+        where TRoot : SyntaxNode
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(nodes);
+        ArgumentNullException.ThrowIfNull(computeReplacement);
+
+        var replacer = new SyntaxReplacer();
+        var any = false;
+        foreach (var node in nodes)
+        {
+            ArgumentNullException.ThrowIfNull(node, nameof(nodes));
+            EnsureInTree(root, node, "One of the nodes is not part of this tree.", nameof(nodes));
+            replacer.ReplaceNode(node, computeReplacement(node, node).Green);
+            any = true;
+        }
+
+        return any ? Rebuild(root, replacer, "One of the nodes is not part of this tree.", nameof(nodes)) : root;
+    }
+
+    /// <summary>Returns <paramref name="root"/> with <paramref name="newToken"/> in place of <paramref name="oldToken"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="oldToken"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot ReplaceToken<TRoot>(this TRoot root, SyntaxToken oldToken, SyntaxToken newToken)
+        where TRoot : SyntaxNode
+        => root.ReplaceTokens([oldToken], (_, _) => newToken);
+
+    /// <summary>Returns <paramref name="root"/> with each of <paramref name="tokens"/> replaced by what <paramref name="computeReplacement"/> returns for it.</summary>
+    /// <remarks>An empty sequence asks for nothing, and gives <paramref name="root"/> back unchanged.</remarks>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">One of <paramref name="tokens"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot ReplaceTokens<TRoot>(this TRoot root, IEnumerable<SyntaxToken> tokens, Func<SyntaxToken, SyntaxToken, SyntaxToken> computeReplacement)
+        where TRoot : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(tokens);
+        ArgumentNullException.ThrowIfNull(computeReplacement);
+
+        var replacer = new SyntaxReplacer();
+        var any = false;
+        foreach (var token in tokens)
+        {
+            EnsureInTree(root, token.Parent, "One of the tokens is not part of this tree.", nameof(tokens));
+            replacer.ReplaceToken(token, computeReplacement(token, token).Node);
+            any = true;
+        }
+
+        return any ? Rebuild(root, replacer, "One of the tokens is not part of this tree.", nameof(tokens)) : root;
+    }
+
+    /// <summary>Returns <paramref name="root"/> with <paramref name="newTrivia"/> in place of <paramref name="oldTrivia"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="oldTrivia"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot ReplaceTrivia<TRoot>(this TRoot root, SyntaxTrivia oldTrivia, SyntaxTrivia newTrivia)
+        where TRoot : SyntaxNode
+        => root.ReplaceTrivia([oldTrivia], (_, _) => newTrivia);
+
+    /// <summary>Returns <paramref name="root"/> with each of <paramref name="trivia"/> replaced by what <paramref name="computeReplacement"/> returns for it.</summary>
+    /// <remarks>An empty sequence asks for nothing, and gives <paramref name="root"/> back unchanged.</remarks>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">One of <paramref name="trivia"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot ReplaceTrivia<TRoot>(this TRoot root, IEnumerable<SyntaxTrivia> trivia, Func<SyntaxTrivia, SyntaxTrivia, SyntaxTrivia> computeReplacement)
+        where TRoot : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(trivia);
+        ArgumentNullException.ThrowIfNull(computeReplacement);
+
+        var replacer = new SyntaxReplacer();
+        var any = false;
+        foreach (var item in trivia)
+        {
+            EnsureInTree(root, item.Token.Parent, "One of the trivia is not part of this tree.", nameof(trivia));
+            replacer.ReplaceTrivia(item, computeReplacement(item, item).UnderlyingNode);
+            any = true;
+        }
+
+        return any ? Rebuild(root, replacer, "One of the trivia is not part of this tree.", nameof(trivia)) : root;
+    }
+
+    /// <summary>Returns <paramref name="root"/> with <paramref name="newNodes"/> in place of <paramref name="oldNode"/>.</summary>
+    /// <remarks>Replacing one node with several requires that it sits in a list, even one holding nothing but it.</remarks>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="oldNode"/> is not part of <paramref name="root"/>, or is not somewhere several nodes can go.</exception>
+    public static TRoot ReplaceNode<TRoot>(this TRoot root, SyntaxNode oldNode, IEnumerable<SyntaxNode> newNodes)
+        where TRoot : SyntaxNode
+        => root.SpliceIntoList(oldNode, newNodes, removeOriginal: true, insertBefore: true);
+
+    /// <summary>Returns <paramref name="root"/> with <paramref name="newNodes"/> added in front of <paramref name="nodeInList"/>.</summary>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="nodeInList"/> is not part of <paramref name="root"/>, or is not in a list.</exception>
+    public static TRoot InsertNodesBefore<TRoot>(this TRoot root, SyntaxNode nodeInList, IEnumerable<SyntaxNode> newNodes)
+        where TRoot : SyntaxNode
+        => root.SpliceIntoList(nodeInList, newNodes, removeOriginal: false, insertBefore: true);
+
+    /// <summary>Returns <paramref name="root"/> with <paramref name="newNodes"/> added after <paramref name="nodeInList"/>.</summary>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="nodeInList"/> is not part of <paramref name="root"/>, or is not in a list.</exception>
+    public static TRoot InsertNodesAfter<TRoot>(this TRoot root, SyntaxNode nodeInList, IEnumerable<SyntaxNode> newNodes)
+        where TRoot : SyntaxNode
+        => root.SpliceIntoList(nodeInList, newNodes, removeOriginal: false, insertBefore: false);
+
+    /// <summary>Returns <paramref name="root"/> without <paramref name="node"/>.</summary>
+    /// <param name="root">The tree to rebuild.</param>
+    /// <param name="node">The node to take out. Its separator goes with it when it sits in a separated list.</param>
+    /// <param name="options">What to keep of the trivia around it. Anything kept moves onto what now stands in its place.</param>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="node"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot RemoveNode<TRoot>(this TRoot root, SyntaxNode node, SyntaxRemoveOptions options)
+        where TRoot : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return root.RemoveNodes([node], options);
+    }
+
+    /// <summary>Returns <paramref name="root"/> without <paramref name="nodes"/>.</summary>
+    /// <param name="root">The tree to rebuild.</param>
+    /// <param name="nodes">The nodes to take out. Naming both a node and something inside it removes the node, once.</param>
+    /// <param name="options">What to keep of the trivia around them.</param>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">One of <paramref name="nodes"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot RemoveNodes<TRoot>(this TRoot root, IEnumerable<SyntaxNode> nodes, SyntaxRemoveOptions options)
+        where TRoot : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(nodes);
+
+        var targets = nodes.ToArray();
+        foreach (var target in targets)
+        {
+            ArgumentNullException.ThrowIfNull(target, nameof(nodes));
+        }
+
+        // Asking for a node and for something inside it is asking for the node.
+        var pending = new HashSet<SyntaxNode>(targets);
+        var replacer = new SyntaxReplacer();
+        var groups = new Dictionary<(SyntaxNode Parent, int Slot), List<int>>();
+
+        foreach (var target in targets)
+        {
+            // Membership is checked against the root being rebuilt, not merely against some parent: a node from
+            // another tree has a parent of its own and would otherwise be located happily and then never found.
+            EnsureInTree(root, target, "The node is not part of this tree.", nameof(nodes));
+
+            if (target.Ancestors().Any(pending.Contains))
+                continue;
+
+            if (!TryLocate(target, out var parent, out var slot, out var indexInList))
+                throw new ArgumentException("The node is not part of this tree.", nameof(nodes));
+
+            if (!groups.TryGetValue((parent, slot), out var indices))
+            {
+                groups[(parent, slot)] = indices = [];
+            }
+
+            indices.Add(indexInList);
+        }
+
+        if (groups.Count == 0)
+            throw new ArgumentException("There was nothing to remove.", nameof(nodes));
+
+        foreach (var ((parent, slot), indices) in groups)
+        {
+            var owner = parent;
+            var slotIndex = slot;
+            var removedIndices = indices;
+            replacer.EditSlots(parent, slots => RemoveFromSlot(owner, slots, slotIndex, removedIndices, options));
+        }
+
+        return Rebuild(root, replacer, "The node is not part of this tree.", nameof(nodes));
+    }
+
+    /// <summary>Takes the named items out of one slot and finds a home for whatever trivia is being kept.</summary>
+    private static GreenNode?[] RemoveFromSlot(SyntaxNode parent, GreenNode?[] slots, int slot, List<int> indices, SyntaxRemoveOptions options)
+    {
+        if (indices.Contains(-1))
+        {
+            // The node filled the slot on its own rather than sitting in a list.
+            var removedAlone = slots[slot] is { } only ? new[] { only } : [];
+            slots[slot] = null;
+
+            return AttachToNeighbouringSlot(slots, slot, SyntaxNodeRemover.ResidualTrivia(removedAlone, options, parent.Green));
+        }
+
+        var items = GreenNodeList.ToArray(slots[slot]);
+        var removing = new HashSet<int>(indices);
+
+        // A separated list has to keep alternating, so the separators go with the nodes. That is decided per run of
+        // adjacent removals rather than per node: two neighbours each looking for "the separator after me, or the one
+        // before me when nothing follows" can settle on the same one and leave another behind. A neighbour that is a
+        // node rather than a token is a sibling in a list that has no separators at all, and taking it would delete
+        // something nobody asked to.
+        var ordered = indices.Distinct().Order().ToArray();
+        for (var i = 0; i < ordered.Length; i++)
+        {
+            var first = ordered[i];
+
+            // Walk to the end of the run, taking the separators that sit inside it.
+            var last = first;
+            while (i + 1 < ordered.Length && ordered[i + 1] == last + 2 && items[last + 1] is { IsToken: true })
+            {
+                removing.Add(last + 1);
+                last = ordered[++i];
+            }
+
+            if (last + 1 < items.Length && items[last + 1] is { IsToken: true })
+            {
+                removing.Add(last + 1);
+            }
+            else if (first > 0 && items[first - 1] is { IsToken: true })
+            {
+                removing.Add(first - 1);
+            }
+        }
+
+        // Each run of adjacent removals keeps its trivia where it was, on whatever now stands in its place. Pooling
+        // the trivia of every removal in the list and attaching it at the first gap would carry the trivia of a later
+        // node backwards, past siblings that were not removed at all.
+        var kept = new List<GreenNode?>();
+        var run = new List<GreenNode>();
+        var attachments = new List<(int Index, GreenNode Residual)>();
+        for (var i = 0; i <= items.Length; i++)
+        {
+            if (i < items.Length && removing.Contains(i))
+            {
+                if (items[i] is { } item)
+                {
+                    run.Add(item);
+                }
+
+                continue;
+            }
+
+            if (run.Count > 0)
+            {
+                if (SyntaxNodeRemover.ResidualTrivia([.. run], options, parent.Green) is { } runResidual)
+                {
+                    attachments.Add((kept.Count, runResidual));
+                }
+
+                run.Clear();
+            }
+
+            if (i < items.Length)
+            {
+                kept.Add(items[i]);
+            }
+        }
+
+        // Only a run with nothing left beside it can have trivia to hand upward, and there is at most one of those.
+        GreenNode? residual = null;
+        foreach (var (index, runResidual) in attachments)
+        {
+            if (index < kept.Count)
+            {
+                kept[index] = SyntaxNodeRemover.PrependLeadingTrivia(kept[index]!, runResidual);
+            }
+            else if (kept.Count > 0)
+            {
+                kept[^1] = SyntaxNodeRemover.AppendTrailingTrivia(kept[^1]!, runResidual);
+            }
+            else
+            {
+                residual = runResidual;
+            }
+        }
+
+        slots[slot] = InternalSyntax.SyntaxList.ListNode([.. kept]);
+
+        return residual is null ? slots : AttachToNeighbouringSlot(slots, slot, residual);
+    }
+
+    /// <summary>Puts kept trivia on the nearest thing left in the parent once its own slot has emptied.</summary>
+    private static GreenNode?[] AttachToNeighbouringSlot(GreenNode?[] slots, int slot, GreenNode? residual)
+    {
+        if (residual is null)
+            return slots;
+
+        for (var i = slot + 1; i < slots.Length; i++)
+        {
+            if (slots[i] is { } following)
+            {
+                slots[i] = SyntaxNodeRemover.PrependLeadingTrivia(following, residual);
+
+                return slots;
+            }
+        }
+
+        for (var i = slot - 1; i >= 0; i--)
+        {
+            if (slots[i] is { } preceding)
+            {
+                slots[i] = SyntaxNodeRemover.AppendTrailingTrivia(preceding, residual);
+
+                return slots;
+            }
+        }
+
+        return slots;
+    }
+
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> in front of its first token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithLeadingTrivia<TNode>(this TNode node, params SyntaxTrivia[] trivia)
+        where TNode : SyntaxNode
+        => node.WithLeadingTrivia((IEnumerable<SyntaxTrivia>?)trivia);
+
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> in front of its first token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithLeadingTrivia<TNode>(this TNode node, IEnumerable<SyntaxTrivia>? trivia)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        var first = node.GetFirstToken();
+
+        return first.RawKind == 0 ? node : node.ReplaceToken(first, first.WithLeadingTrivia(trivia));
+    }
+
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> after its last token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithTrailingTrivia<TNode>(this TNode node, params SyntaxTrivia[] trivia)
+        where TNode : SyntaxNode
+        => node.WithTrailingTrivia((IEnumerable<SyntaxTrivia>?)trivia);
+
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> after its last token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithTrailingTrivia<TNode>(this TNode node, IEnumerable<SyntaxTrivia>? trivia)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        var last = node.GetLastToken();
+
+        return last.RawKind == 0 ? node : node.ReplaceToken(last, last.WithTrailingTrivia(trivia));
+    }
+
+    /// <summary>Returns <paramref name="node"/> surrounded by the trivia that surrounds <paramref name="source"/>.</summary>
+    /// <remarks>
+    /// Replacing a node does not carry its trivia over, because the replacement may want its own. This is how a caller
+    /// asks for the trivia of the node being replaced to be kept.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> or <paramref name="source"/> is <see langword="null"/>.</exception>
+    public static TNode WithTriviaFrom<TNode>(this TNode node, SyntaxNode source)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        return node.WithLeadingTrivia(source.GetLeadingTrivia()).WithTrailingTrivia(source.GetTrailingTrivia());
+    }
+
+    /// <summary>Returns <paramref name="node"/> carrying <paramref name="annotations"/> as well as the ones it already has.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> or <paramref name="annotations"/> is <see langword="null"/>.</exception>
+    public static TNode WithAdditionalAnnotations<TNode>(this TNode node, params SyntaxAnnotation[] annotations)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        ArgumentNullException.ThrowIfNull(annotations);
+
+        return (TNode)node.Green.WithAdditionalAnnotations(annotations).CreateRed();
+    }
+
+    /// <summary>Returns <paramref name="node"/> without <paramref name="annotations"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> or <paramref name="annotations"/> is <see langword="null"/>.</exception>
+    public static TNode WithoutAnnotations<TNode>(this TNode node, params SyntaxAnnotation[] annotations)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        ArgumentNullException.ThrowIfNull(annotations);
+
+        return (TNode)node.Green.WithoutAnnotations(annotations).CreateRed();
+    }
+
+    /// <summary>Returns <paramref name="node"/> without any annotation of the given kind.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> or <paramref name="annotationKind"/> is <see langword="null"/>.</exception>
+    public static TNode WithoutAnnotations<TNode>(this TNode node, string annotationKind)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        ArgumentNullException.ThrowIfNull(annotationKind);
+
+        return node.WithoutAnnotations([.. node.GetAnnotations(annotationKind)]);
+    }
+
+    /// <summary>Returns <paramref name="to"/> carrying the annotations of <paramref name="from"/> as well as its own.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="from"/> or <paramref name="to"/> is <see langword="null"/>.</exception>
+    public static TNode CopyAnnotationsTo<TNode>(this SyntaxNode from, TNode to)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+
+        return to.WithAdditionalAnnotations([.. from.GetAnnotations()]);
+    }
+
+    private static TRoot SpliceIntoList<TRoot>(this TRoot root, SyntaxNode nodeInList, IEnumerable<SyntaxNode> newNodes, bool removeOriginal, bool insertBefore)
+        where TRoot : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(nodeInList);
+        ArgumentNullException.ThrowIfNull(newNodes);
+
+        if (!TryLocate(nodeInList, out var parent, out var slot, out var indexInList))
+            throw new ArgumentException("The node is not part of this tree.", nameof(nodeInList));
+
+        // No index means either that the node fills its slot on its own or that it is the only element of a list,
+        // because a list of one collapses to that element. Only the parent can tell those apart, and only a list is
+        // somewhere several nodes can go: writing a list into the other kind of slot builds a tree whose typed
+        // children no longer have the type they say.
+        if (indexInList < 0 && !parent.Green.IsListSlot(slot))
+            throw new ArgumentException("The node is not somewhere several nodes can go.", nameof(nodeInList));
+
+        var replacements = newNodes.Select(node => (GreenNode?)node.Green).ToArray();
+        if (replacements.Length == 0 && !removeOriginal)
+        {
+            // Inserting nothing is not an error: it is a caller whose sequence happened to come out empty. Only a
+            // replacement may be empty, and that one means "take the node out".
+            return root;
+        }
+
+        var slotGreen = parent.Green.GetSlot(slot);
+
+        var items = GreenNodeList.ToArray(slotGreen);
+        var start = Math.Max(indexInList, 0);
+
+        // Asked of the parent rather than read off the contents: a list of one holds no separator to observe yet, and
+        // it does not even look like a list, because a list collapses to its only element.
+        var isSeparated = parent.Green.IsSeparatedListSlot(slot);
+        var spliced = Splice(items, start, replacements, removeOriginal, insertBefore, parent.Green, slot, isSeparated);
+
+        var newSlots = new GreenNode?[parent.Green.SlotCount];
+        for (var i = 0; i < newSlots.Length; i++)
+        {
+            newSlots[i] = parent.Green.GetSlot(i);
+        }
+
+        newSlots[slot] = InternalSyntax.SyntaxList.ListNode(spliced);
+
+        var replacer = new SyntaxReplacer();
+        replacer.ReplaceNode(parent, parent.Green.WithSlots(newSlots));
+
+        return Rebuild(root, replacer, "The node is not part of this tree.", nameof(nodeInList));
+    }
+
+
+    /// <summary>
+    /// Splices nodes into the contents of a slot, adding the separators a separated list needs to stay alternating.
+    /// </summary>
+    /// <remarks>
+    /// A separated list holds tokens between its nodes. Adding a node to one means adding a separator with it, and
+    /// taking a node out means taking its separator too, or the list stops alternating and can no longer be read.
+    /// Which kind of list this is comes from <paramref name="isSeparated"/>, because a list of one element has no
+    /// separator in it to go by. The separator to add is the one the list already holds, so its spacing carries over;
+    /// failing that it is the one <paramref name="owner"/> declares for this slot, because a language may separate
+    /// one kind of list differently from another.
+    /// </remarks>
+    private static GreenNode?[] Splice(GreenNode?[] items, int index, GreenNode?[] replacements, bool removeOriginal, bool insertBefore, GreenNode owner, int slot, bool isSeparated)
+    {
+        var result = new List<GreenNode?>(items);
+
+        if (!isSeparated)
+        {
+            if (removeOriginal)
+            {
+                result.RemoveAt(index);
+            }
+
+            result.InsertRange(removeOriginal || insertBefore ? index : index + 1, replacements);
+
+            return [.. result];
+        }
+
+        var separator = FindSeparator(items) ?? owner.CreateSeparator(slot)
+            ?? throw new InvalidOperationException("The language does not define a separator for its lists, so nodes cannot be spliced into one.");
+
+        if (removeOriginal)
+        {
+            result.RemoveAt(index);
+            if (replacements.Length == 0)
+            {
+                // Take the separator that went with the node: the one after it, or the one before it when it was last.
+                if (index < result.Count)
+                {
+                    result.RemoveAt(index);
+                }
+                else if (index > 0)
+                {
+                    result.RemoveAt(index - 1);
+                }
+
+                return [.. result];
+            }
+
+            result.InsertRange(index, Interleave(replacements, separator, separatorAtEnd: false));
+
+            return [.. result];
+        }
+
+        if (insertBefore)
+        {
+            result.InsertRange(index, Interleave(replacements, separator, separatorAtEnd: true));
+
+            return [.. result];
+        }
+
+        result.InsertRange(index + 1, [separator, .. Interleave(replacements, separator, separatorAtEnd: false)]);
+
+        return [.. result];
+    }
+
+    private static GreenNode? FindSeparator(GreenNode?[] items) => Array.Find(items, item => item is { IsToken: true });
+
+    private static List<GreenNode?> Interleave(GreenNode?[] nodes, GreenNode separator, bool separatorAtEnd)
+    {
+        var result = new List<GreenNode?>((nodes.Length * 2) - 1);
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            if (i > 0)
+            {
+                result.Add(separator);
+            }
+
+            result.Add(nodes[i]);
+        }
+
+        if (separatorAtEnd && nodes.Length > 0)
+        {
+            result.Add(separator);
+        }
+
+        return result;
+    }
+
+    /// <summary>Finds where <paramref name="node"/> sits in its parent: which slot, and where in that slot's list.</summary>
+    private static bool TryLocate(SyntaxNode node, [NotNullWhen(true)] out SyntaxNode? parent, out int slot, out int indexInList)
+    {
+        slot = -1;
+        indexInList = -1;
+        parent = node.Parent;
+        if (parent is null)
+            return false;
+
+        for (var i = 0; i < parent.Green.SlotCount; i++)
+        {
+            var childGreen = parent.Green.GetSlot(i);
+            if (childGreen is null || childGreen.IsToken)
+                continue;
+
+            if (!childGreen.IsList)
+            {
+                if (ReferenceEquals(parent.GetNodeSlot(i), node))
+                {
+                    slot = i;
+
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (parent.GetNodeSlot(i) is not { } listRed)
+                continue;
+
+            for (var j = 0; j < childGreen.SlotCount; j++)
+            {
+                if (ReferenceEquals(listRed.GetNodeSlot(j), node))
+                {
+                    slot = i;
+                    indexInList = j;
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Rejects a target that is not part of the tree being rebuilt.</summary>
+    /// <remarks>
+    /// Each target is checked as it is registered, so a batch holding one target from the tree and one from
+    /// somewhere else is rejected rather than half applied. Rebuilding alone cannot tell the difference: it only
+    /// knows whether anything at all was replaced.
+    /// </remarks>
+    private static void EnsureInTree(SyntaxNode root, SyntaxNode? node, string message, string parameterName)
+    {
+        for (var current = node; current is not null; current = current.Parent)
+        {
+            if (ReferenceEquals(current, root))
+                return;
+        }
+
+        throw new ArgumentException(message, parameterName);
+    }
+
+    private static TRoot Rebuild<TRoot>(TRoot root, SyntaxReplacer replacer, string message, string parameterName)
+        where TRoot : SyntaxNode
+    {
+        var green = replacer.Rebuild(root, out var replacedAnything);
+        if (!replacedAnything)
+            throw new ArgumentException(message, parameterName);
+
+        return (TRoot)green.CreateRed();
+    }
+}

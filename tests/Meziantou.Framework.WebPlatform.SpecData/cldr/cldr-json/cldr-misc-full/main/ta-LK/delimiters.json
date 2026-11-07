@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ta-LK": {
+      "identity": {
+        "language": "ta",
+        "territory": "LK"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

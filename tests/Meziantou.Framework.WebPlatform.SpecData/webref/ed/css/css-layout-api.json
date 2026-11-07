@@ -1,0 +1,20 @@
+{
+  "spec": {
+    "title": "CSS Layout API Level 1",
+    "url": "https://drafts.css-houdini.org/css-layout-api-1/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "layout()",
+      "href": "https://drafts.css-houdini.org/css-layout-api-1/#valdef-display-layout",
+      "type": "value",
+      "value": "layout()",
+      "for": "display"
+    }
+  ]
+}

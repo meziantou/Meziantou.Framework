@@ -1,4 +1,6 @@
-name: publish
+# Validates pull requests: generated files, analyzers, tests and trimming. The NuGet packages are
+# built by publish.yml, which runs on pull requests too and publishes them on main.
+name: ci
 on:
   workflow_dispatch:
     inputs:
@@ -7,22 +9,22 @@ on:
         type: boolean
         default: false
         required: false
-  push:
-    branches:
-      - 'main'
   pull_request:
     branches:
       - '*'
+  # Pull requests and manual runs only test the projects that set GlobalizationSensitive in invariant
+  # globalization mode. This run tests all of them in that mode, so a failure means the analyzer that
+  # requires the property is missing a rule.
+  schedule:
+    - cron: '0 3 * * 1' # weekly
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
-  NuGetDirectory: ${{ github.workspace}}/nuget
-  NuGetSource: "https://api.nuget.org/v3/index.json"
 
 defaults:
   run:
@@ -30,12 +32,13 @@ defaults:
 
 jobs:
   build_eng_scripts:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - name: Build eng scripts
         run: |
           Get-ChildItem ./eng/*.cs | ForEach-Object {
@@ -45,105 +48,437 @@ jobs:
           }
 
   validate_generated_files:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
         run: dotnet run ./eng/update-all.cs
 
-  create_nuget:
+  run_analyzers:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
-    timeout-minutes: 20
-    outputs:
-      has-project: ${{ steps.package-project.outputs.has-project }}
+    timeout-minutes: 60
+    env:
+      # This job only compiles the .NET code, so the npm packages of the projects are not needed
+      EnableDefaultNpmPackageFile: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
+
       - name: Generate delta build file
-        id: package-project
-        uses: ./.github/actions/deltabuild
+        id: build-project
+        uses: $/.github/actions/deltabuild
         with:
-          input-project: eng/packages.proj
-          output-project: eng/packages.delta.proj
-          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
-          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
+          input-project: eng/build.proj
+          output-project: eng/delta.proj
+          # This job only builds, so it keeps the projects whose tests cannot run on Linux.
+          # They compile everywhere, and this is the only job that reports the IDExxxx
+          # diagnostics for them.
+          properties: SkipUnsupportedPlatforms=false
+          base-commit: ${{ github.event.pull_request.base.sha }}
+          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
 
-      - run: dotnet restore ${{ steps.package-project.outputs.project }} -p:Configuration=Release /p:IsOfficialBuild=true /bl:restore.binlog
-        if: steps.package-project.outputs.has-project == 'true'
+      # Generating the public API of a project runs this tool, and a delta build does not
+      # necessarily contain it
       - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
-        if: steps.package-project.outputs.has-project == 'true'
-      - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /bl:build.binlog
-        if: steps.package-project.outputs.has-project == 'true'
+        if: steps.build-project.outputs.has-project == 'true'
 
-      - name: Prepare NuGet artifact directory
-        run: |
-          New-Item -ItemType Directory -Path "${{ env.NuGetDirectory }}" -Force | Out-Null
-          Set-Content -Path "${{ env.NuGetDirectory }}/artifact-placeholder.txt" -Value "placeholder"
-      - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release --no-build /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
-        if: steps.package-project.outputs.has-project == 'true'
+      # Analyzers are disabled when building the tests (RunAnalyzers=false) and the IDExxxx
+      # diagnostics are only reported in Release with IsOfficialBuild.
+      # -graph schedules each project once its references are built. Without it, a project that
+      # waits for a reference stays on its node, so the long compilations queue on a few nodes
+      # while the others are idle.
+      - name: Build all projects
+        if: steps.build-project.outputs.has-project == 'true'
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration Release /p:IsOfficialBuild=true /p:SkipUnsupportedPlatforms=false /bl:build.binlog
 
-      - name: Skip packaging
-        if: steps.package-project.outputs.has-project != 'true'
-        run: Write-Host "No package project was impacted. Skipping build and pack."
-      - parallel:
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-            if: always()
-            with:
-              name: nuget
-              if-no-files-found: error
-              retention-days: 3
-              path: ${{ env.NuGetDirectory }}/**/*
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-            if: always()
-            with:
-              name: binlog
-              if-no-files-found: ${{ case(steps.package-project.outputs.has-project == 'true', 'error', 'warn') }}
-              retention-days: 3
-              path: '**/*.binlog'
+      - name: Skip build
+        if: steps.build-project.outputs.has-project != 'true'
+        run: Write-Host "No project was impacted. Skipping build."
 
-  validate_nuget:
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: binlog-analyzers
+          if-no-files-found: ${{ case(steps.build-project.outputs.has-project == 'true', 'error', 'warn') }}
+          retention-days: 3
+          path: '**/*.binlog'
+
+  compute_test_matrix:
     runs-on: ubuntu-26.04
-    needs: [ create_nuget ]
+    timeout-minutes: 20
+    outputs:
+      matrix: ${{ steps.compute-matrix.outputs.matrix }}
+      has-tests: ${{ steps.compute-matrix.outputs.has-tests }}
+      aot-matrix: ${{ steps.compute-aot-matrix.outputs.matrix }}
+      has-aot-projects: ${{ steps.compute-aot-matrix.outputs.has-projects }}
+      base-commit: ${{ steps.base-commit.outputs.base-commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - parallel:
-          - name: Setup .NET
-            uses: ./.github/actions/setup-dotnet
-          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-            if: needs.create_nuget.outputs.has-project == 'true'
-            with:
-              name: nuget
-              path: ${{ env.NuGetDirectory }}
-      - name: Validate NuGet packages
-        if: needs.create_nuget.outputs.has-project == 'true'
-        run: dotnet run ./eng/validate-nuget.cs
+        with:
+          fetch-depth: 0
+      - run: git config --global protocol.file.allow always
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+
+      - name: Compute base commit
+        id: base-commit
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_VALIDATION_IS_DELTA: ${{ case((github.event_name == 'pull_request' || github.event_name == 'push') && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
+            # The commit of the base branch that the merge commit being tested was created on. It
+            # does not move, unlike the merge-base with origin/<base branch>: once the pull request
+            # is merged, the head of the pull request is in the base branch, so a job that starts
+            # (or is rerun) after the merge would find no changed file and skip all its tests.
+            $baseCommit = $env:PULL_REQUEST_BASE_SHA
+          }
+          else {
+            # There is no base to compare with (workflow_dispatch), so use the empty tree:
+            # every tracked file is reported as changed and DeltaBuild lists all test projects.
+            $baseCommit = (git hash-object -t tree /dev/null).Trim()
+          }
+
+          Write-Host "Base commit: $baseCommit"
+          "base-commit=$baseCommit" >> $env:GITHUB_OUTPUT
+
+      - name: List affected test projects
+        id: affected-tests
+        uses: $/.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          # This job runs on Linux and feeds every platform, so it must also list the projects
+          # that only run on Windows. The per-job traversal below keeps the default and drops
+          # them again on the platforms that cannot run them.
+          properties: SkipUnsupportedPlatforms=false
+          # A .json output makes DeltaBuild write the affected project paths, relative to the
+          # folder containing the output file, instead of a traversal project.
+          output-project: affected-test-projects.json
+          base-commit: ${{ steps.base-commit.outputs.base-commit }}
+          run-generate: "true"
+          test-projects-only: "true"
+          # "dotnet test" runs a test project on the JIT, which validates nothing for the ones
+          # meant to be published with Native AOT. The test_aot job runs them as native executables.
+          where: "'$(PublishAot)' != 'true'"
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      - name: List affected globalization-sensitive test projects
+        id: affected-globalization-sensitive-tests
+        uses: $/.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          properties: SkipUnsupportedPlatforms=false
+          output-project: affected-globalization-sensitive-test-projects.json
+          base-commit: ${{ steps.base-commit.outputs.base-commit }}
+          run-generate: "true"
+          test-projects-only: "true"
+          # The projects whose tests also run in invariant globalization mode. The
+          # Meziantou.Framework.GlobalizationSensitivity.Analyzer rules make a test project set the
+          # property when it, or the project it tests (including that project's references), depends on ICU.
+          where: "'$(PublishAot)' != 'true' AND '$(GlobalizationSensitive)' == 'true'"
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      - name: List affected Native AOT projects
+        id: affected-aot-projects
+        uses: $/.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          properties: SkipUnsupportedPlatforms=false
+          output-project: affected-aot-projects.json
+          base-commit: ${{ steps.base-commit.outputs.base-commit }}
+          run-generate: "true"
+          # Not limited to the test projects: some of them are console applications that return
+          # a non-zero exit code when a check fails
+          where: "'$(PublishAot)' == 'true'"
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      - name: Compute test matrix
+        id: compute-matrix
+        run: |
+          # The slowest suites are also the flakiest, so they get a job of their own
+          $IsolatedProjects = @(
+            "tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj"
+            "tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj"
+            "tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj"
+            "tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj"
+            # Writes memory dumps of the test process, which suspends it and needs hundreds of MB of disk
+            "tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests.csproj"
+            # Runs the web-platform-tests: tens of thousands of pages, rendered with a script engine
+            "tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj"
+            # Runs test262: about 100,000 scripts, each in its own engine
+            "tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj"
+          )
+
+          # The DNS suites bind sockets, so they run in their own job instead of competing with the
+          # other tests of a shard
+          $DnsProjects = @(
+            "tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj"
+            "tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj"
+            "tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj"
+            "tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj"
+          )
+
+          # The Imaging suites run tens of thousands of decoding and encoding tests and keep every core
+          # busy. In a shard, they starve the suites that start processes:
+          # Meziantou.Framework.SnapshotTesting.PackageTests completed no test before the hang dump
+          # timeout on Windows. They run in jobs of their own, and in several of them: in a single
+          # job they took more than 90 minutes on the slowest legs.
+          #
+          # The value is the relative cost of a project: the sum of the durations of its tests in
+          # the .trx files of a Debug run. The interoperability tests mostly wait for external
+          # tools, so their cost is their share of the job when everything ran together. The
+          # projects are packed into $ImagingGroupCount groups of similar cost: see the assignment
+          # loop below. A project that tests the Imaging library and is missing here fails the job
+          # instead of landing in a shard.
+          $ImagingProjects = [ordered]@{
+            "tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" = 4400
+            "tests/Meziantou.Framework.Imaging.AvifEncoder.Tests/Meziantou.Framework.Imaging.AvifEncoder.Tests.csproj" = 2280
+            "tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" = 1055
+            "tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" = 2900
+            "tests/Meziantou.Framework.Imaging.HeicEncoder.Tests/Meziantou.Framework.Imaging.HeicEncoder.Tests.csproj" = 800
+            "tests/Meziantou.Framework.Imaging.Jpeg2000.Tests/Meziantou.Framework.Imaging.Jpeg2000.Tests.csproj" = 825
+            "tests/Meziantou.Framework.Imaging.Avif.Tests/Meziantou.Framework.Imaging.Avif.Tests.csproj" = 569
+            "tests/Meziantou.Framework.Imaging.Av1.Tests/Meziantou.Framework.Imaging.Av1.Tests.csproj" = 539
+            "tests/Meziantou.Framework.Imaging.Heic.Tests/Meziantou.Framework.Imaging.Heic.Tests.csproj" = 450
+            "tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" = 432
+            "fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" = 350
+            "tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj" = 293
+            "tests/Meziantou.Framework.Imaging.Gif.Tests/Meziantou.Framework.Imaging.Gif.Tests.csproj" = 272
+            "tests/Meziantou.Framework.Imaging.Bmp.Tests/Meziantou.Framework.Imaging.Bmp.Tests.csproj" = 254
+            "tests/Meziantou.Framework.Imaging.Hevc.Tests/Meziantou.Framework.Imaging.Hevc.Tests.csproj" = 250
+            "tests/Meziantou.Framework.Imaging.WebP.Tests/Meziantou.Framework.Imaging.WebP.Tests.csproj" = 249
+            "tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" = 164
+            "tests/Meziantou.Framework.Imaging.Exr.Tests/Meziantou.Framework.Imaging.Exr.Tests.csproj" = 120
+            "tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" = 63
+            "tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" = 52
+            "tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" = 36
+            "tests/Meziantou.Framework.Imaging.Charts.Tests/Meziantou.Framework.Imaging.Charts.Tests.csproj" = 5
+            "tests/Meziantou.Framework.Imaging.Barcodes.Tests/Meziantou.Framework.Imaging.Barcodes.Tests.csproj" = 4
+            "tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" = 1
+            "tests/Meziantou.Framework.Imaging.Tiff.Tests/Meziantou.Framework.Imaging.Tiff.Tests.csproj" = 1
+          }
+
+          $ImagingGroupCount = 6
+
+          # Remaining expensive suites, ordered from slowest to fastest. They are dealt out before
+          # everything else, so this order is what keeps the shards balanced: see the assignment
+          # loop below. The durations come from the .trx files of a full-rebuild run, taking the
+          # slowest of the Linux and Windows legs for each project.
+          $HeavyProjects = @(
+            "tests/Meziantou.Framework.SnapshotTesting.PackageTests/Meziantou.Framework.SnapshotTesting.PackageTests.csproj"
+            "tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj"
+            "tests/Meziantou.Framework.Roslyn.PackageTests/Meziantou.Framework.Roslyn.PackageTests.csproj"
+            "tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj"
+            "tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj"
+            "tests/Meziantou.Framework.Barcodes.Tests/Meziantou.Framework.Barcodes.Tests.csproj"
+            "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_6.csproj"
+            "tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj"
+          )
+
+          $MaxShards = 2
+          $ProjectsPerShard = 15
+
+          # Fail explicitly when a configured project is renamed or removed instead of silently
+          # ignoring it and unbalancing the shards.
+          foreach ($project in @($IsolatedProjects) + @($DnsProjects) + @($ImagingProjects.Keys) + @($HeavyProjects)) {
+            if (-not (Test-Path -LiteralPath $project)) {
+              throw "Configured project does not exist: $project"
+            }
+          }
+
+          function Read-ProjectList([string] $path) {
+            if (-not (Test-Path -LiteralPath $path)) {
+              return @()
+            }
+
+            return @(
+              Get-Content -Raw -LiteralPath $path
+              | ConvertFrom-Json
+              | ForEach-Object { $_.Replace('\', '/') }
+            )
+          }
+
+          $affected = @(Read-ProjectList "affected-test-projects.json")
+          Write-Host "Affected test projects: $($affected.Count)"
+
+          $unlistedImaging = @($affected | Where-Object { [System.IO.Path]::GetFileName($_) -like 'Meziantou.Framework.Imaging.*' -and -not $ImagingProjects.Contains($_) })
+          if ($unlistedImaging.Count -gt 0) {
+            throw "Imaging test projects must be listed in `$ImagingProjects with their cost: $($unlistedImaging -join ', ')"
+          }
+
+          if ($env:GITHUB_EVENT_NAME -eq "schedule") {
+            # The scheduled run checks that the projects without GlobalizationSensitive pass in invariant
+            # globalization mode. The other runs already test everything in the normal mode.
+            $normalProjects = @()
+            $invariantProjects = $affected
+          }
+          else {
+            $normalProjects = $affected
+            $invariantProjects = @(Read-ProjectList "affected-globalization-sensitive-test-projects.json")
+          }
+
+          Write-Host "Test projects to run in invariant globalization mode: $($invariantProjects.Count)"
+
+          # Splits the projects into the groups of the matrix. Each job of the matrix runs one group on one OS.
+          function Get-TestGroups([string[]] $affected, [bool] $invariant) {
+            $groups = @()
+            $isolated = @($IsolatedProjects | Where-Object { $affected -contains $_ })
+            foreach ($project in $isolated) {
+              # tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj -> SnapshotTesting
+              $id = [System.IO.Path]::GetFileNameWithoutExtension($project) -replace '^Meziantou\.Framework\.', '' -replace '\.Tests$', ''
+              $groups += [pscustomobject]@{ id = $id; projects = $project; invariant = $invariant }
+            }
+
+            $dns = @($DnsProjects | Where-Object { $affected -contains $_ })
+            if ($dns.Count -gt 0) {
+              $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n"); invariant = $invariant }
+            }
+
+            # Most expensive first, each into the group that is the cheapest so far: the largest
+            # project sets the duration of the longest job, and the small ones level the others
+            $imaging = @(
+              $ImagingProjects.Keys
+              | Where-Object { $affected -contains $_ }
+              | Sort-Object -Property @{ Expression = { $ImagingProjects[$_] }; Descending = $true }, @{ Expression = { $_ } }
+            )
+            if ($imaging.Count -gt 0) {
+              $imagingGroups = @(1..[Math]::Min($ImagingGroupCount, $imaging.Count) | ForEach-Object { [pscustomobject]@{ Cost = 0; Projects = [System.Collections.Generic.List[string]]::new() } })
+              foreach ($project in $imaging) {
+                $cheapest = $imagingGroups[0]
+                foreach ($group in $imagingGroups) {
+                  if ($group.Cost -lt $cheapest.Cost) {
+                    $cheapest = $group
+                  }
+                }
+
+                $cheapest.Projects.Add($project)
+                $cheapest.Cost += $ImagingProjects[$project]
+              }
+
+              for ($i = 0; $i -lt $imagingGroups.Count; $i++) {
+                $groups += [pscustomobject]@{ id = "Imaging-$($i + 1)"; projects = ($imagingGroups[$i].Projects -join "`n"); invariant = $invariant }
+              }
+            }
+
+            $rest = @($affected | Where-Object { $isolated -notcontains $_ -and $dns -notcontains $_ -and $imaging -notcontains $_ } | Sort-Object)
+            if ($rest.Count -gt 0) {
+              $shardCount = [int][Math]::Min($MaxShards, [Math]::Max(1, [Math]::Ceiling($rest.Count / $ProjectsPerShard)))
+              $shards = @(1..$shardCount | ForEach-Object { ,[System.Collections.Generic.List[string]]::new() })
+
+              # Deal the heavy projects out in boustrophedon order: the first pass walks the shards
+              # forwards, the next one backwards, so shard 1 gets ranks 1 and 4 while shard 2 gets
+              # ranks 2 and 3. Plain round-robin pairs rank 1 with rank 3 and rank 2 with rank 4,
+              # which is lopsided whenever the costs drop off sharply, as they do here.
+              $heavy = @($HeavyProjects | Where-Object { $rest -contains $_ })
+              for ($i = 0; $i -lt $heavy.Count; $i++) {
+                $position = $i % $shardCount
+                $isReversePass = [Math]::Floor($i / $shardCount) % 2 -eq 1
+                $index = $(if ($isReversePass) { $shardCount - 1 - $position } else { $position })
+                $shards[$index].Add($heavy[$i])
+              }
+
+              # Split the remaining projects into contiguous blocks of equal size
+              $remaining = @($rest | Where-Object { $heavy -notcontains $_ })
+              $minimumShardSize = [int][Math]::Floor($remaining.Count / $shardCount)
+              $shardCountWithExtraProject = $remaining.Count % $shardCount
+              $currentIndex = 0
+              for ($i = 0; $i -lt $shardCount; $i++) {
+                $shardSize = $minimumShardSize + $(if ($i -lt $shardCountWithExtraProject) { 1 } else { 0 })
+                for ($j = 0; $j -lt $shardSize; $j++) {
+                  $shards[$i].Add($remaining[$currentIndex])
+                  $currentIndex++
+                }
+              }
+
+              for ($i = 0; $i -lt $shardCount; $i++) {
+                if ($shards[$i].Count -gt 0) {
+                  $groups += [pscustomobject]@{ id = "shard-$($i + 1)"; projects = ($shards[$i] -join "`n"); invariant = $invariant }
+                }
+              }
+            }
+
+            return $groups
+          }
+
+          $groups = @(Get-TestGroups $normalProjects $false) + @(Get-TestGroups $invariantProjects $true)
+
+          foreach ($group in $groups) {
+            Write-Host "Group '$($group.id)'$(if ($group.invariant) { ' (invariant globalization)' }):"
+            $group.projects -split "`n" | ForEach-Object { Write-Host "  $_" }
+          }
+
+          # -InputObject does not unroll the array, so the result is a JSON array for 0, 1 or more groups
+          $matrix = ConvertTo-Json -InputObject @($groups) -Compress
+          Write-Host "Matrix: $matrix"
+          "matrix=$matrix" >> $env:GITHUB_OUTPUT
+          "has-tests=$(($groups.Count -gt 0).ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Compute Native AOT matrix
+        id: compute-aot-matrix
+        run: |
+          $projects = @()
+          if (Test-Path -LiteralPath "affected-aot-projects.json") {
+            $projects = @(
+              Get-Content -Raw -LiteralPath "affected-aot-projects.json"
+              | ConvertFrom-Json
+              | ForEach-Object { $_.Replace('\', '/') }
+              # An application published with Native AOT outside of the tests folder is a product,
+              # not something that validates itself when it runs
+              | Where-Object { $_.StartsWith("tests/", [StringComparison]::Ordinal) }
+              | Sort-Object
+            )
+          }
+
+          Write-Host "Affected Native AOT projects: $($projects.Count)"
+
+          $groups = @()
+          foreach ($project in $projects) {
+            # tests/Meziantou.Framework.Yaml.AotTests/Meziantou.Framework.Yaml.AotTests.csproj -> Yaml.AotTests
+            $id = [System.IO.Path]::GetFileNameWithoutExtension($project) -replace '^Meziantou\.Framework\.', ''
+            $groups += [pscustomobject]@{ id = $id; project = $project }
+            Write-Host "  $project"
+          }
+
+          # -InputObject does not unroll the array, so the result is a JSON array for 0, 1 or more projects
+          $matrix = ConvertTo-Json -InputObject @($groups) -Compress
+          Write-Host "Matrix: $matrix"
+          "matrix=$matrix" >> $env:GITHUB_OUTPUT
+          "has-projects=$(($groups.Count -gt 0).ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
   build_and_test:
+    needs: [ compute_test_matrix ]
+    if: needs.compute_test_matrix.outputs.has-tests == 'true'
+    name: build_and_test (${{ matrix.runs-on }}, ${{ matrix.configuration }}${{ case(matrix.test-group.invariant, ', invariant', '') }}, ${{ matrix.test-group.id }})
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 120
     strategy:
       matrix:
         # x64, arm64
         runs-on: [ windows-2025-vs2026, ubuntu-26.04, ubuntu-26.04-arm, macos-26 ]
-        configuration: [ Debug, Release ]
-        additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
-        shard: [1, 2]
+        configuration: [ Release ]
+        # A group runs either in the normal mode or in invariant globalization mode, see compute_test_matrix
+        test-group: ${{ fromJson(needs.compute_test_matrix.outputs.matrix) }}
       fail-fast: false
     env:
       RUNS_ON: ${{ matrix.runs-on }}
+      ADDITIONAL_ARGUMENTS: ${{ case(matrix.test-group.invariant, '/p:InvariantGlobalization=true', '') }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
       MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY: ${{ github.workspace}}/.cache/public-api-generator-tests
       EnableCodeCoverage: ${{ case(github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage, 'true', 'false') }}
@@ -152,31 +487,32 @@ jobs:
       - id: compute-artifact-name
         name: Compute artifact name
         run: |
-          $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
+          $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ env.ADDITIONAL_ARGUMENTS }}".Replace(":", "_").Replace("/", "_")
+          "artifact-name=test-results-$SanitizedName-${{ matrix.test-group.id }}" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
 
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
 
       - name: Generate delta build file
         id: build-project
-        uses: ./.github/actions/deltabuild
+        uses: $/.github/actions/deltabuild
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
-          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
-          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
+          base-commit: ${{ needs.compute_test_matrix.outputs.base-commit }}
+          run-generate: "true"
           test-projects-only: "true"
-          shard: ${{ matrix.shard }}
-          total-shards: 2
-          shard-separate: |
-            tests/Meziantou.Framework.InlineSnapshotTesting.Tests
-            tests/Meziantou.Framework.PublicApiGenerator.Tests
-            tests/Meziantou.Framework.SnapshotTesting.Tests/
+          # Lets eng/build.proj drop the projects whose tests cannot run in invariant globalization
+          # mode. A group left with nothing to run skips its steps instead of failing the job with
+          # "Zero tests ran".
+          properties: ${{ case(matrix.test-group.invariant, 'InvariantGlobalization=true', '') }}
+          # The projects of the group are the only candidates, so the generated project contains
+          # exactly the projects computed by the compute_test_matrix job.
+          include: ${{ matrix.test-group.projects }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
@@ -207,54 +543,185 @@ jobs:
                 Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
               }
 
+          # The Wslc tests fail instead of skipping on Windows agents, so this step is what keeps them running
+          - name: Setup wslc
+            if: startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
+            uses: $/.github/actions/setup-wslc
+
+      # The WebPlatform tests read the external test suites (html5lib-tests, web-platform-tests...) at the revisions
+      # pinned in tests/Meziantou.Framework.WebPlatform.SpecData: they are fetched, not committed
+      - name: Restore the WebPlatform external test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WebPlatform.')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.WebPlatform.External
+          key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
+          restore-keys: webplatform-external-tests-
+
+      - name: Fetch the WebPlatform external test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WebPlatform.')
+        run: dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release -- fetch-tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The test262 tests read test262 and test262-parser-tests at the commits pinned in
+      # tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json: they are fetched, not committed
+      - name: Restore the test262 test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.Test262')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.JavaScriptEngine.External
+          key: javascriptengine-external-tests-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json') }}
+          restore-keys: javascriptengine-external-tests-
+
+      - name: Fetch the test262 test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.Test262')
+        run: dotnet run eng/javascriptengine/fetch-tests.cs -- test262 test262-parser-tests
+
+      # The Web Tooling Benchmark tests read the benchmark and its npm packages, pinned in
+      # tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json
+      - name: Restore the Web Tooling Benchmark
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.JavaScriptEngine.External/web-tooling-benchmark
+          key: javascriptengine-web-tooling-benchmark-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json') }}
+          restore-keys: javascriptengine-web-tooling-benchmark-
+
+      - name: Fetch the Web Tooling Benchmark
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark')
+        run: dotnet run eng/javascriptengine/fetch-tests.cs -- web-tooling-benchmark
+
+      # The npm package tests read the packages of
+      # tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json and their import map, which the fetch
+      # script writes each time
+      - name: Restore the npm packages of the JavaScript engine tests
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.NpmPackages')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.JavaScriptEngine.External/npm-packages
+          key: javascriptengine-npm-packages-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json') }}
+          restore-keys: javascriptengine-npm-packages-
+
+      - name: Fetch the npm packages of the JavaScript engine tests
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.NpmPackages')
+        run: dotnet run eng/javascriptengine/fetch-tests.cs -- npm-packages
+
+      # The PDF corpus tests read the test files of pdf.js, PDFium, qpdf, the PDF Association and Apache PDFBox at the
+      # commits pinned in tests/Meziantou.Framework.Pdf.Corpus/corpus.json: they are fetched, not committed
+      - name: Restore the PDF corpora
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.Pdf.External
+          key: pdf-external-tests-${{ hashFiles('tests/Meziantou.Framework.Pdf.Corpus/corpus.json') }}
+          restore-keys: pdf-external-tests-
+
+      - name: Fetch the PDF corpora
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
+        run: dotnet run eng/pdf/fetch-tests.cs
+
+      # The Imaging interop tests download the JPEG XL conformance corpus (about 430 MB) at the commit pinned in
+      # tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json the first time they need a file:
+      # it is cached, not committed
+      - name: Restore the JPEG XL conformance corpus
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Imaging.InteropTests')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.Imaging.External
+          key: imaging-jxl-conformance-${{ hashFiles('tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json') }}
+          restore-keys: imaging-jxl-conformance-
+
+      # -graph: see the "Build all projects" step of the run_analyzers job
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
+        run: |
+          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ env.ADDITIONAL_ARGUMENTS }}
+
+          # Exit code 8 is 'zero tests ran'. A delta build can legitimately select only projects that
+          # skip every test on this leg, such as the TDS tests, which need ICU and are therefore all
+          # skipped by the invariant globalization jobs. Those projects already declare that running
+          # no test is expected by setting 'MinimumExpectedTests' to 0, but that only silences the
+          # per-project check, not the run-level one.
+          if ($LASTEXITCODE -eq 8) {
+            Write-Host "No test ran: every project selected for this shard skipped all of its tests."
+            exit 0
+          }
+
+          exit $LASTEXITCODE
+
+      # wslc sometimes stops answering between the two TFM runs of the tests. The state of WSL once the tests are over
+      # tells whether it recovered on its own (slow boot) or stayed stuck.
+      - name: Diagnose wslc
+        if: failure() && startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
+        continue-on-error: true
+        run: |
+          wsl --version
+          wsl --list --verbose
+          Get-Process | Where-Object { $_.Name -match 'wsl|vmmem|vmcompute' } | Format-Table Name, Id, StartTime, WorkingSet64 -AutoSize | Out-String | Write-Host
+          for ($i = 1; $i -le 3; $i++) {
+            $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $output = wslc list -q 2>&1 | Out-String
+            Write-Host "wslc list -q (attempt $i): exit code $LASTEXITCODE in $([int]$stopwatch.Elapsed.TotalSeconds)s"
+            Write-Host $output
+            if ($LASTEXITCODE -eq 0) { break }
+            Start-Sleep -Seconds 20
+          }
 
       - name: Cleanup test results
         if: steps.build-project.outputs.has-project == 'true'
         run: Get-ChildItem -Recurse "${{ env.TestResultsDirectory }}/" -Filter "*.dmp" | Remove-Item -Force -ErrorAction SilentlyContinue
 
       - parallel:
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
             if: always() && steps.build-project.outputs.has-project == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-              if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+              # A group can legitimately produce no test result when all its projects are
+              # excluded on the current platform (SkipUnsupportedPlatforms in eng/build.proj)
+              if-no-files-found: warn
               retention-days: 3
               path: |
                 !**/*.coverage
                 **/*.binlog
                 ${{ env.TestResultsDirectory }}/**/*
                 **/obj/**/GeneratedFiles/**/*.cs
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
             if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
-              if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+              if-no-files-found: warn
               retention-days: 3
               path: |
                 **/*.coverage
 
   test_trimming:
-    runs-on: ubuntu-26.04
+    if: github.event_name != 'schedule'
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
       matrix:
         # https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-        runtime: [ "win-x64", "linux-x64", "osx-x64" ]
+        include:
+          - runtime: "win-x64"
+            runner: ubuntu-26.04
+          - runtime: "linux-x64"
+            runner: ubuntu-26.04
+          - runtime: "osx-arm64"
+            runner: ubuntu-26.04-arm
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable/Trimmable.csproj
+        uses: $/.github/actions/setup-dotnet
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
+    if: github.event_name != 'schedule'
     runs-on: windows-2025-vs2026
     timeout-minutes: 60
     strategy:
@@ -264,8 +731,62 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable.Wpf/Trimmable.Wpf.csproj
+        uses: $/.github/actions/setup-dotnet
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
+
+  # Building a project that sets PublishAot does not compile it ahead of time. Only a published
+  # application is native, and Native AOT cannot target another OS, so each platform publishes
+  # the affected projects of the tests folder that set PublishAot, xUnit.net test project or
+  # console application, and runs the native executable.
+  test_aot:
+    needs: [ compute_test_matrix ]
+    if: needs.compute_test_matrix.outputs.has-aot-projects == 'true' && github.event_name != 'schedule'
+    name: test_aot (${{ matrix.runs-on }}, ${{ matrix.aot-project.id }})
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        runs-on: [ windows-2025-vs2026, ubuntu-26.04, macos-26 ]
+        aot-project: ${{ fromJson(needs.compute_test_matrix.outputs.aot-matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      - name: Publish and run the native executable
+        env:
+          PROJECT: ${{ matrix.aot-project.project }}
+        run: |
+          $project = Get-Item -LiteralPath $env:PROJECT
+          $frameworks = (dotnet msbuild $project.FullName -getProperty:TargetFrameworks).Split(';', [StringSplitOptions]::RemoveEmptyEntries)
+          if ($frameworks.Count -eq 0) {
+            throw "Cannot get the target frameworks of $($project.Name)"
+          }
+
+          $extension = $(if ($IsWindows) { ".exe" } else { "" })
+          $failures = @()
+          foreach ($framework in $frameworks) {
+            $output = Join-Path $env:RUNNER_TEMP "aot" $framework
+
+            Write-Host "::group::Publish $framework"
+            dotnet publish $project.FullName --configuration Release --framework $framework --output $output
+            $published = $LASTEXITCODE -eq 0
+            Write-Host "::endgroup::"
+            if (-not $published) {
+              $failures += "${framework}: publish failed"
+              continue
+            }
+
+            & (Join-Path $output "$($project.BaseName)$extension")
+            if ($LASTEXITCODE -ne 0) {
+              $failures += "${framework}: the native executable failed with exit code $LASTEXITCODE"
+            }
+          }
+
+          if ($failures.Count -gt 0) {
+            $failures | ForEach-Object { Write-Host "::error::$_" }
+            exit 1
+          }
 
   merge_coverage:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage }}
@@ -275,16 +796,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Download test results
         id: download-test-results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         background: true
         with:
           pattern: test-results-*-coverage
           path: test-results
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
 
       - name: Install dotnet-coverage
-        run: dotnet tool update --global dotnet-coverage
+        uses: $/.github/actions/install-dotnet-tool
+        with:
+          package: dotnet-coverage
       # Delta builds can legitimately produce no .coverage files. In that case,
       # skip merge commands and allow the upload step to warn instead of failing.
       - name: Wait for background steps
@@ -296,7 +819,7 @@ jobs:
           - name: Merge coverage files (format cobertura)
             if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
             run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: code-coverage
           if-no-files-found: warn
@@ -305,112 +828,91 @@ jobs:
             test-result.coverage
             test-result.cobertura.xml
 
-  deploy:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
+  # The checks of the WebPlatform specification data and of the code generated from it, and the differential testing of
+  # the HTML parser with Chromium. They only run when a file they depend on changed.
+  webplatform:
+    name: webplatform (${{ matrix.check }})
     runs-on: ubuntu-26.04
-    needs: [ build_eng_scripts, validate_generated_files, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
-    permissions:
-      contents: read
-      id-token: write
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        check: [ specs, chromium-diff ]
+      fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - parallel:
-          - name: Setup .NET
-            uses: ./.github/actions/setup-dotnet
-          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-            with:
-              name: nuget
-              path: ${{ env.NuGetDirectory }}
-      - name: NuGet login (OIDC → temp API key)
-        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
-        id: login
         with:
-          user: meziantou
+          fetch-depth: 0
 
-      - run: |
-          Write-Host "Current ref: $env:GITHUB_REF"
-          Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
-          $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
-          if ($env:GITHUB_REF -eq 'refs/heads/main')
-          {
-            $apiKey = $env:NUGETAPIKEY
-            $source = "${{ env.NuGetSource }}"
-          }
-          else
-          {
-            $apiKey = $env:FEEDZ_APIKEY
-            $source = "https://f.feedz.io/meziantou/meziantou-framework/nuget/index.json"
-          }
-
-          if ($files.Count -eq 0) {
-            Write-Host "No NuGet package found to push."
-          }
-          else {
-            $maxAttempts = 3
-            $baseDelaySeconds = 2
-            $results = $files | ForEach-Object -Parallel {
-              $packagePath = $_.FullName
-              $apiKey = $using:apiKey
-              $source = $using:source
-              $maxAttempts = $using:maxAttempts
-              $baseDelaySeconds = $using:baseDelaySeconds
-
-              for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-                Write-Host "Pushing NuGet package: $packagePath (attempt $attempt/$maxAttempts)"
-                & dotnet nuget push "$packagePath" --api-key "$apiKey" --source "$source" --force-english-output --skip-duplicate
-                $exitCode = $LASTEXITCODE
-
-                if ($exitCode -eq 0) {
-                  return [pscustomobject]@{
-                    PackagePath = $packagePath
-                    Succeeded = $true
-                    Attempts = $attempt
-                  }
-                }
-
-                if ($attempt -lt $maxAttempts) {
-                  $delaySeconds = [int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1))
-                  Write-Host "Retrying NuGet push for $packagePath in $delaySeconds second(s)."
-                  Start-Sleep -Seconds $delaySeconds
-                }
-              }
-
-              return [pscustomobject]@{
-                PackagePath = $packagePath
-                Succeeded = $false
-                Attempts = $maxAttempts
-              }
-            } -ThrottleLimit 8
-
-            $pushResults = @(
-              $results
-              | Where-Object { $_.PSObject.Properties.Name -contains "Succeeded" }
-            )
-            $failedPackages = @($pushResults | Where-Object { -not $_.Succeeded })
-            $succeededPackages = @($pushResults | Where-Object { $_.Succeeded })
-            foreach ($item in $succeededPackages) {
-              Write-Host "Successfully pushed NuGet package: $($item.PackagePath) (attempts: $($item.Attempts))"
-            }
-
-            if ($failedPackages.Count -gt 0) {
-              foreach ($item in $failedPackages) {
-                Write-Host "::error::Failed to push NuGet package after retries: $($item.PackagePath)"
-              }
-
-              Write-Host "::error::Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
-              throw "Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
-            }
-          }
-        name: Publish NuGet packages
-        if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
+      - name: Detect changes
+        id: changes
         env:
-          NUGETAPIKEY: ${{steps.login.outputs.NUGET_API_KEY}}
-          FEEDZ_APIKEY: ${{ secrets.FEEDZ_APIKEY }}
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if ($env:GITHUB_EVENT_NAME -ne "pull_request") {
+            "changed=true" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          # Not origin/<base branch>: it contains the changes once the pull request is merged,
+          # see the base commit of the compute_test_matrix job
+          $files = @(git diff --name-only "$env:PULL_REQUEST_BASE_SHA...HEAD")
+          if ($LASTEXITCODE -ne 0) { throw "git diff failed with exit code $LASTEXITCODE" }
+          $patterns = @(
+            '^src/Meziantou\.Framework\.WebPlatform/'
+            '^docs/WebPlatform/10-WptCoverage/'
+            '^tests/Meziantou\.Framework\.WebPlatform\.(SpecData|Wpt)/'
+            '^tools/Meziantou\.Framework\.WebPlatform\.'
+            '^eng/webplatform/'
+            '^\.github/workflows/ci\.yml$'
+            '^global\.json$'
+            '^Directory\.Build\.(props|targets)$'
+            '^\.editorconfig$'
+          )
+          $changed = @($files | Where-Object { $file = $_; $patterns | Where-Object { $file -match $_ } }).Count -gt 0
+          "changed=$($changed.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET
+        if: steps.changes.outputs.changed == 'true'
+        uses: $/.github/actions/setup-dotnet
+
+      - name: Restore the external test suites
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.WebPlatform.External
+          key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
+          restore-keys: webplatform-external-tests-
+
+      - name: Fetch the external test suites
+        if: steps.changes.outputs.changed == 'true'
+        run: dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release -- fetch-tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify the specification data and the generated code
+        if: steps.changes.outputs.changed == 'true' && matrix.check == 'specs'
+        run: |
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release --no-build -- verify
+          if ($LASTEXITCODE -ne 0) { throw "The specification data does not match its checksums" }
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecGen --configuration Release -- --check
+          if ($LASTEXITCODE -ne 0) { throw "The generated code is not up to date: run 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecGen'" }
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release --no-build -- wpt-coverage --check
+          if ($LASTEXITCODE -ne 0) { throw "The WPT coverage is not up to date: run 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-coverage'" }
+
+      # The trees of the tree construction tests must be the same as the trees of Chromium, except for the deviations
+      # of Chromium listed in tools/Meziantou.Framework.WebPlatform.ChromiumDiff/known-differences.json
+      - name: Compare the HTML trees with Chromium
+        if: steps.changes.outputs.changed == 'true' && matrix.check == 'chromium-diff'
+        run: |
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release -- install --with-deps
+          if ($LASTEXITCODE -ne 0) { throw "The installation of Chromium failed with exit code $LASTEXITCODE" }
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release --no-build
+          if ($LASTEXITCODE -ne 0) { throw "The HTML trees differ from Chromium" }
 
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage, webplatform ]
     steps:
       - name: Check previous jobs status
         env:

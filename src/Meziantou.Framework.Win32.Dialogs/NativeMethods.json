@@ -1,0 +1,10 @@
+{
+  "$schema": "https://aka.ms/CsWin32.schema.json",
+  "comInterop": {
+    "preserveSigMethods": [
+      "IModalWindow.Show",
+      "IFileDialog.Show",
+      "IFileOpenDialog.Show"
+    ]
+  }
+}

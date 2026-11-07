@@ -1,0 +1,12 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Diagnostics.MemoryDump/Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
+  </ItemGroup>
+
+</Project>

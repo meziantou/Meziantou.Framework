@@ -1,0 +1,74 @@
+{
+  "spec": {
+    "title": "Global Privacy Control (GPC)",
+    "url": "https://w3c.github.io/gpc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "GlobalPrivacyControl": {
+        "fragment": "interface mixin GlobalPrivacyControl {\n  readonly attribute boolean globalPrivacyControl;\n};",
+        "type": "interface mixin",
+        "name": "GlobalPrivacyControl",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "globalPrivacyControl",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gpc/#dom-globalprivacycontrol-globalprivacycontrol"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/gpc/#dom-globalprivacycontrol"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes GlobalPrivacyControl;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "GlobalPrivacyControl"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes GlobalPrivacyControl;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "GlobalPrivacyControl"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "GlobalPrivacyControl": [],
+      "Navigator": [
+        "GlobalPrivacyControl"
+      ],
+      "WorkerNavigator": [
+        "GlobalPrivacyControl"
+      ]
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

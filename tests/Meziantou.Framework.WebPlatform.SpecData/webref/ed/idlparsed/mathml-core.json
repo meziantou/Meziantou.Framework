@@ -1,0 +1,155 @@
+{
+  "spec": {
+    "title": "MathML Core",
+    "url": "https://w3c.github.io/mathml-core/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "MathMLElement",
+          "MathMLAnchorElement"
+        ]
+      }
+    },
+    "idlNames": {
+      "MathMLElement": {
+        "fragment": "[Exposed=Window]\ninterface MathMLElement : Element { };",
+        "type": "interface",
+        "name": "MathMLElement",
+        "inheritance": "Element",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mathml-core/#dom-mathmlelement"
+      },
+      "MathMLAnchorElement": {
+        "fragment": "[Exposed=Window]\ninterface MathMLAnchorElement : MathMLElement {\n  [ReflectSetter] attribute USVString href;\n  [Reflect] attribute DOMString target;\n};",
+        "type": "interface",
+        "name": "MathMLAnchorElement",
+        "inheritance": "MathMLElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "href",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "ReflectSetter",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mathml-core/#dom-mathmlanchorelement-href"
+          },
+          {
+            "type": "attribute",
+            "name": "target",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mathml-core/#dom-mathmlanchorelement-target"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mathml-core/#dom-mathmlanchorelement"
+      }
+    },
+    "idlExtendedNames": {
+      "MathMLElement": [
+        {
+          "fragment": "MathMLElement includes GlobalEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "MathMLElement",
+          "includes": "GlobalEventHandlers"
+        },
+        {
+          "fragment": "MathMLElement includes HTMLOrSVGOrMathMLElement;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "MathMLElement",
+          "includes": "HTMLOrSVGOrMathMLElement"
+        }
+      ],
+      "MathMLAnchorElement": [
+        {
+          "fragment": "MathMLAnchorElement includes HyperlinkElementUtils;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "MathMLAnchorElement",
+          "includes": "HyperlinkElementUtils"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "MathMLElement",
+        "MathMLAnchorElement"
+      ]
+    },
+    "dependencies": {
+      "MathMLElement": [
+        "Element",
+        "GlobalEventHandlers",
+        "HTMLOrSVGOrMathMLElement"
+      ],
+      "MathMLAnchorElement": [
+        "MathMLElement",
+        "HyperlinkElementUtils"
+      ]
+    },
+    "externalDependencies": [
+      "Element"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

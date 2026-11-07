@@ -1,0 +1,23 @@
+{
+  "spec": {
+    "title": "Media Capture and Streams Extensions",
+    "url": "https://w3c.github.io/mediacapture-extensions/"
+  },
+  "elements": [
+    {
+      "name": "camera",
+      "href": "https://w3c.github.io/mediacapture-extensions/#dfn-camera",
+      "interface": "HTMLCameraElement"
+    },
+    {
+      "name": "microphone",
+      "href": "https://w3c.github.io/mediacapture-extensions/#dfn-microphone",
+      "interface": "HTMLMicrophoneElement"
+    },
+    {
+      "name": "usermedia",
+      "href": "https://w3c.github.io/mediacapture-extensions/#dfn-usermedia",
+      "interface": "HTMLUserMediaElement"
+    }
+  ]
+}

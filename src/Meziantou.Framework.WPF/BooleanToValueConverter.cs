@@ -4,11 +4,15 @@ namespace Meziantou.Framework.WPF;
 
 /// <summary>Converts boolean values to custom values for WPF data binding.</summary>
 /// <example>
-/// <code>
-/// &lt;Window.Resources&gt;
-///     &lt;wpf:BooleanToValueConverter x:Key="BoolToVisibility" TrueValue="{x:Static Visibility.Visible}" FalseValue="{x:Static Visibility.Collapsed}" /&gt;
-/// &lt;/Window.Resources&gt;
-/// &lt;TextBlock Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}" /&gt;
+/// <code language="xml" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/BooleanToValueConverterExample.xaml">
+/// &lt;UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+///              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+///              xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"&gt;
+///     &lt;UserControl.Resources&gt;
+///         &lt;wpf:BooleanToValueConverter x:Key="BoolToVisibility" TrueValue="{x:Static Visibility.Visible}" FalseValue="{x:Static Visibility.Collapsed}" /&gt;
+///     &lt;/UserControl.Resources&gt;
+///     &lt;TextBlock Text="Shown when IsEnabled is true" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}" /&gt;
+/// &lt;/UserControl&gt;
 /// </code>
 /// </example>
 public sealed class BooleanToValueConverter : IValueConverter
@@ -19,7 +23,7 @@ public sealed class BooleanToValueConverter : IValueConverter
     /// <summary>Gets or sets the value to return when the input is <see langword="false"/>.</summary>
     public object? FalseValue { get; set; }
 
-    /// <summary>Gets or sets the value to return when the input is <see langword="null"/>. If not set, <see cref="FalseValue"/> is used instead.</summary>
+    /// <summary>Gets or sets the value to return when the input is <see langword="null"/> or cannot be converted to a boolean. If not set, <see cref="FalseValue"/> is used instead.</summary>
     public object? NullValue { get; set; }
 
     private object? GetValue(bool value)
@@ -50,7 +54,7 @@ public sealed class BooleanToValueConverter : IValueConverter
             }
         }
 
-        return NullValue;
+        return NullValue ?? FalseValue;
     }
 
     /// <summary>This method is not supported and always throws <see cref="NotSupportedException"/>.</summary>

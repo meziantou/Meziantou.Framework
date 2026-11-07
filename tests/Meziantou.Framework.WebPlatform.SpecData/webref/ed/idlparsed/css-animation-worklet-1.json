@@ -1,0 +1,508 @@
+{
+  "spec": {
+    "title": "CSS Animation Worklet API",
+    "url": "https://drafts.css-houdini.org/css-animationworklet-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "WorkletAnimation"
+        ]
+      },
+      "functions": {
+        "AnimationWorklet": [
+          "AnimationWorkletGlobalScope",
+          "WorkletAnimationEffect",
+          "WorkletGroupEffect"
+        ]
+      }
+    },
+    "idlNames": {
+      "AnimationWorkletGlobalScope": {
+        "fragment": "[ Global=(Worklet,AnimationWorklet), Exposed=AnimationWorklet ]\ninterface AnimationWorkletGlobalScope : WorkletGlobalScope {\n    undefined registerAnimator(DOMString name, AnimatorInstanceConstructor animatorCtor);\n};",
+        "type": "interface",
+        "name": "AnimationWorkletGlobalScope",
+        "inheritance": "WorkletGlobalScope",
+        "members": [
+          {
+            "type": "operation",
+            "name": "registerAnimator",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "animatorCtor",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AnimatorInstanceConstructor"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-animationworkletglobalscope-registeranimator"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Global",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worklet"
+                },
+                {
+                  "value": "AnimationWorklet"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "AnimationWorklet"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-animationworklet-1/#animationworkletglobalscope"
+      },
+      "AnimatorInstanceConstructor": {
+        "fragment": "callback AnimatorInstanceConstructor = any (any options, optional any state);",
+        "type": "callback",
+        "name": "AnimatorInstanceConstructor",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "options",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "state",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": true,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.css-houdini.org/css-animationworklet-1/#callbackdef-animatorinstanceconstructor"
+      },
+      "WorkletAnimationEffect": {
+        "fragment": "[ Exposed=AnimationWorklet ]\ninterface WorkletAnimationEffect {\n    EffectTiming         getTiming();\n    ComputedEffectTiming getComputedTiming();\n    attribute double? localTime;\n};",
+        "type": "interface",
+        "name": "WorkletAnimationEffect",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getTiming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EffectTiming"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-workletanimationeffect-gettiming"
+          },
+          {
+            "type": "operation",
+            "name": "getComputedTiming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ComputedEffectTiming"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-workletanimationeffect-getcomputedtiming"
+          },
+          {
+            "type": "attribute",
+            "name": "localTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-workletanimationeffect-localtime"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "AnimationWorklet"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-animationworklet-1/#workletanimationeffect"
+      },
+      "WorkletAnimation": {
+        "fragment": "[Exposed=Window]\ninterface WorkletAnimation : Animation {\n        constructor(DOMString animatorName,\n              optional (AnimationEffect or sequence<AnimationEffect>)? effects = null,\n              optional AnimationTimeline? timeline,\n              optional any options);\n        readonly attribute DOMString animatorName;\n};",
+        "type": "interface",
+        "name": "WorkletAnimation",
+        "inheritance": "Animation",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "animatorName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "effects",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "AnimationEffect"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "AnimationEffect"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "timeline",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "AnimationTimeline"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-workletanimation-workletanimation"
+          },
+          {
+            "type": "attribute",
+            "name": "animatorName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-workletanimation-animatorname"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-animationworklet-1/#workletanimation"
+      },
+      "WorkletGroupEffect": {
+        "fragment": "[Exposed=AnimationWorklet]\ninterface WorkletGroupEffect {\n  sequence<WorkletAnimationEffect> getChildren();\n};",
+        "type": "interface",
+        "name": "WorkletGroupEffect",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getChildren",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WorkletAnimationEffect"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-workletgroupeffect-getchildren"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "AnimationWorklet"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-animationworklet-1/#workletgroupeffect"
+      }
+    },
+    "idlExtendedNames": {
+      "CSS": [
+        {
+          "fragment": "[Exposed=Window]\npartial namespace CSS {\n    [SameObject] readonly attribute Worklet animationWorklet;\n};",
+          "type": "namespace",
+          "name": "CSS",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "animationWorklet",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Worklet"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.css-houdini.org/css-animationworklet-1/#dom-css-animationworklet"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {
+      "Worklet": [
+        "AnimationWorkletGlobalScope"
+      ],
+      "AnimationWorklet": [
+        "AnimationWorkletGlobalScope"
+      ]
+    },
+    "exposed": {
+      "Window": [
+        "CSS",
+        "WorkletAnimation"
+      ],
+      "AnimationWorklet": [
+        "AnimationWorkletGlobalScope",
+        "WorkletAnimationEffect",
+        "WorkletGroupEffect"
+      ]
+    },
+    "dependencies": {
+      "CSS": [
+        "Worklet"
+      ],
+      "AnimationWorkletGlobalScope": [
+        "WorkletGlobalScope",
+        "AnimatorInstanceConstructor"
+      ],
+      "WorkletAnimationEffect": [
+        "EffectTiming",
+        "ComputedEffectTiming"
+      ],
+      "WorkletAnimation": [
+        "Animation",
+        "AnimationEffect",
+        "AnimationTimeline"
+      ],
+      "WorkletGroupEffect": [
+        "WorkletAnimationEffect"
+      ]
+    },
+    "externalDependencies": [
+      "CSS",
+      "Worklet",
+      "WorkletGlobalScope",
+      "EffectTiming",
+      "ComputedEffectTiming",
+      "Animation",
+      "AnimationEffect",
+      "AnimationTimeline"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

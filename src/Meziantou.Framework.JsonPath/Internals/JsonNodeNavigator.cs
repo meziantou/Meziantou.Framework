@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -5,10 +7,24 @@ namespace Meziantou.Framework.Json.Internals;
 
 internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 {
-    public static JsonNodeNavigator Instance { get; } = new();
+    public override bool IsPure => true;
 
-    private JsonNodeNavigator()
+    /// <summary>
+    /// The objects and arrays parsed out of a <see cref="JsonValue"/> that wraps a CLR object serialized as one.
+    /// Parsing on every access would make walking such a value quadratic. This cache belongs to one evaluation so
+    /// changes to the wrapped value and to returned detached nodes cannot affect later evaluations.
+    /// </summary>
+    private readonly ConditionalWeakTable<JsonValue, JsonNode> _parsedContainers = new();
+
+    public static JsonNodeNavigator Instance => new();
+
+    internal JsonNodeNavigator()
     {
+    }
+
+    internal override JsonPathNavigator<JsonNode> CreateEvaluationNavigator()
+    {
+        return new JsonNodeNavigator();
     }
 
     public override JsonPathNodeKind GetKind(JsonNode? value)
@@ -23,7 +39,8 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
                 JsonValueKind.True or JsonValueKind.False => JsonPathNodeKind.Boolean,
                 JsonValueKind.Number => JsonPathNodeKind.Number,
                 JsonValueKind.String => JsonPathNodeKind.String,
-                JsonValueKind.Null => JsonPathNodeKind.Null,
+                JsonValueKind.Object => JsonPathNodeKind.Object,
+                JsonValueKind.Array => JsonPathNodeKind.Array,
                 _ => JsonPathNodeKind.Null,
             },
             _ => JsonPathNodeKind.Null,
@@ -32,8 +49,23 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 
     public override bool TryGetPropertyValue(JsonNode? value, string name, out JsonNode? result)
     {
-        if (value is JsonObject obj)
+        if (AsContainer(value) is JsonObject obj)
         {
+            if (obj.Options?.PropertyNameCaseInsensitive is true)
+            {
+                foreach (var property in obj)
+                {
+                    if (string.Equals(property.Key, name, StringComparison.Ordinal))
+                    {
+                        result = property.Value;
+                        return true;
+                    }
+                }
+
+                result = null;
+                return false;
+            }
+
             return obj.TryGetPropertyValue(name, out result);
         }
 
@@ -43,7 +75,7 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 
     public override IEnumerable<JsonPathProperty<JsonNode>> GetProperties(JsonNode? value)
     {
-        if (value is not JsonObject obj)
+        if (AsContainer(value) is not JsonObject obj)
         {
             yield break;
         }
@@ -56,12 +88,12 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 
     public override int GetArrayLength(JsonNode? value)
     {
-        return value is JsonArray array ? array.Count : 0;
+        return AsContainer(value) is JsonArray array ? array.Count : 0;
     }
 
     public override bool TryGetElement(JsonNode? value, int index, out JsonNode? result)
     {
-        if (value is JsonArray array && index >= 0 && index < array.Count)
+        if (AsContainer(value) is JsonArray array && index >= 0 && index < array.Count)
         {
             result = array[index];
             return true;
@@ -87,8 +119,7 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
     {
         if (value is JsonValue jsonValue && jsonValue.GetValueKind() is JsonValueKind.Number)
         {
-            result = GetDoubleValue(jsonValue);
-            return true;
+            return TryGetDoubleValue(jsonValue, out result);
         }
 
         result = 0;
@@ -114,71 +145,133 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
         return false;
     }
 
-    private static double GetDoubleValue(JsonValue value)
+    /// <summary>
+    /// Gets the object or array a node stands for. A <see cref="JsonValue"/> can wrap a CLR object that serializes
+    /// as an object or an array; its members are only reachable from its serialized form, so the nodes found
+    /// inside it are detached copies rather than parts of the original tree.
+    /// </summary>
+    private JsonNode? AsContainer(JsonNode? value)
+    {
+        if (value is JsonValue jsonValue && jsonValue.GetValueKind() is JsonValueKind.Object or JsonValueKind.Array)
+        {
+            return _parsedContainers.GetValue(jsonValue, wrapped =>
+            {
+                var reader = CreateReader(wrapped);
+                return JsonNode.Parse(ref reader)!;
+            });
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Reads the numeric value out of a <see cref="JsonValue"/>, whatever CLR type it happens to wrap.
+    /// Common representations are read directly. Anything else, such as an enum, is read back from its serialized
+    /// form, which is what its kind was derived from in the first place.
+    /// </summary>
+    /// <param name="value">A value whose kind is <see cref="JsonValueKind.Number"/>.</param>
+    /// <param name="result">The value as a <see cref="double"/>.</param>
+    /// <returns><see langword="true"/> when the value is representable as a <see cref="double"/>; otherwise, <see langword="false"/>.</returns>
+    private static bool TryGetDoubleValue(JsonValue value, out double result)
     {
         if (value.TryGetValue<JsonElement>(out var element))
         {
-            return element.GetDouble();
+            return element.TryGetDouble(out result);
         }
 
         if (value.TryGetValue<double>(out var d))
         {
-            return d;
+            result = d;
+            return true;
         }
 
         if (value.TryGetValue<float>(out var f))
         {
-            return f;
+            result = f;
+            return true;
+        }
+
+        if (value.TryGetValue<Half>(out var h))
+        {
+            result = (double)h;
+            return true;
         }
 
         if (value.TryGetValue<decimal>(out var dec))
         {
-            return (double)dec;
+            result = (double)dec;
+            return true;
         }
 
         if (value.TryGetValue<long>(out var l))
         {
-            return l;
+            result = l;
+            return true;
         }
 
         if (value.TryGetValue<ulong>(out var ul))
         {
-            return ul;
+            result = ul;
+            return true;
+        }
+
+        if (value.TryGetValue<Int128>(out var i128))
+        {
+            result = (double)i128;
+            return true;
+        }
+
+        if (value.TryGetValue<UInt128>(out var ui128))
+        {
+            result = (double)ui128;
+            return true;
         }
 
         if (value.TryGetValue<int>(out var i))
         {
-            return i;
+            result = i;
+            return true;
         }
 
         if (value.TryGetValue<uint>(out var ui))
         {
-            return ui;
+            result = ui;
+            return true;
         }
 
-        if (value.TryGetValue<short>(out var s))
+        if (value.TryGetValue<short>(out var sh))
         {
-            return s;
+            result = sh;
+            return true;
         }
 
         if (value.TryGetValue<ushort>(out var us))
         {
-            return us;
+            result = us;
+            return true;
         }
 
         if (value.TryGetValue<byte>(out var b))
         {
-            return b;
+            result = b;
+            return true;
         }
 
         if (value.TryGetValue<sbyte>(out var sb))
         {
-            return sb;
+            result = sb;
+            return true;
         }
 
-        return 0;
+        var reader = CreateReader(value);
+        return reader.TryGetDouble(out result);
     }
 
+    /// <summary>
+    /// Reads the string value out of a <see cref="JsonValue"/>. A value wrapping a CLR type other than
+    /// <see cref="string"/>, such as <see cref="DateTime"/>, <see cref="Guid"/> or <see cref="char"/>, is read back
+    /// from its serialized form: <see cref="JsonNode.ToString()"/> would return it as quoted and escaped JSON text.
+    /// </summary>
     private static string? GetStringValue(JsonValue value)
     {
         if (value.TryGetValue<JsonElement>(out var element))
@@ -191,6 +284,25 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
             return s;
         }
 
-        return value.ToString();
+        var reader = CreateReader(value);
+        return reader.GetString();
+    }
+
+    /// <summary>Serializes a value and positions a reader on its first token.</summary>
+    /// <remarks>
+    /// The value is written with the converter it was created with, so this stays safe for trimming, unlike
+    /// serializing its CLR value again.
+    /// </remarks>
+    private static Utf8JsonReader CreateReader(JsonValue value)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            value.WriteTo(writer);
+        }
+
+        var reader = new Utf8JsonReader(buffer.WrittenSpan);
+        reader.Read();
+        return reader;
     }
 }

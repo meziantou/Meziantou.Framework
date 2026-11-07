@@ -2,10 +2,12 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Base class for all expressions (literals, operators, method calls, etc.).</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="Expression_Example" ref:dedent="true">
 /// Expression expr1 = new LiteralExpression(42);
 /// Expression expr2 = new BinaryExpression(BinaryOperator.Add, expr1, 10);
 /// Expression expr3 = new MethodInvokeExpression(new MemberReferenceExpression(typeof(Console), "WriteLine"), expr2);
+///
+/// Assert.Equal("global::System.Console.WriteLine((42 + 10))", expr3.ToCsharpString());
 /// </code>
 /// </example>
 public abstract class Expression : CodeObject, ICommentable

@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Versioning. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The version and range strings of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Versioning.Tests\SemanticVersionTests.cs" LogicalName="SemanticVersionTests.cs" Link="Seeds\SemanticVersionTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Versioning.Tests\SemanticVersionRangeTests.cs" LogicalName="SemanticVersionRangeTests.cs" Link="Seeds\SemanticVersionRangeTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
+  </ItemGroup>
+</Project>

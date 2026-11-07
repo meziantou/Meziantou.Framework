@@ -1,0 +1,16 @@
+{
+  "main": {
+    "mas-TZ": {
+      "identity": {
+        "language": "mas",
+        "territory": "TZ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,139 @@
+const {
+  a,
+  b: [c, ...d],
+} = obj;
+async function f(x = 1, ...y) {
+  return await Promise.all([x, ...y].map(async (v) => v?.w ?? 0));
+}
+label: for (const k in o)
+  if (k) continue label;
+  else break;
+export default class extends Base {
+  static #p = 1;
+  get x() {
+    return this.#p;
+  }
+}
+
+----
+type A<T extends object = {}> = {
+  readonly [K in keyof T]?: T[K] extends Function ? never : T[K];
+};
+enum E {
+  A = 1,
+  B,
+}
+function f<T>(this: Window, a: T): asserts a is NonNullable<T> {}
+abstract class C implements I {
+  private constructor(public x: number) {
+    super();
+  }
+}
+
+----
+.a {
+  color: red;
+  background: URL(x.png);
+}
+@media (max-width: 100px) {
+  .b > .c,
+  .d ~ .e {
+    margin: 0 auto !important;
+  }
+}
+@supports (display: grid) {
+  :root {
+    --x: calc(1px+2px);
+  }
+}
+
+----
+# Title
+
+- item one
+- item two
+
+1. first
+1. second
+
+| a   | b   |
+| --- | --- |
+| 1   | 2   |
+
+```js
+const a = 1;
+```
+
+A very long paragraph that should stay on its own line because markdown prose wrapping is preserved by default.
+
+----
+key: value
+list:
+  - a
+  - b: c
+    d: e
+anchors: &x { a: 1, b: 2 }
+ref: *x
+multi: |
+  text
+
+----
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>T</title>
+  </head>
+  <body>
+    <div class="a" id="b">
+      <p>Some <b>bold</b> text</p>
+      <ul>
+        <li>1</li>
+        <li>2</li>
+      </ul>
+      <button onclick="go(1)" disabled>Go</button>
+    </div>
+  </body>
+</html>
+
+----
+query Q($id: ID!, $n: Int = 10) {
+  user(id: $id) {
+    ...F
+    friends(first: $n) @include(if: true) {
+      edges {
+        node {
+          name
+        }
+      }
+    }
+  }
+}
+fragment F on User {
+  id
+  name
+}
+
+----
+const {
+    a,
+    b: [c, ...d]
+} = obj
+async function f(x = 1, ...y) {
+    return await Promise.all(
+        [x, ...y].map(
+            async v => v?.w ?? 0
+        )
+    )
+}
+label: for (const k in o)
+    if (k) continue label
+    else break
+export default class extends Base {
+    static #p = 1
+    get x() {
+        return this.#p
+    }
+}
+
+----
+SyntaxError: Unexpected token (1:7)

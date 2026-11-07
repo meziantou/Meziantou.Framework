@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kxv-Telu": {
+      "identity": {
+        "language": "kxv",
+        "script": "Telu"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

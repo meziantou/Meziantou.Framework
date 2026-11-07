@@ -4,12 +4,92 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Trace;
 
 namespace Meziantou.AspNetCore.ServiceDefaults.Tests;
 
 public sealed class ServiceDefaultTests
 {
+    [Fact]
+    public void ReadmeExample_TryPattern()
+    {
+        var builder = WebApplication.CreateBuilder();
+
+        #region ServiceDefaults_TryPattern
+        builder.UseMeziantouConventions();
+        builder.TryUseMeziantouConventions(); // Will not register again
+        #endregion
+
+        Assert.Single(builder.Services, service => service.ServiceType == typeof(MeziantouServiceDefaultsOptions));
+    }
+
+    [Fact]
+    public async Task Documentation_ConfigureOptions()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+
+        #region ServiceDefaults_ConfigureOptions
+        builder.UseMeziantouConventions(options =>
+        {
+            options.OpenApi.RoutePattern = "/swagger/{documentName}.json";
+            options.Https.HstsEnabled = false;
+            options.AntiForgery.Enabled = false;
+            options.ForwardedHeaders.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ConfigureJsonOptions = json => json.WriteIndented = true;
+            options.OpenTelemetry.ConfigureTracing = tracing => tracing.AddSource("MyCompany.*");
+        });
+        #endregion
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+        app.MapGet("/", () => TypedResults.Ok(new { Sample = Sample.Value1 }));
+        _ = app.RunAsync();
+
+        var address = GetServerAddress(app);
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+
+        using var openApiResponse = await httpClient.GetAsync("/swagger/v1.json", XunitCancellationToken);
+        Assert.Equal(HttpStatusCode.OK, openApiResponse.StatusCode);
+
+        using var defaultOpenApiResponse = await httpClient.GetAsync("/openapi/v1.json", XunitCancellationToken);
+        Assert.Equal(HttpStatusCode.NotFound, defaultOpenApiResponse.StatusCode);
+
+        Assert.Equal("{\n  \"sample\": \"value1\"\n}", (await httpClient.GetStringAsync("/", XunitCancellationToken)).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public async Task Documentation_JsonConventions()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+        builder.UseMeziantouConventions();
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+
+        #region ServiceDefaults_JsonConventions
+        app.MapGet("/schedule", () => new
+        {
+            Day = DayOfWeek.Monday,
+            Comment = (string?)null,
+            SlotsPerRoom = new Dictionary<string, int>(StringComparer.Ordinal) { ["MeetingRoom"] = 3 },
+        });
+        #endregion
+
+        _ = app.RunAsync();
+
+        var address = GetServerAddress(app);
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+
+        #region ServiceDefaults_JsonConventionsOutput
+        var json = await httpClient.GetStringAsync("/schedule");
+        Assert.Equal("""{"day":"monday","slotsPerRoom":{"meetingRoom":3}}""", json);
+        #endregion
+    }
+
     [Fact]
     public async Task HasDefaultHealthChecks()
     {

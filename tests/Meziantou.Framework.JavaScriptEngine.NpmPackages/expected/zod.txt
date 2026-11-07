@@ -1,0 +1,87 @@
+{
+  "id": "123e4567-e89b-42d3-a456-426614174000",
+  "name": "Alice",
+  "email": "alice@example.com",
+  "age": 30,
+  "tags": [],
+  "address": {
+    "street": "Main",
+    "zip": "75001",
+    "country": "FR"
+  },
+  "shape": {
+    "kind": "circle",
+    "radius": 2
+  },
+  "createdAt": "2020-01-01T00:00:00Z",
+  "password": "x",
+  "confirm": "x",
+  "score": 1.23,
+  "meta": {
+    "a": 1,
+    "b": "x",
+    "c": true
+  }
+}
+----
+[["id","invalid_format","Invalid UUID"],["name","too_small","Too small: expected string to have >=2 characters"],["email","invalid_format","Invalid email address"],["age","invalid_type","Invalid input: expected int, received number"],["tags","too_big","Too big: expected array to have <=3 items"],["address.street","too_small","Too small: expected string to have >=1 characters"],["address.zip","invalid_format","Invalid string: must match pattern /^\\d{5}$/"],["address.country","invalid_value","Invalid option: expected one of \"FR\"|\"US\""],["shape.kind","invalid_union","Invalid discriminator value. Expected 'circle' | 'rect'"],["createdAt","invalid_format","Invalid ISO datetime"],["score","invalid_type","Invalid input: expected number, received string"],["meta.a","invalid_union","Invalid input"]]
+----
+✖ Invalid UUID
+  → at id
+✖ Too small: expected string to have >=2 characters
+  → at name
+✖ Invalid email address
+  → at email
+✖ Invalid input: expected int, received number
+  → at age
+✖ Too big: expected array to have <=3 items
+  → at tags
+✖ Invalid ISO datetime
+  → at createdAt
+✖ Invalid input: expected number, received string
+  → at score
+✖ Too small: expected string to have >=1 characters
+  → at address.street
+✖ Invalid string: must match pattern /^\d{5}$/
+  → at address.zip
+✖ Invalid option: expected one of "FR"|"US"
+  → at address.country
+✖ Invalid discriminator value. Expected 'circle' | 'rect'
+  → at shape.kind
+✖ Invalid input
+  → at meta.a
+----
+{"formErrors":[],"fieldErrors":{"confirm":["Passwords do not match"]}}
+----
+{"name":"root","children":[{"name":"a","children":[{"name":"b"}]}]}
+----
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "a": {
+      "type": "string",
+      "minLength": 1
+    },
+    "b": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "c": {
+      "type": "string",
+      "enum": [
+        "x",
+        "y"
+      ]
+    }
+  },
+  "required": [
+    "a",
+    "c"
+  ],
+  "additionalProperties": false
+}
+----
+{"success":true,"data":12.5}

@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	integer	1.2		TRUE	FALSE	FALSE					
+1	integer	1.2		TRUE	FALSE	FALSE					
+2	integer	1.2		TRUE	FALSE	FALSE					
+3	integer	1.2		TRUE	FALSE	FALSE					

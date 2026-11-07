@@ -1,0 +1,44 @@
+{
+  "tools": [
+    "hb-info 14.6.0",
+    "hb-shape 14.6.0 (--font-funcs=ot and ft)",
+    "hb-vector 14.6.0 (--font-funcs=ot and ft)"
+  ],
+  "faces": [
+    {
+      "family": "Meziantou CID",
+      "subfamily": "Regular",
+      "postScriptName": "MeziantouCID-Regular",
+      "unitsPerEm": 1000,
+      "glyphCount": 4,
+      "metrics": {
+        "hasc": 800,
+        "hdsc": -200,
+        "hlgp": 0,
+        "xhgt": 500,
+        "cpht": 700,
+        "strs": 50,
+        "stro": 250,
+        "unds": 50,
+        "undo": -100
+      },
+      "characterMap": {
+        "0041": 1,
+        "0042": 2,
+        "0043": 3
+      },
+      "advances": [
+        500,
+        500,
+        500,
+        500
+      ],
+      "outlines": [
+        "M0,0L100,0L100,50L0,0Z",
+        "M0,0L0,100L50,100L0,0Z",
+        "M10,10L10,110L60,110L10,10Z",
+        "M10,10L110,10L110,60L10,10Z"
+      ]
+    }
+  ]
+}

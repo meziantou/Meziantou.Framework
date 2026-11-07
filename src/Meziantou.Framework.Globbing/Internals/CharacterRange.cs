@@ -27,6 +27,7 @@ internal readonly struct CharacterRange
 
     public char[] EnumerateCharacters()
     {
+        // The index is an int on purpose: a 'char' counter wraps around when the range ends at char.MaxValue.
         var array = new char[Length];
         for (var i = 0; i < array.Length; i++)
         {

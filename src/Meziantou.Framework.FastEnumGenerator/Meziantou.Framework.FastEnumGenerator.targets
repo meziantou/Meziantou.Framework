@@ -1,10 +1,20 @@
 <Project>
   <PropertyGroup>
     <MeziantouImplicitUsings Condition="'$(MeziantouImplicitUsings)' == ''">$(ImplicitUsings)</MeziantouImplicitUsings>
+    <MeziantouFastEnumInterceptors Condition="'$(MeziantouFastEnumInterceptors)' == ''">false</MeziantouFastEnumInterceptors>
   </PropertyGroup>
 
   <ItemGroup Condition="$(MeziantouImplicitUsings) == 'enable'">
     <!-- For source compatibility between v1 and v2 -->
     <Using Include="Meziantou.Framework.Annotations"/>
   </ItemGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="MeziantouFastEnumInterceptors" />
+  </ItemGroup>
+
+  <!-- Interceptors rewrite System.Enum calls in place, so they are opt-in. -->
+  <PropertyGroup Condition="'$(MeziantouFastEnumInterceptors)' == 'true'">
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Meziantou.Framework.Annotations.FastEnumInterceptors</InterceptorsNamespaces>
+  </PropertyGroup>
 </Project>

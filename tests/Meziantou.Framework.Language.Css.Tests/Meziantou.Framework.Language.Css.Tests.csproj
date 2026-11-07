@@ -1,0 +1,12 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Language.Css.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="files/css-parsing-tests/*.json" LogicalName="Meziantou.Framework.Language.Css.Tests.files.css-parsing-tests.%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />
+  </ItemGroup>
+</Project>

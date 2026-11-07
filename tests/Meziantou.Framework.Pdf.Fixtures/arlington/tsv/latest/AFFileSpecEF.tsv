@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+F	stream	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		fn:IsRequired(fn:Not(fn:IsPresent(UF)))	TRUE	FALSE				[AFEmbeddedFileStream]	Table 43, EF cell
+UF	stream	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		fn:IsRequired(fn:Not(fn:IsPresent(F)))	TRUE	FALSE				[AFEmbeddedFileStream]	

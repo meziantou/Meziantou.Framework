@@ -1,64 +1,45 @@
 namespace Meziantou.Framework.Language.Json;
 
-/// <summary>Base visitor for walking JSON syntax trees without returning a value.</summary>
+/// <summary>Dispatches on the kind of a JSON node.</summary>
+/// <remarks>
+/// Visiting a node does not visit its children. Derive from <see cref="JsonSyntaxWalker"/> to walk a whole tree.
+/// </remarks>
 public abstract class JsonSyntaxVisitor
 {
-    public virtual void Visit(JsonSyntaxNode? node)
-    {
-        if (node is null)
-            return;
+    /// <summary>Visits <paramref name="node"/>, doing nothing when it is <see langword="null"/>.</summary>
+    public virtual void Visit(JsonSyntaxNode? node) => node?.Accept(this);
 
-        node.Accept(this);
+    /// <summary>Called for any node whose own method is not overridden.</summary>
+    public virtual void DefaultVisit(JsonSyntaxNode node)
+    {
     }
 
-    protected virtual void DefaultVisit(JsonSyntaxNode node)
-    {
-        foreach (var child in node.ChildNodes)
-        {
-            Visit(child);
-        }
-    }
-
-    public virtual void VisitDocument(JsonDocumentSyntax node) => DefaultVisit(node);
-    public virtual void VisitObject(JsonObjectSyntax node) => DefaultVisit(node);
-    public virtual void VisitMember(JsonMemberSyntax node) => DefaultVisit(node);
-    public virtual void VisitArray(JsonArraySyntax node) => DefaultVisit(node);
-    public virtual void VisitArrayElement(JsonArrayElementSyntax node) => DefaultVisit(node);
-    public virtual void VisitString(JsonStringSyntax node) => DefaultVisit(node);
-    public virtual void VisitNumber(JsonNumberSyntax node) => DefaultVisit(node);
-    public virtual void VisitLiteral(JsonLiteralSyntax node) => DefaultVisit(node);
-    public virtual void VisitSkippedText(JsonSkippedTextSyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonDocument(JsonDocumentSyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonObject(JsonObjectSyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonMember(JsonMemberSyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonArray(JsonArraySyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonString(JsonStringSyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonNumber(JsonNumberSyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonLiteral(JsonLiteralSyntax node) => DefaultVisit(node);
+    public virtual void VisitJsonSkippedText(JsonSkippedTextSyntax node) => DefaultVisit(node);
 }
 
-/// <summary>Base visitor for walking JSON syntax trees and returning a value.</summary>
-/// <typeparam name="TResult">Type returned by visit methods.</typeparam>
+/// <summary>Dispatches on the kind of a JSON node and returns a result.</summary>
+/// <typeparam name="TResult">What visiting a node produces.</typeparam>
 public abstract class JsonSyntaxVisitor<TResult>
 {
-    public virtual TResult Visit(JsonSyntaxNode? node)
-    {
-        if (node is null)
-            return default!;
+    /// <summary>Visits <paramref name="node"/>, returning the default result when it is <see langword="null"/>.</summary>
+    public virtual TResult? Visit(JsonSyntaxNode? node) => node is null ? default : node.Accept(this);
 
-        return node.Accept(this);
-    }
+    /// <summary>Called for any node whose own method is not overridden.</summary>
+    public virtual TResult? DefaultVisit(JsonSyntaxNode node) => default;
 
-    protected virtual TResult DefaultVisit(JsonSyntaxNode node)
-    {
-        foreach (var child in node.ChildNodes)
-        {
-            _ = Visit(child);
-        }
-
-        return default!;
-    }
-
-    public virtual TResult VisitDocument(JsonDocumentSyntax node) => DefaultVisit(node);
-    public virtual TResult VisitObject(JsonObjectSyntax node) => DefaultVisit(node);
-    public virtual TResult VisitMember(JsonMemberSyntax node) => DefaultVisit(node);
-    public virtual TResult VisitArray(JsonArraySyntax node) => DefaultVisit(node);
-    public virtual TResult VisitArrayElement(JsonArrayElementSyntax node) => DefaultVisit(node);
-    public virtual TResult VisitString(JsonStringSyntax node) => DefaultVisit(node);
-    public virtual TResult VisitNumber(JsonNumberSyntax node) => DefaultVisit(node);
-    public virtual TResult VisitLiteral(JsonLiteralSyntax node) => DefaultVisit(node);
-    public virtual TResult VisitSkippedText(JsonSkippedTextSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonDocument(JsonDocumentSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonObject(JsonObjectSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonMember(JsonMemberSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonArray(JsonArraySyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonString(JsonStringSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonNumber(JsonNumberSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonLiteral(JsonLiteralSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitJsonSkippedText(JsonSkippedTextSyntax node) => DefaultVisit(node);
 }

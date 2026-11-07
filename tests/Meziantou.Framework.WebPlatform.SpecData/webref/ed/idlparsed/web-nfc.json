@@ -1,0 +1,975 @@
+{
+  "spec": {
+    "title": "Web NFC",
+    "url": "https://w3c-cg.github.io/web-nfc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "NDEFMessage",
+          "NDEFRecord",
+          "NDEFReader",
+          "NDEFReadingEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "NDEFMessage": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface NDEFMessage {\n  constructor(NDEFMessageInit messageInit);\n  readonly attribute FrozenArray<NDEFRecord> records;\n};",
+        "type": "interface",
+        "name": "NDEFMessage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "messageInit",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFMessageInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmessage-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "records",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFRecord"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmessage-records"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmessage"
+      },
+      "NDEFMessageInit": {
+        "fragment": "dictionary NDEFMessageInit {\n  required sequence<NDEFRecordInit> records;\n};",
+        "type": "dictionary",
+        "name": "NDEFMessageInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "records",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFRecordInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmessageinit-records"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmessageinit"
+      },
+      "NDEFRecord": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface NDEFRecord {\n  constructor(NDEFRecordInit recordInit);\n\n  readonly attribute USVString recordType;\n  readonly attribute USVString? mediaType;\n  readonly attribute USVString? id;\n  readonly attribute DataView? data;\n\n  readonly attribute USVString? encoding;\n  readonly attribute USVString? lang;\n\n  sequence<NDEFRecord>? toRecords();\n};",
+        "type": "interface",
+        "name": "NDEFRecord",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "recordInit",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFRecordInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "recordType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-recordtype"
+          },
+          {
+            "type": "attribute",
+            "name": "mediaType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-mediatype"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-id"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-data"
+          },
+          {
+            "type": "attribute",
+            "name": "encoding",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-encoding"
+          },
+          {
+            "type": "attribute",
+            "name": "lang",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-lang"
+          },
+          {
+            "type": "operation",
+            "name": "toRecords",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFRecord"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord-torecords"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecord"
+      },
+      "NDEFRecordInit": {
+        "fragment": "dictionary NDEFRecordInit {\n  required USVString recordType;\n  USVString mediaType;\n  USVString id;\n\n  USVString encoding;\n  USVString lang;\n\n  any data; // DOMString or BufferSource or NDEFMessageInit\n};",
+        "type": "dictionary",
+        "name": "NDEFRecordInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "recordType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecordinit-recordtype"
+          },
+          {
+            "type": "field",
+            "name": "mediaType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecordinit-mediatype"
+          },
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecordinit-id"
+          },
+          {
+            "type": "field",
+            "name": "encoding",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecordinit-encoding"
+          },
+          {
+            "type": "field",
+            "name": "lang",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecordinit-lang"
+          },
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecordinit-data"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefrecordinit"
+      },
+      "NDEFMessageSource": {
+        "fragment": "typedef (DOMString or BufferSource or NDEFMessageInit) NDEFMessageSource;",
+        "type": "typedef",
+        "name": "NDEFMessageSource",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NDEFMessageInit"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmessagesource"
+      },
+      "NDEFReader": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface NDEFReader : EventTarget {\n  constructor();\n\n  attribute EventHandler onreading;\n  attribute EventHandler onreadingerror;\n\n  Promise<undefined> scan(optional NDEFScanOptions options={});\n  Promise<undefined> write(NDEFMessageSource message,\n                                 optional NDEFWriteOptions options={});\n  Promise<undefined> makeReadOnly(optional NDEFMakeReadOnlyOptions options={});\n};",
+        "type": "interface",
+        "name": "NDEFReader",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreader-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "onreading",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreader-onreading"
+          },
+          {
+            "type": "attribute",
+            "name": "onreadingerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreader-onreadingerror"
+          },
+          {
+            "type": "operation",
+            "name": "scan",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFScanOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreader-scan"
+          },
+          {
+            "type": "operation",
+            "name": "write",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFMessageSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFWriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreader-write"
+          },
+          {
+            "type": "operation",
+            "name": "makeReadOnly",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFMakeReadOnlyOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreader-makereadonly"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreader"
+      },
+      "NDEFReadingEvent": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface NDEFReadingEvent : Event {\n  constructor(DOMString type, NDEFReadingEventInit readingEventInitDict);\n\n  readonly attribute DOMString serialNumber;\n  [SameObject] readonly attribute NDEFMessage message;\n};",
+        "type": "interface",
+        "name": "NDEFReadingEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "readingEventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NDEFReadingEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreadingevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "serialNumber",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreadingevent-serialnumber"
+          },
+          {
+            "type": "attribute",
+            "name": "message",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NDEFMessage"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreadingevent-message"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreadingevent"
+      },
+      "NDEFReadingEventInit": {
+        "fragment": "dictionary NDEFReadingEventInit : EventInit {\n  DOMString? serialNumber = \"\";\n  required NDEFMessageInit message;\n};",
+        "type": "dictionary",
+        "name": "NDEFReadingEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "serialNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreadingeventinit-serialnumber"
+          },
+          {
+            "type": "field",
+            "name": "message",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NDEFMessageInit"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreadingeventinit-message"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefreadingeventinit"
+      },
+      "NDEFWriteOptions": {
+        "fragment": "dictionary NDEFWriteOptions {\n  boolean overwrite = true;\n  AbortSignal? signal;\n};",
+        "type": "dictionary",
+        "name": "NDEFWriteOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "overwrite",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefwriteoptions-overwrite"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefwriteoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefwriteoptions"
+      },
+      "NDEFMakeReadOnlyOptions": {
+        "fragment": "dictionary NDEFMakeReadOnlyOptions {\n  AbortSignal? signal;\n};",
+        "type": "dictionary",
+        "name": "NDEFMakeReadOnlyOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmakereadonlyoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefmakereadonlyoptions"
+      },
+      "NDEFScanOptions": {
+        "fragment": "dictionary NDEFScanOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "NDEFScanOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefscanoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c-cg.github.io/web-nfc/#dom-ndefscanoptions"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NDEFMessage",
+        "NDEFRecord",
+        "NDEFReader",
+        "NDEFReadingEvent"
+      ]
+    },
+    "dependencies": {
+      "NDEFMessage": [
+        "NDEFMessageInit",
+        "NDEFRecord"
+      ],
+      "NDEFMessageInit": [
+        "NDEFRecordInit"
+      ],
+      "NDEFRecord": [
+        "NDEFRecordInit",
+        "DataView",
+        "NDEFRecord"
+      ],
+      "NDEFRecordInit": [],
+      "NDEFReader": [
+        "EventTarget",
+        "EventHandler",
+        "NDEFScanOptions",
+        "NDEFMessageSource",
+        "NDEFWriteOptions",
+        "NDEFMakeReadOnlyOptions"
+      ],
+      "NDEFReadingEvent": [
+        "Event",
+        "NDEFReadingEventInit",
+        "NDEFMessage"
+      ],
+      "NDEFReadingEventInit": [
+        "EventInit",
+        "NDEFMessageInit"
+      ],
+      "NDEFWriteOptions": [
+        "AbortSignal"
+      ],
+      "NDEFMakeReadOnlyOptions": [
+        "AbortSignal"
+      ],
+      "NDEFScanOptions": [
+        "AbortSignal"
+      ]
+    },
+    "externalDependencies": [
+      "DataView",
+      "BufferSource",
+      "EventTarget",
+      "EventHandler",
+      "Event",
+      "EventInit",
+      "AbortSignal"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -2,26 +2,28 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of objects using file-based snapshots</Description>
-    <Version>3.0.1</Version>
+    <PackageTags>snapshot-testing, approval-tests, testing, assertions</PackageTags>
+    <Version>3.1.19</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.HumanReadableSerializer/Utils/StringUtils.cs" Link="Utils/StringUtils.cs" />
     <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
+    <Compile Include="../Meziantou.Framework.CommandLine/CommandLineBuilder.cs" Link="Utils/CommandLineBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="build/**" Pack="true" PackagePath="build" />
     <None Include="buildTransitive/**" Pack="true" PackagePath="buildTransitive" />
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting" />
-    <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="build/Meziantou.Framework.SourceRootRegistration.targets" />
     <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SourceRootRegistration.targets" />
     <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="buildMultiTargeting/Meziantou.Framework.SourceRootRegistration.targets" />
+    <None Include="common/Meziantou.Framework.SnapshotFiles.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SnapshotFiles.targets" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Tests" />
-    <InternalsVisibleTo Include="SnapshotTestingBenchmarks" />
+    <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,7 +34,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298">
+    <PackageReference Include="System.IO.Hashing" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.367">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

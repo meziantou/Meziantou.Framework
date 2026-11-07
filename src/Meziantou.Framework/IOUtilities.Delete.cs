@@ -7,6 +7,8 @@ internal
 #endif
 static partial class IOUtilities
 {
+    private const int MaxDeleteAttempts = 10;
+
     /// <summary>Determines whether the specified exception is a sharing violation exception.</summary>
     /// <param name="exception">The exception. May not be null.</param>
     /// <returns>
@@ -43,8 +45,12 @@ static partial class IOUtilities
 
         try
         {
-            if (fileSystemInfo is DirectoryInfo directoryInfo)
+            // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
+            if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
             {
+                // On Unix, removing an entry requires write permission on the directory that contains it
+                Retry(() => RemoveReadOnlyAttribute(directoryInfo));
+
                 foreach (var childInfo in directoryInfo.GetFileSystemInfos())
                 {
                     if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
@@ -81,22 +87,22 @@ static partial class IOUtilities
 
     private static void Retry(Action action)
     {
-        var attempt = 0;
-        while (attempt < 10)
+        // The exception filters stop matching on the last attempt, so a failure that never clears is
+        // reported to the caller instead of being swallowed by the loop.
+        for (var attempt = 1; ; attempt++)
         {
             try
             {
                 action();
                 return;
             }
-            catch (IOException ex) when (IsSharingViolation(ex))
+            catch (IOException ex) when (attempt < MaxDeleteAttempts && IsSharingViolation(ex))
             {
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException) when (attempt < MaxDeleteAttempts)
             {
             }
 
-            attempt++;
             Thread.Sleep(50);
         }
     }
@@ -140,32 +146,37 @@ static partial class IOUtilities
         if (!fileSystemInfo.Exists)
             return;
 
-        if (fileSystemInfo is DirectoryInfo directoryInfo)
-        {
-            foreach (var childInfo in directoryInfo.GetFileSystemInfos())
-            {
-                if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                {
-                    try
-                    {
-                        await RetryOnSharingViolationAsync(() => childInfo.Delete(), cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                    }
-                    catch (DirectoryNotFoundException)
-                    {
-                    }
-                }
-                else
-                {
-                    await DeleteAsync(childInfo, cancellationToken).ConfigureAwait(false);
-                }
-            }
-        }
-
         try
         {
+            // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
+            if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                // On Unix, removing an entry requires write permission on the directory that contains it
+                await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(directoryInfo), cancellationToken).ConfigureAwait(false);
+
+                foreach (var childInfo in directoryInfo.GetFileSystemInfos())
+                {
+                    if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        try
+                        {
+                            await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(childInfo), cancellationToken).ConfigureAwait(false);
+                            await RetryOnSharingViolationAsync(() => childInfo.Delete(), cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (FileNotFoundException)
+                        {
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                        }
+                    }
+                    else
+                    {
+                        await DeleteAsync(childInfo, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+            }
+
             await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(fileSystemInfo), cancellationToken).ConfigureAwait(false);
             await RetryOnSharingViolationAsync(() => DeleteFileSystemInfo(fileSystemInfo), cancellationToken).ConfigureAwait(false);
         }
@@ -179,22 +190,22 @@ static partial class IOUtilities
 
     private static async ValueTask RetryOnSharingViolationAsync(Action action, CancellationToken cancellationToken)
     {
-        var attempt = 0;
-        while (attempt < 10)
+        // The exception filters stop matching on the last attempt, so a failure that never clears is
+        // reported to the caller instead of being swallowed by the loop.
+        for (var attempt = 1; ; attempt++)
         {
             try
             {
                 action();
                 return;
             }
-            catch (IOException ex) when (IsSharingViolation(ex))
+            catch (IOException ex) when (attempt < MaxDeleteAttempts && IsSharingViolation(ex))
             {
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException) when (attempt < MaxDeleteAttempts)
             {
             }
 
-            attempt++;
             await Task.Delay(50, cancellationToken).ConfigureAwait(false);
         }
     }

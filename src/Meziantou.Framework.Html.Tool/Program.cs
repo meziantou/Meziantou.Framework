@@ -1,15 +1,24 @@
 using System.CommandLine;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using Meziantou.Framework.Globbing;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.AspNetCore.StaticFiles;
+using WebPlatformHtmlFormatter = Meziantou.Framework.WebPlatform.Formatting.HtmlFormatter;
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.Html.Tool.Tests")]
 
 namespace Meziantou.Framework.Html.Tool;
 
-internal static class Program
+internal static partial class Program
 {
+    static Program()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    }
+
     public static Task<int> Main(string[] args)
     {
         return MainImpl(args, configure: null);
@@ -51,52 +60,48 @@ internal static class Program
                 parseResult.GetValue(filePatternOption),
                 parseResult.GetValue(rootDirectoryOption),
                 parseResult.GetRequiredValue(xpathOption),
-                parseResult.GetRequiredValue(newValueOption));
+                parseResult.GetRequiredValue(newValueOption),
+                cancellationToken);
         });
 
         rootCommand.Subcommands.Add(replaceValueCommand);
     }
 
-    private static async Task<int> ReplaceValue(string? filePath, string? globPattern, string? rootDirectory, string xpath, string newValue)
+    private static async Task<int> ReplaceValue(string? filePath, string? globPattern, string? rootDirectory, string xpath, string newValue, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(filePath))
         {
-            await UpdateFileAsync(filePath, xpath, newValue);
+            await UpdateFileAsync(filePath, xpath, newValue, cancellationToken);
         }
 
         if (!string.IsNullOrEmpty(globPattern))
         {
             if (!Glob.TryParse(globPattern, GlobDialect.Standard, GlobOptions.None, out var glob))
             {
-                await Console.Error.WriteLineAsync($"Glob pattern '{globPattern}' is invalid");
+                await Console.Error.WriteLineAsync($"Glob pattern '{globPattern}' is invalid".AsMemory(), cancellationToken);
                 return -1;
             }
 
             foreach (var file in glob.EnumerateFiles(string.IsNullOrEmpty(rootDirectory) ? Environment.CurrentDirectory : rootDirectory))
             {
-                await UpdateFileAsync(file, xpath, newValue);
+                await UpdateFileAsync(file, xpath, newValue, cancellationToken);
             }
         }
 
         return 0;
 
-        static async Task UpdateFileAsync(string file, string xpath, string newValue)
+        static async Task UpdateFileAsync(string file, string xpath, string newValue, CancellationToken cancellationToken)
         {
-            var doc = new HtmlDocument();
-            await using (var stream = File.OpenRead(file))
-            {
-                doc.Load(stream);
-            }
+            var htmlFile = await LoadHtmlFileAsync(file, cancellationToken);
 
             var count = 0;
-            var nodes = doc.SelectNodes(xpath);
-            foreach (var node in nodes)
+            foreach (var node in SelectNodes(htmlFile, xpath))
             {
-                node.Value = newValue;
+                node.TextContent = newValue;
                 count++;
             }
 
-            doc.Save(file, GetDocumentEncoding(doc));
+            await SaveHtmlFileAsync(htmlFile, file, cancellationToken);
             Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
         }
     }
@@ -143,15 +148,10 @@ internal static class Program
 
             static async Task UpdateFileAsync(string file, CancellationToken cancellationToken)
             {
-                var doc = new HtmlDocument();
-                await using (var stream = File.OpenRead(file))
-                {
-                    doc.Load(stream);
-                }
+                var htmlFile = await LoadHtmlFileAsync(file, cancellationToken).ConfigureAwait(false);
 
                 var count = 0;
-                var nodes = doc.SelectNodes("//@src|//@href|//@poster");
-                foreach (var node in nodes)
+                foreach (var node in SelectNodes(htmlFile, "//@src|//@href|//@poster").OfType<Attr>())
                 {
                     if (string.IsNullOrWhiteSpace(node.Value))
                         continue;
@@ -243,7 +243,7 @@ internal static class Program
 
                 if (count > 0)
                 {
-                    doc.Save(file, GetDocumentEncoding(doc));
+                    await SaveHtmlFileAsync(htmlFile, file, cancellationToken).ConfigureAwait(false);
                 }
 
                 Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
@@ -298,15 +298,10 @@ internal static class Program
 
             static async Task UpdateFileAsync(string file, CancellationToken cancellationToken)
             {
-                var doc = new HtmlDocument();
-                await using (var stream = File.OpenRead(file))
-                {
-                    doc.Load(stream);
-                }
+                var htmlFile = await LoadHtmlFileAsync(file, cancellationToken).ConfigureAwait(false);
 
                 var count = 0;
-                var nodes = doc.SelectNodes("//@src|//@href|//@poster");
-                foreach (var node in nodes)
+                foreach (var node in SelectNodes(htmlFile, "//@src|//@href|//@poster").OfType<Attr>())
                 {
                     if (string.IsNullOrWhiteSpace(node.Value))
                         continue;
@@ -357,20 +352,20 @@ internal static class Program
                     if (!File.Exists(assetPath))
                         continue;
 
-                    var element = node.ParentElement;
-                    if (element is not null && string.Equals(element.Name, "SCRIPT", StringComparison.OrdinalIgnoreCase))
+                    var element = node.OwnerElement;
+                    if (element is not null && string.Equals(element.LocalName, "script", StringComparison.Ordinal))
                     {
                         var text = await File.ReadAllTextAsync(assetPath, cancellationToken).ConfigureAwait(false);
                         element.RemoveAttribute("src");
-                        element.InnerText = text;
-
+                        element.TextContent = text;
                     }
-                    else if (element is not null && string.Equals(element.Name, "LINK", StringComparison.OrdinalIgnoreCase))
+                    else if (element is not null && string.Equals(element.LocalName, "link", StringComparison.Ordinal))
                     {
+                        // The DOM cannot rename an element, so the link is replaced with a new style element
                         var text = await File.ReadAllTextAsync(assetPath, cancellationToken).ConfigureAwait(false);
-                        element.Name = "style";
-                        element.RemoveAttribute("href");
-                        element.InnerText = text;
+                        var style = htmlFile.Document.CreateElement("style");
+                        style.TextContent = text;
+                        element.ReplaceWith(style);
                     }
                     else
                     {
@@ -390,7 +385,7 @@ internal static class Program
 
                 if (count > 0)
                 {
-                    doc.Save(file, GetDocumentEncoding(doc));
+                    await SaveHtmlFileAsync(htmlFile, file, cancellationToken).ConfigureAwait(false);
                 }
 
                 Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
@@ -400,8 +395,52 @@ internal static class Program
         rootCommand.Subcommands.Add(command);
     }
 
-    private static Encoding GetDocumentEncoding(HtmlDocument document)
+    private static async Task<HtmlFile> LoadHtmlFileAsync(string path, CancellationToken cancellationToken)
     {
-        return document.DetectedEncoding ?? document.StreamEncoding ?? Encoding.UTF8;
+        var bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
+        var parser = new HtmlDocumentParser();
+        var document = parser.Parse(bytes);
+        var encoding = GetEncoding(document.CharacterSet);
+        var preamble = encoding.Preamble;
+        var hasByteOrderMark = !preamble.IsEmpty && bytes.AsSpan().StartsWith(preamble);
+        var text = encoding.GetString(bytes.AsSpan(hasByteOrderMark ? preamble.Length : 0));
+        if (DocumentMarkupRegex().IsMatch(text))
+            return new HtmlFile(document, document, encoding, hasByteOrderMark);
+
+        // The file does not contain the markup of a whole document, so it is parsed as a fragment to not add the missing html, head, and body elements
+        var fragment = parser.ParseFragment(text, HtmlDocumentParser.ParseDocument("").Body!);
+        return new HtmlFile(fragment.OwnerDocument!, fragment, encoding, hasByteOrderMark);
+
+        static Encoding GetEncoding(string name)
+        {
+            try
+            {
+                return Encoding.GetEncoding(name);
+            }
+            catch (ArgumentException)
+            {
+                return Encoding.UTF8;
+            }
+        }
     }
+
+    private static async Task SaveHtmlFileAsync(HtmlFile file, string path, CancellationToken cancellationToken)
+    {
+        var encoding = file.Encoding is UTF8Encoding ? new UTF8Encoding(encoderShouldEmitUTF8Identifier: file.HasByteOrderMark) : file.Encoding;
+        await File.WriteAllTextAsync(path, WebPlatformHtmlFormatter.Default.Format(file.Root), encoding, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static IEnumerable<Node> SelectNodes(HtmlFile file, string xpath)
+    {
+        var result = file.Document.Evaluate(xpath, file.Root, resolver: null, XPathResult.OrderedNodeSnapshotType);
+        for (var i = 0u; i < result.SnapshotLength; i++)
+        {
+            yield return result.SnapshotItem(i)!;
+        }
+    }
+
+    [GeneratedRegex(@"<(?:!doctype|html|head|body)[\s/>]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 10_000)]
+    private static partial Regex DocumentMarkupRegex();
+
+    private sealed record HtmlFile(Document Document, Node Root, Encoding Encoding, bool HasByteOrderMark);
 }

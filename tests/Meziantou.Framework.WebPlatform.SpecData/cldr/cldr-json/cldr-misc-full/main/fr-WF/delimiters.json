@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-WF": {
+      "identity": {
+        "language": "fr",
+        "territory": "WF"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

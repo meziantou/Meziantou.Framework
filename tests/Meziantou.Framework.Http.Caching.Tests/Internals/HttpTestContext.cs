@@ -38,6 +38,8 @@ internal sealed class HttpTestContext : IAsyncDisposable
 
     public FakeTimeProvider TimeProvider { get; } = new();
 
+    public HttpClient HttpClient => _httpClient;
+
     public void AddResponse(Func<HttpContext, Task> responseFactory)
     {
         _expectedRequests.Enqueue(new ExpectedRequest(responseFactory));

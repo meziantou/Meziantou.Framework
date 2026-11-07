@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [ { "type": "text", "text": "Steps to reproduce" } ]
+    },
+    {
+      "type": "orderedList",
+      "content": [
+        {
+          "type": "listItem",
+          "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Open the " }, { "type": "text", "text": "settings", "marks": [ { "type": "strong" } ] } ] } ]
+        },
+        {
+          "type": "listItem",
+          "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Click " }, { "type": "text", "text": "Save", "marks": [ { "type": "code" } ] } ] } ]
+        }
+      ]
+    },
+    {
+      "type": "panel",
+      "attrs": { "panelType": "warning" },
+      "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "The application stops responding." } ] } ]
+    },
+    {
+      "type": "expand",
+      "attrs": { "title": "Environment" },
+      "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Version 2.1 on Windows 11" } ] } ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+TSm	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1				Table 325
+TSn	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1				
+TU	string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		fn:IsRequired(fn:IsPresent(TSm) || fn:IsPresent(TSn))	FALSE	FALSE					
+USm	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1				
+USn	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1				
+UU	string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		fn:IsRequired(fn:IsPresent(USm) || fn:IsPresent(USn))	FALSE	FALSE					
+DSm	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1				
+DSn	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1				
+DU	string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		fn:IsRequired(fn:IsPresent(DSm) || fn:IsPresent(DSn))	FALSE	FALSE					

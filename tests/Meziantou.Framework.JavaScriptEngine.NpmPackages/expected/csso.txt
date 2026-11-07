@@ -1,0 +1,7 @@
+{
+  "default": ".footer,.header{color:red;margin:10px}.footer{margin:0}.a,.b{font-weight:700}.c{background:url(image.png)no-repeat 0 0;background-color:#fff}@media screen and (max-width:600px){.a,.b{color:#fff}}.unused{display:none}div>p:first-child::before{content:\"“\"}.d{transition:opacity .3s ease-in-out,transform .3s ease-in-out}.e{width:calc(100% - 2*10px)}@font-face{font-family:\"X\";src:url(x.woff2)format(\"woff2\")}.f{color:transparent}",
+  "noRestructure": ".header{color:red;margin:10px 10px 10px 10px}.footer{color:red;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0}.a{font-weight:700}.b{font-weight:700}.c{background:url(image.png)no-repeat 0 0;background-color:#fff}@media screen and (max-width:600px){.a{color:#fff}.b{color:#fff}}.unused{display:none}div>p:first-child::before{content:\"“\"}.d{transition:opacity .3s ease-in-out,transform .3s ease-in-out}.e{width:calc(100% - 2*10px)}@font-face{font-family:\"X\";src:url(x.woff2)format(\"woff2\")}.f{color:transparent;color:transparent}",
+  "usage": ".header{color:red;margin:10px}.a,.b{font-weight:700}@media screen and (max-width:600px){.a,.b{color:#fff}}div>p:first-child::before{content:\"“\"}@font-face{font-family:\"X\";src:url(x.woff2)format(\"woff2\")}",
+  "comments": "/*! keep */\n.a{color:red}",
+  "ast": ".x,.y{color:red}"
+}

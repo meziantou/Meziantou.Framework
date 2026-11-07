@@ -1,0 +1,643 @@
+{
+  "spec": {
+    "title": "Web Locks API",
+    "url": "https://w3c.github.io/web-locks/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "LockManager",
+          "Lock"
+        ],
+        "Worker": [
+          "LockManager",
+          "Lock"
+        ]
+      }
+    },
+    "idlNames": {
+      "NavigatorLocks": {
+        "fragment": "[SecureContext]\ninterface mixin NavigatorLocks {\n  readonly attribute LockManager locks;\n};",
+        "type": "interface mixin",
+        "name": "NavigatorLocks",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "locks",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LockManager"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/web-locks/#dom-navigatorlocks-locks"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/web-locks/#navigatorlocks"
+      },
+      "LockManager": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface LockManager {\n  Promise<any> request(DOMString name,\n                       LockGrantedCallback callback);\n  Promise<any> request(DOMString name,\n                       LockOptions options,\n                       LockGrantedCallback callback);\n\n  Promise<LockManagerSnapshot> query();\n};",
+        "type": "interface",
+        "name": "LockManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "request",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LockGrantedCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/web-locks/#dom-lockmanager-request"
+          },
+          {
+            "type": "operation",
+            "name": "request",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LockOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LockGrantedCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/web-locks/#dom-lockmanager-request-name-options-callback"
+          },
+          {
+            "type": "operation",
+            "name": "query",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LockManagerSnapshot"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/web-locks/#dom-lockmanager-query"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/web-locks/#lockmanager"
+      },
+      "LockGrantedCallback": {
+        "fragment": "callback LockGrantedCallback = Promise<any> (Lock? lock);",
+        "type": "callback",
+        "name": "LockGrantedCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "lock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Lock"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/web-locks/#callbackdef-lockgrantedcallback"
+      },
+      "LockMode": {
+        "fragment": "enum LockMode { \"shared\", \"exclusive\" };",
+        "type": "enum",
+        "name": "LockMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "shared",
+            "href": "https://w3c.github.io/web-locks/#dom-lockmode-shared"
+          },
+          {
+            "type": "enum-value",
+            "value": "exclusive",
+            "href": "https://w3c.github.io/web-locks/#dom-lockmode-exclusive"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/web-locks/#enumdef-lockmode"
+      },
+      "LockOptions": {
+        "fragment": "dictionary LockOptions {\n  LockMode mode = \"exclusive\";\n  boolean ifAvailable = false;\n  boolean steal = false;\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "LockOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LockMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "exclusive"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockoptions-mode"
+          },
+          {
+            "type": "field",
+            "name": "ifAvailable",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockoptions-ifavailable"
+          },
+          {
+            "type": "field",
+            "name": "steal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockoptions-steal"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/web-locks/#dictdef-lockoptions"
+      },
+      "LockManagerSnapshot": {
+        "fragment": "dictionary LockManagerSnapshot {\n  sequence<LockInfo> held;\n  sequence<LockInfo> pending;\n};",
+        "type": "dictionary",
+        "name": "LockManagerSnapshot",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "held",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LockInfo"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockmanagersnapshot-held"
+          },
+          {
+            "type": "field",
+            "name": "pending",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LockInfo"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockmanagersnapshot-pending"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/web-locks/#dictdef-lockmanagersnapshot"
+      },
+      "LockInfo": {
+        "fragment": "dictionary LockInfo {\n  DOMString name;\n  LockMode mode;\n  DOMString clientId;\n};",
+        "type": "dictionary",
+        "name": "LockInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockinfo-name"
+          },
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LockMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockinfo-mode"
+          },
+          {
+            "type": "field",
+            "name": "clientId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/web-locks/#dom-lockinfo-clientid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/web-locks/#dictdef-lockinfo"
+      },
+      "Lock": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface Lock {\n  readonly attribute DOMString name;\n  readonly attribute LockMode mode;\n};",
+        "type": "interface",
+        "name": "Lock",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/web-locks/#dom-lock-name"
+          },
+          {
+            "type": "attribute",
+            "name": "mode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LockMode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/web-locks/#dom-lock-mode"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/web-locks/#lock"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes NavigatorLocks;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "NavigatorLocks"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes NavigatorLocks;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "NavigatorLocks"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "LockManager",
+        "Lock"
+      ],
+      "Worker": [
+        "LockManager",
+        "Lock"
+      ]
+    },
+    "dependencies": {
+      "NavigatorLocks": [
+        "LockManager"
+      ],
+      "Navigator": [
+        "NavigatorLocks"
+      ],
+      "WorkerNavigator": [
+        "NavigatorLocks"
+      ],
+      "LockManager": [
+        "LockGrantedCallback",
+        "LockOptions",
+        "LockManagerSnapshot"
+      ],
+      "LockOptions": [
+        "LockMode",
+        "AbortSignal"
+      ],
+      "LockManagerSnapshot": [
+        "LockInfo"
+      ],
+      "LockInfo": [
+        "LockMode"
+      ],
+      "Lock": [
+        "LockMode"
+      ]
+    },
+    "externalDependencies": [
+      "AbortSignal"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

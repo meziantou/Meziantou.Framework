@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-IC": {
+      "identity": {
+        "language": "es",
+        "territory": "IC"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

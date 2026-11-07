@@ -1,0 +1,15 @@
+{
+  "main": {
+    "xnr": {
+      "identity": {
+        "language": "xnr"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

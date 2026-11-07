@@ -1,0 +1,239 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_compressed_texture_etc Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_compressed_texture_etc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_compressed_texture_etc"
+        ],
+        "Worker": [
+          "WEBGL_compressed_texture_etc"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_compressed_texture_etc": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_compressed_texture_etc {\n    /* Compressed Texture Formats */\n    const GLenum COMPRESSED_R11_EAC                        = 0x9270;\n    const GLenum COMPRESSED_SIGNED_R11_EAC                 = 0x9271;\n    const GLenum COMPRESSED_RG11_EAC                       = 0x9272;\n    const GLenum COMPRESSED_SIGNED_RG11_EAC                = 0x9273;\n    const GLenum COMPRESSED_RGB8_ETC2                      = 0x9274;\n    const GLenum COMPRESSED_SRGB8_ETC2                     = 0x9275;\n    const GLenum COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2  = 0x9276;\n    const GLenum COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2 = 0x9277;\n    const GLenum COMPRESSED_RGBA8_ETC2_EAC                 = 0x9278;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ETC2_EAC          = 0x9279;\n};",
+        "type": "interface",
+        "name": "WEBGL_compressed_texture_etc",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "COMPRESSED_R11_EAC",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9270"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SIGNED_R11_EAC",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9271"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RG11_EAC",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9272"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SIGNED_RG11_EAC",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9273"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGB8_ETC2",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9274"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ETC2",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9275"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9276"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9277"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA8_ETC2_EAC",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9278"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ETC2_EAC",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x9279"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_compressed_texture_etc"
+      ],
+      "Worker": [
+        "WEBGL_compressed_texture_etc"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_compressed_texture_etc": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

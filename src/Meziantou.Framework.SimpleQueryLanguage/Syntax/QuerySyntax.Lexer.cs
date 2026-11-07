@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
@@ -6,7 +7,23 @@ public partial class QuerySyntax
 {
     private static class Lexer
     {
-        private static readonly SearchValues<char> TextTokenTerminators = SearchValues.Create(":=<>() \t\r\n");
+        private static readonly SearchValues<char> TextTokenTerminators = CreateTextTokenTerminators();
+
+        private static SearchValues<char> CreateTextTokenTerminators()
+        {
+            // Tokenize splits whitespace with char.IsWhiteSpace, so text must end at the same characters.
+            // Otherwise a non-breaking space glues two words into a single search term.
+            var terminators = new List<char>(":=<>()");
+            for (var c = char.MinValue; c < char.MaxValue; c++)
+            {
+                if (char.IsWhiteSpace(c))
+                {
+                    terminators.Add(c);
+                }
+            }
+
+            return SearchValues.Create(CollectionsMarshal.AsSpan(terminators));
+        }
 
         public static IEnumerable<QueryToken> Tokenize(string text)
         {

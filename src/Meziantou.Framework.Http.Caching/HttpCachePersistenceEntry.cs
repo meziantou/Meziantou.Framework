@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace Meziantou.Framework.Http.Caching;
 
 /// <summary>Represents a persisted HTTP cache entry.</summary>
@@ -15,6 +17,19 @@ public sealed class HttpCachePersistenceEntry
 
     /// <summary>Gets or sets the normalized vary-based secondary key headers.</summary>
     public Dictionary<string, string>? SecondaryKeyHeaders { get; set; }
+
+    /// <summary>
+    /// Gets or sets the canonical <c>No-Vary-Search</c> value of the response, or <see langword="null"/> when
+    /// the response does not declare one.
+    /// </summary>
+    public string? NoVarySearch { get; set; }
+
+    /// <summary>Gets or sets the query the response was stored for, canonicalized with <see cref="NoVarySearch"/>.</summary>
+    /// <remarks>
+    /// Only set together with <see cref="NoVarySearch"/>: those entries are stored under a primary key that
+    /// leaves the query out, so the query belongs to their secondary key.
+    /// </remarks>
+    public string? NormalizedQuery { get; set; }
 
     /// <summary>Gets or sets the request time.</summary>
     public DateTimeOffset RequestTime { get; set; }
@@ -96,7 +111,12 @@ public sealed class HttpCachePersistenceEntry
         return new HttpCachePersistenceEntry
         {
             SecondaryKeyMatchNone = SecondaryKeyMatchNone,
-            SecondaryKeyHeaders = SecondaryKeyHeaders is null ? null : new Dictionary<string, string>(SecondaryKeyHeaders, StringComparer.OrdinalIgnoreCase),
+
+            // The comparer is kept: a store that deserializes the entry gets a case-sensitive dictionary, which can hold
+            // names that only differ by case, and copying them into a case-insensitive one would throw.
+            SecondaryKeyHeaders = SecondaryKeyHeaders is null ? null : new Dictionary<string, string>(SecondaryKeyHeaders, SecondaryKeyHeaders.Comparer),
+            NoVarySearch = NoVarySearch,
+            NormalizedQuery = NormalizedQuery,
             RequestTime = RequestTime,
             ResponseTime = ResponseTime,
             ResponseDate = ResponseDate,
@@ -118,13 +138,143 @@ public sealed class HttpCachePersistenceEntry
         };
     }
 
+    /// <summary>Computes the freshness lifetime of the entry, as defined by RFC 7234 Section 4.2.1.</summary>
+    public TimeSpan GetFreshnessLifetime()
+    {
+        return CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
+    }
+
+    /// <summary>Computes the age of the entry at the specified time, as defined by RFC 7234 Section 4.2.3.</summary>
+    /// <param name="now">The time at which the age is evaluated.</param>
+    public TimeSpan GetCurrentAge(DateTimeOffset now)
+    {
+        return CacheFreshness.GetCurrentAge(RequestTime, ResponseTime, ResponseDate, AgeValue, now);
+    }
+
+    /// <summary>Gets the time at which the entry becomes stale.</summary>
+    /// <remarks>
+    /// The result is clamped to the range of <see cref="DateTimeOffset"/>. Stores can index this value to
+    /// remove obsolete entries without deserializing them.
+    /// </remarks>
+    public DateTimeOffset GetStaleTime()
+    {
+        var correctedInitialAge = CacheFreshness.GetCorrectedInitialAge(RequestTime, ResponseTime, ResponseDate, AgeValue);
+        var freshnessLifetime = GetFreshnessLifetime();
+
+        long ticks;
+        try
+        {
+            // Neither duration is negative, so their difference cannot overflow. Adding the freshness lifetime to the
+            // response time first could, while the result is in range.
+            ticks = checked(ResponseTime.UtcTicks + (freshnessLifetime.Ticks - correctedInitialAge.Ticks));
+        }
+        catch (OverflowException)
+        {
+            ticks = freshnessLifetime >= correctedInitialAge ? DateTime.MaxValue.Ticks : DateTime.MinValue.Ticks;
+        }
+
+        if (ticks < DateTime.MinValue.Ticks)
+            return DateTimeOffset.MinValue;
+
+        if (ticks > DateTime.MaxValue.Ticks)
+            return DateTimeOffset.MaxValue;
+
+        return new DateTimeOffset(ticks, TimeSpan.Zero);
+    }
+
+    /// <summary>Gets a value indicating whether the entry becomes unusable as soon as it is stale.</summary>
+    /// <remarks>
+    /// <para>
+    /// Two things keep an entry useful past its freshness lifetime: a validator, which lets it be
+    /// revalidated with a conditional request, and <c>stale-if-error</c> (RFC 5861), which lets it be served
+    /// as-is while the origin is failing. An entry with neither can only ever be discarded once it is stale,
+    /// so a store is free to reclaim it.
+    /// </para>
+    /// <para>
+    /// <c>must-revalidate</c>, <c>proxy-revalidate</c> and <c>no-cache</c> are deliberately not consulted.
+    /// They say when a stored response must be revalidated before reuse, not whether it can be reused at
+    /// all, so requiring one of them here left an ordinary <c>max-age</c> entry unreclaimable forever.
+    /// </para>
+    /// </remarks>
+    public bool IsUnusableWhenStale
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(ETag) || LastModified is not null)
+                return false;
+
+            return StaleIfError is null;
+        }
+    }
+
+    /// <summary>
+    /// Indicates whether the entry is stale and cannot be reused, and can therefore be removed by a store.
+    /// </summary>
+    /// <param name="now">The time at which staleness is evaluated.</param>
+    public bool IsObsolete(DateTimeOffset now)
+    {
+        return IsUnusableWhenStale && GetCurrentAge(now) >= GetFreshnessLifetime();
+    }
+
+    /// <summary>Computes a stable hash of the secondary key, suitable for use as a storage key.</summary>
+    /// <remarks>
+    /// Two entries that <see cref="HasSameSecondaryKey"/> considers the same have the same hash, whatever the comparer of
+    /// their <see cref="SecondaryKeyHeaders"/>.
+    /// </remarks>
+    public string ComputeSecondaryKeyHash()
+    {
+        var stringBuilder = new StringBuilder();
+        stringBuilder.Append(SecondaryKeyMatchNone ? '1' : '0');
+
+        if (SecondaryKeyHeaders is not null)
+        {
+            // RFC 9110 Section 5.1: field names are case-insensitive
+            var headers = SecondaryKeyHeaders
+                .Select(static item => (Key: ToLowerAscii(item.Key), item.Value))
+                .OrderBy(static item => item.Key, StringComparer.Ordinal)
+                .ThenBy(static item => item.Value, StringComparer.Ordinal);
+            foreach (var (key, value) in headers)
+            {
+                stringBuilder.Append('\u001f');
+                stringBuilder.Append(key);
+                stringBuilder.Append('\u001e');
+                stringBuilder.Append(value);
+            }
+        }
+
+        // A response that declares a No-Vary-Search config is stored under a primary key that leaves the
+        // query out, so the query, and the config used to canonicalize it, take part in the secondary key.
+        if (NoVarySearch is not null)
+        {
+            stringBuilder.Append('\u001d');
+            stringBuilder.Append(NoVarySearch);
+            stringBuilder.Append('\u001e');
+            stringBuilder.Append(NormalizedQuery);
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
+        Span<byte> hash = stackalloc byte[32];
+        SHA256.HashData(bytes, hash);
+        return Convert.ToHexString(hash);
+    }
+
     /// <summary>Indicates whether two entries share the same secondary key.</summary>
+    /// <remarks>
+    /// Header names are compared case-insensitively (RFC 9110 Section 5.1) whatever the comparer of the
+    /// <see cref="SecondaryKeyHeaders"/>: a store that deserializes an entry gets a case-sensitive dictionary.
+    /// </remarks>
     public static bool HasSameSecondaryKey(HttpCachePersistenceEntry left, HttpCachePersistenceEntry right)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
         if (left.SecondaryKeyMatchNone != right.SecondaryKeyMatchNone)
+            return false;
+
+        if (!string.Equals(left.NoVarySearch, right.NoVarySearch, StringComparison.Ordinal))
+            return false;
+
+        if (!string.Equals(left.NormalizedQuery, right.NormalizedQuery, StringComparison.Ordinal))
             return false;
 
         var leftHeaders = left.SecondaryKeyHeaders;
@@ -138,16 +288,60 @@ public sealed class HttpCachePersistenceEntry
         if (leftCount is 0)
             return true;
 
+        // A case-sensitive dictionary can hold several names that only differ by case, so the headers are compared as
+        // multisets: each header occurs as many times on both sides.
         foreach (var header in leftHeaders!)
         {
-            if (!rightHeaders!.TryGetValue(header.Key, out var value))
+            if (CountHeader(leftHeaders, header) != CountHeader(rightHeaders!, header))
                 return false;
+        }
 
-            if (!string.Equals(header.Value, value, StringComparison.Ordinal))
+        return true;
+
+        static int CountHeader(Dictionary<string, string> headers, KeyValuePair<string, string> header)
+        {
+            var count = 0;
+            foreach (var (key, value) in headers)
+            {
+                if (EqualsIgnoreAsciiCase(key, header.Key) && string.Equals(value, header.Value, StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    // Field names are tokens, which are ASCII. Only the ASCII letters are folded, so that the comparison and the hash
+    // agree on any other character without depending on the casing tables of the runtime.
+    private static bool EqualsIgnoreAsciiCase(string left, string right)
+    {
+        if (left.Length != right.Length)
+            return false;
+
+        for (var i = 0; i < left.Length; i++)
+        {
+            if (ToLowerAscii(left[i]) != ToLowerAscii(right[i]))
                 return false;
         }
 
         return true;
     }
 
+    private static string ToLowerAscii(string value)
+    {
+        if (!value.AsSpan().ContainsAnyInRange('A', 'Z'))
+            return value;
+
+        return string.Create(value.Length, value, static (span, value) =>
+        {
+            for (var i = 0; i < value.Length; i++)
+            {
+                span[i] = ToLowerAscii(value[i]);
+            }
+        });
+    }
+
+    private static char ToLowerAscii(char value) => value is >= 'A' and <= 'Z' ? (char)(value + ('a' - 'A')) : value;
 }

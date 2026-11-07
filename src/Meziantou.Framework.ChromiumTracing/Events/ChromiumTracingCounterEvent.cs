@@ -4,17 +4,18 @@ namespace Meziantou.Framework.ChromiumTracing;
 
 /// <summary>Represents a counter event that displays counter values over time.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs" ref:region="ChromiumTracingCounterEvent_Example" ref:dedent="true">
+/// await using var writer = ChromiumTracingWriter.Create("trace.json");
 /// await writer.WriteEventAsync(new ChromiumTracingCounterEvent
 /// {
 ///     Name = "Memory Usage",
 ///     Category = "system",
 ///     Timestamp = DateTimeOffset.UtcNow,
 ///     ProcessId = Environment.ProcessId,
-///     Arguments = new Dictionary<![CDATA[<string, object?>]]>
+///     Arguments = new Dictionary&lt;string, object?&gt;(StringComparer.Ordinal)
 ///     {
-///         ["bytes"] = 1024 * 1024 * 500
-///     }
+///         ["bytes"] = 1024 * 1024 * 500,
+///     },
 /// });
 /// </code>
 /// </example>

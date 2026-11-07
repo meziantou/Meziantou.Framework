@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lmo": {
+      "identity": {
+        "language": "lmo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

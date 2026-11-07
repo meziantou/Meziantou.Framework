@@ -9,4 +9,11 @@
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="files/*" />
+    <EmbeddedResource Include="files/*-conformance.*">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

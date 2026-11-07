@@ -17,6 +17,17 @@ function Invoke-Ffmpeg {
     if ($LASTEXITCODE -ne 0) {
         throw "ffmpeg failed with exit code $($LASTEXITCODE): ffmpeg $($Arguments -join ' ')"
     }
+
+    # ffmpeg has exited 0 while leaving an empty file behind, and an empty fixture that no test reads is
+    # invisible until someone writes a test against it. The output is checked here instead.
+    $outputPath = $Arguments[-1]
+    if (-not (Test-Path -LiteralPath $outputPath)) {
+        throw "ffmpeg reported success but produced no file: $outputPath"
+    }
+
+    if ((Get-Item -LiteralPath $outputPath).Length -eq 0) {
+        throw "ffmpeg reported success but produced an empty file: $outputPath"
+    }
 }
 
 Get-Command ffmpeg -ErrorAction Stop | Out-Null
@@ -57,6 +68,28 @@ Invoke-Ffmpeg -Arguments @(
     "-metadata", "album=Test Album", "-metadata", "track=3",
     "-metadata", "date=2024", "-metadata", "genre=Rock",
     "-c:a", "libopus", "-b:a", "32k", (Join-Path $testFilesDirectory "basic.opus")
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-c:a", "libopus", "-b:a", "32k", (Join-Path $testFilesDirectory "empty.opus")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=Ünïcödé Títlé", "-metadata", "artist=Àrtïst 日本語",
+    "-c:a", "libopus", "-b:a", "32k", (Join-Path $testFilesDirectory "unicode.opus")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=All Fields Title", "-metadata", "artist=All Fields Artist",
+    "-metadata", "album=All Fields Album", "-metadata", "ALBUMARTIST=All Fields Album Artist",
+    "-metadata", "genre=Electronic", "-metadata", "date=2023", "-metadata", "TRACKNUMBER=5",
+    "-metadata", "TRACKTOTAL=12", "-metadata", "DISCNUMBER=2", "-metadata", "DISCTOTAL=3",
+    "-metadata", "composer=All Fields Composer", "-metadata", "comment=All Fields Comment",
+    "-metadata", "copyright=2023 Test",
+    "-c:a", "libopus", "-b:a", "32k", (Join-Path $testFilesDirectory "all_fields.opus")
+)
 )
 
 Invoke-Ffmpeg -Arguments @(
@@ -263,6 +296,11 @@ Invoke-Ffmpeg -Arguments @(
     "-c:a", "libmp3lame", "-q:a", "9", "-write_id3v2", "0",
     (Join-Path $testFilesDirectory "id3v1_only.mp3")
 )
+
+$emptyFiles = Get-ChildItem -Path $testFilesDirectory -File -Force | Where-Object { $_.Length -eq 0 }
+if ($emptyFiles) {
+    throw "These fixtures are empty: $($emptyFiles.Name -join ', ')"
+}
 
 Write-Host "Done! Generated test files in $testFilesDirectory"
 Get-ChildItem -Path $testFilesDirectory -Force | Sort-Object Name

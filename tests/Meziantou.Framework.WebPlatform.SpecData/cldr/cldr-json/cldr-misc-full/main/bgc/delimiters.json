@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bgc": {
+      "identity": {
+        "language": "bgc"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

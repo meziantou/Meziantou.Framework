@@ -1,19 +1,27 @@
 <Project>
   <PropertyGroup>
     <_MeziantouSharedSourceRootTargetsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'Meziantou.Framework.SnapshotTesting', 'common', 'Meziantou.Framework.SourceRootRegistration.targets'))</_MeziantouSharedSourceRootTargetsPath>
-    <_MeziantouSourceRootGeneratedFileName>InlineSnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
-    <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>
-    <_MeziantouSourceRootAssemblyMetadataName>InlineSnapshotTestingSourceRootMappings</_MeziantouSourceRootAssemblyMetadataName>
-    <_MeziantouSourceRootInitializerClassName>InlineSnapshotTestingSourceRootInitializer</_MeziantouSourceRootInitializerClassName>
   </PropertyGroup>
 
+  <!-- The shared file is next to this one in the NuGet package, and in the SnapshotTesting 'common' folder in the repository -->
   <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets"
-          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
+          Condition="'$(_MeziantouSourceRootRegistrationTargetsImported)' != 'true' and Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
   <Import Project="$(_MeziantouSharedSourceRootTargetsPath)"
-          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
+          Condition="'$(_MeziantouSourceRootRegistrationTargetsImported)' != 'true' and !Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
+
+  <!-- The item is removed first, so importing this file more than once does not register the package twice -->
+  <ItemGroup>
+    <_MeziantouSourceRootRegistration Remove="InlineSnapshotTesting" />
+    <_MeziantouSourceRootRegistration Include="InlineSnapshotTesting" Condition="'$(InlineSnapshotTestingGenerateSourceRoot)' != 'false'">
+      <GeneratedFileName>InlineSnapshotTestingSourceRoot.g.cs</GeneratedFileName>
+      <RegistrationMethod>global::Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.RegisterSourceRootMapping</RegistrationMethod>
+      <AssemblyMetadataName>InlineSnapshotTestingSourceRootMappings</AssemblyMetadataName>
+      <InitializerClassName>InlineSnapshotTestingSourceRootInitializer</InitializerClassName>
+    </_MeziantouSourceRootRegistration>
+  </ItemGroup>
 
   <Target Name="GenerateInlineSnapshotTestingSourceRoots"
-          DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootsCore"
+          DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootFiles"
           BeforeTargets="CoreCompile"
-          Condition="'$(InlineSnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'" />
+          Condition="'$(InlineSnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true' and '$(Language)' == 'C#'" />
 </Project>

@@ -1,7 +1,148 @@
+using System.Buffers;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Text;
+
 namespace Meziantou.Framework.Tests;
 
 public class ValueStringBuilderTests
 {
+    [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region ValueStringBuilder_Usage
+        Span<char> initialBuffer = stackalloc char[64];
+        using var sb = new ValueStringBuilder(initialBuffer);
+
+        sb.Append("Hello");
+        sb.Append(' ');
+        sb.Append("World");
+
+        string text = sb.ToString();
+        Assert.Equal("Hello World", text);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ToStringDisposes()
+    {
+        #region ValueStringBuilder_ToStringDisposes
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("Hello");
+
+        Assert.Equal("Hello", sb.ToString()); // and the builder is now disposed
+        Assert.Equal("", sb.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AsSpan()
+    {
+        #region ValueStringBuilder_AsSpan
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("Hello");
+
+        ReadOnlySpan<char> content = sb.AsSpan(); // the builder is still usable
+        Assert.Equal("Hello", content);
+
+        sb.Append(" World");
+        Assert.Equal("Hello World", sb.AsSpan());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AppendValues()
+    {
+        #region ValueStringBuilder_AppendValues
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+
+        sb.Append('[');
+        sb.Append('=', 3);                      // a character repeated
+        sb.Append("] ".AsSpan());               // a span of characters
+        sb.Append(new Rune(0x1F600));           // a Unicode scalar value, here a surrogate pair
+        sb.Append(' ');
+        sb.AppendSpanFormattable(42, "D5", CultureInfo.InvariantCulture);
+
+        // Interpolated strings are formatted into the builder; pass a format provider to choose the culture
+        sb.Append(CultureInfo.InvariantCulture, $" {1.5:F2} {DateOnly.MinValue:yyyy}");
+
+        Assert.Equal("[===] \U0001F600 00042 1.50 0001", sb.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Edit()
+    {
+        #region ValueStringBuilder_Edit
+        // Not a using declaration: it would make the variable read-only, and Length could not be set
+        var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("Hello World");
+
+        sb.Insert(5, ",");
+        sb.Insert(0, ">> ");
+        sb[3] = 'h';                          // the indexer returns a reference: assign to replace a character
+        Assert.Equal(">> hello, World", sb.AsSpan());
+
+        sb.Length = 9;                        // setting Length truncates the content
+        Assert.Equal(">> hello,", sb.AsSpan());
+
+        sb.Clear();                           // Length is 0 again; the buffer is kept
+        sb.Append("Done");
+
+        // ToString returns the content and disposes the builder
+        Assert.Equal("Done", sb.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AppendSpan()
+    {
+        #region ValueStringBuilder_AppendSpan
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("id=");
+
+        // Reserve 8 characters at the end of the content and write them directly
+        var destination = sb.AppendSpan(8);
+        Assert.True(0xCAFE.TryFormat(destination, out var written, "X8", CultureInfo.InvariantCulture));
+        Assert.Equal(8, written);
+
+        Assert.Equal("id=0000CAFE", sb.AsSpan());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Capacity()
+    {
+        #region ValueStringBuilder_Capacity
+        // Without an initial buffer, the builder rents one of at least 256 characters from ArrayPool<char>.Shared
+        using var sb = new ValueStringBuilder(initialCapacity: 256);
+        Assert.True(sb.Capacity >= 256);
+
+        // Grow once before a series of appends whose total length you know
+        sb.EnsureCapacity(1024);
+        Assert.True(sb.Capacity >= 1024);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_PassByRef()
+    {
+        #region ValueStringBuilder_PassByRef
+        var sb = new ValueStringBuilder(stackalloc char[64]);
+        AppendGreeting(ref sb, "Alice");
+        AppendGreeting(ref sb, "Bob");
+        Assert.Equal("Hello Alice! Hello Bob! ", sb.ToString());
+
+        // A ValueStringBuilder is a struct: pass it by reference, or the method appends to a copy
+        static void AppendGreeting(ref ValueStringBuilder sb, string name)
+        {
+            sb.Append("Hello ");
+            sb.Append(name);
+            sb.Append("! ");
+        }
+        #endregion
+    }
+
     [Fact]
     public void AppendWithStackBuffer()
     {
@@ -22,6 +163,220 @@ public class ValueStringBuilderTests
         sb.Append("0123456789");
 
         Assert.Equal("0123456789", sb.ToString());
+    }
+
+    [Fact]
+    public void InsertGrowsTheBufferAndKeepsTheExistingContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append("end");
+
+        sb.Insert(0, new string('a', 100));
+        sb.Insert(50, '-', 10);
+
+        var expected = new string('a', 50) + new string('-', 10) + new string('a', 50) + "end";
+        Assert.Equal(expected, sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void InsertAtTheEndAppends()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+        sb.Append("ab");
+
+        sb.Insert(2, "cd");
+        sb.Insert(4, '!', 2);
+
+        Assert.Equal("abcd!!", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void InsertNullStringIsANoOp()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+        sb.Append("ab");
+
+        sb.Insert(1, null);
+
+        Assert.Equal("ab", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendRepeatedCharGrowsTheBuffer()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+        sb.Append('a', 0);
+        sb.Append('b', 100);
+
+        Assert.Equal(new string('b', 100), sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendNullStringIsANoOp()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+        sb.Append("ab");
+        sb.Append((string?)null);
+
+        Assert.Equal("ab", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void EnsureCapacityGrowsWithoutLosingContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append("abc");
+
+        sb.EnsureCapacity(500);
+
+        Assert.True(sb.Capacity >= 500);
+        Assert.Equal(3, sb.Length);
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void EnsureCapacityBelowTheCurrentCapacityIsANoOp()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("abc");
+        var capacity = sb.Capacity;
+
+        sb.EnsureCapacity(1);
+
+        Assert.Equal(capacity, sb.Capacity);
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendSpanGrowsTheBufferAndKeepsTheExistingContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append("ab");
+
+        var span = sb.AppendSpan(100);
+        span.Fill('c');
+
+        Assert.Equal("ab" + new string('c', 100), sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void ClearResetsTheLengthButKeepsTheBuffer()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hello");
+        var capacity = sb.Capacity;
+
+        sb.Clear();
+
+        Assert.Equal(0, sb.Length);
+        Assert.Equal(capacity, sb.Capacity);
+
+        sb.Append("world");
+        Assert.Equal("world", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void DisposeIsIdempotent()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hello");
+
+        sb.Dispose();
+        sb.Dispose();
+
+        Assert.Equal(0, sb.Length);
+        Assert.Equal(0, sb.Capacity);
+    }
+
+    [Fact]
+    public void NullTerminateGrowsWhenTheBufferIsFull()
+    {
+        Span<char> initialBuffer = stackalloc char[2];
+        using var sb = new ValueStringBuilder(initialBuffer);
+        sb.Append("ab");
+
+        sb.NullTerminate();
+
+        Assert.Equal(2, sb.Length);
+        Assert.Equal('\0', sb.RawChars[sb.Length]);
+        Assert.Equal("ab", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void BuilderMatchesStringBuilderForRandomOperationSequences()
+    {
+        var random = new Random(20260829);
+        Span<char> runeChars = stackalloc char[2];
+
+        for (var iteration = 0; iteration < 2000; iteration++)
+        {
+            var expected = new StringBuilder();
+            var sb = iteration % 2 == 0
+                ? new ValueStringBuilder(initialCapacity: random.Next(0, 8))
+                : new ValueStringBuilder(new char[random.Next(0, 8)]);
+
+            try
+            {
+                var operations = random.Next(1, 12);
+                for (var i = 0; i < operations; i++)
+                {
+                    switch (random.Next(8))
+                    {
+                        case 0:
+                            var c = (char)('a' + random.Next(26));
+                            sb.Append(c);
+                            expected.Append(c);
+                            break;
+                        case 1:
+                            var s = new string((char)('a' + random.Next(26)), random.Next(0, 30));
+                            sb.Append(s);
+                            expected.Append(s);
+                            break;
+                        case 2:
+                            var repeated = (char)('a' + random.Next(26));
+                            var count = random.Next(0, 30);
+                            sb.Append(repeated, count);
+                            expected.Append(repeated, count);
+                            break;
+                        case 3:
+                            var span = new string((char)('a' + random.Next(26)), random.Next(0, 30));
+                            sb.Append(span.AsSpan());
+                            expected.Append(span);
+                            break;
+                        case 4:
+                            var charIndex = random.Next(0, expected.Length + 1);
+                            var inserted = (char)('a' + random.Next(26));
+                            var insertedCount = random.Next(0, 10);
+                            sb.Insert(charIndex, inserted, insertedCount);
+                            expected.Insert(charIndex, new string(inserted, insertedCount));
+                            break;
+                        case 5:
+                            var stringIndex = random.Next(0, expected.Length + 1);
+                            var insertedString = new string((char)('a' + random.Next(26)), random.Next(0, 20));
+                            sb.Insert(stringIndex, insertedString);
+                            expected.Insert(stringIndex, insertedString);
+                            break;
+                        case 6:
+                            var length = random.Next(0, 20);
+                            sb.AppendSpan(length).Fill('#');
+                            expected.Append('#', length);
+                            break;
+                        default:
+                            var rune = new Rune(random.Next(2) == 0 ? random.Next(0x20, 0xD7FF) : random.Next(0x10000, 0x10FFFF));
+                            sb.Append(rune);
+                            expected.Append(runeChars[..rune.EncodeToUtf16(runeChars)]);
+                            break;
+                    }
+                }
+
+                Assert.Equal(expected.ToString(), sb.AsSpan().ToString());
+            }
+            finally
+            {
+                sb.Dispose();
+            }
+        }
     }
 
     [Fact]
@@ -54,6 +409,187 @@ public class ValueStringBuilderTests
 
         Assert.Equal('\0', sb.RawChars[sb.Length]);
         Assert.Equal("ab", sb.ToString());
+    }
+
+    [Fact]
+    public void ToStringDisposesTheBuilder()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.ToString());
+        Assert.Equal("", sb.ToString());
+        Assert.Equal(0, sb.Length);
+        Assert.Equal(0, sb.Capacity);
+    }
+
+    [Fact]
+    public void AsSpanDoesNotDisposeTheBuilder()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.AsSpan().ToString());
+
+        sb.Append(" world");
+        Assert.Equal("hello world", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void DisposeIsIdempotentAfterToString()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.ToString());
+        sb.Dispose();
+        sb.Dispose();
+    }
+
+    [Fact]
+    public void AsSpanWithLengthReturnsASliceOfTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("ell", sb.AsSpan(1, 3).ToString());
+        Assert.Equal("hello", sb.AsSpan(0, 5).ToString());
+        Assert.Equal("", sb.AsSpan(5, 0).ToString());
+    }
+
+    [Fact]
+    public void AsSpanWithLengthCannotReadPastTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hi");
+
+        // Reading 10 characters would reach into the rented buffer, past the two that were written.
+        Assert.True(sb.Capacity > 10);
+
+        var threw = false;
+        try
+        {
+            _ = sb.AsSpan(0, 10);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            threw = true;
+        }
+
+        Assert.True(threw);
+    }
+
+    [Fact]
+    public void AsSpanWithStartCannotReadPastTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hi");
+
+        var threw = false;
+        try
+        {
+            _ = sb.AsSpan(10);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            threw = true;
+        }
+
+        Assert.True(threw);
+    }
+
+    [Fact]
+    public void LengthRejectsValuesOutsideTheBuffer()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() =>
+        {
+            var b = new ValueStringBuilder(initialCapacity: 16);
+            try
+            {
+                b.Length = -1;
+            }
+            finally
+            {
+                b.Dispose();
+            }
+        }));
+
+        Assert.True(ThrowsArgumentOutOfRange(() =>
+        {
+            var b = new ValueStringBuilder(initialCapacity: 16);
+            try
+            {
+                b.Length = b.Capacity + 1;
+            }
+            finally
+            {
+                b.Dispose();
+            }
+        }));
+
+        var sb = new ValueStringBuilder(initialCapacity: 16);
+        try
+        {
+            sb.Append("abc");
+            sb.Length = sb.Capacity;
+            sb.Length = 0;
+            Assert.Equal(0, sb.Length);
+        }
+        finally
+        {
+            sb.Dispose();
+        }
+    }
+
+    [Fact]
+    public void EnsureCapacityRejectsNegativeValues()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.EnsureCapacity(-1); }));
+    }
+
+    [Fact]
+    public void IndexerRejectsPositionsOutsideTheContent()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("abc"); _ = b[-1]; }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("abc"); _ = b[3]; }));
+
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("abc");
+        Assert.Equal('c', sb[2]);
+    }
+
+    [Fact]
+    public void InsertRejectsPositionsOutsideTheContent()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(3, "x"); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(-1, "x"); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(3, 'x', 1); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(0, 'x', -1); }));
+
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("ab");
+        sb.Insert(2, "c");
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendAndAppendSpanRejectNegativeCounts()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append('x', -1); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); _ = b.AppendSpan(-1); }));
+    }
+
+    private static bool ThrowsArgumentOutOfRange(Action action)
+    {
+        try
+        {
+            action();
+            return false;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return true;
+        }
     }
 
     [Fact]
@@ -102,12 +638,220 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void AppendInterpolatedStringDoesNotShareItsBufferWithTheBuilderWhenAHoleThrows()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 32);
+        try
+        {
+            // The literal forces the handler to grow before the throwing hole is evaluated.
+            sb.Append($"{new string('x', 200)}{ThrowingHole()}");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        var rented = ArrayPool<char>.Shared.Rent(32);
+        try
+        {
+            Assert.False(Unsafe.AreSame(ref sb.GetPinnableReference(), ref rented[0]));
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(rented);
+        }
+
+        sb.Append("still usable");
+        Assert.Equal("still usable", sb.ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringReturnsTheBufferOnlyOnceWhenAHoleThrows()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 32);
+        try
+        {
+            sb.Append($"{new string('x', 200)}{ThrowingHole()}");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        sb.Dispose();
+
+        var first = ArrayPool<char>.Shared.Rent(32);
+        var second = ArrayPool<char>.Shared.Rent(32);
+        try
+        {
+            Assert.NotSame(first, second);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(first);
+            ArrayPool<char>.Shared.Return(second);
+        }
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringLeavesTheBuilderUntouchedWhenAHoleThrows()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 32);
+        sb.Append("before");
+
+        try
+        {
+            sb.Append($"{new string('x', 200)}{ThrowingHole()}");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        Assert.Equal("before", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringGrowsTheBuilderWhenTheResultIsLarger()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+        var value = new string('a', 500);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}|{value}");
+
+        Assert.Equal(value + "|" + value, sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringWorksWithAStackAllocatedBuffer()
+    {
+        Span<char> initialBuffer = stackalloc char[4];
+        using var sb = new ValueStringBuilder(initialBuffer);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{new string('z', 50)}");
+
+        Assert.Equal(new string('z', 50), sb.AsSpan().ToString());
+    }
+
+    private static string ThrowingHole() => throw new InvalidOperationException("boom");
+
+    [Fact]
+    public void AppendInterpolatedStringUsesTryFormatInsteadOfToString()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        var value = new TestSpanFormattable("abc", returnFromTryFormat: true);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}");
+
+        Assert.Equal(1, value.TryFormatCount);
+        Assert.Equal(0, value.ToStringCount);
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringGrowsAndRetriesWhenTryFormatDoesNotFit()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 1);
+        var value = new TestSpanFormattable(new string('a', 400), returnFromTryFormat: true);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}");
+
+        Assert.True(value.TryFormatCount > 1);
+        Assert.Equal(0, value.ToStringCount);
+        Assert.Equal(new string('a', 400), sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringFallsBackToToStringForNonSpanFormattableValues()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        var value = new FormattableOnly("xyz");
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}");
+
+        Assert.Equal(1, value.ToStringCount);
+        Assert.Equal("xyz", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringFormatsSpanFormattableValuesInPlace()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{42}|{2.5}|{DateTime.UnixEpoch:yyyy-MM-dd}|{Guid.Empty}");
+
+        Assert.Equal("42|2.5|1970-01-01|00000000-0000-0000-0000-000000000000", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringPadsSpanFormattableValuesWithoutAllocating()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+
+        sb.Append(CultureInfo.InvariantCulture, $"|{12,6}|{34,-6}|{5,2}|{123456,3}|");
+
+        Assert.Equal("|    12|34    | 5|123456|", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringSupportsNonSpanFormattableValues()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{new NotSpanFormattable(),8}|{new NotSpanFormattable(),-8}|");
+
+        Assert.Equal("    text|text    |", sb.AsSpan().ToString());
+    }
+
+    private sealed class NotSpanFormattable
+    {
+        public override string ToString() => "text";
+    }
+
+    [Fact]
     public void AppendRuneSupportsSurrogatePairs()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 4);
         sb.Append(new Rune(0x1F600));
 
         Assert.Equal("\U0001F600", sb.ToString());
+    }
+
+    [Fact]
+    public void AppendRuneSupportsBasicMultilingualPlaneRunes()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append(new Rune('a'));
+        sb.Append(new Rune(0x00E9));
+        sb.Append(new Rune(0xFFFD));
+
+        Assert.Equal("a\u00E9\uFFFD", sb.AsSpan().ToString());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void AppendRuneGrowsAtBufferBoundaries(int fillCount)
+    {
+        Span<char> initialBuffer = stackalloc char[4];
+        using var sb = new ValueStringBuilder(initialBuffer);
+        sb.Append('x', fillCount);
+
+        sb.Append(new Rune('a'));
+        sb.Append(new Rune(0x1F600));
+
+        Assert.Equal(new string('x', fillCount) + "a\U0001F600", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendRuneFillsTheBufferExactly()
+    {
+        Span<char> initialBuffer = stackalloc char[2];
+        using var sb = new ValueStringBuilder(initialBuffer);
+
+        sb.Append(new Rune(0x1F600));
+
+        Assert.Equal("\U0001F600", sb.AsSpan().ToString());
+        Assert.Equal(2, sb.Length);
     }
 
     [Fact]
@@ -135,6 +879,21 @@ public class ValueStringBuilderTests
         Assert.Equal(1, value.TryFormatCount);
         Assert.Equal(1, value.ToStringCount);
         Assert.Equal("fallback", sb.ToString());
+    }
+
+    private sealed class FormattableOnly : IFormattable
+    {
+        private readonly string _value;
+
+        public FormattableOnly(string value) => _value = value;
+
+        public int ToStringCount { get; private set; }
+
+        public string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            ToStringCount++;
+            return _value;
+        }
     }
 
     private sealed class TestSpanFormattable : ISpanFormattable

@@ -4,6 +4,39 @@ namespace Meziantou.Framework.Yaml.Tests;
 public sealed class EventReaderTests
 {
     [Fact]
+    public void ReadmeExample_EventReader()
+    {
+        #region EventReader_Usage
+        var yaml = """
+            name: first
+            items: [1, 2]
+            ---
+            name: second
+            """;
+
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        var reader = new EventReader(parser);
+
+        var keys = new List<string>();
+        reader.Expect<StreamStart>();
+        while (!reader.Accept<StreamEnd>())
+        {
+            reader.Expect<DocumentStart>();
+            reader.Expect<MappingStart>();
+            while (reader.Allow<MappingEnd>() is null)
+            {
+                keys.Add(reader.Expect<Scalar>().Value);
+                reader.Skip(); // Skip the value, and its children for a collection
+            }
+
+            reader.Expect<DocumentEnd>();
+        }
+
+        Assert.Equal(["name", "items", "name"], keys);
+        #endregion
+    }
+
+    [Fact]
     public void PeekAllowExpectAndSkip_WorkAsExpected()
     {
         const string Yaml = "root:\n  list:\n    - a\n    - b\n  value: 3\n";

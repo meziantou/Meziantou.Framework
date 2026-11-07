@@ -1,0 +1,189 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_polygon_mode Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_polygon_mode/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_polygon_mode"
+        ],
+        "Worker": [
+          "WEBGL_polygon_mode"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_polygon_mode": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_polygon_mode {\n    const GLenum POLYGON_MODE_WEBGL = 0x0B40;\n\n    const GLenum POLYGON_OFFSET_LINE_WEBGL = 0x2A02;\n\n    const GLenum LINE_WEBGL = 0x1B01;\n    const GLenum FILL_WEBGL = 0x1B02;\n\n    undefined polygonModeWEBGL(GLenum face, GLenum mode);\n};",
+        "type": "interface",
+        "name": "WEBGL_polygon_mode",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "POLYGON_MODE_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x0B40"
+            }
+          },
+          {
+            "type": "const",
+            "name": "POLYGON_OFFSET_LINE_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x2A02"
+            }
+          },
+          {
+            "type": "const",
+            "name": "LINE_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x1B01"
+            }
+          },
+          {
+            "type": "const",
+            "name": "FILL_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x1B02"
+            }
+          },
+          {
+            "type": "operation",
+            "name": "polygonModeWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "face",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLenum"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "mode",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLenum"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_polygon_mode"
+      ],
+      "Worker": [
+        "WEBGL_polygon_mode"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_polygon_mode": [
+        "GLenum"
+      ]
+    },
+    "externalDependencies": [
+      "GLenum"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

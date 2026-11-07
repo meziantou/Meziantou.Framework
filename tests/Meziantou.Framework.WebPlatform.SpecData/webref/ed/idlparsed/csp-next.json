@@ -1,0 +1,140 @@
+{
+  "spec": {
+    "title": "Scripting Policy",
+    "url": "https://wicg.github.io/csp-next/scripting-policy.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "ScriptingPolicyViolationType": {
+        "fragment": "enum ScriptingPolicyViolationType {\n  \"externalScript\",\n  \"inlineScript\",\n  \"inlineEventHandler\",\n  \"eval\"\n};",
+        "type": "enum",
+        "name": "ScriptingPolicyViolationType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "externalScript",
+            "href": "https://wicg.github.io/csp-next/scripting-policy.html#dom-scriptingpolicyviolationtype-externalscript"
+          },
+          {
+            "type": "enum-value",
+            "value": "inlineScript",
+            "href": "https://wicg.github.io/csp-next/scripting-policy.html#dom-scriptingpolicyviolationtype-inlinescript"
+          },
+          {
+            "type": "enum-value",
+            "value": "inlineEventHandler",
+            "href": "https://wicg.github.io/csp-next/scripting-policy.html#dom-scriptingpolicyviolationtype-inlineeventhandler"
+          },
+          {
+            "type": "enum-value",
+            "value": "eval",
+            "href": "https://wicg.github.io/csp-next/scripting-policy.html#dom-scriptingpolicyviolationtype-eval"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/csp-next/scripting-policy.html#enumdef-scriptingpolicyviolationtype"
+      },
+      "ScriptingPolicyReportBody": {
+        "fragment": "dictionary ScriptingPolicyReportBody : ReportBody {\n  DOMString     violationType;\n  USVString?    violationURL;\n  USVString?    violationSample;\n  unsigned long lineno;\n  unsigned long colno;\n};",
+        "type": "dictionary",
+        "name": "ScriptingPolicyReportBody",
+        "inheritance": "ReportBody",
+        "members": [
+          {
+            "type": "field",
+            "name": "violationType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "violationURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "violationSample",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "lineno",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "colno",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false
+          }
+        ],
+        "extAttrs": [],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "ScriptingPolicyReportBody": [
+        "ReportBody"
+      ]
+    },
+    "externalDependencies": [
+      "ReportBody"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.1		FALSE	FALSE	FALSE		[Thread]			Table 162
+F	dictionary	1.1		TRUE	TRUE	FALSE				[BeadFirst]	
+I	dictionary	1.1		FALSE	FALSE	FALSE				[DocInfo]	
+Metadata	stream	2.0		FALSE	TRUE	FALSE				[Metadata]	

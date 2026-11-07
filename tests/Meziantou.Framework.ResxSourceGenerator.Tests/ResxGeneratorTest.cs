@@ -122,6 +122,279 @@ public sealed class ResxGeneratorTest
         Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent);
     }
 
+    [Theory]
+    [InlineData("He\"llo")]
+    [InlineData(@"a\tb")]
+    [InlineData(@"Path\To")]
+    [InlineData("Line1\nLine2")]
+    public async Task ResourceNamesWithSpecialCharactersAreEscaped(string name)
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", name), new XElement("value", "Value {0}")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        // The literal must round-trip to the exact key of the resx entry, otherwise the lookup silently returns null
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        var literal = SymbolDisplay.FormatLiteral(name, quote: true);
+        Assert.Contains("GetString(" + literal + ")", fileContent);
+        Assert.Contains(" = " + literal + ";", fileContent);
+    }
+
+    [Fact]
+    public async Task ResourceFileNameWithSpecialCharactersIsEscaped()
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = @"My\Resource""Name",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("new global::System.Resources.ResourceManager(" + SymbolDisplay.FormatLiteral(@"My\Resource""Name", quote: true), fileContent);
+    }
+
+    [Fact]
+    public async Task InlineTypedValueUsesTheTypeAttribute()
+    {
+        // A typed value that is not a file reference carries its type in the type attribute, not in the value
+        var element = new XElement("root",
+            new XElement("data",
+                new XAttribute("name", "MyColor"),
+                new XAttribute("type", "System.Drawing.Color, System.Drawing"),
+                new XElement("value", "Red")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("public static global::System.Drawing.Color? @MyColor", fileContent);
+        Assert.DoesNotContain("global::?", fileContent);
+    }
+
+    [Fact]
+    public async Task ResourceWithUnknownTypeIsSkippedInsteadOfBreakingTheCompilation()
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")),
+            new XElement("data", new XAttribute("name", "Mystery"), new XAttribute("type", ""), new XElement("value", "?")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.DoesNotContain("global::?", fileContent);
+        Assert.Contains("@Sample", fileContent);
+    }
+
+    [Fact]
+    public async Task ResourceNamesMappingToTheSameIdentifierDoNotCollide()
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Hello World"), new XElement("value", "a")),
+            new XElement("data", new XAttribute("name", "Hello-World"), new XElement("value", "b")));
+
+        // GenerateFiles asserts the generated code compiles, which is the point of the test
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        // Both entries must be reachable: "Hello World" sorts first and keeps the name, "Hello-World" is suffixed
+        Assert.Contains("Hello_World", result.GeneratedFileRoot.GetMemberNames());
+        Assert.Contains("Hello_World1", result.GeneratedFileRoot.GetMemberNames());
+
+        // ...and the key type must agree with the resource type on which entry got which name
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("public const string @Hello_World = \"Hello World\";", fileContent);
+        Assert.Contains("public const string @Hello_World1 = \"Hello-World\";", fileContent);
+    }
+
+    [Theory]
+    [InlineData("ResourceManager")]
+    [InlineData("Culture")]
+    [InlineData("GetString")]
+    [InlineData("GetObject")]
+    [InlineData("GetStream")]
+    public async Task ResourceNamesCannotShadowTheGeneratedMembers(string name)
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "a")),
+            new XElement("data", new XAttribute("name", name), new XElement("value", "b")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        // The resource keeps a usable member, and the member the class always declares is untouched
+        var memberNames = result.GeneratedFileRoot.GetMemberNames();
+        Assert.Contains(name, memberNames);
+        Assert.Contains(name + "1", memberNames);
+        Assert.Contains("Sample", memberNames);
+        Assert.Contains("public const string @" + name + " = \"" + name + "\";", result.GeneratedFileRoot.ToFullString());
+    }
+
+    [Fact]
+    public async Task AFormatMethodDoesNotCollideWithAResourceOfTheSameName()
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Hello"), new XElement("value", "Hello {0}!")),
+            new XElement("data", new XAttribute("name", "FormatHello"), new XElement("value", "b")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        // "FormatHello" sorts first and takes the plain name, so Hello's format method is suffixed
+        var memberNames = result.GeneratedFileRoot.GetMemberNames();
+        Assert.Contains("FormatHello", memberNames);
+        Assert.Contains("FormatHello1", memberNames);
+        Assert.Contains("Hello", memberNames);
+    }
+
+    [Fact]
+    public async Task GeneratedCodeQualifiesEveryFrameworkTypeReference()
+    {
+        // A consumer can declare a type or namespace named System, so nothing in the generated code may rely on it
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        for (var index = fileContent.IndexOf("System.", StringComparison.Ordinal); index >= 0; index = fileContent.IndexOf("System.", index + 1, StringComparison.Ordinal))
+        {
+            var qualified = index >= 8 && fileContent.AsSpan(index - 8, 8).SequenceEqual("global::".AsSpan());
+            Assert.True(qualified, "Unqualified reference: " + fileContent[Math.Max(0, index - 40)..Math.Min(fileContent.Length, index + 40)]);
+        }
+    }
+
+    [Fact]
+    public async Task GenerateProperties_WithFormatParameterMetadata()
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var element = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0} from {1}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "name"), new XAttribute("comment", "Name to greet.")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "country"), new XAttribute("typename", "global::System.String"), new XAttribute("comment", "Country name."))));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(global::System.Globalization.CultureInfo? provider, object? name, global::System.String country)", fileContent);
+        Assert.Contains("FormatHelloWorld(object? name, global::System.String country)", fileContent);
+        Assert.Contains("<param name=\"name\">Name to greet.</param>", fileContent);
+        Assert.Contains("<param name=\"country\">Country name.</param>", fileContent);
+        Assert.DoesNotContain("object? arg0", fileContent);
+    }
+
+    [Fact]
+    public async Task GenerateProperties_WithMissingAndExtraFormatParameterMetadata()
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var element = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0} from {1}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "name"), new XAttribute("comment", "Name to greet.")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", ""), new XAttribute("comment", "Fallback parameter.")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "unused"), new XAttribute("comment", "Ignored parameter."))));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(object? name, object? arg1)", fileContent);
+        Assert.Contains("<param name=\"name\">Name to greet.</param>", fileContent);
+        Assert.Contains("<param name=\"arg1\">Fallback parameter.</param>", fileContent);
+        Assert.DoesNotContain("unused", fileContent);
+        Assert.DoesNotContain("Ignored parameter.", fileContent);
+    }
+
+    [Fact]
+    public async Task GenerateProperties_WithFallbackFormatParameterNameCollision()
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var element = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0} from {1}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "arg1")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", ""))));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(object? arg1, object? arg1_)", fileContent);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GenerateProperties_UsesFormatParameterMetadataFromAnyDuplicateEntry(bool parameterMetadataInFirstFile)
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var elementWithoutParameterMetadata = new XElement("root",
+            new XElement("data", new XAttribute("name", "HelloWorld"), new XElement("value", "Hello {0}!")));
+        var elementWithParameterMetadata = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "name"), new XAttribute("typename", "global::System.String"), new XAttribute("comment", "Name to greet."))));
+
+        var firstElement = parameterMetadataInFirstFile ? elementWithParameterMetadata : elementWithoutParameterMetadata;
+        var secondElement = parameterMetadataInFirstFile ? elementWithoutParameterMetadata : elementWithParameterMetadata;
+
+        var result = await GenerateFiles(
+            [
+                ("test.en.resx", firstElement.ToString()),
+                ("test.resx", secondElement.ToString()),
+            ], new OptionProvider
+            {
+                Namespace = "test",
+                ResourceName = "test",
+            });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(global::System.String name)", fileContent);
+        Assert.Contains("<param name=\"name\">Name to greet.</param>", fileContent);
+    }
+
     [Fact]
     public async Task GeneratePropertiesFromMultipleResx()
     {
@@ -170,6 +443,97 @@ public sealed class ResxGeneratorTest
                 Assert.Contains("HelloWorld", fileContent);
                 Assert.Contains("AAA", fileContent);
             });
+    }
+
+    [Fact]
+    public async Task ResxFilesWithSameFileName()
+    {
+        var element1 = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "from Folder1")));
+        var element2 = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "from Folder2")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Folder1" / "Messages.resx", element1.ToString()),
+                (FullPath.GetTempPath() / "proj" / "Folder2" / "Messages.resx", element2.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        Assert.Collection(result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal),
+            tree =>
+            {
+                Assert.Equal("Folder1.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Equal("Test.Folder1", tree.GetRoot(XunitCancellationToken).GetNamespace());
+            },
+            tree =>
+            {
+                Assert.Equal("Folder2.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Equal("Test.Folder2", tree.GetRoot(XunitCancellationToken).GetNamespace());
+            });
+    }
+
+    [Theory]
+    [InlineData("fr")]
+    [InlineData("fil")]
+    [InlineData("fr-FR")]
+    [InlineData("zh-Hans")]
+    [InlineData("sr-Latn-RS")]
+    [InlineData("es-419")]
+    public async Task SatelliteResxFilesAreGroupedWithTheNeutralFile(string culture)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{culture}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        Assert.Equal("Messages.resx.g.cs", result.GeneratedFileName);
+    }
+
+    [Theory]
+    [InlineData("Backup")]
+    [InlineData("v2")]
+    [InlineData("Design")]
+    public async Task NonCultureSuffixesAreTheirOwnResource(string suffix)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{suffix}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        var fileNames = result.GeneratedTrees.Select(tree => Path.GetFileName(tree.FilePath)).Order(StringComparer.Ordinal);
+        Assert.Equal(new[] { $"Messages.{suffix}.resx.g.cs", "Messages.resx.g.cs" }.Order(StringComparer.Ordinal), fileNames);
+    }
+
+    [Fact]
+    public async Task GenerationSucceedsWhenProjectDirIsNotProvided()
+    {
+        // The project directory is only set by the props shipped in the package, so a project referencing the
+        // analyzer directly leaves it unset. The assembly name must not be used as a directory in that case.
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([(FullPath.GetTempPath() / "elsewhere" / "test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("// ResourceName: test", fileContent);
+        Assert.Equal("test.resx.g.cs", result.GeneratedFileName);
     }
 
     [Fact]
@@ -223,10 +587,10 @@ public sealed class ResxGeneratorTest
         };
         var options = new OptionProvider
         {
-            PerFileNamespace = new Dictionary<string, string>(StringComparer.Ordinal)
+            PerFileMetadata = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal)
             {
-                ["test.resx"] = "A",
-                ["test.fr.resx"] = "B",
+                ["test.resx"] = new(StringComparer.Ordinal) { ["Namespace"] = "A" },
+                ["test.fr.resx"] = new(StringComparer.Ordinal) { ["Namespace"] = "B" },
             },
         };
 
@@ -236,6 +600,33 @@ public sealed class ResxGeneratorTest
 
         var diagnostics = await AnalyzeFiles(files, options);
         Assert.Collection(diagnostics, diag => Assert.Equal("MFRG0004", diag.Id));
+    }
+
+    [Fact]
+    public async Task EmptyMetadataIsNotInconsistent()
+    {
+        // MSBuild reports an unset metadata as an empty value, so only the neutral resx file carries the resource name
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var files = new[]
+        {
+            (ResxPath: "test.fr.resx", ResxContent: element.ToString()),
+            (ResxPath: "test.resx", ResxContent: element.ToString()),
+        };
+        var options = new OptionProvider
+        {
+            Namespace = "test",
+            PerFileMetadata = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal)
+            {
+                ["test.resx"] = new(StringComparer.Ordinal) { ["DefaultResourceName"] = "Sample.Test" },
+                ["test.fr.resx"] = new(StringComparer.Ordinal) { ["DefaultResourceName"] = "" },
+            },
+        };
+
+        var result = await GenerateFiles(files, options);
+        Assert.Contains("Sample.Test", result.GeneratedFileRoot.ToFullString());
+
+        var diagnostics = await AnalyzeFiles(files, options);
+        Assert.Empty(diagnostics);
     }
 
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider
@@ -250,7 +641,7 @@ public sealed class ResxGeneratorTest
         public string? Visibility { get; set; }
         public string? GenerateResourcesType { get; set; }
         public string? GenerateKeyNamesType { get; set; }
-        public Dictionary<string, string> PerFileNamespace { get; set; } = new(StringComparer.Ordinal);
+        public Dictionary<string, Dictionary<string, string>> PerFileMetadata { get; set; } = new(StringComparer.Ordinal);
 
         public override AnalyzerConfigOptions GlobalOptions => new Options(this);
 
@@ -287,7 +678,7 @@ public sealed class ResxGeneratorTest
                     return false;
                 }
 
-                if (_path is not null && string.Equals(key, nameof(OptionProvider.Namespace), StringComparison.Ordinal) && _optionProvider.PerFileNamespace.TryGetValue(_path, out value))
+                if (_path is not null && _optionProvider.PerFileMetadata.TryGetValue(_path, out var metadata) && metadata.TryGetValue(key, out value))
                 {
                     return true;
                 }
@@ -337,6 +728,34 @@ file static class Extensions
             .OfType<NamespaceDeclarationSyntax>()
             .Single()
             .Name.WithoutTrivia().ToFullString();
+    }
+
+    public static List<string> GetMemberNames(this SyntaxNode node)
+    {
+        var result = new List<string>();
+        foreach (var member in node.DescendantNodesAndSelf())
+        {
+            switch (member)
+            {
+                case PropertyDeclarationSyntax property:
+                    result.Add(property.Identifier.ValueText);
+                    break;
+
+                case MethodDeclarationSyntax method:
+                    result.Add(method.Identifier.ValueText);
+                    break;
+
+                case FieldDeclarationSyntax field:
+                    foreach (var variable in field.Declaration.Variables)
+                    {
+                        result.Add(variable.Identifier.ValueText);
+                    }
+
+                    break;
+            }
+        }
+
+        return result;
     }
 
     public static bool AreTypesPublic(this SyntaxNode node)

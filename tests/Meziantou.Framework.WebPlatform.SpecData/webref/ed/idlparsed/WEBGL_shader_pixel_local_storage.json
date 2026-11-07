@@ -1,0 +1,816 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_shader_pixel_local_storage Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_shader_pixel_local_storage/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_shader_pixel_local_storage"
+        ],
+        "Worker": [
+          "WEBGL_shader_pixel_local_storage"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_shader_pixel_local_storage": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_shader_pixel_local_storage {\n  const GLenum MAX_PIXEL_LOCAL_STORAGE_PLANES_WEBGL = 0x96E0;\n  const GLenum MAX_COMBINED_DRAW_BUFFERS_AND_PIXEL_LOCAL_STORAGE_PLANES_WEBGL = 0x96E1;\n  const GLenum PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_WEBGL = 0x96E2;\n  const GLenum LOAD_OP_ZERO_WEBGL = 0x96E3;\n  const GLenum LOAD_OP_CLEAR_WEBGL = 0x96E4;\n  const GLenum LOAD_OP_LOAD_WEBGL = 0x96E5;\n  const GLenum STORE_OP_STORE_WEBGL = 0x96E6;\n  const GLenum PIXEL_LOCAL_INTERNAL_FORMAT_WEBGL = 0x96E7;\n  const GLenum PIXEL_LOCAL_TEXTURE_NAME_WEBGL = 0x96E8;\n  const GLenum PIXEL_LOCAL_TEXTURE_LEVEL_WEBGL = 0x96E9;\n  const GLenum PIXEL_LOCAL_TEXTURE_LAYER_WEBGL = 0x96EA;\n  const GLenum PIXEL_LOCAL_USAGE_WEBGL = 0x96EB;\n  const GLenum PIXEL_LOCAL_CLEAR_VALUE_FLOAT_WEBGL = 0x96EC;\n  const GLenum PIXEL_LOCAL_CLEAR_VALUE_INT_WEBGL = 0x96ED;\n  const GLenum PIXEL_LOCAL_CLEAR_VALUE_UNSIGNED_INT_WEBGL = 0x96EE;\n  const GLenum PIXEL_LOCAL_USAGE_ALWAYS_NONCOHERENT_BIT_WEBGL = 0x1;\n  GLboolean isCoherent();\n  undefined framebufferTexturePixelLocalStorageWEBGL(GLint plane,\n                                                     WebGLTexture? texture,\n                                                     GLint level,\n                                                     GLint layer,\n                                                     GLbitfield usage);\n  undefined framebufferPixelLocalClearValuefvWEBGL(GLint plane,\n                                                   Float32List value,\n                                                   optional unsigned long long srcOffset = 0);\n  undefined framebufferPixelLocalClearValueivWEBGL(GLint plane,\n                                                   Int32List value,\n                                                   optional unsigned long long srcOffset = 0);\n  undefined framebufferPixelLocalClearValueuivWEBGL(GLint plane,\n                                                    Uint32List value,\n                                                    optional unsigned long long srcOffset = 0);\n  undefined beginPixelLocalStorageWEBGL(sequence<GLenum> loadops);\n  undefined endPixelLocalStorageWEBGL(sequence<GLenum> storeops);\n  undefined pixelLocalStorageBarrierWEBGL();\n  any getFramebufferPixelLocalStorageParameterWEBGL(GLint plane, GLenum pname);\n};",
+        "type": "interface",
+        "name": "WEBGL_shader_pixel_local_storage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "MAX_PIXEL_LOCAL_STORAGE_PLANES_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E0"
+            }
+          },
+          {
+            "type": "const",
+            "name": "MAX_COMBINED_DRAW_BUFFERS_AND_PIXEL_LOCAL_STORAGE_PLANES_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E1"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E2"
+            }
+          },
+          {
+            "type": "const",
+            "name": "LOAD_OP_ZERO_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E3"
+            }
+          },
+          {
+            "type": "const",
+            "name": "LOAD_OP_CLEAR_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E4"
+            }
+          },
+          {
+            "type": "const",
+            "name": "LOAD_OP_LOAD_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E5"
+            }
+          },
+          {
+            "type": "const",
+            "name": "STORE_OP_STORE_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E6"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_INTERNAL_FORMAT_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E7"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_TEXTURE_NAME_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E8"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_TEXTURE_LEVEL_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96E9"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_TEXTURE_LAYER_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96EA"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_USAGE_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96EB"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_CLEAR_VALUE_FLOAT_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96EC"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_CLEAR_VALUE_INT_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96ED"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_CLEAR_VALUE_UNSIGNED_INT_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x96EE"
+            }
+          },
+          {
+            "type": "const",
+            "name": "PIXEL_LOCAL_USAGE_ALWAYS_NONCOHERENT_BIT_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x1"
+            }
+          },
+          {
+            "type": "operation",
+            "name": "isCoherent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLboolean"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "framebufferTexturePixelLocalStorageWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "plane",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "texture",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "WebGLTexture"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "level",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "layer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "usage",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLbitfield"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "framebufferPixelLocalClearValuefvWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "plane",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Float32List"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "srcOffset",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "framebufferPixelLocalClearValueivWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "plane",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Int32List"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "srcOffset",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "framebufferPixelLocalClearValueuivWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "plane",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Uint32List"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "srcOffset",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "beginPixelLocalStorageWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "loadops",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "GLenum"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "endPixelLocalStorageWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "storeops",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "GLenum"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "pixelLocalStorageBarrierWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "getFramebufferPixelLocalStorageParameterWEBGL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "plane",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "pname",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLenum"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_shader_pixel_local_storage"
+      ],
+      "Worker": [
+        "WEBGL_shader_pixel_local_storage"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_shader_pixel_local_storage": [
+        "GLboolean",
+        "GLint",
+        "WebGLTexture",
+        "GLbitfield",
+        "Float32List",
+        "Int32List",
+        "Uint32List",
+        "GLenum"
+      ]
+    },
+    "externalDependencies": [
+      "GLboolean",
+      "GLint",
+      "WebGLTexture",
+      "GLbitfield",
+      "Float32List",
+      "Int32List",
+      "Uint32List",
+      "GLenum"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

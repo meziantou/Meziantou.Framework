@@ -3,20 +3,25 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of objects using inline snapshots</Description>
+    <PackageTags>snapshot-testing, inline-snapshot, approval-tests, testing, assertions</PackageTags>
     <DefineConstants>$(DefineConstants);MEZIANTOU_INLINE_SNAPSHOT_TESTING</DefineConstants>
-    <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
-    <Version>6.0.2</Version>
-    <NoWarn>$(NoWarn);NU5100</NoWarn>
+    <Version>6.0.21</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.HumanReadableSerializer/Utils/StringUtils.cs" Link="Utils/StringUtils.cs" />
     <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
+    <Compile Include="../Meziantou.Framework.CommandLine/CommandLineBuilder.cs" Link="Utils/CommandLineBuilder.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/BuildServerDetector.cs" Link="Utils/BuildServerDetector.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ContinuousEnvironmentDetector.cs" Link="Utils/ContinuousEnvironmentDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ContinuousTestingDetector.cs" Link="Utils/ContinuousTestingDetector.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/LLMEnvironmentDetector.cs" Link="Utils/LLMEnvironmentDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/CallerContextUtilities.cs" Link="Utils/CallerContextUtilities.cs" />
-    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTools/GitTool.cs" Link="MergeTools/GitTool.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTool.cs" Link="MergeTool.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeToolResult.cs" Link="MergeToolResult.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTools/*.cs" LinkBase="MergeTools" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ScrubberUtilities.cs" Link="Scrubbers/ScrubberUtilities.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/FileInfoExtensions.cs" Link="Utils/FileInfoExtensions.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/ProcessEntry.cs" Link="Utils/ProcessEntry.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/ProcessExtensions.cs" Link="Utils/ProcessExtensions.cs" />
@@ -50,8 +55,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.367">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

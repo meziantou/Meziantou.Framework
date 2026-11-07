@@ -1,0 +1,15 @@
+{
+  "main": {
+    "om": {
+      "identity": {
+        "language": "om"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

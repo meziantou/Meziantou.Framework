@@ -1,0 +1,16 @@
+{
+  "main": {
+    "hr-BA": {
+      "identity": {
+        "language": "hr",
+        "territory": "BA"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

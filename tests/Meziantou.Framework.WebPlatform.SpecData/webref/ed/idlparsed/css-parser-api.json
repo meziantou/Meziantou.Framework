@@ -1,0 +1,1345 @@
+{
+  "spec": {
+    "title": "CSS Parser API",
+    "url": "https://wicg.github.io/css-parser-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "CSSParserAtRule",
+          "CSSParserQualifiedRule",
+          "CSSParserDeclaration",
+          "CSSParserBlock",
+          "CSSParserFunction"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "CSSParserRule",
+          "CSSParserValue"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSStringSource": {
+        "fragment": "typedef (DOMString or ReadableStream) CSSStringSource;",
+        "type": "typedef",
+        "name": "CSSStringSource",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/css-parser-api/#typedefdef-cssstringsource"
+      },
+      "CSSToken": {
+        "fragment": "typedef (DOMString or CSSStyleValue or CSSParserValue) CSSToken;",
+        "type": "typedef",
+        "name": "CSSToken",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSStyleValue"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSParserValue"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/css-parser-api/#typedefdef-csstoken"
+      },
+      "CSSParserOptions": {
+        "fragment": "dictionary CSSParserOptions {\n  object atRules;\n  /* dict of at-rule name => at-rule type\n     (contains decls or contains qualified rules) */\n};",
+        "type": "dictionary",
+        "name": "CSSParserOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "atRules",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparseroptions-atrules"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#dictdef-cssparseroptions"
+      },
+      "CSSParserRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSParserRule {\n  /* Just a superclass. */\n};",
+        "type": "interface",
+        "name": "CSSParserRule",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#cssparserrule"
+      },
+      "CSSParserAtRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSParserAtRule : CSSParserRule {\n  constructor(DOMString name, sequence<CSSToken> prelude, optional sequence<CSSParserRule>? body);\n  readonly attribute DOMString name;\n  readonly attribute FrozenArray<CSSParserValue> prelude;\n  readonly attribute FrozenArray<CSSParserRule>? body;\n  /* nullable to handle at-statements */\n  stringifier;\n};",
+        "type": "interface",
+        "name": "CSSParserAtRule",
+        "inheritance": "CSSParserRule",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "prelude",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSToken"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "body",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSParserRule"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-cssparseratrule"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-name"
+          },
+          {
+            "type": "attribute",
+            "name": "prelude",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSParserValue"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-prelude"
+          },
+          {
+            "type": "attribute",
+            "name": "body",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSParserRule"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-body"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#cssparseratrule"
+      },
+      "CSSParserQualifiedRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSParserQualifiedRule : CSSParserRule {\n  constructor(sequence<CSSToken> prelude, optional sequence<CSSParserRule>? body);\n  readonly attribute FrozenArray<CSSParserValue> prelude;\n  readonly attribute FrozenArray<CSSParserRule> body;\n  stringifier;\n};",
+        "type": "interface",
+        "name": "CSSParserQualifiedRule",
+        "inheritance": "CSSParserRule",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "prelude",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSToken"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "body",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSParserRule"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-cssparserqualifiedrule"
+          },
+          {
+            "type": "attribute",
+            "name": "prelude",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSParserValue"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-prelude"
+          },
+          {
+            "type": "attribute",
+            "name": "body",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSParserRule"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-body"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#cssparserqualifiedrule"
+      },
+      "CSSParserDeclaration": {
+        "fragment": "[Exposed=Window]\ninterface CSSParserDeclaration : CSSParserRule {\n  constructor(DOMString name, optional sequence<CSSParserRule> body);\n  readonly attribute DOMString name;\n  readonly attribute FrozenArray<CSSParserValue> body;\n  stringifier;\n};",
+        "type": "interface",
+        "name": "CSSParserDeclaration",
+        "inheritance": "CSSParserRule",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "body",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSParserRule"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-cssparserdeclaration"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-name"
+          },
+          {
+            "type": "attribute",
+            "name": "body",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSParserValue"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-body"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#cssparserdeclaration"
+      },
+      "CSSParserValue": {
+        "fragment": "[Exposed=Window]\ninterface CSSParserValue {\n  /* Just a superclass. */\n};",
+        "type": "interface",
+        "name": "CSSParserValue",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#cssparservalue"
+      },
+      "CSSParserBlock": {
+        "fragment": "[Exposed=Window]\ninterface CSSParserBlock : CSSParserValue {\n  constructor(DOMString name, sequence<CSSParserValue> body);\n  readonly attribute DOMString name; /* \"[]\", \"{}\", or \"()\" */\n  readonly attribute FrozenArray<CSSParserValue> body;\n  stringifier;\n};",
+        "type": "interface",
+        "name": "CSSParserBlock",
+        "inheritance": "CSSParserValue",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "body",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSParserValue"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserblock-cssparserblock"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserblock-name"
+          },
+          {
+            "type": "attribute",
+            "name": "body",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSParserValue"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserblock-body"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#cssparserblock"
+      },
+      "CSSParserFunction": {
+        "fragment": "[Exposed=Window]\ninterface CSSParserFunction : CSSParserValue {\n  constructor(DOMString name, sequence<sequence<CSSParserValue>> args);\n  readonly attribute DOMString name;\n  readonly attribute FrozenArray<FrozenArray<CSSParserValue>> args;\n  stringifier;\n};",
+        "type": "interface",
+        "name": "CSSParserFunction",
+        "inheritance": "CSSParserValue",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "args",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "CSSParserValue"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserfunction-cssparserfunction"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserfunction-name"
+          },
+          {
+            "type": "attribute",
+            "name": "args",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "FrozenArray",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "attribute-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSParserValue"
+                    }
+                  ]
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/css-parser-api/#dom-cssparserfunction-args"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/css-parser-api/#cssparserfunction"
+      }
+    },
+    "idlExtendedNames": {
+      "CSS": [
+        {
+          "fragment": "partial namespace CSS {\n  Promise<sequence<CSSParserRule>> parseStylesheet(CSSStringSource css, optional CSSParserOptions options = {});\n  Promise<sequence<CSSParserRule>> parseRuleList(CSSStringSource css, optional CSSParserOptions options = {});\n  Promise<CSSParserRule> parseRule(CSSStringSource css, optional CSSParserOptions options = {});\n  Promise<sequence<CSSParserRule>> parseDeclarationList(CSSStringSource css, optional CSSParserOptions options = {});\n  CSSParserDeclaration parseDeclaration(DOMString css, optional CSSParserOptions options = {});\n  CSSToken parseValue(DOMString css);\n  sequence<CSSToken> parseValueList(DOMString css);\n  sequence<sequence<CSSToken>> parseCommaValueList(DOMString css);\n};",
+          "type": "namespace",
+          "name": "CSS",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "parseStylesheet",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "CSSParserRule"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSStringSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSParserOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parsestylesheet"
+            },
+            {
+              "type": "operation",
+              "name": "parseRuleList",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "CSSParserRule"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSStringSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSParserOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parserulelist"
+            },
+            {
+              "type": "operation",
+              "name": "parseRule",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSParserRule"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSStringSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSParserOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parserule"
+            },
+            {
+              "type": "operation",
+              "name": "parseDeclarationList",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "CSSParserRule"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSStringSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSParserOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parsedeclarationlist"
+            },
+            {
+              "type": "operation",
+              "name": "parseDeclaration",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CSSParserDeclaration"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSParserOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parsedeclaration"
+            },
+            {
+              "type": "operation",
+              "name": "parseValue",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CSSToken"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parsevalue"
+            },
+            {
+              "type": "operation",
+              "name": "parseValueList",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSToken"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parsevaluelist"
+            },
+            {
+              "type": "operation",
+              "name": "parseCommaValueList",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "CSSToken"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "css",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/css-parser-api/#dom-css-parsecommavaluelist"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSParserRule",
+        "CSSParserAtRule",
+        "CSSParserQualifiedRule",
+        "CSSParserDeclaration",
+        "CSSParserValue",
+        "CSSParserBlock",
+        "CSSParserFunction"
+      ]
+    },
+    "dependencies": {
+      "CSS": [
+        "CSSParserRule",
+        "CSSStringSource",
+        "CSSParserOptions",
+        "CSSParserDeclaration",
+        "CSSToken"
+      ],
+      "CSSParserOptions": [],
+      "CSSParserRule": [],
+      "CSSParserAtRule": [
+        "CSSParserRule",
+        "CSSToken",
+        "CSSParserValue"
+      ],
+      "CSSParserQualifiedRule": [
+        "CSSParserRule",
+        "CSSToken",
+        "CSSParserValue"
+      ],
+      "CSSParserDeclaration": [
+        "CSSParserRule",
+        "CSSParserValue"
+      ],
+      "CSSParserValue": [],
+      "CSSParserBlock": [
+        "CSSParserValue"
+      ],
+      "CSSParserFunction": [
+        "CSSParserValue"
+      ]
+    },
+    "externalDependencies": [
+      "ReadableStream",
+      "CSSStyleValue",
+      "CSS"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,2 @@
+title: Analyzer
+description: The rules that find string-based path code and the code fixes that convert it to FullPath.

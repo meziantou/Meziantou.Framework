@@ -14,9 +14,10 @@ A .NET library for generating Chromium Trace Event Format files that can be visu
 
 ### Basic Example
 
-```csharp
-using Meziantou.Framework.ChromiumTracing;
+The types are in the `Meziantou.Framework.ChromiumTracing` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_BasicExample;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Create a writer
 await using var writer = ChromiumTracingWriter.Create("trace.json");
 
@@ -32,19 +33,23 @@ await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
     Arguments = new Dictionary<string, object?>
     {
         ["result"] = "success",
-        ["count"] = 42
-    }
+        ["count"] = 42,
+    },
 });
 ```
+<!-- endref -->
 
 The trace file can be viewed by opening `chrome://tracing` in Chrome or Edge and loading the generated file.
 
 ### Event Types
 
+The following examples write to the `writer` created in the basic example.
+
 #### Duration Events
 
 Track the beginning and end of operations separately:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_DurationEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Begin event
 await writer.WriteEventAsync(new ChromiumTracingDurationBeginEvent
@@ -53,7 +58,7 @@ await writer.WriteEventAsync(new ChromiumTracingDurationBeginEvent
     Category = "compute",
     Timestamp = DateTimeOffset.UtcNow,
     ProcessId = Environment.ProcessId,
-    ThreadId = Environment.CurrentManagedThreadId
+    ThreadId = Environment.CurrentManagedThreadId,
 });
 
 // ... do work ...
@@ -65,15 +70,21 @@ await writer.WriteEventAsync(new ChromiumTracingDurationEndEvent
     Category = "compute",
     Timestamp = DateTimeOffset.UtcNow,
     ProcessId = Environment.ProcessId,
-    ThreadId = Environment.CurrentManagedThreadId
+    ThreadId = Environment.CurrentManagedThreadId,
 });
 ```
+<!-- endref -->
 
 #### Complete Events
 
 Track an operation with a single event (includes start time and duration):
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_CompleteEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var startTime = DateTimeOffset.UtcNow;
+
+// ... do work ...
+
 await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
 {
     Name = "Complete Operation",
@@ -81,14 +92,16 @@ await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
     Timestamp = startTime,
     Duration = TimeSpan.FromMilliseconds(200),
     ProcessId = Environment.ProcessId,
-    ThreadId = Environment.CurrentManagedThreadId
+    ThreadId = Environment.CurrentManagedThreadId,
 });
 ```
+<!-- endref -->
 
 #### Instant Events
 
 Mark a single point in time:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_InstantEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 await writer.WriteEventAsync(new ChromiumTracingInstantEvent
 {
@@ -97,14 +110,16 @@ await writer.WriteEventAsync(new ChromiumTracingInstantEvent
     Timestamp = DateTimeOffset.UtcNow,
     Scope = ChromiumTracingInstantEventScope.Thread, // Global, Process, or Thread
     ProcessId = Environment.ProcessId,
-    ThreadId = Environment.CurrentManagedThreadId
+    ThreadId = Environment.CurrentManagedThreadId,
 });
 ```
+<!-- endref -->
 
 #### Counter Events
 
 Display counter values over time:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_CounterEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 await writer.WriteEventAsync(new ChromiumTracingCounterEvent
 {
@@ -114,15 +129,17 @@ await writer.WriteEventAsync(new ChromiumTracingCounterEvent
     ProcessId = Environment.ProcessId,
     Arguments = new Dictionary<string, object?>
     {
-        ["bytes"] = 1024 * 1024 * 500 // 500 MB
-    }
+        ["bytes"] = 1024 * 1024 * 500, // 500 MB
+    },
 });
 ```
+<!-- endref -->
 
 #### Async Events
 
 Track asynchronous operations:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_AsyncEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Start async operation
 await writer.WriteEventAsync(new ChromiumTracingAsyncBeginEvent
@@ -131,7 +148,7 @@ await writer.WriteEventAsync(new ChromiumTracingAsyncBeginEvent
     Category = "async",
     Timestamp = DateTimeOffset.UtcNow,
     Id = 123, // Unique ID for this async operation
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // End async operation
@@ -141,7 +158,7 @@ await writer.WriteEventAsync(new ChromiumTracingAsyncEndEvent
     Category = "async",
     Timestamp = DateTimeOffset.UtcNow,
     Id = 123, // Same ID as begin event
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // Instant async event
@@ -151,14 +168,16 @@ await writer.WriteEventAsync(new ChromiumTracingAsyncInstantEvent
     Category = "async",
     Timestamp = DateTimeOffset.UtcNow,
     Id = 123,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 ```
+<!-- endref -->
 
 #### Flow Events
 
 Visualize flow between events:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_FlowEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Start flow
 await writer.WriteEventAsync(new ChromiumTracingFlowBeginEvent
@@ -166,7 +185,7 @@ await writer.WriteEventAsync(new ChromiumTracingFlowBeginEvent
     Name = "Request Flow",
     Category = "network",
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // Flow step
@@ -175,7 +194,7 @@ await writer.WriteEventAsync(new ChromiumTracingFlowStepEvent
     Name = "Request Flow",
     Category = "network",
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // End flow
@@ -184,14 +203,16 @@ await writer.WriteEventAsync(new ChromiumTracingFlowEndEvent
     Name = "Request Flow",
     Category = "network",
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 ```
+<!-- endref -->
 
 #### Object Events
 
 Track object lifecycle:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_ObjectEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Object created
 await writer.WriteEventAsync(new ChromiumTracingObjectCreatedEvent
@@ -200,7 +221,7 @@ await writer.WriteEventAsync(new ChromiumTracingObjectCreatedEvent
     Category = "objects",
     Timestamp = DateTimeOffset.UtcNow,
     Id = "obj-1",
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // Object snapshot
@@ -213,8 +234,8 @@ await writer.WriteEventAsync(new ChromiumTracingObjectSnapshotEvent
     ProcessId = Environment.ProcessId,
     Arguments = new Dictionary<string, object?>
     {
-        ["state"] = "active"
-    }
+        ["state"] = "active",
+    },
 });
 
 // Object destroyed
@@ -224,69 +245,70 @@ await writer.WriteEventAsync(new ChromiumTracingObjectDestroyedEvent
     Category = "objects",
     Timestamp = DateTimeOffset.UtcNow,
     Id = "obj-1",
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 ```
+<!-- endref -->
 
 #### Metadata Events
 
 Add process and thread names for better visualization:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_MetadataEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Set process name
 await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessName(
     Environment.ProcessId,
-    "My Application"
-));
+    "My Application"));
 
 // Set process labels
 await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessLabels(
     Environment.ProcessId,
-    "label1", "label2"
-));
+    "label1", "label2"));
 
 // Set process sort index
 await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessSortIndex(
     Environment.ProcessId,
-    1
-));
+    1));
 
 // Set thread name
 await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ThreadName(
     Environment.ProcessId,
     Environment.CurrentManagedThreadId,
-    "Main Thread"
-));
+    "Main Thread"));
 
 // Set thread sort index
 await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ThreadSortIndex(
     Environment.ProcessId,
     Environment.CurrentManagedThreadId,
-    0
-));
+    0));
 ```
+<!-- endref -->
 
 #### Memory Dump Events
 
 Track memory allocations:
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_MemoryDumpEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Process memory dump
 await writer.WriteEventAsync(new ChromiumTracingMemoryDumpProcessEvent
 {
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // Global memory dump
 await writer.WriteEventAsync(new ChromiumTracingMemoryDumpGlobalEvent
 {
-    Timestamp = DateTimeOffset.UtcNow
+    Timestamp = DateTimeOffset.UtcNow,
 });
 ```
+<!-- endref -->
 
 #### Other Events
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_OtherEvents;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Mark event
 await writer.WriteEventAsync(new ChromiumTracingMarkEvent
@@ -294,14 +316,14 @@ await writer.WriteEventAsync(new ChromiumTracingMarkEvent
     Name = "Mark Point",
     Category = "marks",
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // Clock sync event
 await writer.WriteEventAsync(new ChromiumTracingClockSyncEvent
 {
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 // Context events (for tracking nested scopes)
@@ -310,7 +332,7 @@ await writer.WriteEventAsync(new ChromiumTracingContextBeginEvent
     Name = "Context",
     Category = "context",
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 
 await writer.WriteEventAsync(new ChromiumTracingContextEndEvent
@@ -318,28 +340,30 @@ await writer.WriteEventAsync(new ChromiumTracingContextEndEvent
     Name = "Context",
     Category = "context",
     Timestamp = DateTimeOffset.UtcNow,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
 });
 ```
+<!-- endref -->
 
 ### Compression
 
-Create GZip-compressed trace files to reduce file size:
+Create GZip-compressed trace files to reduce file size (`CompressionLevel` is in the `System.IO.Compression` namespace):
 
+<!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_Compression;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Create compressed file
 await using var writer = ChromiumTracingWriter.CreateGzip(
     "trace.json.gz",
-    CompressionLevel.Fastest
-);
+    CompressionLevel.Fastest);
 
 await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
 {
     Name = "Operation",
     Timestamp = DateTimeOffset.UtcNow,
-    Duration = TimeSpan.FromMilliseconds(100)
+    Duration = TimeSpan.FromMilliseconds(100),
 });
 ```
+<!-- endref -->
 
 ## Viewing Traces
 

@@ -8,11 +8,11 @@ public sealed class HarBrowser
 {
     /// <summary>Gets or sets the name of the browser.</summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; } = "";
+    public string? Name { get; set; } = "";
 
     /// <summary>Gets or sets the version of the browser.</summary>
     [JsonPropertyName("version")]
-    public string Version { get; set; } = "";
+    public string? Version { get; set; } = "";
 
     /// <summary>Gets or sets a comment provided by the user or the application.</summary>
     [JsonPropertyName("comment")]

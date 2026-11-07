@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-FM": {
+      "identity": {
+        "language": "en",
+        "territory": "FM"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

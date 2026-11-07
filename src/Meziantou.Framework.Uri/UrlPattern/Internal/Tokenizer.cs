@@ -13,7 +13,7 @@ internal ref struct Tokenizer
     private readonly List<Token> _tokenList;
     private int _index;
     private int _nextIndex;
-    private char _codePoint;
+    private int _codePoint;
 
     public Tokenizer(string input, TokenizePolicy policy)
     {
@@ -22,7 +22,7 @@ internal ref struct Tokenizer
         _tokenList = [];
         _index = 0;
         _nextIndex = 0;
-        _codePoint = '\0';
+        _codePoint = 0;
     }
 
     /// <summary>Tokenizes the input pattern string.</summary>
@@ -232,8 +232,11 @@ internal ref struct Tokenizer
     /// </remarks>
     private void GetNextCodePoint()
     {
-        _codePoint = _input[_nextIndex];
-        _nextIndex++;
+        // A pattern string is iterated by code point, so a surrogate pair counts as one step. An unpaired
+        // surrogate decodes to U+FFFD, which matches none of the pattern syntax, and still advances by one
+        Rune.DecodeFromUtf16(_input.AsSpan(_nextIndex), out var rune, out var charsConsumed);
+        _codePoint = rune.Value;
+        _nextIndex += charsConsumed;
     }
 
     /// <summary>Seeks to a specific position and gets the next code point.</summary>
@@ -292,20 +295,50 @@ internal ref struct Tokenizer
 
     /// <summary>Determines if a code point is valid for a name.</summary>
     /// <remarks>
+    /// A name is an ECMAScript identifier, so it is the IdentifierStart set that opens it and the wider
+    /// IdentifierPart set that continues it.
     /// <see href="https://urlpattern.spec.whatwg.org/#is-a-valid-name-code-point">WHATWG URL Pattern Spec - Is a valid name code point</see>
     /// </remarks>
-    private static bool IsValidNameCodePoint(char codePoint, bool first)
+    private static bool IsValidNameCodePoint(int codePoint, bool first)
     {
-        // If first is true return the result of checking if code point is contained in the IdentifierStart set of code points.
-        // Otherwise return the result of checking if code point is contained in the IdentifierPart set of code points.
-        // Simplified check using common identifier characters
-        if (first)
-        {
-            return char.IsLetter(codePoint) || codePoint == '_' || codePoint == '$';
-        }
+        // IdentifierStartChar is ID_Start plus "$" and "_"; IdentifierPartChar adds ID_Continue plus the
+        // zero-width non-joiner and the zero-width joiner
+        if (codePoint is '$' or '_')
+            return true;
 
-        return char.IsLetterOrDigit(codePoint) || codePoint == '_' || codePoint == '$';
+        var category = CharUnicodeInfo.GetUnicodeCategory(codePoint);
+        var isIdentifierStart = category
+            is UnicodeCategory.UppercaseLetter
+            or UnicodeCategory.LowercaseLetter
+            or UnicodeCategory.TitlecaseLetter
+            or UnicodeCategory.ModifierLetter
+            or UnicodeCategory.OtherLetter
+            or UnicodeCategory.LetterNumber
+            || IsOtherIdStart(codePoint);
+
+        if (first || isIdentifierStart)
+            return isIdentifierStart;
+
+        return category
+            is UnicodeCategory.NonSpacingMark
+            or UnicodeCategory.SpacingCombiningMark
+            or UnicodeCategory.DecimalDigitNumber
+            or UnicodeCategory.ConnectorPunctuation
+            || codePoint is 0x200C or 0x200D
+            || IsOtherIdContinue(codePoint);
     }
 
-    private static bool IsAscii(char codePoint) => codePoint <= 127;
+    /// <summary>The code points the Other_ID_Start property adds to the letter categories.</summary>
+    private static bool IsOtherIdStart(int codePoint)
+    {
+        return codePoint is 0x1885 or 0x1886 or 0x2118 or 0x212E or 0x309B or 0x309C;
+    }
+
+    /// <summary>The code points the Other_ID_Continue property adds to the mark and digit categories.</summary>
+    private static bool IsOtherIdContinue(int codePoint)
+    {
+        return codePoint is 0x00B7 or 0x0387 or 0x19DA or (>= 0x1369 and <= 0x1371);
+    }
+
+    private static bool IsAscii(int codePoint) => codePoint <= 127;
 }

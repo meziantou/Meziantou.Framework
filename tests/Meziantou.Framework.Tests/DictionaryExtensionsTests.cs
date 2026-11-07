@@ -54,4 +54,72 @@ public sealed class DictionaryExtensionsTests
         Assert.False(dict.TryGetValue("key2", out _));
         Assert.Equal(43, dict["key"]);
     }
+
+    [Fact]
+    public void GetOrAddFactory_ThrowingFactoryDoesNotAddTheKey()
+    {
+        var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        Assert.Throws<InvalidOperationException>(() => dict.GetOrAdd("key", _ => throw new InvalidOperationException()));
+        Assert.DoesNotContain("key", dict);
+
+        Assert.Equal("recovered", dict.GetOrAdd("key", _ => "recovered"));
+        Assert.Equal("recovered", dict["key"]);
+    }
+
+    [Fact]
+    public void GetOrAddFactory_StoresTheValueWhenTheFactoryMutatesTheDictionary()
+    {
+        var dict = new Dictionary<int, string>();
+
+        var result = dict.GetOrAdd(0, _ =>
+        {
+            for (var i = 1; i <= 64; i++)
+            {
+                dict[i] = "filler";
+            }
+
+            return "computed";
+        });
+
+        Assert.Equal("computed", result);
+        Assert.Equal("computed", dict[0]);
+    }
+
+    [Fact]
+    public void TryUpdateFactory_StoresTheValueWhenTheFactoryMutatesTheDictionary()
+    {
+        var dict = new Dictionary<int, string>
+        {
+            [0] = "initial",
+        };
+
+        var result = dict.TryUpdate(0, (_, _) =>
+        {
+            for (var i = 1; i <= 64; i++)
+            {
+                dict[i] = "filler";
+            }
+
+            return "updated";
+        });
+
+        Assert.True(result);
+        Assert.Equal("updated", dict[0]);
+    }
+
+    [Fact]
+    public void Documentation_GetOrAdd()
+    {
+        #region DictionaryExtensions_GetOrAdd
+        var cache = new Dictionary<string, int>(StringComparer.Ordinal);
+        Assert.Equal(5, cache.GetOrAdd("hello", key => key.Length));
+        Assert.Equal(5, cache.GetOrAdd("hello", key => throw new InvalidOperationException("Not called")));
+
+        // TryUpdate only changes existing keys
+        Assert.True(cache.TryUpdate("hello", (key, value) => value * 2));
+        Assert.False(cache.TryUpdate("missing", 1));
+        Assert.Equal(10, cache["hello"]);
+        #endregion
+    }
 }

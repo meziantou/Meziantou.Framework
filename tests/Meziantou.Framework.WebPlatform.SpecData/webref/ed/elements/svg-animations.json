@@ -1,0 +1,33 @@
+{
+  "spec": {
+    "title": "SVG Animations",
+    "url": "https://svgwg.org/specs/animations/"
+  },
+  "elements": [
+    {
+      "name": "animate",
+      "href": "https://svgwg.org/specs/animations/#elementdef-animate",
+      "interface": "SVGAnimateElement"
+    },
+    {
+      "name": "set",
+      "href": "https://svgwg.org/specs/animations/#elementdef-set",
+      "interface": "SVGSetElement"
+    },
+    {
+      "name": "animateMotion",
+      "href": "https://svgwg.org/specs/animations/#elementdef-animateMotion",
+      "interface": "SVGAnimateMotionElement"
+    },
+    {
+      "name": "mpath",
+      "href": "https://svgwg.org/specs/animations/#elementdef-mpath",
+      "interface": "SVGMPathElement"
+    },
+    {
+      "name": "animateTransform",
+      "href": "https://svgwg.org/specs/animations/#elementdef-animateTransform",
+      "interface": "SVGAnimateTransformElement"
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.Json;
 using Meziantou.Framework.HttpArchive;
 
 namespace Meziantou.Framework.Http.Recording;
@@ -5,7 +7,13 @@ namespace Meziantou.Framework.Http.Recording;
 /// <summary>Stores recorded HTTP entries in HAR (HTTP Archive) 1.2 format.</summary>
 public sealed class HarHttpRecordingStore : IHttpRecordingStore
 {
-    private static readonly System.Text.UTF8Encoding Utf8EncodingThrowOnInvalid = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    /// <summary>HAR 1.2 uses -1 for "information not available". 0 is a factual claim that tooling will plot.</summary>
+    private const long UnknownSize = -1;
+
+    private static readonly UTF8Encoding Utf8EncodingThrowOnInvalid = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly JsonElement Base64EncodingValue = CreateBase64EncodingValue();
+    private static readonly string CreatorVersion = GetCreatorVersion();
+
     private readonly string _filePath;
 
     public HarHttpRecordingStore(string filePath)
@@ -22,169 +30,158 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             return [];
         }
 
-        await using var stream = File.OpenRead(_filePath);
-        var doc = await HarDocument.ParseAsync(stream, cancellationToken).ConfigureAwait(false);
+        HarDocument doc;
+        await using (var stream = File.OpenRead(_filePath))
+        {
+            try
+            {
+                doc = await HarDocument.ParseAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidDataException($"The recording file '{_filePath}' is not a valid HAR document. It may have been truncated by an interrupted save.", ex);
+            }
+        }
 
-        var entries = new List<HttpRecordingEntry>(doc.Log.Entries.Count);
-        foreach (var harEntry in doc.Log.Entries)
+        if (doc.Log?.Entries is not { } harEntries)
+        {
+            throw new InvalidDataException($"The recording file '{_filePath}' has no 'log.entries' array. Delete it to start a new recording.");
+        }
+
+        var entries = new List<HttpRecordingEntry>(harEntries.Count);
+        foreach (var harEntry in harEntries)
         {
             entries.Add(ConvertFromHarEntry(harEntry));
         }
 
+        HttpRecordingStoreHelpers.ValidateEntries(entries, _filePath);
         return entries;
     }
 
     /// <inheritdoc />
-    public async ValueTask SaveAsync(IReadOnlyList<HttpRecordingEntry> entries, CancellationToken cancellationToken)
+    public ValueTask SaveAsync(IReadOnlyList<HttpRecordingEntry> entries, CancellationToken cancellationToken)
     {
-        var directory = Path.GetDirectoryName(_filePath);
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        ArgumentNullException.ThrowIfNull(entries);
 
-        var doc = new HarDocument();
-        doc.Log.Version = "1.2";
-        doc.Log.Creator = new HarCreator { Name = "Meziantou.Framework.Http.Recording", Version = "1.0.0" };
-
+        var harEntries = new List<HarEntry>(entries.Count);
         foreach (var entry in entries)
         {
-            doc.Log.Entries.Add(ConvertToHarEntry(entry));
+            harEntries.Add(ConvertToHarEntry(entry));
         }
 
-        await using var stream = File.Create(_filePath);
-        await doc.WriteToAsync(stream, indented: true, cancellationToken).ConfigureAwait(false);
+        var doc = new HarDocument
+        {
+            Log = new HarLog
+            {
+                Version = "1.2",
+                Creator = new HarCreator { Name = "Meziantou.Framework.Http.Recording", Version = CreatorVersion },
+                Entries = harEntries,
+            },
+        };
+
+        return HttpRecordingStoreHelpers.WriteAtomicallyAsync(
+            _filePath,
+            async (stream, token) => await doc.WriteToAsync(stream, indented: true, token).ConfigureAwait(false),
+            cancellationToken);
     }
 
     private static HttpRecordingEntry ConvertFromHarEntry(HarEntry harEntry)
     {
+        var request = harEntry.Request;
+        var response = harEntry.Response;
+
         var entry = new HttpRecordingEntry
         {
-            Method = harEntry.Request.Method,
-            RequestUri = harEntry.Request.Url,
-            StatusCode = harEntry.Response.Status,
+            Method = request?.Method ?? "",
+            RequestUri = request?.Url ?? "",
+            StatusCode = response?.Status ?? 0,
+            ReasonPhrase = string.IsNullOrEmpty(response?.StatusText) ? null : response.StatusText,
+            HttpVersion = ParseHttpVersion(response?.HttpVersion),
             RecordedAt = harEntry.StartedDateTime,
+            RequestHeaders = ConvertFromHarHeaders(request?.Headers),
+            ResponseHeaders = ConvertFromHarHeaders(response?.Headers),
         };
 
-        // Request headers
-        if (harEntry.Request.Headers.Count > 0)
-        {
-            entry.RequestHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-            foreach (var header in harEntry.Request.Headers)
-            {
-                if (entry.RequestHeaders.TryGetValue(header.Name, out var existing))
-                {
-                    entry.RequestHeaders[header.Name] = [.. existing, header.Value];
-                }
-                else
-                {
-                    entry.RequestHeaders[header.Name] = [header.Value];
-                }
-            }
-        }
-
         // Request body
-        if (harEntry.Request.PostData.TryGetRawData(out var requestBody))
+        if (request?.PostData.TryGetRawData(out var requestBody) is true)
         {
             entry.RequestBody = requestBody;
         }
 
-        // Response headers
-        if (harEntry.Response.Headers.Count > 0)
+        // Response body. Uses the same helper as the request side: it reports an unrecognized encoding or malformed
+        // base64 as "no body" instead of throwing or silently returning the undecoded text as bytes.
+        if (response?.Content.TryGetRawData(out var responseBody) is true)
         {
-            entry.ResponseHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-            foreach (var header in harEntry.Response.Headers)
-            {
-                if (entry.ResponseHeaders.TryGetValue(header.Name, out var existing))
-                {
-                    entry.ResponseHeaders[header.Name] = [.. existing, header.Value];
-                }
-                else
-                {
-                    entry.ResponseHeaders[header.Name] = [header.Value];
-                }
-            }
-        }
-
-        // Response body
-        if (harEntry.Response.Content.Text is not null)
-        {
-            if (string.Equals(harEntry.Response.Content.Encoding, "base64", StringComparison.OrdinalIgnoreCase))
-            {
-                entry.ResponseBody = Convert.FromBase64String(harEntry.Response.Content.Text);
-            }
-            else
-            {
-                entry.ResponseBody = System.Text.Encoding.UTF8.GetBytes(harEntry.Response.Content.Text);
-            }
+            entry.ResponseBody = responseBody;
         }
 
         return entry;
     }
 
+    /// <summary>Groups the archived headers by name. Headers without a name are skipped: there is nothing to look them up by.</summary>
+    private static Dictionary<string, string[]>? ConvertFromHarHeaders(List<HarHeader>? headers)
+    {
+        if (headers is null || headers.Count is 0)
+            return null;
+
+        var result = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in headers)
+        {
+            if (header.Name is not { } name)
+                continue;
+
+            var value = header.Value ?? "";
+            result[name] = result.TryGetValue(name, out var existing) ? [.. existing, value] : [value];
+        }
+
+        return result.Count is 0 ? null : result;
+    }
+
     private static HarEntry ConvertToHarEntry(HttpRecordingEntry entry)
     {
-        var harEntry = new HarEntry
+        var request = new HarRequest
         {
-            StartedDateTime = entry.RecordedAt,
-            Request =
-            {
-                Method = entry.Method,
-                Url = entry.RequestUri,
-            },
-            Response =
-            {
-                Status = entry.StatusCode,
-                StatusText = "",
-            },
+            Method = entry.Method,
+            Url = entry.RequestUri,
+            Headers = ConvertToHarHeaders(entry.RequestHeaders),
+            HeadersSize = UnknownSize,
+            BodySize = entry.RequestBody?.Length ?? UnknownSize,
         };
 
-        // Request headers
-        if (entry.RequestHeaders is not null)
+        var response = new HarResponse
         {
-            foreach (var (name, values) in entry.RequestHeaders)
-            {
-                foreach (var value in values)
-                {
-                    harEntry.Request.Headers.Add(new HarHeader { Name = name, Value = value });
-                }
-            }
-        }
+            Status = entry.StatusCode,
+            StatusText = entry.ReasonPhrase ?? "",
+            HttpVersion = entry.HttpVersion is { } version ? "HTTP/" + version : "",
+            Headers = ConvertToHarHeaders(entry.ResponseHeaders),
+            HeadersSize = UnknownSize,
+            BodySize = entry.ResponseBody?.Length ?? UnknownSize,
+        };
 
         // Request body
         if (entry.RequestBody is { Length: > 0 })
         {
             var contentType = GetContentType(entry.RequestHeaders);
 
-            harEntry.Request.PostData = new HarPostData
+            var postData = new HarPostData
             {
                 MimeType = contentType,
             };
 
             if (IsTextMediaType(contentType) && TryDecodeUtf8(entry.RequestBody, out var requestText))
             {
-                harEntry.Request.PostData.Text = requestText;
+                postData.Text = requestText;
             }
             else
             {
-                harEntry.Request.PostData.Text = Convert.ToBase64String(entry.RequestBody);
-                harEntry.Request.PostData.ExtensionData = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)
+                postData.Text = Convert.ToBase64String(entry.RequestBody);
+                postData.ExtensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
                 {
-                    [HarPostDataExtensions.DefaultEncodingExtensionName] = System.Text.Json.JsonDocument.Parse("\"base64\"").RootElement.Clone(),
+                    [HarPostDataExtensions.DefaultEncodingExtensionName] = Base64EncodingValue,
                 };
             }
-        }
 
-        // Response headers
-        if (entry.ResponseHeaders is not null)
-        {
-            foreach (var (name, values) in entry.ResponseHeaders)
-            {
-                foreach (var value in values)
-                {
-                    harEntry.Response.Headers.Add(new HarHeader { Name = name, Value = value });
-                }
-            }
+            request.PostData = postData;
         }
 
         // Response body
@@ -192,7 +189,7 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
         {
             var mimeType = GetContentType(entry.ResponseHeaders);
 
-            harEntry.Response.Content = new HarContent
+            var content = new HarContent
             {
                 Size = entry.ResponseBody.Length,
                 MimeType = mimeType,
@@ -200,16 +197,41 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
 
             if (IsTextMediaType(mimeType) && TryDecodeUtf8(entry.ResponseBody, out var responseText))
             {
-                harEntry.Response.Content.Text = responseText;
+                content.Text = responseText;
             }
             else
             {
-                harEntry.Response.Content.Encoding = "base64";
-                harEntry.Response.Content.Text = Convert.ToBase64String(entry.ResponseBody);
+                content.Encoding = "base64";
+                content.Text = Convert.ToBase64String(entry.ResponseBody);
+            }
+
+            response.Content = content;
+        }
+
+        return new HarEntry
+        {
+            StartedDateTime = entry.RecordedAt,
+            Time = UnknownSize,
+            Request = request,
+            Response = response,
+        };
+    }
+
+    private static List<HarHeader> ConvertToHarHeaders(Dictionary<string, string[]>? headers)
+    {
+        var result = new List<HarHeader>();
+        if (headers is not null)
+        {
+            foreach (var (name, values) in headers)
+            {
+                foreach (var value in values)
+                {
+                    result.Add(new HarHeader { Name = name, Value = value });
+                }
             }
         }
 
-        return harEntry;
+        return result;
     }
 
     private static string GetContentType(Dictionary<string, string[]>? headers)
@@ -247,11 +269,40 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             text = Utf8EncodingThrowOnInvalid.GetString(bytes);
             return true;
         }
-        catch (System.Text.DecoderFallbackException)
+        catch (DecoderFallbackException)
         {
             text = null;
             return false;
         }
     }
 
+    /// <summary>Converts the HAR <c>httpVersion</c> field (e.g. <c>HTTP/1.1</c>) to the version string used by <see cref="HttpRecordingEntry.HttpVersion"/>.</summary>
+    private static string? ParseHttpVersion(string? httpVersion)
+    {
+        if (string.IsNullOrEmpty(httpVersion))
+            return null;
+
+        const string Prefix = "HTTP/";
+        var value = httpVersion.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) ? httpVersion[Prefix.Length..] : httpVersion;
+        return Version.TryParse(value, out _) ? value : null;
+    }
+
+    private static JsonElement CreateBase64EncodingValue()
+    {
+        using var document = JsonDocument.Parse("\"base64\"");
+        return document.RootElement.Clone();
+    }
+
+    private static string GetCreatorVersion()
+    {
+        var informationalVersion = typeof(HarHttpRecordingStore).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrEmpty(informationalVersion))
+        {
+            // Strip the source-revision suffix that the SDK appends (1.2.3+abcdef).
+            var separatorIndex = informationalVersion.IndexOf('+', StringComparison.Ordinal);
+            return separatorIndex >= 0 ? informationalVersion[..separatorIndex] : informationalVersion;
+        }
+
+        return typeof(HarHttpRecordingStore).Assembly.GetName().Version?.ToString() ?? "";
+    }
 }

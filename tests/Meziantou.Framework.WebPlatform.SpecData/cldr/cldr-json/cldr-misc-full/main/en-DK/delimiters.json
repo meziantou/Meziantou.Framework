@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-DK": {
+      "identity": {
+        "language": "en",
+        "territory": "DK"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/meziantou/Meziantou.DocumentationGenerator/main/schema/docgen.schema.json",
+  "version": 1,
+  "site": {
+    "title": "Meziantou.Framework",
+    "description": "Documentation of the Meziantou.Framework libraries.",
+    "logo": "docs/logo.svg",
+    "favicon": "docs/logo.svg",
+    "headerLinks": [
+      {
+        "text": "Sponsor",
+        "url": "https://github.com/sponsors/meziantou"
+      },
+      {
+        "text": "GitHub",
+        "url": "https://github.com/meziantou/Meziantou.Framework"
+      }
+    ]
+  },
+  "output": "artifacts/docs",
+  "content": {
+    "root": "docs",
+    "exclude": [
+      "**/AGENTS.md"
+    ],
+    "editUrl": "https://github.com/meziantou/Meziantou.Framework/edit/main/docs/{path}"
+  },
+  "references": [
+    {
+      "id": "Microsoft.AspNetCore.App.Ref",
+      "version": "10.0.14"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.Common",
+      "version": "5.9.0"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.CSharp",
+      "version": "5.9.0"
+    },
+    {
+      "id": "Microsoft.NETCore.App.Ref",
+      "version": "10.0.14"
+    }
+  ],
+  "diagnostics": {
+    "severity": {
+      "DG2007": "none"
+    }
+  },
+  "packages": [
+    {
+      "path": "artifacts/package/release"
+    }
+  ]
+}

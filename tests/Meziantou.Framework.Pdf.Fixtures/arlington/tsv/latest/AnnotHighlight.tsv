@@ -1,0 +1,30 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		FALSE	FALSE	FALSE		[Annot]			Table 166 and Table 172 and Table 182 (markup annot)
+Subtype	name	1.3		TRUE	FALSE	FALSE		[Highlight]			
+Rect	rectangle	1.3		TRUE	FALSE	FALSE					
+Contents	string-text	1.3		FALSE	FALSE	FALSE					
+P	dictionary	1.3		FALSE	TRUE	FALSE				[PageObject]	
+NM	string-text	1.4		FALSE	FALSE	FALSE					
+M	date;string-text	1.3		FALSE	FALSE	FALSE					
+F	bitmask	1.3		FALSE	FALSE	FALSE	0		[fn:Eval(fn:IsPDFVersion(1.3,fn:BitsClear(8,32)) && fn:IsPDFVersion(1.4,fn:BitsClear(9,32)) && fn:IsPDFVersion(1.5,fn:BitsClear(10,32)) && fn:IsPDFVersion(1.6,fn:BitsClear(10,32)) && fn:SinceVersion(1.7,fn:BitsClear(11,32)))]		Table 167
+AP	dictionary	1.3		fn:IsRequired(fn:SinceVersion(2.0,(fn:RectWidth(Rect)>0) || (fn:RectHeight(Rect)>0)))	FALSE	FALSE				[Appearance]	
+AS	name	1.3		fn:IsRequired(fn:IsPresent(AP::N::*) || fn:IsPresent(AP::R::*) || fn:IsPresent(AP::D::*))	FALSE	FALSE					
+Border	array	1.3		FALSE	FALSE	FALSE	[0 0 1]			[ArrayOf_4AnnotBorderCharacteristics]	
+C	array	1.3		FALSE	FALSE	FALSE				[ArrayOf_4NumbersColorAnnotation]	
+StructParent	integer	1.3		FALSE	FALSE	FALSE					Table 359
+OC	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+ca	number	2.0		FALSE	FALSE	FALSE	@CA	[fn:Eval((@ca>=0.0) && (@ca<=1.0))]			https://github.com/pdf-association/pdf-issues/issues/577
+CA	number	1.4		FALSE	FALSE	FALSE	1.0	[fn:Eval((@CA>=0.0) && (@CA<=1.0))]			
+BM	name	2.0		FALSE	FALSE	FALSE	Normal	[fn:Deprecated(1.4,Compatible),Normal,Multiply,Screen,Difference,Darken,Lighten,ColorDodge,ColorBurn,Exclusion,HardLight,Overlay,SoftLight,Luminosity,Hue,Saturation,Color]			Table 134 and Table 135
+Lang	string-text	2.0		FALSE	FALSE	FALSE					
+T	string-text	1.3		FALSE	FALSE	FALSE					
+Popup	dictionary	1.3		FALSE	TRUE	FALSE				[AnnotPopup]	
+RC	stream;string-text	1.5		FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	
+CreationDate	date	1.5		FALSE	FALSE	FALSE					
+IRT	dictionary	1.5		fn:IsRequired(fn:SinceVersion(1.6,fn:IsPresent(RT)))	FALSE	FALSE				[AnnotText,AnnotLink,AnnotFreeText,AnnotLine,AnnotSquare,AnnotCircle,AnnotPolygon,AnnotHighlight,AnnotUnderline,AnnotSquiggly,AnnotStrikeOut,AnnotCaret,AnnotStamp,AnnotInk,AnnotPopup,AnnotFileAttachment,AnnotSound,AnnotMovie,AnnotScreen,AnnotWidget,AnnotPrinterMark,fn:SinceVersion(1.6,AnnotWatermark),fn:SinceVersion(1.6,Annot3D),fn:SinceVersion(1.7,AnnotRedact),fn:SinceVersion(2.0,AnnotProjection),fn:SinceVersion(2.0,AnnotRichMedia)]	https://github.com/pdf-association/pdf-issues/issues/297
+Subj	string-text	1.5		FALSE	FALSE	FALSE					
+RT	name	1.6		FALSE	FALSE	FALSE	R	[R,Group]	[fn:IsMeaningful(fn:IsPresent(IRT))]		
+IT	name	1.6		FALSE	FALSE	FALSE					
+QuadPoints	array	1.3		TRUE	FALSE	FALSE				[ArrayOfQuadPoints]	
+ExData	dictionary	1.7		FALSE	FALSE	FALSE				[ExData3DMarkup,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,ExDataMarkupGeo)),fn:SinceVersion(2.0,ExDataMarkupGeo),fn:SinceVersion(2.0,ExDataProjection)]	2D markup annots only 

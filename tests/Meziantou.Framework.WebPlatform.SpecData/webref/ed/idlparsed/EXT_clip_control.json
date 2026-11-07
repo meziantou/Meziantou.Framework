@@ -1,0 +1,223 @@
+{
+  "spec": {
+    "title": "WebGL EXT_clip_control Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_clip_control/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_clip_control"
+        ],
+        "Worker": [
+          "EXT_clip_control"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_clip_control": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_clip_control {\n    const GLenum LOWER_LEFT_EXT = 0x8CA1;\n    const GLenum UPPER_LEFT_EXT = 0x8CA2;\n\n    const GLenum NEGATIVE_ONE_TO_ONE_EXT = 0x935E;\n    const GLenum ZERO_TO_ONE_EXT         = 0x935F;\n\n    const GLenum CLIP_ORIGIN_EXT     = 0x935C;\n    const GLenum CLIP_DEPTH_MODE_EXT = 0x935D;\n\n    undefined clipControlEXT(GLenum origin, GLenum depth);\n};",
+        "type": "interface",
+        "name": "EXT_clip_control",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "LOWER_LEFT_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8CA1"
+            }
+          },
+          {
+            "type": "const",
+            "name": "UPPER_LEFT_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8CA2"
+            }
+          },
+          {
+            "type": "const",
+            "name": "NEGATIVE_ONE_TO_ONE_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x935E"
+            }
+          },
+          {
+            "type": "const",
+            "name": "ZERO_TO_ONE_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x935F"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_ORIGIN_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x935C"
+            }
+          },
+          {
+            "type": "const",
+            "name": "CLIP_DEPTH_MODE_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x935D"
+            }
+          },
+          {
+            "type": "operation",
+            "name": "clipControlEXT",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "origin",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLenum"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "depth",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLenum"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_clip_control"
+      ],
+      "Worker": [
+        "EXT_clip_control"
+      ]
+    },
+    "dependencies": {
+      "EXT_clip_control": [
+        "GLenum"
+      ]
+    },
+    "externalDependencies": [
+      "GLenum"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

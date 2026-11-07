@@ -1,0 +1,95 @@
+{
+  "css/css-font-loading/empty-family-load.html": {
+    "total": 1
+  },
+  "css/css-font-loading/font-face-reject.html": {
+    "total": 1
+  },
+  "css/css-font-loading/font-face-width-descriptor-aliasing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-css-connected-descriptors.html": {
+    "total": 12
+  },
+  "css/css-font-loading/fontface-descriptor-updates-2.html": {
+    "total": 3
+  },
+  "css/css-font-loading/fontface-descriptor-updates.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-font-variation-settings-persisted-js-api.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-fonts-loading.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-from-arraybuffer.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-invalid-arraybuffer.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-invalid-family.tentative.html": {
+    "total": 9
+  },
+  "css/css-font-loading/fontface-load-in-modal-dialog.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-loadingevent.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-override-descriptor-getter-setter.sub.html": {
+    "total": 24
+  },
+  "css/css-font-loading/fontface-override-descriptors.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-size-adjust-descriptor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-width.html": {
+    "total": 5
+  },
+  "css/css-font-loading/fontfaceset-clear-css-connected-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontfaceset-clear-css-connected.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-delete-css-connected-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontfaceset-delete-css-connected.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-has.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-load-css-connected.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-load-css-wide-keywords.html": {
+    "total": 24
+  },
+  "css/css-font-loading/fontfaceset-load-var.html": {
+    "total": 4
+  },
+  "css/css-font-loading/fontfaceset-ready-unused-face-failed-local-source.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-update-after-stylesheet-change.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfacesetloadevent-constructor.html": {
+    "total": 2
+  },
+  "css/css-font-loading/historical.html": {
+    "total": 1
+  },
+  "css/css-font-loading/idlharness.https.html": {
+    "total": 143
+  },
+  "css/css-font-loading/nonexistent-file-url.html": {
+    "total": 1
+  }
+}

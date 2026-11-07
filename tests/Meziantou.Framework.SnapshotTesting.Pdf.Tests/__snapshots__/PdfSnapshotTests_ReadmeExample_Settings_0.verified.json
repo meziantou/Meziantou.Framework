@@ -1,0 +1,52 @@
+{
+  "version": "1.7",
+  "pageCount": 2,
+  "information": {
+    "title": "Sample",
+    "isEncrypted": false
+  },
+  "creationDate": "2026-01-02T03:04:05+00:00",
+  "outlines": [
+    {
+      "title": "Introduction",
+      "children": [
+        {
+          "title": "Details"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "number": 1,
+      "width": 200,
+      "height": 100,
+      "rotation": 0,
+      "text": [
+        "Page 1"
+      ],
+      "annotations": []
+    },
+    {
+      "number": 2,
+      "width": 200,
+      "height": 100,
+      "rotation": 0,
+      "text": [
+        "Page 2"
+      ],
+      "annotations": [
+        {
+          "subtype": "Link",
+          "rectangle": [
+            20,
+            20,
+            120,
+            40
+          ],
+          "uri": "https://www.meziantou.net/"
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.SyntaxHighlighting.Tests;
+﻿namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class JavaScriptHighlighterTests
 {
@@ -3334,6 +3334,18 @@ const a = 1;
 """,
 """
 <span class="hljs-comment">// just a comment</span>
+""");
+    }
+
+    [Fact]
+    public void JsxTag_OpeningTagIsTreatedAsMarkup()
+    {
+        AssertHighlighter("javascript",
+"""
+const el = <div>hello</div>;
+""",
+"""
+<span class="hljs-keyword">const</span> el = <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span>&gt;</span>hello<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>;
 """);
     }
 }

@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2		FALSE	FALSE	FALSE		[Action]			Table 196 and Table 239
+S	name	1.2		TRUE	FALSE	FALSE		[SubmitForm]			
+F	dictionary;string	1.2		TRUE	FALSE	FALSE				[FileSpecification];[]	
+Fields	array	1.2		FALSE	FALSE	FALSE				[ArrayOfFieldID]	
+Flags	bitmask	1.2		FALSE	FALSE	FALSE	0		[fn:Eval(fn:BitClear(13) && fn:BitsClear(15,32))]		Table 240, https://github.com/pdf-association/pdf-issues/issues/122
+CharSet	string	1.2		FALSE	FALSE	FALSE		['utf-8','utf-16','Shift-JIS','BigFive','GBK','UHC']			see https://github.com/pdf-association/pdf-issues/issues/122
+Next	array;dictionary	1.2		FALSE	FALSE	FALSE				[ArrayOfActions];[ActionGoTo,ActionGoToR,fn:SinceVersion(1.6,ActionGoToE),fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,fn:IsPDFVersion(1.2,ActionNOP),fn:IsPDFVersion(1.2,ActionSetState),ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData,fn:SinceVersion(1.5,ActionSetOCGState),fn:SinceVersion(1.5,ActionRendition),fn:SinceVersion(1.5,ActionTransition),fn:SinceVersion(1.6,ActionGoTo3DView),fn:SinceVersion(1.3,ActionECMAScript),fn:SinceVersion(2.0,ActionRichMediaExecute)]	

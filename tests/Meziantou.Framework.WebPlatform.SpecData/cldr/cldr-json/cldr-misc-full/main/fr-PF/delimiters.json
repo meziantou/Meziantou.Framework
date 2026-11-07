@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-PF": {
+      "identity": {
+        "language": "fr",
+        "territory": "PF"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

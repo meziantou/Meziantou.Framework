@@ -1,0 +1,15 @@
+{
+  "main": {
+    "si": {
+      "identity": {
+        "language": "si"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

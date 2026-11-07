@@ -32,7 +32,7 @@ When using multiple `--input` values, you can use `tfm=path` to set the target f
 
 `--output` is the output directory option.
 
-When using `--file-layout SingleFile`, you can use `--output-file` to set an explicit file path instead of generating `PublicApi.g.cs` in the output directory.
+When using `--file-layout SingleFile`, you can use `--output-file` to set an explicit file path instead of generating `<AssemblyName>.cs` in the output directory.
 
 ```bash
 Meziantou.Framework.PublicApiGenerator.Tool \

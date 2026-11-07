@@ -5,7 +5,6 @@
 Utilities for WPF applications, including:
 
 - `DelegateCommand` for synchronous and asynchronous commands
-- `ConcurrentObservableCollection<T>` for thread-safe collections that can be bound to WPF controls
 - Enum markup extensions (`EnumValuesExtension`, `LocalizedEnumValuesExtension`)
 - `BooleanToValueConverter` for flexible bool-to-value conversion in bindings
 - Dispatcher helpers (`SwitchToDispatcherThread`)
@@ -20,9 +19,10 @@ dotnet add package Meziantou.Framework.WPF
 
 ### Commands
 
-```csharp
-using Meziantou.Framework.WPF;
+The types are in the `Meziantou.Framework.WPF` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.WPF.Tests/DelegateCommandTests.cs;region=DelegateCommand_SampleViewModel;format=md-fenced-code-block;dedent=true -->
+```csharp
 public sealed class SampleViewModel
 {
     public IDelegateCommand SaveCommand { get; } = DelegateCommand.Create(
@@ -30,17 +30,31 @@ public sealed class SampleViewModel
         canExecute: () => true);
 }
 ```
+<!-- endref -->
 
 ### Thread-safe bindable collection
 
-```csharp
-using Meziantou.Framework.WPF.Collections;
+`ConcurrentObservableCollection<T>` has moved to the [Meziantou.Framework.Threading](../Meziantou.Framework.Threading/readme.md) package,
+where it is bound to a `SynchronizationContext` instead of a WPF `Dispatcher`. Creating it on the UI thread keeps the previous behavior:
 
+```powershell
+dotnet add package Meziantou.Framework.Threading
+```
+
+The type is in the `Meziantou.Framework.Collections.Concurrent` namespace. In the code of a window, where `listBox` is a
+`ListBox`:
+
+<!-- ref:../../samples/Meziantou.Framework.WPF.CollectionSamples/MainWindow.xaml.cs;region=ConcurrentObservableCollection_ListBox;format=md-fenced-code-block;dedent=true -->
+```csharp
 var collection = new ConcurrentObservableCollection<string>();
 listBox.ItemsSource = collection.AsObservable;
 
 await Task.Run(() => collection.Add("Item from background thread"));
 ```
+<!-- endref -->
+
+`Meziantou.Framework.WPF.Collections.ConcurrentObservableCollection<T>` no longer exists. Add a reference to the
+`Meziantou.Framework.Threading` package and update the `using` directive.
 
 ### Enum values in XAML
 

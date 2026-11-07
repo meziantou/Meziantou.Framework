@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		FALSE	FALSE	FALSE		[Pattern]			Table 75
+PatternType	integer	1.3		TRUE	FALSE	FALSE		[2]			
+Shading	dictionary;stream	1.3		TRUE	[FALSE];[TRUE]	FALSE				[ShadingType1,ShadingType2,ShadingType3];[ShadingType4,ShadingType5,ShadingType6,ShadingType7]	
+Matrix	matrix	1.3		FALSE	FALSE	FALSE	[1 0 0 1 0 0]				
+ExtGState	dictionary	1.3		FALSE	FALSE	FALSE				[GraphicsStateParameter]	

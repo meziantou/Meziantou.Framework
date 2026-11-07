@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		TRUE	FALSE	FALSE		[MCR]			Table 357
+Pg	dictionary	1.3		fn:IsRequired(fn:Not(fn:IsPresent(parent::Pg)))	TRUE	FALSE				[PageObject]	https://github.com/pdf-association/pdf-issues/issues/431
+Stm	stream	1.3		FALSE	TRUE	FALSE				[XObjectFormType1]	
+StmOwn	array;dictionary;stream	1.3		FALSE	TRUE	FALSE				[_UniversalArray];[_UniversalDictionary];[Stream]	
+MCID	integer	1.3		TRUE	FALSE	FALSE					

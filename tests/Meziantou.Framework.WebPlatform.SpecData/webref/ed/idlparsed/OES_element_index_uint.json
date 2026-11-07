@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL OES_element_index_uint Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/OES_element_index_uint/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "OES_element_index_uint"
+        ],
+        "Worker": [
+          "OES_element_index_uint"
+        ]
+      }
+    },
+    "idlNames": {
+      "OES_element_index_uint": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface OES_element_index_uint {\n};",
+        "type": "interface",
+        "name": "OES_element_index_uint",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "OES_element_index_uint"
+      ],
+      "Worker": [
+        "OES_element_index_uint"
+      ]
+    },
+    "dependencies": {
+      "OES_element_index_uint": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

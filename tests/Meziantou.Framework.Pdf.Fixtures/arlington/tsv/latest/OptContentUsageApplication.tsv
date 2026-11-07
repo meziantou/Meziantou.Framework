@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Event	name	1.5		TRUE	FALSE	FALSE		[View,Print,Export]			Table 101
+OCGs	array	1.5		FALSE	FALSE	FALSE				[ArrayOfOCG]	
+Category	array	1.5		TRUE	FALSE	FALSE				[ArrayOfNamesGeneral]	

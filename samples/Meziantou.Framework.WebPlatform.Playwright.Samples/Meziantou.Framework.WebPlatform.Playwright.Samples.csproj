@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- The examples of src/Meziantou.Framework.WebPlatform.Playwright/readme.md that need the network or ASP.NET Core (see Program.cs) -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);CA1303;CA1515;CA2007</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.64.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Playwright\Meziantou.Framework.WebPlatform.Playwright.csproj" />
+  </ItemGroup>
+</Project>

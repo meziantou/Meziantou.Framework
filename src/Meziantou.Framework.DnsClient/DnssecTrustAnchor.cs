@@ -34,6 +34,10 @@ public sealed class DnssecTrustAnchor
     public byte DigestType { get; }
 
     /// <summary>Gets the DS digest bytes.</summary>
-    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
-    public byte[] Digest { get; }
+    /// <remarks>
+    /// Exposed as <see cref="ReadOnlyMemory{T}"/> rather than an array: <see cref="DnssecTrustAnchors.Root"/> is a
+    /// process-wide singleton and is the root of trust for every client, so handing out a writable reference to it
+    /// would let any code in the process silently break — or redirect — DNSSEC validation everywhere.
+    /// </remarks>
+    public ReadOnlyMemory<byte> Digest { get; }
 }

@@ -68,9 +68,11 @@ public abstract partial class YamlSerializerContext : IYamlTypeInfoResolver
     /// </para>
     /// </remarks>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerContextCreateOptionsTests.cs" ref:region="YamlSerializerContext_CreateOptions" ref:dedent="true">
+    /// var context = new TestYamlSerializerContext();
     /// var options = context.CreateOptions(o =&gt; o with { SourceName = "config.yaml" });
-    /// var result = YamlSerializer.Deserialize&lt;Config&gt;(yaml, options);
+    /// var person = YamlSerializer.Deserialize&lt;GeneratedPerson&gt;("first_name: John\n", options);
+    /// Assert.Equal("John", person!.FirstName);
     /// </code>
     /// </example>
     /// <exception cref="ArgumentNullException"><paramref name="configure"/> is <see langword="null"/>.</exception>

@@ -5,6 +5,97 @@ namespace Meziantou.Framework.Tests;
 public sealed class ObjectMethodExecutorTests
 {
     [Fact]
+    public async Task ReadmeExample_Execute()
+    {
+        #region ObjectMethodExecutor_Execute
+        var methodInfo = typeof(Sample).GetMethod(nameof(Sample.AsyncMethod))!;
+        var executor = ObjectMethodExecutor.Create(methodInfo);
+
+        var instance = new Sample { Offset = 10 };
+        var parameters = new object?[] { 1, 2 };
+        if (executor.IsMethodAsync)
+        {
+            // You can call ExecuteAsync even if the underlying method is not async.
+            // It returns an awaitable that completes with the return value of the method.
+            var result = await executor.ExecuteAsync(instance, parameters);
+            Assert.Equal(13, result);
+        }
+        else
+        {
+            var result = executor.Execute(instance, parameters);
+            Assert.Equal(13, result);
+        }
+        #endregion
+    }
+
+    #region ObjectMethodExecutor_Sample
+    public sealed class Sample
+    {
+        public int Offset { get; init; }
+
+        public async Task<int> AsyncMethod(int a, int b)
+        {
+            await Task.Yield();
+            return Offset + a + b;
+        }
+    }
+    #endregion
+
+    [Fact]
+    public async Task Documentation_Example()
+    {
+        #region ObjectMethodExecutor_Example
+        // Synchronous method
+        var replaceMethod = typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!;
+        var replaceExecutor = ObjectMethodExecutor.Create(replaceMethod);
+        Assert.Equal("Hello Universe", await InvokeAsync(replaceExecutor, "Hello World", ["World", "Universe"]));
+
+        // Asynchronous method
+        var readToEndMethod = typeof(StringReader).GetMethod(nameof(StringReader.ReadToEndAsync), Type.EmptyTypes)!;
+        var readToEndExecutor = ObjectMethodExecutor.Create(readToEndMethod);
+        using var reader = new StringReader("Hello");
+        Assert.Equal("Hello", await InvokeAsync(readToEndExecutor, reader, []));
+
+        static async Task<object?> InvokeAsync(ObjectMethodExecutor executor, object instance, object?[] parameters)
+        {
+            if (executor.IsMethodAsync)
+            {
+                return await executor.ExecuteAsync(instance, parameters);
+            }
+            else
+            {
+                return executor.Execute(instance, parameters);
+            }
+        }
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_KnownReturnType()
+    {
+        #region ObjectMethodExecutor_KnownReturnType
+        var executor = ObjectMethodExecutor.Create(typeof(Sample).GetMethod(nameof(Sample.AsyncMethod))!);
+
+        // Execute returns the Task<int> returned by the method
+        var task = (Task<int>)executor.Execute(new Sample { Offset = 10 }, [1, 2])!;
+        Assert.Equal(13, await task);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_DefaultValues()
+    {
+        #region ObjectMethodExecutor_DefaultValues
+        var methodInfo = typeof(Sample).GetMethod(nameof(Sample.AsyncMethod))!;
+        var executor = ObjectMethodExecutor.Create(methodInfo, parameterDefaultValues: [0, 100]);
+
+        // The caller has a value for the first parameter only
+        var parameters = new object?[] { 5, executor.GetDefaultValueForParameter(1) };
+        Assert.Equal(105, await executor.ExecuteAsync(new Sample(), parameters));
+        #endregion
+    }
+
+    [Fact]
     public void StaticSyncVoidTest()
     {
         var validator = new Validator();
@@ -27,6 +118,54 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public void MutatingStructMethod_AppliesMutationToBoxedInstance()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(MutableCounter).GetMethod(nameof(MutableCounter.Increment))!);
+        object target = new MutableCounter();
+
+        executor.Execute(target, []);
+
+        Assert.Equal(1, ((MutableCounter)target).Value);
+    }
+
+    [Fact]
+    public async Task MutatingStructMethod_AppliesMutationToBoxedInstance_Async()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(MutableCounter).GetMethod(nameof(MutableCounter.IncrementAsync))!);
+        object target = new MutableCounter();
+
+        await executor.ExecuteAsync(target, []);
+
+        Assert.Equal(1, ((MutableCounter)target).Value);
+    }
+
+    [Fact]
+    public void MutatingStructMethod_MatchesMethodInfoInvoke()
+    {
+        var methodInfo = typeof(MutableCounter).GetMethod(nameof(MutableCounter.Increment))!;
+        object viaInvoke = new MutableCounter();
+        methodInfo.Invoke(viaInvoke, parameters: null);
+
+        object viaExecutor = new MutableCounter();
+        ObjectMethodExecutor.Create(methodInfo).Execute(viaExecutor, []);
+
+        Assert.Equal(((MutableCounter)viaInvoke).Value, ((MutableCounter)viaExecutor).Value);
+    }
+
+    private struct MutableCounter
+    {
+        public int Value;
+
+        public void Increment() => Value++;
+
+        public Task IncrementAsync()
+        {
+            Value++;
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
     public void SyncInt32Test()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32")!);
@@ -40,6 +179,40 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
         var result = executor.Execute(new Test(), [12]);
         Assert.Equal(12, result);
+    }
+
+    [Fact]
+    public void GetDefaultValueForParameter_ReturnsSuppliedValues()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!, [42]);
+
+        Assert.Equal(42, executor.GetDefaultValueForParameter(0));
+    }
+
+    [Fact]
+    public void GetDefaultValueForParameter_ThrowsWhenNoDefaultsSupplied()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        Assert.Throws<InvalidOperationException>(() => executor.GetDefaultValueForParameter(0));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    public void GetDefaultValueForParameter_ThrowsWhenIndexOutOfRange(int index)
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!, [42]);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => executor.GetDefaultValueForParameter(index));
+    }
+
+    [Fact]
+    public void Create_ThrowsWhenDefaultValueCountDoesNotMatchParameterCount()
+    {
+        var methodInfo = typeof(Test).GetMethod("SyncInt32WithParam")!;
+
+        Assert.Throws<ArgumentException>(() => ObjectMethodExecutor.Create(methodInfo, [1, 2]));
     }
 
     [Fact]
@@ -65,6 +238,46 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public void AsyncVoid_IsNotReportedAsAsync()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncVoid")!);
+
+        Assert.False(executor.IsMethodAsync);
+    }
+
+    [Fact]
+    public void AsyncVoid_ExecuteAsyncThrows()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncVoid")!);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => _ = executor.ExecuteAsync(new Test(), [new Validator()]));
+        Assert.Contains("async void", exception.Message);
+    }
+
+    [Fact]
+    public void AsyncVoid_ExecuteStartsTheMethod()
+    {
+        var validator = new Validator();
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncVoid")!);
+
+        var result = executor.Execute(new Test(), [validator]);
+
+        Assert.Null(result);
+        Assert.True(validator.HasBeenInvoked);
+    }
+
+    [Fact]
+    public async Task PlainVoid_IsStillExecutableAsync()
+    {
+        var validator = new Validator();
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid")!);
+
+        await executor.ExecuteAsync(new Test(), [validator]);
+
+        Assert.True(validator.HasBeenInvoked);
+    }
+
+    [Fact]
     public async Task AsyncTaskInt32Tests()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32")!);
@@ -81,6 +294,55 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public void Execute_ThrowsWhenTooFewParameters()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        var exception = Assert.Throws<ArgumentException>(() => executor.Execute(new Test(), []));
+        Assert.Contains("SyncInt32WithParam", exception.Message);
+    }
+
+    [Fact]
+    public void Execute_ThrowsWhenTooManyParameters()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        Assert.Throws<ArgumentException>(() => executor.Execute(new Test(), [1, 2]));
+    }
+
+    [Fact]
+    public void Execute_ThrowsWhenParametersIsNullAndMethodTakesParameters()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        Assert.Throws<ArgumentException>(() => executor.Execute(new Test(), parameters: null));
+    }
+
+    [Fact]
+    public void Execute_AllowsNullParametersForParameterlessMethod()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32")!);
+
+        Assert.Equal(1, executor.Execute(new Test(), parameters: null));
+    }
+
+    [Fact]
+    public void ExecuteAsync_ThrowsWhenParameterCountIsWrong()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam")!);
+
+        Assert.Throws<ArgumentException>(() => _ = executor.ExecuteAsync(new Test(), []));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AllowsNullParametersForParameterlessMethod()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32")!);
+
+        Assert.Equal(1, await executor.ExecuteAsync(new Test(), parameters: null));
+    }
+
+    [Fact]
     public async Task AsyncTaskInt32WithParamTests()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam")!);
@@ -94,6 +356,29 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncCustomAwaiter")!);
         var result = await executor.ExecuteAsync(new Test(), []);
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task AwaiterImplementingOnlyINotifyCompletion()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("NotifyOnlyAwaitable")!);
+
+        Assert.True(executor.IsMethodAsync);
+        Assert.Equal(42, await executor.ExecuteAsync(new Test(), []));
+    }
+
+    private sealed class NotifyOnlyAwaitable
+    {
+        public NotifyOnlyAwaiter GetAwaiter() => new();
+
+        internal sealed class NotifyOnlyAwaiter : INotifyCompletion
+        {
+            public bool IsCompleted => false;
+
+            public int GetResult() => 42;
+
+            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
+        }
     }
 
     [Fact]
@@ -180,6 +465,8 @@ public sealed class ObjectMethodExecutorTests
 
         public ValueTask<int> ValueTaskInt32() => ValueTask.FromResult(1);
 
+        public NotifyOnlyAwaitable NotifyOnlyAwaitable() => new();
+
         public async ValueTask AsyncValueTask(Validator validator)
         {
             await Task.Delay(1);
@@ -187,6 +474,14 @@ public sealed class ObjectMethodExecutorTests
         }
 
         public YieldAwaitable AsyncCustomAwaiter() => Task.Yield();
+
+#pragma warning disable MA0155 // Do not use async void methods - this is the shape under test
+        public async void AsyncVoid(Validator validator)
+        {
+            validator.Invoked();
+            await Task.Delay(1);
+        }
+#pragma warning restore MA0155
     }
 #pragma warning restore CA1822
 }

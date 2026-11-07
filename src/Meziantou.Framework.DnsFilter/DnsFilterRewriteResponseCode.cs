@@ -19,4 +19,9 @@ public enum DnsFilterRewriteResponseCode
     /// The server refuses to answer (REFUSED).
     /// </summary>
     Refused,
+
+    /// <summary>
+    /// The server failed to process the query (SERVFAIL).
+    /// </summary>
+    ServerFailure,
 }

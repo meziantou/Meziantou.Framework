@@ -1,0 +1,1 @@
+string(//title) = 'Document' or boolean(//nope)

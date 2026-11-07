@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mua": {
+      "identity": {
+        "language": "mua"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

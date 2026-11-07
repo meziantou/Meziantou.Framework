@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.TdsServer/Meziantou.Framework.TdsServer.csproj" />

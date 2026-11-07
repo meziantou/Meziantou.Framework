@@ -1,0 +1,17 @@
+{
+  "main": {
+    "sr-Cyrl-ME": {
+      "identity": {
+        "language": "sr",
+        "script": "Cyrl",
+        "territory": "ME"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

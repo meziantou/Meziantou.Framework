@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable;
@@ -6,7 +8,7 @@ namespace Meziantou.Framework.HumanReadable;
 public sealed class HumanReadableTextWriter
 {
     private const string Indentation = "  ";
-    private static readonly string NewLine = Environment.NewLine;
+    private const char ZeroWidthJoiner = '\u200D';
 
     private readonly StringBuilder _text = new();
     private readonly HumanReadableSerializerOptions _options;
@@ -14,6 +16,8 @@ public sealed class HumanReadableTextWriter
 
     private int _indentation;
     private int _depth;
+    private int _valueDepth;
+    private string? _pendingArrayItemSeparator;
 
     private WriterContext _context;
 
@@ -24,15 +28,21 @@ public sealed class HumanReadableTextWriter
         _options = options;
     }
 
-    private void WritePendingText(bool indent = true)
+    // The separator after a property name or an array item marker is only written when content follows on the same line,
+    // so an empty value does not leave trailing whitespace
+    private void WritePendingText(bool indent, bool hasContent)
     {
         if (_context is WriterContext.NewLine)
         {
-            _text.Append(NewLine);
+            _text.Append(_options.NewLine);
         }
-        else if (_context is WriterContext.PropertyName)
+        else if (_context is WriterContext.PropertyName && hasContent)
         {
             _text.Append(' ');
+        }
+        else if (_context is WriterContext.ArrayItemStart && hasContent)
+        {
+            _text.Append(_pendingArrayItemSeparator);
         }
 
         if (indent && _context is WriterContext.NewLine)
@@ -43,51 +53,46 @@ public sealed class HumanReadableTextWriter
             }
         }
 
+        _pendingArrayItemSeparator = null;
         _context = WriterContext.None;
     }
 
-    private void Write(string value, bool isValue = false)
+    private void Write(string value, bool showInvisibleCharacters = false)
     {
-        Write(value.AsSpan(), isValue);
+        Write(value.AsSpan(), showInvisibleCharacters);
     }
 
-    private void Write(ReadOnlySpan<char> value, bool isValue = false)
+    private void Write(ReadOnlySpan<char> value, bool showInvisibleCharacters = false)
     {
+        if (value.IsEmpty)
+            return;
+
+        showInvisibleCharacters &= _options.ShowInvisibleCharactersInValues;
+
         var first = true;
-        if (isValue && _options.ShowInvisibleCharactersInValues)
+        foreach (var (line, eol) in StringUtils.EnumerateLines(value))
         {
-            foreach (var (line, eol) in StringUtils.EnumerateLines(value))
+            if (!first)
             {
-                WritePendingText(indent: !line.IsEmpty);
+                WriteNewLine();
+            }
+
+            if (showInvisibleCharacters)
+            {
+                // The control pictures record the original end of line, so the actual line break
+                // is normalized and indented the same way as when the option is disabled.
+                var hasContent = !line.IsEmpty || !eol.IsEmpty;
+                WritePendingText(indent: hasContent, hasContent);
                 ReplaceInvisibleCharacters(_text, line);
                 ReplaceInvisibleCharacters(_text, eol);
             }
-        }
-        else
-        {
-            if (!value.IsEmpty)
+            else
             {
-                foreach (var (line, eol) in StringUtils.EnumerateLines(value))
-                {
-                    if (!first)
-                    {
-                        WriteNewLine();
-                    }
-
-                    WritePendingText(indent: !line.IsEmpty);
-                    if (isValue && _options.ShowInvisibleCharactersInValues)
-                    {
-                        ReplaceInvisibleCharacters(_text, line);
-                        ReplaceInvisibleCharacters(_text, eol);
-                    }
-                    else
-                    {
-                        _text.Append(line);
-                    }
-
-                    first = false;
-                }
+                WritePendingText(indent: !line.IsEmpty, hasContent: !line.IsEmpty);
+                _text.Append(line);
             }
+
+            first = false;
         }
     }
 
@@ -98,25 +103,26 @@ public sealed class HumanReadableTextWriter
 
     private static void ReplaceInvisibleCharacters(StringBuilder sb, ReadOnlySpan<char> value)
     {
+        // A space is only visible between other characters, so leading and trailing whitespace is always encoded
+        var start = 0;
+        while (start < value.Length && IsSpaceOrZeroWidth(value[start]))
+        {
+            start++;
+        }
+
+        var end = value.Length;
+        while (end > start && IsSpaceOrZeroWidth(value[end - 1]))
+        {
+            end--;
+        }
+
+        var graphemeClusterEnd = 0;
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-
-            if (c is '\r')
+            if (c is ' ' && i >= start && i < end)
             {
-                if (i + 1 < value.Length && value[i + 1] is '\n')
-                {
-                    sb.Append("\u240D\u240A\r\n");
-                    i++;
-                }
-                else
-                {
-                    sb.Append("\u240D\r");
-                }
-            }
-            else if (c is '\n')
-            {
-                sb.Append("\u240A\n");
+                sb.Append(c);
             }
             else if (c is >= '\u0000' and <= '\u0020') // Control characters: https://www.compart.com/en/unicode/block/U+2400
             {
@@ -126,11 +132,42 @@ public sealed class HumanReadableTextWriter
             {
                 sb.Append('\u2421');
             }
+            else if (c is ZeroWidthJoiner && IsInEmojiSequence(value, i, ref graphemeClusterEnd))
+            {
+                sb.Append(c);
+            }
+            else if (IsSpaceOrZeroWidth(c) || char.GetUnicodeCategory(c) is UnicodeCategory.Control or UnicodeCategory.Format)
+            {
+                // Other spaces look like a regular space or like nothing at all, and have no control picture.
+                // Format characters (e.g. soft hyphen, bidirectional marks and overrides) and C1 control characters are invisible too,
+                // and a bidirectional override would even reorder the rest of the line when displayed.
+                sb.Append(CultureInfo.InvariantCulture, $"<U+{(int)c:X4}>");
+            }
             else
             {
                 sb.Append(c);
             }
         }
+
+        static bool IsSpaceOrZeroWidth(char c) => char.IsWhiteSpace(c) || c is '\u200B' or '\u200C' or ZeroWidthJoiner or '\u2060' or '\uFEFF';
+    }
+
+    // A zero-width joiner combines emoji into a single one (e.g. a family), so it must be kept there.
+    // Grapheme cluster rule GB11 only continues a cluster after a joiner that sits between two pictographic characters;
+    // everywhere else, the joiner is the last character of its cluster. Indic conjuncts can also continue the cluster
+    // (rule GB9c), but with a letter, which is why the next character must also be a symbol.
+    private static bool IsInEmojiSequence(ReadOnlySpan<char> value, int index, ref int graphemeClusterEnd)
+    {
+        while (graphemeClusterEnd <= index)
+        {
+            graphemeClusterEnd += StringInfo.GetNextTextElementLength(value[graphemeClusterEnd..]);
+        }
+
+        if (index + 1 >= graphemeClusterEnd)
+            return false;
+
+        return Rune.DecodeFromUtf16(value[(index + 1)..], out var next, out _) is OperationStatus.Done
+            && Rune.GetUnicodeCategory(next) is UnicodeCategory.OtherSymbol;
     }
 
     /// <summary>Writes a value to the output.</summary>
@@ -147,7 +184,7 @@ public sealed class HumanReadableTextWriter
                 WriteNewLine();
             }
 
-            Write(value, isValue: true);
+            Write(value, showInvisibleCharacters: true);
 
             if (indent)
             {
@@ -158,7 +195,7 @@ public sealed class HumanReadableTextWriter
         }
         else
         {
-            Write(value);
+            Write(value, showInvisibleCharacters: true);
             WriteNewLine();
         }
     }
@@ -196,16 +233,33 @@ public sealed class HumanReadableTextWriter
     /// <param name="propertyName">The name of the property.</param>
     public void WritePropertyName(string propertyName)
     {
-        Write(propertyName);
+        // Property names go through the same replacement as values: a name containing a newline
+        // would otherwise be indistinguishable from several properties.
+        Write(propertyName, showInvisibleCharacters: true);
         Write(":");
         _context = WriterContext.PropertyName;
     }
 
+    internal void EnterValue()
+    {
+        // A value usually nests a few converter calls per object or array level, hence the margin over MaxDepth
+        var maxValueDepth = (_options.MaxDepth * 4L) + 16;
+        if (_valueDepth >= maxValueDepth || !RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            throw new HumanReadableSerializerException($"Current value depth ({_valueDepth + 1}) is larger than the maximum allowed value depth of {maxValueDepth} (derived from MaxDepth {_options.MaxDepth}). The object graph may contain a cycle.");
+
+        _valueDepth++;
+    }
+
+    internal void ExitValue() => _valueDepth--;
+
     private void IncrementDepth()
     {
+        // Only increment once the limit is known to be respected. Incrementing first would leave
+        // the depth permanently inflated when a caller catches the exception and keeps writing.
+        if (_depth >= _options.MaxDepth)
+            throw new HumanReadableSerializerException($"Current depth ({_depth + 1}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
+
         _depth++;
-        if (_depth > _options.MaxDepth)
-            throw new HumanReadableSerializerException($"Current depth ({_depth}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
     }
 
     /// <summary>Starts writing an object.</summary>
@@ -240,6 +294,7 @@ public sealed class HumanReadableTextWriter
     /// <summary>Starts writing an array.</summary>
     public void StartArray()
     {
+        IncrementDepth();
         if (_text.Length > 0 && _context != WriterContext.ArrayItemStart)
         {
             WriteNewLine();
@@ -255,6 +310,7 @@ public sealed class HumanReadableTextWriter
     /// <summary>Ends writing an array.</summary>
     public void EndArray()
     {
+        _depth--;
         _scopes.Pop().Dispose();
     }
 
@@ -268,9 +324,12 @@ public sealed class HumanReadableTextWriter
     /// <param name="index">An optional index or label for the array item.</param>
     public void StartArrayItem(string? index = null)
     {
-        Write("- " + index);
+        var marker = "- " + index;
+        var trimmedMarker = marker.TrimEnd(' ');
+        Write(trimmedMarker);
         Indent(); // "- " is the same length as one indentation
         _context = WriterContext.ArrayItemStart;
+        _pendingArrayItemSeparator = marker[trimmedMarker.Length..];
         _scopes.Push(new Scope(this, unindent: true));
     }
 

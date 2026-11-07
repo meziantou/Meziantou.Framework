@@ -1,0 +1,15 @@
+{
+  "main": {
+    "dsb": {
+      "identity": {
+        "language": "dsb"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

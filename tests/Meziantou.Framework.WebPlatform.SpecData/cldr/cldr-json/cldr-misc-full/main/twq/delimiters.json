@@ -1,0 +1,15 @@
+{
+  "main": {
+    "twq": {
+      "identity": {
+        "language": "twq"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

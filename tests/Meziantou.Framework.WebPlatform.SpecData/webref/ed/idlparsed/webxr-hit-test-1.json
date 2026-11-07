@@ -1,0 +1,912 @@
+{
+  "spec": {
+    "title": "WebXR Hit Test Module",
+    "url": "https://immersive-web.github.io/hit-test/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "XRRay"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "XRHitTestSource",
+          "XRTransientInputHitTestSource",
+          "XRHitTestResult",
+          "XRTransientInputHitTestResult"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRHitTestTrackableType": {
+        "fragment": "enum XRHitTestTrackableType {\n  \"point\",\n  \"plane\",\n  \"mesh\"\n};",
+        "type": "enum",
+        "name": "XRHitTestTrackableType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "point",
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittesttrackabletype-point"
+          },
+          {
+            "type": "enum-value",
+            "value": "plane",
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittesttrackabletype-plane"
+          },
+          {
+            "type": "enum-value",
+            "value": "mesh",
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittesttrackabletype-mesh"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/hit-test/#enumdef-xrhittesttrackabletype"
+      },
+      "XRHitTestOptionsInit": {
+        "fragment": "dictionary XRHitTestOptionsInit {\n  required XRSpace space;\n  sequence<XRHitTestTrackableType> entityTypes;\n  XRRay offsetRay;\n};",
+        "type": "dictionary",
+        "name": "XRHitTestOptionsInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "space",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittestoptionsinit-space"
+          },
+          {
+            "type": "field",
+            "name": "entityTypes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRHitTestTrackableType"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittestoptionsinit-entitytypes"
+          },
+          {
+            "type": "field",
+            "name": "offsetRay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRRay"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittestoptionsinit-offsetray"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#dictdef-xrhittestoptionsinit"
+      },
+      "XRTransientInputHitTestOptionsInit": {
+        "fragment": "dictionary XRTransientInputHitTestOptionsInit {\n  required DOMString profile;\n  sequence<XRHitTestTrackableType> entityTypes;\n  XRRay offsetRay;\n};",
+        "type": "dictionary",
+        "name": "XRTransientInputHitTestOptionsInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "profile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrtransientinputhittestoptionsinit-profile"
+          },
+          {
+            "type": "field",
+            "name": "entityTypes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRHitTestTrackableType"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrtransientinputhittestoptionsinit-entitytypes"
+          },
+          {
+            "type": "field",
+            "name": "offsetRay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRRay"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrtransientinputhittestoptionsinit-offsetray"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#dictdef-xrtransientinputhittestoptionsinit"
+      },
+      "XRHitTestSource": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRHitTestSource {\n  undefined cancel();\n};",
+        "type": "interface",
+        "name": "XRHitTestSource",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "cancel",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittestsource-cancel"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#xrhittestsource"
+      },
+      "XRTransientInputHitTestSource": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRTransientInputHitTestSource {\n  undefined cancel();\n};",
+        "type": "interface",
+        "name": "XRTransientInputHitTestSource",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "cancel",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrtransientinputhittestsource-cancel"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#xrtransientinputhittestsource"
+      },
+      "XRHitTestResult": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRHitTestResult {\n  XRPose? getPose(XRSpace baseSpace);\n};",
+        "type": "interface",
+        "name": "XRHitTestResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getPose",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRPose"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "baseSpace",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRSpace"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrhittestresult-getpose"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#xrhittestresult"
+      },
+      "XRTransientInputHitTestResult": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRTransientInputHitTestResult {\n  [SameObject] readonly attribute XRInputSource inputSource;\n  readonly attribute FrozenArray<XRHitTestResult> results;\n};",
+        "type": "interface",
+        "name": "XRTransientInputHitTestResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "inputSource",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRInputSource"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrtransientinputhittestresult-inputsource"
+          },
+          {
+            "type": "attribute",
+            "name": "results",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRHitTestResult"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrtransientinputhittestresult-results"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#xrtransientinputhittestresult"
+      },
+      "XRRayDirectionInit": {
+        "fragment": "dictionary XRRayDirectionInit {\n  double x = 0;\n  double y = 0;\n  double z = -1;\n  double w = 0;\n};",
+        "type": "dictionary",
+        "name": "XRRayDirectionInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "x",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrraydirectioninit-x"
+          },
+          {
+            "type": "field",
+            "name": "y",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrraydirectioninit-y"
+          },
+          {
+            "type": "field",
+            "name": "z",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "-1"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrraydirectioninit-z"
+          },
+          {
+            "type": "field",
+            "name": "w",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrraydirectioninit-w"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#dictdef-xrraydirectioninit"
+      },
+      "XRRay": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRRay {\n  constructor(optional DOMPointInit origin = {}, optional XRRayDirectionInit direction = {});\n  constructor(XRRigidTransform transform);\n  [SameObject] readonly attribute DOMPointReadOnly origin;\n  [SameObject] readonly attribute DOMPointReadOnly direction;\n  [SameObject] readonly attribute Float32Array matrix;\n};",
+        "type": "interface",
+        "name": "XRRay",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "origin",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "direction",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRRayDirectionInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrray-xrray"
+          },
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "transform",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRRigidTransform"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrray-xrray-transform"
+          },
+          {
+            "type": "attribute",
+            "name": "origin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrray-origin"
+          },
+          {
+            "type": "attribute",
+            "name": "direction",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrray-direction"
+          },
+          {
+            "type": "attribute",
+            "name": "matrix",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/hit-test/#dom-xrray-matrix"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/hit-test/#xrray"
+      }
+    },
+    "idlExtendedNames": {
+      "XRSession": [
+        {
+          "fragment": "partial interface XRSession {\n  Promise<XRHitTestSource> requestHitTestSource(XRHitTestOptionsInit options);\n  Promise<XRTransientInputHitTestSource> requestHitTestSourceForTransientInput(XRTransientInputHitTestOptionsInit options);\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestHitTestSource",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRHitTestSource"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRHitTestOptionsInit"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/hit-test/#dom-xrsession-requesthittestsource"
+            },
+            {
+              "type": "operation",
+              "name": "requestHitTestSourceForTransientInput",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRTransientInputHitTestSource"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRTransientInputHitTestOptionsInit"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/hit-test/#dom-xrsession-requesthittestsourcefortransientinput"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRFrame": [
+        {
+          "fragment": "partial interface XRFrame {\n  sequence<XRHitTestResult> getHitTestResults(XRHitTestSource hitTestSource);\n  sequence<XRTransientInputHitTestResult> getHitTestResultsForTransientInput(XRTransientInputHitTestSource hitTestSource);\n};",
+          "type": "interface",
+          "name": "XRFrame",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getHitTestResults",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRHitTestResult"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "hitTestSource",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRHitTestSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/hit-test/#dom-xrframe-gethittestresults"
+            },
+            {
+              "type": "operation",
+              "name": "getHitTestResultsForTransientInput",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRTransientInputHitTestResult"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "hitTestSource",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRTransientInputHitTestSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/hit-test/#dom-xrframe-gethittestresultsfortransientinput"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRHitTestSource",
+        "XRTransientInputHitTestSource",
+        "XRHitTestResult",
+        "XRTransientInputHitTestResult",
+        "XRRay"
+      ]
+    },
+    "dependencies": {
+      "XRHitTestOptionsInit": [
+        "XRSpace",
+        "XRHitTestTrackableType",
+        "XRRay"
+      ],
+      "XRTransientInputHitTestOptionsInit": [
+        "XRHitTestTrackableType",
+        "XRRay"
+      ],
+      "XRHitTestSource": [],
+      "XRTransientInputHitTestSource": [],
+      "XRHitTestResult": [
+        "XRPose",
+        "XRSpace"
+      ],
+      "XRTransientInputHitTestResult": [
+        "XRInputSource",
+        "XRHitTestResult"
+      ],
+      "XRSession": [
+        "XRHitTestSource",
+        "XRHitTestOptionsInit",
+        "XRTransientInputHitTestSource",
+        "XRTransientInputHitTestOptionsInit"
+      ],
+      "XRFrame": [
+        "XRHitTestResult",
+        "XRHitTestSource",
+        "XRTransientInputHitTestResult",
+        "XRTransientInputHitTestSource"
+      ],
+      "XRRayDirectionInit": [],
+      "XRRay": [
+        "DOMPointInit",
+        "XRRayDirectionInit",
+        "XRRigidTransform",
+        "DOMPointReadOnly",
+        "Float32Array"
+      ]
+    },
+    "externalDependencies": [
+      "XRSpace",
+      "XRPose",
+      "XRInputSource",
+      "XRSession",
+      "XRFrame",
+      "DOMPointInit",
+      "XRRigidTransform",
+      "DOMPointReadOnly",
+      "Float32Array"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

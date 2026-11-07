@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Height of 500 people</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="55.45" y1="352.73" x2="628.83" y2="352.73" stroke="#e3e6ea"/>
+<line x1="55.45" y1="299.4" x2="628.83" y2="299.4" stroke="#e3e6ea"/>
+<line x1="55.45" y1="246.08" x2="628.83" y2="246.08" stroke="#e3e6ea"/>
+<line x1="55.45" y1="192.76" x2="628.83" y2="192.76" stroke="#e3e6ea"/>
+<line x1="55.45" y1="139.44" x2="628.83" y2="139.44" stroke="#e3e6ea"/>
+<line x1="55.45" y1="86.12" x2="628.83" y2="86.12" stroke="#e3e6ea"/>
+<line x1="55.45" y1="32.8" x2="628.83" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="55.95" y="347.89" width="56.34" height="4.33" fill="#4269d0"><title>[140, 145): 2</title></rect>
+<rect x="113.29" y="347.89" width="56.34" height="4.33" fill="#4269d0"><title>[145, 150): 2</title></rect>
+<rect x="170.62" y="321.23" width="56.34" height="30.99" fill="#4269d0"><title>[150, 155): 12</title></rect>
+<rect x="227.96" y="270.58" width="56.34" height="81.65" fill="#4269d0"><title>[155, 160): 31</title></rect>
+<rect x="285.3" y="129.28" width="56.34" height="222.95" fill="#4269d0"><title>[160, 165): 84</title></rect>
+<rect x="342.64" y="57.29" width="56.34" height="294.93" fill="#4269d0"><title>[165, 170): 111</title></rect>
+<rect x="399.97" y="33.3" width="56.34" height="318.93" fill="#4269d0"><title>[170, 175): 120</title></rect>
+<rect x="457.31" y="134.61" width="56.34" height="217.62" fill="#4269d0"><title>[175, 180): 82</title></rect>
+<rect x="514.65" y="238.59" width="56.34" height="113.64" fill="#4269d0"><title>[180, 185): 43</title></rect>
+<rect x="571.99" y="318.57" width="56.34" height="33.66" fill="#4269d0"><title>[185, 190]: 13</title></rect>
+</g>
+</g>
+<g class="axes">
+<line x1="50.45" y1="352.73" x2="55.45" y2="352.73" stroke="#8c959f"/>
+<text x="47.45" y="355.54" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="50.45" y1="299.4" x2="55.45" y2="299.4" stroke="#8c959f"/>
+<text x="47.45" y="302.21" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="50.45" y1="246.08" x2="55.45" y2="246.08" stroke="#8c959f"/>
+<text x="47.45" y="248.89" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="50.45" y1="192.76" x2="55.45" y2="192.76" stroke="#8c959f"/>
+<text x="47.45" y="195.57" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<line x1="50.45" y1="139.44" x2="55.45" y2="139.44" stroke="#8c959f"/>
+<text x="47.45" y="142.25" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<line x1="50.45" y1="86.12" x2="55.45" y2="86.12" stroke="#8c959f"/>
+<text x="47.45" y="88.93" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="50.45" y1="32.8" x2="55.45" y2="32.8" stroke="#8c959f"/>
+<text x="47.45" y="35.61" text-anchor="end" font-size="11" fill="#59636e">120</text>
+<text x="18.62" y="192.76" text-anchor="middle" font-size="12" fill="#1f2328" transform="rotate(-90 18.62 192.76)">People</text>
+<line x1="55.45" y1="352.73" x2="55.45" y2="357.73" stroke="#8c959f"/>
+<text x="55.45" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">140</text>
+<line x1="170.12" y1="352.73" x2="170.12" y2="357.73" stroke="#8c959f"/>
+<text x="170.12" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">150</text>
+<line x1="284.8" y1="352.73" x2="284.8" y2="357.73" stroke="#8c959f"/>
+<text x="284.8" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">160</text>
+<line x1="399.47" y1="352.73" x2="399.47" y2="357.73" stroke="#8c959f"/>
+<text x="399.47" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">170</text>
+<line x1="514.15" y1="352.73" x2="514.15" y2="357.73" stroke="#8c959f"/>
+<text x="514.15" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">180</text>
+<line x1="628.83" y1="352.73" x2="628.83" y2="357.73" stroke="#8c959f"/>
+<text x="628.83" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">190</text>
+<line x1="55.45" y1="352.73" x2="628.83" y2="352.73" stroke="#8c959f"/>
+<text x="342.14" y="385.52" text-anchor="middle" font-size="12" fill="#1f2328">Height (cm)</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Height of 500 people</text>
+</svg>

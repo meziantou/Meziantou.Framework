@@ -9,9 +9,19 @@ inputs:
     description: Output delta project path
     required: true
   traversal-after-import:
-    description: Project imported after traversal project references
+    description: |
+      Project imported after traversal project references in the generated file.
+      Empty means DeltaBuild's own default, which is a file that does not exist,
+      so the generated project imports nothing.
     required: false
-    default: build.platform-exclusions.proj
+    default: ""
+  properties:
+    description: |
+      Newline-separated MSBuild properties (NAME=VALUE) applied to the evaluation of the
+      input project. DeltaBuild has no --property option, so they are passed as environment
+      variables, which MSBuild reads as global properties.
+    required: false
+    default: ""
   full-rebuild-triggers:
     description: |
       Newline-separated list of full rebuild trigger globs or paths.
@@ -19,7 +29,11 @@ inputs:
     required: false
     default: ""
   base-commit:
-    description: Optional base commit SHA to pass as --base-commit
+    description: |
+      Base commit SHA to pass as --base-commit. Required on pull_request runs, where it should be
+      github.event.pull_request.base.sha. Without it, DeltaBuild compares HEAD with its merge-base
+      with origin/<base branch>, which contains the changes once the pull request is merged: a job
+      that starts or is rerun after the merge then finds no changed file and skips everything.
     required: false
     default: ""
   run-generate:
@@ -30,6 +44,12 @@ inputs:
     description: Whether to include only test projects
     required: false
     default: "false"
+  where:
+    description: |
+      MSBuild condition evaluated against each project, such as '$(PublishAot)' == 'true'.
+      Only the affected projects for which it is true are written. It is passed as --where.
+    required: false
+    default: ""
   shard:
     description: Optional shard number to pass to DeltaBuild
     required: false
@@ -42,6 +62,12 @@ inputs:
     description: |
       Newline-separated list of projects.
       Each entry is passed as --shard-separate.
+    required: false
+    default: ""
+  include:
+    description: |
+      Newline-separated list of project paths or globs.
+      Each entry is passed as --include.
     required: false
     default: ""
 
@@ -59,7 +85,9 @@ runs:
     - name: Install DeltaBuild
       if: ${{ inputs.run-generate == 'true' }}
       shell: pwsh
-      run: dotnet tool install --global Meziantou.DeltaBuild
+      # A composite action cannot reference a sibling action by a relative path (it resolves against
+      # the workspace), but the whole repository is downloaded with the action, so call the script
+      run: '& "$env:GITHUB_ACTION_PATH/../install-dotnet-tool/install-dotnet-tool.ps1" -PackageId Meziantou.DeltaBuild'
 
     - name: Generate delta project
       id: generate-delta
@@ -69,29 +97,54 @@ runs:
         INPUT_PROJECT: ${{ inputs.input-project }}
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         TRAVERSAL_AFTER_IMPORT: ${{ inputs.traversal-after-import }}
+        MSBUILD_PROPERTIES: ${{ inputs.properties }}
         FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
         BASE_COMMIT: ${{ inputs.base-commit }}
         TEST_PROJECTS_ONLY: ${{ inputs.test-projects-only }}
+        WHERE_CONDITION: ${{ inputs.where }}
         SHARD: ${{ inputs.shard }}
         TOTAL_SHARDS: ${{ inputs.total-shards }}
         SHARD_SEPARATE: ${{ inputs.shard-separate }}
+        INCLUDE_PROJECTS: ${{ inputs.include }}
       run: |
         $arguments = @(
           "generate"
           "--input", $env:INPUT_PROJECT
           "--output", $env:OUTPUT_PROJECT
-          "--traversal-after-import", $env:TRAVERSAL_AFTER_IMPORT
           "--no-output-if-empty"
         )
 
+        if ($env:TRAVERSAL_AFTER_IMPORT) {
+          $arguments += @("--traversal-after-import", $env:TRAVERSAL_AFTER_IMPORT)
+        }
+
+        # MSBuild reads environment variables as global properties, so this is how the
+        # properties reach the evaluation of the input project.
+        $env:MSBUILD_PROPERTIES -split "`n" | ForEach-Object {
+          $property = $_.Trim()
+          if ($property) {
+            $name, $value = $property.Split("=", 2)
+            if (-not $value) { throw "Invalid property, expected NAME=VALUE: $property" }
+            Write-Host "Setting property $name=$value"
+            Set-Item -Path "env:$name" -Value $value
+          }
+        }
+
         if ($env:TEST_PROJECTS_ONLY -eq "true") {
           $arguments += "--test-projects-only"
+        }
+
+        if ($env:WHERE_CONDITION) {
+          $arguments += @("--where", $env:WHERE_CONDITION)
         }
 
         # All-zero SHAs can appear in some push edge cases (for example branch creation),
         # and are not valid git commits for DeltaBuild base selection.
         if ($env:BASE_COMMIT -and $env:BASE_COMMIT -notmatch '^0+$') {
           $arguments += @("--base-commit", $env:BASE_COMMIT)
+        }
+        elseif ($env:GITHUB_EVENT_NAME -eq "pull_request") {
+          throw "The base-commit input is required on pull_request runs, see its description"
         }
 
         if ($env:SHARD) {
@@ -106,6 +159,13 @@ runs:
           $project = $_.Trim()
           if ($project) {
             $arguments += @("--shard-separate", $project)
+          }
+        }
+
+        $env:INCLUDE_PROJECTS -split "`n" | ForEach-Object {
+          $project = $_.Trim()
+          if ($project) {
+            $arguments += @("--include", $project)
           }
         }
 

@@ -1,0 +1,496 @@
+{
+  "spec": {
+    "title": "JS Self-Profiling API",
+    "url": "https://wicg.github.io/js-self-profiling/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "Profiler"
+        ],
+        "Worker": [
+          "Profiler"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "Profiler": {
+        "fragment": "[Exposed=(Window, Worker)]\ninterface Profiler : EventTarget {\n  readonly attribute DOMHighResTimeStamp sampleInterval;\n  readonly attribute boolean stopped;\n\n  constructor(ProfilerInitOptions options);\n  Promise<ProfilerTrace> stop();\n};",
+        "type": "interface",
+        "name": "Profiler",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "sampleInterval",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profiler-sampleinterval"
+          },
+          {
+            "type": "attribute",
+            "name": "stopped",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profiler-stopped"
+          },
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProfilerInitOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profiler-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "stop",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProfilerTrace"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profiler-stop"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profiler"
+      },
+      "ProfilerResource": {
+        "fragment": "typedef DOMString ProfilerResource;",
+        "type": "typedef",
+        "name": "ProfilerResource",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "DOMString"
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profilerresource"
+      },
+      "ProfilerTrace": {
+        "fragment": "dictionary ProfilerTrace {\n  required sequence<ProfilerResource> resources;\n  required sequence<ProfilerFrame> frames;\n  required sequence<ProfilerStack> stacks;\n  required sequence<ProfilerSample> samples;\n};",
+        "type": "dictionary",
+        "name": "ProfilerTrace",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "resources",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProfilerResource"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilertrace-resources"
+          },
+          {
+            "type": "field",
+            "name": "frames",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProfilerFrame"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilertrace-frames"
+          },
+          {
+            "type": "field",
+            "name": "stacks",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProfilerStack"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilertrace-stacks"
+          },
+          {
+            "type": "field",
+            "name": "samples",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProfilerSample"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilertrace-samples"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profilertrace"
+      },
+      "ProfilerSample": {
+        "fragment": "dictionary ProfilerSample {\n  required DOMHighResTimeStamp timestamp;\n  unsigned long long stackId;\n};",
+        "type": "dictionary",
+        "name": "ProfilerSample",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "timestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilersample-timestamp"
+          },
+          {
+            "type": "field",
+            "name": "stackId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilersample-stackid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profilersample"
+      },
+      "ProfilerStack": {
+        "fragment": "dictionary ProfilerStack {\n  unsigned long long parentId;\n  required unsigned long long frameId;\n};",
+        "type": "dictionary",
+        "name": "ProfilerStack",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "parentId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerstack-parentid"
+          },
+          {
+            "type": "field",
+            "name": "frameId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerstack-frameid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profilerstack"
+      },
+      "ProfilerFrame": {
+        "fragment": "dictionary ProfilerFrame {\n  required DOMString name;\n  unsigned long long resourceId;\n  unsigned long long line;\n  unsigned long long column;\n};",
+        "type": "dictionary",
+        "name": "ProfilerFrame",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerframe-name"
+          },
+          {
+            "type": "field",
+            "name": "resourceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerframe-resourceid"
+          },
+          {
+            "type": "field",
+            "name": "line",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerframe-line"
+          },
+          {
+            "type": "field",
+            "name": "column",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerframe-column"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profilerframe"
+      },
+      "ProfilerInitOptions": {
+        "fragment": "dictionary ProfilerInitOptions {\n  required DOMHighResTimeStamp sampleInterval;\n  required unsigned long maxBufferSize;\n};",
+        "type": "dictionary",
+        "name": "ProfilerInitOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sampleInterval",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerinitoptions-sampleinterval"
+          },
+          {
+            "type": "field",
+            "name": "maxBufferSize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/js-self-profiling/#dom-profilerinitoptions-maxbuffersize"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/js-self-profiling/#dom-profilerinitoptions"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Profiler"
+      ],
+      "Worker": [
+        "Profiler"
+      ]
+    },
+    "dependencies": {
+      "Profiler": [
+        "EventTarget",
+        "DOMHighResTimeStamp",
+        "ProfilerInitOptions",
+        "ProfilerTrace"
+      ],
+      "ProfilerTrace": [
+        "ProfilerResource",
+        "ProfilerFrame",
+        "ProfilerStack",
+        "ProfilerSample"
+      ],
+      "ProfilerSample": [
+        "DOMHighResTimeStamp"
+      ],
+      "ProfilerStack": [],
+      "ProfilerFrame": [],
+      "ProfilerInitOptions": [
+        "DOMHighResTimeStamp"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "DOMHighResTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

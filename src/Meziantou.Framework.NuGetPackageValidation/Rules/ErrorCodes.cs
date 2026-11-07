@@ -3,6 +3,7 @@ namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 internal static class ErrorCodes
 {
     public const int FileNotFound = 1;
+    public const int InvalidPackage = 2;
 
     public const int AuthorNotSet = 11;
     public const int DefaultAuthorSet = 12;

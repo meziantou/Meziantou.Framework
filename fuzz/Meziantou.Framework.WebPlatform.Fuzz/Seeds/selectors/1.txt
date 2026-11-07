@@ -1,0 +1,1 @@
+div > p.a + ul ~ table :is(th, td):not(:first-child)

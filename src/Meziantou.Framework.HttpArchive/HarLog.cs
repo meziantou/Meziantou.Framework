@@ -8,11 +8,11 @@ public sealed class HarLog
 {
     /// <summary>Gets or sets the version number of the HAR format. Defaults to "1.2".</summary>
     [JsonPropertyName("version")]
-    public string Version { get; set; } = "1.2";
+    public string? Version { get; set; } = "1.2";
 
     /// <summary>Gets or sets information about the application that created the log.</summary>
     [JsonPropertyName("creator")]
-    public HarCreator Creator { get; set; } = new();
+    public HarCreator? Creator { get; set; } = new();
 
     /// <summary>Gets or sets information about the browser that created the log.</summary>
     [JsonPropertyName("browser")]
@@ -26,7 +26,7 @@ public sealed class HarLog
     /// <summary>Gets or sets the list of exported HTTP requests.</summary>
     [JsonPropertyName("entries")]
     [SuppressMessage("Design", "CA1002:Do not expose generic lists")]
-    public List<HarEntry> Entries { get; set; } = [];
+    public List<HarEntry>? Entries { get; set; } = [];
 
     /// <summary>Gets or sets a comment provided by the user or the application.</summary>
     [JsonPropertyName("comment")]

@@ -1,0 +1,178 @@
+{
+  "spec": {
+    "title": "Compositing and Blending Module Level 2",
+    "url": "https://drafts.csswg.org/compositing-2/"
+  },
+  "properties": [
+    {
+      "name": "mix-blend-mode",
+      "href": "https://drafts.csswg.org/compositing-2/#propdef-mix-blend-mode",
+      "value": "<blend-mode> | plus-lighter",
+      "initial": "normal",
+      "appliesTo": "All elements. In SVG, it applies to container elements, graphics elements and graphics referencing elements. [SVG11]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "mix-blend-mode",
+        "mixBlendMode"
+      ]
+    },
+    {
+      "name": "isolation",
+      "href": "https://drafts.csswg.org/compositing-2/#propdef-isolation",
+      "value": "<isolation-mode>",
+      "initial": "auto",
+      "appliesTo": "All elements. In SVG, it applies to container elements, graphics elements and graphics referencing elements. [SVG11]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "isolation"
+      ]
+    },
+    {
+      "name": "background-blend-mode",
+      "href": "https://drafts.csswg.org/compositing-2/#propdef-background-blend-mode",
+      "value": "<'mix-blend-mode'>#",
+      "initial": "normal",
+      "appliesTo": "All HTML elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "background-blend-mode",
+        "backgroundBlendMode"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<blend-mode>",
+      "href": "https://drafts.csswg.org/compositing-2/#ltblendmodegt",
+      "type": "type",
+      "value": "normal | darken | multiply | color-burn | lighten | screen | color-dodge | overlay | soft-light | hard-light | difference | exclusion | hue | saturation | color | luminosity",
+      "values": [
+        {
+          "name": "normal",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "multiply",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-multiply",
+          "type": "value",
+          "value": "multiply"
+        },
+        {
+          "name": "screen",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-screen",
+          "type": "value",
+          "value": "screen"
+        },
+        {
+          "name": "overlay",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-overlay",
+          "type": "value",
+          "value": "overlay"
+        },
+        {
+          "name": "darken",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-darken",
+          "type": "value",
+          "value": "darken"
+        },
+        {
+          "name": "lighten",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-lighten",
+          "type": "value",
+          "value": "lighten"
+        },
+        {
+          "name": "color-dodge",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-color-dodge",
+          "type": "value",
+          "value": "color-dodge"
+        },
+        {
+          "name": "color-burn",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-color-burn",
+          "type": "value",
+          "value": "color-burn"
+        },
+        {
+          "name": "hard-light",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-hard-light",
+          "type": "value",
+          "value": "hard-light"
+        },
+        {
+          "name": "soft-light",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-soft-light",
+          "type": "value",
+          "value": "soft-light"
+        },
+        {
+          "name": "difference",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-difference",
+          "type": "value",
+          "value": "difference"
+        },
+        {
+          "name": "exclusion",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-exclusion",
+          "type": "value",
+          "value": "exclusion"
+        },
+        {
+          "name": "hue",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-hue",
+          "type": "value",
+          "value": "hue"
+        },
+        {
+          "name": "saturation",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-saturation",
+          "type": "value",
+          "value": "saturation"
+        },
+        {
+          "name": "color",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-color",
+          "type": "value",
+          "value": "color"
+        },
+        {
+          "name": "luminosity",
+          "href": "https://drafts.csswg.org/compositing-2/#valdef-blend-mode-luminosity",
+          "type": "value",
+          "value": "luminosity"
+        }
+      ]
+    },
+    {
+      "name": "<isolation-mode>",
+      "href": "https://drafts.csswg.org/compositing-2/#isolated-propid",
+      "type": "type",
+      "value": "auto | isolate"
+    },
+    {
+      "name": "<composite-mode>",
+      "href": "https://drafts.csswg.org/compositing-2/#compositemode",
+      "type": "type",
+      "value": "clear | copy | source-over | destination-over | source-in | destination-in | source-out | destination-out | source-atop | destination-atop | xor | lighter | plus-darker | plus-lighter"
+    }
+  ]
+}

@@ -5,7 +5,16 @@ namespace Meziantou.Framework.Tds.QueryEngine;
 internal sealed class TdsQueryEngineException : Exception
 {
     public TdsQueryEngineException(string message)
-        : base(message)
+        : this(message, errorNumber: 50004)
     {
     }
+
+    public TdsQueryEngineException(string message, uint errorNumber)
+        : base(message)
+    {
+        ErrorNumber = errorNumber;
+    }
+
+    /// <summary>The number of the error reported to the client: the SQL Server one when the engine models it, 50004 otherwise.</summary>
+    public uint ErrorNumber { get; }
 }

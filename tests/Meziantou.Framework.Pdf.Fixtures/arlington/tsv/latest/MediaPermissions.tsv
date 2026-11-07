@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaPermissions]			Table 286
+TF	string-ascii	1.5		FALSE	FALSE	FALSE	'TEMPNEVER'	['TEMPNEVER','TEMPALWAYS','TEMPEXTRACT','TEMPACCESS']			

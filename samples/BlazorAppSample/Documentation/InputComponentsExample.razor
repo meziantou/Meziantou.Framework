@@ -1,0 +1,29 @@
+<EditForm Model="model">
+    <DataAnnotationsValidator />
+
+    <InputDateTime @bind-Value="model.MeetingStart" />
+    <InputEnumSelect @bind-Value="model.Priority" EmptyOptionText="(none)" />
+    <InputGuid @bind-Value="model.ExternalId" ParsingErrorMessage="{0} must be a GUID such as 3f2504e0-4f89-11d3-9a0c-0305e82c3301." />
+    <InputUrl @bind-Value="model.Website" />
+
+    <ValidationSummary />
+</EditForm>
+
+@code {
+    private readonly Meeting model = new();
+
+    public sealed class Meeting
+    {
+        public DateTime MeetingStart { get; set; } = new(2025, 3, 14, 9, 30, 0);
+        public Priority? Priority { get; set; }
+        public Guid ExternalId { get; set; }
+        public Uri? Website { get; set; }
+    }
+
+    public enum Priority
+    {
+        Low,
+        Normal,
+        High,
+    }
+}

@@ -2,9 +2,13 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a secondly recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new SecondlyRecurrenceRule { Interval = 30, Occurrences = 10 };
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="SecondlyRecurrenceRule_Example" ref:dedent="true">
+/// // Every 30 seconds, 10 times
+/// var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;INTERVAL=30;COUNT=10");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).ToArray();
+///
+/// Assert.HasCount(10, nextOccurrences);
+/// Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 30), nextOccurrences[1]);
 /// </code>
 /// </example>
 internal sealed class SecondlyRecurrenceRule : RecurrenceRule
@@ -12,37 +16,17 @@ internal sealed class SecondlyRecurrenceRule : RecurrenceRule
     /// <summary>Limits occurrences to specific days of the week.</summary>
     public IList<DayOfWeek> ByWeekDays { get; set; } = [];
 
+    /// <summary>Limits occurrences to specific days of the year (1-366, -1 to -366).</summary>
+    public IList<int> ByYearDays { get; set; } = [];
+
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var current = startDate;
-        while (true)
-        {
-            var matches = true;
+        return GetNextOccurrencesInternal(startDate, endBound: null);
+    }
 
-            if (!IsEmpty(ByMonths) && !ByMonths.Contains(current.Month))
-                matches = false;
-
-            if (!IsEmpty(ByMonthDays) && !ByMonthDays.Contains(current.Day))
-                matches = false;
-
-            if (!IsEmpty(ByWeekDays) && !ByWeekDays.Contains(current.DayOfWeek))
-                matches = false;
-
-            if (!IsEmpty(ByHours) && !ByHours.Contains(current.Hour))
-                matches = false;
-
-            if (!IsEmpty(ByMinutes) && !ByMinutes.Contains(current.Minute))
-                matches = false;
-
-            if (matches)
-            {
-                yield return current;
-            }
-
-            current = current.AddSeconds(Interval);
-        }
-
-        // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
+    {
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Secondly, this, startDate, endBound, weekDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays, yearDays: ByYearDays);
     }
 
     /// <inheritdoc />
@@ -56,19 +40,19 @@ internal sealed class SecondlyRecurrenceRule : RecurrenceRule
             if (Interval != 1)
             {
                 sb.Append(";INTERVAL=");
-                sb.Append(Interval);
+                sb.Append(Interval.ToString(CultureInfo.InvariantCulture));
             }
 
             if (EndDate.HasValue)
             {
                 sb.Append(";UNTIL=");
-                sb.Append(Utilities.DateTimeToString(EndDate.Value));
+                sb.Append(EndDateText);
             }
 
             if (Occurrences.HasValue)
             {
                 sb.Append(";COUNT=");
-                sb.Append(Occurrences.Value);
+                sb.Append(Occurrences.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             if (WeekStart != DefaultFirstDayOfWeek)
@@ -80,13 +64,19 @@ internal sealed class SecondlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByMonths))
             {
                 sb.Append(";BYMONTH=");
-                sb.AppendJoin(',', ByMonths);
+                AppendValues(sb, ByMonths);
+            }
+
+            if (!IsEmpty(ByYearDays))
+            {
+                sb.Append(";BYYEARDAY=");
+                AppendValues(sb, ByYearDays);
             }
 
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
-                sb.AppendJoin(',', ByMonthDays);
+                AppendValues(sb, ByMonthDays);
             }
 
             if (!IsEmpty(ByWeekDays))
@@ -98,21 +88,28 @@ internal sealed class SecondlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByHours))
             {
                 sb.Append(";BYHOUR=");
-                sb.AppendJoin(',', ByHours);
+                AppendValues(sb, ByHours);
             }
 
             if (!IsEmpty(ByMinutes))
             {
                 sb.Append(";BYMINUTE=");
-                sb.AppendJoin(',', ByMinutes);
+                AppendValues(sb, ByMinutes);
+            }
+
+            if (!IsEmpty(BySeconds))
+            {
+                sb.Append(";BYSECOND=");
+                AppendValues(sb, BySeconds);
             }
 
             if (!IsEmpty(BySetPositions))
             {
                 sb.Append(";BYSETPOS=");
-                sb.AppendJoin(',', BySetPositions);
+                AppendValues(sb, BySetPositions);
             }
 
+            AppendExtensionParts(sb);
             return sb.ToString();
         }
     }

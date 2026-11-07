@@ -1,10 +1,321 @@
 using System.Collections;
+using System.Text.Json;
 using Meziantou.Framework.Yaml.Events;
 
 namespace Meziantou.Framework.Yaml.Tests;
 
 public class ParserTests : ParserTestHelper
 {
+    public static TheoryData<string, string, string, bool> ConformanceCases()
+    {
+        using var stream = typeof(ParserTests).Assembly.GetManifestResourceStream("Meziantou.Framework.Yaml.Tests.files.yaml-test-suite.cases.json")!;
+        using var document = JsonDocument.Parse(stream);
+        var result = new TheoryData<string, string, string, bool>();
+        foreach (var item in document.RootElement.EnumerateArray())
+        {
+            result.Add(item.GetProperty("id").GetString()!, item.GetProperty("yaml").GetString()!, item.GetProperty("events").GetString()!, item.GetProperty("error").GetBoolean());
+        }
+
+        return result;
+    }
+
+    [Theory]
+    [MemberData(nameof(ConformanceCases))]
+    public void YamlTestSuite_StringParser(string id, string yaml, string expectedEvents, bool invalid)
+    {
+        _ = id;
+        using var reader = new StringReader(yaml);
+        AssertConformance(Parser.CreateParser(reader), expectedEvents, invalid);
+    }
+
+    [Theory]
+    [MemberData(nameof(ConformanceCases))]
+    public void YamlTestSuite_BufferedParser(string id, string yaml, string expectedEvents, bool invalid)
+    {
+        _ = id;
+        using var reader = new StringReader(yaml);
+        AssertConformance(new Parser<LookAheadBuffer>(new LookAheadBuffer(reader, 12)), expectedEvents, invalid);
+    }
+
+    [Theory]
+    [InlineData("\\x0")]
+    [InlineData("\\u123")]
+    [InlineData("\\U00110000")]
+    [InlineData("\\UFFFFFFFF")]
+    [InlineData("\\uD800")]
+    [InlineData("\\uDC00")]
+    [InlineData("\\uD800\\u0041")]
+    [InlineData("\\uDC00\\uD800")]
+    [InlineData("\\'")]
+    public void InvalidUnicodeEscapes_ThrowYamlException(string escape)
+    {
+        using var reader = new StringReader("\"" + escape + "\"");
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData("%C0%AF")]
+    [InlineData("%ED%A0%80")]
+    [InlineData("%F4%90%80%80")]
+    [InlineData("%FF")]
+    [InlineData("%E2%82")]
+    [InlineData("%GG")]
+    public void InvalidTagUtf8Escapes_ThrowYamlException(string escape)
+    {
+        using var reader = new StringReader("!<tag:example.com," + escape + "> value");
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData(0x01)]
+    [InlineData(0x0B)]
+    [InlineData(0x1F)]
+    [InlineData(0x7F)]
+    [InlineData(0x9F)]
+    [InlineData(0xD800)]
+    [InlineData(0xDC00)]
+    [InlineData(0xFFFE)]
+    [InlineData(0xFFFF)]
+    public void NonPrintableInput_ThrowsYamlException(int codePoint)
+    {
+        var character = ((char)codePoint).ToString();
+
+        // Quoted scalars accept every non-C0 character (YAML 1.2 §5.1).
+        var inputs = codePoint < 0x20 || char.IsSurrogate((char)codePoint)
+            ? new[] { "a" + character, "'a" + character + "'", "\"a" + character + "\"", "|\n  a" + character, "# a" + character }
+            : new[] { "a" + character, "|\n  a" + character, "# a" + character };
+        foreach (var yaml in inputs)
+        {
+            using var reader = new StringReader(yaml);
+            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+            using var bufferedReader = new StringReader(yaml);
+            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+        }
+    }
+
+    [Theory]
+    [InlineData(0x7F)]
+    [InlineData(0x80)]
+    [InlineData(0x9F)]
+    [InlineData(0xFFFE)]
+    [InlineData(0xFFFF)]
+    public void NonC0Characters_AreAllowedInQuotedScalars(int codePoint)
+    {
+        var character = ((char)codePoint).ToString();
+        foreach (var (yaml, expected) in new[]
+        {
+            ("'a" + character + "b'", "+STR\n+DOC\n=VAL 'a" + character + "b\n-DOC\n-STR"),
+            ("\"a" + character + "b\"", "+STR\n+DOC\n=VAL \"a" + character + "b\n-DOC\n-STR"),
+            ("[\"" + character + "\"]", "+STR\n+DOC\n+SEQ []\n=VAL \"" + character + "\n-SEQ\n-DOC\n-STR"),
+        })
+        {
+            using var reader = new StringReader(yaml);
+            Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+            using var bufferedReader = new StringReader(yaml);
+            Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+        }
+    }
+
+    [Theory]
+    [InlineData("- Invalid use of BOM\n\uFEFF- Inside a document.\n")]
+    [InlineData("- a\n\uFEFF- b\n")]
+    [InlineData("a: 1\n\uFEFFb: 2\n")]
+    [InlineData("---\n\uFEFFa\n")]
+    [InlineData("[\n\uFEFFa]\n")]
+    [InlineData("a\n\uFEFF...\n")]
+    public void ByteOrderMarks_AreRejectedInsideDocuments(string yaml)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        using var bufferedReader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+    }
+
+    [Theory]
+    [InlineData("- !<!> foo\n")]
+    [InlineData("- !<$:?> bar\n")]
+    [InlineData("!<foo> bar\n")]
+    [InlineData("!<1a:b> bar\n")]
+    public void InvalidVerbatimTags_ThrowYamlException(string yaml)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData("!<!bar> baz\n", "+STR\n+DOC\n=VAL <!bar> :baz\n-DOC\n-STR")]
+    [InlineData("!<tag:yaml.org,2002:str> foo\n", "+STR\n+DOC\n=VAL <tag:yaml.org,2002:str> :foo\n-DOC\n-STR")]
+    [InlineData("!<urn:a.b-c+d:e> foo\n", "+STR\n+DOC\n=VAL <urn:a.b-c+d:e> :foo\n-DOC\n-STR")]
+    public void ValidVerbatimTags_AreAccepted(string yaml, string expected)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData("\uFEFF---\nvalue", "+STR\n+DOC ---\n=VAL :value\n-DOC\n-STR")]
+    [InlineData("\uFEFFkey: value", "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-DOC\n-STR")]
+    [InlineData("first\n...\n\uFEFF---\nsecond", "+STR\n+DOC\n=VAL :first\n-DOC ...\n+DOC ---\n=VAL :second\n-DOC\n-STR")]
+    [InlineData("first\n\uFEFF--- second", "+STR\n+DOC\n=VAL :first\n-DOC\n+DOC ---\n=VAL :second\n-DOC\n-STR")]
+    [InlineData("- first\n\uFEFF---\nsecond", "+STR\n+DOC\n+SEQ\n=VAL :first\n-SEQ\n-DOC\n+DOC ---\n=VAL :second\n-DOC\n-STR")]
+    [InlineData("first\n...\n\uFEFFsecond", "+STR\n+DOC\n=VAL :first\n-DOC ...\n+DOC\n=VAL :second\n-DOC\n-STR")]
+    [InlineData("'a\uFEFFb'", "+STR\n+DOC\n=VAL 'a\uFEFFb\n-DOC\n-STR")]
+    [InlineData("\"a\uFEFFb\"", "+STR\n+DOC\n=VAL \"a\uFEFFb\n-DOC\n-STR")]
+    public void ByteOrderMarks_AreAllowedInDocumentPrefixesAndQuotedScalars(string yaml, string expected)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+        using var bufferedReader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+    }
+
+    [Theory]
+    [InlineData("a\uFEFFb")]
+    [InlineData("|\n  a\uFEFFb")]
+    [InlineData(">\n  a\uFEFFb")]
+    public void ByteOrderMarks_AreRejectedInsideUnquotedScalars(string yaml)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData(1023, false)]
+    [InlineData(1024, false)]
+    [InlineData(1025, false)]
+    [InlineData(1023, true)]
+    [InlineData(1024, true)]
+    [InlineData(1025, true)]
+    public void ImplicitKeyLengthLimit_CountsUnicodeCharacters(int length, bool supplementary)
+    {
+        var key = supplementary ? string.Concat(Enumerable.Repeat("\U0001F600", length)) : new string('a', length);
+        var yaml = key + ": value\n";
+        using var reader = new StringReader(yaml);
+        var parser = Parser.CreateParser(reader);
+        if (length > 1024)
+        {
+            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(parser));
+        }
+        else
+        {
+            Assert.Equal("+STR\n+DOC\n+MAP\n=VAL :" + key + "\n=VAL :value\n-MAP\n-DOC\n-STR", ReadConformanceEvents(parser));
+        }
+    }
+
+    [Theory]
+    [InlineData("|\na\n  b\n", "+STR\n+DOC\n=VAL |a\\n  b\\n\n-DOC\n-STR")]
+    [InlineData(">\na\n  b\nc\n", "+STR\n+DOC\n=VAL >a\\n  b\\nc\\n\n-DOC\n-STR")]
+    [InlineData("--- |\n- >\n x\n", "+STR\n+DOC ---\n=VAL |- >\\n x\\n\n-DOC\n-STR")]
+    [InlineData("|\nx\n  ", "+STR\n+DOC\n=VAL |x\\n  \\n\n-DOC\n-STR")]
+    [InlineData("|\n\ta\n", "+STR\n+DOC\n=VAL |\\ta\\n\n-DOC\n-STR")]
+    [InlineData("a: |+\n  abc", "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL |abc\\n\n-MAP\n-DOC\n-STR")]
+    [InlineData(">+\nabc", "+STR\n+DOC\n=VAL >abc\\n\n-DOC\n-STR")]
+    [InlineData("strip: >-\n \nclip: x", "+STR\n+DOC\n+MAP\n=VAL :strip\n=VAL >\n=VAL :clip\n=VAL :x\n-MAP\n-DOC\n-STR")]
+    [InlineData("? a\n: - b", "+STR\n+DOC\n+MAP\n=VAL :a\n+SEQ\n=VAL :b\n-SEQ\n-MAP\n-DOC\n-STR")]
+    [InlineData("? - ? a\n    : b\n: - c", "+STR\n+DOC\n+MAP\n+SEQ\n+MAP\n=VAL :a\n=VAL :b\n-MAP\n-SEQ\n+SEQ\n=VAL :c\n-SEQ\n-MAP\n-DOC\n-STR")]
+    [InlineData("- x\n\t#c", "+STR\n+DOC\n+SEQ\n=VAL :x\n-SEQ\n-DOC\n-STR")]
+    [InlineData("k: v\n\t# c\n", "+STR\n+DOC\n+MAP\n=VAL :k\n=VAL :v\n-MAP\n-DOC\n-STR")]
+    [InlineData("!#a b", "+STR\n+DOC\n=VAL <!#a> :b\n-DOC\n-STR")]
+    [InlineData("%TAG !e! tag:x#\n--- !e!a b", "+STR\n+DOC ---\n=VAL <tag:x#a> :b\n-DOC\n-STR")]
+    [InlineData("[!]", "+STR\n+DOC\n+SEQ []\n=VAL <!> :\n-SEQ\n-DOC\n-STR")]
+    [InlineData("- &a\u0085 b\n- *a\u0085", "+STR\n+DOC\n+SEQ\n=VAL &a\u0085 :b\n=ALI *a\u0085\n-SEQ\n-DOC\n-STR")]
+    public void SpecificationEdgeCases_ProduceExpectedEvents(string yaml, string expected)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+        using var bufferedReader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+    }
+
+    [Theory]
+    [InlineData(": - b")]
+    [InlineData(": a: b")]
+    [InlineData("- : - b")]
+    [InlineData("? a\n: b\n: - c")]
+    [InlineData("k:\n>\n text")]
+    [InlineData("k:\n|\n text")]
+    [InlineData("-\n>")]
+    [InlineData("a: &b\n>")]
+    [InlineData("k:\n\ta")]
+    [InlineData("k:\n\t\"a\"")]
+    [InlineData("a: &b\n\ta")]
+    [InlineData("k: \"a\n\t\n b\"")]
+    [InlineData("k: a\n\t\n b")]
+    [InlineData("k: \"\\\n\"")]
+    [InlineData("- [a\nb]")]
+    [InlineData("- { multi\nline: value}")]
+    [InlineData("&a[b]")]
+    [InlineData("[&a[b]]")]
+    [InlineData("[!t{a: b}]")]
+    public void SpecificationEdgeCases_ThrowYamlException(string yaml)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        using var bufferedReader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+    }
+
+    private static void AssertConformance(IParser parser, string expectedEvents, bool invalid)
+    {
+        if (invalid)
+        {
+            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(parser));
+        }
+        else
+        {
+            Assert.Equal(expectedEvents, ReadConformanceEvents(parser));
+            Assert.False(parser.MoveNext());
+        }
+    }
+
+    private static string ReadConformanceEvents(IParser parser)
+    {
+        var events = new List<string>();
+        while (parser.MoveNext())
+        {
+            var current = parser.Current;
+            var properties = current is NodeEvent node
+                ? (node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " <" + node.Tag + ">")
+                : "";
+            events.Add(current switch
+            {
+                Events.StreamStart => "+STR",
+                Events.StreamEnd => "-STR",
+                Events.DocumentStart start => start.IsImplicit ? "+DOC" : "+DOC ---",
+                Events.DocumentEnd end => end.IsImplicit ? "-DOC" : "-DOC ...",
+                Events.MappingStart mapping => "+MAP" + (mapping.Style is YamlStyle.Flow ? " {}" : "") + properties,
+                Events.MappingEnd => "-MAP",
+                Events.SequenceStart sequence => "+SEQ" + (sequence.Style is YamlStyle.Flow ? " []" : "") + properties,
+                Events.SequenceEnd => "-SEQ",
+                Events.AnchorAlias alias => "=ALI *" + alias.Value,
+                Events.Scalar scalar => "=VAL" + properties + " " + ScalarIndicator(scalar.Style) + EscapeEventValue(scalar.Value),
+                _ => throw new InvalidOperationException($"Unexpected event: {current}"),
+            });
+        }
+
+        return string.Join('\n', events);
+    }
+
+    private static char ScalarIndicator(ScalarStyle style) => style switch
+    {
+        ScalarStyle.Plain => ':',
+        ScalarStyle.SingleQuoted => '\'',
+        ScalarStyle.DoubleQuoted => '"',
+        ScalarStyle.Literal => '|',
+        ScalarStyle.Folded => '>',
+        _ => throw new InvalidOperationException($"Unexpected scalar style: {style}"),
+    };
+
+    private static string EscapeEventValue(string value)
+    {
+        return value.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\0", "\\0", StringComparison.Ordinal)
+            .Replace("\b", "\\b", StringComparison.Ordinal)
+            .Replace("\n", "\\n", StringComparison.Ordinal)
+            .Replace("\r", "\\r", StringComparison.Ordinal)
+            .Replace("\t", "\\t", StringComparison.Ordinal);
+    }
+
     [Fact]
     public void EmptyDocument()
     {

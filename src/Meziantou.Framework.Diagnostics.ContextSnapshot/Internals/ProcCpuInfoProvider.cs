@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 /// <summary>
-/// CPU information from output of the `cat /proc/info` command.
+/// CPU information from the <c>/proc/cpuinfo</c> and <c>/sys/devices/system/cpu</c> pseudo-files.
 /// Linux only.
 /// </summary>
 internal static class ProcCpuInfoProvider
@@ -12,25 +12,19 @@ internal static class ProcCpuInfoProvider
     {
         if (OperatingSystem.IsLinux())
         {
-            var content = ProcessHelper.RunAndReadOutput("cat", "/proc/cpuinfo") ?? "";
-            var output = GetCpuSpeed() ?? "";
-            content += output;
+            var content = ReadFile("/proc/cpuinfo") ?? "";
+            content += GetCpuFrequencies();
             return ProcCpuInfoParser.ParseOutput(content);
         }
 
         return null;
     }
 
-    private static string? GetCpuSpeed()
+    private static string? ReadFile(string path)
     {
         try
         {
-            var output = ProcessHelper.RunAndReadOutput("/bin/bash", "-c \"lscpu | grep MHz\"")?
-                .Split('\n')
-                .SelectMany(x => x.Split(':'))
-                .ToArray();
-
-            return ParseCpuFrequencies(output);
+            return File.ReadAllText(path);
         }
         catch (Exception)
         {
@@ -38,40 +32,26 @@ internal static class ProcCpuInfoProvider
         }
     }
 
-    private static string? ParseCpuFrequencies(string[]? input)
+    private static string GetCpuFrequencies()
     {
-        // Example of output we trying to parse:
-        //
-        // CPU MHz: 949.154
-        // CPU max MHz: 3200,0000
-        // CPU min MHz: 800,0000
-
-        if (input is null)
-            return null;
-
+        // cpuinfo_min_freq / cpuinfo_max_freq are expressed in kHz. They are the same values lscpu reports
+        // as "CPU min MHz" / "CPU max MHz", read directly so no shell or util-linux is required.
         var output = new StringBuilder();
-        for (var i = 0; i + 1 < input.Length; i += 2)
-        {
-            var name = input[i].Trim();
-            var value = input[i + 1].Trim();
-
-            if (string.Equals(name, "CPU min MHz", StringComparison.OrdinalIgnoreCase))
-            {
-                if (Frequency.TryParseMHz(value.Replace(',', '.'), out var minFrequency))
-                {
-                    output.Append(CultureInfo.InvariantCulture, $"\n{ProcCpuInfoKeyNames.MinFrequency}\t:{minFrequency.ToMHz()}");
-                }
-            }
-
-            if (string.Equals(name, "CPU max MHz", StringComparison.OrdinalIgnoreCase))
-            {
-                if (Frequency.TryParseMHz(value.Replace(',', '.'), out var maxFrequency))
-                {
-                    output.Append(CultureInfo.InvariantCulture, $"\n{ProcCpuInfoKeyNames.MaxFrequency}\t:{maxFrequency.ToMHz()}");
-                }
-            }
-        }
-
+        AppendFrequency(output, ProcCpuInfoKeyNames.MinFrequency, "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq");
+        AppendFrequency(output, ProcCpuInfoKeyNames.MaxFrequency, "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
         return output.ToString();
+
+        static void AppendFrequency(StringBuilder output, string keyName, string path)
+        {
+            var value = ReadFile(path);
+            if (value is null)
+                return;
+
+            if (!long.TryParse(value.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var kiloHertz) || kiloHertz <= 0)
+                return;
+
+            var frequency = new Frequency(kiloHertz, FrequencyUnit.KHz);
+            output.Append(CultureInfo.InvariantCulture, $"\n{keyName}\t:{frequency.ToMHz()}");
+        }
     }
 }

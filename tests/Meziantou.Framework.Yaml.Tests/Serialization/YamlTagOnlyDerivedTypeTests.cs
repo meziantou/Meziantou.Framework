@@ -3,6 +3,53 @@ using Meziantou.Framework.Yaml.Serialization;
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public class YamlTagOnlyDerivedTypeTests
 {
+    [Fact]
+    public void ReadmeExample_TagDiscriminator()
+    {
+        var yaml = YamlSerializer.Serialize<Animal>(new Dog { Name = "Rex" });
+
+        Assert.Equal("!dog\nName: Rex\n", yaml);
+        Assert.Equal("Rex", Assert.IsType<Dog>(YamlSerializer.Deserialize<Animal>(yaml)).Name);
+    }
+
+    #region YamlTypeDiscriminatorStyle_Tag
+    [YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Tag)]
+    [YamlDerivedType(typeof(Dog), Tag = "!dog")]
+    internal abstract class Animal
+    {
+        public string Name { get; set; } = "";
+    }
+
+    internal sealed class Dog : Animal;
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_InferClosedTypePolymorphism()
+    {
+        #region YamlPolymorphismOptions_InferClosedTypePolymorphism
+        var options = new YamlSerializerOptions
+        {
+            PolymorphismOptions = new YamlPolymorphismOptions { InferClosedTypePolymorphism = true },
+        };
+
+        Shape shape = new Circle { Name = "circle", Radius = 3 };
+        var yaml = YamlSerializer.Serialize(shape, options);
+        Assert.Equal("$type: Circle\nName: circle\nRadius: 3.0\n", yaml);
+        #endregion
+
+        Assert.Equal(3, Assert.IsType<Circle>(YamlSerializer.Deserialize<Shape>(yaml, options)).Radius);
+    }
+
+    #region YamlPolymorphism_ClosedHierarchy
+    public closed class Shape
+    {
+        public string Name { get; set; } = "";
+    }
+
+    public sealed class Circle : Shape { public double Radius { get; set; } }
+    public sealed class Square : Shape { public double Side { get; set; } }
+    #endregion
+
     // ---- Model types: tag-only entries (no discriminator) via attributes ----
 
     [YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Tag)]

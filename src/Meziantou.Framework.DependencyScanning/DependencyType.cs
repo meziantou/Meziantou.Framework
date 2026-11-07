@@ -56,4 +56,22 @@ public enum DependencyType
 
     /// <summary>.NET assembly file reference.</summary>
     DotNetAssemblyReference,
+
+    /// <summary>Claude Code or GitHub Copilot plugin referenced by a plugin marketplace.</summary>
+    AgentPlugin,
+
+    /// <summary>Claude Code or GitHub Copilot plugin marketplace.</summary>
+    AgentPluginMarketplace,
+
+    /// <summary>Rust crate package from crates.io or another Cargo source.</summary>
+    RustCrate,
+
+    /// <summary>Go module dependency.</summary>
+    GoModule,
+
+    /// <summary>Java package dependency from Maven or Gradle.</summary>
+    JavaPackage,
+
+    /// <summary>PHP package dependency from Composer.</summary>
+    PhpPackage,
 }

@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Default	dictionary;stream	1.6		FALSE	[FALSE];[TRUE]	FALSE				[FunctionType2,FunctionType3];[FunctionType0,FunctionType4]	Table 72, DotGain
+*	dictionary;stream	1.6		FALSE	[FALSE];[TRUE]	FALSE				[FunctionType2,FunctionType3];[FunctionType0,FunctionType4]	

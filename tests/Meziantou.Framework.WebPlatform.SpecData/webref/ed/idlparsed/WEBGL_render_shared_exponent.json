@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_render_shared_exponent Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_render_shared_exponent/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_render_shared_exponent"
+        ],
+        "Worker": [
+          "WEBGL_render_shared_exponent"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_render_shared_exponent": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_render_shared_exponent {\n};",
+        "type": "interface",
+        "name": "WEBGL_render_shared_exponent",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_render_shared_exponent"
+      ],
+      "Worker": [
+        "WEBGL_render_shared_exponent"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_render_shared_exponent": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

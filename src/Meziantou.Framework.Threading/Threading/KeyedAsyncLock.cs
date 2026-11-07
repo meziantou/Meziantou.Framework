@@ -5,27 +5,32 @@ namespace Meziantou.Framework.Threading;
 /// <summary>Provides an asynchronous lock mechanism that locks based on a key, allowing concurrent operations on different keys.</summary>
 /// <typeparam name="TKey">The type of the key.</typeparam>
 /// <example>
-/// <code><![CDATA[
-/// var keyedLock = new KeyedAsyncLock<string>();
-/// 
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/KeyedAsyncLockTests.cs" ref:region="KeyedAsyncLock_Usage" ref:dedent="true">
+/// var keyedLock = new KeyedAsyncLock&lt;string&gt;(StringComparer.Ordinal);
+/// var updateCounts = new ConcurrentDictionary&lt;string, int&gt;(StringComparer.Ordinal);
+///
 /// async Task ProcessUserAsync(string userId)
 /// {
 ///     using (await keyedLock.LockAsync(userId))
 ///     {
 ///         // Only one operation per userId at a time
 ///         // Multiple different userIds can be processed concurrently
-///         await UpdateUserDataAsync(userId);
+///         var count = updateCounts.GetValueOrDefault(userId);
+///         await Task.Yield();
+///         updateCounts[userId] = count + 1;
 ///     }
 /// }
-/// ]]></code>
+///
+/// await Task.WhenAll(ProcessUserAsync("alice"), ProcessUserAsync("alice"), ProcessUserAsync("bob"));
+/// Assert.Equal(2, updateCounts["alice"]);
+/// Assert.Equal(1, updateCounts["bob"]);
+/// </code>
 /// </example>
 public sealed class KeyedAsyncLock<TKey> where TKey : notnull
 {
-    // Entries are reference-counted and removed once no one holds or waits for a key's lock, so the
-    // dictionary doesn't grow without bound when used with high-cardinality keys. The dictionary
-    // bookkeeping (add/remove + ref count) is guarded by locking on the dictionary itself; the
-    // per-key AsyncLock provides the actual mutual exclusion.
-    private readonly Dictionary<TKey, Entry> _locks;
+    // The table reference-counts and evicts entries so it doesn't grow without bound when used with
+    // high-cardinality keys; the per-key AsyncLock provides the actual mutual exclusion.
+    private readonly KeyedEntryTable<TKey, Entry> _locks;
 
     /// <summary>Initializes a new instance of the <see cref="KeyedAsyncLock{TKey}"/> class.</summary>
     public KeyedAsyncLock()
@@ -37,66 +42,77 @@ public sealed class KeyedAsyncLock<TKey> where TKey : notnull
     /// <param name="comparer">The equality comparer to use when comparing keys.</param>
     public KeyedAsyncLock(IEqualityComparer<TKey>? comparer)
     {
-        _locks = new Dictionary<TKey, Entry>(comparer);
+        _locks = new KeyedEntryTable<TKey, Entry>(comparer, () => new Entry());
     }
+
+    /// <summary>Gets the number of keys currently tracked. Used by tests to assert that released keys are evicted.</summary>
+    internal int EntryCount => _locks.Count;
 
     /// <summary>Asynchronously acquires the lock for the specified key.</summary>
     /// <param name="key">The key to lock on.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the lock.</param>
     /// <returns>A task that returns a disposable lease. Disposing the lease releases the lock.</returns>
-    public async ValueTask<KeyedAsyncLockLease> LockAsync(TKey key, CancellationToken cancellationToken = default)
+    public ValueTask<KeyedAsyncLockLease> LockAsync(TKey key, CancellationToken cancellationToken = default)
     {
-        Entry entry;
-        lock (_locks)
-        {
-            if (!_locks.TryGetValue(key, out entry!))
-            {
-                entry = new Entry();
-                _locks.Add(key, entry);
-            }
+        // Checked before reserving: an already-canceled token would otherwise create an entry and the per-key
+        // lock behind it only to evict them again once the cancellation surfaces.
+        if (cancellationToken.IsCancellationRequested)
+            return ValueTask.FromCanceled<KeyedAsyncLockLease>(cancellationToken);
 
-            // Reserve the entry before releasing the bookkeeping lock so a concurrent release
-            // cannot remove it from under us while we wait to acquire the per-key lock.
-            entry.ReferenceCount++;
-        }
-
+        var entry = _locks.Reserve(key);
+        ValueTask<AsyncLock.AsyncLockLease> pending;
         try
         {
-            var lease = await entry.Lock.LockAsync(cancellationToken).ConfigureAwait(false);
+            pending = entry.Lock.LockAsync(cancellationToken);
+        }
+        catch
+        {
+            // The lock was not acquired, so undo the reservation.
+            _locks.Release(key, entry);
+            throw;
+        }
+
+        // An uncontended acquisition completes synchronously, so hand the lease back without going through the
+        // async state machine.
+        if (pending.IsCompletedSuccessfully)
+            return new ValueTask<KeyedAsyncLockLease>(new KeyedAsyncLockLease(this, key, entry, pending.Result));
+
+        return AwaitLockAsync(key, entry, pending);
+    }
+
+    private async ValueTask<KeyedAsyncLockLease> AwaitLockAsync(TKey key, Entry entry, ValueTask<AsyncLock.AsyncLockLease> pending)
+    {
+        try
+        {
+            var lease = await pending.ConfigureAwait(false);
             return new KeyedAsyncLockLease(this, key, entry, lease);
         }
         catch
         {
             // The lock was not acquired (e.g. cancellation), so undo the reservation.
-            ReleaseReference(key, entry);
+            _locks.Release(key, entry);
             throw;
-        }
-    }
-
-    private void ReleaseReference(TKey key, Entry entry)
-    {
-        lock (_locks)
-        {
-            if (--entry.ReferenceCount == 0)
-            {
-                _locks.Remove(key);
-            }
         }
     }
 
     private void Release(TKey key, Entry entry, AsyncLock.AsyncLockLease lease)
     {
-        lease.Dispose();
-        ReleaseReference(key, entry);
+        // The per-key lock only lets the first release of an acquisition through, so a lease disposed twice
+        // cannot drop the entry's reference count twice and evict an entry somebody else is still using.
+        if (lease.TryRelease())
+        {
+            _locks.Release(key, entry);
+        }
     }
 
-    internal sealed class Entry
+    internal sealed class Entry : KeyedEntry
     {
         public AsyncLock Lock { get; } = new();
-        public int ReferenceCount { get; set; }
     }
 
     /// <summary>Represents a disposable lease for a <see cref="KeyedAsyncLock{TKey}"/>. Disposing the lease releases the lock for the key.</summary>
+    /// <remarks>Only the first disposal of a lease releases the key. Disposing the same lease again, or disposing a
+    /// copy of an already-disposed lease, does nothing instead of releasing an acquisition made in the meantime.</remarks>
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Not meant to be used directly")]
     public readonly struct KeyedAsyncLockLease : IDisposable

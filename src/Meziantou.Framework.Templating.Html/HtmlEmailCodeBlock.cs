@@ -70,7 +70,7 @@ public class HtmlEmailCodeBlock : CodeBlock
 
         if (text.StartsWith('#', StringComparison.Ordinal))
         {
-            return Template.OutputParameterName + ".Write(\"{0}\", " + text[1..].TrimStart() + ");";
+            return Template.OutputParameterName + ".Write(" + text[1..].TrimStart() + ");";
         }
 
         return base.BuildCode();

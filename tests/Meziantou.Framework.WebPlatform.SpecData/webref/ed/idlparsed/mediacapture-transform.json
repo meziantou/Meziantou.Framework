@@ -1,0 +1,363 @@
+{
+  "spec": {
+    "title": "MediaStreamTrack Insertable Media Processing using Streams",
+    "url": "https://w3c.github.io/mediacapture-transform/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "MediaStreamTrackHandle"
+        ],
+        "DedicatedWorker": [
+          "MediaStreamTrackHandle",
+          "MediaStreamTrackProcessor",
+          "VideoTrackGenerator"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "MediaStreamTrackHandle": {
+        "fragment": "[Exposed=(Window,DedicatedWorker), Transferable]\ninterface MediaStreamTrackHandle {\n   constructor(MediaStreamTrack track);\n};",
+        "type": "interface",
+        "name": "MediaStreamTrackHandle",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "track",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-mediastreamtrackhandle-mediastreamtrackhandle"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-transform/#mediastreamtrackhandle"
+      },
+      "MediaStreamTrackProcessor": {
+        "fragment": "[Exposed=DedicatedWorker]\ninterface MediaStreamTrackProcessor {\n    constructor(MediaStreamTrackProcessorInit init);\n    readonly attribute ReadableStream readable;\n    readonly attribute unsigned long long discardedFrames;\n    readonly attribute unsigned long long totalFrames;\n};",
+        "type": "interface",
+        "name": "MediaStreamTrackProcessor",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrackProcessorInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-mediastreamtrackprocessor-mediastreamtrackprocessor"
+          },
+          {
+            "type": "attribute",
+            "name": "readable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-mediastreamtrackprocessor-readable"
+          },
+          {
+            "type": "attribute",
+            "name": "discardedFrames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-mediastreamtrackprocessor-discardedframes"
+          },
+          {
+            "type": "attribute",
+            "name": "totalFrames",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-mediastreamtrackprocessor-totalframes"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "DedicatedWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-transform/#mediastreamtrackprocessor"
+      },
+      "MediaStreamTrackOrHandle": {
+        "fragment": "typedef (MediaStreamTrack or MediaStreamTrackHandle) MediaStreamTrackOrHandle;",
+        "type": "typedef",
+        "name": "MediaStreamTrackOrHandle",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrack"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrackHandle"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-transform/#typedefdef-mediastreamtrackorhandle"
+      },
+      "MediaStreamTrackProcessorInit": {
+        "fragment": "dictionary MediaStreamTrackProcessorInit {\n  required MediaStreamTrackOrHandle track;\n  [EnforceRange] unsigned short maxBufferSize;\n};",
+        "type": "dictionary",
+        "name": "MediaStreamTrackProcessorInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "track",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrackOrHandle"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-mediastreamtrackprocessorinit-track"
+          },
+          {
+            "type": "field",
+            "name": "maxBufferSize",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-mediastreamtrackprocessorinit-maxbuffersize"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-transform/#dictdef-mediastreamtrackprocessorinit"
+      },
+      "VideoTrackGenerator": {
+        "fragment": "[Exposed=DedicatedWorker]\ninterface VideoTrackGenerator {\n  constructor();\n  readonly attribute WritableStream writable;\n  attribute boolean muted;\n  readonly attribute MediaStreamTrack track;\n};",
+        "type": "interface",
+        "name": "VideoTrackGenerator",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-videotrackgenerator-videotrackgenerator"
+          },
+          {
+            "type": "attribute",
+            "name": "writable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WritableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-videotrackgenerator-writable"
+          },
+          {
+            "type": "attribute",
+            "name": "muted",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-videotrackgenerator-muted"
+          },
+          {
+            "type": "attribute",
+            "name": "track",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrack"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-transform/#dom-videotrackgenerator-track"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "DedicatedWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-transform/#videotrackgenerator"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "MediaStreamTrackHandle"
+      ],
+      "DedicatedWorker": [
+        "MediaStreamTrackHandle",
+        "MediaStreamTrackProcessor",
+        "VideoTrackGenerator"
+      ]
+    },
+    "dependencies": {
+      "MediaStreamTrackHandle": [
+        "MediaStreamTrack"
+      ],
+      "MediaStreamTrackProcessor": [
+        "MediaStreamTrackProcessorInit",
+        "ReadableStream"
+      ],
+      "MediaStreamTrackProcessorInit": [
+        "MediaStreamTrackOrHandle"
+      ],
+      "VideoTrackGenerator": [
+        "WritableStream",
+        "MediaStreamTrack"
+      ]
+    },
+    "externalDependencies": [
+      "MediaStreamTrack",
+      "ReadableStream",
+      "WritableStream"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

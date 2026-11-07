@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Specifies the type of a credential in the Windows Credential Manager.</summary>
@@ -22,8 +24,10 @@ public enum CredentialType
     DomainExtended,
 
     /// <summary>A sentinel value indicating the maximum number of supported credential types. This is used internally by the Windows API and should not be used as an actual credential type.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     Maximum,
 
     /// <summary>A sentinel value indicating the maximum number of supported credential types including extended types. This is used internally by the Windows API and should not be used as an actual credential type.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     MaximumEx = Maximum + 1000,
 }

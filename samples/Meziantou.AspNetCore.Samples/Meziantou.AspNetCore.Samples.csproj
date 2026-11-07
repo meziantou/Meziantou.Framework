@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk.Razor">
+
+  <!-- The readme examples of the ASP.NET Core packages that start a web application, and the Razor views using the
+       TagHelpers of Meziantou.AspNetCore.Mvc. CI compiles them but does not run them. -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.AspNetCore/Meziantou.AspNetCore.csproj" />
+    <ProjectReference Include="../../src/Meziantou.AspNetCore.Authentication.HttpBasic/Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
+    <ProjectReference Include="../../src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
+    <ProjectReference Include="../../src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
+  </ItemGroup>
+
+</Project>

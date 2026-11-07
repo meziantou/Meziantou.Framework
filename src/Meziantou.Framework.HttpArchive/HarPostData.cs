@@ -8,7 +8,7 @@ public sealed class HarPostData
 {
     /// <summary>Gets or sets the MIME type of the posted data.</summary>
     [JsonPropertyName("mimeType")]
-    public string MimeType { get; set; } = "";
+    public string? MimeType { get; set; } = "";
 
     /// <summary>Gets or sets the list of posted parameters (in case of URL encoded parameters).</summary>
     [JsonPropertyName("params")]

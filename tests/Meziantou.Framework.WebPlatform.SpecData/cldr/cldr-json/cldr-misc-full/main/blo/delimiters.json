@@ -1,0 +1,15 @@
+{
+  "main": {
+    "blo": {
+      "identity": {
+        "language": "blo"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

@@ -16,6 +16,37 @@ public sealed class SnapshotTestingToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal("new-value", await File.ReadAllTextAsync(verifiedPath));
     }
 
+    [Theory]
+    [InlineData("sample.actual.g.cs", "sample.verified.g.cs")]
+    [InlineData("sample.actual.d.ts", "sample.verified.d.ts")]
+    [InlineData("Parse.actual.value.actual.txt", "Parse.actual.value.verified.txt")]
+    public async Task Approve_MapsTheActualFileToItsVerifiedFile(string actualFileName, string verifiedFileName)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var actualPath = await temp.CreateTextFileAsync("__snapshots__/" + actualFileName, "new-value", XunitCancellationToken);
+
+        var result = await RunTool(["approve", "--folder", temp.FullPath]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.False(File.Exists(actualPath));
+        Assert.Equal([verifiedFileName], [.. Directory.GetFiles(temp.GetFullPath("__snapshots__")).Select(path => Path.GetFileName(path))]);
+        Assert.Equal("new-value", await File.ReadAllTextAsync(temp.GetFullPath("__snapshots__/" + verifiedFileName)));
+    }
+
+    [Fact]
+    public async Task Approve_DoesNotRenameAVerifiedFileWhoseNameContainsTheActualMarker()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var verifiedPath = await temp.CreateTextFileAsync("__snapshots__/Parse.actual.value.verified.txt", "committed", XunitCancellationToken);
+
+        var result = await RunTool(["approve", "--folder", temp.FullPath]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Found 0 snapshot(s).", result.Output);
+        Assert.Equal("committed", await File.ReadAllTextAsync(verifiedPath));
+        Assert.Single(Directory.GetFiles(temp.GetFullPath("__snapshots__")));
+    }
+
     [Fact]
     public async Task Approve_RecursesByDefault()
     {

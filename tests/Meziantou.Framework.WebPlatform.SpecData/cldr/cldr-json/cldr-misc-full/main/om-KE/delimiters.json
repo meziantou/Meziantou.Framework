@@ -1,0 +1,16 @@
+{
+  "main": {
+    "om-KE": {
+      "identity": {
+        "language": "om",
+        "territory": "KE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+URL	string-ascii	1.3	2.0	TRUE	FALSE	FALSE					Table 393
+L	integer	1.3	2.0	FALSE	FALSE	FALSE	1		[fn:Eval(@L>=1)]		
+F	bitmask	1.3	2.0	FALSE	FALSE	FALSE	0		[fn:Eval(fn:BitsClear(4,32))]		Table 394
+P	stream;string	1.3	2.0	FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	
+CT	string-ascii	1.3	2.0	FALSE	FALSE	FALSE	'application/x-www-form-urlencoded'				shall describe the content type of the posted data as described in Internet RFC 2045
+H	string	1.3	2.0	FALSE	FALSE	FALSE					
+S	dictionary	1.3	2.0	FALSE	FALSE	FALSE				[WebCaptureCommandSettings]	

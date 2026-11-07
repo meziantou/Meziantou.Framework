@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-LV": {
+      "identity": {
+        "language": "en",
+        "territory": "LV"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

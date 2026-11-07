@@ -1,6 +1,10 @@
 # Meziantou.Framework.Win32.CredentialManager
 
-````c#
+Read, write, and delete the credentials of the Windows Credential Manager. `CredentialManager` is in the
+`Meziantou.Framework.Win32` namespace.
+
+<!-- ref:../../samples/Meziantou.Framework.Win32.CredentialManagerConsole/ReadmeExamples.cs;region=CredentialManager_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Save the credential to the credential manager
 CredentialManager.WriteCredential(
     applicationName: "CredentialManagerTests",
@@ -9,14 +13,20 @@ CredentialManager.WriteCredential(
     comment: "Test",
     persistence: CredentialPersistence.LocalMachine);
 
-// Get a credential from the credential manager
+// Get a credential from the credential manager.
+// ReadCredential returns null when no such credential exists.
 var cred = CredentialManager.ReadCredential(applicationName: "CredentialManagerTests");
-Console.WriteLine(cred.UserName);
-Console.WriteLine(cred.Password);
+if (cred is not null)
+{
+    Console.WriteLine(cred.UserName);
+    Console.WriteLine(cred.Password);
+}
 
-// Delete a credential from the credential manager
+// Delete a credential from the credential manager.
+// DeleteCredential throws Win32Exception when no such credential exists.
 CredentialManager.DeleteCredential(applicationName: "CredentialManagerTests");
-````
+```
+<!-- endref -->
 
 ## Additional resources
 

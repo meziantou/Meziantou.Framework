@@ -16,6 +16,6 @@ internal sealed class DateTimeOffsetToTimestampJsonConverter : JsonConverter<Dat
 
     public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
     {
-        writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
+        writer.WriteNumberValue(value.UtcTicks / TicksPerMicroseconds);
     }
 }

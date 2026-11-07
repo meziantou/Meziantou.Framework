@@ -14,6 +14,17 @@ public sealed class PostgreSqlQueryParameter
     /// <summary>Gets or sets the declared PostgreSQL column type.</summary>
     public required PostgreSqlColumnType Type { get; init; }
 
+    /// <summary>Gets the PostgreSQL type OID sent by the client.</summary>
+    /// <remarks>Use this when <see cref="Type"/> is not specific enough, for example for an OID the library does not model.</remarks>
+    public uint TypeOid { get; init; }
+
+    /// <summary>Gets the wire format of the value: <c>0</c> for text, <c>1</c> for binary.</summary>
+    public int FormatCode { get; init; }
+
+    /// <summary>Gets the undecoded payload exactly as it arrived, or <see langword="null"/> for a SQL NULL.</summary>
+    /// <remarks>This is the escape hatch for values the library could not decode; <see cref="Value"/> then holds the same bytes.</remarks>
+    public ReadOnlyMemory<byte>? RawValue { get; init; }
+
     /// <summary>Gets a value indicating whether the parameter value is null.</summary>
     public bool IsNull => Value is null or DBNull;
 
@@ -125,9 +136,50 @@ public sealed class PostgreSqlQueryParameter
             uint value => value,
             long value => value,
             ulong value => value,
-            float value => (decimal)value,
-            double value => (decimal)value,
+            float value => ToDecimal(value),
+            double value => ToDecimal(value),
             string text when decimal.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var value) => value,
+            _ => null,
+        };
+    }
+
+    /// <summary>Converts the value to <see cref="Guid"/> when possible.</summary>
+    public Guid? AsGuid()
+    {
+        return Value switch
+        {
+            null or DBNull => null,
+            Guid value => value,
+            string text when Guid.TryParse(text, CultureInfo.InvariantCulture, out var value) => value,
+            byte[] { Length: 16 } bytes => new Guid(bytes, bigEndian: true),
+            _ => null,
+        };
+    }
+
+    /// <summary>Converts the value to <see cref="DateTime"/> when possible.</summary>
+    public DateTime? AsDateTime()
+    {
+        return Value switch
+        {
+            null or DBNull => null,
+            DateTime value => value,
+            DateTimeOffset value => value.UtcDateTime,
+            DateOnly value => value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            string text when DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var value) => value,
+            _ => null,
+        };
+    }
+
+    /// <summary>Converts the value to <see cref="DateTimeOffset"/> when possible.</summary>
+    public DateTimeOffset? AsDateTimeOffset()
+    {
+        return Value switch
+        {
+            null or DBNull => null,
+            DateTimeOffset value => value,
+            DateTime value => new DateTimeOffset(value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : value),
+            DateOnly value => new DateTimeOffset(value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)),
+            string text when DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var value) => value,
             _ => null,
         };
     }
@@ -156,6 +208,11 @@ public sealed class PostgreSqlQueryParameter
             _ => ParseJsonObject(AsString() ?? throw new FormatException("Parameter value cannot be converted to JSON.")),
         };
     }
+
+    // NaN, the infinities, and the values whose magnitude reaches 2^96 have no decimal representation.
+    private static decimal? ToDecimal(float value) => float.IsFinite(value) && Math.Abs(value) < 79228162514264337593543950336f ? (decimal)value : null;
+
+    private static decimal? ToDecimal(double value) => double.IsFinite(value) && Math.Abs(value) < 79228162514264337593543950336d ? (decimal)value : null;
 
     private static JsonObject ParseJsonObject(string value)
     {

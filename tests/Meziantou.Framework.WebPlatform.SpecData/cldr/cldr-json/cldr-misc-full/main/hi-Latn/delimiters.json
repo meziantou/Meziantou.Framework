@@ -1,0 +1,16 @@
+{
+  "main": {
+    "hi-Latn": {
+      "identity": {
+        "language": "hi",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

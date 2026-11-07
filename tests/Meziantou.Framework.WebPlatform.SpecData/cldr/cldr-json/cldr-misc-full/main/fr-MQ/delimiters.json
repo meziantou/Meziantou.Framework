@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-MQ": {
+      "identity": {
+        "language": "fr",
+        "territory": "MQ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

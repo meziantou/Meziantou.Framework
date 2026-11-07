@@ -1400,14 +1400,14 @@ Content-Length: 58
 <span class="hljs-attribute">Content-Type</span><span class="hljs-punctuation">: </span>application/json
 <span class="hljs-attribute">Content-Length</span><span class="hljs-punctuation">: </span>50
 
-<span class="language-json">{&quot;name&quot;:&quot;alice&quot;,&quot;email&quot;:&quot;alice@example.com&quot;}
+<span class="language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-string">&quot;alice&quot;</span><span class="hljs-punctuation">,</span><span class="hljs-attr">&quot;email&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-string">&quot;alice@example.com&quot;</span><span class="hljs-punctuation">}</span>
 
-HTTP/1.1 201 Created
-Content-Type: application/json
-Location: https://api.example.com/users/42
-Content-Length: 58
+HTTP/<span class="hljs-number">1.1</span> <span class="hljs-number">201</span> Created
+Content-Type<span class="hljs-punctuation">:</span> application/json
+Location<span class="hljs-punctuation">:</span> https<span class="hljs-punctuation">:</span><span class="hljs-comment">//api.example.com/users/42</span>
+Content-Length<span class="hljs-punctuation">:</span> <span class="hljs-number">58</span>
 
-{&quot;id&quot;:42,&quot;name&quot;:&quot;alice&quot;,&quot;email&quot;:&quot;alice@example.com&quot;}</span>
+<span class="hljs-punctuation">{</span><span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-number">42</span><span class="hljs-punctuation">,</span><span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-string">&quot;alice&quot;</span><span class="hljs-punctuation">,</span><span class="hljs-attr">&quot;email&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-string">&quot;alice@example.com&quot;</span><span class="hljs-punctuation">}</span></span>
 """);
     }
 

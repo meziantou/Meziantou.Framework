@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- The readme example sets assembly-level defaults, which apply to the whole assembly and can be set only once per
+       assembly, so it cannot share a project with the other StronglyTypedId samples -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+  </ItemGroup>
+
+</Project>

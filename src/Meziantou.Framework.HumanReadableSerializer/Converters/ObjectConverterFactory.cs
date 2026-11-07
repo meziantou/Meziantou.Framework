@@ -21,7 +21,14 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
         private static TypeConverter? GetTypeConverter()
         {
             var typeConverter = TypeDescriptor.GetConverter(typeof(T));
-            if (typeConverter is not null && typeConverter.GetType() != typeof(TypeConverter) && typeConverter.CanConvertTo(typeof(string)))
+
+            // Some converters cannot produce a meaningful string, so the members are serialized instead:
+            // - ReferenceConverter (used for interfaces) and ComponentConverter (used for IComponent) return an empty string without a site
+            // - ExpandableObjectConverter and CollectionConverter return the name of the type
+            if (typeConverter is null or ReferenceConverter or ExpandableObjectConverter or CollectionConverter || typeConverter.GetType() == typeof(TypeConverter))
+                return null;
+
+            if (typeConverter.CanConvertTo(typeof(string)))
                 return typeConverter;
 
             return null;
@@ -53,20 +60,8 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
                 var members = options.GetMembers(type);
                 foreach (var member in members)
                 {
-                    object? memberValue;
-                    try
-                    {
-                        memberValue = member.GetValue(value);
-                        if (member.MustIgnore(new HumanReadableIgnoreData(memberValue, exception: null)))
-                            continue;
-                    }
-                    catch (Exception ex)
-                    {
-                        if (member.MustIgnore(new HumanReadableIgnoreData(value: null, exception: ex)))
-                            continue;
-
-                        throw;
-                    }
+                    if (!member.TryGetValue(value, out var memberValue))
+                        continue;
 
                     if (!hasMember)
                     {
@@ -75,30 +70,7 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
                     }
 
                     writer.WritePropertyName(member.Name);
-
-                    if (member.Converter is not null)
-                    {
-                        member.Converter.WriteValue(writer, memberValue, member.MemberType, options);
-                    }
-                    else
-                    {
-                        var actualType = memberValue?.GetType() ?? member.MemberType;
-                        if (actualType == typeof(object))
-                        {
-                            if (memberValue is null)
-                            {
-                                writer.WriteNullValue();
-                            }
-                            else
-                            {
-                                writer.WriteEmptyObject();
-                            }
-                        }
-                        else
-                        {
-                            HumanReadableSerializer.Serialize(writer, memberValue, actualType, options);
-                        }
-                    }
+                    member.WriteValue(writer, memberValue, options);
                 }
 
                 if (hasMember)

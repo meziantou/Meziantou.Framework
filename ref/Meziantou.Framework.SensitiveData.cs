@@ -7,19 +7,19 @@ namespace Meziantou.Framework
     public static class SensitiveData
     {
         public static Meziantou.Framework.SensitiveData<char> Create(string value) => throw null;
-        public static Meziantou.Framework.SensitiveData<T> Create<T>(T[] buffer) where T : struct => throw null;
-        public static Meziantou.Framework.SensitiveData<T> Create<T>(System.ReadOnlySpan<T> buffer) where T : struct => throw null;
+        public static Meziantou.Framework.SensitiveData<T> Create<T>(System.ReadOnlySpan<T> buffer) where T : unmanaged => throw null;
+        public static Meziantou.Framework.SensitiveData<T> Create<T>(T[] buffer) where T : unmanaged => throw null;
         public static string RevealToString(this Meziantou.Framework.SensitiveData<char> secret) => throw null;
     }
 
     [System.ComponentModel.TypeConverter(typeof(Meziantou.Framework.SensitiveDataTypeConverter))]
-    public sealed class SensitiveData<T> : System.IDisposable where T : struct
+    public sealed class SensitiveData<T> : System.IDisposable where T : unmanaged
     {
-        public int GetLength() => throw null;
-        public int RevealInto(System.Span<T> destination) => throw null;
-        public T[] RevealToArray() => throw null;
-        public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction) { }
         public Meziantou.Framework.SensitiveData<T> Clone() => throw null;
         public void Dispose() { }
+        public int GetLength() => throw null;
+        public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction) { }
+        public int RevealInto(System.Span<T> destination) => throw null;
+        public T[] RevealToArray() => throw null;
     }
 }

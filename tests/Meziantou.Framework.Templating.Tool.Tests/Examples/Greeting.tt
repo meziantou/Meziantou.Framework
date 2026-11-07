@@ -1,0 +1,4 @@
+<#@ output extension=".txt" #>
+<# foreach (var name in new[] { "Ada", "Grace" }) { #>
+Hello <#= name #>!
+<# } #>

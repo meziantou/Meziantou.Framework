@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-SV": {
+      "identity": {
+        "language": "es",
+        "territory": "SV"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

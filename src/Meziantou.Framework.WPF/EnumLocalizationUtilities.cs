@@ -1,26 +1,21 @@
+using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Meziantou.Framework.WPF;
 
 internal static class EnumLocalizationUtilities
 {
-    private static readonly Dictionary<Type, LocalizedEnumValueCollection> EnumsCache = [];
-    private static readonly Dictionary<Expression, string?> PropertiesCache = [];
-
-    public static LocalizedEnumValueCollection GetEnumLocalization<T>()
-        where T : struct
-    {
-        return GetEnumLocalization(typeof(T));
-    }
+    private static readonly ConcurrentDictionary<Type, LocalizedEnumValueCollection> EnumsCache = new();
 
     public static LocalizedEnumValueCollection GetEnumLocalization(Type type)
     {
-        if (EnumsCache.TryGetValue(type, out var value))
-            return value;
+        return EnumsCache.GetOrAdd(type, CreateEnumLocalization);
+    }
 
+    private static LocalizedEnumValueCollection CreateEnumLocalization(Type type)
+    {
         var result = new List<LocalizedEnumValue>();
         var enumValues = type.GetEnumValues();
 
@@ -42,28 +37,6 @@ internal static class EnumLocalizationUtilities
             }
         }
 
-        var localizedValueCollection = new LocalizedEnumValueCollection(result);
-        EnumsCache.Add(type, localizedValueCollection);
-        return localizedValueCollection;
-    }
-
-    public static string? GetPropertyLocalization<T>(Expression<Func<T>> exp)
-    {
-        if (!PropertiesCache.TryGetValue(exp, out var value))
-        {
-            var memberExpression = (MemberExpression)exp.Body;
-            var displayAttribute = memberExpression.Member.GetCustomAttribute<DisplayAttribute>();
-            value = displayAttribute?.GetName() ?? memberExpression.Member.Name;
-
-            PropertiesCache.Add(exp, value);
-        }
-
-        return value;
-    }
-
-    public static string GetEnumMemberLocalization(Enum value)
-    {
-        var localizedValueCollection = GetEnumLocalization(value.GetType());
-        return localizedValueCollection[value].Name;
+        return new LocalizedEnumValueCollection(result);
     }
 }

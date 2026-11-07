@@ -10,13 +10,12 @@ A message handler that allows you to set default browser options for all HTTP re
 
 #### Usage
 
-Register the handler with `HttpClient` using dependency injection:
+Register the handler with `HttpClient` using dependency injection. `DefaultBrowserOptionsMessageHandler` is in the
+`Meziantou.AspNetCore.Components.WebAssembly` namespace, and `BrowserRequestCache` in
+`Microsoft.AspNetCore.Components.WebAssembly.Http`:
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/ComponentsReadmeExamples.cs;region=DefaultBrowserOptionsMessageHandler_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.AspNetCore.Components.WebAssembly;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.AspNetCore.Components.WebAssembly.Http;
-
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 // Add HttpClient with default browser options
@@ -29,6 +28,29 @@ builder.Services.AddHttpClient<MyApiClient>()
 
 await builder.Build().RunAsync();
 ```
+<!-- endref -->
+
+#### Behavior
+
+Only the options you set on the handler are applied. An option you leave unset is **not** sent to the
+browser, so the [Fetch defaults](https://fetch.spec.whatwg.org/#requestinit) keep applying
+(`cache: "default"`, `credentials: "same-origin"`, `mode: "cors"`). In the example above, only the
+`cache` option is set; credentials and mode are untouched.
+
+Options already set on an individual request always win over the handler defaults:
+
+<!-- ref:../../tests/Meziantou.AspNetCore.Components.WebAssembly.Tests/DefaultBrowserOptionsMessageHandlerTests.cs;region=DefaultBrowserOptionsMessageHandler_RequestOptionsWin;format=md-fenced-code-block;dedent=true -->
+```csharp
+// This request keeps force-cache, whatever the handler is configured with
+request.SetBrowserRequestCache(BrowserRequestCache.ForceCache);
+```
+<!-- endref -->
+
+> [!NOTE]
+> Before version 2.1.0, unset properties were sent using their `default` enum value, which meant
+> `credentials: "omit"` and `mode: "same-origin"` were applied even when only the cache was configured.
+> That broke cookie-based authentication and cross-origin requests. If you relied on that behavior, set
+> `DefaultBrowserRequestCredentials` and `DefaultBrowserRequestMode` explicitly.
 
 ## Additional Resources
 

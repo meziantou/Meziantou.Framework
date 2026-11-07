@@ -1,0 +1,169 @@
+{
+  "spec": {
+    "title": "WebRTC Diagnostic Logging API",
+    "url": "https://wicg.github.io/webrtc-diagnostic-logging/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "RTCPeerConnection"
+        ]
+      }
+    },
+    "idlNames": {
+      "RTCDiagnosticLoggingOptions": {
+        "fragment": "dictionary RTCDiagnosticLoggingOptions {\n  record<DOMString, DOMString> metadata;\n};",
+        "type": "dictionary",
+        "name": "RTCDiagnosticLoggingOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "metadata",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webrtc-diagnostic-logging/#dom-rtcdiagnosticloggingoptions-metadata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webrtc-diagnostic-logging/#dictdef-rtcdiagnosticloggingoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "RTCPeerConnection": [
+        {
+          "fragment": "[\n  Exposed=Window\n] partial interface RTCPeerConnection {\n  static DOMString startDiagnosticLogging(optional RTCDiagnosticLoggingOptions options = {});\n  static undefined stopDiagnosticLogging();\n  static undefined cancelDiagnosticLogging();\n};",
+          "type": "interface",
+          "name": "RTCPeerConnection",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "startDiagnosticLogging",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCDiagnosticLoggingOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://wicg.github.io/webrtc-diagnostic-logging/#dom-rtcpeerconnection-startdiagnosticlogging"
+            },
+            {
+              "type": "operation",
+              "name": "stopDiagnosticLogging",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://wicg.github.io/webrtc-diagnostic-logging/#dom-rtcpeerconnection-stopdiagnosticlogging"
+            },
+            {
+              "type": "operation",
+              "name": "cancelDiagnosticLogging",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://wicg.github.io/webrtc-diagnostic-logging/#dom-rtcpeerconnection-canceldiagnosticlogging"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "RTCPeerConnection"
+      ]
+    },
+    "dependencies": {
+      "RTCPeerConnection": [
+        "RTCDiagnosticLoggingOptions"
+      ],
+      "RTCDiagnosticLoggingOptions": []
+    },
+    "externalDependencies": [
+      "RTCPeerConnection"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

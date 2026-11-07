@@ -84,6 +84,19 @@ internal sealed class OpenTelemetryRequestPipeline
         await _tailSamplerHandler.HandleAsync(context, request, _tailSampler, DispatchTracesAsync, cancellationToken);
     }
 
+    /// <summary>Gets the interval at which buffered traces must be swept, or <see langword="null"/> when no tail sampler is configured.</summary>
+    public TimeSpan? TailSamplerSweepInterval => _tailSampler?.GetSweepInterval();
+
+    public ValueTask FlushTimedOutTracesAsync(CancellationToken cancellationToken)
+    {
+        if (_tailSampler is null)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        return _tailSamplerHandler.FlushTimedOutTracesAsync(_tailSampler, DispatchTracesAsync, cancellationToken);
+    }
+
     private async ValueTask DispatchTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
     {
         foreach (var receiver in _receivers)
@@ -96,13 +109,24 @@ internal sealed class OpenTelemetryRequestPipeline
     {
         ArgumentNullException.ThrowIfNull(receiverRegistrations);
 
-        var receivers = receiverRegistrations.Select(static item => item.Handler).ToArray();
-        if (receivers.Length is 0)
+        // The same handler instance can be registered more than once, typically when AddOpenTelemetryReceiver is called
+        // from several places for the same receiver. Dispatching to it twice would duplicate every record.
+        var receivers = new List<OpenTelemetryHandler>();
+        var seenHandlers = new HashSet<OpenTelemetryHandler>(ReferenceEqualityComparer.Instance);
+        foreach (var registration in receiverRegistrations)
+        {
+            if (seenHandlers.Add(registration.Handler))
+            {
+                receivers.Add(registration.Handler);
+            }
+        }
+
+        if (receivers.Count is 0)
         {
             throw new InvalidOperationException($"No OpenTelemetry receivers are registered. Use {nameof(OpenTelemetryServiceCollectionExtensions)}.{nameof(OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver)}(...).");
         }
 
-        return receivers;
+        return [.. receivers];
     }
 
     private static OpenTelemetryTailSampler? GetTailSampler(OpenTelemetrySampler[] samplers)

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "agq": {
+      "identity": {
+        "language": "agq"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

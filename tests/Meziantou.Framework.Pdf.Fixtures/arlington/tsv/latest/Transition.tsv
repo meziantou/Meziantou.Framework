@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.1		FALSE	FALSE	FALSE		[Trans]			Table 164
+S	name	1.1		FALSE	FALSE	FALSE	R	[Split,Blinds,Box,Wipe,Dissolve,Glitter,R,Fly,Push,Cover,Uncover,Fade]			
+D	number	1.1		FALSE	FALSE	FALSE	1	[fn:Eval(@D>=0)]			
+Dm	name	1.1		FALSE	FALSE	FALSE	H	[H,V]	[fn:IsMeaningful((@S==Split) || (@S==Blinds))]		
+M	name	1.1		FALSE	FALSE	FALSE	I	[I,O]	[fn:IsMeaningful((@S==Split) || (@S==Box) || (@S==Fly))]		
+Di	integer;name	1.1		FALSE	FALSE	FALSE	[0];[]	[0,90,180,270,315];[None]	[fn:Eval((((@Di==90) || (@Di==180)) && (@S==Wipe)) || ((@Di==315) && (@S==Glitter)))];[fn:Eval(((@Di==None) && (@S==Fly) && fn:SinceVersion(1.5,(@SS!=1.0))))]		
+SS	number	1.5		FALSE	FALSE	FALSE	1.0		[fn:IsMeaningful(@S==Fly)]		
+B	boolean	1.5		FALSE	FALSE	FALSE	false		[fn:IsMeaningful(@S==Fly)]		

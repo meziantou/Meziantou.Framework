@@ -1,0 +1,16 @@
+{
+  "main": {
+    "qu-EC": {
+      "identity": {
+        "language": "qu",
+        "territory": "EC"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

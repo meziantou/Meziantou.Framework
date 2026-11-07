@@ -2,11 +2,18 @@ namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
 internal static class SequenceReadHelpers
 {
-    public static List<TElement>? ReadList<TElement>(YamlReader reader, ref YamlConverter? elementConverter, string typeDisplayName)
+    /// <summary>Reads a sequence into a new <see cref="List{T}"/> exposed as <typeparamref name="TCollection"/>.</summary>
+    /// <remarks>
+    /// An alias resolves to the object of its anchor, which is not necessarily a list: an array aliased by an
+    /// <see cref="IList{T}"/> member is assigned as is, and an object that is not a <typeparamref name="TCollection"/> is
+    /// reported as a <see cref="YamlException"/>.
+    /// </remarks>
+    public static TCollection? ReadList<TCollection, TElement>(YamlReader reader, ref YamlConverter? elementConverter, string typeDisplayName)
+        where TCollection : class, IEnumerable<TElement>
     {
         if (reader.TryReadAlias(out var rootAliasValue))
         {
-            return (List<TElement>)rootAliasValue!;
+            return YamlThrowHelper.CastAliasValue<TCollection>(reader, rootAliasValue);
         }
 
         if (reader.TokenType == YamlTokenType.Alias)
@@ -42,7 +49,7 @@ internal static class SequenceReadHelpers
         }
 
         reader.Read();
-        return list;
+        return (TCollection)(object)list;
     }
 
     public static void WriteEnumerable<TElement>(YamlWriter writer, IEnumerable<TElement>? value, ref YamlConverter? elementConverter)
@@ -55,19 +62,10 @@ internal static class SequenceReadHelpers
 
         elementConverter ??= writer.GetConverter(typeof(TElement));
 
-        if (writer.ReferenceWriter is not null)
+        // The runtime type decides whether the value is tracked: a boxed value type is not an identity worth preserving.
+        if (writer.TryWriteReference(value))
         {
-            if (writer.ReferenceWriter.TryGetAnchor(value, out var existing))
-            {
-                writer.WriteAlias(existing);
-                return;
-            }
-
-            var anchor = writer.ReferenceWriter.GetOrAddAnchor(value);
-            if (anchor is not null)
-            {
-                writer.WriteAnchor(anchor);
-            }
+            return;
         }
 
         writer.WriteStartSequence();

@@ -1,0 +1,329 @@
+{
+  "spec": {
+    "title": "HTMLVideoElement.requestVideoFrameCallback()",
+    "url": "https://wicg.github.io/video-rvfc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "VideoFrameCallbackMetadata": {
+        "fragment": "dictionary VideoFrameCallbackMetadata {\n  required DOMHighResTimeStamp presentationTime;\n  required DOMHighResTimeStamp expectedDisplayTime;\n\n  required unsigned long width;\n  required unsigned long height;\n  required double mediaTime;\n\n  required unsigned long presentedFrames;\n  double processingDuration;\n\n  DOMHighResTimeStamp captureTime;\n  DOMHighResTimeStamp receiveTime;\n  unsigned long rtpTimestamp;\n};",
+        "type": "dictionary",
+        "name": "VideoFrameCallbackMetadata",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "presentationTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-presentationtime"
+          },
+          {
+            "type": "field",
+            "name": "expectedDisplayTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-expecteddisplaytime"
+          },
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-height"
+          },
+          {
+            "type": "field",
+            "name": "mediaTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-mediatime"
+          },
+          {
+            "type": "field",
+            "name": "presentedFrames",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-presentedframes"
+          },
+          {
+            "type": "field",
+            "name": "processingDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-processingduration"
+          },
+          {
+            "type": "field",
+            "name": "captureTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-capturetime"
+          },
+          {
+            "type": "field",
+            "name": "receiveTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-receivetime"
+          },
+          {
+            "type": "field",
+            "name": "rtpTimestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/video-rvfc/#dom-videoframecallbackmetadata-rtptimestamp"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/video-rvfc/#dictdef-videoframecallbackmetadata"
+      },
+      "VideoFrameRequestCallback": {
+        "fragment": "callback VideoFrameRequestCallback = undefined(DOMHighResTimeStamp now, VideoFrameCallbackMetadata metadata);",
+        "type": "callback",
+        "name": "VideoFrameRequestCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "now",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "metadata",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "VideoFrameCallbackMetadata"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/video-rvfc/#callbackdef-videoframerequestcallback"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLVideoElement": [
+        {
+          "fragment": "partial interface HTMLVideoElement {\n    unsigned long requestVideoFrameCallback(VideoFrameRequestCallback callback);\n    undefined cancelVideoFrameCallback(unsigned long handle);\n};",
+          "type": "interface",
+          "name": "HTMLVideoElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestVideoFrameCallback",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "callback",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "VideoFrameRequestCallback"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/video-rvfc/#dom-htmlvideoelement-requestvideoframecallback"
+            },
+            {
+              "type": "operation",
+              "name": "cancelVideoFrameCallback",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "handle",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/video-rvfc/#dom-htmlvideoelement-cancelvideoframecallback"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "VideoFrameCallbackMetadata": [
+        "DOMHighResTimeStamp"
+      ],
+      "HTMLVideoElement": [
+        "VideoFrameRequestCallback"
+      ]
+    },
+    "externalDependencies": [
+      "DOMHighResTimeStamp",
+      "HTMLVideoElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

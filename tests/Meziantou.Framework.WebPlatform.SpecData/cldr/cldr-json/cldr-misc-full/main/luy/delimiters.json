@@ -1,0 +1,15 @@
+{
+  "main": {
+    "luy": {
+      "identity": {
+        "language": "luy"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

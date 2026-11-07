@@ -24,7 +24,4 @@ public enum PerceivedTypeSource
 
     /// <summary>The perceived type is supported by Windows compressed folders.</summary>
     ZipFolder = 0x0040,
-
-    /// <summary>The perceived type was determined through MIME content types in the registry.</summary>
-    Mime = 0x0080,
 }

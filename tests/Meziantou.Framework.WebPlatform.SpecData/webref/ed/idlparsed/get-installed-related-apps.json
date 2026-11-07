@@ -1,0 +1,174 @@
+{
+  "spec": {
+    "title": "Get Installed Related Apps API",
+    "url": "https://wicg.github.io/get-installed-related-apps/spec/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator"
+        ]
+      }
+    },
+    "idlNames": {
+      "RelatedApplication": {
+        "fragment": "dictionary RelatedApplication {\n    required USVString platform;\n    USVString url;\n    DOMString id;\n    USVString version;\n};",
+        "type": "dictionary",
+        "name": "RelatedApplication",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "platform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/get-installed-related-apps/spec/#dom-relatedapplication-platform"
+          },
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/get-installed-related-apps/spec/#dom-relatedapplication-url"
+          },
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/get-installed-related-apps/spec/#dom-relatedapplication-id"
+          },
+          {
+            "type": "field",
+            "name": "version",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/get-installed-related-apps/spec/#dom-relatedapplication-version"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/get-installed-related-apps/spec/#dictdef-relatedapplication"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Navigator {\n  [SecureContext] Promise<sequence<RelatedApplication>> getInstalledRelatedApps();\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getInstalledRelatedApps",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "RelatedApplication"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://wicg.github.io/get-installed-related-apps/spec/#dom-navigator-getinstalledrelatedapps"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator"
+      ]
+    },
+    "dependencies": {
+      "RelatedApplication": [],
+      "Navigator": [
+        "RelatedApplication"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

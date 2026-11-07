@@ -2,16 +2,19 @@
 
 ASP.NET Core authentication handler for HTTP Basic authentication.
 
+> [!WARNING]
+> HTTP Basic sends the password on **every** request, encoded with Base64, which is reversible and not encryption. Serve these endpoints over HTTPS only. Unlike a session cookie, a leaked Basic credential is the password itself and stays replayable until it is changed.
+
 Credential validation is delegate-based through `options.ValidateCredentials`, which returns a `ClaimsPrincipal` for valid credentials and `null` for invalid credentials.
 
 You can also integrate with ASP.NET Core Identity using `AddHttpBasicIdentity<TUser>()`.
 
 ## Usage
 
-```csharp
-using Meziantou.AspNetCore.Authentication.HttpBasic;
-using System.Security.Claims;
+The types are in the `Meziantou.AspNetCore.Authentication.HttpBasic` namespace.
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
@@ -50,13 +53,12 @@ app.MapGet("/", (ClaimsPrincipal user) => $"Hello {user.Identity?.Name}!")
 
 app.Run();
 ```
+<!-- endref -->
 
 ## ASP.NET Core Identity integration
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_IdentityIntegration;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.AspNetCore.Authentication.HttpBasic;
-using Microsoft.AspNetCore.Identity;
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddIdentityCore<IdentityUser>()
@@ -69,7 +71,72 @@ builder.Services
         options.Realm = "My application";
     });
 ```
+<!-- endref -->
+
+ASP.NET Core Identity validates the credentials, so `options.ValidateCredentials` must not be set for this scheme. Setting it, in the callback or through a later `Configure`/`PostConfigure` call, throws an `OptionsValidationException` at startup rather than being ignored or replacing the password check. To restrict which accounts, tenants, or networks can access a resource, use [authorization policies](https://learn.microsoft.com/aspnet/core/security/authorization/policies) (a fallback policy applies to every endpoint). To validate credentials yourself, use `AddHttpBasic` instead.
+
+### Authentication type
+
+The principal is built by `SignInManager<TUser>.CreateUserPrincipalAsync`, so `User.Identity.AuthenticationType` is Identity's own `"Identity.Application"`, not the Basic scheme name:
+
+<!-- ref:../../tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests/HttpBasicAuthenticationTests.cs;region=HttpBasicIdentity_AuthenticationType;format=md-fenced-code-block;dedent=true -->
+```csharp
+app.MapGet("/", (ClaimsPrincipal user) => user.Identity?.AuthenticationType);
+// => "Identity.Application"
+```
+<!-- endref -->
+
+Authorization policies are keyed on the authentication *scheme*, so `RequireAuthorization` and `AddAuthenticationSchemes(...)` behave as expected. Only code that branches on `AuthenticationType` is affected — audit logging, "how did this user sign in" checks, or an application that mixes cookie and Basic authentication would attribute these requests to the cookie scheme. Use the scheme name from the authentication ticket if you need to tell them apart.
+
+### Two-factor authentication
+
+Accounts that require two-factor authentication are rejected, even when the password is correct. A Basic `Authorization` header carries only a username and a password, so it cannot satisfy a second factor. Accepting the password alone would let anyone who knows it skip the second factor that Identity's interactive sign-in enforces.
+
+An account requires two-factor authentication when `SignInManager<TUser>.IsTwoFactorEnabledAsync` returns `true`. This is the same check `PasswordSignInAsync` uses: the user store implements `IUserTwoFactorStore<TUser>`, two-factor authentication is enabled for the user, and at least one two-factor provider can produce a token for them. A remembered two-factor client (the `Identity.TwoFactorRememberMe` cookie) does not exempt the account.
+
+The rejection is reported to the client as an ordinary `401 Unauthorized`, the same as a wrong password, so the response does not reveal that the password was correct. It does not count as a failed attempt for lockout. Clients such as scripts or services that act for these accounts need credentials meant for them, for example scoped and revocable API keys or tokens, validated by `AddHttpBasic` with your own `ValidateCredentials` delegate or by another authentication scheme.
+
+If you accept the risk, set `AllowTwoFactorEnabledAccounts` to authenticate these accounts with their password alone:
+
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_AllowTwoFactorEnabledAccounts;format=md-fenced-code-block;dedent=true -->
+```csharp
+builder.Services
+    .AddAuthentication(HttpBasicAuthenticationDefaults.AuthenticationScheme)
+    .AddHttpBasicIdentity<IdentityUser>(options => options.AllowTwoFactorEnabledAccounts = true);
+```
+<!-- endref -->
+
+> [!WARNING]
+> With `AllowTwoFactorEnabledAccounts` enabled, anyone who knows the password of a two-factor account can use this endpoint without the second factor. Only enable it when the resources behind the Basic scheme do not need the protection the second factor gives, or when an authorization policy independently requires evidence of multi-factor authentication.
+
+Identity's other sign-in checks still apply: locked-out accounts and accounts that fail `IdentityOptions.SignIn` confirmation requirements (`RequireConfirmedAccount`, `RequireConfirmedEmail`, `RequireConfirmedPhoneNumber`) are rejected.
 
 ## Security options
 
-- `MaxCredentialLength` limits the size (in characters) of the Base64 credential payload in the `Authorization` header.
+- `MaxCredentialLength` limits the size (in characters) of the Base64 credential payload in the `Authorization` header. The limit is applied before the payload is decoded.
+- Credentials containing a control character (U+0000 to U+001F, or U+007F) in the username or the password fail authentication before `ValidateCredentials` is called, as required by RFC 7617. Any other Unicode character is passed through unchanged, including C1 controls (U+0080 to U+009F) and line or paragraph separators (U+2028, U+2029). The username is untrusted input: escape it before writing it to a log.
+- `Realm` accepts printable ASCII only (U+0020 to U+007E). Other characters cannot be written to a `WWW-Authenticate` header, so they are rejected when the option is set rather than failing later on every challenge.
+
+### Use HTTPS
+
+Credentials travel in cleartext on every request. Do not expose a Basic endpoint over plain HTTP outside of loopback.
+
+### Rate limit the endpoint
+
+HTTP Basic is an easy brute-force target: there is no CSRF token, no session, and no interactive step, so an attacker can replay guesses as fast as the server answers. Put the endpoint behind [ASP.NET Core rate limiting](https://learn.microsoft.com/aspnet/core/performance/rate-limit).
+
+This matters for throughput too. Credentials are revalidated from scratch on every request, and with ASP.NET Core Identity that means a full password hash each time — on the order of tens of milliseconds of CPU per request. A single client can consume a disproportionate amount of CPU.
+
+### Account lockout with ASP.NET Core Identity
+
+`AddHttpBasicIdentity<TUser>` does **not** record failed sign-in attempts by default, so Identity's lockout never triggers no matter how `IdentityOptions.Lockout` is configured. Pass `lockoutOnFailure: true` to opt in:
+
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_LockoutOnFailure;format=md-fenced-code-block;dedent=true -->
+```csharp
+builder.Services
+    .AddAuthentication(HttpBasicAuthenticationDefaults.AuthenticationScheme)
+    .AddHttpBasicIdentity<IdentityUser>(options => options.Realm = "My application", lockoutOnFailure: true);
+```
+<!-- endref -->
+
+The default is `false` because lockout on an endpoint with no interactive step lets a third party lock accounts out on purpose simply by sending bad passwords. Neither default is safe on its own: choose `lockoutOnFailure: true` to bound guessing per account, or keep `false` and rely on rate limiting to bound guessing per caller. Doing neither leaves an unthrottled password oracle.

@@ -5,19 +5,9 @@ namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
 internal static class Cpp
 {
-    private const string DeclTypeAutoRe = @"decltype\(auto\)";
-    private const string NamespaceRe = @"[a-zA-Z_]\w*::";
-    private const string TemplateArgumentRe = @"<[^<>]+>";
+    private const string DecimalStartRe = @"(?:\G|(?<![0-9](?:(?!\G)')?))";
 
-    private const string FunctionTypeRe =
-        "(?!struct)(" + DeclTypeAutoRe + "|"
-        + "(?:" + NamespaceRe + ")?"
-        + @"[a-zA-Z_]\w*"
-        + "(?:" + TemplateArgumentRe + ")?"
-        + ")";
-
-    private const string FunctionTitleRe =
-        "(?:" + NamespaceRe + ")?" + CommonModes.IdentRe + @"\s*\(";
+    private static readonly string FunctionDeclarationRe = CFamily.CreateFunctionDeclarationRe("(?!struct)");
 
     private static readonly string[] ReservedKeywords =
     [
@@ -33,25 +23,29 @@ internal static class Cpp
         "typeid","typename","union","using","virtual","volatile","while","xor","xor_eq",
     ];
 
-    private static readonly string[] ReservedTypes =
+    internal static readonly string[] ReservedTypes =
     [
         "bool","char","char16_t","char32_t","char8_t","double","float","int","long","short","void",
         "wchar_t","unsigned","signed","const","static",
     ];
 
-    private static readonly string[] Literals = ["NULL", "false", "nullopt", "nullptr", "true"];
-    private static readonly string[] BuiltIn = ["_Pragma"];
+    internal static readonly string[] Literals = ["NULL", "false", "nullopt", "nullptr", "true"];
+    internal static readonly string[] BuiltIn = ["_Pragma"];
 
-    public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode());
+    public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode(ReservedTypes, Literals, BuiltIn));
 
-    private static Mode CreateMode()
+    /// <summary>
+    /// Creates the C++ grammar with the given keyword groups, so that a superset of C++ (Arduino) can add its own
+    /// words to every mode that recognizes the C++ keywords.
+    /// </summary>
+    internal static Mode CreateMode(string[] types, string[] literals, string[] builtIns)
     {
         var keywords = Engine.Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
-            ["type"] = ReservedTypes,
+            ["type"] = types,
             ["keyword"] = ReservedKeywords,
-            ["literal"] = Literals,
-            ["built_in"] = BuiltIn,
+            ["literal"] = literals,
+            ["built_in"] = builtIns,
         });
 
         var cLineCommentBackslash = new Mode { Begin = @"\\\n" };
@@ -65,34 +59,7 @@ internal static class Cpp
 
         var primitiveTypes = new Mode { Scope = "type", Begin = @"\b[a-z\d_]*_t\b" };
 
-        const string CharacterEscapes = @"\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4,8}|[0-7]{3}|\S)";
-
-        var strings = new Mode
-        {
-            Scope = "string",
-            Variants =
-            [
-                new Mode
-                {
-                    Begin = @"(u8?|U|L)?""",
-                    End = @"""",
-                    Illegal = @"\n",
-                    Contains = [CommonModes.BackslashEscape],
-                },
-                new Mode
-                {
-                    Begin = @"(u8?|U|L)?'(" + CharacterEscapes + "|.)",
-                    End = "'",
-                    Illegal = ".",
-                },
-                new Mode
-                {
-                    Begin = @"(?:u8?|U|L)?R""([^()\\ ]{0,16})\(",
-                    End = @"\)([^()\\ ]{0,16})""",
-                    EndSameAsBegin = true,
-                },
-            ],
-        };
+        var strings = CFamily.CreateStrings();
 
         var numbers = new Mode
         {
@@ -101,13 +68,16 @@ internal static class Cpp
             [
                 new Mode
                 {
+                    // A decimal part that follows a digit (or a digit and a separator) can also be matched
+                    // from that digit, so only the first digit of a run may start one: otherwise, each
+                    // digit of a long run would rescan it.
                     Begin =
                         @"[+-]?(?:" +
                         @"(?:" +
-                            @"[0-9](?:'?[0-9])*\.(?:[0-9](?:'?[0-9])*)?" +
+                            DecimalStartRe + @"[0-9](?:'?[0-9])*\.(?:[0-9](?:'?[0-9])*)?" +
                             @"|\.[0-9](?:'?[0-9])*" +
                         @")(?:[Ee][+-]?[0-9](?:'?[0-9])*)?" +
-                        @"|[0-9](?:'?[0-9])*[Ee][+-]?[0-9](?:'?[0-9])*" +
+                        @"|" + DecimalStartRe + @"[0-9](?:'?[0-9])*[Ee][+-]?[0-9](?:'?[0-9])*" +
                         @"|0[Xx](?:" +
                             @"[0-9A-Fa-f](?:'?[0-9A-Fa-f])*(?:\.(?:[0-9A-Fa-f](?:'?[0-9A-Fa-f])*)?)?" +
                             @"|\.[0-9A-Fa-f](?:'?[0-9A-Fa-f])*" +
@@ -151,13 +121,13 @@ internal static class Cpp
             [
                 new() { Begin = @"\\\n" },
                 strings,
-                new() { Scope = "string", Begin = "<.*?>" },
+                new() { Scope = "string", Begin = CFamily.HeaderNameRe },
                 cLineComment,
                 CommonModes.CBlockCommentMode,
             ],
         };
 
-        var titleMode = new Mode { Scope = "title", Begin = "(?:" + NamespaceRe + ")?" + CommonModes.IdentRe };
+        var titleMode = new Mode { Scope = "title", Begin = CFamily.ScopedIdentifierRe };
 
         var functionDispatch = new Mode
         {
@@ -229,7 +199,7 @@ internal static class Cpp
         var functionDeclaration = new Mode
         {
             Scope = "function",
-            Begin = "(" + FunctionTypeRe + @"[\*&\s]+)+" + FunctionTitleRe,
+            Begin = FunctionDeclarationRe,
             ReturnBegin = true,
             End = "[{;=]",
             ExcludeEnd = true,
@@ -237,10 +207,10 @@ internal static class Cpp
             Illegal = @"[^\w\s\*&:<>.]",
             Contains =
             [
-                new() { Begin = DeclTypeAutoRe, Keywords = keywords },
+                new() { Begin = CFamily.DeclTypeAutoRe, Keywords = keywords },
                 new()
                 {
-                    Begin = FunctionTitleRe,
+                    Begin = CFamily.FunctionTitleRe,
                     ReturnBegin = true,
                     Contains = [titleMode],
                 },
@@ -302,7 +272,7 @@ internal static class Cpp
         contains.AddRange(expressionContains);
         contains.Add(preprocessor);
         contains.Add(containerTemplates);
-        contains.Add(new Mode { Begin = CommonModes.IdentRe + "::", Keywords = keywords });
+        contains.Add(new Mode { Begin = CFamily.ScopeQualifierRe, Keywords = keywords });
         contains.Add(classDeclaration);
 
         return new Mode

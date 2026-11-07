@@ -1,0 +1,30 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    External-tool interoperability tests: decode files produced by our encoders with pinned independent tools (ffmpeg, libwebp,
+    Apple ImageIO), and decode files produced by pinned independent encoders (libavif, libaom and SVT-AV1 through ffmpeg) as
+    independent decoders do (AVIF, AV1). ffmpeg, libwebp and libavif are downloaded from the meziantou/prebuilt release pinned
+    by the Meziantou.Prebuilt package (TestHarness): a download failure, a version mismatch or a missing capability fails the tests.
+    The JPEG XL conformance corpus is downloaded the same way, at the commit pinned in JpegXlConformance/corpus.json, into
+    tests/Meziantou.Framework.Imaging.External (git-ignored, cached by the CI).
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.InteropTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Locates the tools that cannot be downloaded (swift) in the PATH -->
+    <Compile Include="..\..\src\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
+    <!-- The JPEG writer of the tests, which makes the choices an encoder is free to make and does not make -->
+    <Compile Include="..\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTest*.cs" LinkBase="Shared\Codecs" />
+    <!-- The animations of the encoders that write frames as the regions that change -->
+    <Compile Include="..\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\DeltaFrameAnimations.cs" LinkBase="Shared\Codecs" />
+    <!-- Synthetic ICC profiles shared with the corpus generator -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
+  </ItemGroup>
+</Project>

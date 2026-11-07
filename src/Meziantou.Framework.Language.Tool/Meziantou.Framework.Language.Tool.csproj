@@ -1,0 +1,29 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+
+    <Version>1.0.13</Version>
+    <Description>CLI to dump CSS, INI, JSON, TOML, XML, regular expression, and shell syntax trees as JSON</Description>
+    <PackageTags>syntax-tree, cst, parser, css, ini, json, toml, xml, regex, shell, cli, dotnet-tool</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Ini/Meziantou.Framework.Language.Ini.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Shell/Meziantou.Framework.Language.Shell.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
+  </ItemGroup>
+
+</Project>

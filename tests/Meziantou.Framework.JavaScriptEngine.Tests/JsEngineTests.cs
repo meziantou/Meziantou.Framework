@@ -1,0 +1,3105 @@
+using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
+using System.Text;
+using Meziantou.Framework.JavaScriptEngine.Samples;
+
+namespace Meziantou.Framework.JavaScriptEngine.Tests;
+
+public sealed class JsEngineTests
+{
+    [Fact]
+    public void CreateAndDispose()
+    {
+        using var engine = new JsEngine();
+        Assert.NotNull(engine);
+    }
+
+    [Fact]
+    public void ObjectOperations()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var obj = realm.CreateObject();
+        Assert.True(obj.SetProperty("a", 1));
+        Assert.True(obj.DefineProperty("b", JsPropertyDescriptor.Data(2, writable: false)));
+        Assert.False(obj.SetProperty("b", 3));
+        Assert.Equal(2, obj.GetProperty("b").AsNumber());
+        Assert.True(obj.TryGetOwnProperty("b", out var descriptor));
+        Assert.True(descriptor.IsDataDescriptor);
+        Assert.False(descriptor.Writable);
+        Assert.True(obj.ContainsProperty("toString"));
+        Assert.Equal(["a", "b"], obj.GetOwnPropertyKeys().Select(key => key.AsString()));
+        Assert.True(obj.DeleteProperty("a"));
+        Assert.Same(realm.ObjectPrototype, obj.GetPrototype());
+        Assert.True(obj.SetPrototype(null));
+        Assert.Null(obj.GetPrototype());
+
+        realm.GlobalObject.SetProperty("obj", obj);
+        Assert.Equal("undefined,2", realm.Execute("String(obj.a) + ',' + obj.b").AsString());
+    }
+
+    [Fact]
+    public void GetOwnPropertyKeys_SnapshotInTheOrderOfTheSpecification()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+
+        // Elements in the dense storage (0, 1, 10) and in the property table (5, 3)
+        var array = realm.Execute("const a = [0, 1]; a[10] = 10; Object.defineProperty(a, 5, { value: 5, enumerable: true }); a[3] = 3; a.x = 'x'; a[Symbol.iterator] = null; a").AsObject();
+        var keys = array.GetOwnPropertyKeys();
+        Assert.Equal(["0", "1", "3", "5", "10", "length", "x"], keys.Where(key => key.IsString).Select(key => key.AsString()));
+        Assert.True(keys[^1].IsSymbol);
+        Assert.True(array.SetProperty("y", 1));
+        Assert.Equal(8, keys.Count);
+
+        var host = new CallableHostObject(realm.ObjectPrototype);
+        Assert.True(host.SetProperty("b", 1));
+        Assert.True(host.SetProperty("0", 2));
+        Assert.True(host.SetProperty("a", 3));
+        Assert.Equal(["0", "b", "a"], host.GetOwnPropertyKeys().Select(key => key.AsString()));
+        Assert.Equal(["0", "b", "a"], host.OrdinaryOwnPropertyKeys().Select(key => key.AsString()));
+        realm.GlobalObject.SetProperty("host", host);
+        Assert.Equal("0,b,a", realm.Execute("Object.keys(host).join()").AsString());
+    }
+
+    [Fact]
+    public void LazyProperties()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var created = 0;
+        realm.GlobalObject.DefineLazyDataProperty("lazy", () => { created++; return 42; }, writable: true, enumerable: false, configurable: true);
+        realm.GlobalObject.DefineLazyAccessorProperty("lazyGetter", () => { created++; return realm.CreateFunction("get lazyGetter", 0, (_, _) => "value"); }, setterFactory: null, enumerable: false, configurable: true);
+        Assert.Equal(0, created);
+        Assert.Equal("42,value", realm.Execute("lazy + ',' + lazyGetter").AsString());
+        Assert.Equal(2, created);
+    }
+
+    // The built-in methods and accessors, and some built-ins, are created on first use: it is not observable
+    [Theory]
+    [InlineData("var names = Object.getOwnPropertyNames(globalThis); var order = ['Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef', 'FinalizationRegistry', 'Promise', 'RegExp', 'ArrayBuffer', 'Date', 'SuppressedError', 'DisposableStack', 'AsyncDisposableStack'].map(n => names.indexOf(n)); order.every((index, i) => index > 0 && (i === 0 || index > order[i - 1]))", "true")]
+    [InlineData("delete globalThis.RegExp; 'abc'.match(/b/)[0] + 'a-b'.split(/-/).length", "b2")]
+    [InlineData("delete globalThis.Map; typeof Map + '|' + Object.prototype.toString.call(new Set().entries())", "undefined|[object Set Iterator]")]
+    [InlineData("delete globalThis.Set; new Map([[1, 2]]).size + Object.getPrototypeOf(new Map().keys())[Symbol.toStringTag]", "1Map Iterator")]
+    [InlineData("new Date(0).toLocaleDateString('en', { timeZone: 'UTC' }) + '|' + Object.getOwnPropertyNames(Date.prototype).includes('toLocaleTimeString')", "1/1/1970|true")]
+    [InlineData("typeof new WeakRef({}).deref() + '|' + typeof new FinalizationRegistry(() => {}).register", "object|function")]
+    [InlineData("var r = new ShadowRealm(); [Object.prototype.toString.call(r), r.evaluate('var x = 1; x + 1'), r.evaluate('typeof x'), typeof x].join()", "[object ShadowRealm],2,number,undefined")]
+    [InlineData("typeof new DisposableStack().use + '|' + typeof AsyncDisposableStack.prototype.disposeAsync + '|' + new SuppressedError(1, 2).suppressed", "function|function|2")]
+    [InlineData("var d = Object.getOwnPropertyDescriptor(Array.prototype, 'map'); [typeof d.value, d.value.name, d.value.length, d.writable, d.enumerable, d.configurable, d.value === [].map].join()", "function,map,1,true,false,true,true")]
+    [InlineData("var d = Object.getOwnPropertyDescriptor(Map.prototype, 'size'); [typeof d.get, d.get.name, d.get.length, d.set, d.get === Object.getOwnPropertyDescriptor(Map.prototype, 'size').get].join()", "function,get size,0,,true")]
+    [InlineData("Object.freeze(String.prototype); 'abc'.at(-1) + Object.isFrozen(String.prototype) + Object.getOwnPropertyDescriptor(String.prototype, 'at').writable", "ctruefalse")]
+    [InlineData("delete globalThis.Promise; var p = (async () => 1)(); [Object.getPrototypeOf(p).constructor.name, typeof p.then, Object.getPrototypeOf(p) === Object.getPrototypeOf((async () => {})())].join()", "Promise,function,true")]
+    [InlineData("var g = function* () { yield 1; }; var proto = Object.getPrototypeOf(g); [proto[Symbol.toStringTag], proto.constructor.name, [...g()].join(), Object.getOwnPropertyNames(Object.getPrototypeOf(g.prototype)).join()].join('|')", "GeneratorFunction|GeneratorFunction|1|constructor,next,return,throw")]
+    [InlineData("var asyncIteratorPrototype = Object.getPrototypeOf(Object.getPrototypeOf(async function* () { }.prototype)); Reflect.ownKeys(asyncIteratorPrototype).map(String).join() + '|' + Object.getPrototypeOf(async function () { }).constructor.name", "Symbol(Symbol.asyncIterator),Symbol(Symbol.asyncDispose)|AsyncFunction")]
+    [InlineData("Object.getPrototypeOf([1].values().map(x => x))[Symbol.toStringTag] + '|' + Object.getOwnPropertyNames(Object.getPrototypeOf(Iterator.from({ next() { } }))).join()", "Iterator Helper|next,return")]
+    public void LazyBuiltins(string code, string expected)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var result = realm.Execute(code);
+        using var scope = engine.Enter();
+        Assert.Equal(expected, JsOperations.ToString(result));
+    }
+
+    [Fact]
+    public void ShadowRealmsAreNotAddedToTheRealmsOfTheEngine()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var result = realm.Execute("var r = new ShadowRealm(); var add = r.evaluate('(a, b) => a + b'); add(1, 2)");
+        using var scope = engine.Enter();
+        Assert.Equal("3", JsOperations.ToString(result));
+        Assert.Single(engine.Realms);
+    }
+
+    [Fact]
+    public void BuiltinMethodTablesAreSharedByTheRealms()
+    {
+        // The realms share the static tables of the built-in methods, and the sizes they learn: each realm still gets its own
+        // function objects, and the properties of a realm do not depend on what the scripts of another realm added
+        using var engine = new JsEngine();
+        var realm1 = engine.CreateRealm();
+        const string Names = "[Object.getOwnPropertyNames(Array.prototype).join(), Object.getOwnPropertyNames(Math).join(), Object.getOwnPropertyNames(String.prototype).length].join('|')";
+        var names1 = realm1.Execute(Names);
+        realm1.Execute("for (var i = 0; i < 100; i++) Array.prototype['extra' + i] = i;");
+        var realm2 = engine.CreateRealm();
+        var names2 = realm2.Execute(Names);
+        using var scope = engine.Enter();
+        realm2.GlobalObject.SetProperty("otherMap", realm1.Execute("Array.prototype.map"));
+        Assert.Equal(JsOperations.ToString(names1), JsOperations.ToString(names2));
+        Assert.Equal("false,2,4,true", JsOperations.ToString(realm2.Execute("[otherMap === Array.prototype.map, [1].map(x => x * 2)[0], otherMap.call([2], x => x * 2)[0], 'extra0' in Array.prototype === false].join()")));
+    }
+
+    [Fact]
+    public void MakePrototypeImmutable()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var prototype = realm.CreateObject();
+        var obj = realm.CreateObject();
+        Assert.True(obj.SetPrototype(prototype));
+        obj.MakePrototypeImmutable();
+        Assert.True(obj.SetPrototype(prototype));
+        Assert.False(obj.SetPrototype(null));
+        Assert.Same(prototype, obj.GetPrototype());
+        realm.GlobalObject.SetProperty("obj", obj);
+        Assert.Equal("TypeError,false,true", realm.Execute("""
+            var results = [];
+            try { Object.setPrototypeOf(obj, {}); } catch (e) { results.push(e.name); }
+            results.push(Reflect.setPrototypeOf(obj, null), Reflect.setPrototypeOf(obj, Object.getPrototypeOf(obj)));
+            results.join()
+            """).AsString());
+    }
+
+    [Fact]
+    public void SetGlobalThis()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var thisValue = realm.CreateObject();
+        realm.SetGlobalThis(thisValue);
+        realm.GlobalObject.SetProperty("thisValue", thisValue);
+        Assert.Same(thisValue, realm.GlobalThis.TryGetObject());
+
+        // The global object keeps the global bindings: only the this value of the global code changes
+        Assert.Equal("true,true,true,true,true,true,false,1,undefined", realm.Execute("""
+            var declared = 1;
+            function sloppy() { return this; }
+            function strict() { 'use strict'; return this; }
+            [
+              this === thisValue, globalThis === thisValue, sloppy() === thisValue, (0, eval)('this') === thisValue,
+              Function('return this')() === thisValue, (() => this)() === thisValue, strict() === thisValue,
+              declared, typeof thisValue.declared,
+            ].join()
+            """).AsString());
+
+        Assert.True(realm.GlobalObject.TryGetOwnProperty("globalThis", out var descriptor));
+        Assert.Same(thisValue, descriptor.Value.TryGetObject());
+        Assert.True(descriptor.Writable);
+        Assert.False(descriptor.Enumerable);
+        Assert.True(descriptor.Configurable);
+    }
+
+    [Theory]
+    [InlineData("0", true, 0u)]
+    [InlineData("4294967294", true, 4294967294u)]
+    [InlineData("4294967295", false, 0u)]
+    [InlineData("01", false, 0u)]
+    [InlineData("-0", false, 0u)]
+    [InlineData("a", false, 0u)]
+    public void PropertyKey_TryGetArrayIndex(string name, bool isIndex, uint expectedIndex)
+    {
+        var key = new JsPropertyKey(name);
+        Assert.Equal(isIndex, key.TryGetArrayIndex(out var index));
+        Assert.Equal(expectedIndex, index);
+    }
+
+    [Fact]
+    public void ReserveProperties()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var obj = realm.CreateObject();
+        obj.SetProperty("a", 1);
+        obj.ReserveProperties(100);
+        for (var i = 0; i < 100; i++)
+        {
+            obj.SetProperty("p" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), i);
+        }
+
+        realm.GlobalObject.SetProperty("obj", obj);
+        Assert.Equal("101,1,99", realm.Execute("[Object.keys(obj).length, obj.a, obj.p99].join()").AsString());
+    }
+
+    [Fact]
+    public void FunctionsCallsAndConstructors()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", 2, (_, arguments) => arguments[0].AsNumber() + arguments[1].AsNumber()));
+        realm.GlobalObject.SetProperty("Point", realm.CreateConstructor("Point", 0, (_, _, newTarget) => newTarget is null ? "called" : "constructed"));
+        Assert.Equal("3,2,add,called", realm.Execute("add(1, 2) + ',' + add.length + ',' + add.name + ',' + Point()").AsString());
+
+        var function = realm.Execute("(function (a) { return this.x + a; })");
+        var thisValue = realm.CreateObject();
+        thisValue.SetProperty("x", 40);
+        Assert.Equal(42, engine.Call(function, thisValue, 2).AsNumber());
+
+        var classes = realm.Execute("class A { constructor() { this.target = new.target.name; } } class B extends A {} [A, B]").AsObject();
+        var instance = engine.Construct(classes.GetProperty("0"), [], classes.GetProperty("1")).AsObject();
+        Assert.Equal("B", instance.GetProperty("target").AsString());
+
+        var exception = Assert.Throws<JsException>(() => engine.Call(JsValue.Undefined, JsValue.Undefined));
+        Assert.StartsWith("TypeError", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Conversions()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var value = realm.Execute("({ valueOf() { return 42; }, toString() { return 'text'; } })");
+        Assert.Equal(42, engine.ToNumber(value));
+        Assert.Equal("text", engine.ToString(value));
+        Assert.True(JsEngine.ToBoolean(value));
+        Assert.Equal(12, engine.ToBigInt(realm.Execute("12n")));
+        Assert.True(engine.IsArray(realm.Execute("new Proxy([], {})")));
+        Assert.True(JsEngine.SameValue(double.NaN, double.NaN));
+        Assert.Equal("1", engine.ToPropertyKey(1).AsString());
+    }
+
+    [Fact]
+    public void ExceptionsHaveTheirLocation()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsException>(() => realm.Execute("var a = 1;\n  throw new Error('boom');", "script.js"));
+        Assert.Equal(new JsSourceLocation("script.js", 2, 3), exception.Location);
+
+        exception = Assert.Throws<JsException>(() => realm.Execute("var a = 1;\nnull.x;", "script.js"));
+        Assert.Equal("script.js", exception.Location?.Url);
+        Assert.Equal(2, exception.Location?.Line);
+
+        exception = Assert.Throws<JsException>(() => realm.Execute("function f() {\n  return  undefined.x;\n}\nf();", "script.js"));
+        Assert.Equal(new JsSourceLocation("script.js", 2, 11), exception.Location);
+        Assert.Equal("TypeError: Cannot read properties of undefined (reading 'x')", exception.Message);
+
+        exception = Assert.Throws<JsException>(() => realm.Execute("var o = {};\n  o.m();", "script.js"));
+        Assert.Equal(new JsSourceLocation("script.js", 2, 5), exception.Location);
+        Assert.Equal("TypeError: o.m is not a function", exception.Message);
+
+        using var scope = engine.Enter();
+        var error = realm.CreateError(JsErrorType.RangeError, "out of range");
+        Assert.True(error.HasInternalSlot(JsInternalSlot.ErrorData));
+        Assert.Equal("RangeError: out of range", error.GetErrorStack());
+        Assert.True(error.TrySetErrorStack("custom"));
+        realm.GlobalObject.SetProperty("error", error);
+        Assert.Equal("custom", realm.Execute("error.stack").AsString());
+    }
+
+    [Fact]
+    public void HostObjectWithErrorData()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var hostObject = new JsHostObject(realm.Execute("Error.prototype").AsObject());
+        Assert.False(hostObject.HasErrorData);
+        Assert.False(hostObject.HasInternalSlot(JsInternalSlot.ErrorData));
+        Assert.False(hostObject.TrySetErrorStack("ignored"));
+
+        hostObject.InitializeErrorData("SyntaxError: bad");
+        Assert.True(hostObject.HasErrorData);
+        Assert.True(hostObject.HasInternalSlot(JsInternalSlot.ErrorData));
+        Assert.Equal("SyntaxError: bad", hostObject.GetErrorStack());
+
+        realm.GlobalObject.SetProperty("hostError", hostObject);
+        Assert.Equal("true,false,SyntaxError: bad", realm.Execute("[Error.isError(hostError), Object.hasOwn(hostError, 'stack'), hostError.stack].join()").AsString());
+        Assert.True(hostObject.TrySetErrorStack("custom"));
+        Assert.Equal("custom", realm.Execute("Object.getOwnPropertyDescriptor(Error.prototype, 'stack').get.call(hostError)").AsString());
+    }
+
+    [Fact]
+    public void PreparedScriptRunsInSeveralEngines()
+    {
+        var script = JsPreparedScript.Parse("var counter = (globalThis.counter ?? 0) + 1; counter", "prepared.js", lineOffset: 9, columnOffset: 4);
+        for (var i = 0; i < 2; i++)
+        {
+            using var engine = new JsEngine();
+            var realm = engine.CreateRealm();
+            Assert.Equal(1, realm.Execute(script).AsNumber());
+            Assert.Equal(2, realm.Execute(script).AsNumber());
+        }
+
+        var thrower = JsPreparedScript.Parse("throw new Error('x')", "inline.html", lineOffset: 9, columnOffset: 4);
+        using var other = new JsEngine();
+        var exception = Assert.Throws<JsException>(() => other.CreateRealm().Execute(thrower));
+        Assert.Equal(new JsSourceLocation("inline.html", 10, 5), exception.Location);
+
+        Assert.False(JsPreparedScript.TryParse("var = 1", "invalid.js", 0, 0, out _, out var error));
+        Assert.Equal("invalid.js", error.Url);
+    }
+
+    [Fact]
+    public void PreparedScriptWithUnboundFunctionName()
+    {
+        const string Prefix = "var onload = 'global'; ({ onload: ";
+        const string Code = Prefix + "function onload() { return typeof onload; } }).onload";
+        var script = JsPreparedScript.Parse(Code, "handler.js", 0, 0, unboundNameFunctionStart: Prefix.Length);
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        realm.GlobalObject.SetProperty("f", realm.Execute(script));
+        Assert.Equal("string", realm.Execute("f()").AsString());
+        Assert.Equal("onload", realm.Execute("f.name").AsString());
+        Assert.Equal("function onload() { return typeof onload; }", realm.Execute("f.toString()").AsString());
+
+        var bound = JsPreparedScript.Parse(Code, "handler.js", 0, 0, unboundNameFunctionStart: -1);
+        realm.GlobalObject.SetProperty("g", realm.Execute(bound));
+        Assert.Equal("function", realm.Execute("g()").AsString());
+
+        Assert.True(JsPreparedScript.TryParse(Code, "handler.js", 0, 0, Prefix.Length, out var parsed, out _));
+        Assert.Equal("handler.js", parsed.Url);
+        Assert.False(JsPreparedScript.TryParse("var = 1", "invalid.js", 0, 0, Prefix.Length, out _, out var error));
+        Assert.Equal("invalid.js", error.Url);
+    }
+
+    [Fact]
+    public void Jobs()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var log = new List<string>();
+        engine.EnqueueJob(() => log.Add("job"));
+        using (engine.EnterNestedJobQueue())
+        {
+            engine.EnqueueJob(() => log.Add("nested"));
+            engine.RunJobs();
+        }
+
+        Assert.Equal(["nested"], log);
+        engine.RunJobs();
+        Assert.Equal(["nested", "job"], log);
+
+        var promise = realm.Execute("Promise.reject(1)").AsObject();
+        Assert.True(promise.TryGetPromiseState(out var state, out var result, out var isHandled));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.Equal(1, result.AsNumber());
+        Assert.False(isHandled);
+    }
+
+    [Fact]
+    public void RunInRealm()
+    {
+        using var engine = new JsEngine();
+        var first = engine.CreateRealm();
+        var second = engine.CreateRealm();
+        var array = engine.RunInRealm(second, () => second.Execute("[]").AsObject());
+        Assert.Same(first, engine.RunInRealm(first, () => engine.CurrentRealm));
+        first.Execute("1");
+        using var scope = engine.Enter();
+        Assert.NotSame(first.GlobalObject.GetProperty("Array").AsObject().GetProperty("prototype").AsObject(), array.GetPrototype());
+
+        // A function runs in its own realm, or in the realm of its caller
+        JsRealm? calledRealm = null;
+        second.GlobalObject.SetProperty("ownRealm", second.CreateFunction("ownRealm", 0, (_, _) => { calledRealm = engine.CurrentRealm; return default; }));
+        second.GlobalObject.SetProperty("callerRealm", second.CreateFunction("callerRealm", 0, (_, _) => { calledRealm = engine.CurrentRealm; return default; }, runInCallerRealm: true));
+        first.GlobalObject.SetProperty("other", second.GlobalObject);
+        first.Execute("other.ownRealm()");
+        Assert.Same(second, calledRealm);
+        first.Execute("other.callerRealm()");
+        Assert.Same(first, calledRealm);
+    }
+
+    [Fact]
+    public void HostObjectsOverrideTheInternalMethods()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var target = new object();
+        var host = new UppercaseHostObject(realm.ObjectPrototype, target);
+        Assert.Same(target, host.Target);
+        realm.GlobalObject.SetProperty("host", host);
+        Assert.Equal("NAME,real,true,false", realm.Execute("host.real = 'real'; host.name + ',' + host.real + ',' + ('name' in host) + ',' + Object.keys(host).includes('name')").AsString());
+
+        host.IsHtmlDdaObject = true;
+        Assert.Equal("undefined,true", realm.Execute("typeof host + ',' + (host == null)").AsString());
+    }
+
+    [Fact]
+    public void HostObjectsCanRejectPrivateElements()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var host = new JsHostObject(realm.ObjectPrototype);
+        realm.GlobalObject.SetProperty("host", host);
+        realm.Execute("""
+            class Base { constructor(o) { return o; } }
+            class Field extends Base { #x = 1; static has(o) { return #x in o; } }
+            class Method extends Base { #m() {} static has(o) { return #m in o; } }
+            """);
+        Assert.Equal("true,true", realm.Execute("new Field(host); new Method(host); Field.has(host) + ',' + Method.has(host)").AsString());
+
+        var rejecting = new JsHostObject(realm.ObjectPrototype) { RejectsPrivateElements = true };
+        Assert.True(rejecting.RejectsPrivateElements);
+        realm.GlobalObject.SetProperty("rejecting", rejecting);
+        Assert.Equal("TypeError,TypeError,false,false", realm.Execute("""
+            const errors = [];
+            try { new Field(rejecting); } catch (e) { errors.push(e.constructor.name); }
+            try { new Method(rejecting); } catch (e) { errors.push(e.constructor.name); }
+            errors.join(',') + ',' + Field.has(rejecting) + ',' + Method.has(rejecting)
+            """).AsString());
+    }
+
+    [Fact]
+    public void HostObjectsCanBeCallable()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var host = new CallableHostObject(realm.ObjectPrototype);
+        realm.GlobalObject.SetProperty("host", host);
+        Assert.Equal("object", realm.Execute("typeof host").AsString());
+        Assert.Throws<JsException>(() => realm.Execute("host()"));
+
+        host.HasCallInternalMethod = true;
+        Assert.True(host.IsCallable);
+        Assert.False(host.IsConstructor);
+        Assert.Equal("function,called 2,called 1,true", realm.Execute("typeof host + ',' + host(1, 2) + ',' + Reflect.apply(host, null, ['x']) + ',' + (Function.prototype.toString.call(host) === 'function () { [native code] }')").AsString());
+        Assert.Throws<JsException>(() => realm.Execute("new host()"));
+
+        host.IsHtmlDdaObject = true;
+        Assert.Equal("undefined,false,true,called 0", realm.Execute("typeof host + ',' + Boolean(host) + ',' + (host == undefined) + ',' + host()").AsString());
+    }
+
+    [Fact]
+    public void BuffersShareTheirMemory()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var external = new byte[] { 1, 2, 3, 4 };
+        var buffer = realm.CreateArrayBuffer(external.AsMemory(), "key");
+        var view = realm.CreateBufferView(JsBufferKind.Uint8Array, buffer, 1, 2);
+        realm.GlobalObject.SetProperty("view", view);
+        realm.Execute("view[0] = 42");
+        Assert.Equal(42, external[1]);
+
+        Assert.True(JsBinaryData.TryGetBufferSource(view, out var kind, out var isShared, out var bytes));
+        Assert.Equal(JsBufferKind.Uint8Array, kind);
+        Assert.False(isShared);
+        Assert.Equal([42, 3], bytes.ToArray());
+
+        Assert.Throws<JsException>(() => realm.Execute("view.buffer.transfer()"));
+        JsBinaryData.DetachArrayBuffer(buffer, "key");
+        Assert.Equal(0, realm.Execute("view.length").AsNumber());
+
+        var shared = realm.Execute("new SharedArrayBuffer(8)");
+        var block = JsBinaryData.GetSharedDataBlock(shared);
+        Assert.NotNull(block);
+        using var otherEngine = new JsEngine();
+        var otherRealm = otherEngine.CreateRealm();
+        using (otherEngine.Enter())
+        {
+            otherRealm.GlobalObject.SetProperty("shared", otherRealm.CreateSharedArrayBuffer(block));
+        }
+
+        otherRealm.Execute("new Uint8Array(shared)[0] = 7");
+        Assert.Equal(7, block.GetSpan()[0]);
+
+        Assert.True(realm.CreateDate(0).TryGetDateValue(out var timeValue));
+        Assert.Equal(0, timeValue);
+        Assert.Equal([5, 6], JsBinaryData.TryGetBufferSource(realm.CreateArrayBuffer([5, 6]), out _, out _, out var copy) ? copy.ToArray() : []);
+    }
+
+    [Fact]
+    public void BufferViewsCreatedByTheHostAreAlignedAndInBounds()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var shared = realm.Execute("new SharedArrayBuffer(32)").AsObject();
+
+        // The atomic operations access the elements as aligned integers
+        Assert.Throws<ArgumentException>("byteOffset", () => realm.CreateBufferView(JsBufferKind.BigInt64Array, shared, 12, 1));
+        Assert.Throws<ArgumentException>("byteOffset", () => realm.CreateBufferView(JsBufferKind.Int32Array, shared, 2, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("byteOffset", () => realm.CreateBufferView(JsBufferKind.Uint8Array, shared, -1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => realm.CreateBufferView(JsBufferKind.BigInt64Array, shared, 24, 2));
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => realm.CreateBufferView(JsBufferKind.DataView, shared, 30, 3));
+
+        // A DataView has no alignment
+        _ = realm.CreateBufferView(JsBufferKind.DataView, shared, 3, 29);
+
+        realm.GlobalObject.SetProperty("view", realm.CreateBufferView(JsBufferKind.BigInt64Array, shared, 8, 3));
+        Assert.Equal("0,5", realm.Execute("String(Atomics.add(view, 2, 5n)) + ',' + String(Atomics.load(view, 2))").AsString());
+    }
+
+    [Fact]
+    public void HostHooks()
+    {
+        var host = new RecordingHost();
+        using var engine = new JsEngine(new JsEngineOptions { Host = host });
+        var realm = engine.CreateRealm();
+        realm.Execute("var p = Promise.reject(1); p.catch(() => {}); eval('1 + 1'); new Function('a', 'return a');");
+        engine.RunJobs();
+        Assert.Equal([JsPromiseRejectionOperation.Reject, JsPromiseRejectionOperation.Handle], host.Rejections);
+        Assert.Equal(["IndirectEval|1 + 1", "Function|return a"], host.Compilations.Select(c => c.Replace("DirectEval", "IndirectEval", StringComparison.Ordinal)));
+        Assert.Equal(1, host.Callbacks);
+    }
+
+    [Fact]
+    public void HostHooks_AwaitContinuationRunsInTheRealmOfTheAsyncFunction()
+    {
+        // The awaited promise is rejected by another realm: the promise of the async function is rejected in its own realm
+        var host = new RecordingHost();
+        using var engine = new JsEngine(new JsEngineOptions { Host = host });
+        var otherRealm = engine.CreateRealm();
+        var functionRealm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            functionRealm.GlobalObject.SetProperty("p", otherRealm.Execute("var reject; new Promise((_, r) => reject = r)"));
+        }
+
+        functionRealm.Execute("(async () => { await p; })();");
+        otherRealm.Execute("reject(1);");
+        engine.RunJobs();
+        Assert.Equal(JsPromiseRejectionOperation.Reject, host.Rejections[^1]);
+        Assert.Same(functionRealm, host.RejectionRealms[^1]);
+    }
+
+    [Fact]
+    public void HostCodeForEval_IsUsedByEvalAndTheFunctionConstructor()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Host = new TrustedCodeHost() });
+        var realm = engine.CreateRealm();
+
+        // The code of a trusted object is its code, not the result of its toString method
+        Assert.Equal("15,4,0", realm.Execute("""
+            let calls = 0;
+            const trusted = code => ({ trustedCode: code, toString() { calls++; return 'forged'; } });
+            const f = new Function(trusted('a'), trusted('b'), trusted('return a * b'));
+            [f(3, 5), eval(trusted('2 + 2')), calls].join()
+            """).AsString());
+    }
+
+    [Fact]
+    public void ActiveScriptOrModule()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        string? url = null;
+        JsSourceLocation? location = null;
+        realm.GlobalObject.SetProperty("probe", realm.CreateFunction("probe", 0, (_, _) =>
+        {
+            url = engine.GetActiveScriptOrModule()?.Url;
+            location = engine.GetCurrentLocation();
+            return default;
+        }));
+        realm.Execute("\n  probe();", "active.js");
+        Assert.Equal("active.js", url);
+        Assert.Equal(new JsSourceLocation("active.js", 2, 3), location);
+
+        // The location of a call in the concise body of an arrow function is the location of the call
+        realm.Execute("[0].forEach(_ =>\n    probe());", "arrow.js");
+        Assert.Equal(new JsSourceLocation("arrow.js", 2, 5), location);
+
+        // The location of a method call is the location of the name of the method
+        realm.Execute("var o = { m: probe };\no.\n  m();", "method.js");
+        Assert.Equal(new JsSourceLocation("method.js", 3, 3), location);
+        Assert.Null(engine.GetActiveScriptOrModule());
+
+        // The script of a dynamic function is the script that created it, not the script that calls it
+        realm.Execute("var dynamic = new Function('probe()'); var dynamicGenerator = new (function* () {}).constructor('probe()');", "creator.js");
+        realm.Execute("dynamic();", "caller.js");
+        Assert.Equal("creator.js", url);
+        realm.Execute("dynamicGenerator().next();", "caller.js");
+        Assert.Equal("creator.js", url);
+
+        // A dynamic function created by the host has no script: the script of its caller is the active one
+        realm.GlobalObject.SetProperty("hostDynamic", engine.Construct(realm.Execute("Function"), ["probe()"]));
+        realm.Execute("hostDynamic();", "caller.js");
+        Assert.Equal("caller.js", url);
+    }
+
+    [Fact]
+    public void ExecutionLimits()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 100 }))
+        {
+            var realm = engine.CreateRealm();
+            Assert.Equal(10, realm.Execute("var i = 0; while (i < 10) i++; i").AsNumber());
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("for (;;) {}"));
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+            // A recursion without loops counts its calls; the limit applies to each entry
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("function f(n) { return n < 2 ? n : f(n - 1) + f(n - 2); } f(30)"));
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+            Assert.Equal(3, realm.Execute("1 + 2").AsNumber());
+
+            // An endless recursion of tail calls never exceeds the recursion limit: it is a loop
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("'use strict'; function g() { return g(); } g()"));
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromMilliseconds(50) }))
+        {
+            var realm = engine.CreateRealm();
+            Assert.True(realm.Execute("/^(a+)+$/.test('aaaa')").AsBoolean());
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("/^(a+)+$/.test('a'.repeat(40) + 'b')"));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 1024 * 1024 }))
+        {
+            var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute("var a = []; for (;;) a.push({});"));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            using var scope = engine.Enter();
+            engine.CheckInterrupt();
+            realm.GlobalObject.SetProperty("check", realm.CreateFunction("check", 0, (_, _) =>
+            {
+                cancellation.Cancel();
+                engine.CheckInterrupt();
+                return default;
+            }));
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("check()"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+    }
+
+    // A built-in function has no interrupt point: it checks the memory limit before a large allocation, and while its
+    // result grows. Without these checks, each script allocates gigabytes.
+    [Theory]
+    [InlineData("'abc'.padStart(933886059)")]
+    [InlineData("'abc'.padEnd(933886059, 'xy')")]
+    [InlineData("'abc'.repeat(300000000)")]
+    [InlineData("try { 'a'.repeat(1e9) } catch { }")]
+    [InlineData("let s = 'a'; for (let i = 0; i < 29; i++) s += s; s.at(-1)")]
+    [InlineData("'a'.repeat(1 << 16).replaceAll('a', 'b'.repeat(400))")]
+    [InlineData("'a'.repeat(1 << 16).replace(/a/g, '$&'.repeat(200))")]
+    [InlineData("Array(1e7).join('x'.repeat(100))")]
+    [InlineData("Array(1e8).join('x')")]
+    [InlineData("new Uint8Array(1e8).join('x'.repeat(100))")]
+    [InlineData("JSON.stringify(Array(1e8))")]
+    [InlineData("JSON.stringify('\\u0001'.repeat(1 << 22))")]
+    [InlineData("String.raw({ raw: Array(1e7).fill('x'.repeat(100)) })")]
+    [InlineData("escape('\\u0100'.repeat(1 << 22))")]
+    [InlineData("encodeURIComponent('\\u0800'.repeat(1 << 22))")]
+    [InlineData("'x'.link('\"'.repeat(1 << 22))")]
+    [InlineData("'\\uFDFA'.repeat(1 << 20).normalize('NFKD')")]
+    [InlineData("Array.from({ length: 1e8 })")]
+    [InlineData("Array(1e8).fill(0)")]
+    [InlineData("new ArrayBuffer(2e9)")]
+    [InlineData("new Float64Array(2.5e8)")]
+    [InlineData("Object.keys('a'.repeat(1 << 22))")]
+    [InlineData("1n << 200000000n")]
+    [InlineData("3n ** 200000000n")]
+    [InlineData("let a = 1n << 100000000n; a * (a - 1n)")]
+    [InlineData("(1n << 50000000n).toString()")]
+    [InlineData("(1n << 100000000n).toString(16)")]
+    public void ExecutionLimits_MemoryLimitStopsBuiltins(string code)
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 16 * 1024 * 1024 });
+        var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute(code));
+        Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+    }
+
+    [Fact]
+    public void ExecutionLimits_BuiltinsWithinTheLimits()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 64 * 1024 * 1024 });
+        var realm = engine.CreateRealm();
+        Assert.Equal(1 << 22, realm.Execute("'a'.repeat(1 << 22).normalize('NFKD').length").AsNumber());
+        Assert.Equal((1 << 20) + 2, realm.Execute("('a'.repeat(1 << 20) + '\\u00E9').normalize('NFD').length").AsNumber());
+        Assert.Equal(1 << 22, realm.Execute("'ab'.repeat(1 << 20).padEnd(1 << 22, 'xy').length").AsNumber());
+        Assert.Equal((1 << 20) * 2, realm.Execute("'a'.repeat(1 << 20).replaceAll('a', 'bc').length").AsNumber());
+        Assert.Equal(((1 << 18) * 5) - 2, realm.Execute("Array(1 << 18).fill('abc').join(', ').length").AsNumber());
+        Assert.Equal(1 << 20, realm.Execute("let s = 'a'; for (let i = 0; i < 20; i++) s += s; s.length").AsNumber());
+        Assert.Equal(1_000_000, realm.Execute("BigInt('7'.repeat(1_000_000)).toString().length").AsNumber());
+        Assert.Equal(3_000_000, realm.Execute("((1n << 3_000_000n) - 1n).toString(2).length").AsNumber());
+        Assert.Equal(3_169_926, realm.Execute("let n = 3n ** 1_000_000n; (n * (n + 1n)).toString(2).length").AsNumber());
+    }
+
+    // The large BigInt operations are split into parts, and the limits are checked between the parts: a single operation
+    // could otherwise run for hours (3n ** 600000000n has 950 million bits).
+    [Theory]
+    [InlineData("3n ** 600000000n")]
+    [InlineData("let a = (1n << 500000000n) - 1n; a * (a - 2n)")]
+    [InlineData("let b = (1n << 500000000n) - 1n; b * b")]
+    [InlineData("BigInt('1'.repeat(30000000))")]
+    [InlineData("((1n << 300000000n) - 1n).toString()")]
+    [InlineData("((1n << 300000000n) - 1n).toString(36)")]
+    public void ExecutionLimits_TimeoutStopsBigIntOperations(string code)
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(200) }))
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromMinutes(1), $"Elapsed: {stopwatch.Elapsed}");
+        }
+
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute(code));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromMinutes(1), $"Elapsed: {stopwatch.Elapsed}");
+        }
+    }
+
+    [Fact]
+    public void ExecutionLimits_TimeoutStopsBuiltins()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(200) });
+        var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute("Array.prototype.indexOf.call(new Proxy({ length: 1e9 }, {}), 1)"));
+        Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+    }
+
+    // The search of a literal prefix or of the first characters of a pattern has no backtracking step: it counts the
+    // code units it scans, so a long search checks the limits too. The input comes from the host, so the search is the
+    // first code that checks the limits.
+    [Theory]
+    [InlineData("/[ab]/.test(s)")]
+    [InlineData("/[ab]/u.test(s)")]
+    [InlineData("/\\d/.test(s)")]
+    [InlineData("/ab/.test(s)")]
+    [InlineData("/ab/i.test(s)")]
+    [InlineData("/[^x]/.test(s)")]
+    [InlineData("/\\s+$/.test(s)")]
+    public void ExecutionLimits_RegExpSearchChecksTheLimits(string code)
+    {
+        var input = new string('x', 4_000_000);
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromTicks(1) }))
+        {
+            var realm = engine.CreateRealm();
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromTicks(1) }))
+        {
+            var realm = engine.CreateRealm();
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+                realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+                {
+                    cancellation.Cancel();
+                    return default;
+                }));
+            }
+
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); " + code));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromSeconds(30), Timeout = TimeSpan.FromSeconds(30) }))
+        {
+            var realm = engine.CreateRealm();
+            using var scope = engine.Enter();
+            realm.GlobalObject.SetProperty("s", input);
+            Assert.False(realm.Execute(code).AsBoolean());
+            realm.GlobalObject.SetProperty("s", input + "ab1");
+            Assert.True(realm.Execute(code.Replace("\\s+$", "\\d$", StringComparison.Ordinal)).AsBoolean());
+        }
+    }
+
+    // The backtracking stack of the matcher checks the memory limit before it grows: without the check, the stack
+    // doubles until the next periodic check, and allocates about twice the limit
+    [Fact]
+    public void ExecutionLimits_RegExpBacktrackingStackChecksTheMemoryLimit()
+    {
+        const long MemoryLimit = 16 * 1024 * 1024;
+        var input = new string('a', 1_000_000);
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = MemoryLimit }))
+        {
+            var realm = engine.CreateRealm();
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
+            var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("/^(?:a|b)*c/.test(s)"));
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            Assert.True(allocated < MemoryLimit, "allocated: " + allocated.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        // The runner of the thread is reused after the termination, and a deep backtracking within the limit succeeds
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 256 * 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
+            Assert.False(realm.Execute("/^(?:a|b)*c/.test(s)").AsBoolean());
+            Assert.True(realm.Execute("/^(?:a|b)*$/.test(s)").AsBoolean());
+            Assert.Equal("b,b", realm.Execute("/(a)|(b)/.exec('xb').slice(0, 3).filter(Boolean).join()").ToString());
+        }
+    }
+
+    // The limits apply to the built-ins called by the host as they do when a script calls them
+    [Fact]
+    public void ExecutionLimits_HostCallsOfBuiltins()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 16 * 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            var repeat = realm.Execute("String.prototype.repeat");
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("'abcd'.repeat(1 << 26)"));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => engine.Call(repeat, "abcd", 1 << 26));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => engine.Construct(realm.Execute("ArrayBuffer"), [1e9]));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            Assert.Equal("abcdabcd", engine.Call(repeat, "abcd", 2).AsString());
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(100) }))
+        {
+            var realm = engine.CreateRealm();
+            var indexOf = realm.Execute("Array.prototype.indexOf");
+            var proxy = realm.Execute("new Proxy({ length: 1e9 }, {})");
+            var exception = Assert.Throws<JsTerminationException>(() => engine.Call(indexOf, proxy, 1));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+    }
+
+    // A long built-in checks the limits while it runs: the timeout of the scope elapses during the operation (nothing
+    // else runs in the scope), and the script stops before the operation completes
+    [Theory]
+    [InlineData("new Uint8Array(1 << 26).sort()")]
+    [InlineData("new Float64Array(1 << 23).sort()")]
+    [InlineData("new Int32Array(1 << 23).toSorted()")]
+    [InlineData("new BigInt64Array(1 << 23).sort()")]
+    [InlineData("text.normalize('NFD')")]
+    [InlineData("text.normalize('NFKC')")]
+    [InlineData("ascii.split('')")]
+    [InlineData("ascii.split('a')")]
+    public void ExecutionLimits_LongBuiltinsCheckTheTimeout(string code)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("var text = '\\u00E9'.repeat(1 << 23); var ascii = 'a'.repeat(1 << 22);");
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { Timeout = TimeSpan.FromMilliseconds(1) });
+            realm.Execute(code);
+        });
+        Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+    }
+
+    // cancel() cancels the token without checking it: the operation that follows notices the cancellation
+    [Theory]
+    [InlineData("new Uint8Array(1 << 24).sort()")]
+    [InlineData("new Float64Array(1 << 22).sort()")]
+    [InlineData("text.normalize('NFD')")]
+    [InlineData("ascii.split('')")]
+    public void ExecutionLimits_LongBuiltinsCheckTheCancellation(string code)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("var text = '\u00E9'.repeat(1 << 20); var ascii = 'a'.repeat(1 << 20);");
+        using var cancellation = new CancellationTokenSource();
+        DefineCancel(realm, cancellation);
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token });
+            realm.Execute("cancel(); " + code);
+        });
+        Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+    }
+
+    private static void DefineCancel(JsRealm realm, CancellationTokenSource cancellation)
+    {
+        using (realm.Engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+            {
+                cancellation.Cancel();
+                return JsValue.Undefined;
+            }));
+        }
+    }
+
+    // The sort of the large typed arrays works on runs that it merges: the results are the ones of a single sort
+    [Fact]
+    public void LongBuiltins_SortSameResults()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        Assert.True(realm.Execute("""
+            let seed = 1;
+            const random = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+            const values = Array.from({ length: 100000 }, (_, i) => i % 1000 === 0 ? NaN : i % 777 === 0 ? -0 : Math.floor(random() * 2000) - 1000);
+            const expected = values.slice().sort((a, b) => Number.isNaN(a) ? (Number.isNaN(b) ? 0 : 1) : Number.isNaN(b) ? -1 : a - b || (Object.is(a, -0) ? (Object.is(b, -0) ? 0 : -1) : Object.is(b, -0) ? 1 : 0));
+            const same = (actual, expected) => actual.length === expected.length && actual.every((v, i) => Object.is(v, expected[i]));
+            same(Array.from(new Float64Array(values).sort()), expected)
+                && same(Array.from(new Int32Array(values).sort()), expected.map(v => v | 0).sort((a, b) => a - b))
+                && same(Array.from(new Uint8Array(values).sort()), Array.from(new Uint8Array(values)).sort((a, b) => a - b))
+                && same(Array.from(new BigInt64Array(values.map(v => BigInt(v | 0))).toSorted()), values.map(v => BigInt(v | 0)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0))
+            """).AsBoolean());
+    }
+
+    // A long string is normalized in chunks: the result is the one of a single normalization
+    [Fact]
+    public void LongBuiltins_NormalizeSameResults()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var text = CreateNormalizationText();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("text", text);
+        }
+
+        foreach (var form in new[] { NormalizationForm.FormC, NormalizationForm.FormD, NormalizationForm.FormKC, NormalizationForm.FormKD })
+        {
+            var name = form switch { NormalizationForm.FormC => "NFC", NormalizationForm.FormD => "NFD", NormalizationForm.FormKC => "NFKC", _ => "NFKD" };
+            Assert.Equal(UnicodeNormalization.Normalize(text, form), realm.Execute("text.normalize('" + name + "')").AsString());
+        }
+    }
+
+    private static string CreateNormalizationText()
+    {
+        // Starters, combining marks, Hangul jamos and syllables, characters whose decomposition starts with a mark...
+        string[] pieces = ["a", "e", "é", "́", "̣", "ᄀ", "ᅡ", "ᆨ", "가", "각", "ཱི", "ﾞ", "େ", "ା", "ḋ", "ﬁ", "Å", "̈́", "𝐀", "゙", "か"];
+        var builder = new StringBuilder();
+        var seed = 42u;
+        while (builder.Length < 300_000)
+        {
+            seed = (seed * 1103515245) + 12345;
+            builder.Append(pieces[(seed >> 16) % pieces.Length]);
+        }
+
+        return builder.ToString();
+    }
+
+    // The parsing and the compilation of a source are part of the entry that runs it
+    [Fact]
+    public void ExecutionLimits_Compilation()
+    {
+        var code = string.Concat(Enumerable.Repeat("var a = 1 + 2 * 3;\n", 200_000));
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => realm.ParseModule(code));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("eval(code)".Replace("code", "'" + code.Replace("\n", " ", StringComparison.Ordinal) + "'", StringComparison.Ordinal)));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+        }
+
+        // The cancellation is noticed while the code of eval is parsed
+        using var cancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            DefineCancel(realm, cancellation);
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("code", code);
+            }
+
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); eval(code)"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+
+            // A canceled entry does not start
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("1"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+
+        // A prepared script is parsed outside an entry, unless the host parses it in an execution scope
+        using (var engine = new JsEngine())
+        {
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { MemoryLimit = 1024 * 1024 });
+                JsPreparedScript.Parse(code);
+            });
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            Assert.NotNull(JsPreparedScript.Parse("var a = 1;"));
+        }
+    }
+
+    [Fact]
+    public void ExecutionLimits_AtomicsWait()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(500) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
+
+            // The timeout of the engine stops the wait, which leaves no waiter
+            var stopwatch = Stopwatch.StartNew();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("Atomics.wait(i32, 0, 0)"));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
+            Assert.Equal(0, realm.Execute("Atomics.notify(i32, 0)").AsNumber());
+        }
+
+        using (var engine = new JsEngine())
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
+            Assert.Equal("timed-out", realm.Execute("Atomics.wait(i32, 0, 0, 10)").AsString());
+            using var cancellation = new CancellationTokenSource();
+            DefineCancel(realm, cancellation);
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token });
+                realm.Execute("cancel(); Atomics.wait(i32, 0, 0)");
+            });
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.Equal(0, realm.Execute("Atomics.notify(i32, 0)").AsNumber());
+        }
+
+        using var engineCancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = engineCancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
+            DefineCancel(realm, engineCancellation);
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); Atomics.wait(i32, 0, 0)"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { CanBlock = false }))
+        {
+            Assert.Equal("TypeError", engine.CreateRealm().Execute("try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0); } catch (e) { e.name }").AsString());
+        }
+    }
+
+    // A host function that catches the termination of a nested call cannot let the script continue: the termination
+    // stays until the outermost entry returns
+    [Fact]
+    public void ExecutionLimits_TerminationIsSticky()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1000 });
+        var realm = engine.CreateRealm();
+        var caught = 0;
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("callAndSwallow", realm.CreateFunction("callAndSwallow", 1, (_, arguments) =>
+            {
+                try
+                {
+                    engine.Call(arguments[0], JsValue.Undefined);
+                }
+                catch (JsTerminationException)
+                {
+                    caught++;
+                }
+
+                return JsValue.Undefined;
+            }));
+        }
+
+        var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("callAndSwallow(() => { while (true) {} }); globalThis.after = 1;"));
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+        Assert.Equal(1, caught);
+        Assert.Equal("undefined", realm.Execute("typeof after").AsString());
+
+        // The same from a nested host entry: the host catches the termination, and its next call is terminated too
+        exception = Assert.Throws<JsTerminationException>(() => realm.Execute("callAndSwallow(() => { while (true) {} }); callAndSwallow(() => { globalThis.after = 1; });"));
+        Assert.Equal(2, caught);
+        Assert.Equal("undefined", realm.Execute("typeof after").AsString());
+
+        // Once the outermost entry has returned, the next entry runs
+        Assert.Equal(2, realm.Execute("1 + 1").AsNumber());
+    }
+
+    [Fact]
+    public void ExecutionLimits_RunJobs()
+    {
+        // Each job is an entry: a self-replenishing queue keeps RunJobs running, unless it runs in an execution scope
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1000 }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var count = 0; function f() { if (++count < 2000) Promise.resolve().then(f); } f()");
+            engine.RunJobs();
+            Assert.Equal(2000, realm.Execute("count").AsNumber());
+
+            realm.Execute("function g() { Promise.resolve().then(g); } g()");
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope();
+                engine.RunJobs();
+            });
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+        }
+
+        using (var engine = new JsEngine())
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("async function g() { while (true) await null; } g()");
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { Timeout = TimeSpan.FromMilliseconds(50) });
+                engine.RunJobs();
+            });
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+
+        }
+
+        using (var engine = new JsEngine())
+        {
+            var realm = engine.CreateRealm();
+            using var cancellation = new CancellationTokenSource();
+            DefineCancel(realm, cancellation);
+            realm.Execute("var n = 0; function g() { if (++n === 100) cancel(); Promise.resolve().then(g); } g()");
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token });
+                engine.RunJobs();
+            });
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.Equal(100, realm.Execute("n").AsNumber());
+        }
+
+        // Once the token of the engine is canceled, the jobs do not run and stay in the queue
+        using var engineCancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = engineCancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var ran = false; Promise.resolve().then(() => { ran = true; });");
+            engineCancellation.Cancel();
+            var exception = Assert.Throws<JsTerminationException>(engine.RunJobs);
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.True(engine.HasPendingJobs);
+        }
+    }
+
+    [Fact]
+    public void ExecutionScope()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1500 });
+        var realm = engine.CreateRealm();
+
+        // The limits of the options apply to each entry...
+        Assert.Equal(1000, realm.Execute("var i = 0; while (i < 1000) i++; i").AsNumber());
+        Assert.Equal(1000, realm.Execute("var i = 0; while (i < 1000) i++; i").AsNumber());
+
+        // ... and to a scope as a whole
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope();
+            realm.Execute("var i = 0; while (i < 1000) i++; i");
+            realm.Execute("var i = 0; while (i < 1000) i++; i");
+        });
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+        // The limits of a scope add to the ones of the options
+        exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { MaxStatements = 100 });
+            realm.Execute("var i = 0; while (i < 1000) i++; i");
+        });
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+        // A canceled scope does not start
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        exception = Assert.Throws<JsTerminationException>(() => engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token }));
+        Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+
+        // The token of a scope stops the JavaScript code and the host functions that check the interrupts
+        using var cancellation2 = new CancellationTokenSource();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+            {
+                cancellation2.Cancel();
+                engine.CheckInterrupt();
+                return JsValue.Undefined;
+            }));
+        }
+
+        exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation2.Token });
+            realm.Execute("cancel(); globalThis.after = 1;");
+        });
+        Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        Assert.Equal("undefined", realm.Execute("typeof after").AsString());
+
+        // The scopes are exited in order
+        var outer = engine.EnterExecutionScope();
+        var inner = engine.EnterExecutionScope();
+        Assert.Throws<InvalidOperationException>(outer.Dispose);
+        inner.Dispose();
+        outer.Dispose();
+        Assert.Equal(3, realm.Execute("1 + 2").AsNumber());
+    }
+
+    // The Promise constructor rejects the promise after its catch block: a deep recursion through the executors throws a
+    // RangeError instead of overflowing the stack of the thread (which would terminate the process)
+    [Theory]
+    [InlineData(10_000)]
+    [InlineData(int.MaxValue)]
+    public void DeepRecursionThroughPromiseExecutors(int recursionLimit)
+    {
+        Exception? error = null;
+        string? result = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = recursionLimit });
+                var realm = engine.CreateRealm();
+                result = realm.Execute("var depth = 0; function f() { depth++; new Promise(f); } f(); typeof depth").AsString();
+                engine.RunJobs();
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+        }, maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+        Assert.Null(error);
+        Assert.Equal("number", result);
+    }
+
+    [Fact]
+    public void DeepRecursionThroughHostFunctionsThrowsARangeError()
+    {
+        // Without a recursion limit, the .NET stack is the limit: the recursion through host functions and conversions
+        // throws a RangeError instead of overflowing the stack of the thread
+        using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = int.MaxValue });
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        realm.GlobalObject.SetProperty("convert", realm.CreateFunction("convert", 1, (_, arguments) => engine.ToString(arguments[0])));
+        Assert.Equal("RangeError", realm.Execute("""
+            const value = { toString() { return convert(value); } };
+            try { convert(value); } catch (e) { e.name }
+            """).AsString());
+    }
+
+    // Each operation calls recurse() again (through the host function convert) from a place where the error leaves a
+    // .NET catch block of the engine: the generators, the steps of the iterators and the closing of the iterators
+    [Theory]
+    [InlineData("function* g() { yield convert(step); } g().next();")]
+    [InlineData("Array.from({ [Symbol.iterator]() { return { next() { return convert(step); } }; } });")]
+    [InlineData("const a = [0]; Object.defineProperty(a, 0, { get() { return convert(step); } }); new Set(a);")]
+    [InlineData("new Set(Array.prototype.values.call({ length: 1, get 0() { return convert(step); } }));")]
+    [InlineData("Array.from({ [Symbol.iterator]() { return { next() { return { get done() { return convert(step); } }; } }; } });")]
+    [InlineData("Array.from({ [Symbol.iterator]() { return { next() { return { done: false, get value() { return convert(step); } }; } }; } });")]
+    [InlineData("Array.from([1], () => convert(step));")]
+    [InlineData("new Map([{ get 0() { return convert(step); } }]);")]
+    [InlineData("new WeakMap([{ get 0() { return convert(step); } }]);")]
+    [InlineData("Map.groupBy([1], () => convert(step));")]
+    [InlineData("class S extends Set { add() { return convert(step); } } new S([1]);")]
+    [InlineData("Object.fromEntries([{ get 0() { return convert(step); } }]);")]
+    [InlineData("Object.groupBy([1], () => convert(step));")]
+    [InlineData("[1].values().take({ valueOf() { return convert(step); } });")]
+    [InlineData("[1].values().forEach(() => convert(step));")]
+    [InlineData("[1].values().join({ toString() { return convert(step); } });")]
+    [InlineData("[{ toString() { return convert(step); } }].values().join();")]
+    [InlineData("[1].values().map(() => convert(step)).next();")]
+    [InlineData("[1].values().flatMap(() => ({ next() { return convert(step); } })).next();")]
+    [InlineData("[1].values().flatMap(() => ({ get [Symbol.iterator]() { return convert(step); } })).next();")]
+    [InlineData("const h = [1].values().flatMap(() => ({ next() { return { value: 1, done: false }; }, return() { return convert(step); } })); h.next(); h.return();")]
+    [InlineData("Iterator.zip([{ next() { return convert(step); } }]).next();")]
+    [InlineData("Iterator.zip([{ next() { return { done: true }; } }, { next() { return convert(step); } }], { mode: 'strict' }).next();")]
+    [InlineData("Iterator.zip({ [Symbol.iterator]() { return { next() { return convert(step); } }; } });")]
+    [InlineData("Iterator.zip([{ get [Symbol.iterator]() { return convert(step); } }]);")]
+    [InlineData("Iterator.zip([], { mode: 'longest', padding: { get [Symbol.iterator]() { return convert(step); } } });")]
+    [InlineData("Iterator.zip([[]], { mode: 'longest', padding: { [Symbol.iterator]() { return { next() { return convert(step); } }; } } });")]
+    [InlineData("Iterator.zip([[]], { mode: 'longest', padding: { [Symbol.iterator]() { return { next() { return { value: 1, done: false }; }, return() { return convert(step); } }; } } });")]
+    [InlineData("Iterator.zipKeyed({ get a() { return convert(step); } });")]
+    [InlineData("Iterator.zipKeyed({ a: [] }, { mode: 'longest', padding: { get a() { return convert(step); } } });")]
+    public void DeepRecursionThroughBuiltinsThrowsARangeError(string operation)
+    {
+        using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = int.MaxValue });
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        realm.GlobalObject.SetProperty("convert", realm.CreateFunction("convert", 1, (_, arguments) => engine.ToString(arguments[0])));
+        Assert.Equal("RangeError", realm.Execute($$"""
+            const step = { toString() { recurse(); return ''; } };
+            function recurse() { {{operation}} }
+            try { recurse(); } catch (e) { e.name }
+            """).AsString());
+    }
+
+    [Fact]
+    public void SyntaxErrorsHaveTheirLocation()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsException>(() => realm.Execute("var a = 1;\nvar = 2;", "script.js"));
+        Assert.Equal("script.js", exception.Location?.Url);
+        Assert.Equal(2, exception.Location?.Line);
+
+        // The module of an inline script is located in its document
+        exception = Assert.Throws<JsException>(() => realm.ParseModule("export const a = 1;\nexport const = 2;", "page.html", hostDefined: null, lineOffset: 10, columnOffset: 4));
+        Assert.Equal(new JsSourceLocation("page.html", 12, 14), exception.Location);
+
+        using var scope = engine.Enter();
+        var error = realm.CreateError(JsErrorType.TypeError, "custom");
+        exception = new JsException(error, new JsSourceLocation("other.js", 3, 4));
+        Assert.Equal(new JsSourceLocation("other.js", 3, 4), exception.Location);
+        Assert.Equal(error, exception.Value);
+    }
+
+    [Fact]
+    public void ModuleEvaluationErrorHasItsLocation()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule("export const a = 1;\n  throw new Error('boom');", "module.js");
+        module.LoadRequestedModules();
+        module.Link();
+        var promise = module.Evaluate().AsObject();
+        Assert.True(promise.TryGetPromiseState(out var state, out _, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.True(module.HasEvaluationError);
+        Assert.Equal(new JsSourceLocation("module.js", 2, 3), module.EvaluationErrorLocation);
+    }
+
+    [Fact]
+    public void ReadmeExample_Execute()
+    {
+        #region JavaScriptEngine_Execute
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            Timeout = TimeSpan.FromSeconds(5), // per entry into JavaScript
+            RecursionLimit = 1_000,
+        });
+
+        var realm = engine.CreateRealm();
+
+        // Expose a .NET function to the scripts. They can pass any value, and fewer arguments than expected: convert the
+        // arguments explicitly (AsNumber throws when a value is not a number)
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", 2, (thisValue, arguments) =>
+            {
+                var left = arguments.Length > 0 ? engine.ToNumber(arguments[0]) : double.NaN;
+                var right = arguments.Length > 1 ? engine.ToNumber(arguments[1]) : double.NaN;
+                return left + right;
+            }));
+        }
+
+        var result = realm.Execute("const values = [1, 2, 3].map(x => add(x, 10)); values.join('-')");
+        Assert.Equal("11-12-13", result.AsString());
+        Assert.Equal("6,NaN", realm.Execute("[add('5', 1), add(1)].join()").AsString());
+
+        // The promise jobs run when the host asks for them
+        realm.Execute("globalThis.log = []; Promise.resolve().then(() => log.push('job')); log.push('script');");
+        engine.RunJobs();
+        Assert.Equal("script,job", realm.Execute("log.join()").AsString());
+
+        // An uncaught JavaScript error is a JsException
+        var exception = Assert.Throws<JsException>(() => realm.Execute("null.x"));
+        Assert.StartsWith("TypeError", exception.Message, StringComparison.Ordinal);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Modules()
+    {
+        #region JavaScriptEngine_Modules
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = "import { square } from './math.js'; globalThis.result = square(7);",
+            ["math.js"] = "export function square(x) { return x * x; }",
+        };
+
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DictionaryModuleLoader(files) });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule(files["main.js"], "main.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        module.Evaluate();
+        engine.RunJobs();
+
+        Assert.Equal(49, realm.Execute("result").AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Debugger()
+    {
+        #region JavaScriptEngine_Debugger
+        var pauses = new List<string>();
+        JsEngine? engine = null;
+        var debugger = new BreakpointDebugger(debugEvent =>
+        {
+            // The script waits here: inspect its state, then return to resume it
+            var total = debugEvent.Realm.Execute("total").AsNumber();
+            pauses.Add($"{debugEvent.FunctionName}@{debugEvent.Location.Line} depth={debugEvent.CallDepth} total={total}");
+        });
+        debugger.Breakpoints.Add(("cart.js", 4));
+
+        using (engine = new JsEngine(new JsEngineOptions { Debugger = debugger }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("""
+                var total = 0;
+                function add(price, quantity) {
+                  if (quantity > 0) {
+                    total += price * quantity;
+                  }
+                }
+                add(10, 2);
+                add(5, 0);
+                add(3, 1);
+                debugger;
+                """, "cart.js");
+        }
+
+        Assert.Equal(["add@4 depth=2 total=0", "add@4 depth=2 total=20", "@10 depth=1 total=23"], pauses);
+
+        // Line 4 did not run for add(5, 0), the coverage has it once
+        Assert.Contains(("cart.js", 4), debugger.CoveredLines);
+        Assert.DoesNotContain(("cart.js", 2), debugger.CoveredLines);
+        #endregion
+    }
+
+    [Fact]
+    public void Debugger_StatementEvents()
+    {
+        var events = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => events.Add($"{e.Location.Line}:{e.Location.Column}:{e.CallDepth}:{e.FunctionName}")) });
+        var realm = engine.CreateRealm();
+        realm.Execute("function f(x) {\n  const y = x + 1;\n  return y;\n}\nlabel: for (let i = 0; i < 2; i++) { f(i); }\n;", "a.js");
+
+        Assert.Equal(["5:8:1:", "5:38:1:", "2:3:2:f", "3:3:2:f", "5:38:1:", "2:3:2:f", "3:3:2:f"], events);
+
+        // eval, new Function and the prepared scripts raise events too
+        events.Clear();
+        realm.Execute(JsPreparedScript.Parse("eval('1;'); new Function('return 2;')();", "p.js"));
+        Assert.Equal(["1:1:1:", "1:1:2:", "1:13:1:", "3:1:2:anonymous"], events);
+    }
+
+    [Fact]
+    public void Debugger_NoEventsWithoutDebuggerOrInCallbacks()
+    {
+        using (var engine = new JsEngine())
+        {
+            Assert.Equal(3, engine.CreateRealm().Execute("debugger; 1 + 2").AsNumber());
+        }
+
+        // The code of the callbacks raises no event and does not count in the limits of the script (7 callbacks x 50 iterations)
+        var count = 0;
+        var debugger = new DelegateDebugger(e =>
+        {
+            count++;
+            Assert.Equal(50, e.Realm.Execute("var n = 0; for (let i = 0; i < 50; i++) n++; n").AsNumber());
+        });
+
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 100, Debugger = debugger }))
+        {
+            Assert.Equal(6, engine.CreateRealm().Execute("var s = 0; for (let i = 0; i < 4; i++) { s += i; } s").AsNumber());
+            Assert.Equal(7, count);
+        }
+    }
+
+    [Fact]
+    public void Debugger_PausedTimeIsNotCountedAndTerminationStopsTheScript()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(100), Debugger = new DelegateDebugger(_ => Thread.Sleep(250)) }))
+        {
+            Assert.Equal(2, engine.CreateRealm().Execute("var x = 1;\nx + 1;").AsNumber());
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => { if (e.Location.Line == 2) throw new JsTerminationException(JsTerminationReason.Canceled, "Stopped by the debugger"); }) }))
+        {
+            var realm = engine.CreateRealm();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("globalThis.x = 1;\ntry { x = 2; } finally { x = 3; }"));
+            Assert.Equal("Stopped by the debugger", exception.Message);
+            Assert.Equal(1, realm.Execute("x").AsNumber());
+        }
+    }
+
+    [Fact]
+    public void Debugger_AsyncAndGeneratorStatementsRaiseEventsWhenTheyRun()
+    {
+        var events = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => events.Add($"{e.Location.Line}:{e.CallDepth}")) });
+        var realm = engine.CreateRealm();
+        realm.Execute("async function f() {\n  await 0;\n  globalThis.done = true;\n}\nf();\nfunction* g() {\n  yield 1;\n  yield 2;\n}\nvar it = g(); it.next();", "async.js");
+        Assert.Equal(["5:1", "2:2", "10:1", "10:1", "7:2"], events);
+
+        events.Clear();
+        engine.RunJobs();
+        Assert.Equal(["3:1"], events);
+
+        events.Clear();
+        realm.Execute("it.next();", "next.js");
+        Assert.Equal(["1:1", "8:2"], events);
+    }
+
+    [Fact]
+    public void Documentation_SourceMaps()
+    {
+        #region JavaScriptEngine_SourceMaps
+        // A bundle generated from src/check.ts and src/run.ts, and its source map
+        var bundle = """
+            function check(order) {
+              if (!order.id) throw new RangeError('The order has no id');
+            }
+            function run() { check({}); }
+            run();
+            """;
+        var sourceMap = JsSourceMap.Parse("""
+            {
+              "version": 3,
+              "file": "bundle.js",
+              "sourceRoot": "src",
+              "sources": ["check.ts", "run.ts"],
+              "mappings": "AAAA;AAGA,EAAE;AAEF;ACIA,iBACE;AAEF"
+            }
+            """, "dist/bundle.js.map");
+
+        var mapper = new JsSourceMapper();
+        mapper.Add("bundle.js", sourceMap);
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsException>(() => realm.Execute(bundle, "bundle.js"));
+
+        // The positions in the original sources
+        Assert.Equal(new JsSourceLocation("bundle.js", 2, 18), exception.Location);
+        Assert.Equal(new JsSourceLocation("dist/src/check.ts", 4, 3), mapper.MapLocation(exception.Location));
+        using (engine.Enter())
+        {
+            var stack = exception.Value.AsObject().GetErrorStack();
+            Assert.Equal("RangeError: The order has no id\n    at check (dist/src/check.ts:4:3)\n    at run (dist/src/run.ts:11:3)\n    at dist/src/run.ts:13:1", mapper.MapStackTrace(stack!));
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void SourceMaps_UnmappedPositionsAreNotChanged()
+    {
+        var calls = new List<string>();
+        var mapper = new JsSourceMapper(url =>
+        {
+            calls.Add(url);
+            return url == "bundle.js" ? JsSourceMap.Parse("""{"version":3,"sources":["a.js"],"mappings":"AAAA;;A;CAAC"}""") : null;
+        });
+
+        // No source map for the URL, no URL, a line without mapping, a segment without source, a line after the mappings
+        Assert.Equal(new JsSourceLocation("other.js", 1, 1), mapper.MapLocation(new JsSourceLocation("other.js", 1, 1)));
+        Assert.Equal(new JsSourceLocation(null, 1, 1), mapper.MapLocation(new JsSourceLocation(null, 1, 1)));
+        Assert.Null(mapper.MapLocation(null));
+        Assert.Equal(new JsSourceLocation("bundle.js", 2, 5), mapper.MapLocation(new JsSourceLocation("bundle.js", 2, 5)));
+        Assert.Equal(new JsSourceLocation("bundle.js", 3, 5), mapper.MapLocation(new JsSourceLocation("bundle.js", 3, 5)));
+        Assert.Equal(new JsSourceLocation("bundle.js", 9, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 9, 1)));
+
+        // Before the first segment of a line, and after it
+        Assert.Equal(new JsSourceLocation("bundle.js", 4, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 4, 1)));
+        Assert.Equal(new JsSourceLocation("a.js", 1, 2), mapper.MapLocation(new JsSourceLocation("bundle.js", 4, 7)));
+        Assert.Equal(new JsSourceLocation("a.js", 1, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 1, 40)));
+
+        // The resolver is called once per URL; the other lines of a stack trace are kept
+        Assert.Equal("Error: x\n    at f (a.js:1:1)\n    at other.js:3:4\n    at <anonymous>:1:1\nnot a frame", mapper.MapStackTrace("Error: x\n    at f (bundle.js:1:3)\n    at other.js:3:4\n    at <anonymous>:1:1\nnot a frame"));
+        Assert.Equal(["other.js", "bundle.js", "<anonymous>"], calls);
+    }
+
+    [Fact]
+    public void SourceMaps_SectionsAndSourceUrls()
+    {
+        var sourceMap = JsSourceMap.Parse("""
+            {
+              "version": 3,
+              "sections": [
+                { "offset": { "line": 0, "column": 0 }, "map": { "version": 3, "sources": ["../lib/a.js"], "mappings": "AAAA" } },
+                { "offset": { "line": 1, "column": 10 }, "map": { "version": 3, "sourceRoot": "https://cdn.example.com/src/", "sources": ["b.js"], "mappings": "AACA" } }
+              ]
+            }
+            """, "https://example.com/dist/app.js.map");
+
+        Assert.Equal(["https://example.com/lib/a.js", "https://cdn.example.com/src/b.js"], sourceMap.Sources);
+        Assert.True(sourceMap.TryGetOriginalLocation(1, 5, out var location));
+        Assert.Equal(new JsSourceLocation("https://example.com/lib/a.js", 1, 1), location);
+        Assert.False(sourceMap.TryGetOriginalLocation(2, 5, out _));
+        Assert.True(sourceMap.TryGetOriginalLocation(2, 11, out location));
+        Assert.Equal(new JsSourceLocation("https://cdn.example.com/src/b.js", 2, 1), location);
+        Assert.False(sourceMap.TryGetOriginalLocation(3, 1, out _));
+        Assert.Equal(["webpack:///src/c.ts"], JsSourceMap.Parse("""{"version":3,"sourceRoot":"ignored","sources":["webpack:///src/c.ts"],"mappings":""}""", "dist/c.js.map").Sources);
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("[]")]
+    [InlineData("""{"version":2,"sources":[],"mappings":""}""")]
+    [InlineData("""{"version":3,"mappings":""}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA!A"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"ACAA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"g"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA+/////DA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AAA+/////D"}""")]
+    [InlineData("""{"version":3,"sections":[{"offset":{"line":1,"column":0},"map":{"version":3,"sources":[],"mappings":""}},{"offset":{"line":0,"column":0},"map":{"version":3,"sources":[],"mappings":""}}]}""")]
+    public void SourceMaps_InvalidMaps(string json)
+    {
+        Assert.Throws<FormatException>(() => JsSourceMap.Parse(json));
+        Assert.False(JsSourceMap.TryParse(json, url: null, out var sourceMap));
+        Assert.Null(sourceMap);
+    }
+
+    [Fact]
+    public void SourceMaps_UnpairedSurrogateIsNotValid()
+    {
+        const string Json = "{\"version\":3,\"sources\":[\"\uD800\"],\"mappings\":\"\"}";
+
+        Assert.Throws<FormatException>(() => JsSourceMap.Parse(Json));
+        Assert.False(JsSourceMap.TryParse(Json, url: null, out _));
+    }
+
+    [Fact]
+    public void SourceMaps_PositionsThatAreNotOneBasedAreNotMapped()
+    {
+        var sourceMap = JsSourceMap.Parse("""{"version":3,"sources":["a.js"],"mappings":"AAAA"}""");
+
+        Assert.True(sourceMap.TryGetOriginalLocation(1, 1, out _));
+        Assert.False(sourceMap.TryGetOriginalLocation(1, 0, out _));
+        Assert.False(sourceMap.TryGetOriginalLocation(1, int.MinValue, out _));
+        Assert.False(sourceMap.TryGetOriginalLocation(int.MinValue, 1, out _));
+    }
+
+    [Fact]
+    public void SourceMaps_ResolverExceptionsPropagate()
+    {
+        var calls = 0;
+        var mapper = new JsSourceMapper(_ =>
+        {
+            calls++;
+            throw new IOException("Cannot read the source map");
+        });
+
+        Assert.Throws<IOException>(() => mapper.MapLocation(new JsSourceLocation("a.js", 1, 1)));
+        Assert.Throws<IOException>(() => mapper.MapStackTrace("Error\n    at a.js:1:1"));
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public void ModuleLoader_ExceptionFailsStaticImport()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DelegateModuleLoader(request => throw new FileNotFoundException("Could not find file 'dep.js'")) });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule("import './dep.js';", "main.js");
+
+        var loading = module.LoadRequestedModules().AsObject();
+        engine.RunJobs();
+
+        Assert.True(loading.TryGetPromiseState(out var state, out var reason, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.Equal("TypeError: Cannot load the module './dep.js': Could not find file 'dep.js'", engine.ToString(reason));
+        Assert.Equal(JsModuleStatus.New, module.Status);
+    }
+
+    [Fact]
+    public void ModuleLoader_ExceptionRejectsDynamicImport()
+    {
+        var calls = 0;
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            ModuleLoader = new DelegateModuleLoader(request =>
+            {
+                calls++;
+                if (request.Specifier == "syntax.js")
+                    throw new JsException(request.Realm.CreateError(JsErrorType.SyntaxError, "Unexpected token"));
+
+                throw new IOException("Disk error");
+            }),
+        });
+        var realm = engine.CreateRealm();
+
+        realm.Execute("globalThis.r = []; for (const s of ['io.js', 'syntax.js', 'io.js']) import(s).then(() => r.push('loaded'), e => r.push(`${e}`));");
+        engine.RunJobs();
+
+        Assert.Equal(3, calls);
+        Assert.Equal("TypeError: Cannot load the module 'io.js': Disk error|SyntaxError: Unexpected token|TypeError: Cannot load the module 'io.js': Disk error", realm.Execute("r.join('|')").AsString());
+    }
+
+    [Fact]
+    public void ModuleLoader_TerminationAndExceptionsAfterCompletionPropagate()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DelegateModuleLoader(request => throw new JsTerminationException(JsTerminationReason.Canceled, "Canceled")) }))
+        {
+            var realm = engine.CreateRealm();
+            Assert.Throws<JsTerminationException>(() => realm.ParseModule("import './dep.js';").LoadRequestedModules());
+            Assert.Throws<JsTerminationException>(() => realm.Execute("import('./dep.js')"));
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions
+        {
+            ModuleLoader = new DelegateModuleLoader(request =>
+            {
+                request.Complete(request.Realm.ParseModule("export default 1;", request.Specifier));
+                throw new InvalidOperationException("After completion");
+            }),
+        }))
+        {
+            var realm = engine.CreateRealm();
+            var module = realm.ParseModule("import './dep.js';");
+            Assert.Throws<InvalidOperationException>(() => module.LoadRequestedModules());
+        }
+    }
+
+    [Fact]
+    public async Task ModuleLoader_CompletionFromAnotherThreadRunsOnTheEngineThread()
+    {
+        var requests = new List<JsModuleLoadRequest>();
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DelegateModuleLoader(requests.Add) });
+        var realm = engine.CreateRealm();
+        var a = realm.ParseModule("export default 'a';", "a.js");
+        var b = realm.ParseModule("export default 'b';", "b.js");
+        using (engine.Enter())
+        {
+            // The engine is busy (a script runs) while another thread completes the requests
+            realm.GlobalObject.SetProperty("completeFromThreadPool", realm.CreateFunction("completeFromThreadPool", 0, (_, _) =>
+            {
+                Task.Run(() =>
+                {
+                    requests[1].Complete(b);
+                    requests[0].Complete(a);
+                    Assert.Throws<InvalidOperationException>(() => requests[0].Fail("Too late"));
+                }).GetAwaiter().GetResult();
+                return JsValue.Undefined;
+            }));
+        }
+
+        realm.Execute("globalThis.r = []; import('a.js').then(ns => r.push(ns.default)); import('b.js').then(ns => r.push(ns.default)); completeFromThreadPool(); r.push('sync');");
+        Assert.Equal("sync", realm.Execute("r.join()").AsString());
+
+        // The completions are processed by RunJobs, in the order they were made
+        engine.RunJobs();
+        Assert.Equal("sync,b,a", realm.Execute("r.join()").AsString());
+
+        // A request completed concurrently by several threads is completed once
+        realm.Execute("import('c.js').then(ns => r.push(ns.default), e => r.push(e.message));");
+        var c = realm.ParseModule("export default 'c';", "c.js");
+        var request = requests[2];
+        var successes = 0;
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(() =>
+        {
+            try
+            {
+                if (i % 2 == 0)
+                {
+                    request.Complete(c);
+                }
+                else
+                {
+                    request.Fail("Failed " + i.ToString(CultureInfo.InvariantCulture));
+                }
+
+                Interlocked.Increment(ref successes);
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        })));
+
+        Assert.Equal(1, successes);
+        engine.RunJobs();
+        Assert.Equal(4, realm.Execute("r.length").AsNumber());
+    }
+
+    [Fact]
+    public void Module_TerminationDuringEvaluationFailsTheModule()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 10_000 });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule("globalThis.started = true; while (true) {}", "loop.js");
+        module.LoadRequestedModules();
+        module.Link();
+
+        Assert.Throws<JsTerminationException>(() => module.Evaluate());
+        Assert.Equal(JsModuleStatus.Evaluated, module.Status);
+        Assert.True(module.HasEvaluationError);
+        Assert.Equal("Error: The execution was terminated: The script exceeded its statement limit", engine.ToString(module.EvaluationError));
+
+        // The next evaluation does not run the module again: its promise is rejected
+        var evaluation = module.Evaluate().AsObject();
+        Assert.True(evaluation.TryGetPromiseState(out var state, out var reason, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.True(JsEngine.SameValue(module.EvaluationError, reason));
+        Assert.True(realm.Execute("started").AsBoolean());
+    }
+
+    [Fact]
+    public void Module_TerminationDuringTopLevelAwaitFailsTheModuleAndItsImporters()
+    {
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = "import './tla.js'; globalThis.mainRan = true;",
+            ["tla.js"] = "await 0; while (true) {}",
+        };
+
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 10_000, ModuleLoader = new DictionaryModuleLoader(files) });
+        var realm = engine.CreateRealm();
+        var main = realm.ParseModule(files["main.js"], "main.js");
+        main.LoadRequestedModules();
+        engine.RunJobs();
+        main.Link();
+        var evaluation = main.Evaluate().AsObject();
+        Assert.Equal(JsModuleStatus.EvaluatingAsync, main.Status);
+
+        Assert.Throws<JsTerminationException>(engine.RunJobs);
+        Assert.Equal(JsModuleStatus.Evaluated, main.Status);
+        Assert.True(main.HasEvaluationError);
+        Assert.True(evaluation.TryGetPromiseState(out var state, out var reason, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.Equal("Error: The execution was terminated: The script exceeded its statement limit", engine.ToString(reason));
+
+        // A later import of the modules is rejected with the same error, and the engine can run code again
+        realm.Execute("import('tla.js').catch(e => globalThis.importError = e.message);");
+        engine.RunJobs();
+        Assert.Equal("The execution was terminated: The script exceeded its statement limit", realm.Execute("importError").AsString());
+        Assert.Equal("undefined", realm.Execute("typeof mainRan").AsString());
+    }
+
+    [Fact]
+    public void HostException_ClosesTheGenerator()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("boom", realm.CreateFunction("boom", 0, (_, _) => throw new InvalidOperationException("Boom")));
+        }
+
+        realm.Execute("function* g() { try { while (true) yield boom(); } finally { globalThis.cleaned = true; } } globalThis.it = g();");
+        Assert.Throws<InvalidOperationException>(() => realm.Execute("it.next()"));
+
+        // The generator is completed: it is not 'already running', and its finally block did not run
+        Assert.Equal("true,undefined", realm.Execute("var result = it.next(); `${result.done},${result.value}`").AsString());
+        Assert.Equal("undefined", realm.Execute("typeof cleaned").AsString());
+        Assert.Equal("1,2", realm.Execute("function* h() { yield 1; yield 2; } [...h()].join()").AsString());
+    }
+
+    [Fact]
+    public void HostException_RejectsTheAsyncFunctionAndTheAsyncGenerator()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("boom", realm.CreateFunction("boom", 0, (_, _) => throw new InvalidOperationException("Boom")));
+        }
+
+        realm.Execute("""
+            globalThis.r = [];
+            async function f() { try { await 0; boom(); } finally { r.push('finally'); } }
+            f().catch(e => r.push(e.message));
+            """);
+
+        // The exception of the continuation goes to the caller of RunJobs; the promise of the async function is rejected
+        Assert.Throws<InvalidOperationException>(engine.RunJobs);
+        engine.RunJobs();
+        Assert.Equal("The execution was stopped by a .NET exception: System.InvalidOperationException: Boom", realm.Execute("r.join()").AsString());
+
+        realm.Execute("""
+            globalThis.r = [];
+            async function* g() { yield 1; await 0; boom(); }
+            globalThis.it = g();
+            it.next().then(v => r.push(v.value));
+            it.next().then(v => r.push('fulfilled'), e => r.push(e.message));
+            it.next().then(v => r.push(v.done));
+            """);
+        Assert.Throws<InvalidOperationException>(engine.RunJobs);
+        engine.RunJobs();
+        Assert.Equal("1,The execution was stopped by a .NET exception: System.InvalidOperationException: Boom,true", realm.Execute("r.join()").AsString());
+    }
+
+    // The examples of the documentation site (docs/JavaScriptEngine)
+    [Fact]
+    public void Documentation_HelloWorld()
+    {
+        #region JavaScriptEngine_HelloWorld
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        var result = realm.Execute("const name = 'world'; `Hello, ${name}!`");
+        Assert.Equal("Hello, world!", result.AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Realms()
+    {
+        #region JavaScriptEngine_Realms
+        using var engine = new JsEngine();
+        var first = engine.CreateRealm();
+        var second = engine.CreateRealm();
+
+        // Each realm has its own global object and its own built-ins
+        first.Execute("globalThis.owner = 'first'; Array.prototype.last = function () { return this.at(-1); };");
+        Assert.Equal("undefined", second.Execute("typeof owner").AsString());
+        Assert.Equal("undefined", second.Execute("typeof [].last").AsString());
+
+        // The objects of a realm can be given to the other realms of the same engine
+        using (engine.Enter())
+        {
+            second.GlobalObject.SetProperty("firstGlobal", first.GlobalObject);
+        }
+
+        Assert.Equal("first", second.Execute("firstGlobal.owner").AsString());
+        Assert.False(second.Execute("firstGlobal.Array === Array").AsBoolean());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EnterScope()
+    {
+        #region JavaScriptEngine_EnterScope
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        // Execute, Call and Construct enter the engine themselves
+        var point = realm.Execute("({ x: 1, y: 2 })").AsObject();
+
+        // The members of the objects are used inside a scope of the engine
+        using (engine.Enter())
+        {
+            point.SetProperty("z", 3);
+            Assert.Equal(2, point.GetProperty("y").AsNumber());
+            realm.GlobalObject.SetProperty("point", point);
+        }
+
+        Assert.Equal("1,2,3", realm.Execute("Object.values(point).join()").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CompletionValue()
+    {
+        #region JavaScriptEngine_CompletionValue
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        // The result of a script is the value of its last statement
+        var total = realm.Execute("let total = 0; for (const price of [10, 20, 12.5]) { total += price; } total", "prices.js");
+        Assert.Equal(42.5, total.AsNumber());
+
+        // The scripts of a realm share their global variables and functions
+        realm.Execute("var counter = 1; function increment() { return ++counter; }");
+        realm.Execute("increment();");
+        Assert.Equal(2, realm.Execute("counter").AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_PreparedScript()
+    {
+        #region JavaScriptEngine_PreparedScript
+        // Parse and compile once, run many times, in any engine and on any thread
+        var script = JsPreparedScript.Parse("function fib(n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); } fib(input)", "fib.js");
+
+        var results = new double[4];
+        Parallel.For(0, results.Length, i =>
+        {
+            // An engine runs on one thread at a time: each thread uses its own engine
+            using var engine = new JsEngine();
+            var realm = engine.CreateRealm();
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("input", 10 + i);
+            }
+
+            results[i] = realm.Execute(script).AsNumber();
+        });
+
+        Assert.Equal([55, 89, 144, 233], results);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_PreparedScriptRuns()
+    {
+        #region JavaScriptEngine_PreparedScriptRuns
+        var counter = JsPreparedScript.Parse("var count = (count ?? 0) + 1; count", "counter.js");
+
+        using var engine = new JsEngine();
+        var first = engine.CreateRealm();
+        var second = engine.CreateRealm();
+
+        // Each run evaluates the script again, in the realm that runs it: its global declarations go to that realm
+        Assert.Equal(1, first.Execute(counter).AsNumber());
+        Assert.Equal(2, first.Execute(counter).AsNumber());
+        Assert.Equal(1, second.Execute(counter).AsNumber());
+
+        // A realm cannot declare the same let, const or class twice: run such a script once per realm
+        var settings = JsPreparedScript.Parse("const limit = 10; limit", "settings.js");
+        Assert.Equal(10, first.Execute(settings).AsNumber());
+        var exception = Assert.Throws<JsException>(() => first.Execute(settings));
+        Assert.StartsWith("SyntaxError", exception.Message, StringComparison.Ordinal);
+
+        // The URL given to Parse is the location of the errors of every run
+        var failing = JsPreparedScript.Parse("let total = 0;\nthrow new Error('Invalid total');", "https://example.com/total.js");
+        exception = Assert.Throws<JsException>(() => second.Execute(failing));
+        Assert.Equal(new JsSourceLocation("https://example.com/total.js", 2, 1), exception.Location);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ValidateScript()
+    {
+        #region JavaScriptEngine_ValidateScript
+        // TryParse reports a syntax error without throwing
+        if (JsPreparedScript.TryParse("let total = 1;\nlet = ;", "user.js", lineOffset: 0, columnOffset: 0, out var script, out var error))
+        {
+            Assert.Fail("The script is not valid: " + script.Url);
+        }
+
+        Assert.Equal("user.js", error.Url);
+        Assert.Equal(2, error.Line);
+        Assert.Equal(7, error.Column);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Modules()
+    {
+        #region JavaScriptEngine_LoadModules
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = """
+                import { log } from 'app:log';
+                import { formatPrice } from './format.js';
+                import config from './config.json' with { type: 'json' };
+
+                log(`${import.meta.url}: ${formatPrice(config.price, config.currency)}`);
+                export const ready = true;
+                """,
+            ["./format.js"] = "export function formatPrice(amount, currency) { return `${amount.toFixed(2)} ${currency}`; }",
+            ["./config.json"] = """{ "price": 12.5, "currency": "EUR" }""",
+        };
+
+        var logs = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new AppModuleLoader(files, logs) });
+        var realm = engine.CreateRealm();
+
+        // Load the module and its dependencies, link them, then evaluate them
+        var module = realm.ParseModule(files["main.js"], "main.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        var evaluation = module.Evaluate().AsObject();
+        engine.RunJobs();
+
+        Assert.True(evaluation.TryGetPromiseState(out var state, out _, out _));
+        Assert.Equal(JsPromiseState.Fulfilled, state);
+        Assert.Equal(["main.js: 12.50 EUR"], logs);
+
+        // The exports of the module
+        using (engine.Enter())
+        {
+            var exports = module.GetNamespace().AsObject();
+            Assert.True(exports.GetProperty("ready").AsBoolean());
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ModuleErrors()
+    {
+        #region JavaScriptEngine_ModuleErrors
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = "import { missing } from './missing.js';",
+        };
+
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new AppModuleLoader(files, []) });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule(files["main.js"], "main.js");
+
+        // A module that cannot be loaded rejects the promise of LoadRequestedModules
+        var loading = module.LoadRequestedModules().AsObject();
+        engine.RunJobs();
+        Assert.True(loading.TryGetPromiseState(out var state, out var reason, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.Equal("TypeError: Cannot find the module './missing.js'", engine.ToString(reason));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CommonJs()
+    {
+        #region JavaScriptEngine_CommonJs
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["/app/index.js"] = """
+                const { greet } = require('./greeting');
+                const config = require('../config.json');
+                module.exports = greet(config.name);
+                """,
+            ["/app/greeting/index.js"] = """
+                const a = require('./a');
+                exports.greet = name => `${a.prefix} ${name} (${a.seenB})`;
+                """,
+            ["/app/greeting/a.js"] = """
+                exports.prefix = 'Hello';
+                // A circular require gets the exports defined so far
+                exports.seenB = require('./b').seenPrefix;
+                """,
+            ["/app/greeting/b.js"] = "exports.seenPrefix = require('./a').prefix;",
+            ["/config.json"] = """{ "name": "world" }""",
+        };
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            var loader = new CommonJsLoader(realm, files);
+            Assert.Equal("Hello world (Hello)", loader.Require("/app/index.js").AsString());
+
+            // A module runs once: the next require returns the same exports
+            Assert.Same(loader.Require("/app/greeting/a.js").AsObject(), loader.Require("/app/greeting/a.js").AsObject());
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CommonJs_Errors()
+    {
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["/index.js"] = "require('lodash');",
+            ["/data.json"] = "42",
+            ["/lib/escape.js"] = "module.exports = require('../../../data.json');",
+            ["/fail.js"] = "globalThis.failures = (globalThis.failures ?? 0) + 1;\nthrow new Error('boom');",
+        };
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            var loader = new CommonJsLoader(realm, files);
+            Assert.Equal("Error: Cannot find module 'lodash'", Assert.Throws<JsException>(() => loader.Require("/index.js")).Message);
+
+            // ".." stops at the root of the files
+            Assert.Equal(42, loader.Require("/lib/escape.js").AsNumber());
+
+            // A module that throws is not cached, and its errors have the lines of the file
+            var exception = Assert.Throws<JsException>(() => loader.Require("/fail.js"));
+            Assert.Equal(new JsSourceLocation("/fail.js", 2, 1), exception.Location);
+            Assert.Throws<JsException>(() => loader.Require("/fail.js"));
+            Assert.Equal(2, realm.GlobalObject.GetProperty("failures").AsNumber());
+        }
+    }
+
+    [Fact]
+    public void Documentation_DynamicImport()
+    {
+        #region JavaScriptEngine_DynamicImport
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["./plugin.js"] = "export default function run(input) { return input.toUpperCase(); }",
+        };
+
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new AppModuleLoader(files, []) });
+        var realm = engine.CreateRealm();
+
+        // A script can import a module with import(): the loading runs from the job queue
+        realm.Execute("import('./plugin.js').then(plugin => { globalThis.result = plugin.default('done'); });", "app.js");
+        engine.RunJobs();
+
+        Assert.Equal("DONE", realm.Execute("result").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CatchErrors()
+    {
+        #region JavaScriptEngine_CatchErrors
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        var exception = Assert.Throws<JsException>(() => realm.Execute("function check(order) {\n  if (!order.id) throw new RangeError('The order has no id');\n}\ncheck({});", "orders.js"));
+
+        // The thrown value, and where it was thrown
+        Assert.Equal("RangeError: The order has no id", exception.Message);
+        Assert.Equal(new JsSourceLocation("orders.js", 2, 18), exception.Location);
+        using (engine.Enter())
+        {
+            var error = exception.Value.AsObject();
+            Assert.Equal("RangeError", error.GetProperty("name").AsString());
+            Assert.Equal("The order has no id", error.GetProperty("message").AsString());
+            Assert.Equal("RangeError: The order has no id\n    at check (orders.js:2:28)\n    at orders.js:4:1", error.GetErrorStack());
+        }
+
+        // A script can throw any value
+        exception = Assert.Throws<JsException>(() => realm.Execute("throw 42;"));
+        Assert.Equal(42, exception.Value.AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ThrowFromDotNet()
+    {
+        #region JavaScriptEngine_ThrowFromDotNet
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("parseAge", realm.CreateFunction("parseAge", 1, (_, arguments) =>
+            {
+                var text = arguments.Length > 0 ? engine.ToString(arguments[0]) : "";
+                if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var age))
+                {
+                    // A JavaScript error, which the scripts can catch
+                    throw realm.CreateException(JsErrorType.TypeError, "Invalid age: " + text);
+                }
+
+                return age;
+            }));
+        }
+
+        Assert.Equal(42, realm.Execute("parseAge('42')").AsNumber());
+        Assert.Equal("TypeError: Invalid age: abc", realm.Execute("try { parseAge('abc'); } catch (e) { `${e}` }").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DotNetExceptionsAreNotCatchable()
+    {
+        #region JavaScriptEngine_DotNetExceptions
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("fail", realm.CreateFunction("fail", 0, (_, _) => throw new InvalidOperationException("Unexpected state")));
+        }
+
+        // A .NET exception is not a JavaScript error: the script cannot catch it, and it goes to the caller
+        Assert.Throws<InvalidOperationException>(() => realm.Execute("try { fail(); } catch { }"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Values()
+    {
+        #region JavaScriptEngine_Values
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        static string Describe(JsValue value) => value.Kind switch
+        {
+            JsValueKind.Undefined => "undefined",
+            JsValueKind.Null => "null",
+            JsValueKind.Boolean => value.AsBoolean() ? "true" : "false",
+            JsValueKind.Number => value.AsNumber().ToString(CultureInfo.InvariantCulture),
+            JsValueKind.String => '"' + value.AsString() + '"',
+            JsValueKind.BigInt => value.AsBigInt().ToString(CultureInfo.InvariantCulture) + "n",
+            JsValueKind.Symbol => value.AsSymbol().ToString(),
+            JsValueKind.Object when value.IsCallable => "function",
+            JsValueKind.Object => "object",
+            _ => throw new UnreachableException(),
+        };
+
+        var values = (JsArray)realm.Execute("[42, 'text', true, null, undefined, 2n ** 70n, Symbol('id'), {}, Math.max]").AsObject();
+        using (engine.Enter())
+        {
+            var descriptions = new List<string>();
+            for (var i = 0u; i < values.Length; i++)
+            {
+                descriptions.Add(Describe(values.GetProperty(i.ToString(CultureInfo.InvariantCulture))));
+            }
+
+            Assert.Equal(["42", "\"text\"", "true", "null", "undefined", "1180591620717411303424n", "Symbol(id)", "object", "function"], descriptions);
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CreateValues()
+    {
+        #region JavaScriptEngine_CreateValues
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            // The numbers, the strings and the booleans convert implicitly to JsValue
+            realm.GlobalObject.SetProperty("count", 3);
+            realm.GlobalObject.SetProperty("ratio", 0.5);
+            realm.GlobalObject.SetProperty("title", "Report");
+            realm.GlobalObject.SetProperty("enabled", true);
+            realm.GlobalObject.SetProperty("nothing", JsValue.Null);
+            realm.GlobalObject.SetProperty("big", JsValue.FromBigInt(BigInteger.Pow(2, 70)));
+        }
+
+        Assert.Equal("number,number,string,boolean,object,bigint", realm.Execute("[count, ratio, title, enabled, nothing, big].map(x => typeof x).join()").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Conversions()
+    {
+        #region JavaScriptEngine_Conversions
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        // AsNumber, AsString... read a value of their kind: check the kind first
+        var length = realm.Execute("[1, 2, 3].length");
+        Assert.True(length.IsNumber);
+        Assert.Equal(3, length.AsNumber());
+
+        // The conversions of JavaScript accept any value, and may run code of the script (valueOf, toString)
+        var price = realm.Execute("({ amount: 5, valueOf() { return this.amount * 2; } })");
+        Assert.Equal(10, engine.ToNumber(price));
+        Assert.Equal("[object Object]", engine.ToString(price));
+        Assert.True(JsEngine.ToBoolean(realm.Execute("'0'")));
+        Assert.Equal(12, engine.ToNumber(realm.Execute("'12'")));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Dates()
+    {
+        #region JavaScriptEngine_Dates
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            // A Date is a number of milliseconds since 1970-01-01T00:00:00Z
+            var date = realm.CreateDate(new DateTimeOffset(2026, 10, 29, 12, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds());
+            realm.GlobalObject.SetProperty("date", date);
+        }
+
+        Assert.Equal("2026-10-29T12:00:00.000Z", realm.Execute("date.toISOString()").AsString());
+
+        var returned = realm.Execute("new Date(Date.UTC(2000, 0, 1))").AsObject();
+        Assert.True(returned.TryGetDateValue(out var timeValue));
+        Assert.Equal(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero), DateTimeOffset.FromUnixTimeMilliseconds((long)timeValue));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Json()
+    {
+        #region JavaScriptEngine_Json
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            function summarize(order) {
+              return { id: order.id, count: order.items.length, total: order.items.reduce((sum, item) => sum + item.price, 0) };
+            }
+            """);
+
+        using (engine.Enter())
+        {
+            var json = realm.GlobalObject.GetProperty("JSON").AsObject();
+            var parse = json.GetProperty("parse");
+            var stringify = json.GetProperty("stringify");
+
+            // .NET to JavaScript: parse a JSON text, e.g. the output of System.Text.Json
+            var order = engine.Call(parse, json, """{ "id": "A-12", "items": [{ "price": 5 }, { "price": 7.5 }] }""");
+
+            var summary = engine.Call(realm.GlobalObject.GetProperty("summarize"), JsValue.Undefined, order);
+
+            // JavaScript to .NET: a JSON text
+            Assert.Equal("""{"id":"A-12","count":2,"total":12.5}""", engine.Call(stringify, json, summary).AsString());
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CreateObjects()
+    {
+        #region JavaScriptEngine_CreateObjects
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            var settings = realm.CreateObject();
+            settings.SetProperty("theme", "dark");
+            settings.SetProperty("fontSize", 14);
+            settings.SetProperty("languages", realm.CreateArray(["en", "fr"]));
+
+            // A read-only property, which the scripts do not enumerate
+            settings.DefineProperty("version", JsPropertyDescriptor.Data("1.0", writable: false, enumerable: false, configurable: false));
+
+            realm.GlobalObject.SetProperty("settings", settings);
+        }
+
+        Assert.Equal("theme,fontSize,languages", realm.Execute("Object.keys(settings).join()").AsString());
+        Assert.Equal("TypeError", realm.Execute("'use strict'; try { settings.version = '2.0'; } catch (e) { e.name }").AsString());
+        Assert.Equal("1.0", realm.Execute("settings.version").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ReadObjects()
+    {
+        #region JavaScriptEngine_ReadObjects
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var user = realm.Execute("({ name: 'Ada', roles: ['admin', 'dev'], [Symbol.for('id')]: 1 })").AsObject();
+
+        using (engine.Enter())
+        {
+            Assert.Equal("Ada", user.GetProperty("name").AsString());
+
+            // An array is a JsArray: its elements are the properties "0", "1"...
+            var roles = (JsArray)user.GetProperty("roles").AsObject();
+            Assert.Equal(2u, roles.Length);
+            Assert.Equal("dev", roles.GetProperty("1").AsString());
+
+            // The keys are strings or symbols
+            Assert.Equal(["name", "roles"], user.GetOwnPropertyKeys().Where(key => key.IsString).Select(key => key.AsString()));
+
+            // A missing property is undefined
+            Assert.True(user.GetProperty("email").IsUndefined);
+            Assert.False(user.ContainsProperty("email"));
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_LazyProperties()
+    {
+        #region JavaScriptEngine_LazyProperties
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var created = 0;
+        using (engine.Enter())
+        {
+            // The value is created the first time a script reads the property
+            realm.GlobalObject.DefineLazyDataProperty("catalog", () =>
+            {
+                created++;
+                return realm.CreateArray(["apple", "pear"]);
+            }, writable: false, enumerable: false, configurable: true);
+        }
+
+        realm.Execute("1 + 1");
+        Assert.Equal(0, created);
+        Assert.Equal("apple,pear", realm.Execute("catalog.join()").AsString());
+        Assert.Equal(1, created);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Functions()
+    {
+        #region JavaScriptEngine_Functions
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            // The name and the length are the name and length properties of the function
+            realm.GlobalObject.SetProperty("formatPrice", realm.CreateFunction("formatPrice", 2, (thisValue, arguments) =>
+            {
+                // The arguments are the ones of the call: a script can pass fewer than the length of the function
+                if (arguments.Length < 1 || !arguments[0].IsNumber)
+                {
+                    throw realm.CreateException(JsErrorType.TypeError, "The amount must be a number");
+                }
+
+                var currency = arguments.Length > 1 ? engine.ToString(arguments[1]) : "EUR";
+                return arguments[0].AsNumber().ToString("F2", CultureInfo.InvariantCulture) + " " + currency;
+            }));
+        }
+
+        Assert.Equal("12.50 EUR", realm.Execute("formatPrice(12.5)").AsString());
+        Assert.Equal("3.00 USD", realm.Execute("formatPrice(3, 'USD')").AsString());
+        Assert.Equal("formatPrice,2", realm.Execute("[formatPrice.name, formatPrice.length].join()").AsString());
+        Assert.Equal("TypeError: The amount must be a number", realm.Execute("try { formatPrice('x'); } catch (e) { `${e}` }").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CallJavaScript()
+    {
+        #region JavaScriptEngine_CallJavaScript
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            function applyDiscount(order, percent) {
+              return { ...order, total: order.total * (1 - percent / 100) };
+            }
+            """);
+
+        using (engine.Enter())
+        {
+            var order = realm.CreateObject();
+            order.SetProperty("id", "A-12");
+            order.SetProperty("total", 80);
+
+            // Call(function, this, arguments...)
+            var applyDiscount = realm.GlobalObject.GetProperty("applyDiscount");
+            var discounted = engine.Call(applyDiscount, JsValue.Undefined, order, 25).AsObject();
+            Assert.Equal("A-12", discounted.GetProperty("id").AsString());
+            Assert.Equal(60, discounted.GetProperty("total").AsNumber());
+
+            // Construct(constructor, arguments): new Map([["a", 1]])
+            var map = engine.Construct(realm.GlobalObject.GetProperty("Map"), [realm.CreateArray([realm.CreateArray(["a", 1])])]).AsObject();
+            Assert.Equal(1, map.GetProperty("size").AsNumber());
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ExposeDotNetClass()
+    {
+        #region JavaScriptEngine_ExposeClass
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            // The methods are defined once, on the prototype that the instances share
+            var prototype = realm.CreateObject();
+            prototype.SetProperty("append", realm.CreateFunction("append", 1, (thisValue, arguments) =>
+            {
+                GetBuilder(thisValue).Append(engine.ToString(arguments.Length > 0 ? arguments[0] : JsValue.Undefined));
+                return thisValue;
+            }));
+            prototype.SetProperty("toString", realm.CreateFunction("toString", 0, (thisValue, _) => GetBuilder(thisValue).ToString()));
+
+            var constructor = realm.CreateConstructor("TextBuilder", 0, (_, _, newTarget) =>
+            {
+                if (newTarget is null)
+                {
+                    throw realm.CreateException(JsErrorType.TypeError, "Constructor TextBuilder requires 'new'");
+                }
+
+                // The prototype of newTarget lets the scripts extend the class
+                var instancePrototype = newTarget.GetProperty("prototype").TryGetObject() ?? prototype;
+                return new JsHostObject(instancePrototype, new StringBuilder());
+            });
+            constructor.DefineProperty("prototype", JsPropertyDescriptor.Data(prototype, writable: false, enumerable: false, configurable: false));
+            prototype.DefineProperty("constructor", JsPropertyDescriptor.Data(constructor, writable: true, enumerable: false, configurable: true));
+            realm.GlobalObject.SetProperty("TextBuilder", constructor);
+
+            // The .NET object of an instance is the target of its host object
+            StringBuilder GetBuilder(JsValue thisValue) => thisValue.TryGetObject() is JsHostObject { Target: StringBuilder builder }
+                ? builder
+                : throw realm.CreateException(JsErrorType.TypeError, "Illegal invocation");
+        }
+
+        Assert.Equal("Hello, 42", realm.Execute("const builder = new TextBuilder(); builder.append('Hello').append(', ').append(42); `${builder}`").AsString());
+        Assert.Equal("true,[x]", realm.Execute("class Brackets extends TextBuilder { wrap(text) { return this.append(`[${text}]`); } } const b = new Brackets(); [b instanceof TextBuilder, `${b.wrap('x')}`].join()").AsString());
+        Assert.Equal("TypeError", realm.Execute("try { TextBuilder.prototype.append.call({}, 'x'); } catch (e) { e.name }").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_HostObject()
+    {
+        #region JavaScriptEngine_HostObject
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var environment = new Dictionary<string, string>(StringComparer.Ordinal) { ["REGION"] = "eu-west", ["STAGE"] = "test" };
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("env", new ReadOnlyDictionaryObject(realm, environment));
+        }
+
+        Assert.Equal("eu-west", realm.Execute("env.REGION").AsString());
+
+        // The object reads the dictionary on each access
+        environment["STAGE"] = "production";
+        Assert.Equal("""{"REGION":"eu-west","STAGE":"production"}""", realm.Execute("JSON.stringify(env)").AsString());
+        Assert.Equal("TypeError", realm.Execute("'use strict'; try { env.REGION = 'us'; } catch (e) { e.name }").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Buffers()
+    {
+        #region JavaScriptEngine_Buffers
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var pixels = new byte[] { 10, 20, 30, 40 };
+        var detachKey = "pixels";
+        JsObject buffer;
+        using (engine.Enter())
+        {
+            // The ArrayBuffer uses the memory of the array: nothing is copied. With a detach key, the scripts cannot
+            // transfer or detach it
+            buffer = realm.CreateArrayBuffer(pixels.AsMemory(), detachKey);
+            realm.GlobalObject.SetProperty("pixels", realm.CreateBufferView(JsBufferKind.Uint8Array, buffer, byteOffset: 0, length: pixels.Length));
+        }
+
+        realm.Execute("for (let i = 0; i < pixels.length; i++) pixels[i] = 255 - pixels[i];");
+        Assert.Equal([245, 235, 225, 215], pixels);
+
+        // Before the memory is reused, detach the buffer: the scripts then see an empty buffer
+        JsBinaryData.DetachArrayBuffer(buffer, detachKey);
+        Assert.Equal(0, realm.Execute("pixels.length").AsNumber());
+
+        // Read the bytes of a buffer or a view created by a script
+        var result = realm.Execute("Uint8Array.from([1, 2, 3])");
+        Assert.True(JsBinaryData.TryGetBufferSource(result, out var kind, out var isShared, out var bytes));
+        Assert.Equal(JsBufferKind.Uint8Array, kind);
+        Assert.False(isShared);
+        Assert.Equal([1, 2, 3], bytes.ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AsyncFunctions()
+    {
+        #region JavaScriptEngine_AsyncFunctions
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var promise = realm.Execute("""
+            async function compute() {
+              const values = await Promise.all([1, 2, 3].map(async x => x * 10));
+              return values.reduce((a, b) => a + b);
+            }
+            compute()
+            """).AsObject();
+
+        // The script ran until its first await: the rest runs from the job queue
+        Assert.True(promise.TryGetPromiseState(out var state, out _, out _));
+        Assert.Equal(JsPromiseState.Pending, state);
+
+        engine.RunJobs();
+        Assert.True(promise.TryGetPromiseState(out state, out var result, out _));
+        Assert.Equal(JsPromiseState.Fulfilled, state);
+        Assert.Equal(60, result.AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_AwaitDotNetTasks()
+    {
+        #region JavaScriptEngine_AwaitDotNetTasks
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var pending = new Queue<(Task<string> Task, JsValue Resolve, JsValue Reject)>();
+        using (engine.Enter())
+        {
+            var promiseConstructor = realm.GlobalObject.GetProperty("Promise");
+            realm.GlobalObject.SetProperty("readText", realm.CreateFunction("readText", 1, (_, arguments) =>
+            {
+                var task = ReadTextAsync(arguments.Length > 0 ? engine.ToString(arguments[0]) : "");
+
+                // new Promise((resolve, reject) => ...): keep the resolving functions until the task completes
+                var executor = realm.CreateFunction("executor", 2, (_, resolvingFunctions) =>
+                {
+                    pending.Enqueue((task, resolvingFunctions[0], resolvingFunctions[1]));
+                    return JsValue.Undefined;
+                });
+                return engine.Construct(promiseConstructor, [executor]);
+            }));
+        }
+
+        var promise = realm.Execute("""
+            (async () => {
+              const text = await readText('a.txt');
+              try {
+                await readText('missing.txt');
+              } catch (e) {
+                return `${text} | ${e.message}`;
+              }
+            })()
+            """).AsObject();
+
+        // The event loop of the host: wait for the .NET work, settle its promise, then run the jobs it unblocks
+        while (pending.TryDequeue(out var item))
+        {
+            try
+            {
+                var text = await item.Task;
+                engine.Call(item.Resolve, JsValue.Undefined, text);
+            }
+            catch (FileNotFoundException exception)
+            {
+                using (engine.Enter())
+                {
+                    engine.Call(item.Reject, JsValue.Undefined, realm.CreateError(JsErrorType.Error, exception.Message));
+                }
+            }
+
+            engine.RunJobs();
+        }
+
+        Assert.True(promise.TryGetPromiseState(out var state, out var result, out _));
+        Assert.Equal(JsPromiseState.Fulfilled, state);
+        Assert.Equal("content of a.txt | missing.txt not found", result.AsString());
+
+        static async Task<string> ReadTextAsync(string name)
+        {
+            await Task.Yield();
+            return name is "missing.txt" ? throw new FileNotFoundException(name + " not found") : "content of " + name;
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UnhandledRejections()
+    {
+        #region JavaScriptEngine_UnhandledRejections
+        var host = new RejectionTrackingHost();
+        using var engine = new JsEngine(new JsEngineOptions { Host = host });
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            Promise.reject(new Error('handled')).catch(() => {});
+            Promise.reject(new Error('forgotten'));
+            """);
+        engine.RunJobs();
+
+        // Once the jobs have run, report the promises that are still rejected without a handler
+        var promise = Assert.Single(host.UnhandledRejections);
+        Assert.True(promise.TryGetPromiseState(out _, out var reason, out _));
+        Assert.Equal("Error: forgotten", engine.ToString(reason));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_HostConsole()
+    {
+        #region JavaScriptEngine_Console
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var output = new StringWriter();
+        using (engine.Enter())
+        {
+            HostConsole.Install(realm, output);
+        }
+
+        realm.Execute("console.log('total:', 42, [1, 2], { toString() { throw new Error('not called'); } }); console.error('failed');");
+        Assert.Equal("[log] total: 42 [object Array] [object Object]\n[error] failed\n", output.ToString().ReplaceLineEndings("\n"));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_HostEventLoop()
+    {
+        #region JavaScriptEngine_EventLoop
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var eventLoop = new HostEventLoop(engine, TimeProvider.System);
+        using (engine.Enter())
+        {
+            eventLoop.Install(realm);
+        }
+
+        realm.Execute("""
+            globalThis.log = [];
+            setTimeout(() => {
+              log.push('timer 0 ms');
+              Promise.resolve().then(() => log.push('promise of the timer'));
+            }, 0);
+            setTimeout(name => log.push(name), 20, 'timer 20 ms');
+            const canceled = setTimeout(() => log.push('canceled'), 10);
+            queueMicrotask(() => log.push('microtask'));
+            clearTimeout(canceled);
+            log.push('script');
+            """);
+
+        // The jobs run after the script, and after each timer
+        await eventLoop.RunAsync();
+        Assert.Equal("script,microtask,timer 0 ms,promise of the timer,timer 20 ms", realm.Execute("log.join()").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DataVersionsAreUpToDate()
+    {
+        // docs/JavaScriptEngine/11-DataAndOutputDifferences.md lists the versions of the embedded data
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "docs", "JavaScriptEngine")))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        var page = File.ReadAllText(Path.Combine(directory.FullName, "docs", "JavaScriptEngine", "11-DataAndOutputDifferences.md"));
+        Assert.Contains("| Unicode | " + UnicodeProperties.UnicodeVersion.ToString(3) + " |", page, StringComparison.Ordinal);
+        Assert.Contains("| CLDR | " + Meziantou.Framework.JavaScriptEngine.Intl.Data.CldrData.EmbeddedCldrJsonVersion + " |", page, StringComparison.Ordinal);
+        Assert.Contains("| Unicode Collation Algorithm | " + Meziantou.Framework.JavaScriptEngine.Intl.Data.CldrData.EmbeddedUcaVersion + " |", page, StringComparison.Ordinal);
+        Assert.Contains("| IANA time zone database | " + Meziantou.Framework.JavaScriptEngine.TimeZones.TimeZoneDatabase.EmbeddedTzdataVersion + " |", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Documentation_Limits()
+    {
+        #region JavaScriptEngine_Limits
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            Timeout = TimeSpan.FromSeconds(2),
+            MaxStatements = 1_000_000,
+            MemoryLimit = 64 * 1024 * 1024,
+            RecursionLimit = 500,
+            RegExpTimeout = TimeSpan.FromMilliseconds(100),
+        });
+        var realm = engine.CreateRealm();
+
+        // A limit stops the script: the script cannot catch the termination, and its finally blocks do not run
+        var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("try { for (;;) {} } finally { globalThis.cleanedUp = true; }"));
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+        Assert.Equal("undefined", realm.Execute("typeof cleanedUp").AsString());
+
+        // Each entry into JavaScript gets the full limits again
+        Assert.Equal(4, realm.Execute("2 + 2").AsNumber());
+
+        // A too deep recursion is a RangeError, which the scripts can catch
+        Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try { f(); } catch (e) { e.name }").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Cancellation()
+    {
+        #region JavaScriptEngine_Cancellation
+        using var cancellation = new CancellationTokenSource();
+        using var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token });
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("processItem", realm.CreateFunction("processItem", 1, (_, arguments) =>
+            {
+                if (engine.ToNumber(arguments[0]) >= 3)
+                {
+                    cancellation.Cancel(); // e.g. the user clicked Cancel, from another thread
+                }
+
+                // A .NET function that works for a long time checks the limits and the cancellation itself
+                engine.CheckInterrupt();
+                return JsValue.Undefined;
+            }));
+        }
+
+        var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("for (let i = 0; ; i++) processItem(i);"));
+        Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ExecutionScope()
+    {
+        #region JavaScriptEngine_ExecutionScope
+        // One engine serves several requests: its options apply to every entry
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1_000_000 });
+        var realm = engine.CreateRealm();
+
+        // A request gets its own token and budget, shared by the script and by the jobs it enqueues
+        using var requestAborted = new CancellationTokenSource();
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits
+            {
+                CancellationToken = requestAborted.Token,
+                Timeout = TimeSpan.FromSeconds(5),
+                MaxStatements = 10_000,
+            });
+
+            realm.Execute("function tick() { Promise.resolve().then(tick); } tick();");
+            engine.RunJobs(); // the jobs keep enqueuing jobs: the limits of the scope stop the drain
+        });
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+        // The next request starts with a new budget
+        Assert.Equal(2, realm.Execute("1 + 1").AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NoStringCompilation()
+    {
+        #region JavaScriptEngine_NoStringCompilation
+        using var engine = new JsEngine(new JsEngineOptions { Host = new NoStringCompilationHost() });
+        var realm = engine.CreateRealm();
+
+        Assert.Equal("EvalError,EvalError", realm.Execute("""
+            const errors = [];
+            try { eval('1 + 1'); } catch (e) { errors.push(e.name); }
+            try { new Function('return 1'); } catch (e) { errors.push(e.name); }
+            errors.join()
+            """).AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Locale()
+    {
+        #region JavaScriptEngine_Locale
+        using var engine = new JsEngine(new JsEngineOptions { DefaultLocale = "de-DE", TimeZone = "Europe/Berlin" });
+        var realm = engine.CreateRealm();
+
+        // The default locale and time zone of the scripts
+        Assert.Equal("1.234,5", realm.Execute("(1234.5).toLocaleString()").AsString());
+        Assert.Equal("29.10.2026, 13:00:00", realm.Execute("new Date(Date.UTC(2026, 9, 29, 12)).toLocaleString()").AsString());
+        Assert.Equal("de-DE|Europe/Berlin", realm.Execute("const options = new Intl.DateTimeFormat().resolvedOptions(); `${options.locale}|${options.timeZone}`").AsString());
+
+        // The scripts can ask for another locale or time zone
+        Assert.Equal("1,234.5", realm.Execute("new Intl.NumberFormat('en-US').format(1234.5)").AsString());
+        Assert.Equal("29 octobre 2026", realm.Execute("new Date(Date.UTC(2026, 9, 29, 12)).toLocaleDateString('fr-FR', { dateStyle: 'long', timeZone: 'UTC' })").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_IntlWarmUp()
+    {
+        #region JavaScriptEngine_IntlWarmUp
+        // At startup: load the data of the locales that the scripts will use, for every engine of the process
+        using (var warmUp = new JsEngine())
+        {
+            warmUp.CreateRealm().Execute("""
+                for (const locale of ['en', 'fr', 'zh']) {
+                  new Intl.Collator(locale).compare('a', 'b');
+                  new Intl.NumberFormat(locale).format(1);
+                  new Intl.DateTimeFormat(locale).format(0);
+                }
+                """);
+        }
+
+        // Later: the engines of the requests reuse the data
+        using var engine = new JsEngine();
+        Assert.Equal("a,b,c", engine.CreateRealm().Execute("['c', 'a', 'b'].sort(new Intl.Collator('fr').compare).join()").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Clock()
+    {
+        #region JavaScriptEngine_Clock
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            TimeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 29, 23, 30, 0, TimeSpan.Zero)),
+            TimeZone = "Asia/Tokyo",
+        });
+        var realm = engine.CreateRealm();
+
+        Assert.Equal("2026-10-29T23:30:00.000Z", realm.Execute("new Date().toISOString()").AsString());
+        Assert.Equal("2026-10-30", realm.Execute("Temporal.Now.plainDateISO().toString()").AsString());
+        Assert.Equal(8, realm.Execute("new Date().getHours()").AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CustomTimeZone()
+    {
+        #region JavaScriptEngine_CustomTimeZone
+        // A time zone that is not in the IANA database: +05:00, and +06:00 from the last Sunday of March to the last Sunday of October
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            DateTime.MinValue.Date,
+            DateTime.MaxValue.Date,
+            TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 5, DayOfWeek.Sunday),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), month: 10, week: 5, DayOfWeek.Sunday));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Test/Zone", TimeSpan.FromHours(5), "Test zone", "Test standard time", "Test daylight time", [rule]);
+
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            TimeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero), timeZone),
+        });
+        var realm = engine.CreateRealm();
+
+        Assert.Equal(18, realm.Execute("new Date().getHours()").AsNumber());
+        Assert.Equal(-300, realm.Execute("new Date(2026, 0, 1).getTimezoneOffset()").AsNumber());
+        Assert.Equal("Test/Zone", realm.Execute("Temporal.Now.timeZoneId()").AsString());
+        #endregion
+    }
+
+    /// <summary>Loads the modules from a dictionary: the specifiers are the keys (e.g. <c>./math.js</c> is <c>math.js</c>).</summary>
+    private sealed class DictionaryModuleLoader(Dictionary<string, string> files) : JsModuleLoader
+    {
+        private readonly Dictionary<string, JsModule> _modules = new(StringComparer.Ordinal);
+
+        protected internal override void LoadImportedModule(JsModuleLoadRequest request)
+        {
+            var name = request.Specifier.StartsWith("./", StringComparison.Ordinal) ? request.Specifier[2..] : request.Specifier;
+            if (!files.TryGetValue(name, out var code))
+            {
+                request.Fail("Cannot find the module '" + request.Specifier + "'");
+                return;
+            }
+
+            if (!_modules.TryGetValue(name, out var module))
+            {
+                module = request.Realm.ParseModule(code, name);
+                _modules[name] = module;
+            }
+
+            request.Complete(module);
+        }
+    }
+
+    private sealed class DelegateDebugger(Action<JsDebugEvent> onStatement) : JsDebugger
+    {
+        protected internal override void OnStatement(JsDebugEvent debugEvent) => onStatement(debugEvent);
+    }
+
+    private sealed class DelegateModuleLoader(Action<JsModuleLoadRequest> load) : JsModuleLoader
+    {
+        protected internal override void LoadImportedModule(JsModuleLoadRequest request) => load(request);
+    }
+
+    private sealed class UppercaseHostObject(JsObject prototype, object target) : JsHostObject(prototype, target)
+    {
+        protected override bool GetOwnPropertyCore(JsPropertyKey key, out JsPropertyDescriptor descriptor)
+        {
+            if (key.IsString && key.AsString() == "name")
+            {
+                descriptor = JsPropertyDescriptor.Data("NAME", writable: false, enumerable: false, configurable: true);
+                return true;
+            }
+
+            return base.GetOwnPropertyCore(key, out descriptor);
+        }
+    }
+
+    private sealed class CallableHostObject(JsObject prototype) : JsHostObject(prototype)
+    {
+        protected override JsValue CallCore(JsValue thisValue, ReadOnlySpan<JsValue> arguments) => "called " + arguments.Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private sealed class TrustedCodeHost : JsHost
+    {
+        public override string? GetCodeForEval(JsEngine engine, JsValue argument)
+        {
+            if (argument.TryGetObject() is { } obj && obj.TryGetOwnProperty("trustedCode", out var descriptor))
+                return descriptor.Value.AsString();
+
+            return base.GetCodeForEval(engine, argument);
+        }
+    }
+
+    private sealed class RecordingHost : JsHost
+    {
+        public List<JsPromiseRejectionOperation> Rejections { get; } = [];
+
+        public List<JsRealm?> RejectionRealms { get; } = [];
+
+        public List<string> Compilations { get; } = [];
+
+        public int Callbacks { get; private set; }
+
+        public override void PromiseRejectionTracker(JsEngine engine, JsObject promise, JsPromiseRejectionOperation operation)
+        {
+            Rejections.Add(operation);
+            RejectionRealms.Add(engine.CurrentRealm);
+        }
+
+        public override void EnsureCanCompileStrings(JsEngine engine, JsRealm realm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)
+            => Compilations.Add(compilationType + "|" + bodyString);
+
+        public override JsValue CallJobCallback(JsEngine engine, in JsJobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments)
+        {
+            Callbacks++;
+            return base.CallJobCallback(engine, jobCallback, thisValue, arguments);
+        }
+    }
+}

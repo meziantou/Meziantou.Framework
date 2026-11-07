@@ -1,5 +1,5 @@
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework;
 
@@ -23,10 +23,11 @@ public static class HtmlToMarkdown
         if (string.IsNullOrWhiteSpace(html))
             return "";
 
-        var parser = new HtmlParser();
-        var document = parser.ParseDocument("<body>" + html + "</body>");
+        var document = HtmlDocumentParser.ParseDocument("<body>" + html + "</body>");
         var state = new ConversionState(options);
-        var result = ConvertChildNodes(document.Body!, state);
+        var body = document.Body!;
+        ConvertDescendants(body, state);
+        var result = ConvertChildNodes(body, state);
         return result.Trim('\n', '\r');
     }
 
@@ -34,17 +35,59 @@ public static class HtmlToMarkdown
     // Core traversal
     // =========================================================================
 
-    private static string ConvertNode(INode node, ConversionState state)
+    /// <summary>
+    /// Converts every descendant of <paramref name="root"/> bottom-up using an explicit
+    /// stack, so that deeply nested documents cannot overflow the call stack. Every node
+    /// is converted before any of its ancestors, and the result is recorded in
+    /// <paramref name="state"/> for the ancestor to read back.
+    /// </summary>
+    private static void ConvertDescendants(Node root, ConversionState state)
+    {
+        var stack = new Stack<(Node Node, bool ChildrenConverted)>();
+        PushChildren(stack, root);
+
+        while (stack.Count > 0)
+        {
+            var (node, childrenConverted) = stack.Pop();
+            if (childrenConverted)
+            {
+                state.SetConverted(node, ConvertNode(node, state));
+                continue;
+            }
+
+            stack.Push((node, ChildrenConverted: true));
+            if (!IsOpaqueElement(node))
+                PushChildren(stack, node);
+        }
+
+        static void PushChildren(Stack<(Node Node, bool ChildrenConverted)> stack, Node parent)
+        {
+            foreach (var child in parent.ChildNodes)
+                stack.Push((child, ChildrenConverted: false));
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether an element is converted from its raw text or outer
+    /// HTML. The descendants of such an element are never read back, so the traversal does
+    /// not need to convert them.
+    /// </summary>
+    private static bool IsOpaqueElement(Node node)
+    {
+        return node is Element el && el.LocalName is "pre" or "code" or "script" or "style" or "noscript";
+    }
+
+    private static string ConvertNode(Node node, ConversionState state)
     {
         return node switch
         {
-            IText text => ConvertText(text, state),
-            IElement element => ConvertElement(element, state),
+            Text text => ConvertText(text, state),
+            Element element => ConvertElement(element, state),
             _ => "",
         };
     }
 
-    private static string ConvertText(IText text, ConversionState state)
+    private static string ConvertText(Text text, ConversionState state)
     {
         var content = CollapseWhitespace(text.Data);
         if (state.Options.UseSimplePunctuation)
@@ -59,7 +102,7 @@ public static class HtmlToMarkdown
         return content;
     }
 
-    private static string ConvertElement(IElement element, ConversionState state)
+    private static string ConvertElement(Element element, ConversionState state)
     {
         return element.LocalName switch
         {
@@ -79,7 +122,7 @@ public static class HtmlToMarkdown
             "code" => ConvertInlineCode(element),
             "a" => ConvertLink(element, state),
             "img" => ConvertImage(element),
-            "br" => ConvertBreak(state),
+            "br" => ConvertBreak(element, state),
             "input" => ConvertInput(element),
 
             "script" or "style" or "noscript" => "",
@@ -101,7 +144,7 @@ public static class HtmlToMarkdown
     /// Processes children of a container node, grouping inline nodes and
     /// separating block elements with blank lines.
     /// </summary>
-    private static string ConvertChildNodes(INode parent, ConversionState state)
+    private static string ConvertChildNodes(Node parent, ConversionState state)
     {
         var blocks = new List<string>();
         var inlineBuf = new StringBuilder();
@@ -114,13 +157,13 @@ public static class HtmlToMarkdown
             if (IsBlockElement(child))
             {
                 FlushInlineBuffer(inlineBuf, blocks);
-                var block = ConvertNode(child, state);
+                var block = state.GetConverted(child);
                 if (!string.IsNullOrEmpty(block))
                     blocks.Add(block);
             }
             else
             {
-                inlineBuf.Append(ConvertNode(child, state));
+                inlineBuf.Append(state.GetConverted(child));
             }
         }
 
@@ -132,12 +175,12 @@ public static class HtmlToMarkdown
     /// Concatenates all children as inline content (no block grouping).
     /// Used inside inline elements like strong, em, a, etc.
     /// </summary>
-    private static string ConvertInlineContent(INode parent, ConversionState state)
+    private static string ConvertInlineContent(Node parent, ConversionState state)
     {
         var sb = new StringBuilder();
         foreach (var child in parent.ChildNodes)
         {
-            sb.Append(ConvertNode(child, state));
+            sb.Append(state.GetConverted(child));
         }
         return sb.ToString();
     }
@@ -146,9 +189,11 @@ public static class HtmlToMarkdown
     // Block converters
     // =========================================================================
 
-    private static string ConvertHeading(IElement element, ConversionState state)
+    private static string ConvertHeading(Element element, ConversionState state)
     {
-        var content = ConvertInlineContent(element, state).Trim();
+        // A heading is a single line: a line break in its content would end the heading and
+        // turn the remainder into a separate paragraph.
+        var content = CollapseHardLineBreaks(ConvertInlineContent(element, state)).Trim();
         if (content.Length == 0)
             return "";
 
@@ -163,13 +208,23 @@ public static class HtmlToMarkdown
         return new string('#', level) + " " + content;
     }
 
-    private static string ConvertParagraph(IElement element, ConversionState state)
+    /// <summary>
+    /// Replaces hard line breaks with a single space so inline content fits on one line.
+    /// A hard line break is a newline preceded either by trailing spaces or by a backslash,
+    /// depending on <see cref="LineBreakStyle"/>; the backslash has to go with it.
+    /// </summary>
+    private static string CollapseHardLineBreaks(string content)
+    {
+        return CollapseWhitespace(content.Replace("\\\n", "\n", StringComparison.Ordinal));
+    }
+
+    private static string ConvertParagraph(Element element, ConversionState state)
     {
         var content = ConvertInlineContent(element, state).Trim();
         return PostProcessLineStart(content);
     }
 
-    private static string ConvertBlockquote(IElement element, ConversionState state)
+    private static string ConvertBlockquote(Element element, ConversionState state)
     {
         var content = ConvertChildNodes(element, state);
         if (string.IsNullOrEmpty(content))
@@ -177,11 +232,18 @@ public static class HtmlToMarkdown
         return PrefixLines(content, "> ", "> ", ">");
     }
 
-    private static string ConvertPre(IElement element, ConversionState state)
+    private static string ConvertPre(Element element, ConversionState state)
     {
         var codeElement = element.QuerySelector("code");
-        var contentElement = codeElement ?? element;
-        var content = contentElement.TextContent;
+
+        // Only take the content from <code> when it is the sole significant child of the
+        // <pre>. QuerySelector matches any descendant, so using it unconditionally would
+        // silently drop everything around the match. The language may still come from a
+        // nested <code>, because a wrong language annotation costs less than lost content.
+        var contentElement = GetSingleSignificantChild(element) is Element { LocalName: "code" } soleCodeChild
+            ? soleCodeChild
+            : element;
+        var content = contentElement.TextContent ?? "";
         var language = ExtractLanguage(codeElement) ?? ExtractLanguage(element);
 
         if (state.Options.CodeBlockStyle == CodeBlockStyle.Indented)
@@ -192,7 +254,7 @@ public static class HtmlToMarkdown
         return FencedCodeBlock(content, language, state.Options.CodeBlockFenceCharacter);
     }
 
-    private static string ConvertUnorderedList(IElement element, ConversionState state)
+    private static string ConvertUnorderedList(Element element, ConversionState state)
     {
         var marker = state.Options.UnorderedListMarker + " ";
         var indent = new string(' ', marker.Length);
@@ -210,9 +272,9 @@ public static class HtmlToMarkdown
         return string.Join(isLoose ? "\n\n" : "\n", items);
     }
 
-    private static string ConvertOrderedList(IElement element, ConversionState state)
+    private static string ConvertOrderedList(Element element, ConversionState state)
     {
-        var start = int.TryParse(element.GetAttribute("start"), System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : 1;
+        var start = ParseListStart(element.GetAttribute("start"));
         var isLoose = IsLooseList(element);
         var items = new List<string>();
         var index = start;
@@ -225,17 +287,34 @@ public static class HtmlToMarkdown
             var indent = new string(' ', marker.Length);
             var content = ConvertListItemContent(li, state);
             items.Add(PrefixLines(content, marker, indent, ""));
-            index++;
+            if (index < MaximumListStart)
+                index++;
         }
 
         return string.Join(isLoose ? "\n\n" : "\n", items);
+    }
+
+    // CommonMark allows an ordered list marker of at most nine digits.
+    private const int MaximumListStart = 999_999_999;
+
+    /// <summary>
+    /// Parses the start attribute of an ordered list. Values that cannot produce a valid
+    /// Markdown list marker fall back to 1, because emitting them would turn the list into
+    /// a plain paragraph.
+    /// </summary>
+    private static int ParseListStart(string? value)
+    {
+        if (!int.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var start))
+            return 1;
+
+        return start is < 0 or > MaximumListStart ? 1 : start;
     }
 
     /// <summary>
     /// Converts the content of a list item, using single newline before
     /// sublists (tight) and double newline before other block elements.
     /// </summary>
-    private static string ConvertListItemContent(IElement li, ConversionState state)
+    private static string ConvertListItemContent(Element li, ConversionState state)
     {
         var parts = new List<(string Content, bool IsList)>();
         var inlineBuf = new StringBuilder();
@@ -252,16 +331,16 @@ public static class HtmlToMarkdown
                 if (inline.Length > 0)
                     parts.Add((PostProcessLineStart(inline), false));
 
-                var block = ConvertNode(child, state);
+                var block = state.GetConverted(child);
                 if (!string.IsNullOrEmpty(block))
                 {
-                    var isList = child is IElement el && el.LocalName is "ul" or "ol";
+                    var isList = child is Element el && el.LocalName is "ul" or "ol";
                     parts.Add((block, isList));
                 }
             }
             else
             {
-                inlineBuf.Append(ConvertNode(child, state));
+                inlineBuf.Append(state.GetConverted(child));
             }
         }
 
@@ -283,7 +362,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertTable(IElement table, ConversionState state)
+    private static string ConvertTable(Element table, ConversionState state)
     {
         var headerRows = new List<List<(string Content, string? Align)>>();
         var bodyRows = new List<List<(string Content, string? Align)>>();
@@ -343,7 +422,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertDefinitionList(IElement element, ConversionState state)
+    private static string ConvertDefinitionList(Element element, ConversionState state)
     {
         var sb = new StringBuilder();
         var isFirst = true;
@@ -367,8 +446,10 @@ public static class HtmlToMarkdown
                 else if (lastWasDt)
                     sb.Append('\n');
 
-                sb.Append(":   ");
-                sb.Append(ConvertInlineContent(child, state).Trim());
+                // Convert as blocks so multiple paragraphs keep their separation, and
+                // indent continuation lines so they stay part of the definition.
+                var definition = ConvertChildNodes(child, state).Trim();
+                sb.Append(PrefixLines(definition, ":   ", "    ", ""));
                 lastWasDt = false;
                 isFirst = false;
             }
@@ -381,42 +462,49 @@ public static class HtmlToMarkdown
     // Inline converters
     // =========================================================================
 
-    private static string ConvertStrong(IElement element, ConversionState state)
+    private static string ConvertStrong(Element element, ConversionState state)
     {
         // Collapse redundant nesting: <strong><strong>x</strong></strong>
         var onlyChild = GetSingleSignificantChild(element);
-        if (onlyChild is IElement childEl && childEl.LocalName is "strong" or "b")
-            return ConvertStrong(childEl, state);
+        if (onlyChild is Element childEl && childEl.LocalName is "strong" or "b")
+            return state.GetConverted(childEl);
 
         var content = ConvertInlineContent(element, state);
         var marker = state.Options.EmphasisMarker == EmphasisMarker.Asterisk ? "**" : "__";
         return WrapInlineMarker(content, marker);
     }
 
-    private static string ConvertEmphasis(IElement element, ConversionState state)
+    private static string ConvertEmphasis(Element element, ConversionState state)
     {
         var onlyChild = GetSingleSignificantChild(element);
-        if (onlyChild is IElement childEl && childEl.LocalName is "em" or "i")
-            return ConvertEmphasis(childEl, state);
+        if (onlyChild is Element childEl && childEl.LocalName is "em" or "i")
+            return state.GetConverted(childEl);
 
         var content = ConvertInlineContent(element, state);
         var marker = state.Options.EmphasisMarker == EmphasisMarker.Asterisk ? "*" : "_";
         return WrapInlineMarker(content, marker);
     }
 
-    private static string ConvertStrikethrough(IElement element, ConversionState state)
+    private static string ConvertStrikethrough(Element element, ConversionState state)
     {
         var content = ConvertInlineContent(element, state);
         return WrapInlineMarker(content, "~~");
     }
 
-    private static string ConvertInlineCode(IElement element)
+    private static string ConvertInlineCode(Element element)
     {
         var content = element.TextContent;
         if (string.IsNullOrEmpty(content))
             return "";
 
-        var needSpace = content.StartsWith('`', StringComparison.Ordinal) || content.EndsWith('`', StringComparison.Ordinal);
+        // A code span whose content both begins and ends with a space has one space removed
+        // from each end when it is parsed, so it has to be padded to survive the round trip.
+        // Content made entirely of spaces is left alone: that rule does not apply to it.
+        var needSpace = content.StartsWith('`', StringComparison.Ordinal)
+            || content.EndsWith('`', StringComparison.Ordinal)
+            || (content.StartsWith(' ', StringComparison.Ordinal)
+                && content.EndsWith(' ', StringComparison.Ordinal)
+                && content.AsSpan().Trim(' ').Length > 0);
         var openCount = CountMaxConsecutiveChars(content, '`') + 1;
 
         var sb = new StringBuilder();
@@ -428,10 +516,11 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertLink(IElement element, ConversionState state)
+    private static string ConvertLink(Element element, ConversionState state)
     {
+        // GetAttribute returns null only when the attribute is absent: <a href> yields "".
         var href = element.GetAttribute("href");
-        if (href is null && !element.HasAttribute("href"))
+        if (href is null)
             return ConvertInlineContent(element, state);
 
         var title = element.GetAttribute("title");
@@ -441,7 +530,7 @@ public static class HtmlToMarkdown
         sb.Append('[');
         sb.Append(content);
         sb.Append("](");
-        sb.Append(href ?? "");
+        AppendLinkDestination(sb, href);
         if (!string.IsNullOrEmpty(title))
         {
             AppendLinkTitle(sb, title);
@@ -450,7 +539,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertImage(IElement element)
+    private static string ConvertImage(Element element)
     {
         var src = element.GetAttribute("src");
         if (string.IsNullOrEmpty(src))
@@ -461,9 +550,9 @@ public static class HtmlToMarkdown
 
         var sb = new StringBuilder();
         sb.Append("![");
-        sb.Append(alt);
+        AppendLinkText(sb, alt);
         sb.Append("](");
-        sb.Append(src);
+        AppendLinkDestination(sb, src);
         if (!string.IsNullOrEmpty(title))
         {
             AppendLinkTitle(sb, title);
@@ -472,52 +561,109 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertBreak(ConversionState state)
+    private static string ConvertBreak(Element element, ConversionState state)
     {
-        if (state.InTableCell)
+        if (IsInTableCell(element))
             return "<br>";
         return state.Options.LineBreakStyle == LineBreakStyle.Backslash ? "\\\n" : "  \n";
     }
 
-    private static string ConvertInput(IElement element)
+    /// <summary>
+    /// Determines whether an element is inside a table cell by walking its ancestors.
+    /// </summary>
+    private static bool IsInTableCell(Element element)
+    {
+        for (var parent = element.ParentElement; parent is not null; parent = parent.ParentElement)
+        {
+            if (parent.LocalName is "td" or "th")
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string ConvertInput(Element element)
     {
         if (string.Equals(element.GetAttribute("type"), "checkbox", StringComparison.OrdinalIgnoreCase))
             return element.HasAttribute("checked") ? "[x]" : "[ ]";
         return "";
     }
 
-    private static string ConvertUnknownElement(IElement element, ConversionState state)
+    private static string ConvertUnknownElement(Element element, ConversionState state)
     {
         return state.Options.UnknownElementHandling switch
         {
             UnknownElementHandling.Strip => "",
             UnknownElementHandling.StripKeepContent => ConvertChildNodes(element, state),
-            _ => element.OuterHtml,
+            _ => GetOuterHtmlWithoutStrippedElements(element),
         };
+    }
+
+    /// <summary>
+    /// Gets the outer HTML of an element with its script, style and noscript descendants
+    /// removed. Those elements are stripped everywhere else, so passing an unknown element
+    /// through verbatim must not reintroduce them.
+    /// </summary>
+    private static string GetOuterHtmlWithoutStrippedElements(Element element)
+    {
+        if (element.QuerySelector(StrippedElementsSelector) is null)
+            return element.OuterHtml;
+
+        var clone = (Element)element.CloneNode(subtree: true);
+        foreach (var stripped in clone.QuerySelectorAll<Element>(StrippedElementsSelector))
+        {
+            stripped.Remove();
+        }
+
+        return clone.OuterHtml;
     }
 
     // =========================================================================
     // Table helpers
     // =========================================================================
 
-    private static List<(string Content, string? Align)> ExtractTableRow(IElement tr, ConversionState state)
+    private static List<(string Content, string? Align)> ExtractTableRow(Element tr, ConversionState state)
     {
         var cells = new List<(string Content, string? Align)>();
-        var prevInTableCell = state.InTableCell;
-        state.InTableCell = true;
 
         foreach (var cell in tr.Children)
         {
             if (cell.LocalName is "th" or "td")
             {
-                var content = ConvertInlineContent(cell, state).Trim();
+                var content = ConvertTableCellContent(cell, state);
                 var align = GetCellAlignment(cell);
                 cells.Add((content, align));
             }
         }
 
-        state.InTableCell = prevInTableCell;
         return cells;
+    }
+
+    /// <summary>
+    /// Converts the content of a table cell. Block children are converted as blocks rather
+    /// than concatenated, then the result is collapsed onto a single line: a row of a pipe
+    /// table cannot contain a line break.
+    /// </summary>
+    private static string ConvertTableCellContent(Element cell, ConversionState state)
+    {
+        var content = ConvertChildNodes(cell, state).Trim();
+        if (!content.Contains('\n', StringComparison.Ordinal))
+            return content;
+
+        var sb = new StringBuilder();
+        foreach (var line in content.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0)
+                continue;
+
+            if (sb.Length > 0)
+                sb.Append("<br>");
+
+            sb.Append(trimmed);
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
@@ -525,7 +671,7 @@ public static class HtmlToMarkdown
     /// 1. The CSS text-align property from the style attribute
     /// 2. The HTML align attribute
     /// </summary>
-    private static string? GetCellAlignment(IElement cell)
+    private static string? GetCellAlignment(Element cell)
     {
         var style = cell.GetAttribute("style");
         if (style is not null)
@@ -631,25 +777,47 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string? ExtractLanguage(IElement? element)
+    private static string? ExtractLanguage(Element? element)
     {
         if (element is null) return null;
 
         var classes = element.GetAttribute("class");
         if (classes is not null)
         {
-            foreach (var cls in classes.Split(' '))
+            // The class attribute is separated by any whitespace, not only spaces.
+            foreach (var cls in classes.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
             {
                 if (cls.StartsWith("language-", StringComparison.Ordinal))
-                    return cls["language-".Length..];
+                    return SanitizeLanguage(cls["language-".Length..]);
             }
         }
 
         var dataLang = element.GetAttribute("data-language");
         if (!string.IsNullOrEmpty(dataLang))
-            return dataLang;
+            return SanitizeLanguage(dataLang);
 
         return null;
+    }
+
+    /// <summary>
+    /// Validates the info string of a fenced code block. The value comes from the document
+    /// and is copied onto the opening fence, so one containing a line break or a fence
+    /// character would end the code block early and let the rest of the attribute be
+    /// interpreted as Markdown. Letters and digits are accepted, including non-ASCII ones,
+    /// and anything outside the accepted set drops the info string.
+    /// </summary>
+    private static string? SanitizeLanguage(string language)
+    {
+        if (language.Length == 0)
+            return null;
+
+        foreach (var c in language)
+        {
+            if (!char.IsLetterOrDigit(c) && c is not ('-' or '+' or '_' or '.' or '#'))
+                return null;
+        }
+
+        return language;
     }
 
     // =========================================================================
@@ -671,12 +839,121 @@ public static class HtmlToMarkdown
                     sb.Append('\\');
                     sb.Append(c);
                     break;
+
                 default:
                     sb.Append(c);
                     break;
             }
         }
         sb.Append('"');
+    }
+
+    /// <summary>
+    /// Appends a link or image destination, escaping the characters that would otherwise
+    /// end it. A destination containing a space must use the angle bracket form, because
+    /// a space cannot be backslash-escaped there.
+    /// </summary>
+    private static void AppendLinkDestination(StringBuilder sb, string url)
+    {
+        if (url.Contains(' ', StringComparison.Ordinal))
+        {
+            sb.Append('<');
+            foreach (var c in url)
+            {
+                switch (c)
+                {
+                    case '<' or '>' or '\\':
+                        sb.Append('\\');
+                        sb.Append(c);
+                        break;
+
+                    default:
+                        AppendUrlCharacter(sb, c);
+                        break;
+                }
+            }
+            sb.Append('>');
+            return;
+        }
+
+        var escapeParentheses = !HasBalancedParentheses(url);
+        foreach (var c in url)
+        {
+            switch (c)
+            {
+                case '(' or ')' when escapeParentheses:
+                case '<' or '>' or '\\':
+                    sb.Append('\\');
+                    sb.Append(c);
+                    break;
+
+                default:
+                    AppendUrlCharacter(sb, c);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Determines whether the parentheses in a link destination are balanced. A bare
+    /// destination may contain balanced parentheses, so only unbalanced ones need escaping.
+    /// </summary>
+    private static bool HasBalancedParentheses(string url)
+    {
+        var depth = 0;
+        foreach (var c in url)
+        {
+            if (c is '(')
+            {
+                depth++;
+            }
+            else if (c is ')')
+            {
+                depth--;
+                if (depth < 0)
+                    return false;
+            }
+        }
+
+        return depth == 0;
+    }
+
+    /// <summary>
+    /// Appends a character of a URL, percent-encoding the control characters that cannot
+    /// appear in a link destination in any form.
+    /// </summary>
+    private static void AppendUrlCharacter(StringBuilder sb, char c)
+    {
+        if (char.IsControl(c))
+        {
+            sb.Append(System.Globalization.CultureInfo.InvariantCulture, $"%{(int)c:X2}");
+        }
+        else
+        {
+            sb.Append(c);
+        }
+    }
+
+    /// <summary>
+    /// Appends literal text used as a link label or image description, escaping the
+    /// brackets that would otherwise end it.
+    /// </summary>
+    private static void AppendLinkText(StringBuilder sb, string text)
+    {
+        foreach (var c in text)
+        {
+            switch (c)
+            {
+                case '[' or ']' or '\\':
+                    sb.Append('\\');
+                    sb.Append(c);
+                    break;
+
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
     }
 
     private static string EscapeMarkdown(string text)
@@ -693,6 +970,21 @@ public static class HtmlToMarkdown
                     sb.Append(c);
                     break;
 
+                // Escape & only when it could start an entity reference. Markdown has no
+                // backslash escape for &, so the entity form is the only way to keep a
+                // literal & from being decoded into a different character by the renderer.
+                case '&':
+                    if (i + 1 < text.Length && (char.IsAsciiLetter(text[i + 1]) || text[i + 1] is '#'))
+                    {
+                        sb.Append("&amp;");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+
+                    break;
+
                 // Escape ~ only in ~~ sequences (strikethrough)
                 case '~':
                     if ((i + 1 < text.Length && text[i + 1] == '~') || (i > 0 && text[i - 1] == '~'))
@@ -707,8 +999,8 @@ public static class HtmlToMarkdown
                     sb.Append(c);
                     break;
 
-                // Escape # only at start of text (heading)
-                case '#':
+                // Escape # (heading) and + (bullet list) only at start of text
+                case '#' or '+':
                     if (i == 0)
                         sb.Append('\\');
                     sb.Append(c);
@@ -802,10 +1094,23 @@ public static class HtmlToMarkdown
 
         var sb = new StringBuilder(text.Length);
         var changed = false;
-        var textElementEnumerator = StringInfo.GetTextElementEnumerator(text);
-        while (textElementEnumerator.MoveNext())
+        var index = 0;
+        while (index < text.Length)
         {
-            var textElement = (string)textElementEnumerator.Current;
+            var remaining = text.AsSpan(index);
+            var length = StringInfo.GetNextTextElementLength(remaining);
+            var element = remaining[..length];
+            index += length;
+
+            // No mapping key is a single ASCII character, so ordinary text can be copied
+            // without materializing a string for every grapheme cluster.
+            if (length == 1 && char.IsAscii(element[0]))
+            {
+                sb.Append(element[0]);
+                continue;
+            }
+
+            var textElement = element.ToString();
             if (mappings.TryGetValue(textElement, out var shortcode))
             {
                 sb.Append(shortcode);
@@ -852,19 +1157,54 @@ public static class HtmlToMarkdown
     }
 
     /// <summary>
-    /// Escapes ordered list markers (e.g., "1.") at the start of text.
+    /// Escapes constructs that would start a new block when they appear at the beginning of
+    /// a line: ordered list markers such as "1." and "4)", and setext heading underlines.
+    /// This runs per line because a line break inside a paragraph puts text at the start of
+    /// a line without it being the start of the block.
     /// </summary>
     private static string PostProcessLineStart(string text)
     {
-        if (text.Length > 1)
+        if (!text.Contains('\n', StringComparison.Ordinal))
+            return EscapeLineStart(text);
+
+        var lines = text.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
         {
-            var i = 0;
-            while (i < text.Length && char.IsAsciiDigit(text[i]))
-                i++;
-            if (i > 0 && i < text.Length && text[i] is '.')
-                return string.Concat(text.AsSpan(0, i), "\\.", text.AsSpan(i + 1));
+            lines[i] = EscapeLineStart(lines[i]);
         }
-        return text;
+
+        return string.Join('\n', lines);
+    }
+
+    private static string EscapeLineStart(string line)
+    {
+        if (line.Length == 0)
+            return line;
+
+        // Ordered list marker: a run of digits followed by '.' or ')'
+        var i = 0;
+        while (i < line.Length && char.IsAsciiDigit(line[i]))
+            i++;
+
+        if (i > 0 && i < line.Length && line[i] is '.' or ')')
+            return string.Concat(line.AsSpan(0, i), "\\", line.AsSpan(i, 1), line.AsSpan(i + 1));
+
+        // Setext heading underline: a line containing nothing but '='
+        if (line[0] is '=' && IsSetextUnderline(line))
+            return "\\" + line;
+
+        return line;
+
+        static bool IsSetextUnderline(string line)
+        {
+            foreach (var c in line)
+            {
+                if (c is not ('=' or ' '))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     /// <summary>
@@ -928,9 +1268,9 @@ public static class HtmlToMarkdown
     // Classification helpers
     // =========================================================================
 
-    private static bool IsBlockElement(INode node)
+    private static bool IsBlockElement(Node node)
     {
-        return node is IElement el && el.LocalName is
+        return node is Element el && el.LocalName is
             "h1" or "h2" or "h3" or "h4" or "h5" or "h6"
             or "p" or "blockquote" or "pre" or "ul" or "ol" or "li"
             or "hr" or "table" or "thead" or "tbody" or "tfoot" or "tr"
@@ -940,15 +1280,17 @@ public static class HtmlToMarkdown
             or "details" or "summary";
     }
 
-    private static bool IsStrippedElement(INode node)
+    private const string StrippedElementsSelector = "script, style, noscript";
+
+    private static bool IsStrippedElement(Node node)
     {
-        return node is IElement el && el.LocalName is "script" or "style" or "noscript";
+        return node is Element el && el.LocalName is "script" or "style" or "noscript";
     }
 
     /// <summary>
     /// A list is "loose" if any list item contains block elements other than sublists.
     /// </summary>
-    private static bool IsLooseList(IElement listElement)
+    private static bool IsLooseList(Element listElement)
     {
         foreach (var li in listElement.Children)
         {
@@ -986,12 +1328,12 @@ public static class HtmlToMarkdown
     /// Returns the single non-whitespace child node, or null if there are
     /// zero or multiple significant children.
     /// </summary>
-    private static INode? GetSingleSignificantChild(IElement element)
+    private static Node? GetSingleSignificantChild(Element element)
     {
-        INode? result = null;
+        Node? result = null;
         foreach (var child in element.ChildNodes)
         {
-            if (child is IText text && string.IsNullOrWhiteSpace(text.Data))
+            if (child is Text text && string.IsNullOrWhiteSpace(text.Data))
                 continue;
             if (result is not null)
                 return null;
@@ -1044,12 +1386,17 @@ public static class HtmlToMarkdown
 
     private sealed class ConversionState
     {
+        private readonly Dictionary<Node, string> _converted = [];
+
         public HtmlToMarkdownOptions Options { get; }
-        public bool InTableCell { get; set; }
 
         public ConversionState(HtmlToMarkdownOptions options)
         {
             Options = options;
         }
+
+        public void SetConverted(Node node, string markdown) => _converted[node] = markdown;
+
+        public string GetConverted(Node node) => _converted.TryGetValue(node, out var markdown) ? markdown : "";
     }
 }

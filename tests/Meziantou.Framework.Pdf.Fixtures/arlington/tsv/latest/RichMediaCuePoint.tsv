@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE		[CuePoint]			Adobe Extension Level 3, Table 9.51e
+Subtype	name	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE		[Navigation,Event]			
+Name	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE					
+Time	number	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE					
+A	dictionary	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE				[ActionGoTo,ActionGoToR,ActionGoToE,ActionLaunch,ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData,ActionSetOCGState,ActionRendition,ActionTransition,ActionGoTo3DView,ActionECMAScript,ActionRichMediaExecute]	

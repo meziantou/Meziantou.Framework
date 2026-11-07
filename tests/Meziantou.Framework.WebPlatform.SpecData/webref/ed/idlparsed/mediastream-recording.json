@@ -1,0 +1,760 @@
+{
+  "spec": {
+    "title": "MediaStream Recording",
+    "url": "https://w3c.github.io/mediacapture-record/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "MediaRecorder",
+          "BlobEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "MediaRecorder": {
+        "fragment": "[Exposed=Window]\ninterface MediaRecorder : EventTarget {\n  constructor(MediaStream stream, optional MediaRecorderOptions options = {});\n  readonly attribute MediaStream stream;\n  readonly attribute DOMString mimeType;\n  readonly attribute RecordingState state;\n  attribute EventHandler onstart;\n  attribute EventHandler onstop;\n  attribute EventHandler ondataavailable;\n  attribute EventHandler onpause;\n  attribute EventHandler onresume;\n  attribute EventHandler onerror;\n  readonly attribute unsigned long videoBitsPerSecond;\n  readonly attribute unsigned long audioBitsPerSecond;\n  readonly attribute BitrateMode audioBitrateMode;\n\n  undefined start(optional unsigned long timeslice);\n  undefined stop();\n  undefined pause();\n  undefined resume();\n  undefined requestData();\n\n  static boolean isTypeSupported(DOMString type);\n};",
+        "type": "interface",
+        "name": "MediaRecorder",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stream",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStream"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaRecorderOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-mediarecorder"
+          },
+          {
+            "type": "attribute",
+            "name": "stream",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-stream"
+          },
+          {
+            "type": "attribute",
+            "name": "mimeType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-mimetype"
+          },
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RecordingState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-state"
+          },
+          {
+            "type": "attribute",
+            "name": "onstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-onstart"
+          },
+          {
+            "type": "attribute",
+            "name": "onstop",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-onstop"
+          },
+          {
+            "type": "attribute",
+            "name": "ondataavailable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-ondataavailable"
+          },
+          {
+            "type": "attribute",
+            "name": "onpause",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-onpause"
+          },
+          {
+            "type": "attribute",
+            "name": "onresume",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-onresume"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "videoBitsPerSecond",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-videobitspersecond"
+          },
+          {
+            "type": "attribute",
+            "name": "audioBitsPerSecond",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-audiobitspersecond"
+          },
+          {
+            "type": "attribute",
+            "name": "audioBitrateMode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BitrateMode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-audiobitratemode"
+          },
+          {
+            "type": "operation",
+            "name": "start",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "timeslice",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-start"
+          },
+          {
+            "type": "operation",
+            "name": "stop",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-stop"
+          },
+          {
+            "type": "operation",
+            "name": "pause",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-pause"
+          },
+          {
+            "type": "operation",
+            "name": "resume",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-resume"
+          },
+          {
+            "type": "operation",
+            "name": "requestData",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-requestdata"
+          },
+          {
+            "type": "operation",
+            "name": "isTypeSupported",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-istypesupported"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-record/#mediarecorder"
+      },
+      "MediaRecorderOptions": {
+        "fragment": "dictionary MediaRecorderOptions {\n  DOMString mimeType = \"\";\n  unsigned long audioBitsPerSecond;\n  unsigned long videoBitsPerSecond;\n  unsigned long bitsPerSecond;\n  BitrateMode audioBitrateMode = \"variable\";\n  DOMHighResTimeStamp videoKeyFrameIntervalDuration;\n  unsigned long videoKeyFrameIntervalCount;\n};",
+        "type": "dictionary",
+        "name": "MediaRecorderOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "mimeType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorderoptions-mimetype"
+          },
+          {
+            "type": "field",
+            "name": "audioBitsPerSecond",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorderoptions-audiobitspersecond"
+          },
+          {
+            "type": "field",
+            "name": "videoBitsPerSecond",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorderoptions-videobitspersecond"
+          },
+          {
+            "type": "field",
+            "name": "bitsPerSecond",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorderoptions-bitspersecond"
+          },
+          {
+            "type": "field",
+            "name": "audioBitrateMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BitrateMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "variable"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorderoptions-audiobitratemode"
+          },
+          {
+            "type": "field",
+            "name": "videoKeyFrameIntervalDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorderoptions-videokeyframeintervalduration"
+          },
+          {
+            "type": "field",
+            "name": "videoKeyFrameIntervalCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-mediarecorderoptions-videokeyframeintervalcount"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-record/#dictdef-mediarecorderoptions"
+      },
+      "BitrateMode": {
+        "fragment": "enum BitrateMode {\n  \"constant\",\n  \"variable\"\n};",
+        "type": "enum",
+        "name": "BitrateMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "constant",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-bitratemode-constant"
+          },
+          {
+            "type": "enum-value",
+            "value": "variable",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-bitratemode-variable"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-record/#enumdef-bitratemode"
+      },
+      "RecordingState": {
+        "fragment": "enum RecordingState {\n  \"inactive\",\n  \"recording\",\n  \"paused\"\n};",
+        "type": "enum",
+        "name": "RecordingState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "inactive",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-recordingstate-inactive"
+          },
+          {
+            "type": "enum-value",
+            "value": "recording",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-recordingstate-recording"
+          },
+          {
+            "type": "enum-value",
+            "value": "paused",
+            "href": "https://w3c.github.io/mediacapture-record/#dom-recordingstate-paused"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-record/#enumdef-recordingstate"
+      },
+      "BlobEvent": {
+        "fragment": "[Exposed=Window]\ninterface BlobEvent : Event {\n  constructor(DOMString type, BlobEventInit eventInitDict);\n  [SameObject] readonly attribute Blob data;\n  readonly attribute DOMHighResTimeStamp timecode;\n};",
+        "type": "interface",
+        "name": "BlobEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BlobEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-record/#dom-blobevent-blobevent"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Blob"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-blobevent-data"
+          },
+          {
+            "type": "attribute",
+            "name": "timecode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-blobevent-timecode"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-record/#blobevent"
+      },
+      "BlobEventInit": {
+        "fragment": "dictionary BlobEventInit : EventInit {\n  required Blob data;\n  DOMHighResTimeStamp timecode;\n};",
+        "type": "dictionary",
+        "name": "BlobEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Blob"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-blobeventinit-data"
+          },
+          {
+            "type": "field",
+            "name": "timecode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-record/#dom-blobeventinit-timecode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-record/#dictdef-blobeventinit"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "MediaRecorder",
+        "BlobEvent"
+      ]
+    },
+    "dependencies": {
+      "MediaRecorder": [
+        "EventTarget",
+        "MediaStream",
+        "MediaRecorderOptions",
+        "RecordingState",
+        "EventHandler",
+        "BitrateMode"
+      ],
+      "MediaRecorderOptions": [
+        "BitrateMode",
+        "DOMHighResTimeStamp"
+      ],
+      "BlobEvent": [
+        "Event",
+        "BlobEventInit",
+        "Blob",
+        "DOMHighResTimeStamp"
+      ],
+      "BlobEventInit": [
+        "EventInit",
+        "Blob",
+        "DOMHighResTimeStamp"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "MediaStream",
+      "EventHandler",
+      "DOMHighResTimeStamp",
+      "Event",
+      "Blob",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

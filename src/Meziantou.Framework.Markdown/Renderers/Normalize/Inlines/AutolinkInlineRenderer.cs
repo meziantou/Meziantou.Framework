@@ -1,0 +1,22 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Syntax.Inlines;
+
+namespace Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
+
+/// <summary>
+/// A Normalize renderer for an <see cref="AutolinkInline"/>.
+/// </summary>
+/// <seealso cref="NormalizeObjectRenderer{AutolinkInline}" />
+public class AutolinkInlineRenderer : NormalizeObjectRenderer<AutolinkInline>
+{
+    /// <summary>
+    /// Writes the object to the specified renderer.
+    /// </summary>
+    protected override void Write(NormalizeRenderer renderer, AutolinkInline obj)
+    {
+        renderer.Write('<').Write(renderer.EscapeTablePipes ? obj.Url.Replace("|", "\\|", StringComparison.Ordinal) : obj.Url).Write('>');
+    }
+}

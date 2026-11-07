@@ -1,0 +1,89 @@
+{
+  "spec": {
+    "title": "CSS Cascading and Inheritance Module Level 6",
+    "url": "https://drafts.csswg.org/css-cascade-6/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSScopeRule"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSScopeRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSScopeRule : CSSGroupingRule {\n  readonly attribute CSSOMString? start;\n  readonly attribute CSSOMString? end;\n};",
+        "type": "interface",
+        "name": "CSSScopeRule",
+        "inheritance": "CSSGroupingRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "start",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-start"
+          },
+          {
+            "type": "attribute",
+            "name": "end",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-end"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-cascade-6/#cssscoperule"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSScopeRule"
+      ]
+    },
+    "dependencies": {
+      "CSSScopeRule": [
+        "CSSGroupingRule",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSGroupingRule",
+      "CSSOMString"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

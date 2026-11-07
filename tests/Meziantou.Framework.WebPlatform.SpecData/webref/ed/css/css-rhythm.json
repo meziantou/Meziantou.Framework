@@ -1,0 +1,187 @@
+{
+  "spec": {
+    "title": "CSS Rhythmic Sizing Module Level 1",
+    "url": "https://drafts.csswg.org/css-rhythm-1/"
+  },
+  "properties": [
+    {
+      "name": "block-step-size",
+      "href": "https://drafts.csswg.org/css-rhythm-1/#propdef-block-step-size",
+      "value": "none | <length [0,∞]>",
+      "initial": "none",
+      "appliesTo": "block-level boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword or absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "block-step-size",
+        "blockStepSize"
+      ]
+    },
+    {
+      "name": "block-step-insert",
+      "href": "https://drafts.csswg.org/css-rhythm-1/#propdef-block-step-insert",
+      "value": "margin-box | padding-box | content-box",
+      "initial": "margin-box",
+      "appliesTo": "block-level boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "margin-box",
+          "prose": "Any extra space resulting from a block-step-size-induced adjustment is inserted outside the box’s border, as extra margin.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-insert-margin-box",
+          "type": "value",
+          "value": "margin-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "Any extra space resulting from a block-step-size-induced adjustment is inserted inside the box’s border, as extra padding.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-insert-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "content-box",
+          "prose": "Any extra space resulting from a block-step-size-induced adjustment is inserted inside the box’s border by increasing the height of the content area.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-insert-content-box",
+          "type": "value",
+          "value": "content-box"
+        }
+      ],
+      "styleDeclaration": [
+        "block-step-insert",
+        "blockStepInsert"
+      ]
+    },
+    {
+      "name": "block-step-align",
+      "href": "https://drafts.csswg.org/css-rhythm-1/#propdef-block-step-align",
+      "value": "auto | center | start | end",
+      "initial": "auto",
+      "appliesTo": "block-level boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "If block-step-insert is margin-box: if align-self is start, end, or center, treat as that value, otherwise treat as center.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-align-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "center",
+          "prose": "Any extra space resulting from a block-step-size-induced adjustment is split, and applied half on either side of the box.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-align-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "start",
+          "prose": "Any extra space resulting from a block-step-size-induced adjustment is inserted on the end side of the box.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-align-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "Any extra space resulting from a block-step-size-induced adjustment is inserted on the start side of the box.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-align-end",
+          "type": "value",
+          "value": "end"
+        },
+        {
+          "name": "up",
+          "prose": "The outer size of the box is increased (positive space is inserted) to fulfill the block-step-size constraint.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-align-up",
+          "type": "value",
+          "value": "up"
+        },
+        {
+          "name": "down",
+          "prose": "The outer size of the box is decreased (negative space is inserted) to fulfill the block-step-size constraint.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-align-down",
+          "type": "value",
+          "value": "down"
+        },
+        {
+          "name": "nearest",
+          "prose": "The outer size of the box is either increased (as for up) or decreased (as for down—​whichever results in the smallest absolute change—​to fulfill the block-step-size constraint. If both options would result in the same amount of change, the size is increased.",
+          "href": "https://drafts.csswg.org/css-rhythm-1/#valdef-block-step-align-nearest",
+          "type": "value",
+          "value": "nearest"
+        }
+      ],
+      "styleDeclaration": [
+        "block-step-align",
+        "blockStepAlign"
+      ]
+    },
+    {
+      "name": "block-step-round",
+      "href": "https://drafts.csswg.org/css-rhythm-1/#propdef-block-step-round",
+      "value": "up | down | nearest",
+      "initial": "up",
+      "appliesTo": "block-level boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "block-step-round",
+        "blockStepRound"
+      ]
+    },
+    {
+      "name": "block-step",
+      "href": "https://drafts.csswg.org/css-rhythm-1/#propdef-block-step",
+      "value": "<'block-step-size'> || <'block-step-insert'> || <'block-step-align'> || <'block-step-round'>",
+      "initial": "see individual properties",
+      "appliesTo": "block-level boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "block-step",
+        "blockStep"
+      ],
+      "longhands": [
+        "block-step-size",
+        "block-step-insert",
+        "block-step-align",
+        "block-step-round"
+      ]
+    },
+    {
+      "name": "line-height-step",
+      "href": "https://drafts.csswg.org/css-rhythm-1/#propdef-line-height-step",
+      "value": "<length [0,∞]>",
+      "initial": "0",
+      "appliesTo": "block containers",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "line-height-step",
+        "lineHeightStep"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

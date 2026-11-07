@@ -1,13 +1,18 @@
+using System.Collections.ObjectModel;
+
 namespace Meziantou.Framework.Templating;
 
 /// <summary>Provides a templating engine specialized for generating HTML email content with automatic encoding and metadata extraction.</summary>
 /// <example>
-/// <code>
-/// var template = new HtmlEmailTemplate();
-/// template.Load("{{@begin_section title}}Welcome{{@end_section}}&lt;h1&gt;Hello {{#html userName}}!&lt;/h1&gt;");
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Templating.Html.Tests/EmailTemplateTest.cs" ref:region="HtmlEmailTemplate_Example" ref:dedent="true">
+/// using var template = new HtmlEmailTemplate();
+/// template.Load("&lt;title&gt;{{@begin_section title}}Welcome{{@end_section}}&lt;/title&gt;&lt;h1&gt;Hello {{#html userName}}!&lt;/h1&gt;");
+/// template.Arguments.Add(new TemplateArgument("userName", typeof(string)));
+///
 /// var result = template.Run(out var metadata, new Dictionary&lt;string, object?&gt; { ["userName"] = "John" });
-/// // result: &lt;h1&gt;Hello John!&lt;/h1&gt;
-/// // metadata.Title: "Welcome"
+/// Assert.Equal("&lt;title&gt;Welcome&lt;/title&gt;&lt;h1&gt;Hello John!&lt;/h1&gt;", result);
+/// Assert.NotNull(metadata);
+/// Assert.Equal("Welcome", metadata.Title);
 /// </code>
 /// </example>
 public class HtmlEmailTemplate : Template
@@ -49,8 +54,13 @@ public class HtmlEmailTemplate : Template
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
-        using var writer = new StringWriter();
-        Run(writer, out metadata, parameters);
+        using var writer = CreateStringWriter();
+
+        // Wrapped, not passed as-is: IDictionary<,> does not derive from IReadOnlyDictionary<,>, so
+        // the call would bind to the params overload and pass the whole dictionary as the first
+        // positional argument instead of matching the parameters by name. The wrapper keeps the
+        // comparer of the original dictionary, which a copy would not.
+        Run(writer, out metadata, new ReadOnlyDictionary<string, object?>(parameters));
         return writer.ToString();
     }
 
@@ -60,7 +70,7 @@ public class HtmlEmailTemplate : Template
     /// <returns>The generated HTML content.</returns>
     public virtual string Run(out HtmlEmailMetadata? metadata, params object?[] parameters)
     {
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata, parameters);
         return writer.ToString();
     }
@@ -70,7 +80,7 @@ public class HtmlEmailTemplate : Template
     /// <returns>The generated HTML content.</returns>
     public virtual string Run(out HtmlEmailMetadata? metadata)
     {
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata);
         return writer.ToString();
     }
@@ -112,6 +122,20 @@ public class HtmlEmailTemplate : Template
         var p = CreateMethodParameters(writer, (object[]?)null);
         InvokeRunMethod(p);
         metadata = GetMetadata(p);
+    }
+
+    /// <summary>Runs the template, then rejects it if it left a section open.</summary>
+    /// <exception cref="TemplateException">The template started a section but never ended it.</exception>
+    protected override void InvokeRunMethod(object?[] p)
+    {
+        base.InvokeRunMethod(p);
+
+        // Checked here rather than while building the metadata so that every Run overload validates,
+        // including the inherited ones that never produce an HtmlEmailMetadata.
+        foreach (var htmlEmailOutput in p.OfType<HtmlEmailOutput>())
+        {
+            htmlEmailOutput.ThrowIfSectionsAreOpen();
+        }
     }
 
     private static HtmlEmailMetadata? GetMetadata(object?[] parameters)

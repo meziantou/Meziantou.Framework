@@ -1,0 +1,284 @@
+{
+  "spec": {
+    "title": "Pointer-driven Animations Module Level 1",
+    "url": "https://drafts.csswg.org/pointer-animations-1/"
+  },
+  "properties": [
+    {
+      "name": "pointer-timeline-name",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#propdef-pointer-timeline-name",
+      "value": "[ none | <dashed-ident> ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none or a list of CSS identifiers",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "pointer-timeline-name",
+        "pointerTimelineName"
+      ]
+    },
+    {
+      "name": "pointer-timeline-axis",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#propdef-pointer-timeline-axis",
+      "value": "[ block | inline | x | y ]#",
+      "initial": "block",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "a list of the keywords specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "block",
+          "prose": "Specifies to use the measure of progress along the block axis of the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "Specifies to use the measure of progress along the inline axis of the pointer range. (Default.)",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "x",
+          "prose": "Specifies to use the measure of progress along the horizontal axis of the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "Specifies to use the measure of progress along the vertical axis of the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "self",
+          "prose": "Specifies to use the element’s own principal box as the pointer range. (Default.)",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-self",
+          "type": "value",
+          "value": "self"
+        },
+        {
+          "name": "nearest",
+          "prose": "Specifies to use the nearest element’s parent box as the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-nearest",
+          "type": "value",
+          "value": "nearest"
+        },
+        {
+          "name": "root",
+          "prose": "Specifies to use the root element’s principal box as the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-root",
+          "type": "value",
+          "value": "root"
+        }
+      ],
+      "styleDeclaration": [
+        "pointer-timeline-axis",
+        "pointerTimelineAxis"
+      ]
+    },
+    {
+      "name": "pointer-timeline",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#propdef-pointer-timeline",
+      "value": "[ <'pointer-timeline-name'> <'pointer-timeline-axis'>? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "pointer-timeline",
+        "pointerTimeline"
+      ],
+      "longhands": [
+        "pointer-timeline-name",
+        "pointer-timeline-axis"
+      ]
+    },
+    {
+      "name": "animation-range-center",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#propdef-animation-range-center",
+      "value": "[ normal | [ <length-percentage> | <timeline-range-center-subject> <length-percentage>? ] ]#",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the corresponding dimension of the specified timeline range center subject, else relative to the start of the animation attachment range",
+      "computedValue": "list, each item either the keyword normal or a timeline range center subject and a length-percentage value",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The 50% progress point of the animation’s active interval is at the center of the animation attachment range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-animation-range-center-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<length-percentage>",
+          "prose": "The 50% progress point of the animation’s active interval is at the specified point on the timeline measuring from the start of the animation attachment range. Percentages are relative to the size of the animation attachment range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-animation-range-center-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>"
+        },
+        {
+          "name": "<timeline-range-name> <length-percentage>?",
+          "prose": "The 50% progress point of the animation’s active interval is at the specified point relative to the start padding edge of the specified animation range center subject’s principal box. If the <length-percentage> is omitted, it defaults to 50%.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-animation-range-center-timeline-range-name-length-percentage",
+          "type": "value",
+          "value": "<timeline-range-name> <length-percentage>?"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-range-center",
+        "animationRangeCenter"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "pointer()",
+      "prose": "The pointer() functional notation can be used as a <single-animation-timeline> value in animation-timeline and specifies a pointer progress timeline. Its syntax is",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#funcdef-pointer",
+      "type": "function",
+      "value": "pointer( [ <pointer-source> || <pointer-axis> ]? )",
+      "values": [
+        {
+          "name": "block",
+          "prose": "Specifies to use the measure of progress along the block axis of the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "Specifies to use the measure of progress along the inline axis of the pointer range. (Default.)",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "x",
+          "prose": "Specifies to use the measure of progress along the horizontal axis of the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "Specifies to use the measure of progress along the vertical axis of the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "self",
+          "prose": "Specifies to use the element’s own principal box as the pointer range. (Default.)",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-self",
+          "type": "value",
+          "value": "self"
+        },
+        {
+          "name": "nearest",
+          "prose": "Specifies to use the nearest element’s parent box as the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-nearest",
+          "type": "value",
+          "value": "nearest"
+        },
+        {
+          "name": "root",
+          "prose": "Specifies to use the root element’s principal box as the pointer range.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-pointer-root",
+          "type": "value",
+          "value": "root"
+        }
+      ]
+    },
+    {
+      "name": "<pointer-axis>",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#typedef-axis",
+      "type": "type",
+      "value": "block | inline | x | y"
+    },
+    {
+      "name": "<pointer-source>",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#typedef-source",
+      "type": "type",
+      "value": "root | nearest | self"
+    },
+    {
+      "name": "<timeline-range-center-subject>",
+      "prose": "The animation range center subject is the element whose principal box is the range relative to which the center of the active range is calculated, and is represented by the <timeline-range-center-subject> value type, which indicates a CSS identifier representing one of the following:",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#typedef-timeline-range-center-subject",
+      "type": "type",
+      "values": [
+        {
+          "name": "source",
+          "prose": "The element whose pointer offset drives the progress of the timeline.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-timeline-range-center-subject-source",
+          "type": "value",
+          "value": "source"
+        },
+        {
+          "name": "target",
+          "prose": "The element to which the animation is applied.",
+          "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-timeline-range-center-subject-target",
+          "type": "value",
+          "value": "target"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "fill",
+      "prose": "Represents the full range of the pointer progress timeline: 0% progress represents the pointer position over the start padding edge of the element’s principal box. 100% progress represents the pointer position over the end padding edge of the element’s principal box.",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-animation-timeline-range-fill",
+      "type": "value",
+      "value": "fill",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit",
+      "prose": "Represents a range that is the same size as fill, but its points of 0% and 100% progress are offset according to the value of animation-range-center property, so that the point of 50% progress remains at the center of the range.",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-animation-timeline-range-fit",
+      "type": "value",
+      "value": "fit",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "cover",
+      "prose": "Represents the largest possible range of the pointer progress timeline that fully covers the element’s principal box according to the value of animation-range-center property as follows: If the distance between the point of 50% progress and the element’s start padding edge is greater than the distance between the point of 50% progress and the element’s end padding edge, then the 0% progress point is at the element’s start padding edge, and the 100% progress point is at the same distance from the 50% progress point on the opposite side. Otherwise, the 100% progress point is at the element’s end padding edge, and the 0% progress point is at the same distance from the 50% progress point on the opposite side.",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-animation-timeline-range-cover",
+      "type": "value",
+      "value": "cover",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "Represents the largest possible range that is fully contained within the element’s principal box according to the value of animation-range-center property as follows: If the distance between the point of 50% progress and the element’s start padding edge is smaller than the distance between the point of 50% progress and the element’s end padding edge, then the 0% progress point is at the element’s start padding edge, and the 100% progress point is at the same distance from the 50% progress point on the opposite side. Otherwise, the 100% progress point is at the element’s end padding edge, and the 0% progress point is at the same distance from the 50% progress point on the opposite side.",
+      "href": "https://drafts.csswg.org/pointer-animations-1/#valdef-animation-timeline-range-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "animation-timeline-range"
+    }
+  ]
+}

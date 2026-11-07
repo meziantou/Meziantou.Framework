@@ -2,7 +2,7 @@ namespace Meziantou.Framework.HumanReadable;
 
 /// <summary>
 /// Specifies the property order that is present in the output when serializing. Lower values are serialized first.
-/// If the attribute is not specified, the default value is 0.
+/// Members with this attribute are serialized before the members without it.
 /// </summary>
 /// <remarks>If multiple properties have the same value, the ordering is undefined between them.</remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]

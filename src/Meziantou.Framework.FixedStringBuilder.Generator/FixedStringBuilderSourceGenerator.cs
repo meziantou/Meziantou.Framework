@@ -8,6 +8,13 @@ namespace Meziantou.Framework.FixedStringBuilder.Generator;
 [Generator]
 public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// The largest capacity a fixed string can have. The generated type counts its characters in a
+    /// <see cref="short"/>, so a larger capacity would let the length overflow and produce a negative
+    /// <c>Length</c> instead of throwing.
+    /// </summary>
+    internal const int MaximumLength = short.MaxValue;
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(static context =>
@@ -60,6 +67,11 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         if (!declaration.Modifiers.Any(SyntaxKind.PartialKeyword))
             return null;
 
+        // The generated members are mutable and implement interfaces, so they would not compile in these shapes.
+        // The analyzer reports MFFSG0006 for them.
+        if (declaration.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) || declaration.Modifiers.Any(SyntaxKind.RefKeyword))
+            return null;
+
         if (context.TargetSymbol is not INamedTypeSymbol targetTypeSymbol)
             return null;
 
@@ -68,28 +80,89 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             if (attribute.ConstructorArguments.Length != 1)
                 continue;
 
-            if (attribute.ConstructorArguments[0].Value is int length and > 0)
+            if (attribute.ConstructorArguments[0].Value is int length and > 0 and <= MaximumLength)
             {
                 var fixedStringInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString`1");
                 var fixedStringNonGenericInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString");
-                return new FixedStringTypeInfo(targetTypeSymbol, length, fixedStringInterface is not null, fixedStringNonGenericInterface is not null);
+                return new FixedStringTypeInfo(
+                    Namespace: targetTypeSymbol.ContainingNamespace.IsGlobalNamespace ? null : targetTypeSymbol.ContainingNamespace.ToDisplayString(),
+                    FullyQualifiedName: targetTypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    Name: targetTypeSymbol.Name,
+                    TypeParameters: GetTypeParameters(targetTypeSymbol),
+                    Accessibility: GetAccessibility(targetTypeSymbol.DeclaredAccessibility),
+                    ContainingTypeDeclarations: GetContainingTypeDeclarations(targetTypeSymbol),
+                    Length: length,
+                    ImplementsIFixedStringGeneric: fixedStringInterface is not null,
+                    ImplementsIFixedStringNonGeneric: fixedStringNonGenericInterface is not null,
+                    UsesUpdatedMemorySafetyRules: declaration.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules"));
             }
         }
 
         return null;
     }
 
+    private static string GetContainingTypeDeclarations(INamedTypeSymbol symbol)
+    {
+        var containingTypes = new Stack<INamedTypeSymbol>();
+        for (var containingType = symbol.ContainingType; containingType is not null; containingType = containingType.ContainingType)
+        {
+            containingTypes.Push(containingType);
+        }
+
+        if (containingTypes.Count == 0)
+            return string.Empty;
+
+        return string.Join("\n", containingTypes.Select(static containingType => $"{GetAccessibility(containingType.DeclaredAccessibility)} partial {GetTypeKeyword(containingType)} {containingType.Name}{GetTypeParameters(containingType)}"));
+    }
+
     private static void Generate(SourceProductionContext context, FixedStringTypeInfo target)
     {
-        var hintName = target.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-            .Replace("global::", "", StringComparison.Ordinal)
-            .Replace('<', '_')
-            .Replace('>', '_')
-            .Replace('.', '_')
-            .Replace('+', '_') + ".g.cs";
-
         var source = GenerateSource(target);
-        context.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
+        context.AddSource(ComputeHintName(target.FullyQualifiedName), SourceText.From(source, Encoding.UTF8));
+    }
+
+    /// <summary>
+    /// Computes the name of the generated file for a type. Replacing the characters that cannot appear in a hint
+    /// name is not injective: <c>A.B.C</c> and <c>A.B_C</c> both sanitize to <c>A_B_C</c>. A duplicate hint name
+    /// makes <see cref="SourceProductionContext.AddSource(string, SourceText)"/> throw, which takes down the whole
+    /// generator and leaves every type without its members, so a hash of the original name is appended to keep the
+    /// result unique. The types are generated one at a time, so a shared set of already-used names is not an
+    /// option here: it would make the output depend on the order the types are processed in.
+    /// </summary>
+    private static string ComputeHintName(string fullyQualifiedName)
+    {
+        var name = fullyQualifiedName.Replace("global::", "", StringComparison.Ordinal);
+
+        var sb = new StringBuilder(name.Length + 14);
+        foreach (var c in name)
+        {
+            sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+        }
+
+        sb.Append('.');
+        sb.Append(GetStableHash(name).ToString("x8", CultureInfo.InvariantCulture));
+        sb.Append(".g.cs");
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// FNV-1a. <see cref="string.GetHashCode()"/> is randomized per process, which would make the name of the
+    /// generated files change between builds.
+    /// </summary>
+    private static uint GetStableHash(string value)
+    {
+        unchecked
+        {
+            var hash = 2166136261;
+            foreach (var c in value)
+            {
+                hash ^= c;
+                hash *= 16777619;
+            }
+
+            return hash;
+        }
     }
 
     private static string GenerateSource(FixedStringTypeInfo target)
@@ -101,13 +174,12 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("#nullable enable");
         AppendLine("using System;");
         AppendLine("using System.ComponentModel;");
+        AppendLine("using System.Diagnostics.CodeAnalysis;");
         AppendLine("using System.Runtime.CompilerServices;");
         AppendLine("using System.Runtime.InteropServices;");
         AppendLine();
 
-        var namespaceName = target.Type.ContainingNamespace.IsGlobalNamespace
-            ? null
-            : target.Type.ContainingNamespace.ToDisplayString();
+        var namespaceName = target.Namespace;
         if (namespaceName is not null)
         {
             AppendLine($"namespace {namespaceName}");
@@ -115,21 +187,19 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             indent++;
         }
 
-        var containingTypes = new Stack<INamedTypeSymbol>();
-        for (var containingType = target.Type.ContainingType; containingType is not null; containingType = containingType.ContainingType)
-        {
-            containingTypes.Push(containingType);
-        }
+        var containingTypeDeclarations = target.ContainingTypeDeclarations.Length == 0
+            ? []
+            : target.ContainingTypeDeclarations.Split('\n');
 
-        foreach (var containingType in containingTypes)
+        foreach (var containingTypeDeclaration in containingTypeDeclarations)
         {
-            AppendLine($"{GetAccessibility(containingType.DeclaredAccessibility)} partial {GetTypeKeyword(containingType)} {containingType.Name}{GetTypeParameters(containingType)}");
+            AppendLine(containingTypeDeclaration);
             AppendLine("{");
             indent++;
         }
 
-        var fullTypeName = target.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var simpleTypeName = target.Type.Name + GetTypeParameters(target.Type);
+        var fullTypeName = target.FullyQualifiedName;
+        var simpleTypeName = target.Name + target.TypeParameters;
         var implementedInterfaces = new List<string>
         {
             $"global::System.IEquatable<{fullTypeName}>",
@@ -143,7 +213,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
         AppendLine("[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Sequential)]");
         AppendLine("[global::System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]");
-        AppendLine($"{GetAccessibility(target.Type.DeclaredAccessibility)} partial struct {target.Type.Name}{GetTypeParameters(target.Type)} : {string.Join(", ", implementedInterfaces)}");
+        AppendLine($"{target.Accessibility} partial struct {simpleTypeName} : {string.Join(", ", implementedInterfaces)}");
         AppendLine("{");
         indent++;
 
@@ -151,13 +221,18 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine();
 
         AppendLine("private short _length;");
-        AppendLine("#pragma warning disable CS0169, CS0649");
-        for (var i = 0; i < target.Length; i++)
-        {
-            AppendLine($"private char _c{i};");
-        }
+        AppendLine("private Storage _storage;");
+        AppendLine();
 
-        AppendLine("#pragma warning restore CS0169, CS0649");
+        AppendLine($"[global::System.Runtime.CompilerServices.InlineArray({target.Length})]");
+        AppendLine("private struct Storage");
+        AppendLine("{");
+        indent++;
+        AppendLine("#pragma warning disable CS0169");
+        AppendLine("private char _element0;");
+        AppendLine("#pragma warning restore CS0169");
+        indent--;
+        AppendLine("}");
         AppendLine();
 
         AppendLine($"public {simpleTypeName}(int literalLength, int formattedCount)");
@@ -177,7 +252,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine("public int Length");
+        AppendLine("public readonly int Length");
         AppendLine("{");
         indent++;
         AppendLine("get => _length;");
@@ -185,7 +260,40 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
+        AppendLine("/// <summary>");
+        AppendLine("/// Resets this string to an empty string.");
+        AppendLine("/// </summary>");
+        AppendLine("/// <remarks>");
+        AppendLine("/// Only the length is reset. The characters that were written are not overwritten and stay in");
+        AppendLine("/// the underlying buffer. Do not rely on this method to erase sensitive data.");
+        AppendLine("/// </remarks>");
         AppendLine("public void Clear() => _length = 0;");
+        AppendLine();
+
+        AppendLine("/// <summary>");
+        AppendLine("/// Resets this string to an empty string, optionally overwriting the underlying buffer with zeros.");
+        AppendLine("/// </summary>");
+        AppendLine("/// <param name=\"zeroBuffer\">");
+        AppendLine("/// <see langword=\"true\"/> to overwrite the whole underlying buffer with <c>\'\\0\'</c>, so the characters that were");
+        AppendLine("/// written can no longer be read; <see langword=\"false\"/> to only reset the length, as <see cref=\"Clear()\"/> does.");
+        AppendLine("/// </param>");
+        AppendLine("/// <remarks>");
+        AppendLine("/// The whole buffer is overwritten, not only the characters up to <see cref=\"Length\"/>: a previous longer");
+        AppendLine("/// value can still be present after <see cref=\"Length\"/>.");
+        AppendLine("/// </remarks>");
+        AppendLine("public void Clear(bool zeroBuffer)");
+        AppendLine("{");
+        indent++;
+        AppendLine("if (zeroBuffer)");
+        AppendLine("{");
+        indent++;
+        AppendLine("AsUnsafeFullSpan().Clear();");
+        indent--;
+        AppendLine("}");
+        AppendLine();
+        AppendLine("_length = 0;");
+        indent--;
+        AppendLine("}");
         AppendLine();
 
         AppendLine("public void AppendLiteral(ReadOnlySpan<char> value)");
@@ -207,52 +315,78 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
         AppendLine("public void AppendFormatted(string value) => AppendLiteral(value);");
         AppendLine();
-
+        AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+        AppendLine("public void AppendFormatted(string value, string? format) => AppendLiteral(value);");
+        AppendLine();
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
         AppendLine("public void AppendFormatted(string value, int alignment)");
         AppendLine("{");
         indent++;
         AppendLine("var startPosition = _length;");
-        AppendLine("AppendFormatted(value);");
+        AppendLine("AppendLiteral(value);");
         AppendLine("AppendOrInsertAlignment(startPosition, alignment);");
         indent--;
         AppendLine("}");
         AppendLine();
-
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        AppendLine("public void AppendFormatted<T>(T value) where T : ISpanFormattable");
+        AppendLine("public void AppendFormatted(string value, int alignment, string? format) => AppendFormatted(value, alignment);");
+        AppendLine();
+        AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+        AppendLine("public void AppendFormatted(ReadOnlySpan<char> value) => AppendLiteral(value);");
+        AppendLine();
+        AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+        AppendLine("public void AppendFormatted(ReadOnlySpan<char> value, string? format) => AppendLiteral(value);");
+        AppendLine();
+        AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+        AppendLine("public void AppendFormatted(ReadOnlySpan<char> value, int alignment)");
         AppendLine("{");
         indent++;
-        AppendLine("var span = AsRemainingSpan();");
-        AppendLine("if (!value.TryFormat(span, out var charsWritten, ReadOnlySpan<char>.Empty, null))");
-        AppendLine("{");
-        indent++;
-        AppendLine("ThrowValueTooLong();");
-        indent--;
-        AppendLine("}");
-        AppendLine("_length += (short)charsWritten;");
+        AppendLine("var startPosition = _length;");
+        AppendLine("AppendLiteral(value);");
+        AppendLine("AppendOrInsertAlignment(startPosition, alignment);");
         indent--;
         AppendLine("}");
         AppendLine();
-
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        AppendLine("public void AppendFormatted<T>(T value, string? format) where T : ISpanFormattable");
+        AppendLine("public void AppendFormatted(ReadOnlySpan<char> value, int alignment, string? format) => AppendFormatted(value, alignment);");
+        AppendLine();
+        AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+        AppendLine("public void AppendFormatted<T>(T value) => AppendFormatted(value, format: null);");
+        AppendLine();
+        AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+        AppendLine("public void AppendFormatted<T>(T value, string? format)");
         AppendLine("{");
         indent++;
-        AppendLine("var span = AsRemainingSpan();");
-        AppendLine("if (!value.TryFormat(span, out var charsWritten, format, null))");
+        AppendLine("if (value is ISpanFormattable spanFormattable)");
         AppendLine("{");
         indent++;
-        AppendLine("ThrowValueTooLong();");
-        indent--;
-        AppendLine("}");
-        AppendLine("_length += (short)charsWritten;");
+        AppendLine("if (!spanFormattable.TryFormat(AsRemainingSpan(), out var charsWritten, format, null))");
+        AppendLine("{");
+        indent++;
+        AppendLine("ThrowFormattedValueTooLong();");
         indent--;
         AppendLine("}");
         AppendLine();
-
+        AppendLine("_length += (short)charsWritten;");
+        indent--;
+        AppendLine("}");
+        AppendLine("else if (value is IFormattable formattable)");
+        AppendLine("{");
+        indent++;
+        AppendLine("AppendLiteral(formattable.ToString(format, null));");
+        indent--;
+        AppendLine("}");
+        AppendLine("else if (value is not null)");
+        AppendLine("{");
+        indent++;
+        AppendLine("AppendLiteral(value.ToString());");
+        indent--;
+        AppendLine("}");
+        indent--;
+        AppendLine("}");
+        AppendLine();
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        AppendLine("public void AppendFormatted<T>(T value, int alignment) where T : ISpanFormattable");
+        AppendLine("public void AppendFormatted<T>(T value, int alignment)");
         AppendLine("{");
         indent++;
         AppendLine("var startPosition = _length;");
@@ -261,9 +395,8 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         indent--;
         AppendLine("}");
         AppendLine();
-
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        AppendLine("public void AppendFormatted<T>(T value, int alignment, string? format) where T : ISpanFormattable");
+        AppendLine("public void AppendFormatted<T>(T value, int alignment, string? format)");
         AppendLine("{");
         indent++;
         AppendLine("var startPosition = _length;");
@@ -273,19 +406,19 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine($"public bool Equals({simpleTypeName} other) => _length == other._length && AsSpan().SequenceEqual(other.AsSpan());");
+        AppendLine($"public readonly bool Equals({simpleTypeName} other) => _length == other._length && AsSpan().SequenceEqual(other.AsSpan());");
         AppendLine();
-        AppendLine($"public bool Equals({simpleTypeName} other, StringComparison comparison) => new string(AsSpan()).Equals(new string(other.AsSpan()), comparison);");
+        AppendLine($"public readonly bool Equals({simpleTypeName} other, StringComparison comparison) => AsSpan().Equals(other.AsSpan(), comparison);");
         AppendLine();
         AppendLine($"public static bool operator ==({simpleTypeName} left, {simpleTypeName} right) => left.Equals(right);");
         AppendLine();
         AppendLine($"public static bool operator !=({simpleTypeName} left, {simpleTypeName} right) => !left.Equals(right);");
         AppendLine();
 
-        AppendLine("public override bool Equals(object? obj) => obj is " + simpleTypeName + " other && Equals(other);");
+        AppendLine("public override readonly bool Equals(object? obj) => obj is " + simpleTypeName + " other && Equals(other);");
         AppendLine();
 
-        AppendLine("public override int GetHashCode()");
+        AppendLine("public override readonly int GetHashCode()");
         AppendLine("{");
         indent++;
         AppendLine("var hash = unchecked((int)2166136261);");
@@ -302,7 +435,8 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine("public readonly ReadOnlySpan<char> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), _length);");
+        AppendLine("[UnscopedRef]");
+        AppendLine("public readonly ReadOnlySpan<char> AsSpan() => ((ReadOnlySpan<char>)_storage).Slice(0, _length);");
         AppendLine();
         if (target.ImplementsIFixedStringNonGeneric)
         {
@@ -312,13 +446,13 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
         AppendLine($"public static implicit operator {simpleTypeName}(string value) => new(value);");
         AppendLine();
-        AppendLine("public override string ToString() => ToString(null, null);");
+        AppendLine("public override readonly string ToString() => ToString(null, null);");
         AppendLine();
-        AppendLine("public string ToString(string? format, IFormatProvider? formatProvider) => _length == 0 ? string.Empty : new string(AsSpan());");
+        AppendLine("public readonly string ToString(string? format, IFormatProvider? formatProvider) => _length == 0 ? string.Empty : new string(AsSpan());");
         AppendLine();
 
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        AppendLine("public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)");
+        AppendLine("public readonly bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)");
         AppendLine("{");
         indent++;
         AppendLine("if (destination.Length < _length)");
@@ -336,7 +470,19 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine("private Span<char> AsUnsafeFullSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), MaxLength);");
+        // Unlike AsSpan, this one has to launder the ref: the explicit IFixedString.GetUnsafeFullSpan
+        // implementation returns it, and an interface member cannot be [UnscopedRef]. That is the escape hatch
+        // IFixedString.GetUnsafeFullSpan is documented to be, and why that interface member is declared unsafe: its
+        // callers need an unsafe context under the updated memory safety rules. The explicit implementation itself
+        // stays safe (a safe member may implement an unsafe one), so it compiles whether or not the referenced
+        // IFixedString declares the member unsafe and whatever the rules of the compilation. Under the updated memory
+        // safety rules, the Unsafe and MemoryMarshal methods laundering the ref require an unsafe context, hence the
+        // unsafe expression around them. The unsafe expression does not exist in older
+        // language versions, so it is only emitted when the compilation opted into the rules.
+        const string FullSpanExpression = "MemoryMarshal.CreateSpan(ref Unsafe.As<Storage, char>(ref Unsafe.AsRef(in _storage)), MaxLength)";
+        AppendLine(target.UsesUpdatedMemorySafetyRules
+            ? $"private Span<char> AsUnsafeFullSpan() => unsafe({FullSpanExpression});"
+            : $"private Span<char> AsUnsafeFullSpan() => {FullSpanExpression};");
         AppendLine();
         AppendLine("private Span<char> AsRemainingSpan() => AsUnsafeFullSpan().Slice(_length);");
         AppendLine();
@@ -403,14 +549,18 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
+        AppendLine("[global::System.Diagnostics.CodeAnalysis.DoesNotReturn]");
         AppendLine("private static void ThrowValueTooLong() => throw new ArgumentException(\"The value is too long to fit in this fixed string.\");");
+        AppendLine();
+
+        AppendLine("[global::System.Diagnostics.CodeAnalysis.DoesNotReturn]");
+        AppendLine("private static void ThrowFormattedValueTooLong() => throw new ArgumentException(\"The formatted value does not fit in the remaining capacity of this fixed string.\");");
 
         indent--;
         AppendLine("}");
 
-        while (containingTypes.Count > 0)
+        for (var i = 0; i < containingTypeDeclarations.Length; i++)
         {
-            containingTypes.Pop();
             indent--;
             AppendLine("}");
         }
@@ -470,5 +620,21 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         return "<" + string.Join(", ", symbol.TypeParameters.Select(static t => t.Name)) + ">";
     }
 
-    private sealed record FixedStringTypeInfo(INamedTypeSymbol Type, int Length, bool ImplementsIFixedStringGeneric, bool ImplementsIFixedStringNonGeneric);
+    /// <summary>
+    /// The data needed to generate a fixed string. This flows through the incremental pipeline, so it must only
+    /// contain values that compare by value. In particular it must never hold a symbol or a syntax node: those
+    /// compare by reference and keep a <see cref="Compilation"/> alive, which stops the generator from caching
+    /// its output and makes it re-run on every keystroke.
+    /// </summary>
+    private sealed record FixedStringTypeInfo(
+        string? Namespace,
+        string FullyQualifiedName,
+        string Name,
+        string TypeParameters,
+        string Accessibility,
+        string ContainingTypeDeclarations,
+        int Length,
+        bool ImplementsIFixedStringGeneric,
+        bool ImplementsIFixedStringNonGeneric,
+        bool UsesUpdatedMemorySafetyRules);
 }

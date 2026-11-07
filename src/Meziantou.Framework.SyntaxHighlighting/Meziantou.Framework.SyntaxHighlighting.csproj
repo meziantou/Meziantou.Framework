@@ -3,7 +3,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Syntax highlighting engine for .NET</Description>
-    <Version>1.0.1</Version>
+    <PackageTags>syntax-highlighting, highlighter, code, html</PackageTags>
+    <Version>1.0.6</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.SyntaxHighlighting.Tests" />
+  </ItemGroup>
 
 </Project>

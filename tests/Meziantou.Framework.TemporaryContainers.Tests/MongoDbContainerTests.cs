@@ -4,6 +4,9 @@ using MongoDB.Driver;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
+// Each test starts its own container. Running them all at once saturates the CI agents and makes the container
+// runtimes fail transiently (image pull races, port collisions), so this class does not run in parallel.
+[TestClass(DisableParallelization = true)]
 public sealed class MongoDbContainerTests
 {
     private static void SkipOnNonCompatibleEnvironments()
@@ -22,7 +25,7 @@ public sealed class MongoDbContainerTests
         Assert.Equal("root", definition.RootUsername);
         Assert.Equal("root", definition.Environment.GetValue("MONGO_INITDB_ROOT_USERNAME"));
         Assert.Equal(password, definition.Environment.GetValue("MONGO_INITDB_ROOT_PASSWORD"));
-        Assert.Equal(24, password.Length);
+        Assert.HasCount(24, password);
         Assert.Contains(password, static c => char.IsUpper(c));
         Assert.Contains(password, static c => char.IsLower(c));
         Assert.Contains(password, static c => char.IsDigit(c));
@@ -45,22 +48,42 @@ public sealed class MongoDbContainerTests
     [Fact]
     public async Task GetConnectionString_JournalingDisabledByDefault()
     {
-        SkipOnNonCompatibleEnvironments();
         await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
-        await container.StartAsync(XunitCancellationToken);
 
-        Assert.Contains("j=false", container.GetConnectionString());
+        Assert.Contains("j=false", container.BuildConnectionString("127.0.0.1", 27017, enableJournaling: false));
     }
 
     [Fact]
     public async Task GetConnectionString_JournalingCanBeEnabled()
     {
-        SkipOnNonCompatibleEnvironments();
-
         await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
-        await container.StartAsync(XunitCancellationToken);
 
-        Assert.Contains("j=true", container.GetConnectionString(enableJournaling: true));
+        Assert.Contains("j=true", container.BuildConnectionString("127.0.0.1", 27017, enableJournaling: true));
+    }
+
+    [Fact]
+    public async Task GetConnectionString_UsesTheHostAddress()
+    {
+        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
+
+        Assert.Contains("@docker.example.com:27017/", container.BuildConnectionString("docker.example.com", 27017, enableJournaling: false), StringComparison.Ordinal);
+        Assert.Contains("@[::1]:27017/", container.BuildConnectionString("::1", 27017, enableJournaling: false), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetConnectionString_EscapesTheCredentials()
+    {
+        var definition = ContainerDefinition.CreateMongoDb();
+        definition.RootUsername = "ro:ot";
+        definition.RootPassword = "p@ss%w+rd?/";
+        await using var container = definition.CreateContainer();
+
+        var connectionString = container.BuildConnectionString("127.0.0.1", 27017, enableJournaling: false);
+
+        Assert.Equal("mongodb://ro%3Aot:p%40ss%25w%2Brd%3F%2F@127.0.0.1:27017/?authSource=admin&j=false", connectionString);
+        var url = MongoUrl.Create(connectionString);
+        Assert.Equal("ro:ot", url.Username);
+        Assert.Equal("p@ss%w+rd?/", url.Password);
     }
 
     [Fact]
@@ -96,20 +119,26 @@ public sealed class MongoDbContainerTests
 
     private static async Task<MongoDbContainer> StartWithRetryAsync(MongoDbContainerDefinition definition)
     {
-        const int MaxRetries = 3;
-        for (var i = 0; ; i++)
+        try
         {
-            var container = definition.CreateContainer();
-            try
-            {
-                await container.StartAsync(XunitCancellationToken);
-                return container;
-            }
-            catch when (i < MaxRetries)
-            {
-                await container.DisposeAsync();
-                await Task.Delay(1000, XunitCancellationToken);
-            }
+            return await ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken, IsIncompatibleKernelFailure);
         }
+        catch (Exception ex) when (IsIncompatibleKernelFailure(ex))
+        {
+            global::Xunit.Assert.Skip("The MongoDB image cannot start on this kernel (SERVER-121912): " + ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Recognizes the fatal log line <c>mongod</c> writes before exiting on Linux 6.19 and newer
+    /// (https://jira.mongodb.org/browse/SERVER-121912), which the readiness wait reports in its failure message.
+    /// Matching the ticket rather than comparing kernel versions keeps the skip tied to the image actually refusing
+    /// to run: the container's kernel is the one that decides (the host's on Linux, the runtime VM's elsewhere), and
+    /// the tests start running again on their own once an image without the guard ships.
+    /// </summary>
+    private static bool IsIncompatibleKernelFailure(Exception exception)
+    {
+        return exception.ToString().Contains("SERVER-121912", StringComparison.Ordinal);
     }
 }

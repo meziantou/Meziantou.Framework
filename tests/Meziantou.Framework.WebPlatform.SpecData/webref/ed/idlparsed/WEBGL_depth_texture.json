@@ -1,0 +1,86 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_depth_texture Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_depth_texture/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_depth_texture"
+        ],
+        "Worker": [
+          "WEBGL_depth_texture"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_depth_texture": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_depth_texture {\n  const GLenum UNSIGNED_INT_24_8_WEBGL = 0x84FA;\n};",
+        "type": "interface",
+        "name": "WEBGL_depth_texture",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "UNSIGNED_INT_24_8_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x84FA"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_depth_texture"
+      ],
+      "Worker": [
+        "WEBGL_depth_texture"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_depth_texture": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

@@ -15,7 +15,7 @@ internal static class TargetFrameworkHelper
 #if NET10_0
         $"10.0.0";
 #elif NET11_0
-        $"11.0.0-preview.7.26381.103";
+        $"11.0.0-rc.3.26522.148";
 #else
 #error Version not supported
 #endif

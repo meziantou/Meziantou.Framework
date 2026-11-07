@@ -6,8 +6,8 @@ namespace Meziantou.Framework
 {
     public interface IStronglyTypedId
     {
-        string ValueAsString { get; }
         System.Type UnderlyingType { get; }
+        string ValueAsString { get; }
     }
 
     public interface IStronglyTypedId<T> : Meziantou.Framework.IStronglyTypedId

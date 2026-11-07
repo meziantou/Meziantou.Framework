@@ -1,0 +1,58 @@
+# Cancels the queued and running workflow runs of a pull request when it is merged or closed.
+# The concurrency groups in ci.yml and publish.yml only cancel a run when a newer run starts,
+# and closing a pull request does not start one.
+name: cancel-pr-workflows
+on:
+  pull_request:
+    types:
+      - closed
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  cancel:
+    # The token of a pull request from a fork cannot cancel runs.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+        run: |
+          # The branch filter also matches the runs of pull requests from forks that use the same
+          # branch name, so keep only the runs from this repository. This run is skipped too.
+          $branch = [uri]::EscapeDataString($env:HEAD_BRANCH)
+          $runs = foreach ($status in 'queued', 'in_progress', 'waiting', 'pending', 'requested') {
+            gh api --paginate "repos/$env:REPOSITORY/actions/runs?event=pull_request&status=$status&branch=$branch&per_page=100" --jq '.workflow_runs[]' | ConvertFrom-Json
+          }
+
+          $runs = @(
+            $runs
+            | Where-Object { $_.head_repository.full_name -eq $env:HEAD_REPOSITORY -and "$($_.id)" -ne $env:CURRENT_RUN_ID }
+            | Sort-Object id -Unique
+          )
+
+          if ($runs.Count -eq 0) {
+            Write-Host "No workflow runs to cancel."
+            exit 0
+          }
+
+          foreach ($run in $runs) {
+            Write-Host "Cancelling $($run.name) #$($run.run_number) ($($run.html_url))"
+            gh run cancel $run.id --repo $env:REPOSITORY
+            if ($LASTEXITCODE -ne 0) {
+              # The run can complete between the listing and the cancellation.
+              Write-Host "::warning::Could not cancel run $($run.id)"
+            }
+          }
+
+          exit 0

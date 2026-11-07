@@ -1,0 +1,683 @@
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Toml.Serialization;
+
+namespace Meziantou.Framework.Toml.Tests;
+
+#pragma warning disable CA1002 // Test models use List<T> on purpose
+#pragma warning disable MA0048 // File name must match type name
+
+public sealed class NewApiObjectCreationHandlingTests
+{
+    private const string NestedToml = """
+        Numbers = [4, 5]
+        [Child]
+        Value = 42
+        """;
+
+    private sealed class ReflectionChild
+    {
+        public int Value { get; set; } = 7;
+    }
+
+    private sealed class ReflectionReplaceRoot
+    {
+        public ReflectionChild Child { get; } = new();
+
+        public List<int> Numbers { get; } = [1, 2, 3];
+    }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    private sealed class ReflectionPopulateRoot
+    {
+        public ReflectionChild Child { get; } = new();
+
+        public List<int> Numbers { get; } = [1, 2, 3];
+    }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    private sealed class ReflectionPopulateOverrideRoot
+    {
+        public ReflectionChild Child { get; } = new();
+
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Replace)]
+        public List<int> Numbers { get; } = [1, 2, 3];
+    }
+
+    private sealed class ReflectionPopulateNullRoot
+    {
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+        public ReflectionChild? Child { get; }
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private struct ReflectionStructPayload
+    {
+        public int Value1 { get; set; }
+        public int Value2 { get; set; }
+    }
+
+    private sealed class ReflectionPopulateStructRoot
+    {
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+        public ReflectionStructPayload Payload { get; } = new() { Value1 = 7 };
+    }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    private sealed class ReflectionTypePopulateStructRoot
+    {
+        public ReflectionStructPayload Payload { get; } = new() { Value1 = 7 };
+    }
+
+    private sealed class ReflectionPopulateSettableStructRoot
+    {
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+        public ReflectionStructPayload Payload { get; set; } = new() { Value1 = 7 };
+    }
+
+    private sealed class ReflectionPopulateNullableStructRoot
+    {
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+        public ReflectionStructPayload? Payload { get; set; } = new() { Value1 = 7 };
+    }
+
+    private sealed class ReflectionPopulateImmutableRoot
+    {
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+        public string Name { get; } = "before";
+    }
+
+    private sealed class ReflectionConstructorChild
+    {
+        public ReflectionConstructorChild(int value1)
+        {
+            Value1 = value1;
+        }
+
+        public int Value1 { get; }
+
+        public int Value2 { get; set; }
+    }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    private sealed class ReflectionConstructorPopulateRoot
+    {
+        public ReflectionConstructorChild Child { get; } = new(7);
+    }
+
+    [Fact]
+    public void Reflection_DefaultReplace_DoesNotPopulateReadOnlyMembers()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionReplaceRoot>(NestedToml);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3 }, result.Numbers);
+    }
+
+    [Fact]
+    public void Reflection_TypeLevelPopulate_PopulatesReadOnlyMembers()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionPopulateRoot>(NestedToml);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Numbers);
+    }
+
+    [Fact]
+    public void Reflection_GlobalPopulateOption_PopulatesReadOnlyMembers()
+    {
+        var options = TomlSerializerOptions.Default with
+        {
+            PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate,
+        };
+
+        var result = TomlSerializer.Deserialize<ReflectionReplaceRoot>(NestedToml, options);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Numbers);
+    }
+
+    // A read-only collection cannot be populated: like a type that does not support populating, it is replaced when the
+    // member has a setter, left unchanged when the preference cannot be honored, and a configuration error when it is explicit
+    [Fact]
+    public void Reflection_PopulateReadOnlyCollections_ReplacesOrKeepsThemOrReportsAConfigurationError()
+    {
+        var options = TomlSerializerOptions.Default with
+        {
+            PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate,
+        };
+
+        var result = TomlSerializer.Deserialize<GeneratedReadOnlyCollectionsRoot>(GeneratedReadOnlyCollectionsRoot.Toml, options)!;
+        var getOnly = TomlSerializer.Deserialize<GeneratedReadOnlyCollectionPreferredGetOnlyRoot>("Values = [2]", options)!;
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedReadOnlyCollectionExplicitGetOnlyRoot>("Values = [2]", out _));
+
+        GeneratedReadOnlyCollectionsRoot.AssertReplaced(result);
+        Assert.Equal([1], getOnly.Values);
+        Assert.Contains("doesn't support populating", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Reflection_PropertyLevelReplace_OverridesTypeLevelPopulate()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionPopulateOverrideRoot>(NestedToml);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3 }, result.Numbers);
+    }
+
+    [Fact]
+    public void Reflection_PropertyLevelPopulate_ReadOnlyNullReference_IsIgnored()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionPopulateNullRoot>(
+            """
+            [Child]
+            Value = 42
+            """);
+
+        Assert.NotNull(result);
+        Assert.Null(result!.Child);
+    }
+
+    [Fact]
+    public void Reflection_PropertyLevelPopulate_ReadOnlyStruct_Throws()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ReflectionPopulateStructRoot>(
+            """
+            [Payload]
+            Value2 = 42
+            """));
+
+        Assert.Contains("requires a setter", ex!.Message);
+    }
+
+    [Fact]
+    public void Reflection_TypeLevelPopulate_ReadOnlyStruct_IsIgnored()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionTypePopulateStructRoot>(
+            """
+            [Payload]
+            Value2 = 42
+            """);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Payload.Value1);
+        Assert.Equal(0, result.Payload.Value2);
+    }
+
+    [Fact]
+    public void Reflection_PropertyLevelPopulate_StructWithSetter_PopulatesExistingValues()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionPopulateSettableStructRoot>(
+            """
+            [Payload]
+            Value2 = 42
+            """);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Payload.Value1);
+        Assert.Equal(42, result.Payload.Value2);
+    }
+
+    [Fact]
+    public void Reflection_PropertyLevelPopulate_NullableStructWithSetter_PopulatesExistingValues()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionPopulateNullableStructRoot>(
+            """
+            [Payload]
+            Value2 = 42
+            """);
+
+        Assert.NotNull(result);
+        var payload = result!.Payload;
+        Assert.NotNull(payload);
+        Assert.Equal(7, payload.GetValueOrDefault().Value1);
+        Assert.Equal(42, payload.GetValueOrDefault().Value2);
+    }
+
+    [Fact]
+    public void Reflection_PropertyLevelPopulate_ReadOnlyImmutableReference_Throws()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ReflectionPopulateImmutableRoot>(
+            """
+            Name = "after"
+            """));
+
+        Assert.Contains("doesn't support populating", ex!.Message);
+    }
+
+    [Fact]
+    public void Reflection_TypeLevelPopulate_ReadOnlyConstructorBoundReference_PopulatesExistingInstance()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionConstructorPopulateRoot>(
+            """
+            [Child]
+            Value2 = 42
+            """);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Child.Value1);
+        Assert.Equal(42, result.Child.Value2);
+    }
+}
+
+public sealed class GeneratedObjectCreationChild
+{
+    public int Value { get; set; } = 7;
+}
+
+[StructLayout(LayoutKind.Auto)]
+public struct GeneratedStructPayload
+{
+    public int Value1 { get; set; }
+
+    public int Value2 { get; set; }
+}
+
+public sealed class GeneratedReplaceObjectCreationRoot
+{
+    public GeneratedObjectCreationChild Child { get; } = new();
+
+    public List<int> Numbers { get; } = [1, 2, 3];
+}
+
+[TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+public sealed class GeneratedPopulateObjectCreationRoot
+{
+    public GeneratedObjectCreationChild Child { get; } = new();
+
+    public List<int> Numbers { get; } = [1, 2, 3];
+}
+
+[TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+public sealed class GeneratedPopulateOverrideObjectCreationRoot
+{
+    public GeneratedObjectCreationChild Child { get; } = new();
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Replace)]
+    public List<int> Numbers { get; } = [1, 2, 3];
+}
+
+public sealed class GeneratedOptionsPopulateObjectCreationRoot
+{
+    public GeneratedObjectCreationChild Child { get; } = new();
+
+    public List<int> Numbers { get; } = [1, 2, 3];
+}
+
+[TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+public sealed class GeneratedTypePopulateStructRoot
+{
+    public GeneratedStructPayload Payload { get; } = new() { Value1 = 7 };
+}
+
+public sealed class GeneratedPropertyPopulateStructRoot
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedStructPayload Payload { get; } = new() { Value1 = 7 };
+}
+
+public sealed class GeneratedPropertyPopulateSettableStructRoot
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedStructPayload Payload { get; set; } = new() { Value1 = 7 };
+}
+
+public sealed class GeneratedPropertyPopulateNullableStructRoot
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedStructPayload? Payload { get; set; } = new() { Value1 = 7 };
+}
+
+public sealed class GeneratedPropertyPopulateNullReferenceRoot
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedObjectCreationChild? Child { get; }
+}
+
+public sealed class GeneratedConstructorObjectCreationChild
+{
+    public GeneratedConstructorObjectCreationChild(int value1)
+    {
+        Value1 = value1;
+    }
+
+    public int Value1 { get; }
+
+    public int Value2 { get; set; }
+}
+
+[TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+public sealed class GeneratedConstructorPopulateRoot
+{
+    public GeneratedConstructorObjectCreationChild Child { get; } = new(7);
+}
+
+// Generated code creates these types with an object initializer, once their members are read
+public sealed class GeneratedRequiredGenericPopulateRoot<T>
+{
+    public required T? A { get; init; }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedObjectCreationChild Child { get; } = new();
+}
+
+[System.Runtime.InteropServices.StructLayout(LayoutKind.Auto)]
+public struct GeneratedRequiredStructPopulateRoot
+{
+    public GeneratedRequiredStructPopulateRoot()
+    {
+    }
+
+    public required int A { get; init; }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedObjectCreationChild Child { get; } = new();
+}
+
+public sealed class GeneratedRequiredGenericPreferredPopulateRoot<T>
+{
+    public required T? A { get; init; }
+
+    public GeneratedObjectCreationChild Child { get; } = new();
+}
+
+public sealed class GeneratedRequiredGenericValuePopulateRoot<T>
+{
+    public required T? A { get; init; }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedStructPayload Payload { get; }
+}
+
+[TomlSerializable(typeof(GeneratedRequiredGenericPopulateRoot<int>))]
+[TomlSerializable(typeof(GeneratedRequiredStructPopulateRoot))]
+[TomlSerializable(typeof(GeneratedRequiredGenericValuePopulateRoot<int>))]
+internal sealed partial class TestTomlSerializerContextObjectCreationRequiredPopulate : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
+[TomlSerializable(typeof(GeneratedRequiredGenericPreferredPopulateRoot<int>))]
+internal sealed partial class TestTomlSerializerContextObjectCreationRequiredPreferredPopulate : TomlSerializerContext
+{
+}
+
+public sealed class GeneratedReadOnlyCollectionsRoot
+{
+    public const string Toml = """
+        Tags = ['a']
+        Fixed = ['b']
+        [Map]
+        c = 1
+        """;
+
+    public IReadOnlyList<string> Tags { get; set; } = [];
+
+    public ICollection<string> Fixed { get; set; } = new[] { "x" };
+
+    public IDictionary<string, int> Map { get; set; } = new System.Collections.ObjectModel.ReadOnlyDictionary<string, int>(new Dictionary<string, int>(StringComparer.Ordinal));
+
+    public static void AssertReplaced(GeneratedReadOnlyCollectionsRoot value)
+    {
+        Assert.Equal(["a"], value.Tags);
+        Assert.Equal(["b"], value.Fixed);
+        Assert.Equal(1, Assert.Single(value.Map).Value);
+    }
+}
+
+public sealed class GeneratedReadOnlyCollectionPreferredGetOnlyRoot
+{
+    public IList<int> Values { get; } = new[] { 1 };
+}
+
+public sealed class GeneratedReadOnlyCollectionExplicitGetOnlyRoot
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public IList<int> Values { get; } = new[] { 1 };
+}
+
+[TomlSourceGenerationOptions(PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
+[TomlSerializable(typeof(GeneratedReadOnlyCollectionsRoot))]
+[TomlSerializable(typeof(GeneratedReadOnlyCollectionPreferredGetOnlyRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationReadOnlyCollections : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedReadOnlyCollectionExplicitGetOnlyRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationReadOnlyCollectionExplicit : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedReplaceObjectCreationRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationReplace : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedPopulateObjectCreationRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationPopulate : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedPopulateOverrideObjectCreationRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationOverride : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
+[TomlSerializable(typeof(GeneratedOptionsPopulateObjectCreationRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationPopulateOptions : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedTypePopulateStructRoot))]
+[TomlSerializable(typeof(GeneratedPropertyPopulateStructRoot))]
+[TomlSerializable(typeof(GeneratedPropertyPopulateSettableStructRoot))]
+[TomlSerializable(typeof(GeneratedPropertyPopulateNullableStructRoot))]
+[TomlSerializable(typeof(GeneratedPropertyPopulateNullReferenceRoot))]
+[TomlSerializable(typeof(GeneratedConstructorPopulateRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationPopulateAdvanced : TomlSerializerContext
+{
+}
+
+public sealed class NewApiSourceGenerationObjectCreationHandlingTests
+{
+    private const string NestedToml = """
+        Numbers = [4, 5]
+        [Child]
+        Value = 42
+        """;
+
+    [Fact]
+    public void GeneratedContext_PopulateReadOnlyCollections_ReplacesOrKeepsThemOrReportsAConfigurationError()
+    {
+        var context = TestTomlSerializerContextObjectCreationReadOnlyCollections.Default;
+
+        var result = TomlSerializer.Deserialize(GeneratedReadOnlyCollectionsRoot.Toml, context.GeneratedReadOnlyCollectionsRoot)!;
+        var getOnly = TomlSerializer.Deserialize("Values = [2]", context.GeneratedReadOnlyCollectionPreferredGetOnlyRoot)!;
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedReadOnlyCollectionExplicitGetOnlyRoot>("Values = [2]", TestTomlSerializerContextObjectCreationReadOnlyCollectionExplicit.Default, out _));
+
+        GeneratedReadOnlyCollectionsRoot.AssertReplaced(result);
+        Assert.Equal([1], getOnly.Values);
+        Assert.Contains("doesn't support populating", exception.Message, StringComparison.Ordinal);
+    }
+
+    // A type created with an object initializer still populates its get-only members, like the reflection resolver
+    [Fact]
+    public void GeneratedContext_GetOnlyMemberOfATypeWithRequiredMembers_IsPopulated()
+    {
+        const string Toml = "A = 1\n[Child]\nValue = 42\n";
+        var context = TestTomlSerializerContextObjectCreationRequiredPopulate.Default;
+        var preferredOptions = TomlSerializerOptions.Default with { PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate };
+
+        Assert.Equal(42, TomlSerializer.Deserialize(Toml, context.GeneratedRequiredGenericPopulateRootInt32)!.Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize<GeneratedRequiredGenericPopulateRoot<int>>(Toml)!.Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize(Toml, context.GeneratedRequiredStructPopulateRoot).Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize<GeneratedRequiredStructPopulateRoot>(Toml).Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize(Toml, TestTomlSerializerContextObjectCreationRequiredPreferredPopulate.Default.GeneratedRequiredGenericPreferredPopulateRootInt32)!.Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize<GeneratedRequiredGenericPreferredPopulateRoot<int>>(Toml, preferredOptions)!.Child.Value);
+
+        const string InvalidToml = "A = 1\n[Child]\nValue = 'bad'\n";
+        var error = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(InvalidToml, context.GeneratedRequiredGenericPopulateRootInt32));
+        Assert.Equal((3, 9), (error.Line, error.Column));
+        Assert.False(TomlSerializer.TryDeserialize(InvalidToml, context.GeneratedRequiredGenericPopulateRootInt32, out _));
+
+        const string ValueToml = "A = 1\n[Payload]\nValue1 = 42\n";
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize(ValueToml, context.GeneratedRequiredGenericValuePopulateRootInt32, out _));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedRequiredGenericValuePopulateRoot<int>>(ValueToml, out _));
+        Assert.Equal(reflection.Message, generated.Message);
+    }
+
+    [Fact]
+    public void GeneratedContext_DefaultReplace_DoesNotPopulateReadOnlyMembers()
+    {
+        var context = TestTomlSerializerContextObjectCreationReplace.Default;
+
+        var result = TomlSerializer.Deserialize(NestedToml, context.GeneratedReplaceObjectCreationRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3 }, result.Numbers);
+    }
+
+    [Fact]
+    public void GeneratedContext_TypeLevelPopulate_PopulatesReadOnlyMembers()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulate.Default;
+
+        var result = TomlSerializer.Deserialize(NestedToml, context.GeneratedPopulateObjectCreationRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Numbers);
+    }
+
+    [Fact]
+    public void GeneratedContext_PropertyLevelReplace_OverridesTypeLevelPopulate()
+    {
+        var context = TestTomlSerializerContextObjectCreationOverride.Default;
+
+        var result = TomlSerializer.Deserialize(NestedToml, context.GeneratedPopulateOverrideObjectCreationRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3 }, result.Numbers);
+    }
+
+    [Fact]
+    public void GeneratedContext_TomlSourceGenerationOptions_PopulateReadOnlyMembers()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulateOptions.Default;
+
+        var result = TomlSerializer.Deserialize(NestedToml, context.GeneratedOptionsPopulateObjectCreationRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Numbers);
+        Assert.Equal(TomlObjectCreationHandling.Populate, context.Options.PreferredObjectCreationHandling);
+    }
+
+    [Fact]
+    public void GeneratedContext_TypeLevelPopulate_ReadOnlyStruct_IsIgnored()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulateAdvanced.Default;
+
+        var result = TomlSerializer.Deserialize(
+            """
+            [Payload]
+            Value2 = 42
+            """,
+            context.GeneratedTypePopulateStructRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Payload.Value1);
+        Assert.Equal(0, result.Payload.Value2);
+    }
+
+    [Fact]
+    public void GeneratedContext_PropertyLevelPopulate_ReadOnlyStruct_Throws()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulateAdvanced.Default;
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(
+            """
+            [Payload]
+            Value2 = 42
+            """,
+            context.GeneratedPropertyPopulateStructRoot));
+
+        Assert.Contains("requires a setter", ex!.Message);
+    }
+
+    [Fact]
+    public void GeneratedContext_PropertyLevelPopulate_StructWithSetter_PopulatesExistingValues()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulateAdvanced.Default;
+
+        var result = TomlSerializer.Deserialize(
+            """
+            [Payload]
+            Value2 = 42
+            """,
+            context.GeneratedPropertyPopulateSettableStructRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Payload.Value1);
+        Assert.Equal(42, result.Payload.Value2);
+    }
+
+    [Fact]
+    public void GeneratedContext_PropertyLevelPopulate_NullableStructWithSetter_PopulatesExistingValues()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulateAdvanced.Default;
+
+        var result = TomlSerializer.Deserialize(
+            """
+            [Payload]
+            Value2 = 42
+            """,
+            context.GeneratedPropertyPopulateNullableStructRoot);
+
+        Assert.NotNull(result);
+        var payload = result!.Payload;
+        Assert.NotNull(payload);
+        Assert.Equal(7, payload.GetValueOrDefault().Value1);
+        Assert.Equal(42, payload.GetValueOrDefault().Value2);
+    }
+
+    [Fact]
+    public void GeneratedContext_PropertyLevelPopulate_ReadOnlyNullReference_IsIgnored()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulateAdvanced.Default;
+
+        var result = TomlSerializer.Deserialize(
+            """
+            [Child]
+            Value = 42
+            """,
+            context.GeneratedPropertyPopulateNullReferenceRoot);
+
+        Assert.NotNull(result);
+        Assert.Null(result!.Child);
+    }
+
+    [Fact]
+    public void GeneratedContext_TypeLevelPopulate_ReadOnlyConstructorBoundReference_PopulatesExistingInstance()
+    {
+        var context = TestTomlSerializerContextObjectCreationPopulateAdvanced.Default;
+
+        var result = TomlSerializer.Deserialize(
+            """
+            [Child]
+            Value2 = 42
+            """,
+            context.GeneratedConstructorPopulateRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.Child.Value1);
+        Assert.Equal(42, result.Child.Value2);
+    }
+}

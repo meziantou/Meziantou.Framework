@@ -1,0 +1,89 @@
+{
+  "name": "example",
+  "version": "1.2.0",
+  "anchors": {
+    "base": {
+      "a": 1
+    },
+    "copy": {
+      "a": 1
+    },
+    "merged": {
+      "a": 1,
+      "b": 2
+    }
+  },
+  "sequence": [
+    "one",
+    "two",
+    {
+      "complex": "key"
+    }
+  ],
+  "binary": [
+    104,
+    101,
+    108,
+    108,
+    111
+  ],
+  "timestamp": "2001-12-15T02:59:43.100Z",
+  "set": [
+    "a",
+    "b"
+  ],
+  "multiline": "folded text"
+}
+----
+# A comment
+name: example # inline comment
+version: 2.0.0
+anchors:
+  base: &base { a: 1 }
+  merged: { <<: *base, b: 2 }
+sequence:
+  - uno
+  - "two"
+  - complex: key
+  - added: true
+binary: !!binary |-
+  aGVsbG8=
+timestamp: 2001-12-15T02:59:43.100Z
+set: !!set { a, b }
+multiline: >-
+  folded text
+
+----
+name,example,version,2.0.0,anchors,base,a,1,merged,Symbol(<<),b,2,sequence,uno,two,complex,key,binary,104,101,108,108,111,timestamp,2001-12-15T02:59:43.100Z,set,a,b,multiline,folded text
+----
+# generated
+
+list: [ 1, 2, { nested: x } ]
+text: |-
+    a
+    b
+empty: null
+
+----
+a:
+  - 1
+  - b: 2
+c: "true"
+d: "1e3"
+e:
+  1: "x"
+
+----
+"\u0002" "\u001f" "a" ":" " " "[" "\u001f" "1" "," " " "\u001f" "2" "]" "\n"
+----
+["document"]
+----
+BAD_INDENT Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 9:
+----
+BLOCK_AS_IMPLICIT_KEY Nested mappings are not allowed in compact mappings at line 1, column 4:
+----
+BLOCK_AS_IMPLICIT_KEY Nested mappings are not allowed in compact mappings at line 1, column 6: | MULTILINE_IMPLICIT_KEY Implicit keys need to be on a single line at line 1, column 6:
+----
+UNEXPECTED_TOKEN Unexpected scalar at node end at line 3, column 1: | UNEXPECTED_TOKEN Unexpected map-value-ind token in YAML stream: ":" at line 3, column 2: | UNEXPECTED_TOKEN Unexpected scalar token in YAML stream: "d" at line 3, column 4:
+----
+true

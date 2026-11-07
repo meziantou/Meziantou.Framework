@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+DocMDP	dictionary	1.5		FALSE	TRUE	FALSE			[fn:Eval(fn:ArrayLength(DocMDP::Reference)>=1)]	[Signature]	Table 263 and https://github.com/pdf-association/pdf-issues/issues/218
+UR3	dictionary	1.5	2.0	FALSE	FALSE	FALSE			[fn:Eval(UR3::Reference::0::@TransformMethod==UR3)]	[Signature]	

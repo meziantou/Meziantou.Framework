@@ -1,0 +1,15 @@
+{
+  "main": {
+    "da": {
+      "identity": {
+        "language": "da"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

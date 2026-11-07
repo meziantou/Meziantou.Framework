@@ -2,11 +2,16 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Locate and resolve external diff tools</Description>
-    <Version>2.0.1</Version>
+    <PackageTags>diff, diff-tool, merge-tool, testing</PackageTags>
+    <Version>2.0.15</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.DiffEngine.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework.CommandLine/CommandLineBuilder.cs" Link="Utils/CommandLineBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

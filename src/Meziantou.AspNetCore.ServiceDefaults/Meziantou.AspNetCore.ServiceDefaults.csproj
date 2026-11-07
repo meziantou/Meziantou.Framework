@@ -2,30 +2,31 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.4</Version>
-    <Description>Default configuration for meziantou applications</Description>
+    <Version>2.0.17</Version>
+    <Description>Opinionated ASP.NET Core defaults for OpenTelemetry, health checks, resilience, service discovery, and security</Description>
+    <PackageTags>aspnetcore, service-defaults, opentelemetry, health-checks, resilience, service-discovery, aspire</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\Meziantou.AspNetCore\Meziantou.AspNetCore.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
-    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.8.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.11.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.20.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
     <!-- Force Microsoft.OpenApi to a non-vulnerable (transitive: Microsoft.AspNetCore.OpenApi) -->
-    <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.13.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net11.0'">
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0-preview.7.26381.103" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0-rc.3.26522.148" />
     <!-- Force Microsoft.OpenApi to a non-vulnerable (transitive: Microsoft.AspNetCore.OpenApi) -->
-    <PackageReference Include="Microsoft.OpenApi" Version="3.9.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="3.11.0" />
   </ItemGroup>
 </Project>

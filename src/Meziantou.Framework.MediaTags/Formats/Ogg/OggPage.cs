@@ -10,6 +10,10 @@ internal sealed class OggPage
     public long GranulePosition { get; set; }
     public uint SerialNumber { get; set; }
     public uint PageSequenceNumber { get; set; }
+
+    /// <summary>Gets the checksum stored in the page header, as read from the file.</summary>
+    public uint Checksum { get; set; }
+
     public byte[] SegmentTable { get; set; } = [];
     public byte[] Data { get; set; } = [];
 
@@ -17,10 +21,13 @@ internal sealed class OggPage
     public const byte HeaderTypeBeginOfStream = 0x02;
     public const byte HeaderTypeEndOfStream = 0x04;
 
+    /// <summary>The number of bytes in a page header before the segment table.</summary>
+    public const int FixedHeaderSize = 27;
+
     public static OggPage? Read(Stream stream)
     {
-        Span<byte> headerBuf = stackalloc byte[27];
-        if (stream.ReadAtLeast(headerBuf, 27, throwOnEndOfStream: false) < 27)
+        Span<byte> headerBuf = stackalloc byte[FixedHeaderSize];
+        if (stream.ReadAtLeast(headerBuf, FixedHeaderSize, throwOnEndOfStream: false) < FixedHeaderSize)
             return null;
 
         // Check "OggS" magic
@@ -34,7 +41,7 @@ internal sealed class OggPage
             GranulePosition = BinaryPrimitives.ReadInt64LittleEndian(headerBuf[6..]),
             SerialNumber = BinaryPrimitives.ReadUInt32LittleEndian(headerBuf[14..]),
             PageSequenceNumber = BinaryPrimitives.ReadUInt32LittleEndian(headerBuf[18..]),
-            // CRC at bytes 22-25 (we'll compute when writing)
+            Checksum = BinaryPrimitives.ReadUInt32LittleEndian(headerBuf[22..]),
         };
 
         var numSegments = headerBuf[26];
@@ -53,16 +60,34 @@ internal sealed class OggPage
         return page;
     }
 
+    /// <summary>
+    /// Recomputes the page checksum and compares it with the one stored in the file.
+    /// </summary>
+    public bool VerifyChecksum() => ComputeChecksum() == Checksum;
+
     public void Write(Stream stream)
     {
-        // Rebuild segment table from data
         var pageBytes = Serialize();
         stream.Write(pageBytes);
     }
 
     public byte[] Serialize()
     {
-        var headerSize = 27 + SegmentTable.Length;
+        var result = BuildPageBytes();
+
+        // Compute CRC over the page with the checksum field zeroed, then store it.
+        var crc = OggCrc32.Compute(result);
+        BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(22), crc);
+
+        return result;
+    }
+
+    private uint ComputeChecksum() => OggCrc32.Compute(BuildPageBytes());
+
+    /// <summary>Builds the page bytes with the checksum field zeroed, which is what the checksum is computed over.</summary>
+    private byte[] BuildPageBytes()
+    {
+        var headerSize = FixedHeaderSize + SegmentTable.Length;
         var totalSize = headerSize + Data.Length;
         var result = new byte[totalSize];
 
@@ -76,62 +101,11 @@ internal sealed class OggPage
         BinaryPrimitives.WriteInt64LittleEndian(result.AsSpan(6), GranulePosition);
         BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(14), SerialNumber);
         BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(18), PageSequenceNumber);
-        // CRC placeholder at 22-25 (set to 0 for computation)
-        result[22] = 0;
-        result[23] = 0;
-        result[24] = 0;
-        result[25] = 0;
+        // Checksum field stays zero: it is not part of its own computation.
         result[26] = (byte)SegmentTable.Length;
-        SegmentTable.CopyTo(result, 27);
+        SegmentTable.CopyTo(result, FixedHeaderSize);
         Data.CopyTo(result, headerSize);
 
-        // Compute CRC
-        var crc = OggCrc32.Compute(result);
-        BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(22), crc);
-
         return result;
-    }
-
-    public OggPage Clone()
-    {
-        return new OggPage
-        {
-            Version = Version,
-            HeaderType = HeaderType,
-            GranulePosition = GranulePosition,
-            SerialNumber = SerialNumber,
-            PageSequenceNumber = PageSequenceNumber,
-            SegmentTable = (byte[])SegmentTable.Clone(),
-            Data = (byte[])Data.Clone(),
-        };
-    }
-
-    /// <summary>
-    /// Builds the segment table for a given data size.
-    /// </summary>
-    public static byte[] BuildSegmentTable(int dataSize)
-    {
-        var numFullSegments = dataSize / 255;
-        var lastSegmentSize = dataSize % 255;
-
-        // If data is an exact multiple of 255, we need a trailing 0-length segment
-        var needsTerminator = dataSize > 0 && lastSegmentSize == 0;
-        var tableSize = numFullSegments + (needsTerminator ? 1 : (lastSegmentSize > 0 ? 1 : 0));
-
-        if (dataSize == 0)
-            tableSize = 1; // At least one segment entry of 0
-
-        var table = new byte[tableSize];
-        for (var i = 0; i < numFullSegments; i++)
-            table[i] = 255;
-
-        if (needsTerminator)
-            table[numFullSegments] = 0;
-        else if (lastSegmentSize > 0)
-            table[numFullSegments] = (byte)lastSegmentSize;
-        else if (dataSize == 0)
-            table[0] = 0;
-
-        return table;
     }
 }

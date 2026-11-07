@@ -1,3 +1,12 @@
+GetLogicalProcessorInformationEx
 PowerReadFriendlyName
 PowerGetActiveScheme
 WscGetSecurityProviderHealth
+LocalFree
+
+WSCProductList
+IWSCProductList
+IWscProduct
+WSC_SECURITY_PROVIDER
+WSC_SECURITY_PRODUCT_STATE
+WSC_SECURITY_SIGNATURE_STATUS

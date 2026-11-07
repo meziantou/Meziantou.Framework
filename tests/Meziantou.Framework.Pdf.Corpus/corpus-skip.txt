@@ -1,0 +1,2 @@
+# The files of the corpora that are not run: an identifier, a directory (ending with '/'), or a pattern ('*' matches
+# within a segment, '**' across segments), with the reason.

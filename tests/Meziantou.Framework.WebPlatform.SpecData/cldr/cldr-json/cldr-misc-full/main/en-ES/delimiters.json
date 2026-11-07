@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-ES": {
+      "identity": {
+        "language": "en",
+        "territory": "ES"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

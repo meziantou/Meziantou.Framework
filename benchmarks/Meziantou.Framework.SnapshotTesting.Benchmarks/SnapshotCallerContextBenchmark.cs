@@ -1,0 +1,54 @@
+using System.Runtime.CompilerServices;
+using BenchmarkDotNet.Attributes;
+using Meziantou.Framework.SnapshotTesting;
+
+namespace Meziantou.Framework.SnapshotTesting.Benchmarks;
+
+/// <summary>
+/// Measures the cost of resolving the caller context, which every snapshot assertion pays before
+/// anything is serialized or compared.
+/// </summary>
+[MemoryDiagnoser]
+public class SnapshotCallerContextBenchmark
+{
+    private string _sourceFilePath = null!;
+
+    /// <summary>Number of frames between the assertion method and the benchmark entry point.</summary>
+    [Params(1, 20)]
+    public int StackDepth { get; set; }
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Meziantou.Framework.SnapshotTesting.Benchmarks", "CallerContext");
+        Directory.CreateDirectory(directory);
+        _sourceFilePath = Path.Combine(directory, "Source.cs");
+        File.WriteAllText(_sourceFilePath, "");
+    }
+
+    private static readonly SnapshotTestContext TestContext = new() { ClassName = nameof(SnapshotCallerContextBenchmark), MethodName = nameof(Create) };
+
+    /// <summary>No test framework context: the name has to come from the call stack.</summary>
+    [Benchmark(Baseline = true)]
+    public string Create() => Recurse(StackDepth, testContext: null);
+
+    /// <summary>The test framework exposes the names, so the call stack is never walked.</summary>
+    [Benchmark]
+    public string CreateWithTestContext() => Recurse(StackDepth, TestContext);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private string Recurse(int depth, SnapshotTestContext? testContext)
+    {
+        if (depth > 0)
+            return Recurse(depth - 1, testContext);
+
+        return CreateCallerContext(testContext);
+    }
+
+    [SnapshotAssertion]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private string CreateCallerContext(SnapshotTestContext? testContext)
+    {
+        return SnapshotCallerContext.Create(_sourceFilePath, lineNumber: 1, memberName: nameof(CreateCallerContext), testContext).MethodName;
+    }
+}

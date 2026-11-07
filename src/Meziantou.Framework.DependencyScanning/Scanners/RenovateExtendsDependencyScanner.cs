@@ -4,13 +4,19 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans Renovate configuration files for extends references to shared configuration presets.</summary>
+/// <summary>
+/// Scans Renovate configuration files for extends references to shared configuration presets.
+/// <c>.json5</c> files are read as JSON with comments and trailing commas; JSON5-only syntax such as unquoted property names or single-quoted strings is not supported, and such files report nothing.
+/// </summary>
 public sealed class RenovateExtendsDependencyScanner : DependencyScanner
 {
     private static readonly string[] PotentialRenovateFiles =
     [
         "renovate.json",
         "renovate.json5",
+        ".renovaterc",
+        ".renovaterc.json",
+        ".renovaterc.json5",
         "renovaterc",
         "renovaterc.json",
         "renovaterc.json5",

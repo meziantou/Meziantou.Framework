@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Unicode;
 
 namespace Meziantou.Framework;
@@ -5,19 +6,23 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides options for customizing slug generation.
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Slug.Tests/SlugTests.cs" ref:region="SlugOptions_Example" ref:dedent="true">
 /// var options = new SlugOptions
 /// {
 ///     MaximumLength = 20,
 ///     CasingTransformation = CasingTransformation.ToLowerCase,
 /// };
-/// var slug = Slug.Create("This is a text", options); // this-is-a-text
+/// var slug = Slug.Create("This is a text", options);
+/// Assert.Equal("this-is-a-text", slug);
 /// </code>
 /// </example>
 /// </summary>
 public class SlugOptions
 {
     internal static SlugOptions Default { get; } = new SlugOptions();
+
+    /// <summary>Caches, per derived type, whether <see cref="Replace(Rune)"/> is still the one declared here.</summary>
+    private static readonly ConcurrentDictionary<Type, bool> UsesDefaultReplaceByType = new();
 
     /// <summary>The default maximum length for generated slugs (80 characters).</summary>
     public const int DefaultMaximumLength = 80;
@@ -26,13 +31,41 @@ public class SlugOptions
     public const string DefaultSeparator = "-";
 
     /// <summary>Gets the list of allowed Unicode character ranges in the generated slug.</summary>
+    /// <remarks>
+    /// An <b>empty</b> list allows every character instead of none, so the slug is returned unfiltered. The list has no
+    /// setter: add to it, or call <see cref="ICollection{T}.Clear"/> and then add, to change which characters are kept.
+    /// Clearing it and adding nothing is what makes the generation permissive.
+    /// </remarks>
     public IList<UnicodeRange> AllowedRanges { get; }
 
-    /// <summary>Gets or sets the maximum length of the generated slug. Default is 80.</summary>
+    /// <summary>
+    /// Gets or sets the maximum length of the generated slug. Default is 80. A value less than or equal to zero means the slug is not truncated.
+    /// </summary>
+    /// <remarks>
+    /// The limit applies to the returned slug and is never exceeded. A slug is only cut between characters, so it never
+    /// ends with an incomplete surrogate pair, a partial <see cref="Separator"/>, or a character stripped of the combining
+    /// marks that follow it. Because those units are kept whole, a slug can end up slightly shorter than the limit.
+    /// <para>
+    /// Truncation makes slugs lossy: two different inputs that agree up to the limit produce the same slug, as do inputs
+    /// that differ only by characters this class removes. A slug is therefore never unique. Callers that key on one must
+    /// enforce uniqueness themselves, and must not use it as a security boundary.
+    /// </para>
+    /// </remarks>
     public int MaximumLength { get; set; }
 
     /// <summary>Gets or sets the separator string used between words. Default is "-".</summary>
-    public string Separator { get; set; }
+    /// <remarks>The separator should be made of characters that <see cref="IsAllowed(Rune)"/> rejects. When a separator character
+    /// can also come from the input, a trailing occurrence of it is indistinguishable from a separator this class emitted.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    public string Separator
+    {
+        get => field;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets the culture to use for case transformations. When null, uses invariant culture.</summary>
     public CultureInfo? Culture { get; set; }
@@ -59,9 +92,22 @@ public class SlugOptions
     /// <summary>Determines whether the specified character is allowed in the slug.</summary>
     /// <param name="character">The character to check.</param>
     /// <returns><see langword="true"/> if the character is allowed; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>Every character is allowed when <see cref="AllowedRanges"/> is empty. The check runs on the character read from
+    /// the input, before <see cref="Replace(Rune)"/> and <see cref="CasingTransformation"/> are applied to it.</remarks>
     public virtual bool IsAllowed(Rune character)
     {
-        return AllowedRanges.Count == 0 || AllowedRanges.Any(range => IsInRange(range, character));
+        var ranges = AllowedRanges;
+        if (ranges.Count == 0)
+            return true;
+
+        // Avoid the closure allocated by LINQ: this runs for every rune of the input.
+        for (var i = 0; i < ranges.Count; i++)
+        {
+            if (IsInRange(ranges[i], character))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsInRange(UnicodeRange range, Rune rune)
@@ -74,15 +120,43 @@ public class SlugOptions
     /// <returns>The transformed string representation of the rune.</returns>
     public virtual string Replace(Rune rune)
     {
-        if (CasingTransformation == CasingTransformation.ToLowerCase)
-        {
-            rune = Culture is null ? Rune.ToLowerInvariant(rune) : Rune.ToLower(rune, Culture);
-        }
-        else if (CasingTransformation == CasingTransformation.ToUpperCase)
-        {
-            rune = Culture is null ? Rune.ToUpperInvariant(rune) : Rune.ToUpper(rune, Culture);
-        }
+        return Transform(rune).ToString();
+    }
 
-        return rune.ToString();
+    /// <summary>
+    /// Applies <see cref="CasingTransformation"/> to a rune without allocating the string <see cref="Replace(Rune)"/> returns.
+    /// Only used when <see cref="Replace(Rune)"/> is known not to be overridden.
+    /// </summary>
+    internal Rune Transform(Rune rune)
+    {
+        return CasingTransformation switch
+        {
+            CasingTransformation.ToLowerCase => Culture is null ? Rune.ToLowerInvariant(rune) : Rune.ToLower(rune, Culture),
+            CasingTransformation.ToUpperCase => Culture is null ? Rune.ToUpperInvariant(rune) : Rune.ToUpper(rune, Culture),
+            _ => rune,
+        };
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether <see cref="Replace(Rune)"/> still has its default implementation, in which case
+    /// <see cref="Transform(Rune)"/> produces the same result without allocating a string for every rune.
+    /// </summary>
+    internal bool UsesDefaultReplace
+    {
+        get
+        {
+            var type = GetType();
+            if (type == typeof(SlugOptions))
+                return true;
+
+            return UsesDefaultReplaceByType.GetOrAdd(type, _ =>
+            {
+                // Binding the delegate resolves the virtual call, so its target is the override that would run.
+                // Reading the method off a delegate keeps this trimmer-friendly, unlike looking the override up
+                // by name on a type that is only known at run time.
+                Func<Rune, string> replace = Replace;
+                return replace.Method.DeclaringType == typeof(SlugOptions);
+            });
+        }
     }
 }

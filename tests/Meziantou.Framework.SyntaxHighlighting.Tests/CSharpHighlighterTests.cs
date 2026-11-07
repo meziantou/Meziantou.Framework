@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.SyntaxHighlighting.Tests;
+﻿namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class CSharpHighlighterTests
 {
@@ -85,7 +85,7 @@ public enum FileAccess { None = 0, Read = 1, Write = 2, All = Read | Write }
 record Foo(int X, int Y);
 """,
 """
-record Foo(int X, int Y);
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-title">Foo</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> X, <span class="hljs-built_in">int</span> Y</span>)</span>;
 """);
     }
 
@@ -97,7 +97,7 @@ record Foo(int X, int Y);
 record class Foo(int X);
 """,
 """
-record class Foo(int X);
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Foo</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> X</span>)</span>;
 """);
     }
 
@@ -109,7 +109,7 @@ record class Foo(int X);
 record struct Point(int X, int Y);
 """,
 """
-record struct Point(int X, int Y);
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-keyword">struct</span> <span class="hljs-title">Point</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> X, <span class="hljs-built_in">int</span> Y</span>)</span>;
 """);
     }
 
@@ -122,6 +122,112 @@ readonly record struct Money(decimal Amount, string Currency);
 """,
 """
 <span class="hljs-function"><span class="hljs-keyword">readonly</span> <span class="hljs-keyword">record</span> <span class="hljs-keyword">struct</span> <span class="hljs-title">Money</span>(<span class="hljs-params"><span class="hljs-built_in">decimal</span> Amount, <span class="hljs-built_in">string</span> Currency</span>)</span>;
+""");
+    }
+
+    [Fact]
+    public void Keyword_Union()
+    {
+        AssertHighlighter("csharp",
+"""
+union Pet(Cat, Dog);
+""",
+"""
+<span class="hljs-keyword">union</span> <span class="hljs-title">Pet</span>(<span class="hljs-title">Cat</span>, <span class="hljs-title">Dog</span>);
+""");
+    }
+
+    [Fact]
+    public void Keyword_UnionGenericWithBody()
+    {
+        AssertHighlighter("csharp",
+"""
+public union OneOrMore<T>(T, IEnumerable<T>) : IEnumerable<T> where T : class
+{
+    public IEnumerable<T> AsEnumerable() => Value switch
+    {
+        IEnumerable<T> list => list,
+        T item => [item],
+    };
+}
+""",
+"""
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">union</span> <span class="hljs-title">OneOrMore</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-title">T</span>, <span class="hljs-title">IEnumerable</span>&lt;<span class="hljs-title">T</span>&gt;) : <span class="hljs-title">IEnumerable</span>&lt;<span class="hljs-title">T</span>&gt; <span class="hljs-keyword">where</span> <span class="hljs-title">T</span> : <span class="hljs-keyword">class</span>
+{
+    <span class="hljs-function"><span class="hljs-keyword">public</span> IEnumerable&lt;T&gt; <span class="hljs-title">AsEnumerable</span>()</span> =&gt; Value <span class="hljs-keyword">switch</span>
+    {
+        IEnumerable&lt;T&gt; list =&gt; list,
+        T item =&gt; [item],
+    };
+}
+""");
+    }
+
+    [Fact]
+    public void Keyword_UnionCaseTypes()
+    {
+        AssertHighlighter("csharp",
+"""
+public partial union Value(int?, string, System.Uri, Dictionary<string, List<Dog>>, Cat[]);
+""",
+"""
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">partial</span> <span class="hljs-keyword">union</span> <span class="hljs-title">Value</span>(<span class="hljs-built_in">int</span>?, <span class="hljs-built_in">string</span>, <span class="hljs-title">System.Uri</span>, <span class="hljs-title">Dictionary</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-title">List</span>&lt;<span class="hljs-title">Dog</span>&gt;&gt;, <span class="hljs-title">Cat</span>[]);
+""");
+    }
+
+    [Fact]
+    public void Keyword_UnionAsIdentifier()
+    {
+        AssertHighlighter("csharp",
+"""
+var union = first.Union(second);
+Process(union);
+""",
+"""
+<span class="hljs-keyword">var</span> union = first.Union(second);
+Process(union);
+""");
+    }
+
+    [Fact]
+    public void Keyword_ClosedClass()
+    {
+        AssertHighlighter("csharp",
+"""
+public closed partial class Shape;
+public sealed class Circle : Shape;
+""",
+"""
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">closed</span> <span class="hljs-keyword">partial</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Shape</span>;
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">sealed</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Circle</span> : <span class="hljs-title">Shape</span>;
+""");
+    }
+
+    [Fact]
+    public void Keyword_ClosedRecord()
+    {
+        AssertHighlighter("csharp",
+"""
+public closed record GateState;
+public record Open(float Percent) : GateState;
+""",
+"""
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">closed</span> <span class="hljs-keyword">record</span> <span class="hljs-title">GateState</span>;
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">record</span> <span class="hljs-title">Open</span>(<span class="hljs-params"><span class="hljs-built_in">float</span> Percent</span>) : GateState</span>;
+""");
+    }
+
+    [Fact]
+    public void Keyword_ClosedAsIdentifier()
+    {
+        AssertHighlighter("csharp",
+"""
+var closed = true;
+if (closed) return closed ? 1 : 0;
+""",
+"""
+<span class="hljs-keyword">var</span> closed = <span class="hljs-literal">true</span>;
+<span class="hljs-keyword">if</span> (closed) <span class="hljs-keyword">return</span> closed ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;
 """);
     }
 
@@ -2866,6 +2972,42 @@ Dictionary&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built
     }
 
     [Fact]
+    public void CollectionExpression_WithArguments()
+    {
+        AssertHighlighter("csharp",
+"""
+List<string> names = [with(capacity: values.Count * 2), .. values];
+""",
+"""
+List&lt;<span class="hljs-built_in">string</span>&gt; names = [<span class="hljs-keyword">with</span>(capacity: values.Count * <span class="hljs-number">2</span>), .. values];
+""");
+    }
+
+    [Fact]
+    public void ExtensionIndexer()
+    {
+        AssertHighlighter("csharp",
+"""
+static class Extensions
+{
+    extension<T>(IList<T> source)
+    {
+        public T this[Index index] => source[index];
+    }
+}
+""",
+"""
+<span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Extensions</span>
+{
+    <span class="hljs-keyword">extension</span>&lt;T&gt;(IList&lt;T&gt; source)
+    {
+        <span class="hljs-keyword">public</span> T <span class="hljs-keyword">this</span>[Index index] =&gt; source[index];
+    }
+}
+""");
+    }
+
+    [Fact]
     public void Range_FromTo()
     {
         AssertHighlighter("csharp",
@@ -3317,6 +3459,66 @@ foreach (var x in items)
 {
     <span class="hljs-keyword">if</span> (!x.IsValid) <span class="hljs-keyword">continue</span>;
     Process(x);
+}
+""");
+    }
+
+    [Fact]
+    public void Loop_LabeledBreakAndContinue()
+    {
+        AssertHighlighter("csharp",
+"""
+outer: for (int x = 0; x < xMax; x++)
+{
+    for (int y = 0; y < yMax; y++)
+    {
+        if (ShouldSkipRest(x, y))
+            continue outer;
+        if (ShouldExitAll(x, y))
+            break outer;
+    }
+}
+""",
+"""
+outer: <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> x = <span class="hljs-number">0</span>; x &lt; xMax; x++)
+{
+    <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> y = <span class="hljs-number">0</span>; y &lt; yMax; y++)
+    {
+        <span class="hljs-keyword">if</span> (ShouldSkipRest(x, y))
+            <span class="hljs-keyword">continue</span> outer;
+        <span class="hljs-keyword">if</span> (ShouldExitAll(x, y))
+            <span class="hljs-keyword">break</span> outer;
+    }
+}
+""");
+    }
+
+    [Fact]
+    public void Loop_LabeledBreakFromSwitch()
+    {
+        AssertHighlighter("csharp",
+"""
+sw: switch (x)
+{
+    case 1:
+        foreach (var item in items)
+        {
+            if (item is null) continue;
+            break sw;
+        }
+        break;
+}
+""",
+"""
+sw: <span class="hljs-keyword">switch</span> (x)
+{
+    <span class="hljs-keyword">case</span> <span class="hljs-number">1</span>:
+        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> item <span class="hljs-keyword">in</span> items)
+        {
+            <span class="hljs-keyword">if</span> (item <span class="hljs-keyword">is</span> <span class="hljs-literal">null</span>) <span class="hljs-keyword">continue</span>;
+            <span class="hljs-keyword">break</span> sw;
+        }
+        <span class="hljs-keyword">break</span>;
 }
 """);
     }
@@ -4124,6 +4326,154 @@ class Foo { }
 """
 <span class="hljs-keyword">class</span> <span class="hljs-title">Foo</span> { }
 
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_GlobalAlias()
+    {
+        AssertHighlighter("csharp",
+"""
+var value = global::System.String.Empty;
+""",
+"""
+<span class="hljs-keyword">var</span> <span class="hljs-keyword">value</span> = <span class="hljs-keyword">global</span>::System.String.Empty;
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_UsingAlias()
+    {
+        AssertHighlighter("csharp",
+"""
+using S = global::System;
+""",
+"""
+<span class="hljs-keyword">using</span> S = <span class="hljs-keyword">global</span>::System;
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_ExternAlias()
+    {
+        AssertHighlighter("csharp",
+"""
+extern alias Legacy;
+""",
+"""
+<span class="hljs-keyword">extern</span> <span class="hljs-keyword">alias</span> Legacy;
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_InsideTypeMember()
+    {
+        AssertHighlighter("csharp",
+"""
+class C { global::System.Int32 Value { get; set; } }
+""",
+"""
+<span class="hljs-keyword">class</span> <span class="hljs-title">C</span> { <span class="hljs-keyword">global</span>::System.Int32 Value { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; } }
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordStructWithoutParameters()
+    {
+        AssertHighlighter("csharp",
+"""
+record struct Point { }
+""",
+"""
+<span class="hljs-keyword">record</span> <span class="hljs-keyword">struct</span> <span class="hljs-title">Point</span> { }
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordGeneric()
+    {
+        AssertHighlighter("csharp",
+"""
+record Pair<TKey, TValue>(TKey Key, TValue Value);
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-title">Pair</span>&lt;<span class="hljs-title">TKey</span>, <span class="hljs-title">TValue</span>&gt;(<span class="hljs-params">TKey Key, TValue Value</span>)</span>;
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordWithAttributeAndDefaultValue()
+    {
+        AssertHighlighter("csharp",
+"""
+record Person([property: JsonPropertyName("name")] string Name, int Age = 42);
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-title">Person</span>(<span class="hljs-params">[property: JsonPropertyName(<span class="hljs-string">&quot;name&quot;</span>)] <span class="hljs-built_in">string</span> Name, <span class="hljs-built_in">int</span> Age = <span class="hljs-number">42</span></span>)</span>;
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordWithSeveralBaseTypes()
+    {
+        AssertHighlighter("csharp",
+"""
+record Person : IEquatable<Person>, IComparable<Person>;
+""",
+"""
+<span class="hljs-keyword">record</span> <span class="hljs-title">Person</span> : <span class="hljs-title">IEquatable</span>&lt;<span class="hljs-title">Person</span>&gt;, <span class="hljs-title">IComparable</span>&lt;<span class="hljs-title">Person</span>&gt;;
+""");
+    }
+
+    [Fact]
+    public void PrimaryConstructor_Class()
+    {
+        AssertHighlighter("csharp",
+"""
+class Service(ILogger<Service> logger) : IService { }
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">class</span> <span class="hljs-title">Service</span>(<span class="hljs-params">ILogger&lt;Service&gt; logger</span>) : IService</span> { }
+""");
+    }
+
+    [Fact]
+    public void PrimaryConstructor_GenericClass()
+    {
+        AssertHighlighter("csharp",
+"""
+class Repository<T>(DbContext context) where T : class
+{
+}
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">class</span> <span class="hljs-title">Repository</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-params">DbContext context</span>) <span class="hljs-keyword">where</span> T : <span class="hljs-keyword">class</span></span>
+{
+}
+""");
+    }
+
+    [Fact]
+    public void PrimaryConstructor_Struct()
+    {
+        AssertHighlighter("csharp",
+"""
+struct Vector(double x, double y) { }
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">struct</span> <span class="hljs-title">Vector</span>(<span class="hljs-params"><span class="hljs-built_in">double</span> x, <span class="hljs-built_in">double</span> y</span>)</span> { }
+""");
+    }
+
+    [Fact]
+    public void Keyword_ClassWithNewConstraint()
+    {
+        AssertHighlighter("csharp",
+"""
+class Factory<T> where T : new() { }
+""",
+"""
+<span class="hljs-keyword">class</span> <span class="hljs-title">Factory</span>&lt;<span class="hljs-title">T</span>&gt; <span class="hljs-keyword">where</span> <span class="hljs-title">T</span> : <span class="hljs-keyword">new</span>() { }
 """);
     }
 }

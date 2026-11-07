@@ -1,0 +1,59 @@
+{{header}}
+% An original file and an incremental update that replaces the content of the page, adds an object and
+% changes the trailer
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Resources << /Font << /F1 4 0 R >> >>
+  /Contents 5 0 R
+>>
+endobj
+{{object 4 0}} <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Helvetica
+>>
+endobj
+{{object 5 0}} <<
+  {{streamlen}}
+>>
+stream
+BT /F1 12 Tf 72 720 Td (Original) Tj ET
+endstream
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF
+{{object 5 0}} <<
+  {{streamlen}}
+>>
+stream
+BT /F1 12 Tf 72 720 Td (Updated) Tj ET
+endstream
+endobj
+{{object 6 0}} <<
+  /Title (Second revision)
+>>
+endobj
+{{xref update}}
+trailer <<
+  /Root 1 0 R
+  /Info 6 0 R
+  /Size 7
+  {{prev}}
+>>
+{{startxref}}
+%%EOF

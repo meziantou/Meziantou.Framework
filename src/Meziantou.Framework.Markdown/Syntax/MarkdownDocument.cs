@@ -1,0 +1,37 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+namespace Meziantou.Framework.Markdown.Syntax;
+
+/// <summary>
+/// The root Markdown document.
+/// </summary>
+/// <seealso cref="ContainerBlock" />
+public class MarkdownDocument : ContainerBlock
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MarkdownDocument"/> class.
+    /// </summary>
+    public MarkdownDocument() : base(null)
+    {
+    }
+
+    /// <summary>
+    /// Gets the number of lines in this <see cref="MarkdownDocument"/>
+    /// </summary>
+    public int LineCount;
+
+    /// <summary>
+    /// Gets a list of zero-based indexes of line beginnings in the source span
+    /// <para>Available if <see cref="MarkdownPipelineBuilder.PreciseSourceLocation"/> is used, otherwise null</para>
+    /// </summary>
+    public List<int>? LineStartIndexes { get; set; }
+
+    // Empty cells added to the short rows of all the tables of the document (see Table.MaximumAutocompletedCells)
+    internal long AutocompletedTableCells { get; set; }
+
+    // With trivia, the text of the document when it contains NUL characters, which the parser replaces with U+FFFD (CommonMark
+    // 2.3, Insecure characters): the roundtrip renderer writes them back as they were (see NullCharacterWriter)
+    internal string? TextWithNullCharacters { get; set; }
+}

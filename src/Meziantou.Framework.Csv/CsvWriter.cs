@@ -2,19 +2,15 @@ namespace Meziantou.Framework.Csv;
 
 /// <summary>Writes CSV data to a text writer.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs" ref:region="CsvWriter_WriteRowAsync" ref:dedent="true">
 /// using var writer = new StringWriter();
-/// var csvWriter = new CsvWriter(writer);
-/// 
+/// var csvWriter = new CsvWriter(writer) { EndOfLine = "\n" };
+///
 /// await csvWriter.WriteRowAsync("Name", "Age");
 /// await csvWriter.WriteRowAsync("John", "30");
 /// await csvWriter.WriteRowAsync("Jane", "25");
-/// 
-/// Console.WriteLine(writer.ToString());
-/// // Output:
-/// // Name,Age
-/// // John,30
-/// // Jane,25
+///
+/// Assert.Equal("Name,Age\nJohn,30\nJane,25", writer.ToString());
 /// </code>
 /// </example>
 public class CsvWriter
@@ -115,7 +111,7 @@ public class CsvWriter
             if (Quote.HasValue)
             {
                 var quote = Quote.Value;
-                if (value[0] != quote && value.IndexOf(Separator, StringComparison.Ordinal) < 0)
+                if (!RequiresQuoting(value, quote))
                 {
                     await writer.WriteAsync(value).ConfigureAwait(false);
                 }
@@ -144,5 +140,20 @@ public class CsvWriter
                 await writer.WriteAsync(value).ConfigureAwait(false);
             }
         }
+    }
+
+    private bool RequiresQuoting(string value, char quote)
+    {
+        ReadOnlySpan<char> specialCharacters = [quote, Separator, '\r', '\n'];
+        if (value.AsSpan().IndexOfAny(specialCharacters) >= 0)
+            return true;
+
+        foreach (var c in EndOfLine)
+        {
+            if (value.Contains(c, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 }

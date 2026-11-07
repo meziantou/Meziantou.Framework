@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-VG": {
+      "identity": {
+        "language": "en",
+        "territory": "VG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

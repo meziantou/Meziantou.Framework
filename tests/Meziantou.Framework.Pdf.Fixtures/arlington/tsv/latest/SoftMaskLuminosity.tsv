@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.4		FALSE	FALSE	FALSE		[Mask]			Table 142
+S	name	1.4		TRUE	FALSE	FALSE		[Luminosity]			
+G	stream	1.4		TRUE	TRUE	FALSE			[fn:Eval((G::Group::@S==Transparency) && fn:IsPresent(G::Group::CS))]	[XObjectFormType1]	
+BC	array	1.4		FALSE	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+TR	dictionary;name;stream	1.4		FALSE	[FALSE];[FALSE];[TRUE]	FALSE	[];[Identity];[]	[];[Identity];[]		[FunctionType2,FunctionType3];[];[FunctionType0,FunctionType4]	

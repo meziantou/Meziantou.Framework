@@ -14,37 +14,36 @@
 
 ## Usage
 
-```c#
-using Meziantou.Framework.MediaTags;
+The types are in the `Meziantou.Framework.MediaTags` namespace. `ReadTags` returns a result: check `IsSuccess`, and
+read `Error` and `ErrorMessage` when it fails.
 
-var result = MediaFile.ReadTags("song.flac");
-if (!result.IsSuccess)
-{
-    Console.WriteLine($"{result.Error}: {result.ErrorMessage}");
-    return;
-}
+<!-- ref:../../tests/Meziantou.Framework.MediaTags.Tests/FlacTests.cs;region=MediaFile_ReadTags;format=md-fenced-code-block;dedent=true -->
+```csharp
+var result = MediaFile.ReadTags("TestFiles/basic.flac");
+Assert.True(result.IsSuccess, $"{result.Error}: {result.ErrorMessage}");
 
 var tags = result.Value;
-Console.WriteLine($"Format: {tags.Format}");
-Console.WriteLine($"Duration: {tags.Duration}");
-Console.WriteLine($"Title: {tags.Title}");
-Console.WriteLine($"Artist: {tags.Artist}");
+Assert.Equal(MediaFormat.Flac, tags.Format);
+Assert.True(tags.Duration > TimeSpan.Zero);
+Assert.Equal("Test Title", tags.Title);
+Assert.Equal("Test Artist", tags.Artist);
 ```
+<!-- endref -->
 
-```c#
-using Meziantou.Framework.MediaTags;
+Writing **replaces** the tags of the file, so change one field by reading the tags first, editing the result
+and writing it back:
 
-var tags = new MediaTagInfo
-{
-    Title = "New Title",
-    Artist = "New Artist",
-    Album = "New Album",
-    Year = 2026,
-    Genre = "Rock",
-    TrackNumber = 1,
-    TrackTotal = 10,
-};
+<!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_UpdateTags;format=md-fenced-code-block;dedent=true -->
+```csharp
+var read = MediaFile.ReadTags("song.mp3");
+if (!read.IsSuccess)
+    return;
 
+var tags = read.Value;
+tags.Title = "New Title";
+tags.Year = 2026;
+
+tags.Pictures.Clear();
 tags.Pictures.Add(new MediaPicture
 {
     PictureType = MediaPictureType.FrontCover,
@@ -59,11 +58,90 @@ if (!writeResult.IsSuccess)
     Console.WriteLine($"{writeResult.Error}: {writeResult.ErrorMessage}");
 }
 ```
+<!-- endref -->
+
+## Write semantics
+
+`WriteTags` **replaces** the whole tag rather than merging into it. A field left `null` is *removed* from the
+file, so writing a freshly constructed `MediaTagInfo` deletes every field it does not set:
+
+<!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_ReplaceTags;format=md-fenced-code-block;dedent=true -->
+```csharp
+// This deletes the artist, album, artwork and everything else the file had.
+MediaFile.WriteTags("song.mp3", new MediaTagInfo { Title = "New Title" });
+```
+<!-- endref -->
+
+Use `MediaFile.RemoveTags` when removing the tags is what you actually want.
+
+Other things worth knowing before writing:
+
+- The file is replaced only once the new content has been written in full and flushed to disk. If the operation
+  fails, the original file is left exactly as it was.
+- WAV and AIFF tags are stored as an embedded ID3v2 chunk. Existing `LIST`/`INFO` (WAV) and
+  `NAME`/`AUTH`/`ANNO`/`(c)`/`ISRC` (AIFF) chunks are removed, because they would otherwise be read back in
+  preference to the tag that was just written.
+- MP3 files get an ID3v1 tag in addition to the ID3v2 tag. ID3v1 stores at most 30 Latin-1 characters per
+  field, so it truncates values the ID3v2 tag holds in full. Pass
+  `new MediaTagWriteOptions { WriteId3v1Tag = false }` to suppress it.
+- `MediaTagInfo.Format` describes the file the tags were read from. It is ignored when writing: the format
+  comes from the file, or from the `MediaFormat` argument of the stream overloads.
+- Multiplexed and chained OGG streams (a video stream alongside the audio, several concatenated logical
+  streams) are refused rather than rewritten.
+- ID3v2 frames this library does not read (publisher, sort names, ratings, `UFID`, `PRIV`, iTunes' own `COMM`
+  frames, ...) are carried over from the existing ID3v2.3 or ID3v2.4 tag, as are the MP4 `ilst` items it does
+  not read. `RemoveTags` removes the ID3v2 frames as well.
+- A field whose value cannot be parsed, such as a Vorbis `TRACKNUMBER=A1`, is exposed in `CustomFields` so
+  that writing the tags back keeps it.
+- An ID3v2 tag that a tagger prepended to a FLAC, OGG, MP4, WAV or AIFF file is skipped when reading, and
+  copied through unchanged when writing.
+
+## Field support by format
+
+| Field | MP3 | OGG / Opus | FLAC | MP4 | WAV / AIFF |
+|---|---|---|---|---|---|
+| `Title`, `Artist`, `Album`, `AlbumArtist`, `Genre`, `Year` | yes | yes | yes | yes | yes |
+| `TrackNumber`, `TrackTotal`, `DiscNumber`, `DiscTotal` | yes | yes | yes | yes<sup>1</sup> | yes |
+| `Comment`, `Lyrics`, `Composer`, `Conductor`, `Copyright`, `Isrc` | yes | yes | yes | yes | yes |
+| `Bpm`, `IsCompilation` | yes | yes | yes | yes<sup>1</sup> | yes |
+| `Duration` | read and written (`TLEN`)<sup>3</sup> | read only | read only | read only | read and written (`TLEN`)<sup>3</sup> |
+| `Pictures` | yes | yes | yes | front cover only | yes |
+| `ReplayGain` | yes | yes | yes | yes | yes |
+| `MusicBrainz*` | yes | yes | yes | yes | yes |
+| `CustomFields` | yes | yes | yes | yes | yes<sup>2</sup> |
+
+<sup>1</sup> MP4 stores these in 16 bits. A value above 65535 is refused with `MediaTagError.InvalidTagData`
+rather than silently wrapped.
+
+<sup>2</sup> Stored in the embedded ID3v2 tag, not as native `INFO` chunks.
+
+<sup>3</sup> A duration computed from the audio is not written back, so it cannot later override the audio. A
+duration read from a `TLEN` frame, or set by the caller, is written.
+
+## Errors
+
+`ReadTags` and `WriteTags` report problems with the *file* through the returned result instead of throwing.
+They still throw `ArgumentNullException` / `ArgumentOutOfRangeException` for invalid arguments, and let
+unexpected exceptions propagate rather than reporting a defect in this library as a corrupt file.
+
+| `MediaTagError` | Meaning |
+|---|---|
+| `UnsupportedFormat` | The format could not be detected, or is not one this library writes. |
+| `CorruptFile` | The file structure could not be parsed. |
+| `UnexpectedEndOfStream` | The stream ended before the data it declared. |
+| `InvalidTagData` | The supplied tags cannot be represented in the target format. |
+| `EncodingError` | Text in the tag could not be decoded. |
+| `IoError` | The file could not be read or written, or the stream does not support seeking. |
 
 ## API overview
 
 - `MediaFile.ReadTags(...)` reads metadata from a file path or stream.
-- `MediaFile.WriteTags(...)` writes tags to a file path or to an output stream.
+- `MediaFile.WriteTags(...)` replaces the tags of a file, or writes a retagged copy to an output stream.
+- `MediaFile.RemoveTags(...)` removes every tag this library can write.
 - `MediaFile.DetectFormat(...)` detects the media format from file content and extension.
 - `MediaTagInfo` contains common metadata fields, embedded pictures, ReplayGain values, and custom fields.
+- `MediaTagWriteOptions` controls the ID3v1 tag and the ID3v2 padding size.
 - `MediaTagResult` and `MediaTagResult<T>` return operation status, error code, and message.
+
+The stream overloads read from the stream's **current position**, so a media file embedded in a larger stream
+can be tagged in place. The stream must support seeking.

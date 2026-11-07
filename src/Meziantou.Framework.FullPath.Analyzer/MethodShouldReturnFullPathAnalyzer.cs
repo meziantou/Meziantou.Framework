@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.FullPath;
 
@@ -41,13 +42,21 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (methodSymbol.MethodKind is MethodKind.LocalFunction)
             return;
 
+        // Accessors are reported by PropertyShouldReturnFullPathAnalyzer, which points at the property itself
+        if (methodSymbol.AssociatedSymbol is not null)
+            return;
+
         if (methodSymbol.ReturnType.SpecialType != SpecialType.System_String)
             return;
+
+        if (!methodSymbol.CanChangeDeclaredType())
+            return;
+
         var hasReturnValue = false;
         var allReturnsAreFullPath = true;
         foreach (var operationBlock in context.OperationBlocks)
         {
-            AnalyzeReturnOperations(operationBlock, analyzerContext, ref hasReturnValue, ref allReturnsAreFullPath);
+            analyzerContext.AnalyzeReturnOperations(operationBlock, ref hasReturnValue, ref allReturnsAreFullPath);
         }
 
         if (!hasReturnValue && context.OperationBlocks.Length == 1 && context.OperationBlocks[0] is not IBlockOperation)
@@ -59,7 +68,7 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (!hasReturnValue || !allReturnsAreFullPath)
             return;
 
-        ReportDiagnostic(context.ReportDiagnostic, methodSymbol);
+        ReportDiagnostic(context, methodSymbol);
     }
 
     private static void AnalyzeLocalFunction(OperationAnalysisContext context, FullPathContext analyzerContext)
@@ -72,54 +81,21 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         var allReturnsAreFullPath = true;
         if (localFunctionOperation.Body is not null)
         {
-            AnalyzeReturnOperations(localFunctionOperation.Body, analyzerContext, ref hasReturnValue, ref allReturnsAreFullPath);
+            analyzerContext.AnalyzeReturnOperations(localFunctionOperation.Body, ref hasReturnValue, ref allReturnsAreFullPath);
         }
 
         if (!hasReturnValue || !allReturnsAreFullPath)
             return;
 
-        ReportDiagnostic(context.ReportDiagnostic, localFunctionOperation.Symbol);
+        ReportDiagnostic(context, localFunctionOperation.Symbol);
     }
 
-    private static void AnalyzeReturnOperations(IOperation operation, FullPathContext analyzerContext, ref bool hasReturnValue, ref bool allReturnsAreFullPath)
+    private static void ReportDiagnostic(DiagnosticReporter reporter, IMethodSymbol methodSymbol)
     {
-        if (!allReturnsAreFullPath)
-            return;
-
-        if (operation is ILocalFunctionOperation)
-            return;
-
-        if (operation is IReturnOperation returnOperation && returnOperation.ReturnedValue is not null)
-        {
-            hasReturnValue = true;
-            if (!analyzerContext.IsFullPathType(returnOperation.ReturnedValue))
-            {
-                allReturnsAreFullPath = false;
-                return;
-            }
-        }
-
-        foreach (var childOperation in operation.ChildOperations)
-        {
-            AnalyzeReturnOperations(childOperation, analyzerContext, ref hasReturnValue, ref allReturnsAreFullPath);
-        }
-    }
-
-    private static void ReportDiagnostic(Action<Diagnostic> reportDiagnostic, IMethodSymbol methodSymbol)
-    {
-        Location? location = null;
-        foreach (var candidateLocation in methodSymbol.Locations)
-        {
-            if (!candidateLocation.IsInSource)
-                continue;
-
-            location = candidateLocation;
-            break;
-        }
-
+        var location = methodSymbol.GetFirstSourceLocation();
         if (location is null)
             return;
 
-        reportDiagnostic(Diagnostic.Create(Descriptor, location, methodSymbol.Name));
+        reporter.ReportDiagnostic(Descriptor, location, [methodSymbol.Name]);
     }
 }

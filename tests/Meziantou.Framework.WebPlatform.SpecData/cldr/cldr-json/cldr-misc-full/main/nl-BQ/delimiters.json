@@ -1,0 +1,16 @@
+{
+  "main": {
+    "nl-BQ": {
+      "identity": {
+        "language": "nl",
+        "territory": "BQ"
+      },
+      "delimiters": {
+        "quotationStart": "‘",
+        "quotationEnd": "’",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

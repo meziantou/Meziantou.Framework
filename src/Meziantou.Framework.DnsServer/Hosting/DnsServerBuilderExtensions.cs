@@ -1,7 +1,9 @@
+using System.Net.Security;
 using Meziantou.Framework.DnsServer.Handler;
 using Meziantou.Framework.DnsServer.Listeners;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -23,16 +25,17 @@ public static class DnsServerBuilderExtensions
 
         builder.Services.AddSingleton(options);
         builder.Services.AddSingleton<DnsRequestDelegateHolder>();
+        builder.Services.AddSingleton<DnsRequestProcessor>();
 
         // Configure Kestrel for TCP and TLS listeners
         if (options.TcpListeners.Count > 0 || options.TlsListeners.Count > 0)
         {
-            builder.Services.AddSingleton<DnsTcpConnectionHandler>(sp =>
-            {
-                var handlerHolder = sp.GetRequiredService<DnsRequestDelegateHolder>();
-                var logger = sp.GetRequiredService<ILogger<DnsTcpConnectionHandler>>();
-                return new DnsTcpConnectionHandler(handlerHolder, DnsServerProtocol.Tcp, logger);
-            });
+            // These listeners are configured through Kestrel, so they would silently never start on a
+            // host that has no web server.
+            if (!builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IServer)))
+                throw new InvalidOperationException("TCP and DNS over TLS listeners require Kestrel. Build the host with WebApplication.CreateBuilder (or another Kestrel-based web host) before calling AddDnsServer, or configure only UDP and QUIC listeners.");
+
+            builder.Services.AddSingleton<DnsTcpConnectionHandler>();
 
             builder.Services.Configure<KestrelServerOptions>(kestrelOptions =>
             {
@@ -48,7 +51,14 @@ public static class DnsServerBuilderExtensions
                 {
                     kestrelOptions.Listen(tlsListener.BindAddress, tlsListener.Port, listenOptions =>
                     {
-                        listenOptions.UseHttps(tlsListener.Certificate);
+                        listenOptions.UseHttps(httpsOptions =>
+                        {
+                            httpsOptions.ServerCertificate = tlsListener.Certificate;
+
+                            // This is a DNS endpoint, not an HTTP one: advertise the ALPN protocol from
+                            // RFC 7858 3.1 instead of the HTTP protocols Kestrel would offer by default.
+                            httpsOptions.OnAuthenticate = (_, sslOptions) => sslOptions.ApplicationProtocols = [new SslApplicationProtocol("dot")];
+                        });
                         listenOptions.UseConnectionHandler<DnsTcpConnectionHandler>();
                     });
                 }
@@ -58,25 +68,13 @@ public static class DnsServerBuilderExtensions
         // Register UDP listener as hosted service
         if (options.UdpListeners.Count > 0)
         {
-            builder.Services.AddHostedService<DnsUdpListener>(sp =>
-            {
-                var serverOptions = sp.GetRequiredService<DnsServerOptions>();
-                var handlerHolder = sp.GetRequiredService<DnsRequestDelegateHolder>();
-                var logger = sp.GetRequiredService<ILogger<DnsUdpListener>>();
-                return new DnsUdpListener(serverOptions, handlerHolder, logger);
-            });
+            builder.Services.AddHostedService<DnsUdpListener>();
         }
 
         // Register QUIC listener as hosted service
         if (options.QuicListeners.Count > 0)
         {
-            builder.Services.AddHostedService<DnsQuicListener>(sp =>
-            {
-                var serverOptions = sp.GetRequiredService<DnsServerOptions>();
-                var handlerHolder = sp.GetRequiredService<DnsRequestDelegateHolder>();
-                var logger = sp.GetRequiredService<ILogger<DnsQuicListener>>();
-                return new DnsQuicListener(serverOptions, handlerHolder, logger);
-            });
+            builder.Services.AddHostedService<DnsQuicListener>();
         }
 
         return builder;

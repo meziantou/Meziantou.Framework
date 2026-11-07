@@ -1,0 +1,11 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- Compiles the readme examples, which call JavaScript modules of a project that is not in the repository, so CI
+       checks them without running them -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.NodeJs\Meziantou.Framework.NodeJs.csproj" />
+  </ItemGroup>
+</Project>

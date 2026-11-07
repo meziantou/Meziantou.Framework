@@ -1,0 +1,167 @@
+{
+  "spec": {
+    "title": "AVC (H.264) WebCodecs Registration",
+    "url": "https://w3c.github.io/webcodecs/avc_codec_registration.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "AvcEncoderConfig": {
+        "fragment": "dictionary AvcEncoderConfig {\n  AvcBitstreamFormat format = \"avc\";\n};",
+        "type": "dictionary",
+        "name": "AvcEncoderConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "format",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AvcBitstreamFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "avc"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dom-avcencoderconfig-format"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dictdef-avcencoderconfig"
+      },
+      "AvcBitstreamFormat": {
+        "fragment": "enum AvcBitstreamFormat {\n  \"annexb\",\n  \"avc\",\n};",
+        "type": "enum",
+        "name": "AvcBitstreamFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "annexb",
+            "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dom-avcbitstreamformat-annexb"
+          },
+          {
+            "type": "enum-value",
+            "value": "avc",
+            "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dom-avcbitstreamformat-avc"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#enumdef-avcbitstreamformat"
+      },
+      "VideoEncoderEncodeOptionsForAvc": {
+        "fragment": "dictionary VideoEncoderEncodeOptionsForAvc {\n  unsigned short? quantizer;\n};",
+        "type": "dictionary",
+        "name": "VideoEncoderEncodeOptionsForAvc",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "quantizer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dom-videoencoderencodeoptionsforavc-quantizer"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dictdef-videoencoderencodeoptionsforavc"
+      }
+    },
+    "idlExtendedNames": {
+      "VideoEncoderConfig": [
+        {
+          "fragment": "partial dictionary VideoEncoderConfig {\n  AvcEncoderConfig avc;\n};",
+          "type": "dictionary",
+          "name": "VideoEncoderConfig",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "avc",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AvcEncoderConfig"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dom-videoencoderconfig-avc"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "VideoEncoderEncodeOptions": [
+        {
+          "fragment": "partial dictionary VideoEncoderEncodeOptions {\n  VideoEncoderEncodeOptionsForAvc avc;\n};",
+          "type": "dictionary",
+          "name": "VideoEncoderEncodeOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "avc",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "VideoEncoderEncodeOptionsForAvc"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/avc_codec_registration.html#dom-videoencoderencodeoptions-avc"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "VideoEncoderConfig": [
+        "AvcEncoderConfig"
+      ],
+      "AvcEncoderConfig": [
+        "AvcBitstreamFormat"
+      ],
+      "VideoEncoderEncodeOptions": [
+        "VideoEncoderEncodeOptionsForAvc"
+      ],
+      "VideoEncoderEncodeOptionsForAvc": []
+    },
+    "externalDependencies": [
+      "VideoEncoderConfig",
+      "VideoEncoderEncodeOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

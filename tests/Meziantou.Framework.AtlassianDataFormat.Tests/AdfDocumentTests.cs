@@ -1,0 +1,421 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
+namespace Meziantou.Framework.AtlassianDataFormat.Tests;
+
+public sealed class AdfDocumentTests
+{
+    private const string SampleJson = """
+        {
+          "version": 1,
+          "type": "doc",
+          "content": [
+            {
+              "type": "heading",
+              "attrs": { "level": 2 },
+              "content": [ { "type": "text", "text": "Title" } ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                { "type": "text", "text": "Hello " },
+                { "type": "text", "text": "world", "marks": [ { "type": "strong" } ] }
+              ]
+            }
+          ]
+        }
+        """;
+
+    [Fact]
+    public void ReadmeExample_ObjectModel()
+    {
+        #region AdfDocument_ObjectModel
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                { "type": "heading", "attrs": { "level": 1 }, "content": [ { "type": "text", "text": "Title" } ] },
+                { "type": "paragraph", "content": [ { "type": "text", "text": "Hello " }, { "type": "mention", "attrs": { "id": "123", "text": "@Alex" } } ] }
+              ]
+            }
+            """;
+
+        var document = AdfDocument.Parse(json);
+
+        var mentionIds = document.Descendants().OfType<AdfMention>().Select(mention => mention.Id).ToList();
+        Assert.Equal(["123"], mentionIds);
+
+        var heading = (AdfHeading)document.Content[0];
+        Assert.Equal(1, heading.Level);
+
+        var markdown = document.ToMarkdown();
+        Assert.Equal("# Title\n\nHello @Alex", markdown);
+
+        var roundTripped = document.ToJsonString();
+        Assert.Equal(AdfDocument.Parse(roundTripped).ToMarkdown(), markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Build()
+    {
+        #region AdfDocument_Build
+        var document = new AdfDocument
+        {
+            Content =
+            [
+                new AdfHeading { Level = 1, Content = [new AdfText { Text = "Title" }] },
+                new AdfParagraph { Content = [new AdfText { Text = "Hello", Marks = [new AdfStrongMark()] }] },
+            ],
+        };
+
+        var json = document.ToJsonString();
+        Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"Title"}]},{"type":"paragraph","content":[{"type":"text","text":"Hello","marks":[{"type":"strong"}]}]}]}""", json);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FindLinks()
+    {
+        #region AdfDocument_FindLinks
+        var document = AdfDocument.Parse("""
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "text", "text": "See the " },
+                    { "type": "text", "text": "design", "marks": [ { "type": "link", "attrs": { "href": "https://example.com/design" } } ] },
+                    { "type": "text", "text": " and the " },
+                    { "type": "text", "text": "plan", "marks": [ { "type": "strong" }, { "type": "link", "attrs": { "href": "https://example.com/plan" } } ] }
+                  ]
+                }
+              ]
+            }
+            """);
+
+        var links = document.Descendants()
+            .OfType<AdfText>()
+            .Select(text => text.GetMark<AdfLinkMark>()?.Href)
+            .OfType<string>();
+
+        Assert.Equal(["https://example.com/design", "https://example.com/plan"], links);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TryParse()
+    {
+        #region AdfDocument_TryParse
+        // Not JSON
+        Assert.False(AdfDocument.TryParse("Steps to reproduce", out _));
+
+        // JSON, but the root is not a "doc" node
+        Assert.False(AdfDocument.TryParse("""{ "type": "paragraph" }""", out _));
+
+        // Parse throws an AdfException instead
+        Assert.Throws<AdfException>(() => AdfDocument.Parse("""{ "type": "paragraph" }"""));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UnknownNodes()
+    {
+        #region AdfDocument_UnknownNodes
+        var json = """{"version":1,"type":"doc","content":[{"type":"somethingNew","attrs":{"answer":42}}]}""";
+        var document = AdfDocument.Parse(json);
+
+        var unknown = Assert.IsType<AdfUnknownNode>(document.Content[0]);
+        Assert.Equal("somethingNew", unknown.TypeName);
+        Assert.Equal(42, unknown.RawJson.GetProperty("attrs").GetProperty("answer").GetInt32());
+
+        // The node is written back unchanged
+        Assert.Equal(json, document.ToJsonString());
+        #endregion
+    }
+
+    [Fact]
+    public void ParseReadsTheDocumentStructure()
+    {
+        var document = AdfDocument.Parse(SampleJson);
+
+        Assert.Equal(1, document.Version);
+        Assert.Equal(2, document.Content.Count);
+
+        var heading = Assert.IsType<AdfHeading>(document.Content[0]);
+        Assert.Equal(2, heading.Level);
+        Assert.Equal("Title", Assert.IsType<AdfText>(heading.Content[0]).Text);
+
+        var paragraph = Assert.IsType<AdfParagraph>(document.Content[1]);
+        Assert.Equal(2, paragraph.Content.Count);
+
+        var strong = Assert.IsType<AdfText>(paragraph.Content[1]);
+        Assert.Equal("world", strong.Text);
+        Assert.IsType<AdfStrongMark>(strong.Marks[0]);
+    }
+
+    [Fact]
+    public void ParseFromJsonElement()
+    {
+        using var json = JsonDocument.Parse(SampleJson);
+        var document = AdfDocument.Parse(json.RootElement);
+        Assert.Equal(2, document.Content.Count);
+    }
+
+    [Fact]
+    public void ParseFromJsonNode()
+    {
+        var node = JsonNode.Parse(SampleJson)!;
+        var document = AdfDocument.Parse(node);
+        Assert.Equal(2, document.Content.Count);
+    }
+
+    [Fact]
+    public void ParseRejectsANonDocumentRoot()
+    {
+        Assert.Throws<AdfException>(() => AdfDocument.Parse("""{"type":"paragraph"}"""));
+    }
+
+    [Fact]
+    public void ParseRejectsInvalidJson()
+    {
+        Assert.Throws<AdfException>(() => AdfDocument.Parse("not json"));
+    }
+
+    [Fact]
+    public void ParseRejectsAStringWithAnUnpairedSurrogate()
+    {
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse("{\"type\":\"doc\",\"content\":[],\"version\":1,\"x\":\"\uDC8E\"}"));
+        Assert.IsType<ArgumentException>(exception.InnerException);
+        Assert.False(AdfDocument.TryParse("\uD800", out _));
+    }
+
+    [Fact]
+    public void ParseRejectsAnEscapedUnpairedSurrogate()
+    {
+        var json = """{"type":"doc","version":1,"content":[{"type":"paragraph","content":[{"type":"text","text":"a\ud800"}]}]}""";
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse(json));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        using var document = JsonDocument.Parse(json);
+        Assert.False(AdfDocument.TryParse(document.RootElement, out _));
+    }
+
+    [Theory]
+    [InlineData("""{"type":"somethingNew","x\ud800":1}""")]
+    [InlineData("""{"type":"paragraph","content":[{"type":"text","text":"a","marks":[{"type":"newMark","attrs":{"v":"\udc00"}}]}]}""")]
+    [InlineData("""{"type":"paragraph","content":[{"type":"inlineCard","attrs":{"url":"https://example.com","data":{"name":"\ud800x"}}}]}""")]
+    public void ParseRejectsAnEscapedUnpairedSurrogateInAValueItWritesBack(string node)
+    {
+        // The unknown nodes and marks and the JSON attributes are written back as they are read
+        var json = $$"""{"type":"doc","version":1,"content":[{{node}}]}""";
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse(json));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void ParseIgnoresANumberAttributeOutOfTheRangeOfADouble()
+    {
+        // 1e400 reads as an infinity, which JSON cannot represent
+        var document = AdfDocument.Parse("""{"type":"doc","version":1,"content":[{"type":"table","attrs":{"width":1e400},"content":[]}]}""");
+        Assert.Null(Assert.IsType<AdfTable>(Assert.Single(document.Content)).Width);
+        Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"table"}]}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void ParseKeepsTheEscapesOfAnUnknownNode()
+    {
+        var document = AdfDocument.Parse("""{"type":"doc","version":1,"content":[{"type":"somethingNew","x":"\u00E9\uD83D\uDE00\n"}]}""");
+        Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"somethingNew","x":"\u00E9\uD83D\uDE00\n"}]}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void ParseJsonNodeRejectsAnEscapedUnpairedSurrogateInAnIgnoredProperty()
+    {
+        // The JsonNode overload writes the whole node, so it reads the strings the reader ignores
+        var json = """{"type":"doc","version":1,"content":[],"extra":"a\ud800"}""";
+        Assert.Empty(AdfDocument.Parse(json).Content);
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse(JsonNode.Parse(json)!));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void TryParseReturnsFalseForInvalidInput()
+    {
+        Assert.False(AdfDocument.TryParse("not json", out var document));
+        Assert.Null(document);
+    }
+
+    [Fact]
+    public void TryParseReturnsTrueForAValidDocument()
+    {
+        Assert.True(AdfDocument.TryParse(SampleJson, out var document));
+        Assert.NotNull(document);
+    }
+
+    [Fact]
+    public void GetMarkFindsAMarkByType()
+    {
+        var document = AdfDocument.Parse(SampleJson);
+        var paragraph = document.Content[1];
+
+        Assert.NotNull(paragraph.Content[1].GetMark<AdfStrongMark>());
+        Assert.Null(paragraph.Content[0].GetMark<AdfStrongMark>());
+    }
+
+    [Fact]
+    public void DescendantsEnumeratesEveryNode()
+    {
+        var document = AdfDocument.Parse(SampleJson);
+        var kinds = document.Descendants().Select(n => n.Kind).ToList();
+
+        Assert.Equal(
+            [AdfNodeKind.Heading, AdfNodeKind.Text, AdfNodeKind.Paragraph, AdfNodeKind.Text, AdfNodeKind.Text],
+            kinds);
+    }
+
+    [Fact]
+    public void ToJsonStringRoundTrips()
+    {
+        var document = AdfDocument.Parse(SampleJson);
+        var roundTripped = AdfDocument.Parse(document.ToJsonString());
+
+        Assert.Equal(document.ToJsonString(), roundTripped.ToJsonString());
+        Assert.Equal(document.ToMarkdown(), roundTripped.ToMarkdown());
+    }
+
+    [Fact]
+    public void ToJsonStringWritesTheExpectedShape()
+    {
+        var document = new AdfDocument
+        {
+            Content =
+            [
+                new AdfParagraph
+                {
+                    Content = [new AdfText { Text = "Hello", Marks = [new AdfStrongMark()] }],
+                },
+            ],
+        };
+
+        Assert.Equal(
+            """{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello","marks":[{"type":"strong"}]}]}]}""",
+            document.ToJsonString());
+    }
+
+    [Fact]
+    public void NodesWithoutAttributesDoNotWriteAnEmptyAttrsObject()
+    {
+        var document = new AdfDocument { Content = [new AdfRule()] };
+        Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"rule"}]}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void UnknownNodesArePreservedInsteadOfThrowing()
+    {
+        const string Json = """
+            {"version":1,"type":"doc","content":[{"type":"unsupportedBlock","attrs":{"originalValue":{"type":"whatever"}}}]}
+            """;
+
+        var document = AdfDocument.Parse(Json);
+        var unknown = Assert.IsType<AdfUnknownNode>(document.Content[0]);
+        Assert.Equal("unsupportedBlock", unknown.TypeName);
+
+        // The raw JSON is kept, so the node round-trips unchanged.
+        Assert.Equal(Json.Trim(), document.ToJsonString());
+    }
+
+    [Fact]
+    public void UnknownMarksArePreserved()
+    {
+        const string Json = """
+            {"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"a","marks":[{"type":"somethingNew","attrs":{"value":1}}]}]}]}
+            """;
+
+        var document = AdfDocument.Parse(Json);
+        var text = (AdfText)document.Content[0].Content[0];
+        var mark = Assert.IsType<AdfUnknownMark>(text.Marks[0]);
+        Assert.Equal("somethingNew", mark.TypeName);
+        Assert.Equal(Json.Trim(), document.ToJsonString());
+    }
+
+    [Fact]
+    public void ExtensionParametersArePreserved()
+    {
+        const string Json = """
+            {"version":1,"type":"doc","content":[{"type":"extension","attrs":{"extensionKey":"k","extensionType":"t","parameters":{"a":[1,2]}}}]}
+            """;
+
+        var document = AdfDocument.Parse(Json);
+        var extension = Assert.IsType<AdfExtension>(document.Content[0]);
+        Assert.Equal("k", extension.ExtensionKey);
+        Assert.Equal(Json.Trim(), document.ToJsonString());
+    }
+
+    [Fact]
+    public void MissingVersionDefaultsToOne()
+    {
+        var document = AdfDocument.Parse("""{"type":"doc","content":[]}""");
+        Assert.Equal(1, document.Version);
+    }
+
+    [Theory]
+    [InlineData("1704067200000", "2024-01-01T00:00:00+00:00")]
+    [InlineData("1704067200", "2024-01-01T00:00:00+00:00")]
+    public void DateTimestampsAreReadAsMillisecondsWithASecondsFallback(string timestamp, string expected)
+    {
+        var date = new AdfDate { Timestamp = timestamp };
+        Assert.Equal(DateTimeOffset.Parse(expected, CultureInfo.InvariantCulture), date.GetDateTimeOffset());
+    }
+
+    [Fact]
+    public void ANonNumericDateTimestampHasNoValue()
+    {
+        Assert.Null(new AdfDate { Timestamp = "not a date" }.GetDateTimeOffset());
+    }
+
+    [Theory]
+    [InlineData("1767225667225600000")]
+    [InlineData("-1767225667225600000")]
+    [InlineData("253402300800000")]
+    [InlineData("-62135596801")]
+    [InlineData("-99999999999")]
+    public void AnOutOfRangeDateTimestampHasNoValue(string timestamp)
+    {
+        Assert.Null(new AdfDate { Timestamp = timestamp }.GetDateTimeOffset());
+    }
+
+    [Theory]
+    [InlineData("253402300799999", "9999-12-31T23:59:59.999+00:00")]
+    [InlineData("-62135596800000", "0001-01-01T00:00:00+00:00")]
+    [InlineData("-62135596800", "0001-01-01T00:00:00+00:00")]
+    public void DateTimestampsAtTheEdgesOfTheRangeAreRead(string timestamp, string expected)
+    {
+        var date = new AdfDate { Timestamp = timestamp };
+        Assert.Equal(DateTimeOffset.Parse(expected, CultureInfo.InvariantCulture), date.GetDateTimeOffset());
+    }
+
+    [Fact]
+    public void DocumentsCanBeBuiltAndConvertedWithoutParsing()
+    {
+        var document = new AdfDocument
+        {
+            Content =
+            [
+                new AdfHeading { Level = 1, Content = [new AdfText { Text = "Title" }] },
+                new AdfBulletList
+                {
+                    Content =
+                    [
+                        new AdfListItem { Content = [new AdfParagraph { Content = [new AdfText { Text = "one" }] }] },
+                        new AdfListItem { Content = [new AdfParagraph { Content = [new AdfText { Text = "two" }] }] },
+                    ],
+                },
+            ],
+        };
+
+        Assert.Equal("# Title\n\n- one\n- two", document.ToMarkdown());
+    }
+}

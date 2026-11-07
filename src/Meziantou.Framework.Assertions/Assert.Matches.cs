@@ -5,8 +5,6 @@ namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
 {
-    private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromSeconds(1);
-
     /// <summary>Asserts that the specified regular expression matches the actual value.</summary>
     /// <param name="regex">The regular expression expected to match <paramref name="actual"/>.</param>
     /// <param name="actual">The string to inspect.</param>
@@ -25,9 +23,11 @@ public partial class Assert
     /// <param name="actual">The string to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="patternExpression">The expression that produced the pattern.</param>
+    /// <remarks>Like <see cref="Regex.IsMatch(string, string)"/>, the default match timeout of the application applies (see <c>REGEX_DEFAULT_MATCH_TIMEOUT</c>).</remarks>
+    [SuppressMessage("Security", "MA0009:Add regex evaluation timeout", Justification = "Like Regex.IsMatch(input, pattern), the default match timeout applies, which can be configured with REGEX_DEFAULT_MATCH_TIMEOUT")]
     public static void Matches(string pattern, string actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(pattern))] string? patternExpression = null)
     {
-        if (Regex.IsMatch(actual, pattern, RegexOptions.None, RegexMatchTimeout))
+        if (Regex.IsMatch(actual, pattern))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new RegexMatchesAssertionError(pattern, actual, actualExpression, patternExpression, message)));

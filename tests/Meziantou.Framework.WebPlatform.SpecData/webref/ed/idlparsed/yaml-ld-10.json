@@ -1,0 +1,44 @@
+{
+  "spec": {
+    "title": "YAML-LD 1.0",
+    "url": "https://w3c.github.io/yaml-ld/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "YamlLdErrorCode": {
+        "fragment": "enum YamlLdErrorCode {\n  \"invalid-encoding\",\n  \"mapping-key-error\",\n  \"profile-error\"\n};",
+        "type": "enum",
+        "name": "YamlLdErrorCode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "invalid-encoding",
+            "href": "https://w3c.github.io/yaml-ld/#dom-yamllderrorcode-invalid-encoding"
+          },
+          {
+            "type": "enum-value",
+            "value": "mapping-key-error",
+            "href": "https://w3c.github.io/yaml-ld/#dom-yamllderrorcode-mapping-key-error"
+          },
+          {
+            "type": "enum-value",
+            "value": "profile-error",
+            "href": "https://w3c.github.io/yaml-ld/#dom-yamllderrorcode-profile-error"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/yaml-ld/#dom-yamllderrorcode"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {},
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

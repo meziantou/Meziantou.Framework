@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	1.2		TRUE	FALSE	FALSE		[Pattern]			Clause 8.7.3.3
+1	array;name	1.2		FALSE	FALSE	FALSE		[];[DeviceCMYK,DeviceRGB,DeviceGray]		[DeviceGrayColorSpace,DeviceRGBColorSpace,DeviceCMYKColorSpace,CalGrayColorSpace,CalRGBColorSpace,LabColorSpace,fn:SinceVersion(1.3,ICCBasedColorSpace),IndexedColorSpace,SeparationColorSpace,fn:SinceVersion(1.3,DeviceNColorSpace)];[]	

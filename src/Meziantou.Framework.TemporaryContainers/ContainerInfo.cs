@@ -27,12 +27,24 @@ public sealed record ContainerInfo
     /// <summary>Gets the exit code of the container, when it has exited.</summary>
     public int? ExitCode { get; init; }
 
+    /// <summary>Gets the status of the health check of the container (the <c>HEALTHCHECK</c> instruction of its image), or <see cref="ContainerHealthStatus.None"/> when it has none or the runtime does not report it.</summary>
+    public ContainerHealthStatus Health { get; init; }
+
+    /// <summary>The output of the last health check, which explains why a container is unhealthy.</summary>
+    internal string? HealthCheckOutput { get; init; }
+
     /// <summary>Gets the container IP address on its primary network, when available.</summary>
     public string? IPAddress { get; init; }
 
     /// <summary>Gets the published ports, mapping each container port to its host port.</summary>
     public IReadOnlyDictionary<int, int> Ports { get; init; } = new Dictionary<int, int>();
 
+    /// <summary>The host address each published port is bound to, as the runtime reports it (<c>0.0.0.0</c> for every interface). A runtime that does not report it leaves it out.</summary>
+    internal IReadOnlyDictionary<int, string> PortHostIps { get; init; } = new Dictionary<int, string>();
+
     /// <summary>Gets the container labels.</summary>
     public IReadOnlyDictionary<string, string> Labels { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>The environment the container was created with, which holds the credentials a reused container has to be adopted with.</summary>
+    internal IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 }

@@ -111,4 +111,90 @@ public sealed class JsonHttpRecordingStoreTests : IDisposable
         Assert.Single(loaded);
         Assert.Equal("POST", loaded[0].Method);
     }
+
+    [Fact]
+    public async Task SaveAsync_Canceled_DoesNotDestroyTheExistingFile()
+    {
+        var filePath = Path.Combine(_tempDir, "recordings.json");
+        var store = new JsonHttpRecordingStore(filePath);
+        var entries = new List<HttpRecordingEntry>
+        {
+            new() { Method = "GET", RequestUri = "https://example.com/api", StatusCode = 200, ResponseBody = "hi"u8.ToArray() },
+        };
+        await store.SaveAsync(entries, CancellationToken.None);
+        var original = await File.ReadAllTextAsync(filePath);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await store.SaveAsync(entries, cts.Token));
+
+        Assert.Equal(original, await File.ReadAllTextAsync(filePath));
+        Assert.Single(await store.LoadAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SaveAsync_LeavesNoTemporaryFileBehind()
+    {
+        var filePath = Path.Combine(_tempDir, "recordings.json");
+        var store = new JsonHttpRecordingStore(filePath);
+        await store.SaveAsync([new() { Method = "GET", RequestUri = "https://example.com/api", StatusCode = 200 }], CancellationToken.None);
+
+        Assert.Single(Directory.GetFiles(_tempDir));
+    }
+
+    [Fact]
+    public async Task LoadAsync_MalformedJson_ThrowsNamingTheFile()
+    {
+        var filePath = Path.Combine(_tempDir, "broken.json");
+        await File.WriteAllTextAsync(filePath, "[{\"method\": \"GET\"");
+        var store = new JsonHttpRecordingStore(filePath);
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(async () => await store.LoadAsync(CancellationToken.None));
+        Assert.Contains("broken.json", exception.Message);
+    }
+
+    [Fact]
+    public async Task LoadAsync_NullDocument_ThrowsInsteadOfReportingNoRecordings()
+    {
+        var filePath = Path.Combine(_tempDir, "null.json");
+        await File.WriteAllTextAsync(filePath, "null");
+        var store = new JsonHttpRecordingStore(filePath);
+
+        await Assert.ThrowsAsync<InvalidDataException>(async () => await store.LoadAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task LoadAsync_EntryWithoutMethod_ThrowsNamingTheIndex()
+    {
+        var filePath = Path.Combine(_tempDir, "bad-entry.json");
+        await File.WriteAllTextAsync(filePath, "[{\"method\": null, \"requestUri\": \"https://example.com/api\", \"statusCode\": 200}]");
+        var store = new JsonHttpRecordingStore(filePath);
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(async () => await store.LoadAsync(CancellationToken.None));
+        Assert.Contains("index 0", exception.Message);
+    }
+
+    [Fact]
+    public async Task RoundTrip_PreservesReasonPhraseAndHttpVersion()
+    {
+        var filePath = Path.Combine(_tempDir, "recordings.json");
+        var store = new JsonHttpRecordingStore(filePath);
+        var entries = new List<HttpRecordingEntry>
+        {
+            new()
+            {
+                Method = "GET",
+                RequestUri = "https://example.com/api",
+                StatusCode = 599,
+                ReasonPhrase = "Vendor Failure",
+                HttpVersion = "2.0",
+            },
+        };
+
+        await store.SaveAsync(entries, CancellationToken.None);
+        var loaded = Assert.Single(await store.LoadAsync(CancellationToken.None));
+
+        Assert.Equal("Vendor Failure", loaded.ReasonPhrase);
+        Assert.Equal("2.0", loaded.HttpVersion);
+    }
 }

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.Loader;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -7,24 +8,32 @@ using Microsoft.CodeAnalysis.Text;
 namespace Meziantou.Framework.Templating;
 
 /// <summary>Represents a text template with embedded code blocks that can be dynamically compiled and executed.</summary>
+/// <remarks>
+/// Building a template compiles it into an assembly that is loaded in a dedicated collectible
+/// <see cref="AssemblyLoadContext"/>. Dispose the template to unload that assembly as soon as the
+/// template is no longer needed; otherwise it is unloaded once the template becomes unreachable and
+/// the garbage collector runs.
+/// </remarks>
 /// <example>
-/// <code><![CDATA[
-/// var template = new Template();
-/// template.Load("Hello <%=Name%>!");
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs" ref:region="Template_Example" ref:dedent="true">
+/// using var template = new Template();
+/// template.Load("Hello &lt;%=Name%&gt;!");
 /// template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 /// var result = template.Run("Meziantou");
-/// // result: "Hello Meziantou!"
-/// ]]></code>
+/// Assert.Equal("Hello Meziantou!", result);
+/// </code>
 /// </example>
-public class Template
+public class Template : IDisposable
 {
     private const string DefaultClassName = "Template";
     private const string DefaultRunMethodName = "Run";
     private const string DefaultWriterParameterName = "__output__";
 
-    private static readonly Lock BuildLock = new();
+    private readonly Lock _buildLock = new();
 
     private MethodInfo? _runMethodInfo;
+    private AssemblyLoadContext? _assemblyLoadContext;
+    private bool _disposed;
 
     [NotNull]
     private string? ClassName
@@ -64,7 +73,7 @@ public class Template
     public BlockCollection Blocks { get; } = [];
 
     /// <summary>Gets a value indicating whether the template has been built.</summary>
-    public bool IsBuilt => _runMethodInfo != null;
+    public bool IsBuilt => Volatile.Read(ref _runMethodInfo) is not null;
 
     /// <summary>Gets the generated C# source code after building the template.</summary>
     public string? SourceCode { get; private set; }
@@ -90,14 +99,16 @@ public class Template
     /// <summary>Gets or sets a value indicating whether to compile the template in debug mode.</summary>
     public bool Debug { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether running the template with named parameters throws when an argument has no value. When <see langword="false" /> (the default), a missing argument gets the default value of its type.</summary>
+    public bool ThrowOnMissingArgument { get; set; }
+
     /// <summary>Loads the template from a string.</summary>
     /// <param name="text">The template text containing code blocks.</param>
     public void Load(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        using var reader = new StringReader(text);
-        Load(reader);
+        LoadCore(text);
     }
 
     /// <summary>Loads the template from a <see cref="TextReader"/>.</summary>
@@ -106,202 +117,175 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        using var r = new TextReaderWithPosition(reader);
-        Load(r);
+        ThrowIfBuilt();
+        LoadCore(reader.ReadToEnd());
     }
 
-    private void Load(TextReaderWithPosition reader)
+    private void ThrowIfBuilt()
     {
-        ArgumentNullException.ThrowIfNull(reader);
-
         if (IsBuilt)
             throw new InvalidOperationException("Template is already built.");
+    }
 
+    private void LoadCore(string text)
+    {
+        ThrowIfBuilt();
+
+        var startCodeBlockDelimiter = StartCodeBlockDelimiter;
+        var endCodeBlockDelimiter = EndCodeBlockDelimiter;
+        var span = text.AsSpan();
         var blocks = new List<TemplateBlock>();
-        var isInBlock = false;
-        var currentBlock = new StringBuilder();
-        var nextDelimiter = StartCodeBlockDelimiter;
-        var blockDelimiterIndex = 0;
+        var position = new TextPositionTracker();
         var blockIndex = 0;
-        var startLine = reader.Line;
-        var startColumn = reader.Column;
-        var startIndex = reader.Index;
-        var delimiterStartLine = 0;
-        var delimiterStartColumn = 0;
-        var delimiterStartIndex = 0;
-        var skipOptionalLfAfterCr = false;
-        var trimLineOnlyBlockTrailingNewline = false;
-        var trimPreviousTextBlockTrailingWhitespaceLength = 0;
-        var pendingPostBlockWhitespace = new StringBuilder();
-        var pendingPostBlockStartLine = 0;
-        var pendingPostBlockStartColumn = 0;
-        var pendingPostBlockStartIndex = 0;
 
-        int n;
-        while ((n = reader.Read()) >= 0)
+        while (true)
         {
-            var c = (char)n;
-            var line = reader.PreviousLine;
-            var column = reader.PreviousColumn;
-            var index = reader.PreviousIndex;
+            // Text up to the next start delimiter
+            var remaining = span[position.Index..];
+            var delimiterOffset = remaining.IndexOf(startCodeBlockDelimiter, StringComparison.Ordinal);
+            if (delimiterOffset < 0)
+                break;
 
-            if (skipOptionalLfAfterCr)
+            AddBlock(blocks, codeBlock: false, span, ref position, delimiterOffset, ref blockIndex);
+
+            // Code up to the next end delimiter. An unterminated block falls back to a text block. The end delimiter is
+            // searched for before consuming the start delimiter, so that fallback keeps the start delimiter in the text.
+            remaining = span[(position.Index + startCodeBlockDelimiter.Length)..];
+            delimiterOffset = remaining.IndexOf(endCodeBlockDelimiter, StringComparison.Ordinal);
+            if (delimiterOffset < 0)
+                break;
+
+            position.Advance(startCodeBlockDelimiter);
+
+            var canTrimLeadingWhitespaceForLineOnlyBlock = TryGetTrailingLineWhitespaceLengthFromLastTextBlock(blocks, out var trailingWhitespaceLength);
+            var block = AddBlock(blocks, codeBlock: true, span, ref position, delimiterOffset, ref blockIndex);
+            position.Advance(endCodeBlockDelimiter);
+
+            // A directive, class member or statement block sitting alone on its line swallows that line
+            if (canTrimLeadingWhitespaceForLineOnlyBlock && block is not null && IsLineOnlyTrimmableBlock(block))
             {
-                skipOptionalLfAfterCr = false;
-                if (c == '\n')
+                var lineEndLength = GetLineOnlyBlockTrailingLength(span, position.Index);
+                if (lineEndLength >= 0)
                 {
-                    continue;
+                    position.Advance(span.Slice(position.Index, lineEndLength));
+                    TrimTrailingWhitespaceFromLastTextBlock(blocks, trailingWhitespaceLength);
                 }
             }
-
-            if (!isInBlock && trimLineOnlyBlockTrailingNewline)
-            {
-                if (c is ' ' or '\t')
-                {
-                    if (pendingPostBlockWhitespace.Length == 0)
-                    {
-                        pendingPostBlockStartLine = line;
-                        pendingPostBlockStartColumn = column;
-                        pendingPostBlockStartIndex = index;
-                    }
-
-                    pendingPostBlockWhitespace.Append(c);
-                    continue;
-                }
-
-                if (c is '\r' or '\n')
-                {
-                    TrimTrailingWhitespaceFromLastTextBlock(blocks, trimPreviousTextBlockTrailingWhitespaceLength);
-
-                    trimLineOnlyBlockTrailingNewline = false;
-                    trimPreviousTextBlockTrailingWhitespaceLength = 0;
-                    pendingPostBlockWhitespace.Clear();
-                    if (c == '\r')
-                    {
-                        skipOptionalLfAfterCr = true;
-                    }
-
-                    continue;
-                }
-
-                trimLineOnlyBlockTrailingNewline = false;
-                trimPreviousTextBlockTrailingWhitespaceLength = 0;
-                if (pendingPostBlockWhitespace.Length > 0)
-                {
-                    if (currentBlock.Length == 0)
-                    {
-                        startLine = pendingPostBlockStartLine;
-                        startColumn = pendingPostBlockStartColumn;
-                        startIndex = pendingPostBlockStartIndex;
-                    }
-
-                    currentBlock.Append(pendingPostBlockWhitespace);
-                    pendingPostBlockWhitespace.Clear();
-                }
-            }
-
-            if (blockDelimiterIndex < nextDelimiter.Length && c == nextDelimiter[blockDelimiterIndex])
-            {
-                if (blockDelimiterIndex == 0)
-                {
-                    delimiterStartLine = line;
-                    delimiterStartColumn = column;
-                    delimiterStartIndex = index;
-                }
-
-                blockDelimiterIndex++;
-                if (blockDelimiterIndex >= nextDelimiter.Length) // end of delimiter
-                {
-                    var canTrimLeadingWhitespaceForLineOnlyBlock = false;
-                    var trailingWhitespaceLength = 0;
-                    if (isInBlock)
-                    {
-                        canTrimLeadingWhitespaceForLineOnlyBlock = TryGetTrailingLineWhitespaceLengthFromLastTextBlock(blocks, out trailingWhitespaceLength);
-                    }
-
-                    var text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
-                    var start = new TextPosition(startLine, startColumn, startIndex);
-                    var end = new TextPosition(delimiterStartLine, delimiterStartColumn, delimiterStartIndex);
-                    var block = CreateBlock(isInBlock, text, blockIndex++, start, end);
-                    if (block is not null)
-                    {
-                        blocks.Add(block);
-
-                        if (isInBlock && canTrimLeadingWhitespaceForLineOnlyBlock && IsLineOnlyTrimmableBlock(block))
-                        {
-                            trimLineOnlyBlockTrailingNewline = true;
-                            trimPreviousTextBlockTrailingWhitespaceLength = trailingWhitespaceLength;
-                            pendingPostBlockWhitespace.Clear();
-                        }
-                        else if (isInBlock)
-                        {
-                            trimLineOnlyBlockTrailingNewline = false;
-                            trimPreviousTextBlockTrailingWhitespaceLength = 0;
-                            pendingPostBlockWhitespace.Clear();
-                        }
-                    }
-
-                    currentBlock.Clear();
-                    blockDelimiterIndex = 0;
-                    if (isInBlock)
-                    {
-                        nextDelimiter = StartCodeBlockDelimiter;
-                        isInBlock = false;
-                    }
-                    else
-                    {
-                        nextDelimiter = EndCodeBlockDelimiter;
-                        isInBlock = true;
-                    }
-
-                    continue;
-                }
-            }
-            else
-            {
-                if (c == nextDelimiter[0])
-                {
-                    delimiterStartLine = line;
-                    delimiterStartColumn = column;
-                    delimiterStartIndex = index;
-                    blockDelimiterIndex = 1;
-                }
-                else
-                {
-                    blockDelimiterIndex = 0;
-                }
-            }
-
-            if (currentBlock.Length == 0)
-            {
-                startLine = line;
-                startColumn = column;
-                startIndex = index;
-            }
-
-            currentBlock.Append(c);
-        }
-
-        if (trimLineOnlyBlockTrailingNewline)
-        {
-            TrimTrailingWhitespaceFromLastTextBlock(blocks, trimPreviousTextBlockTrailingWhitespaceLength);
         }
 
         // Create final parsed block if needed
-        if (currentBlock.Length > 0)
+        if (position.Index < span.Length)
         {
-            var start = new TextPosition(startLine, startColumn, startIndex);
-            var end = new TextPosition(reader.Line, reader.Column, reader.Index);
-            var block = CreateBlock(codeBlock: false, currentBlock.ToString(), blockIndex, start, end);
-            if (block is not null)
-            {
-                blocks.Add(block);
-            }
+            AddBlock(blocks, codeBlock: false, span, ref position, span.Length - position.Index, ref blockIndex);
         }
 
         blocks.Sort(TemplateBlockComparer.IndexComparer);
         Blocks.Clear();
         Blocks.AddRange(blocks);
+
+        TemplateBlock? AddBlock(List<TemplateBlock> blocks, bool codeBlock, ReadOnlySpan<char> span, ref TextPositionTracker position, int length, ref int blockIndex)
+        {
+            var start = position.Current;
+            var content = span.Slice(position.Index, length);
+            position.Advance(content);
+            var block = CreateBlock(codeBlock, content.ToString(), blockIndex++, start, position.Current);
+            if (block is not null)
+            {
+                blocks.Add(block);
+            }
+
+            return block;
+        }
+    }
+
+    /// <summary>
+    /// Gets the number of characters between <paramref name="index"/> and the end of the line (inclusive of the line
+    /// terminator), or -1 when anything other than spaces and tabs remains on the line.
+    /// </summary>
+    private static int GetLineOnlyBlockTrailingLength(ReadOnlySpan<char> span, int index)
+    {
+        var current = index;
+        while (current < span.Length && span[current] is ' ' or '\t')
+        {
+            current++;
+        }
+
+        if (current >= span.Length)
+            return current - index;
+
+        if (span[current] == '\r')
+        {
+            current++;
+            if (current < span.Length && span[current] == '\n')
+            {
+                current++;
+            }
+
+            return current - index;
+        }
+
+        if (span[current] == '\n')
+            return current - index + 1;
+
+        return -1;
+    }
+
+    /// <summary>Tracks line, column and index while walking through the template text.</summary>
+    private struct TextPositionTracker
+    {
+        private bool _previousIsCarriageReturn;
+
+        public TextPositionTracker()
+        {
+        }
+
+        public int Line { get; private set; } = 1;
+        public int Column { get; private set; } = 1;
+        public int Index { get; private set; }
+
+        public readonly TextPosition Current => new(Line, Column, Index);
+
+        public void Advance(ReadOnlySpan<char> text)
+        {
+            while (!text.IsEmpty)
+            {
+                var newLineIndex = text.IndexOfAny('\r', '\n');
+                if (newLineIndex < 0)
+                {
+                    Column += text.Length;
+                    Index += text.Length;
+                    _previousIsCarriageReturn = false;
+                    return;
+                }
+
+                if (newLineIndex > 0)
+                {
+                    Column += newLineIndex;
+                    Index += newLineIndex;
+                    _previousIsCarriageReturn = false;
+                }
+
+                Index++;
+                if (text[newLineIndex] == '\r')
+                {
+                    Line++;
+                    Column = 1;
+                    _previousIsCarriageReturn = true;
+                }
+                else
+                {
+                    if (!_previousIsCarriageReturn)
+                    {
+                        Line++;
+                        Column = 1;
+                    }
+
+                    _previousIsCarriageReturn = false;
+                }
+
+                text = text[(newLineIndex + 1)..];
+            }
+        }
     }
 
     private static bool IsLineOnlyTrimmableBlock(TemplateBlock block)
@@ -465,98 +449,121 @@ public class Template
 
     /// <summary>Compiles the template into executable code.</summary>
     /// <param name="cancellationToken">A cancellation token to observe.</param>
+    /// <exception cref="ObjectDisposedException">The template is disposed.</exception>
     public void Build(CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed), this);
+
         if (IsBuilt)
             return;
 
-        lock (BuildLock)
+        lock (_buildLock)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (IsBuilt)
                 return;
 
-            ApplyDirectives();
-
-            using var sw = new StringWriter();
-            using (var tw = new IndentedTextWriter(sw))
+            // A failed build must not leave the directives applied. Build can be retried directly, or
+            // after loading corrected content, and applying them twice adds duplicate usings,
+            // interfaces and references, which reports errors that hide the real diagnostic.
+            var directiveState = CaptureDirectiveState();
+            try
             {
-                foreach (var @using in Usings)
-                {
-                    tw.WriteLine("using " + @using + ";");
-                }
+                BuildCore(cancellationToken);
+            }
+            catch
+            {
+                RestoreDirectiveState(directiveState);
+                throw;
+            }
+        }
+    }
 
-                var inheritanceTypes = new List<string>();
-                if (!string.IsNullOrEmpty(BaseClassFullTypeName))
-                {
-                    inheritanceTypes.Add(BaseClassFullTypeName);
-                }
+    private void BuildCore(CancellationToken cancellationToken)
+    {
+        ApplyDirectives();
 
-                foreach (var @interface in ImplementedInterfaces)
-                {
-                    inheritanceTypes.Add(@interface);
-                }
-
-                tw.Write("public class " + ClassName);
-                if (inheritanceTypes.Count > 0)
-                {
-                    tw.Write(" : " + string.Join(", ", inheritanceTypes));
-                }
-
-                tw.WriteLine();
-                tw.WriteLine("{");
-                tw.Indent++;
-
-                tw.Write("public static void " + RunMethodName);
-                tw.Write("(");
-                tw.Write(OutputType?.FullName ?? "dynamic");
-                tw.Write(" " + OutputParameterName);
-
-                foreach (var argument in Arguments)
-                {
-                    if (argument is null)
-                        continue;
-
-                    tw.Write(", ");
-                    tw.Write(argument.Type?.FullName ?? "dynamic");
-                    tw.Write(" ");
-                    tw.Write(argument.Name);
-                }
-
-                tw.Write(")");
-                tw.WriteLine();
-                tw.WriteLine("{");
-                tw.Indent++;
-
-                foreach (var block in Blocks)
-                {
-                    if (block is ClassMemberBlock)
-                        continue;
-
-                    WriteBlock(tw, block);
-                }
-
-                tw.Indent--;
-                tw.WriteLine("}");
-
-                foreach (var block in Blocks)
-                {
-                    if (block is not ClassMemberBlock)
-                        continue;
-
-                    WriteBlock(tw, block);
-                }
-
-                tw.Indent--;
-                tw.WriteLine("}");
+        using var sw = new StringWriter();
+        using (var tw = new IndentedTextWriter(sw))
+        {
+            // A namespace imported by default can also be imported explicitly; emitting it twice would raise CS0105
+            foreach (var @using in Usings.Distinct(StringComparer.Ordinal))
+            {
+                tw.WriteLine("using " + @using + ";");
             }
 
-            var source = sw.ToString();
-            SourceCode = source;
-            Compile(source, cancellationToken);
-            if (IsBuilt)
+            var inheritanceTypes = new List<string>();
+            if (!string.IsNullOrEmpty(BaseClassFullTypeName))
             {
-                FreezeCollections();
+                inheritanceTypes.Add(BaseClassFullTypeName);
             }
+
+            foreach (var @interface in ImplementedInterfaces)
+            {
+                inheritanceTypes.Add(@interface);
+            }
+
+            tw.Write("public class " + ClassName);
+            if (inheritanceTypes.Count > 0)
+            {
+                tw.Write(" : " + string.Join(", ", inheritanceTypes));
+            }
+
+            tw.WriteLine();
+            tw.WriteLine("{");
+            tw.Indent++;
+
+            tw.Write("public static void " + RunMethodName);
+            tw.Write("(");
+            tw.Write(OutputType?.FullName ?? "dynamic");
+            tw.Write(" " + OutputParameterName);
+
+            foreach (var argument in Arguments)
+            {
+                if (argument is null)
+                    continue;
+
+                tw.Write(", ");
+                tw.Write(argument.Type?.FullName ?? "dynamic");
+                tw.Write(" ");
+                tw.Write(argument.Name);
+            }
+
+            tw.Write(")");
+            tw.WriteLine();
+            tw.WriteLine("{");
+            tw.Indent++;
+
+            foreach (var block in Blocks)
+            {
+                if (block is ClassMemberBlock)
+                    continue;
+
+                WriteBlock(tw, block);
+            }
+
+            tw.Indent--;
+            tw.WriteLine("}");
+
+            foreach (var block in Blocks)
+            {
+                if (block is not ClassMemberBlock)
+                    continue;
+
+                WriteBlock(tw, block);
+            }
+
+            tw.Indent--;
+            tw.WriteLine("}");
+        }
+
+        var source = sw.ToString();
+        SourceCode = source;
+        Compile(source, cancellationToken);
+        if (IsBuilt)
+        {
+            FreezeCollections();
         }
     }
 
@@ -565,7 +572,10 @@ public class Template
         var code = block.BuildCode();
         if (block is CodeBlock or ClassMemberBlock && code.Length > 0 && block.Text.Length > 0)
         {
-            var textOffset = code.IndexOf(block.Text, StringComparison.Ordinal);
+            // The block text is emitted last, after whatever prefix BuildCode adds (for an expression
+            // block, "<output>.Write("). Search backwards so a prefix that happens to contain the
+            // block text — "<%=__output__%>", say — does not win over the real occurrence.
+            var textOffset = code.LastIndexOf(block.Text, StringComparison.Ordinal);
             if (textOffset >= 0)
             {
                 var generatedCodeColumnOffset = (writer.Indent * IndentedTextWriter.DefaultTabString.Length) + textOffset;
@@ -594,6 +604,45 @@ public class Template
                 directive.ApplyDirective();
             }
         }
+    }
+
+    private DirectiveState CaptureDirectiveState()
+    {
+        return new DirectiveState
+        {
+            Usings = [.. Usings],
+            ImplementedInterfaces = [.. ImplementedInterfaces],
+            AssemblyReferences = [.. AssemblyReferences],
+            IncludedSourceFiles = [.. IncludedSourceFiles],
+            BaseClassFullTypeName = BaseClassFullTypeName,
+        };
+    }
+
+    private void RestoreDirectiveState(DirectiveState state)
+    {
+        Usings.Clear();
+        Usings.AddRange(state.Usings);
+
+        ImplementedInterfaces.Clear();
+        ImplementedInterfaces.AddRange(state.ImplementedInterfaces);
+
+        AssemblyReferences.Clear();
+        AssemblyReferences.AddRange(state.AssemblyReferences);
+
+        IncludedSourceFiles.Clear();
+        IncludedSourceFiles.AddRange(state.IncludedSourceFiles);
+
+        BaseClassFullTypeName = state.BaseClassFullTypeName;
+    }
+
+    /// <summary>Snapshot of everything <see cref="ApplyDirectives"/> mutates, so a failed build can be rolled back.</summary>
+    private sealed class DirectiveState
+    {
+        public required string[] Usings { get; init; }
+        public required string[] ImplementedInterfaces { get; init; }
+        public required AssemblyReference[] AssemblyReferences { get; init; }
+        public required FileReference[] IncludedSourceFiles { get; init; }
+        public required string? BaseClassFullTypeName { get; init; }
     }
 
     /// <summary>Creates a text block for text content.</summary>
@@ -696,6 +745,11 @@ public class Template
             new AssemblyReference(typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location),
             new AssemblyReference(typeof(System.Dynamic.DynamicObject).Assembly.Location),
             new AssemblyReference(typeof(System.Linq.Expressions.ExpressionType).Assembly.Location),
+            // Types of the namespaces imported by default that are not defined in System.Private.CoreLib
+            new AssemblyReference(typeof(Enumerable).Assembly.Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("System.Collections")).Location),
+            new AssemblyReference(typeof(Uri).Assembly.Location),
+            new AssemblyReference(typeof(Console).Assembly.Location),
             new AssemblyReference(Assembly.Load(new AssemblyName("mscorlib")).Location),
             new AssemblyReference(Assembly.Load(new AssemblyName("System.Runtime")).Location),
             new AssemblyReference(Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location),
@@ -783,20 +837,42 @@ public class Template
         pdbStream.Seek(0, SeekOrigin.Begin);
 
         var assembly = LoadAssembly(dllStream, pdbStream);
-        _runMethodInfo = FindMethod(assembly);
-        if (_runMethodInfo == null)
+        var runMethodInfo = FindMethod(assembly);
+        if (runMethodInfo is null)
         {
             throw new TemplateException("Run method not found in the generated assembly.");
         }
+
+        // Publish last: a thread observing IsBuilt must also observe everything written above.
+        Volatile.Write(ref _runMethodInfo, runMethodInfo);
+    }
+
+    /// <summary>Creates the load context the compiled template is loaded into.</summary>
+    /// <returns>A new load context. It should be collectible, otherwise the compiled template can never be unloaded.</returns>
+    protected virtual AssemblyLoadContext CreateAssemblyLoadContext()
+    {
+        return new AssemblyLoadContext(GetAssemblyLoadContextName(), isCollectible: true);
+    }
+
+    private string GetAssemblyLoadContextName()
+    {
+        var name = "Meziantou.Framework.Templating." + ClassName;
+        return SourceFileName is null ? name : name + " (" + SourceFileName + ")";
     }
 
     /// <summary>Loads an assembly from memory streams.</summary>
     /// <param name="peStream">The stream containing the assembly.</param>
     /// <param name="pdbStream">The stream containing debug symbols.</param>
     /// <returns>The loaded assembly.</returns>
+    /// <remarks>
+    /// The assembly is loaded in the load context created by <see cref="CreateAssemblyLoadContext"/>, so that
+    /// <see cref="Dispose()"/> can unload it. Loading it in the default context instead, for instance with
+    /// <see cref="Assembly.Load(byte[], byte[])"/>, keeps it in memory for the lifetime of the process.
+    /// </remarks>
     protected virtual Assembly LoadAssembly(MemoryStream peStream, MemoryStream pdbStream)
     {
-        return Assembly.Load(peStream.ToArray(), pdbStream.ToArray());
+        var loadContext = _assemblyLoadContext ??= CreateAssemblyLoadContext();
+        return loadContext.LoadFromStream(peStream, pdbStream);
     }
 
     /// <summary>Finds the Run method in the compiled assembly.</summary>
@@ -804,13 +880,29 @@ public class Template
     /// <returns>The Run method information.</returns>
     protected virtual MethodInfo FindMethod(Assembly assembly)
     {
-        var type = assembly.GetType(ClassName);
-        System.Diagnostics.Debug.Assert(type != null);
+        ArgumentNullException.ThrowIfNull(assembly);
 
-        var methodInfo = type.GetMethod(RunMethodName);
-        System.Diagnostics.Debug.Assert(methodInfo != null);
+        var type = assembly.GetType(ClassName)
+            ?? throw new TemplateException($"Type '{ClassName}' was not found in the generated assembly.");
+
+        // A class member block can declare its own overload of the run method, which makes
+        // Type.GetMethod(name) throw AmbiguousMatchException. Identify the generated one by its
+        // first parameter instead: it is always the output parameter.
+        var methodInfo = Array.Find(
+            type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly),
+            IsRunMethod)
+            ?? throw new TemplateException($"Method '{RunMethodName}' was not found in the generated assembly.");
 
         return methodInfo;
+
+        bool IsRunMethod(MethodInfo method)
+        {
+            if (!string.Equals(method.Name, RunMethodName, StringComparison.Ordinal))
+                return false;
+
+            var parameters = method.GetParameters();
+            return parameters.Length > 0 && string.Equals(parameters[0].Name, OutputParameterName, StringComparison.Ordinal);
+        }
     }
 
     /// <summary>Creates a string writer for capturing template output.</summary>
@@ -843,6 +935,8 @@ public class Template
     /// <param name="parameters">The parameter values to pass to the template.</param>
     public virtual void Run(TextWriter writer, params object?[] parameters)
     {
+        ArgumentNullException.ThrowIfNull(writer);
+
         if (!IsBuilt)
         {
             Build(CancellationToken.None);
@@ -871,7 +965,7 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, parameters);
         return writer.ToString();
     }
@@ -893,6 +987,7 @@ public class Template
     /// <param name="writer">The text writer for output.</param>
     /// <param name="parameters">A dictionary of parameter names and values.</param>
     /// <returns>An array of method parameters.</returns>
+    /// <exception cref="TemplateException"><see cref="ThrowOnMissingArgument" /> is <see langword="true" /> and an argument has no value in <paramref name="parameters" />.</exception>
     protected virtual object?[] CreateMethodParameters(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
     {
         if (!IsBuilt)
@@ -900,7 +995,7 @@ public class Template
             Build(CancellationToken.None);
         }
 
-        var parameterInfos = _runMethodInfo!.GetParameters();
+        var parameterInfos = Volatile.Read(ref _runMethodInfo)!.GetParameters();
         var p = new object?[parameterInfos.Length];
         foreach (var pi in parameterInfos)
         {
@@ -908,12 +1003,13 @@ public class Template
             {
                 p[pi.Position] = CreateOutput(writer);
             }
-            else
+            else if (parameters.TryGetValue(pi.Name!, out var value))
             {
-                if (parameters.TryGetValue(pi.Name!, out var value))
-                {
-                    p[pi.Position] = value;
-                }
+                p[pi.Position] = value;
+            }
+            else if (ThrowOnMissingArgument)
+            {
+                throw new TemplateException($"No value was provided for the argument '{pi.Name}'.");
             }
         }
 
@@ -929,6 +1025,42 @@ public class Template
             Build(CancellationToken.None);
         }
 
-        _runMethodInfo!.Invoke(null, p);
+        Volatile.Read(ref _runMethodInfo)!.Invoke(null, p);
+    }
+
+    /// <summary>Unloads the assembly the template was compiled into.</summary>
+    /// <remarks>
+    /// The assembly is unloaded once nothing references it anymore, which includes any object the
+    /// template created. A disposed template cannot be built or run again.
+    /// </remarks>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the resources used by the template.</summary>
+    /// <param name="disposing"><see langword="true"/> when called from <see cref="Dispose()"/>.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposing)
+            return;
+
+        // Take the build lock so the assembly is not unloaded while a concurrent build is loading it.
+        lock (_buildLock)
+        {
+            if (_disposed)
+                return;
+
+            Volatile.Write(ref _runMethodInfo, null);
+            Volatile.Write(ref _disposed, true);
+
+            var loadContext = _assemblyLoadContext;
+            _assemblyLoadContext = null;
+            if (loadContext?.IsCollectible is true)
+            {
+                loadContext.Unload();
+            }
+        }
     }
 }

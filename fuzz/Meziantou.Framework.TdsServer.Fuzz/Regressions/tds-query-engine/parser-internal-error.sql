@@ -1,0 +1,1 @@
+SELECT ISJSON( FETCH NEXT x FROM json_docs

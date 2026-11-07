@@ -6,6 +6,48 @@ namespace Meziantou.Framework.Json;
 /// <summary>Provides JSONPath evaluation helpers for JSON values.</summary>
 public static class JsonPathExtensions
 {
+    /// <summary>Evaluates using cooperative cancellation and resource limits.</summary>
+    public static JsonPathResult Evaluate(this JsonNode? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.Evaluate(root, options, mode);
+    }
+
+    /// <summary>Evaluates using cooperative cancellation and resource limits.</summary>
+    public static JsonPathResult<JsonElement> Evaluate(this JsonDocument? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.Evaluate(root, options, mode);
+    }
+
+    /// <summary>Evaluates using cooperative cancellation and resource limits.</summary>
+    public static JsonPathResult<JsonElement> Evaluate(this JsonElement root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.Evaluate(root, options, mode);
+    }
+
+    /// <summary>Returns the first value using cooperative cancellation and resource limits.</summary>
+    public static JsonNode? EvaluateValue(this JsonNode? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.EvaluateValue(root, options, mode);
+    }
+
+    /// <summary>Returns the first value using cooperative cancellation and resource limits.</summary>
+    public static JsonElement? EvaluateValue(this JsonDocument? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.EvaluateValue(root, options, mode);
+    }
+
+    /// <summary>Returns the first value using cooperative cancellation and resource limits.</summary>
+    public static JsonElement? EvaluateValue(this JsonElement root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.EvaluateValue(root, options, mode);
+    }
+
     /// <summary>Evaluates a JSONPath expression against this JSON value.</summary>
     /// <param name="root">The root JSON value to query. May be <see langword="null"/>.</param>
     /// <param name="path">The JSONPath expression to evaluate.</param>

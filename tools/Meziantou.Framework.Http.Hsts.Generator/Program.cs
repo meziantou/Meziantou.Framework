@@ -4,6 +4,7 @@
 #pragma warning disable MA0048 // File name must match type name
 #pragma warning disable CA1849 // Call async methods when in an async method
 #pragma warning disable MA0042 // Do not use blocking calls in an async method
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -14,107 +15,72 @@ using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.Versioning;
 
+// A preload entry that disappears is a silent security regression for every consumer, so a run that would drop
+// a large share of the list fails instead of shipping. Tuned to absorb ordinary churn only.
+const double MinimumEntryRatio = 0.95;
+
 if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
 
 var outputPath = root / "src" / "Meziantou.Framework.Http.Hsts";
-var outputFilePath = outputPath / "HstsDomainPolicyCollection.g.cs";
-var csprojPath = root / "src" / "Meziantou.Framework.Http.Hsts" / "Meziantou.Framework.Http.Hsts.csproj";
+var outputFilePath = outputPath / "HstsPreloadList.g.cs";
+var manifestPath = outputPath / "preload-hosts.txt";
+var csprojPath = outputPath / "Meziantou.Framework.Http.Hsts.csproj";
 
 var (entries, fileUrl, commitSha, commitDate) = await LoadEntries();
 
-// Start generating the code
-var entriesThreshold = 10;
+// The generated code indexes the resources by label count, so every count from 1 to the deepest name needs a
+// slot even if nothing lands in it
 var maxSegments = entries.Max(e => e.SegmentCount);
-
-var sb = new StringBuilder();
-sb.Append($"        CollectionsMarshal.SetCount(_policies, {maxSegments.ToString(CultureInfo.InvariantCulture)});\n\n");
-for (var i = 1; i <= maxSegments; i++)
+var buckets = new List<Data>[maxSegments];
+for (var i = 0; i < maxSegments; i++)
 {
-    var count = entries.Count(e => e.SegmentCount == i);
-    sb.Append($"        var dict{i.ToString(CultureInfo.InvariantCulture)} = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: {(count + 10).ToString(CultureInfo.InvariantCulture)}, comparer: StringComparer.OrdinalIgnoreCase);\n");
-    sb.Append($"        _policies[{(i - 1).ToString(CultureInfo.InvariantCulture)}] = dict{i.ToString(CultureInfo.InvariantCulture)};\n");
-
-    if (count < entriesThreshold)
-    {
-        foreach (var entry in entries.Where(e => e.SegmentCount == i).OrderBy(e => e.Name, StringComparer.Ordinal))
-        {
-            var expiresIn = entry.Policy switch
-            {
-                "bulk-18-weeks" => "_expires18weeks",
-                "bulk-1-year" => "_expires1year",
-                _ => "_expires1year",
-            };
-            sb.Append($"        dict{i.ToString(CultureInfo.InvariantCulture)}.TryAdd(\"{entry.Name}\", new HstsDomainPolicy(\"{entry.Name}\", {expiresIn}, {entry.IncludeSubdomains.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}));\n");
-        }
-    }
-    else
-    {
-        sb.Append($"        Load(dict{i.ToString(CultureInfo.InvariantCulture)}, {count.ToString(CultureInfo.InvariantCulture)}, \"{$"preload_{i}.bin"}\");\n");
-    }
-    sb.Append('\n');
+    buckets[i] = [];
 }
 
-void AddPreloadData()
+foreach (var entry in entries)
 {
-    foreach (var entryGroup in entries.GroupBy(e => e.SegmentCount).OrderBy(group => group.Key))
+    buckets[entry.SegmentCount - 1].Add(entry);
+}
+
+// Sorted for the manifest, which is what a human reviews; the payload re-orders its own copy
+foreach (var bucket in buckets)
+{
+    bucket.Sort((x, y) => string.CompareOrdinal(x.Name, y.Name));
+}
+
+// The manifest is the only reviewable form of this data: the compressed resources are opaque in a pull request
+// diff, so the added and removed hosts would otherwise be visible nowhere.
+var manifest = BuildManifest();
+CheckEntryCountAgainstTheCommittedManifest();
+
+var preloadFiles = BuildPreloadData();
+var result = BuildGeneratedCode();
+
+// Everything is produced before anything is written, so a failure cannot leave the generated file and the
+// resources it indexes out of sync. The resources are rewritten before the stale ones are removed, so there
+// is no moment where a resource the generated file loads is missing.
+foreach (var (name, content) in preloadFiles)
+{
+    File.WriteAllBytes(outputPath / name, content);
+}
+
+foreach (var file in Directory.GetFiles(outputPath, "preload_*"))
+{
+    if (!preloadFiles.ContainsKey(Path.GetFileName(file)))
     {
-        if (entryGroup.Count() < entriesThreshold)
-            continue;
-
-        using var ms = new MemoryStream();
-        using (var gz = new GZipStream(ms, CompressionLevel.SmallestSize))
-        using (var writer = new BinaryWriter(gz))
-        {
-            foreach (var entry in entryGroup.OrderBy(entry => entry.Name, StringComparer.Ordinal))
-            {
-                var expiresIn = entry.Policy switch
-                {
-                    "bulk-18-weeks" => 18 * 7 * 24 * 60 * 60,
-                    "bulk-1-year" => 365 * 24 * 60 * 60,
-                    _ => 365 * 24 * 60 * 60,
-                };
-
-                writer.Write(entry.Name);
-                writer.Write(entry.IncludeSubdomains);
-                writer.Write(expiresIn);
-            }
-        }
-
-        var array = ms.ToArray();
-        File.WriteAllBytes(outputPath / $"preload_{entryGroup.Key}.bin", array);
+        File.Delete(file);
     }
 }
 
-Directory.GetFiles(outputPath, "preload_*.bin").ToList().ForEach(File.Delete);
-AddPreloadData();
+var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+var changed = false;
+changed |= WriteIfChanged(manifestPath, manifest);
+changed |= WriteIfChanged(outputFilePath, result);
 
-var result = $$"""
-    // <auto-generated />
-    #nullable enable
-
-    using System.Collections.Concurrent;
-    using System.Runtime.InteropServices;
-
-    namespace Meziantou.Framework.Http;
-
-    partial class HstsDomainPolicyCollection
-    {
-        private void LoadPreloadDomains()
-        {
-            // HSTS preload data source: {{fileUrl}}
-            // Commit date: {{commitDate.ToString("O", CultureInfo.InvariantCulture)}}
-    {{sb.ToString().TrimEnd('\n')}}
-        }
-    }
-    """.ReplaceLineEndings("\n");
-
-// Write file and update csproj
-if (!File.Exists(outputFilePath) || File.ReadAllText(outputFilePath).ReplaceLineEndings("\n") != result)
+if (changed)
 {
-    var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-    File.WriteAllText(outputFilePath, result, encoding);
-    Console.WriteLine("The file has been updated");
+    Console.WriteLine($"The files have been updated ({entries.Count} entries)");
 
     var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
     var versionNode = doc.Descendants().First(e => e.Name.LocalName == "Version");
@@ -124,32 +90,197 @@ if (!File.Exists(outputFilePath) || File.ReadAllText(outputFilePath).ReplaceLine
     var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false, Encoding = encoding };
     using var writer = XmlWriter.Create(csprojPath, xws);
     doc.Save(writer);
+
+    // The exit code is the result, not a status: 1 means the files were updated and 0 means they were already
+    // up to date. Any other code is a failure and the workspace must not be committed. The workflow runs
+    // `dotnet build` first so that a build failure, which also exits 1, cannot be read as "files updated".
     return 1;
 }
 
 return 0;
 
+bool WriteIfChanged(FullPath path, string content)
+{
+    if (File.Exists(path) && File.ReadAllText(path).ReplaceLineEndings("\n") == content)
+        return false;
+
+    File.WriteAllText(path, content, encoding);
+    return true;
+}
+
+string BuildManifest()
+{
+    var sb = new StringBuilder();
+    sb.Append("# Chromium HSTS preload hosts compiled into this package. Generated; do not edit.\n");
+    sb.Append("# One host per line, sorted. A trailing tab and '+' marks include_subdomains.\n");
+    sb.Append($"# Source: {fileUrl}\n");
+    foreach (var bucket in buckets)
+    {
+        foreach (var entry in bucket)
+        {
+            sb.Append(entry.Name);
+            if (entry.IncludeSubdomains)
+            {
+                sb.Append("\t+");
+            }
+
+            sb.Append('\n');
+        }
+    }
+
+    return sb.ToString();
+}
+
+void CheckEntryCountAgainstTheCommittedManifest()
+{
+    if (!File.Exists(manifestPath))
+        return;
+
+    var previousCount = File.ReadLines(manifestPath).Count(line => line.Length > 0 && line[0] != '#');
+    if (previousCount == 0)
+        return;
+
+    var minimum = (int)(previousCount * MinimumEntryRatio);
+    if (entries.Count < minimum)
+    {
+        throw new InvalidOperationException(
+            $"The upstream list yielded {entries.Count} entries but the committed manifest has {previousCount}. " +
+            $"Fewer than {minimum} means the upstream format probably changed and the filtering silently dropped entries. " +
+            "Losing a preload entry is a security regression, so this must be reviewed by hand.");
+    }
+}
+
+Dictionary<string, byte[]> BuildPreloadData()
+{
+    var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+    for (var segmentCount = 1; segmentCount <= maxSegments; segmentCount++)
+    {
+        var bucket = buckets[segmentCount - 1];
+        if (bucket.Count == 0)
+            continue;
+
+        // The same payload is written in both formats: a target framework embeds only the one it can read,
+        // gzip before .NET 11 and Zstandard from .NET 11 on, so neither assembly carries the other's copy.
+        // Zstandard is used where it exists because it makes the resource about 10% smaller and the list
+        // loads faster from it. The checksum keeps the corrupted-resource detection gzip provided with its CRC.
+        var payload = BuildBucketPayload(bucket);
+        var baseName = GetResourceBaseName(segmentCount);
+        files.Add(baseName + ".bin", Compress(payload, stream => new GZipStream(stream, CompressionLevel.SmallestSize)));
+        files.Add(baseName + ".zst", Compress(payload, stream => new ZstandardStream(stream, new ZstandardCompressionOptions
+        {
+            Quality = ZstandardCompressionOptions.MaxQuality,
+            AppendChecksum = true,
+        }, leaveOpen: false)));
+    }
+
+    return files;
+}
+
+// A lookup is an exact match, so the reader jumps straight to the names of the probe's length and binary
+// -searches them as fixed-width records. That is what the order here is for: names by length first, then
+// ordinally within a length, which lets the length of each name be dropped in favour of one count per
+// length. The layout is the entry count, the longest name length, how many names there are of each length
+// from 1 up, the names, then the include_subdomains bits in the same order.
+// The names are known to fit a byte each: LoadEntries rejects anything longer than 253.
+static byte[] BuildBucketPayload(List<Data> bucket)
+{
+    var ordered = bucket.OrderBy(entry => entry.Name.Length).ThenBy(entry => entry.Name, StringComparer.Ordinal).ToList();
+    var longestNameLength = ordered[^1].Name.Length;
+    var countsByLength = new int[longestNameLength + 1];
+    foreach (var entry in ordered)
+    {
+        countsByLength[entry.Name.Length]++;
+    }
+
+    using var ms = new MemoryStream();
+    using (var writer = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
+    {
+        writer.Write(ordered.Count);
+        writer.Write(longestNameLength);
+        for (var length = 1; length <= longestNameLength; length++)
+        {
+            writer.Write(countsByLength[length]);
+        }
+
+        foreach (var entry in ordered)
+        {
+            writer.Write(Encoding.ASCII.GetBytes(entry.Name));
+        }
+
+        var bitmap = new byte[(ordered.Count + 7) / 8];
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            if (ordered[i].IncludeSubdomains)
+            {
+                bitmap[i >> 3] |= (byte)(1 << (i & 7));
+            }
+        }
+
+        writer.Write(bitmap);
+    }
+
+    return ms.ToArray();
+}
+
+static byte[] Compress(byte[] payload, Func<Stream, Stream> createCompressionStream)
+{
+    using var ms = new MemoryStream();
+    using (var compression = createCompressionStream(ms))
+    {
+        compression.Write(payload);
+    }
+
+    return ms.ToArray();
+}
+
+string BuildGeneratedCode()
+{
+    var sb = new StringBuilder();
+    for (var segmentCount = 1; segmentCount <= maxSegments; segmentCount++)
+    {
+        var count = buckets[segmentCount - 1].Count;
+        var resource = count == 0 ? "null" : $"\"{GetResourceBaseName(segmentCount)}\"";
+        sb.Append($"        ({resource}, {count.ToString(CultureInfo.InvariantCulture)}),\n");
+    }
+
+    return $$"""
+        // <auto-generated />
+        #nullable enable
+
+        namespace Meziantou.Framework.Http;
+
+        partial class HstsPreloadList
+        {
+            // HSTS preload data source: {{fileUrl}}
+            // Commit date: {{commitDate.ToString("O", CultureInfo.InvariantCulture)}}
+            // Entries: {{entries.Count.ToString(CultureInfo.InvariantCulture)}}
+            // The index is the label count minus one; see preload-hosts.txt for the host names themselves.
+            private static (string? ResourceBaseName, int EntryCount)[] GetResources() =>
+            [
+        {{sb.ToString().TrimEnd('\n')}}
+            ];
+        }
+        """.ReplaceLineEndings("\n") + "\n";
+}
+
+// The extension is the consumer's business: it appends the one matching the format its target framework
+// reads. See HstsPreloadList.cs.
+static string GetResourceBaseName(int segmentCount) => $"preload_{segmentCount.ToString(CultureInfo.InvariantCulture)}";
+
 static async Task<(List<Data> entries, string fileUrl, string commit, DateTimeOffset commitDate)> LoadEntries()
 {
     var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-    if (token is null)
+    if (string.IsNullOrEmpty(token))
     {
-        // gh auth token
-        var process = Process.Start(new ProcessStartInfo
-        {
-            FileName = "gh",
-            Arguments = "auth token",
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-        });
-        process!.WaitForExit();
-        token = process.StandardOutput.ReadToEnd().Trim();
+        token = GetTokenFromGitHubCli();
     }
 
     var jsonOptions = new JsonSerializerOptions
     {
         AllowTrailingCommas = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
+        RespectNullableAnnotations = true,
+        RespectRequiredConstructorParameters = true,
     };
 
     using var getCommitsRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/chromium/chromium/commits?path=net/http/transport_security_state_static.json&per_page=1");
@@ -168,18 +299,91 @@ static async Task<(List<Data> entries, string fileUrl, string commit, DateTimeOf
         throw new InvalidOperationException("The document is invalid");
 
     var entries = content.RootElement.GetProperty("entries").Deserialize<List<Data>>(jsonOptions);
-    if (entries is null)
+    if (entries is null || entries.Count == 0)
         throw new InvalidOperationException("The entries are invalid");
 
     // Remove entries that are not relevant
-    entries.RemoveAll(entries => entries.Mode != "force-https" || entries.Policy == "test");
+    entries.RemoveAll(entry => entry.Mode != "force-https" || entry.Policy == "test");
+    if (entries.Count == 0)
+        throw new InvalidOperationException("No entry is a force-https entry; the upstream format has probably changed");
+
+    // The lookup binary-searches a blob of lower-case ASCII names, so the data is folded to that form here and
+    // anything that cannot be represented in it is rejected rather than silently mangled
+    foreach (var entry in entries)
+    {
+        entry.Name = entry.Name.ToLowerInvariant();
+    }
+
+    var invalidDomains = entries.Where(e => !IsValidHostName(e.Name)).Select(e => e.Name).ToList();
+    if (invalidDomains.Count > 0)
+        throw new InvalidOperationException("Invalid domain names: " + string.Join(", ", invalidDomains));
 
     // check if there are duplicated domains
-    var duplicatedDomains = entries.GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+    var duplicatedDomains = entries.GroupBy(e => e.Name, StringComparer.Ordinal).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
     if (duplicatedDomains.Count > 0)
         throw new InvalidOperationException("Duplicated domains: " + string.Join(", ", duplicatedDomains));
 
     return (entries, fileUrl, sha, commitDate);
+}
+
+static string GetTokenFromGitHubCli()
+{
+    Process process;
+    try
+    {
+        process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "gh",
+            Arguments = "auth token",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        })!;
+    }
+    catch (Win32Exception ex)
+    {
+        throw new InvalidOperationException("Cannot run 'gh auth token'. Set the GITHUB_TOKEN environment variable or install the GitHub CLI.", ex);
+    }
+
+    using (process)
+    {
+        // Read the pipes before waiting: a command that fills one would otherwise block forever
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        if (process.ExitCode != 0 || string.IsNullOrWhiteSpace(output))
+            throw new InvalidOperationException($"'gh auth token' exited with code {process.ExitCode.ToString(CultureInfo.InvariantCulture)}. Set the GITHUB_TOKEN environment variable or run 'gh auth login'. {error.Trim()}");
+
+        return output.Trim();
+    }
+}
+
+static bool IsValidHostName(string name)
+{
+    // The blob stores names as ASCII bytes with a single length byte each, and the generated code has to be
+    // able to name the resource, so a preload entry outside this character set is data to reject.
+    if (name.Length is 0 or > 253 || name[0] is '.' or '-' || name[^1] is '.' or '-')
+        return false;
+
+    var previousWasDot = false;
+    foreach (var c in name)
+    {
+        if (c is '.')
+        {
+            if (previousWasDot)
+                return false;
+
+            previousWasDot = true;
+            continue;
+        }
+
+        previousWasDot = false;
+        if (!char.IsAsciiDigit(c) && !char.IsAsciiLetterLower(c) && c is not ('-' or '_'))
+            return false;
+    }
+
+    return true;
 }
 
 internal sealed class Data

@@ -1,14 +1,31 @@
-using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace Meziantou.Framework.Threading.Tests;
 
 public sealed class KeyedLockTests
 {
-    private static System.Collections.ICollection GetEntries<TKey>(KeyedLock<TKey> locks)
-        where TKey : notnull
+    [Fact]
+    public void KeyedLock_Example()
     {
-        var field = typeof(KeyedLock<TKey>).GetField("_locks", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        return (System.Collections.ICollection)field.GetValue(locks)!;
+        #region KeyedLock_Usage
+        var keyedLock = new KeyedLock<string>(StringComparer.Ordinal);
+        var updateCounts = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+
+        void ProcessUser(string userId)
+        {
+            using (keyedLock.Lock(userId))
+            {
+                // Only one operation per userId at a time
+                // Multiple different userIds can be processed concurrently
+                var count = updateCounts.GetValueOrDefault(userId);
+                updateCounts[userId] = count + 1;
+            }
+        }
+
+        Parallel.Invoke(() => ProcessUser("alice"), () => ProcessUser("alice"), () => ProcessUser("bob"));
+        Assert.Equal(2, updateCounts["alice"]);
+        Assert.Equal(1, updateCounts["bob"]);
+        #endregion
     }
 
     [Fact]
@@ -33,8 +50,8 @@ public sealed class KeyedLockTests
             }
         }
 
-        // Entries must be removed once released, otherwise the dictionary grows without bound.
-        Assert.Empty(GetEntries(locks));
+        // Entries must be removed once released, otherwise the table grows without bound.
+        Assert.Equal(0, locks.EntryCount);
     }
 
     [Fact]
@@ -43,7 +60,7 @@ public sealed class KeyedLockTests
         var locks = new KeyedLock<int>();
         using (locks.Lock(1))
         {
-            Assert.Single(GetEntries(locks));
+            Assert.Equal(1, locks.EntryCount);
         }
     }
 
@@ -106,6 +123,90 @@ public sealed class KeyedLockTests
     }
 
     [Fact]
+    public async Task Lock_DisposedOnAnotherThread_ThrowsAndKeepsTheLockHeld()
+    {
+        // System.Threading.Lock is thread-affine, so Exit throws here and the lock remains held by the
+        // acquiring thread. The entry must therefore stay in the table: evicting it would let another
+        // thread lock a fresh entry for the same key while this critical section is still running.
+        var locks = new KeyedLock<int>();
+        var lease = locks.Lock(1);
+
+        // A dedicated thread, not the thread pool: xunit runs the test body on a pool thread, so Task.Run can
+        // schedule the disposal back onto that same thread and Exit would then legitimately succeed.
+        Exception? captured = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                lease.Dispose();
+            }
+            catch (Exception ex)
+            {
+                captured = ex;
+            }
+        });
+
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
+
+        Assert.IsType<SynchronizationLockException>(captured);
+        Assert.Equal(1, locks.EntryCount);
+
+        using var acquired = new ManualResetEventSlim(initialState: false);
+        var blocked = Task.Run(() =>
+        {
+            using (locks.Lock(1))
+            {
+                acquired.Set();
+            }
+        });
+
+        Assert.False(acquired.Wait(200)); // still blocked by the lock this thread owns
+
+        // The failed disposal did not consume the lease, so the owning thread can still release the lock.
+        lease.Dispose();
+
+        await blocked.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.True(acquired.IsSet);
+        Assert.Equal(0, locks.EntryCount);
+    }
+
+    [Fact]
+    public void Lock_InterruptedWhileWaiting_ReleasesTheReservation()
+    {
+        var locks = new KeyedLock<int>();
+        var lease = locks.Lock(1);
+
+        Exception? captured = null;
+        var waiter = new Thread(() =>
+        {
+            try
+            {
+                using (locks.Lock(1))
+                {
+                }
+            }
+            catch (Exception ex)
+            {
+                captured = ex;
+            }
+        });
+
+        waiter.Start();
+
+        // An interrupt requested before the thread blocks is delivered when it does, and the only blocking call
+        // the waiter makes is the acquisition of the held lock.
+        waiter.Interrupt();
+        Assert.True(waiter.Join(TimeSpan.FromMinutes(1)));
+
+        Assert.IsType<ThreadInterruptedException>(captured);
+        Assert.Equal(1, locks.EntryCount);
+
+        lease.Dispose();
+        Assert.Equal(0, locks.EntryCount);
+    }
+
+    [Fact]
     public void Dispose_IsIdempotent()
     {
         var locks = new KeyedLock<int>();
@@ -113,6 +214,22 @@ public sealed class KeyedLockTests
         lease.Dispose();
         lease.Dispose(); // must not double-release or corrupt the ref count
 
-        Assert.Empty(GetEntries(locks));
+        Assert.Equal(0, locks.EntryCount);
+    }
+
+    [Fact]
+    public void KeysDifferingOnlyInTheirHighBits_AreSpreadAcrossShards()
+    {
+        // The shard index used to come from the low bits of the mixed hash code, which bits 21 to 31 of the hash code
+        // never reach: every one of these keys landed in the same shard.
+        var table = new KeyedEntryTable<int, TestEntry>(comparer: null, () => new TestEntry());
+
+        var shards = Enumerable.Range(0, 1000).Select(i => table.GetShardIndex(i << 21)).Distinct().Count();
+
+        Assert.Equal(table.ShardCount, shards);
+    }
+
+    private sealed class TestEntry : KeyedEntry
+    {
     }
 }

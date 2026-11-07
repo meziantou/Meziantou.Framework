@@ -1,0 +1,2556 @@
+{
+  "spec": {
+    "title": "Writing Assistance APIs",
+    "url": "https://webmachinelearning.github.io/writing-assistance-apis/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Summarizer",
+          "Writer",
+          "Rewriter",
+          "CreateMonitor"
+        ]
+      }
+    },
+    "idlNames": {
+      "Summarizer": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface Summarizer {\n  static Promise<Summarizer> create(optional SummarizerCreateOptions options = {});\n  static Promise<Availability> availability(optional SummarizerCreateCoreOptions options = {});\n\n  Promise<DOMString> summarize(\n    DOMString input,\n    optional SummarizerSummarizeOptions options = {}\n  );\n  ReadableStream summarizeStreaming(\n    DOMString input,\n    optional SummarizerSummarizeOptions options = {}\n  );\n\n  readonly attribute DOMString sharedContext;\n  readonly attribute SummarizerType type;\n  readonly attribute SummarizerFormat format;\n  readonly attribute SummarizerLength length;\n  // **EXPERIMENTAL**: Only available in extension and experimental contexts.\n  readonly attribute PerformancePreference preference;\n\n  readonly attribute FrozenArray<DOMString>? expectedInputLanguages;\n  readonly attribute FrozenArray<DOMString>? expectedContextLanguages;\n  readonly attribute DOMString? outputLanguage;\n\n  Promise<double> measureInputUsage(\n    DOMString input,\n    optional SummarizerSummarizeOptions options = {}\n  );\n  readonly attribute unrestricted double inputQuota;\n};",
+        "type": "interface",
+        "name": "Summarizer",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Summarizer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SummarizerCreateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-create"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SummarizerCreateCoreOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-availability"
+          },
+          {
+            "type": "operation",
+            "name": "summarize",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SummarizerSummarizeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-summarize"
+          },
+          {
+            "type": "operation",
+            "name": "summarizeStreaming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SummarizerSummarizeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-summarizestreaming"
+          },
+          {
+            "type": "attribute",
+            "name": "sharedContext",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-sharedcontext"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SummarizerType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-type"
+          },
+          {
+            "type": "attribute",
+            "name": "format",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SummarizerFormat"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-format"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SummarizerLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-length"
+          },
+          {
+            "type": "attribute",
+            "name": "preference",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformancePreference"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-preference"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedInputLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-expectedinputlanguages"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedContextLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-expectedcontextlanguages"
+          },
+          {
+            "type": "attribute",
+            "name": "outputLanguage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-outputlanguage"
+          },
+          {
+            "type": "operation",
+            "name": "measureInputUsage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SummarizerSummarizeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-measureinputusage"
+          },
+          {
+            "type": "attribute",
+            "name": "inputQuota",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizer-inputquota"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#summarizer"
+      },
+      "SummarizerCreateCoreOptions": {
+        "fragment": "dictionary SummarizerCreateCoreOptions {\n  SummarizerType type = \"key-points\";\n  SummarizerFormat format = \"markdown\";\n  SummarizerLength length = \"short\";\n  // **EXPERIMENTAL**: Only available in extension and experimental contexts.\n  PerformancePreference preference = \"auto\";\n\n  sequence<DOMString> expectedInputLanguages;\n  sequence<DOMString> expectedContextLanguages;\n  DOMString outputLanguage;\n};",
+        "type": "dictionary",
+        "name": "SummarizerCreateCoreOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SummarizerType"
+            },
+            "default": {
+              "type": "string",
+              "value": "key-points"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreatecoreoptions-type"
+          },
+          {
+            "type": "field",
+            "name": "format",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SummarizerFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "markdown"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreatecoreoptions-format"
+          },
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SummarizerLength"
+            },
+            "default": {
+              "type": "string",
+              "value": "short"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreatecoreoptions-length"
+          },
+          {
+            "type": "field",
+            "name": "preference",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformancePreference"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreatecoreoptions-preference"
+          },
+          {
+            "type": "field",
+            "name": "expectedInputLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreatecoreoptions-expectedinputlanguages"
+          },
+          {
+            "type": "field",
+            "name": "expectedContextLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreatecoreoptions-expectedcontextlanguages"
+          },
+          {
+            "type": "field",
+            "name": "outputLanguage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreatecoreoptions-outputlanguage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-summarizercreatecoreoptions"
+      },
+      "SummarizerCreateOptions": {
+        "fragment": "dictionary SummarizerCreateOptions : SummarizerCreateCoreOptions {\n  AbortSignal signal;\n  CreateMonitorCallback monitor;\n\n  DOMString sharedContext;\n};",
+        "type": "dictionary",
+        "name": "SummarizerCreateOptions",
+        "inheritance": "SummarizerCreateCoreOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitorCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreateoptions-monitor"
+          },
+          {
+            "type": "field",
+            "name": "sharedContext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizercreateoptions-sharedcontext"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-summarizercreateoptions"
+      },
+      "SummarizerSummarizeOptions": {
+        "fragment": "dictionary SummarizerSummarizeOptions {\n  AbortSignal signal;\n  DOMString context;\n};",
+        "type": "dictionary",
+        "name": "SummarizerSummarizeOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizersummarizeoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "context",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizersummarizeoptions-context"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-summarizersummarizeoptions"
+      },
+      "SummarizerType": {
+        "fragment": "enum SummarizerType { \"tldr\", \"teaser\", \"key-points\", \"headline\" };",
+        "type": "enum",
+        "name": "SummarizerType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "tldr",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizertype-tldr"
+          },
+          {
+            "type": "enum-value",
+            "value": "teaser",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizertype-teaser"
+          },
+          {
+            "type": "enum-value",
+            "value": "key-points",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizertype-key-points"
+          },
+          {
+            "type": "enum-value",
+            "value": "headline",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizertype-headline"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-summarizertype"
+      },
+      "SummarizerFormat": {
+        "fragment": "enum SummarizerFormat { \"plain-text\", \"markdown\" };",
+        "type": "enum",
+        "name": "SummarizerFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "plain-text",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizerformat-plain-text"
+          },
+          {
+            "type": "enum-value",
+            "value": "markdown",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizerformat-markdown"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-summarizerformat"
+      },
+      "SummarizerLength": {
+        "fragment": "enum SummarizerLength { \"short\", \"medium\", \"long\" };",
+        "type": "enum",
+        "name": "SummarizerLength",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "short",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizerlength-short"
+          },
+          {
+            "type": "enum-value",
+            "value": "medium",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizerlength-medium"
+          },
+          {
+            "type": "enum-value",
+            "value": "long",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-summarizerlength-long"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-summarizerlength"
+      },
+      "PerformancePreference": {
+        "fragment": "enum PerformancePreference { \"auto\", \"speed\", \"capability\" };",
+        "type": "enum",
+        "name": "PerformancePreference",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-performancepreference-auto"
+          },
+          {
+            "type": "enum-value",
+            "value": "speed",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-performancepreference-speed"
+          },
+          {
+            "type": "enum-value",
+            "value": "capability",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-performancepreference-capability"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-performancepreference"
+      },
+      "Writer": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface Writer {\n  static Promise<Writer> create(optional WriterCreateOptions options = {});\n  static Promise<Availability> availability(optional WriterCreateCoreOptions options = {});\n\n  Promise<DOMString> write(\n    DOMString input,\n    optional WriterWriteOptions options = {}\n  );\n  ReadableStream writeStreaming(\n    DOMString input,\n    optional WriterWriteOptions options = {}\n  );\n\n  readonly attribute DOMString sharedContext;\n  readonly attribute WriterTone tone;\n  readonly attribute WriterFormat format;\n  readonly attribute WriterLength length;\n\n  readonly attribute FrozenArray<DOMString>? expectedInputLanguages;\n  readonly attribute FrozenArray<DOMString>? expectedContextLanguages;\n  readonly attribute DOMString? outputLanguage;\n\n  Promise<double> measureInputUsage(\n    DOMString input,\n    optional WriterWriteOptions options = {}\n  );\n  readonly attribute unrestricted double inputQuota;\n};",
+        "type": "interface",
+        "name": "Writer",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Writer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WriterCreateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-create"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WriterCreateCoreOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-availability"
+          },
+          {
+            "type": "operation",
+            "name": "write",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WriterWriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-write"
+          },
+          {
+            "type": "operation",
+            "name": "writeStreaming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WriterWriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-writestreaming"
+          },
+          {
+            "type": "attribute",
+            "name": "sharedContext",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-sharedcontext"
+          },
+          {
+            "type": "attribute",
+            "name": "tone",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriterTone"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-tone"
+          },
+          {
+            "type": "attribute",
+            "name": "format",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriterFormat"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-format"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriterLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-length"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedInputLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-expectedinputlanguages"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedContextLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-expectedcontextlanguages"
+          },
+          {
+            "type": "attribute",
+            "name": "outputLanguage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-outputlanguage"
+          },
+          {
+            "type": "operation",
+            "name": "measureInputUsage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WriterWriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-measureinputusage"
+          },
+          {
+            "type": "attribute",
+            "name": "inputQuota",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writer-inputquota"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#writer"
+      },
+      "WriterCreateCoreOptions": {
+        "fragment": "dictionary WriterCreateCoreOptions {\n  WriterTone tone = \"neutral\";\n  WriterFormat format = \"markdown\";\n  WriterLength length = \"short\";\n\n  sequence<DOMString> expectedInputLanguages;\n  sequence<DOMString> expectedContextLanguages;\n  DOMString outputLanguage;\n};",
+        "type": "dictionary",
+        "name": "WriterCreateCoreOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "tone",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriterTone"
+            },
+            "default": {
+              "type": "string",
+              "value": "neutral"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreatecoreoptions-tone"
+          },
+          {
+            "type": "field",
+            "name": "format",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriterFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "markdown"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreatecoreoptions-format"
+          },
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WriterLength"
+            },
+            "default": {
+              "type": "string",
+              "value": "short"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreatecoreoptions-length"
+          },
+          {
+            "type": "field",
+            "name": "expectedInputLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreatecoreoptions-expectedinputlanguages"
+          },
+          {
+            "type": "field",
+            "name": "expectedContextLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreatecoreoptions-expectedcontextlanguages"
+          },
+          {
+            "type": "field",
+            "name": "outputLanguage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreatecoreoptions-outputlanguage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-writercreatecoreoptions"
+      },
+      "WriterCreateOptions": {
+        "fragment": "dictionary WriterCreateOptions : WriterCreateCoreOptions {\n  AbortSignal signal;\n  CreateMonitorCallback monitor;\n\n  DOMString sharedContext;\n};",
+        "type": "dictionary",
+        "name": "WriterCreateOptions",
+        "inheritance": "WriterCreateCoreOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitorCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreateoptions-monitor"
+          },
+          {
+            "type": "field",
+            "name": "sharedContext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writercreateoptions-sharedcontext"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-writercreateoptions"
+      },
+      "WriterWriteOptions": {
+        "fragment": "dictionary WriterWriteOptions {\n  DOMString context;\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "WriterWriteOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "context",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writerwriteoptions-context"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writerwriteoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-writerwriteoptions"
+      },
+      "WriterTone": {
+        "fragment": "enum WriterTone { \"formal\", \"neutral\", \"casual\" };",
+        "type": "enum",
+        "name": "WriterTone",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "formal",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writertone-formal"
+          },
+          {
+            "type": "enum-value",
+            "value": "neutral",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writertone-neutral"
+          },
+          {
+            "type": "enum-value",
+            "value": "casual",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writertone-casual"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-writertone"
+      },
+      "WriterFormat": {
+        "fragment": "enum WriterFormat { \"plain-text\", \"markdown\" };",
+        "type": "enum",
+        "name": "WriterFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "plain-text",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writerformat-plain-text"
+          },
+          {
+            "type": "enum-value",
+            "value": "markdown",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writerformat-markdown"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-writerformat"
+      },
+      "WriterLength": {
+        "fragment": "enum WriterLength { \"short\", \"medium\", \"long\" };",
+        "type": "enum",
+        "name": "WriterLength",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "short",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writerlength-short"
+          },
+          {
+            "type": "enum-value",
+            "value": "medium",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writerlength-medium"
+          },
+          {
+            "type": "enum-value",
+            "value": "long",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-writerlength-long"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-writerlength"
+      },
+      "Rewriter": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface Rewriter {\n  static Promise<Rewriter> create(optional RewriterCreateOptions options = {});\n  static Promise<Availability> availability(optional RewriterCreateCoreOptions options = {});\n\n  Promise<DOMString> rewrite(\n    DOMString input,\n    optional RewriterRewriteOptions options = {}\n  );\n  ReadableStream rewriteStreaming(\n    DOMString input,\n    optional RewriterRewriteOptions options = {}\n  );\n\n  readonly attribute DOMString sharedContext;\n  readonly attribute RewriterTone tone;\n  readonly attribute RewriterFormat format;\n  readonly attribute RewriterLength length;\n\n  readonly attribute FrozenArray<DOMString>? expectedInputLanguages;\n  readonly attribute FrozenArray<DOMString>? expectedContextLanguages;\n  readonly attribute DOMString? outputLanguage;\n\n  Promise<double> measureInputUsage(\n    DOMString input,\n    optional RewriterRewriteOptions options = {}\n  );\n  readonly attribute unrestricted double inputQuota;\n};",
+        "type": "interface",
+        "name": "Rewriter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Rewriter"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RewriterCreateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-create"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RewriterCreateCoreOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-availability"
+          },
+          {
+            "type": "operation",
+            "name": "rewrite",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RewriterRewriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-rewrite"
+          },
+          {
+            "type": "operation",
+            "name": "rewriteStreaming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RewriterRewriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-rewritestreaming"
+          },
+          {
+            "type": "attribute",
+            "name": "sharedContext",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-sharedcontext"
+          },
+          {
+            "type": "attribute",
+            "name": "tone",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RewriterTone"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-tone"
+          },
+          {
+            "type": "attribute",
+            "name": "format",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RewriterFormat"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-format"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RewriterLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-length"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedInputLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-expectedinputlanguages"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedContextLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-expectedcontextlanguages"
+          },
+          {
+            "type": "attribute",
+            "name": "outputLanguage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-outputlanguage"
+          },
+          {
+            "type": "operation",
+            "name": "measureInputUsage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RewriterRewriteOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-measureinputusage"
+          },
+          {
+            "type": "attribute",
+            "name": "inputQuota",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriter-inputquota"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#rewriter"
+      },
+      "RewriterCreateCoreOptions": {
+        "fragment": "dictionary RewriterCreateCoreOptions {\n  RewriterTone tone = \"as-is\";\n  RewriterFormat format = \"as-is\";\n  RewriterLength length = \"as-is\";\n\n  sequence<DOMString> expectedInputLanguages;\n  sequence<DOMString> expectedContextLanguages;\n  DOMString outputLanguage;\n};",
+        "type": "dictionary",
+        "name": "RewriterCreateCoreOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "tone",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RewriterTone"
+            },
+            "default": {
+              "type": "string",
+              "value": "as-is"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreatecoreoptions-tone"
+          },
+          {
+            "type": "field",
+            "name": "format",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RewriterFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "as-is"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreatecoreoptions-format"
+          },
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RewriterLength"
+            },
+            "default": {
+              "type": "string",
+              "value": "as-is"
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreatecoreoptions-length"
+          },
+          {
+            "type": "field",
+            "name": "expectedInputLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreatecoreoptions-expectedinputlanguages"
+          },
+          {
+            "type": "field",
+            "name": "expectedContextLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreatecoreoptions-expectedcontextlanguages"
+          },
+          {
+            "type": "field",
+            "name": "outputLanguage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreatecoreoptions-outputlanguage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-rewritercreatecoreoptions"
+      },
+      "RewriterCreateOptions": {
+        "fragment": "dictionary RewriterCreateOptions : RewriterCreateCoreOptions {\n  AbortSignal signal;\n  CreateMonitorCallback monitor;\n\n  DOMString sharedContext;\n};",
+        "type": "dictionary",
+        "name": "RewriterCreateOptions",
+        "inheritance": "RewriterCreateCoreOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitorCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreateoptions-monitor"
+          },
+          {
+            "type": "field",
+            "name": "sharedContext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritercreateoptions-sharedcontext"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-rewritercreateoptions"
+      },
+      "RewriterRewriteOptions": {
+        "fragment": "dictionary RewriterRewriteOptions {\n  DOMString context;\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "RewriterRewriteOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "context",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterrewriteoptions-context"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterrewriteoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dictdef-rewriterrewriteoptions"
+      },
+      "RewriterTone": {
+        "fragment": "enum RewriterTone { \"as-is\", \"more-formal\", \"more-casual\" };",
+        "type": "enum",
+        "name": "RewriterTone",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "as-is",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritertone-as-is"
+          },
+          {
+            "type": "enum-value",
+            "value": "more-formal",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritertone-more-formal"
+          },
+          {
+            "type": "enum-value",
+            "value": "more-casual",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewritertone-more-casual"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-rewritertone"
+      },
+      "RewriterFormat": {
+        "fragment": "enum RewriterFormat { \"as-is\", \"plain-text\", \"markdown\" };",
+        "type": "enum",
+        "name": "RewriterFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "as-is",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterformat-as-is"
+          },
+          {
+            "type": "enum-value",
+            "value": "plain-text",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterformat-plain-text"
+          },
+          {
+            "type": "enum-value",
+            "value": "markdown",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterformat-markdown"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-rewriterformat"
+      },
+      "RewriterLength": {
+        "fragment": "enum RewriterLength { \"as-is\", \"shorter\", \"longer\" };",
+        "type": "enum",
+        "name": "RewriterLength",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "as-is",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterlength-as-is"
+          },
+          {
+            "type": "enum-value",
+            "value": "shorter",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterlength-shorter"
+          },
+          {
+            "type": "enum-value",
+            "value": "longer",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-rewriterlength-longer"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-rewriterlength"
+      },
+      "CreateMonitor": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface CreateMonitor : EventTarget {\n  attribute EventHandler ondownloadprogress;\n};",
+        "type": "interface",
+        "name": "CreateMonitor",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "ondownloadprogress",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-createmonitor-ondownloadprogress"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#createmonitor"
+      },
+      "CreateMonitorCallback": {
+        "fragment": "callback CreateMonitorCallback = undefined (CreateMonitor monitor);",
+        "type": "callback",
+        "name": "CreateMonitorCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitor"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#callbackdef-createmonitorcallback"
+      },
+      "Availability": {
+        "fragment": "enum Availability {\n  \"unavailable\",\n  \"downloadable\",\n  \"downloading\",\n  \"available\"\n};",
+        "type": "enum",
+        "name": "Availability",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "unavailable",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-availability-unavailable"
+          },
+          {
+            "type": "enum-value",
+            "value": "downloadable",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-availability-downloadable"
+          },
+          {
+            "type": "enum-value",
+            "value": "downloading",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-availability-downloading"
+          },
+          {
+            "type": "enum-value",
+            "value": "available",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-availability-available"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#enumdef-availability"
+      },
+      "DestroyableModel": {
+        "fragment": "interface mixin DestroyableModel {\n  undefined destroy();\n};",
+        "type": "interface mixin",
+        "name": "DestroyableModel",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "destroy",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/writing-assistance-apis/#dom-destroyablemodel-destroy"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/writing-assistance-apis/#destroyablemodel"
+      }
+    },
+    "idlExtendedNames": {
+      "Summarizer": [
+        {
+          "fragment": "Summarizer includes DestroyableModel;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Summarizer",
+          "includes": "DestroyableModel"
+        }
+      ],
+      "Writer": [
+        {
+          "fragment": "Writer includes DestroyableModel;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Writer",
+          "includes": "DestroyableModel"
+        }
+      ],
+      "Rewriter": [
+        {
+          "fragment": "Rewriter includes DestroyableModel;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Rewriter",
+          "includes": "DestroyableModel"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Summarizer",
+        "Writer",
+        "Rewriter",
+        "CreateMonitor"
+      ]
+    },
+    "dependencies": {
+      "Summarizer": [
+        "Summarizer",
+        "SummarizerCreateOptions",
+        "Availability",
+        "SummarizerCreateCoreOptions",
+        "SummarizerSummarizeOptions",
+        "ReadableStream",
+        "SummarizerType",
+        "SummarizerFormat",
+        "SummarizerLength",
+        "PerformancePreference",
+        "DestroyableModel"
+      ],
+      "SummarizerCreateCoreOptions": [
+        "SummarizerType",
+        "SummarizerFormat",
+        "SummarizerLength",
+        "PerformancePreference"
+      ],
+      "SummarizerCreateOptions": [
+        "SummarizerCreateCoreOptions",
+        "AbortSignal",
+        "CreateMonitorCallback"
+      ],
+      "SummarizerSummarizeOptions": [
+        "AbortSignal"
+      ],
+      "Writer": [
+        "Writer",
+        "WriterCreateOptions",
+        "Availability",
+        "WriterCreateCoreOptions",
+        "WriterWriteOptions",
+        "ReadableStream",
+        "WriterTone",
+        "WriterFormat",
+        "WriterLength",
+        "DestroyableModel"
+      ],
+      "WriterCreateCoreOptions": [
+        "WriterTone",
+        "WriterFormat",
+        "WriterLength"
+      ],
+      "WriterCreateOptions": [
+        "WriterCreateCoreOptions",
+        "AbortSignal",
+        "CreateMonitorCallback"
+      ],
+      "WriterWriteOptions": [
+        "AbortSignal"
+      ],
+      "Rewriter": [
+        "Rewriter",
+        "RewriterCreateOptions",
+        "Availability",
+        "RewriterCreateCoreOptions",
+        "RewriterRewriteOptions",
+        "ReadableStream",
+        "RewriterTone",
+        "RewriterFormat",
+        "RewriterLength",
+        "DestroyableModel"
+      ],
+      "RewriterCreateCoreOptions": [
+        "RewriterTone",
+        "RewriterFormat",
+        "RewriterLength"
+      ],
+      "RewriterCreateOptions": [
+        "RewriterCreateCoreOptions",
+        "AbortSignal",
+        "CreateMonitorCallback"
+      ],
+      "RewriterRewriteOptions": [
+        "AbortSignal"
+      ],
+      "CreateMonitor": [
+        "EventTarget",
+        "EventHandler"
+      ],
+      "DestroyableModel": []
+    },
+    "externalDependencies": [
+      "ReadableStream",
+      "AbortSignal",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

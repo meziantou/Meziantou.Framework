@@ -10,7 +10,7 @@ namespace Meziantou.AspNetCore.Components;
 public class InputGuid<TValue> : InputBase<TValue>
 {
     /// <summary>Gets or sets the error message to display when the input value cannot be parsed.</summary>
-    [Parameter] public string ParsingErrorMessage { get; set; } = "";
+    [Parameter] public string ParsingErrorMessage { get; set; } = "The {0} field must be a valid GUID.";
 
     /// <summary>Gets a reference to the rendered input element.</summary>
     [DisallowNull] public ElementReference? Element { get; protected set; }
@@ -19,7 +19,7 @@ public class InputGuid<TValue> : InputBase<TValue>
     {
         builder.OpenElement(0, "input");
         builder.AddMultipleAttributes(1, AdditionalAttributes);
-        builder.AddAttribute(2, "type", "url");
+        builder.AddAttribute(2, "type", "text");
         builder.AddAttribute(3, "class", CssClass);
         builder.AddAttribute(4, "value", BindConverter.FormatValue(CurrentValueAsString));
         builder.AddAttribute(5, "onchange", EventCallback.Factory.CreateBinder<string?>(this, value => CurrentValueAsString = value, CurrentValueAsString));
@@ -50,7 +50,7 @@ public class InputGuid<TValue> : InputBase<TValue>
         }
         else
         {
-            throw new InvalidOperationException($"The type '{targetType}' is not a supported date type.");
+            throw new InvalidOperationException($"The type '{targetType}' is not supported. Use Guid or Guid?.");
         }
 
         if (success)

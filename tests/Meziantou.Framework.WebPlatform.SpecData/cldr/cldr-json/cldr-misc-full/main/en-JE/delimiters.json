@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-JE": {
+      "identity": {
+        "language": "en",
+        "territory": "JE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

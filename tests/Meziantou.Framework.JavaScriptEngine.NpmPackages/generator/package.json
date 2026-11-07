@@ -1,0 +1,9 @@
+{
+  "name": "meziantou-framework-javascriptengine-npm-packages-generator",
+  "private": true,
+  "description": "Runs the workloads in Chromium to write the expected results: see ../readme.md",
+  "license": "MIT",
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}

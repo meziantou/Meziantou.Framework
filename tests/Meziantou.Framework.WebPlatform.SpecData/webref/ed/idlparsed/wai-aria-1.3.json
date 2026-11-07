@@ -1,0 +1,1911 @@
+{
+  "spec": {
+    "title": "Accessible Rich Internet Applications (WAI-ARIA) 1.3",
+    "url": "https://w3c.github.io/aria/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "ARIAMixin": {
+        "fragment": "interface mixin ARIAMixin {\n[CEReactions, Reflect] attribute DOMString? role;\n[CEReactions, Reflect=\"aria-activedescendant\"] attribute Element? ariaActiveDescendantElement;\n[CEReactions, Reflect=\"aria-atomic\"] attribute DOMString? ariaAtomic;\n[CEReactions, Reflect=\"aria-autocomplete\"] attribute DOMString? ariaAutoComplete;\n[CEReactions, Reflect=\"aria-braillelabel\"] attribute DOMString? ariaBrailleLabel;\n[CEReactions, Reflect=\"aria-brailleroledescription\"] attribute DOMString? ariaBrailleRoleDescription;\n[CEReactions, Reflect=\"aria-busy\"] attribute DOMString? ariaBusy;\n[CEReactions, Reflect=\"aria-checked\"] attribute DOMString? ariaChecked;\n[CEReactions, Reflect=\"aria-colcount\"] attribute DOMString? ariaColCount;\n[CEReactions, Reflect=\"aria-colindex\"] attribute DOMString? ariaColIndex;\n[CEReactions, Reflect=\"aria-colindextext\"] attribute DOMString? ariaColIndexText;\n[CEReactions, Reflect=\"aria-colspan\"] attribute DOMString? ariaColSpan;\n[CEReactions, Reflect=\"aria-controls\"] attribute FrozenArray<Element>? ariaControlsElements;\n[CEReactions, Reflect=\"aria-current\"] attribute DOMString? ariaCurrent;\n[CEReactions, Reflect=\"aria-describedby\"] attribute FrozenArray<Element>? ariaDescribedByElements;\n[CEReactions, Reflect=\"aria-description\"] attribute DOMString? ariaDescription;\n[CEReactions, Reflect=\"aria-details\"] attribute FrozenArray<Element>? ariaDetailsElements;\n[CEReactions, Reflect=\"aria-disabled\"] attribute DOMString? ariaDisabled;\n[CEReactions, Reflect=\"aria-errormessage\"] attribute FrozenArray<Element>? ariaErrorMessageElements;\n[CEReactions, Reflect=\"aria-expanded\"] attribute DOMString? ariaExpanded;\n[CEReactions, Reflect=\"aria-flowto\"] attribute FrozenArray<Element>? ariaFlowToElements;\n[CEReactions, Reflect=\"aria-haspopup\"] attribute DOMString? ariaHasPopup;\n[CEReactions, Reflect=\"aria-hidden\"] attribute DOMString? ariaHidden;\n[CEReactions, Reflect=\"aria-invalid\"] attribute DOMString? ariaInvalid;\n[CEReactions, Reflect=\"aria-keyshortcuts\"] attribute DOMString? ariaKeyShortcuts;\n[CEReactions, Reflect=\"aria-label\"] attribute DOMString? ariaLabel;\n[CEReactions, Reflect=\"aria-labelledby\"] attribute FrozenArray<Element>? ariaLabelledByElements;\n[CEReactions, Reflect=\"aria-level\"] attribute DOMString? ariaLevel;\n[CEReactions, Reflect=\"aria-live\"] attribute DOMString? ariaLive;\n[CEReactions, Reflect=\"aria-modal\"] attribute DOMString? ariaModal;\n[CEReactions, Reflect=\"aria-multiline\"] attribute DOMString? ariaMultiLine;\n[CEReactions, Reflect=\"aria-multiselectable\"] attribute DOMString? ariaMultiSelectable;\n[CEReactions, Reflect=\"aria-orientation\"] attribute DOMString? ariaOrientation;\n[CEReactions, Reflect=\"aria-owns\"] attribute FrozenArray<Element>? ariaOwnsElements;\n[CEReactions, Reflect=\"aria-placeholder\"] attribute DOMString? ariaPlaceholder;\n[CEReactions, Reflect=\"aria-posinset\"] attribute DOMString? ariaPosInSet;\n[CEReactions, Reflect=\"aria-pressed\"] attribute DOMString? ariaPressed;\n[CEReactions, Reflect=\"aria-readonly\"] attribute DOMString? ariaReadOnly;\n[CEReactions, Reflect=\"aria-relevant\"] attribute DOMString? ariaRelevant;\n[CEReactions, Reflect=\"aria-required\"] attribute DOMString? ariaRequired;\n[CEReactions, Reflect=\"aria-roledescription\"] attribute DOMString? ariaRoleDescription;\n[CEReactions, Reflect=\"aria-rowcount\"] attribute DOMString? ariaRowCount;\n[CEReactions, Reflect=\"aria-rowindex\"] attribute DOMString? ariaRowIndex;\n[CEReactions, Reflect=\"aria-rowindextext\"] attribute DOMString? ariaRowIndexText;\n[CEReactions, Reflect=\"aria-rowspan\"] attribute DOMString? ariaRowSpan;\n[CEReactions, Reflect=\"aria-selected\"] attribute DOMString? ariaSelected;\n[CEReactions, Reflect=\"aria-setsize\"] attribute DOMString? ariaSetSize;\n[CEReactions, Reflect=\"aria-sort\"] attribute DOMString? ariaSort;\n[CEReactions, Reflect=\"aria-valuemax\"] attribute DOMString? ariaValueMax;\n[CEReactions, Reflect=\"aria-valuemin\"] attribute DOMString? ariaValueMin;\n[CEReactions, Reflect=\"aria-valuenow\"] attribute DOMString? ariaValueNow;\n[CEReactions, Reflect=\"aria-valuetext\"] attribute DOMString? ariaValueText;\n  };",
+        "type": "interface mixin",
+        "name": "ARIAMixin",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "role",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-role"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaActiveDescendantElement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-activedescendant\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaactivedescendantelement"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaAtomic",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-atomic\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaatomic"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaAutoComplete",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-autocomplete\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaautocomplete"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaBrailleLabel",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-braillelabel\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariabraillelabel"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaBrailleRoleDescription",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-brailleroledescription\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariabrailleroledescription"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaBusy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-busy\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariabusy"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaChecked",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-checked\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariachecked"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaColCount",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-colcount\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariacolcount"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaColIndex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-colindex\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariacolindex"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaColIndexText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-colindextext\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariacolindextext"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaColSpan",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-colspan\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariacolspan"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaControlsElements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-controls\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariacontrolselements"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaCurrent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-current\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariacurrent"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaDescribedByElements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-describedby\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariadescribedbyelements"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaDescription",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-description\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariadescription"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaDetailsElements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-details\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariadetailselements"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaDisabled",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-disabled\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariadisabled"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaErrorMessageElements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-errormessage\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaerrormessageelements"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaExpanded",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-expanded\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaexpanded"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaFlowToElements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-flowto\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaflowtoelements"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaHasPopup",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-haspopup\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariahaspopup"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaHidden",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-hidden\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariahidden"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaInvalid",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-invalid\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariainvalid"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaKeyShortcuts",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-keyshortcuts\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariakeyshortcuts"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaLabel",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-label\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-arialabel"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaLabelledByElements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-labelledby\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-arialabelledbyelements"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaLevel",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-level\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-arialevel"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaLive",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-live\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-arialive"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaModal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-modal\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariamodal"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaMultiLine",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-multiline\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariamultiline"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaMultiSelectable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-multiselectable\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariamultiselectable"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaOrientation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-orientation\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaorientation"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaOwnsElements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-owns\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaownselements"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaPlaceholder",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-placeholder\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaplaceholder"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaPosInSet",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-posinset\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaposinset"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaPressed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-pressed\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariapressed"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaReadOnly",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-readonly\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariareadonly"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaRelevant",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-relevant\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariarelevant"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaRequired",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-required\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariarequired"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaRoleDescription",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-roledescription\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaroledescription"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaRowCount",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-rowcount\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariarowcount"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaRowIndex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-rowindex\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariarowindex"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaRowIndexText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-rowindextext\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariarowindextext"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaRowSpan",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-rowspan\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariarowspan"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaSelected",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-selected\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariaselected"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaSetSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-setsize\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariasetsize"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaSort",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-sort\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariasort"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaValueMax",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-valuemax\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariavaluemax"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaValueMin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-valuemin\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariavaluemin"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaValueNow",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-valuenow\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariavaluenow"
+          },
+          {
+            "type": "attribute",
+            "name": "ariaValueText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "string",
+                  "value": "\"aria-valuetext\""
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/aria/#dom-ariamixin-ariavaluetext"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/aria/#dom-ariamixin"
+      },
+      "AriaNotifyPriority": {
+        "fragment": "enum AriaNotifyPriority { \"normal\", \"high\" };",
+        "type": "enum",
+        "name": "AriaNotifyPriority",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "normal",
+            "href": "https://w3c.github.io/aria/#dom-arianotifypriority-normal"
+          },
+          {
+            "type": "enum-value",
+            "value": "high",
+            "href": "https://w3c.github.io/aria/#dom-arianotifypriority-high"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/aria/#dom-arianotifypriority"
+      },
+      "AriaNotificationOptions": {
+        "fragment": "dictionary AriaNotificationOptions {\n  AriaNotifyPriority priority = \"normal\";\n};",
+        "type": "dictionary",
+        "name": "AriaNotificationOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "priority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AriaNotifyPriority"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/aria/#dom-arianotificationoptions-priority"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/aria/#dom-arianotificationoptions"
+      },
+      "ARIANotifyMixin": {
+        "fragment": "interface mixin ARIANotifyMixin {\n  undefined ariaNotify(DOMString announcement, optional AriaNotificationOptions options = {});\n};",
+        "type": "interface mixin",
+        "name": "ARIANotifyMixin",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "ariaNotify",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "announcement",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AriaNotificationOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/aria/#dom-arianotifymixin-arianotify"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/aria/#dom-arianotifymixin"
+      }
+    },
+    "idlExtendedNames": {
+      "Element": [
+        {
+          "fragment": "Element includes ARIAMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Element",
+          "includes": "ARIAMixin"
+        },
+        {
+          "fragment": "Element includes ARIANotifyMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Element",
+          "includes": "ARIANotifyMixin"
+        }
+      ],
+      "Document": [
+        {
+          "fragment": "Document includes ARIANotifyMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Document",
+          "includes": "ARIANotifyMixin"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "ARIAMixin": [
+        "Element"
+      ],
+      "Element": [
+        "ARIAMixin",
+        "ARIANotifyMixin"
+      ],
+      "AriaNotificationOptions": [
+        "AriaNotifyPriority"
+      ],
+      "ARIANotifyMixin": [
+        "AriaNotificationOptions"
+      ],
+      "Document": [
+        "ARIANotifyMixin"
+      ]
+    },
+    "externalDependencies": [
+      "Element"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,369 @@
+namespace Meziantou.Framework.Threading.Tests;
+
+public sealed class ResettableCancellationTokenSourceTests
+{
+    [Fact]
+    public async Task ResettableCancellationTokenSource_Example()
+    {
+        #region ResettableCancellationTokenSource_Usage
+        using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+
+        // Use the token
+        var token = cts.Token;
+        await Task.Delay(1, token);
+
+        // Reset to reuse: the previous token is canceled, read Token again to get a new one
+        cts.Reset();
+        Assert.True(token.IsCancellationRequested);
+        await Task.Delay(1, cts.Token);
+        #endregion
+    }
+
+    [Fact]
+    public void ResettableCancellationTokenSource_OptionsExample()
+    {
+        #region ResettableCancellationTokenSource_Options
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+
+        // Reset gives a fresh token after a cancellation
+        cts.Cancel();
+        var canceledToken = cts.Token;
+        cts.Reset();
+        Assert.True(canceledToken.IsCancellationRequested);
+        Assert.False(cts.IsCancellationRequested);
+
+        // CancelOnDispose cancels the current token when the source is disposed
+        var token = cts.Token;
+        cts.Dispose();
+        Assert.True(token.IsCancellationRequested);
+        #endregion
+    }
+
+    [Fact]
+    public void Dispose_IsIdempotent()
+    {
+        var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+        cts.Dispose();
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Dispose_IsIdempotent_WithoutCancelOnDispose()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        cts.Dispose();
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Dispose_CancelsTheToken_WhenCancelOnDisposeIsSet()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        var token = cts.Token;
+        cts.Dispose();
+
+        Assert.True(token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Dispose_DoesNotCancelTheToken_WhenCancelOnDisposeIsNotSet()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
+        cts.Dispose();
+
+        Assert.False(token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Reset_CancelsTheCurrentToken_WhenCancelOnResetIsSet()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset);
+        var token = cts.Token;
+        cts.Reset();
+
+        Assert.True(token.IsCancellationRequested);
+        Assert.False(cts.IsCancellationRequested);
+        Assert.NotEqual(token, cts.Token);
+    }
+
+    [Fact]
+    public void Reset_ProducesAFreshTokenAfterCancellation()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
+        cts.Cancel();
+        Assert.True(cts.IsCancellationRequested);
+
+        cts.Reset();
+
+        Assert.False(cts.IsCancellationRequested);
+        Assert.False(cts.Token.IsCancellationRequested);
+        Assert.NotEqual(token, cts.Token);
+    }
+
+    [Fact]
+    public void Reset_ReusesTheToken_WhenCancellationWasNotRequested()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
+
+        cts.Reset();
+
+        Assert.Equal(token, cts.Token);
+
+        cts.Cancel();
+
+        Assert.True(token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Reset_DropsTheRegistrationsOfTheReusedToken()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var invoked = false;
+        using (cts.Token.Register(() => invoked = true))
+        {
+            cts.Reset();
+            cts.Cancel();
+        }
+
+        Assert.False(invoked);
+    }
+
+    [Fact]
+    public void Reset_DisarmsAPendingCancelAfter()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+
+        cts.Reset();
+
+        Assert.False(cts.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(1)));
+        Assert.False(cts.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Dispose_DisposesTheUnderlyingSource_WhenACancellationCallbackThrows()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        cts.Token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Dispose);
+
+        // The underlying source must be disposed even though the callback threw, otherwise the resources it holds
+        // (such as an allocated wait handle) stay alive until the finalizer runs.
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        Assert.Throws<ObjectDisposedException>(cts.Reset);
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Dispose_IsIdempotent_AfterACancellationCallbackThrows()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        cts.Token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Dispose);
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Reset_ProducesAFreshToken_WhenACancellationCallbackThrows()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset);
+        var token = cts.Token;
+        token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Reset);
+
+        Assert.True(token.IsCancellationRequested);
+        Assert.False(cts.IsCancellationRequested);
+        Assert.False(cts.Token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Reset_IsAbandoned_WhenACancellationCallbackDisposesTheInstance()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset);
+        cts.Token.Register(cts.Dispose);
+
+        cts.Reset();
+
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Reset_AfterDispose_Throws()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        cts.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(cts.Reset);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_IsIdempotent()
+    {
+        var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+        await cts.DisposeAsync();
+        await cts.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_IsIdempotent_WithoutCancelOnDispose()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        await cts.DisposeAsync();
+        await cts.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_CancelsTheToken_WhenCancelOnDisposeIsSet()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        var token = cts.Token;
+        await cts.DisposeAsync();
+
+        Assert.True(token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DoesNotCancelTheToken_WhenCancelOnDisposeIsNotSet()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
+        await cts.DisposeAsync();
+
+        Assert.False(token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesTheUnderlyingSource()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        _ = cts.Token;
+
+        await cts.DisposeAsync();
+
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        Assert.Throws<ObjectDisposedException>(cts.Reset);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesTheUnderlyingSource_WhenACancellationCallbackThrows()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        cts.Token.Register(() => throw new InvalidOperationException("callback"));
+
+        await Assert.ThrowsAsync<AggregateException>(() => cts.DisposeAsync().AsTask());
+
+        // The underlying source must be disposed even though the callback threw, otherwise the resources it holds
+        // (such as an allocated wait handle) stay alive until the finalizer runs.
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        Assert.Throws<ObjectDisposedException>(cts.Reset);
+        await cts.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_RunsTheCallbacksOutsideTheLock()
+    {
+        // The callback uses the instance, which deadlocks if the callbacks are awaited while the lock is held.
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        var canceled = false;
+        cts.Token.Register(() => canceled = cts.IsCancellationRequested);
+
+        await cts.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(60));
+
+        Assert.True(canceled);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_AfterDispose_DoesNothing()
+    {
+        var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+        cts.Dispose();
+
+        await cts.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Dispose_AfterDisposeAsync_DoesNothing()
+    {
+        var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+        await cts.DisposeAsync();
+
+        cts.Dispose();
+    }
+
+    [Fact]
+    public async Task ConcurrentResetAndCancel_DoesNotThrow()
+    {
+        // Reset replaces (and disposes) the underlying source. Without synchronization a concurrent reader observes
+        // the disposed instance and throws ObjectDisposedException.
+        for (var round = 0; round < 50; round++)
+        {
+            using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+            using var start = new Barrier(2);
+
+            var resets = RunOnDedicatedThread(() =>
+            {
+                start.SignalAndWait();
+                for (var i = 0; i < 200; i++)
+                {
+                    cts.Reset();
+                }
+            });
+
+            var readers = RunOnDedicatedThread(() =>
+            {
+                start.SignalAndWait();
+                for (var i = 0; i < 200; i++)
+                {
+                    _ = cts.Token;
+                    _ = cts.IsCancellationRequested;
+                    cts.Cancel();
+                }
+            });
+
+            await Task.WhenAll(resets, readers).WaitAsync(TimeSpan.FromMinutes(2));
+        }
+    }
+
+    [Fact]
+    public async Task ConcurrentDispose_DisposesOnlyOnce()
+    {
+        using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+        using var start = new Barrier(4);
+
+        var tasks = Enumerable.Range(0, 4).Select(_ => RunOnDedicatedThread(() =>
+        {
+            start.SignalAndWait();
+            cts.Dispose();
+        })).ToArray();
+
+        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromMinutes(2));
+    }
+
+    [Fact]
+    public async Task ConcurrentDisposeAsync_DisposesOnlyOnce()
+    {
+        await using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+        using var start = new Barrier(4);
+
+        var tasks = Enumerable.Range(0, 4).Select(_ => RunOnDedicatedThread(() =>
+        {
+            start.SignalAndWait();
+            return cts.DisposeAsync().AsTask();
+        })).ToArray();
+
+        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromMinutes(2));
+    }
+
+    /// <summary>Runs the participant of a barrier on a thread of its own. On the thread pool, the participants that already wait on the barrier hold their threads, and a busy pool can take more than 30 seconds to start the last one.</summary>
+    private static Task RunOnDedicatedThread(Action action) => Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+    /// <inheritdoc cref="RunOnDedicatedThread(Action)"/>
+    private static Task RunOnDedicatedThread(Func<Task> action) => Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+}

@@ -13,8 +13,11 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
     private readonly Type _unionType = typeof(T);
     private readonly PropertyInfo _valueProperty;
     private readonly ImmutableArray<UnionCase> _cases;
+    private readonly ImmutableArray<UnionCase> _readCases;
     private readonly ImmutableArray<UnionCase> _writeCases;
     private readonly UnionCase? _nullableCase;
+    private YamlSerializerOptions? _classifierContextOptions;
+    private YamlTypeClassifierContext? _classifierContext;
 
     [UnconditionalSuppressMessage(
         "Trimming",
@@ -31,6 +34,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             throw new InvalidOperationException($"Type '{_unionType}' is not a supported C# union type.");
         }
 
+        _readCases = CollapseNullableOverloads(_cases);
         _writeCases = SortCasesForWriting(_cases);
         _nullableCase = FindNullableCase(_cases);
     }
@@ -46,7 +50,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
     internal static bool CanConvertUnionType(Type typeToConvert)
     {
         ArgumentNullException.ThrowIfNull(typeToConvert);
-        return TryCreateCases(typeToConvert, out _, out _);
+        return TryGetCaseParameters(typeToConvert, out _, out _);
     }
 
     public override T? Read(YamlReader reader)
@@ -68,7 +72,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             var aliasCase = GetCaseForRuntimeValue(aliasValue.GetType());
             if (aliasCase is null)
             {
-                throw CreateNoMatchingCaseException(reader, GetKind(aliasValue.GetType()));
+                throw new YamlException(reader.SourceName, reader.Start, reader.End, $"Union type '{_unionType}' does not define a case that can represent the referenced value.");
             }
 
             return CreateValue(reader, aliasCase.Value, aliasValue);
@@ -81,10 +85,22 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         }
 
         var kind = GetCurrentKind(reader);
-        var unionCase = GetCaseForKind(kind, reader);
-        var converter = reader.GetConverter(unionCase.Type);
-        var caseValue = converter.Read(reader, unionCase.Type);
-        return CreateValue(reader, unionCase, caseValue);
+        Span<bool> isCandidate = _readCases.Length <= 32 ? stackalloc bool[_readCases.Length] : new bool[_readCases.Length];
+        var candidateCount = FindCandidates(reader, kind, isCandidate);
+        if (candidateCount == 1)
+        {
+            var unionCase = _readCases[isCandidate.IndexOf(true)];
+            var converter = GetCaseConverter(reader, unionCase);
+            var caseValue = converter.Read(reader, unionCase.Type);
+            return CreateValue(reader, unionCase, caseValue);
+        }
+
+        if (candidateCount == 0)
+        {
+            throw CreateNoMatchingCaseException(reader.SourceName, reader.Start, reader.End, kind);
+        }
+
+        return ReadClassifiedValue(reader, kind, isCandidate);
     }
 
     public override void Write(YamlWriter writer, T? value)
@@ -110,7 +126,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             throw new NotSupportedException($"Union type '{_unionType}' does not define a case that can represent '{caseValue.GetType()}'.");
         }
 
-        var converter = writer.GetConverter(unionCase.Value.Type);
+        var converter = GetCaseConverter(writer, unionCase.Value);
         converter.Write(writer, caseValue);
     }
 
@@ -124,9 +140,50 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
     private static bool TryCreateCases(Type unionType, [NotNullWhen(true)] out PropertyInfo? valueProperty, out ImmutableArray<UnionCase> cases)
     {
-        valueProperty = null;
         cases = ImmutableArray<UnionCase>.Empty;
 
+        if (!TryGetCaseParameters(unionType, out valueProperty, out var parameters))
+        {
+            return false;
+        }
+
+        var numberHandling = GetNumberHandling(unionType);
+        var nullabilityInfoContext = new NullabilityInfoContext();
+        var visitedUnions = new HashSet<Type> { unionType };
+        var builder = ImmutableArray.CreateBuilder<UnionCase>(parameters.Count);
+        foreach (var parameter in parameters)
+        {
+            var caseType = parameter.ParameterType;
+            var runtimeType = Nullable.GetUnderlyingType(caseType) ?? caseType;
+            var acceptsNull = IsNullableParameter(nullabilityInfoContext, parameter);
+            var caseNumberHandling = YamlNumberHandlingConverter.IsSupportedType(caseType) ? numberHandling : YamlNumberHandling.None;
+
+            var exactKinds = UnionCaseKinds.None;
+            var fallbackKinds = UnionCaseKinds.None;
+            var converterTypes = new List<Type>();
+
+            // The number handling of this union is applied by the exact match of the case, so it is not passed here.
+            AddCaseKinds(runtimeType, YamlNumberHandling.None, visitedUnions, ref exactKinds, ref fallbackKinds, converterTypes);
+
+            builder.Add(new UnionCase(caseType, runtimeType, (ConstructorInfo)parameter.Member, exactKinds, fallbackKinds, [.. converterTypes], acceptsNull, caseNumberHandling));
+        }
+
+        cases = builder.MoveToImmutable();
+        return true;
+    }
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2070",
+        Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2075",
+        Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+    private static bool TryGetCaseParameters(Type unionType, [NotNullWhen(true)] out PropertyInfo? valueProperty, out List<ParameterInfo> parameters)
+    {
+        parameters = [];
+        valueProperty = null;
         if (!HasUnionAttribute(unionType))
         {
             return false;
@@ -138,36 +195,76 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             return false;
         }
 
-        var constructors = unionType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
-        if (constructors.Length == 0)
+        foreach (var constructor in unionType.GetConstructors(BindingFlags.Instance | BindingFlags.Public))
         {
-            return false;
+            var constructorParameters = constructor.GetParameters();
+            if (constructorParameters.Length == 1)
+            {
+                parameters.Add(constructorParameters[0]);
+            }
         }
 
-        var nullabilityInfoContext = new NullabilityInfoContext();
-        var builder = ImmutableArray.CreateBuilder<UnionCase>();
-        foreach (var constructor in constructors)
+        return parameters.Count > 0;
+    }
+
+    private static YamlNumberHandling GetNumberHandling(Type unionType)
+        => unionType.GetCustomAttribute<YamlNumberHandlingAttribute>(inherit: true)?.Handling ?? YamlNumberHandling.None;
+
+    // Computes the YAML kinds a case reads. The exact kinds are the kinds the case type is represented by. The fallback
+    // kinds are the other scalar kinds the case can still read, such as a number for a string case; they are only
+    // considered when no case matches the kind exactly. A nested union matches the kinds of its own cases. A case whose
+    // type is a union being computed, such as 'union U(bool, U?)', never matches: reading it would read the enclosing
+    // union again. The converter types are the types whose custom converter, when one is registered, lets the case read
+    // any kind as a fallback.
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2067",
+        Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072",
+        Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+    private static void AddCaseKinds(Type runtimeType, YamlNumberHandling numberHandling, HashSet<Type> visitedUnions, ref UnionCaseKinds exactKinds, ref UnionCaseKinds fallbackKinds, List<Type> converterTypes)
+    {
+        if (visitedUnions.Contains(runtimeType))
         {
-            var parameters = constructor.GetParameters();
-            if (parameters.Length != 1)
+            return;
+        }
+
+        if (!converterTypes.Contains(runtimeType))
+        {
+            converterTypes.Add(runtimeType);
+        }
+
+        // A type-level converter can represent the type by any YAML kind.
+        if (runtimeType.GetCustomAttribute<YamlConverterAttribute>(inherit: false) is not null)
+        {
+            fallbackKinds |= UnionCaseKinds.All;
+        }
+
+        // The number handling declared on a nested union lets its numeric cases read some string scalars, such as "42".
+        if (YamlNumberHandlingConverter.CanReadStringScalars(runtimeType, numberHandling))
+        {
+            fallbackKinds |= UnionCaseKinds.String;
+        }
+
+        if (TryGetCaseParameters(runtimeType, out _, out var parameters))
+        {
+            var nestedNumberHandling = GetNumberHandling(runtimeType);
+            visitedUnions.Add(runtimeType);
+            foreach (var parameter in parameters)
             {
-                continue;
+                var caseType = parameter.ParameterType;
+                var caseNumberHandling = YamlNumberHandlingConverter.IsSupportedType(caseType) ? nestedNumberHandling : YamlNumberHandling.None;
+                AddCaseKinds(Nullable.GetUnderlyingType(caseType) ?? caseType, caseNumberHandling, visitedUnions, ref exactKinds, ref fallbackKinds, converterTypes);
             }
 
-            var parameter = parameters[0];
-            var caseType = parameter.ParameterType;
-            var runtimeType = Nullable.GetUnderlyingType(caseType) ?? caseType;
-            var acceptsNull = IsNullableParameter(nullabilityInfoContext, parameter);
-            builder.Add(new UnionCase(caseType, runtimeType, constructor, GetKind(caseType), acceptsNull));
+            visitedUnions.Remove(runtimeType);
+            return;
         }
 
-        if (builder.Count == 0)
-        {
-            return false;
-        }
-
-        cases = builder.ToImmutable();
-        return true;
+        exactKinds |= GetKind(runtimeType);
+        fallbackKinds |= GetFallbackKinds(runtimeType);
     }
 
     private static bool HasUnionAttribute(Type type)
@@ -199,41 +296,90 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         return nullabilityInfo.ReadState != NullabilityState.NotNull;
     }
 
-    private static ImmutableArray<UnionCase> SortCasesForWriting(ImmutableArray<UnionCase> cases)
+    private static ImmutableArray<UnionCase> CollapseNullableOverloads(ImmutableArray<UnionCase> cases)
     {
-        var builder = cases.ToBuilder();
-        builder.Sort((left, right) =>
+        var builder = ImmutableArray.CreateBuilder<UnionCase>(cases.Length);
+        foreach (var unionCase in cases)
         {
-            if (left.RuntimeType == right.RuntimeType)
+            var replaced = false;
+            for (var i = 0; i < builder.Count; i++)
             {
-                return 0;
+                if (builder[i].RuntimeType != unionCase.RuntimeType)
+                {
+                    continue;
+                }
+
+                // 'union Foo(int, int?)' declares two cases for the same underlying type. They are indistinguishable
+                // when reading a non-null value, so keep the non-nullable overload as the canonical one. The nullable
+                // overload is still used when reading a null scalar.
+                if (Nullable.GetUnderlyingType(builder[i].Type) is not null)
+                {
+                    builder[i] = unionCase;
+                }
+
+                replaced = true;
+                break;
             }
 
-            if (left.RuntimeType.IsAssignableFrom(right.RuntimeType))
+            if (!replaced)
             {
-                return 1;
+                builder.Add(unionCase);
             }
+        }
 
-            if (right.RuntimeType.IsAssignableFrom(left.RuntimeType))
-            {
-                return -1;
-            }
-
-            return 0;
-        });
         return builder.ToImmutable();
     }
 
-    private static UnionCaseKind GetCurrentKind(YamlReader reader)
+    // Orders the cases so that every case comes before the cases its type derives from, so the first case accepting a
+    // value is the most specific one. A comparison sort cannot do this: unrelated types compare as equal, which is not
+    // a consistent ordering, so 'union U(Animal, int, string, Dog)' could keep 'Animal' before 'Dog'. Unrelated cases
+    // keep their declaration order.
+    private static ImmutableArray<UnionCase> SortCasesForWriting(ImmutableArray<UnionCase> cases)
+    {
+        var remaining = new List<UnionCase>(cases);
+        var builder = ImmutableArray.CreateBuilder<UnionCase>(cases.Length);
+        while (remaining.Count > 0)
+        {
+            var index = 0;
+            for (var i = 0; i < remaining.Count; i++)
+            {
+                if (!HasMoreSpecificCase(remaining, remaining[i]))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            builder.Add(remaining[index]);
+            remaining.RemoveAt(index);
+        }
+
+        return builder.MoveToImmutable();
+
+        static bool HasMoreSpecificCase(List<UnionCase> cases, UnionCase unionCase)
+        {
+            foreach (var other in cases)
+            {
+                if (other.RuntimeType != unionCase.RuntimeType && unionCase.RuntimeType.IsAssignableFrom(other.RuntimeType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private static UnionCaseKinds GetCurrentKind(YamlReader reader)
     {
         if (reader.TokenType == YamlTokenType.StartMapping)
         {
-            return UnionCaseKind.Mapping;
+            return UnionCaseKinds.Mapping;
         }
 
         if (reader.TokenType == YamlTokenType.StartSequence)
         {
-            return UnionCaseKind.Sequence;
+            return UnionCaseKinds.Sequence;
         }
 
         if (reader.TokenType != YamlTokenType.Scalar)
@@ -244,29 +390,32 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         var scalarValue = YamlScalar.ResolveObject(reader);
         return scalarValue switch
         {
-            null => UnionCaseKind.Null,
-            bool => UnionCaseKind.Boolean,
-            sbyte or byte or short or ushort or int or uint or long or ulong or nint or nuint or float or double or decimal or Half or Int128 or UInt128 => UnionCaseKind.Number,
-            _ => UnionCaseKind.String,
+            bool => UnionCaseKinds.Boolean,
+            sbyte or byte or short or ushort or int or uint or long or ulong or nint or nuint or float or double or decimal or Half or Int128 or UInt128 => UnionCaseKinds.Number,
+            _ => UnionCaseKinds.String,
         };
     }
 
-    private static UnionCaseKind GetKind(Type type)
+    private static UnionCaseKinds GetKind(Type runtimeType)
     {
-        var runtimeType = Nullable.GetUnderlyingType(type) ?? type;
-        if (runtimeType == typeof(object) || typeof(YamlNode).IsAssignableFrom(runtimeType))
+        if (runtimeType == typeof(object))
         {
-            return UnionCaseKind.Any;
+            return UnionCaseKinds.All;
+        }
+
+        if (typeof(YamlNode).IsAssignableFrom(runtimeType))
+        {
+            return GetYamlNodeKind(runtimeType);
         }
 
         if (runtimeType == typeof(bool))
         {
-            return UnionCaseKind.Boolean;
+            return UnionCaseKinds.Boolean;
         }
 
         if (IsNumeric(runtimeType))
         {
-            return UnionCaseKind.Number;
+            return UnionCaseKinds.Number;
         }
 
         if (runtimeType == typeof(string) ||
@@ -277,22 +426,112 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             runtimeType == typeof(TimeSpan) ||
             runtimeType == typeof(DateOnly) ||
             runtimeType == typeof(TimeOnly) ||
+            runtimeType == typeof(Uri) ||
+            runtimeType == typeof(CultureInfo) ||
+            runtimeType == typeof(System.Version) ||
+            runtimeType == typeof(System.Text.Rune) ||
             runtimeType.IsEnum)
         {
-            return UnionCaseKind.String;
+            return UnionCaseKinds.String;
         }
 
         if (IsDictionary(runtimeType))
         {
-            return UnionCaseKind.Mapping;
+            return UnionCaseKinds.Mapping;
         }
 
-        if (runtimeType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(runtimeType))
+        if (IsSequence(runtimeType))
         {
-            return UnionCaseKind.Sequence;
+            return UnionCaseKinds.Sequence;
         }
 
-        return UnionCaseKind.Mapping;
+        return UnionCaseKinds.Mapping;
+    }
+
+    // A YAML model case reads the nodes of its own shape; the base node types read any node.
+    private static UnionCaseKinds GetYamlNodeKind(Type runtimeType)
+    {
+        if (typeof(YamlSequence).IsAssignableFrom(runtimeType))
+        {
+            return UnionCaseKinds.Sequence;
+        }
+
+        if (typeof(YamlMapping).IsAssignableFrom(runtimeType))
+        {
+            return UnionCaseKinds.Mapping;
+        }
+
+        if (typeof(YamlValue).IsAssignableFrom(runtimeType))
+        {
+            return UnionCaseKinds.Scalar;
+        }
+
+        if (typeof(YamlContainer).IsAssignableFrom(runtimeType))
+        {
+            return UnionCaseKinds.Sequence | UnionCaseKinds.Mapping;
+        }
+
+        return UnionCaseKinds.All;
+    }
+
+    // The scalar kinds a case reads besides its exact kind: a string reads the text of any scalar, and a char or an enum
+    // reads the text or the value of a number.
+    private static UnionCaseKinds GetFallbackKinds(Type runtimeType)
+    {
+        if (runtimeType == typeof(string))
+        {
+            return UnionCaseKinds.Boolean | UnionCaseKinds.Number;
+        }
+
+        if (runtimeType == typeof(char) || runtimeType.IsEnum)
+        {
+            return UnionCaseKinds.Number;
+        }
+
+        return UnionCaseKinds.None;
+    }
+
+    // A type is a sequence case only when it is serialized through a built-in collection converter. Other enumerable
+    // types, such as a class implementing only IEnumerable<T>, are serialized as objects, so they read YAML mappings.
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2067",
+        Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+    private static bool IsSequence(Type type)
+    {
+        if (type.IsArray)
+        {
+            return true;
+        }
+
+        if (type.IsGenericType)
+        {
+            var definition = type.GetGenericTypeDefinition();
+            if (definition == typeof(List<>) ||
+                definition == typeof(IList<>) ||
+                definition == typeof(ICollection<>) ||
+                definition == typeof(IReadOnlyList<>) ||
+                definition == typeof(IReadOnlyCollection<>) ||
+                definition == typeof(IEnumerable<>) ||
+                definition == typeof(HashSet<>) ||
+                definition == typeof(ISet<>) ||
+                definition == typeof(IReadOnlySet<>) ||
+                definition == typeof(ImmutableArray<>) ||
+                definition == typeof(ImmutableList<>) ||
+                definition == typeof(ImmutableHashSet<>) ||
+                definition == typeof(Queue<>) ||
+                definition == typeof(Stack<>) ||
+                definition == typeof(System.Collections.Concurrent.ConcurrentQueue<>) ||
+                definition == typeof(System.Collections.Concurrent.ConcurrentStack<>) ||
+                definition == typeof(System.Collections.Concurrent.ConcurrentBag<>) ||
+                definition == typeof(System.Collections.Frozen.FrozenSet<>) ||
+                definition == typeof(ArraySegment<>))
+            {
+                return true;
+            }
+        }
+
+        return YamlReaderWriterBase.YamlBuiltInConverters.TryGetMutableCollectionElementType(type, out _);
     }
 
     private static bool IsNumeric(Type type)
@@ -311,6 +550,13 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
            type == typeof(decimal) ||
            type == typeof(Half) ||
            type == typeof(Int128) ||
+           type == typeof(System.Numerics.BigInteger) ||
+#if NET11_0_OR_GREATER
+           type == typeof(System.Numerics.BFloat16) ||
+           type == typeof(System.Numerics.Decimal32) ||
+           type == typeof(System.Numerics.Decimal64) ||
+           type == typeof(System.Numerics.Decimal128) ||
+#endif
            type == typeof(UInt128);
 
     [UnconditionalSuppressMessage(
@@ -355,38 +601,160 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         return null;
     }
 
-    private UnionCase GetCaseForKind(UnionCaseKind kind, YamlReader reader)
+    // Marks the cases that can read the current value and returns how many there are. The cases matching the kind of the
+    // value exactly win. Only when there is none, the cases that can still read the value are considered, such as a
+    // string case for a number or a case whose type has a custom converter.
+    private int FindCandidates(YamlReader reader, UnionCaseKinds kind, Span<bool> isCandidate)
     {
-        UnionCase? match = null;
-        var matchCount = 0;
-        for (var i = 0; i < _cases.Length; i++)
+        var count = 0;
+        for (var i = 0; i < _readCases.Length; i++)
         {
-            var unionCase = _cases[i];
-            if (unionCase.Kind == kind || unionCase.Kind == UnionCaseKind.Any)
+            var unionCase = _readCases[i];
+            if ((unionCase.ExactKinds & kind) != UnionCaseKinds.None || CanReadStringScalar(reader, kind, unionCase))
             {
-                match ??= unionCase;
-                matchCount++;
+                isCandidate[i] = true;
+                count++;
             }
         }
 
-        if (matchCount == 1 && match is not null)
+        if (count > 0)
         {
-            return match.Value;
+            return count;
         }
 
-        if (matchCount > 1)
+        for (var i = 0; i < _readCases.Length; i++)
         {
-            throw new YamlException(reader.SourceName, reader.Start, reader.End, $"Cannot deserialize union type '{_unionType}' because multiple cases match YAML {GetKindDescription(kind)} values.");
+            var unionCase = _readCases[i];
+            if ((unionCase.FallbackKinds & kind) != UnionCaseKinds.None || HasCustomConverter(reader, unionCase))
+            {
+                isCandidate[i] = true;
+                count++;
+            }
         }
 
-        throw CreateNoMatchingCaseException(reader, kind);
+        return count;
     }
+
+    // A numeric case whose number handling reads strings also matches a string scalar holding a number, such as "42".
+    // When a string case also matches, the scalar is ambiguous and requires a type classifier.
+    private static bool CanReadStringScalar(YamlReader reader, UnionCaseKinds kind, UnionCase unionCase)
+        => kind == UnionCaseKinds.String &&
+           unionCase.NumberHandling != YamlNumberHandling.None &&
+           YamlNumberHandlingConverter.CanReadStringScalar(reader, unionCase.Type, unionCase.NumberHandling);
+
+    // A converter registered in the options can represent the type of the case, or of a case of a nested union, by any
+    // YAML kind. A type-level converter is already part of the fallback kinds.
+    private static bool HasCustomConverter(YamlReader reader, UnionCase unionCase)
+    {
+        foreach (var converterType in unionCase.ConverterTypes)
+        {
+            if (reader.TryGetCustomConverter(converterType, out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static YamlConverter GetCaseConverter(YamlReaderWriterBase readerWriter, UnionCase unionCase)
+    {
+        var converter = readerWriter.GetConverter(unionCase.Type);
+        if (unionCase.NumberHandling == YamlNumberHandling.None)
+        {
+            return converter;
+        }
+
+        return new YamlNumberHandlingConverter(converter, unionCase.Type, unionCase.NumberHandling);
+    }
+
+    private T? ReadClassifiedValue(YamlReader reader, UnionCaseKinds kind, ReadOnlySpan<bool> isCandidate)
+    {
+        // Classification consumes the value, so errors report the position of the value captured before it runs.
+        var sourceName = reader.SourceName;
+        var start = reader.Start;
+        var end = reader.End;
+        var classified = YamlTypeClassification.Classify(reader, GetClassifierContext(reader), out var bufferedNode);
+        if (classified is null)
+        {
+            throw new YamlException(sourceName, start, end, $"Cannot deserialize union type '{_unionType}' because multiple cases match YAML {GetKindDescription(kind)} values.");
+        }
+
+        for (var i = 0; i < _readCases.Length; i++)
+        {
+            // A classifier selecting a case that cannot represent the value, such as a number case for a mapping, is
+            // reported like a value no case matches.
+            var unionCase = _readCases[i];
+            if (!isCandidate[i] || unionCase.RuntimeType != classified)
+            {
+                continue;
+            }
+
+            // Classification consumed the value, so the case is deserialized from the buffered copy.
+            var caseReader = reader.CreateReader(bufferedNode!);
+            if (!caseReader.Read())
+            {
+                return default;
+            }
+
+            var converter = GetCaseConverter(caseReader, unionCase);
+            return CreateValue(reader, unionCase, converter.Read(caseReader, unionCase.Type));
+        }
+
+        throw CreateNoMatchingCaseException(sourceName, start, end, kind);
+    }
+
+    private YamlTypeClassifierContext GetClassifierContext(YamlReader reader)
+    {
+        if (_classifierContext is not null && ReferenceEquals(_classifierContextOptions, reader.Options))
+        {
+            return _classifierContext;
+        }
+
+        var cases = new List<YamlUnionCaseInfo>(_readCases.Length);
+        foreach (var unionCase in _readCases)
+        {
+            // A case referencing the union itself never reads a value, so it is not a case to classify.
+            if (unionCase.ConverterTypes.IsEmpty)
+            {
+                continue;
+            }
+
+            IReadOnlyList<YamlUnionCaseProperty>? properties = null;
+            var disallowUnmappedProperties = false;
+            if (unionCase.ExactKinds is UnionCaseKinds.Mapping && reader.GetConverter(unionCase.RuntimeType) is IYamlUnionCaseShapeProvider provider)
+            {
+                properties = provider.GetUnionCaseProperties(reader, out disallowUnmappedProperties);
+            }
+
+            cases.Add(new YamlUnionCaseInfo(unionCase.RuntimeType, GetShape(unionCase.ExactKinds), properties, disallowUnmappedProperties));
+        }
+
+        var context = YamlTypeClassifierContext.CreateForUnion(_unionType, [.. cases]);
+        _classifierContextOptions = reader.Options;
+        _classifierContext = context;
+        return context;
+    }
+
+    // A case matching several kinds, such as a nested union, is described as matching any shape.
+    private static YamlUnionCaseShape GetShape(UnionCaseKinds kinds)
+        => kinds switch
+        {
+            UnionCaseKinds.Boolean => YamlUnionCaseShape.Boolean,
+            UnionCaseKinds.Number => YamlUnionCaseShape.Number,
+            UnionCaseKinds.String => YamlUnionCaseShape.Text,
+            UnionCaseKinds.Sequence => YamlUnionCaseShape.Sequence,
+            UnionCaseKinds.Mapping => YamlUnionCaseShape.Mapping,
+            _ => YamlUnionCaseShape.Any,
+        };
 
     private T? CreateNullValue(YamlReader reader)
     {
+        // A union with no nullable case still has a null state: 'default(TUnion)' selects no case and exposes a null
+        // value. Returning the default value makes 'default(TUnion)' round-trip through a null scalar.
         if (_nullableCase is null)
         {
-            throw new YamlException(reader.SourceName, reader.Start, reader.End, $"Union type '{_unionType}' does not define a nullable case.");
+            return default;
         }
 
         return CreateValue(reader, _nullableCase.Value, null);
@@ -404,19 +772,17 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         }
     }
 
-    private YamlException CreateNoMatchingCaseException(YamlReader reader, UnionCaseKind kind)
-        => new(reader.SourceName, reader.Start, reader.End, $"Union type '{_unionType}' does not define a case that matches YAML {GetKindDescription(kind)} values.");
+    private YamlException CreateNoMatchingCaseException(string? sourceName, Mark start, Mark end, UnionCaseKinds kind)
+        => new(sourceName, start, end, $"Union type '{_unionType}' does not define a case that matches YAML {GetKindDescription(kind)} values.");
 
-    private static string GetKindDescription(UnionCaseKind kind)
+    private static string GetKindDescription(UnionCaseKinds kind)
         => kind switch
         {
-            UnionCaseKind.Null => "null",
-            UnionCaseKind.Boolean => "boolean",
-            UnionCaseKind.Number => "number",
-            UnionCaseKind.String => "scalar string",
-            UnionCaseKind.Sequence => "sequence",
-            UnionCaseKind.Mapping => "mapping",
-            _ => "untyped",
+            UnionCaseKinds.Boolean => "boolean",
+            UnionCaseKinds.Number => "number",
+            UnionCaseKinds.String => "scalar string",
+            UnionCaseKinds.Sequence => "sequence",
+            _ => "mapping",
         };
 
     private static UnionCase? FindNullableCase(ImmutableArray<UnionCase> cases)
@@ -433,21 +799,26 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         return null;
     }
 
-    private enum UnionCaseKind
+    [Flags]
+    private enum UnionCaseKinds
     {
-        Null,
-        Boolean,
-        Number,
-        String,
-        Sequence,
-        Mapping,
-        Any,
+        None = 0,
+        Boolean = 1,
+        Number = 2,
+        String = 4,
+        Sequence = 8,
+        Mapping = 16,
+        Scalar = Boolean | Number | String,
+        All = Scalar | Sequence | Mapping,
     }
 
     private readonly record struct UnionCase(
         Type Type,
         Type RuntimeType,
         ConstructorInfo Constructor,
-        UnionCaseKind Kind,
-        bool AcceptsNull);
+        UnionCaseKinds ExactKinds,
+        UnionCaseKinds FallbackKinds,
+        ImmutableArray<Type> ConverterTypes,
+        bool AcceptsNull,
+        YamlNumberHandling NumberHandling);
 }

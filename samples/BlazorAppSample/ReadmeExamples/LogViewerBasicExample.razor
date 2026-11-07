@@ -1,0 +1,28 @@
+@page "/logs"
+@using Meziantou.AspNetCore.Components
+
+<LogViewer Entries="@logEntries" />
+
+@code {
+    private List<LogEntry> logEntries = new()
+    {
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            Message = "Application started",
+            LogLevel = LogLevel.Information
+        },
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow.AddSeconds(1),
+            Message = "Processing request",
+            LogLevel = LogLevel.Debug
+        },
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow.AddSeconds(2),
+            Message = "An error occurred",
+            LogLevel = LogLevel.Error
+        },
+    };
+}

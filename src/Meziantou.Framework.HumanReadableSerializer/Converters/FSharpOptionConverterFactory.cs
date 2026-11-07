@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using Meziantou.Framework.HumanReadable.Utils;
 
@@ -16,31 +17,27 @@ internal sealed class FSharpOptionConverterFactory : HumanReadableConverterFacto
 
     public override HumanReadableConverter? CreateConverter(Type typeToConvert, HumanReadableSerializerOptions options)
     {
-        return (HumanReadableConverter)Activator.CreateInstance(typeof(FSharpValueOptionConverter<,>).MakeGenericType(typeToConvert, typeToConvert.GenericTypeArguments[0]))!;
+        return (HumanReadableConverter?)Activator.CreateInstance(typeof(FSharpOptionConverter<,>).MakeGenericType(typeToConvert, typeToConvert.GenericTypeArguments[0]));
     }
 
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
-    private sealed class FSharpValueOptionConverter<T, TOption> : HumanReadableConverter<T>
+    private sealed class FSharpOptionConverter<T, TOption> : HumanReadableConverter<T>
         where T : class
     {
         private readonly PropertyInfo _valueProperty;
 
-        public FSharpValueOptionConverter()
+        public FSharpOptionConverter()
         {
-            _valueProperty = typeof(T).GetProperty("Value")!;
+            _valueProperty = typeof(T).GetProperty("Value") ?? throw new HumanReadableSerializerException($"Cannot serialize the F# type '{typeof(T)}' as the 'Value' property does not exist");
         }
 
         protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
-            if (value is null)
-            {
-                writer.WriteNullValue();
-            }
-            else
-            {
-                var propertyValue = (TOption?)_valueProperty.GetValue(value);
-                HumanReadableSerializer.Serialize(writer, propertyValue, options);
-            }
+            // None is represented by null, which is written by the NullConverterWrapper
+            Debug.Assert(value is not null);
+
+            var propertyValue = (TOption?)_valueProperty.GetValue(value);
+            HumanReadableSerializer.Serialize(writer, propertyValue, options);
         }
     }
 }

@@ -1,9 +1,161 @@
+using System.Reflection;
 using Meziantou.Framework.FixedStringBuilder;
 
 namespace Meziantou.Framework.Tests;
 
-public sealed class FixedStringBuilderTests
+public sealed partial class FixedStringBuilderTests
 {
+    [Fact]
+    public void ReadmeExample_Interpolation()
+    {
+#pragma warning disable MA0011 // The readme calls ToString() without a format provider, as most callers do
+        #region FixedStringBuilder_Interpolation
+        FixedStringBuilder16 sb = $"Hello {"World"}";
+        sb.AppendLiteral("!");
+
+        string str = sb.ToString();
+        Assert.Equal("Hello World!", str);
+        #endregion
+#pragma warning restore MA0011
+    }
+
+    [Fact]
+    public void ReadmeExample_ClearZeroBuffer()
+    {
+        #region FixedStringBuilder_ClearZeroBuffer
+        FixedStringBuilder16 sb = $"secret";
+        sb.Clear(zeroBuffer: true);
+        Assert.Equal(0, sb.Length);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Capacity()
+    {
+        #region FixedStringBuilder_Capacity
+        FixedStringBuilder8 code = "ABC";
+        Assert.Equal(3, code.Length);
+        Assert.Equal(8, FixedStringBuilder8.MaxLength);
+
+        // 9 characters do not fit in a FixedStringBuilder8
+        Assert.Throws<ArgumentException>(() => new FixedStringBuilder8("ABCDEFGHI"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Formatting()
+    {
+#pragma warning disable MA0011 // The example calls ToString() without a format provider, as most callers do
+        #region FixedStringBuilder_Formatting
+        var quantity = 42;
+        FixedStringBuilder32 line = $"[{quantity:D5}] [{"A",3}] [{"B",-3}]";
+        Assert.Equal("[00042] [  A] [B  ]", line.ToString());
+        #endregion
+#pragma warning restore MA0011
+    }
+
+    [Fact]
+    public void Documentation_Equality()
+    {
+        #region FixedStringBuilder_Equality
+        FixedStringBuilder16 first = "Hello";
+        FixedStringBuilder16 second = "HELLO";
+
+        Assert.False(first == second);
+        Assert.True(first.Equals(second, StringComparison.OrdinalIgnoreCase));
+        Assert.True(first == "Hello"); // The string is converted to a FixedStringBuilder16
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AsSpan()
+    {
+        #region FixedStringBuilder_AsSpan
+        FixedStringBuilder16 value = "Hello World";
+        ReadOnlySpan<char> span = value.AsSpan();
+
+        Assert.HasCount(11, span);
+        Assert.True(span.StartsWith("Hello", StringComparison.Ordinal));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GenericCode()
+    {
+        #region FixedStringBuilder_GenericCode
+        Assert.Equal(8, GetMaxLength<FixedStringBuilder8>());
+        Assert.Equal(64, GetMaxLength<FixedStringBuilder64>());
+
+        var value = Create<FixedStringBuilder16>("Hello");
+        Assert.Equal(5, value.Length);
+
+        static int GetMaxLength<T>() where T : IFixedString => T.MaxLength;
+        static T Create<T>(string value) where T : IFixedString<T> => value;
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomType()
+    {
+        #region FixedStringBuilder_CustomTypeUsage
+        FixedStringBuilder128 value = $"{new string('a', 100)}";
+        Assert.Equal(100, value.Length);
+        Assert.Equal(128, FixedStringBuilder128.MaxLength);
+
+        // 129 characters do not fit
+        Assert.Throws<ArgumentException>(() => value.AppendLiteral(new string('b', 29)));
+        #endregion
+
+        FixedStringBuilder10 small = "0123456789";
+        Assert.Equal("0123456789", small.ToString(null, null));
+    }
+
+    #region FixedStringBuilder_CustomType
+    [FixedStringBuilderAttribute(128)]
+    public partial struct FixedStringBuilder128;
+    #endregion
+
+    #region FixedStringBuilderGenerator_Usage
+    [FixedStringBuilderAttribute(10)]
+    public partial struct FixedStringBuilder10;
+    #endregion
+
+    [Theory]
+    [InlineData("get_Length")]
+    [InlineData("Equals")]
+    [InlineData("GetHashCode")]
+    [InlineData("ToString")]
+    [InlineData("TryFormat")]
+    [InlineData("AsSpan")]
+    public void NonMutatingMembersAreReadOnly(string methodName)
+    {
+        // A non-readonly member forces a defensive copy of the whole struct when it is called on a readonly
+        // field or through an "in" parameter.
+        var methods = typeof(FixedStringBuilder64)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(method => method.Name == methodName)
+            .ToArray();
+
+        Assert.NotEmpty(methods);
+        Assert.All(methods, static method => Assert.Contains(
+            method.GetCustomAttributesData(),
+            static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute"));
+    }
+
+    [Fact]
+    public void MutatingMembersAreNotReadOnly()
+    {
+        var methods = typeof(FixedStringBuilder64)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(static method => method.Name is "Clear" or "AppendLiteral")
+            .ToArray();
+
+        Assert.NotEmpty(methods);
+        Assert.All(methods, static method => Assert.DoesNotContain(
+            method.GetCustomAttributesData(),
+            static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute"));
+    }
+
     [Fact]
     public void MaxLengthValues()
     {
@@ -51,9 +203,9 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder8 value = "abc";
         var fixedString = (IFixedString)value;
-        var span = fixedString.GetUnsafeFullSpan();
+        var span = unsafe(fixedString.GetUnsafeFullSpan());
 
-        Assert.Equal(FixedStringBuilder8.MaxLength, span.Length);
+        Assert.HasCount(FixedStringBuilder8.MaxLength, span);
         Assert.Equal('a', span[0]);
         Assert.Equal('b', span[1]);
         Assert.Equal('c', span[2]);
@@ -103,6 +255,140 @@ public sealed class FixedStringBuilderTests
     }
 
     [Fact]
+    public void ClearResetsTheLengthWithoutErasingTheBuffer()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear();
+
+        Assert.Equal(0, value.Length);
+        Assert.Equal("", value.ToString(null, null));
+
+        // Documented behavior: Clear only resets the length, the characters stay in the underlying buffer.
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
+        Assert.Equal("abcdefgh", fullSpan.ToString());
+    }
+
+    [Fact]
+    public void ClearWithZeroBufferErasesTheBuffer()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear(zeroBuffer: true);
+
+        Assert.Equal(0, value.Length);
+        Assert.Equal("", value.ToString(null, null));
+
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
+        Assert.Equal(new string('\0', 8), fullSpan.ToString());
+    }
+
+    [Fact]
+    public void ClearWithZeroBufferErasesTheCharactersAfterTheCurrentLength()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear();
+        value.AppendLiteral("ab");
+        value.Clear(zeroBuffer: true);
+
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
+        Assert.Equal(new string('\0', 8), fullSpan.ToString());
+    }
+
+    [Fact]
+    public void ClearWithoutZeroBufferKeepsTheBuffer()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear(zeroBuffer: false);
+
+        Assert.Equal(0, value.Length);
+
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
+        Assert.Equal("abcdefgh", fullSpan.ToString());
+    }
+
+    [Fact]
+    public void ClearWithZeroBufferCanBeCalledThroughTheInterface()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        Clear(ref value);
+
+        Assert.Equal(0, value.Length);
+        Assert.Equal(new string('\0', 8), unsafe(((IFixedString)value).GetUnsafeFullSpan()).ToString());
+
+        static void Clear<T>(ref T value) where T : IFixedString => value.Clear(zeroBuffer: true);
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsASpan()
+    {
+        ReadOnlySpan<char> span = "World".AsSpan();
+        FixedStringBuilder16 value = $"Hi {span}";
+
+        Assert.Equal("Hi World", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsASpanWithAlignment()
+    {
+        ReadOnlySpan<char> span = "ab".AsSpan();
+        FixedStringBuilder16 value = $"{span,4}";
+
+        Assert.Equal("  ab", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAValueThatIsNotSpanFormattable()
+    {
+        FixedStringBuilder16 value = $"{new NotSpanFormattable()}";
+
+        Assert.Equal("custom", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAnEnum()
+    {
+        FixedStringBuilder16 value = $"{DayOfWeek.Monday}";
+
+        Assert.Equal("Monday", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAFormattableThatIsNotSpanFormattable()
+    {
+        FixedStringBuilder16 value = $"{new OnlyFormattable():X}";
+
+        Assert.Equal("fmt:X", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAStringWithAlignmentAndFormat()
+    {
+        FixedStringBuilder16 value = $"{"ab",4:X}";
+
+        Assert.Equal("  ab", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsANullReference()
+    {
+        object? nullValue = null;
+        FixedStringBuilder16 value = $"[{nullValue}]";
+
+        Assert.Equal("[]", value.ToString(null, null));
+    }
+
+    private sealed class NotSpanFormattable
+    {
+        public override string ToString() => "custom";
+    }
+
+    private sealed class OnlyFormattable : IFormattable
+    {
+        public string ToString(string? format, IFormatProvider? formatProvider) => "fmt:" + format;
+
+        public override string ToString() => "fmt:";
+    }
+
+    [Fact]
     public void EqualsSupportsStringComparison()
     {
         FixedStringBuilder8 a = "AbC";
@@ -110,5 +396,108 @@ public sealed class FixedStringBuilderTests
 
         Assert.False(a.Equals(b, StringComparison.Ordinal));
         Assert.True(a.Equals(b, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ToStringReturnsTheContent()
+    {
+        FixedStringBuilder16 value = "abc";
+
+        Assert.Equal("abc", value.ToString(null, null));
+        Assert.Equal("", default(FixedStringBuilder16).ToString(null, null));
+    }
+
+    [Fact]
+    public void AsSpanReturnsTheWrittenCharacters()
+    {
+        FixedStringBuilder16 value = "abc";
+
+        Assert.HasCount(3, value.AsSpan());
+        Assert.Equal("abc", value.AsSpan().ToString());
+        Assert.Empty(default(FixedStringBuilder16).AsSpan());
+    }
+
+    [Fact]
+    public void EqualityOperatorsCompareTheContent()
+    {
+        FixedStringBuilder8 a = "abc";
+        FixedStringBuilder8 b = "abc";
+        FixedStringBuilder8 c = "abd";
+
+        Assert.True(a == b);
+        Assert.False(a != b);
+        Assert.False(a == c);
+        Assert.True(a != c);
+    }
+
+    [Fact]
+    public void EqualsObjectComparesOnlyTheSameType()
+    {
+        FixedStringBuilder8 a = "abc";
+        FixedStringBuilder8 b = "abc";
+
+        Assert.True(a.Equals((object)b));
+        Assert.False(a.Equals((object)"abc"));
+        Assert.False(a.Equals((object?)null));
+    }
+
+    [Fact]
+    public void GetHashCodeIsEqualForEqualValues()
+    {
+        FixedStringBuilder8 a = "abc";
+        FixedStringBuilder8 b = "abc";
+
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.Equal(default(FixedStringBuilder8).GetHashCode(), default(FixedStringBuilder8).GetHashCode());
+    }
+
+    [Fact]
+    public void InterpolatedAlignmentPadsRightWhenNegative()
+    {
+        FixedStringBuilder8 value = $"{1,-4}";
+
+        Assert.Equal("1   ", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedAlignmentIsIgnoredWhenTheValueIsWider()
+    {
+        FixedStringBuilder8 value = $"{1234,2}";
+
+        Assert.Equal("1234", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAFormatString()
+    {
+        FixedStringBuilder8 value = $"{255:X2}";
+
+        Assert.Equal("FF", value.ToString(null, null));
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAFormatStringAndAlignment()
+    {
+        FixedStringBuilder8 value = $"{255,4:X2}";
+
+        Assert.Equal("  FF", value.ToString(null, null));
+    }
+
+    [SuppressMessage("Globalization", "MFGS0001", Justification = "The expected value comes from string.Equals with the same comparison, so it follows the globalization mode.")]
+    [Theory]
+    [InlineData("AbC", "aBc", StringComparison.Ordinal)]
+    [InlineData("AbC", "aBc", StringComparison.OrdinalIgnoreCase)]
+    [InlineData("AbC", "aBc", StringComparison.CurrentCulture)]
+    [InlineData("AbC", "aBc", StringComparison.CurrentCultureIgnoreCase)]
+    [InlineData("AbC", "AbC", StringComparison.Ordinal)]
+    [InlineData("", "", StringComparison.Ordinal)]
+    [InlineData("a", "", StringComparison.Ordinal)]
+    [InlineData("a", "", StringComparison.CurrentCulture)]
+    public void EqualsWithComparisonMatchesString(string left, string right, StringComparison comparison)
+    {
+        FixedStringBuilder8 a = left;
+        FixedStringBuilder8 b = right;
+
+        Assert.Equal(left.Equals(right, comparison), a.Equals(b, comparison));
     }
 }

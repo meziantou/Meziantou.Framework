@@ -1,7 +1,83 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 public sealed class ProjectedFileSystemTests
 {
+    [ProjectedFileSystemFact]
+    public void ReadmeExample_Start()
+    {
+        #region ProjectedFileSystem_Start
+        // Start the virtual file system
+        var rootPath = Path.Combine(Path.GetTempPath(), "MyVirtualFS", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(rootPath);
+
+        using var vfs = new MyVirtualFileSystem(rootPath);
+        vfs.Start(options: null);
+
+        // The files are now accessible through Windows Explorer or any application
+        var content = File.ReadAllText(Path.Combine(rootPath, "file1.txt"));
+        Assert.Equal("Hello, World!", content);
+        Assert.Equal("Nested file", File.ReadAllText(Path.Combine(rootPath, "folder", "nested.txt")));
+        #endregion
+
+        #region ProjectedFileSystem_GetOnDiskFileState
+        var state = ProjectedFileSystemBase.GetOnDiskFileState(Path.Combine(rootPath, "file1.txt"));
+        Assert.True(state.HasFlag(PRJ_FILE_STATE.PRJ_FILE_STATE_HYDRATED_PLACEHOLDER)); // The content was read
+        #endregion
+
+        vfs.Dispose();
+        try { Directory.Delete(rootPath, recursive: true); } catch { }
+    }
+
+    [ProjectedFileSystemFact]
+    public void ReadmeExample_StartOptions()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), "MyVirtualFS", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(rootPath);
+        using var vfs = new MyVirtualFileSystem(rootPath);
+
+        #region ProjectedFileSystem_StartOptions
+        var options = new ProjectedFileSystemStartOptions
+        {
+            // Enable caching of non-existent file paths for better performance
+            UseNegativePathCache = true,
+
+            // Subscribe to file system notifications
+            Notifications =
+            {
+                new Notification(
+                    PRJ_NOTIFY_TYPES.FILE_OPENED |
+                    PRJ_NOTIFY_TYPES.NEW_FILE_CREATED |
+                    PRJ_NOTIFY_TYPES.FILE_RENAMED |
+                    PRJ_NOTIFY_TYPES.PRE_DELETE),
+            },
+        };
+
+        vfs.Start(options);
+        #endregion
+
+        Assert.Equal("Another file content", File.ReadAllText(Path.Combine(rootPath, "file2.txt")));
+        vfs.Dispose();
+        try { Directory.Delete(rootPath, recursive: true); } catch { }
+    }
+
+    [Fact]
+    public void ReadmeExample_Entries()
+    {
+        #region ProjectedFileSystem_Entries
+        // Create a file entry
+        var file = ProjectedFileSystemEntry.File("example.txt", length: 1024);
+        Assert.False(file.IsDirectory);
+        Assert.Equal(1024, file.Length);
+
+        // Create a folder entry
+        var folder = ProjectedFileSystemEntry.Directory("MyFolder");
+        Assert.True(folder.IsDirectory);
+        Assert.Equal("MyFolder", folder.Name);
+        #endregion
+    }
+
     [ProjectedFileSystemFact]
     public void BasicEnumerationAndFileRead()
     {
@@ -303,5 +379,224 @@ public sealed class ProjectedFileSystemTests
         {
             try { Directory.Delete(fullPath, recursive: true); } catch { }
         }
+    }
+
+    /// <summary>
+    /// Verifies that re-enumerating a directory on an already-open handle keeps returning the provider entries.
+    ///
+    /// ProjFS sets PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN whenever an application restarts an enumeration on a
+    /// handle it already holds (Explorer refreshing a folder, a FindFirstFile loop rescanning, an indexer).
+    /// The session must start a new enumerator in that case; reusing a disposed one silently yields no entries.
+    ///
+    /// The .NET Directory APIs open a fresh handle per call, so this has to go through NtQueryDirectoryFile
+    /// to reach the restart-scan path at all.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void RestartScanKeepsReturningEntries()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new SampleVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            using var directory = NativeDirectoryEnumerator.Open(fullPath);
+
+            // Every scan restarts the enumeration on the same handle
+            for (var scan = 1; scan <= 3; scan++)
+            {
+                var entries = directory.FullScan();
+                Assert.Equal(["a", "b", "folder"], entries.Where(name => name is not "." and not "..").Order(StringComparer.Ordinal));
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Verifies that the provider filters its entries with the search expression ProjFS passes down.
+    ///
+    /// ProjFS applies the expression to the entries it owns (".", "..", on-disk placeholders) but leaves the
+    /// provider responsible for its own, which is what PrjFileNameMatch exists for. Without that filtering a
+    /// caller asking for "*.txt" is handed every entry in the directory.
+    ///
+    /// Directory.GetFiles re-filters client-side, so it hides the bug; the raw enumeration does not.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void SearchExpressionFiltersProviderEntries()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new UnsortedEntriesVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            using var directory = NativeDirectoryEnumerator.Open(fullPath);
+
+            // "banana" is a directory with no extension, so it must not come back
+            var matches = directory.FullScan("*.txt").Order(StringComparer.Ordinal);
+            Assert.Equal(["apple.txt", "mango.txt", "yellow.txt", "zebra.txt"], matches);
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
+    [Fact]
+    public void BufferSizeRejectsZeroAndNegativeValues()
+    {
+        // The constructor only resolves the path, so this needs no ProjFS instance
+        using var vfs = new BufferSizeVirtualFileSystem(Path.GetTempPath());
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => vfs.SetBufferSize(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => vfs.SetBufferSize(-1));
+
+        vfs.SetBufferSize(8192);
+        Assert.Equal(8192, vfs.GetBufferSize());
+    }
+
+    // The calls must fail before reaching ProjFS, so this runs on every platform
+    [Fact]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.17763")]
+    public void NativeCallsWithADisposedInstanceHandleDoNotReachTheDriver()
+    {
+        // Stop can dispose the instance handle while another thread calls ProjFS with it: the driver must never get the
+        // context of an instance that PrjStopVirtualizing already tore down
+        var handle = new ProjFSSafeHandle(1, ownHandle: false);
+        handle.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => NativeMethods.PrjClearNegativePathCache(handle, out _));
+        Assert.Throws<ObjectDisposedException>(() => NativeMethods.PrjDeleteFile(handle, "file.txt", PRJ_UPDATE_TYPES.PRJ_UPDATE_NONE, out _));
+        Assert.Throws<ObjectDisposedException>(() => NativeMethods.PrjGetVirtualizationInstanceInfo(handle, out _));
+    }
+
+    [ProjectedFileSystemFact]
+    public void InstanceHelpersCanBeCalledUntilTheInstanceIsStopped()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), "MyVirtualFS", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(rootPath);
+        using var vfs = new InstanceHelpersVirtualFileSystem(rootPath);
+        Assert.Throws<InvalidOperationException>(vfs.ClearCache);
+
+        vfs.Start(options: null);
+        vfs.ClearCache();
+        vfs.ClearCache();
+
+        // Stop waits for the calls that use the instance handle: it returns because every call ended
+        vfs.Stop();
+        Assert.Throws<InvalidOperationException>(vfs.ClearCache);
+        Assert.Throws<InvalidOperationException>(() => vfs.Delete("file1.txt"));
+
+        vfs.Dispose();
+        try { Directory.Delete(rootPath, recursive: true); } catch { }
+    }
+
+    /// <summary>
+    /// Verifies that a stream ending before the declared length fails the read instead of yielding filler.
+    ///
+    /// ProjFS zero-fills whatever range the provider does not write, so returning S_OK after a short read
+    /// hands the caller a file that is half real content and half zeros, with no error anywhere. For a
+    /// provider backed by a network or a pipe, a stream ending early is an ordinary transient failure,
+    /// so it has to surface as one.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void TruncatedStreamFailsTheReadInsteadOfZeroFilling()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new TruncatedStreamVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            // The provider declares 10000 bytes but only supplies 5000
+            Assert.ThrowsAny<IOException>(() => File.ReadAllBytes(Path.Combine(fullPath, "truncated.bin")));
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Verifies that Stop does not tear the instance down while a callback that returned
+    /// ERROR_IO_PENDING is still outstanding.
+    ///
+    /// PrjStopVirtualizing only waits for callbacks that returned synchronously. A callback that
+    /// handed back ERROR_IO_PENDING still has a PrjCompleteCommand to make, and making it against
+    /// a context the driver has already destroyed is undefined behaviour.
+    ///
+    /// The assertion is on how long Stop blocked rather than on it still running at some instant:
+    /// the provider is released on a timer, so a Stop that drains correctly cannot return before
+    /// that timer fires, while a Stop that ignores pending commands returns almost immediately.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public async Task StopWaitsForCommandsThatReturnedIoPending()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new GatedVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            var read = Task.Run(() => File.ReadAllBytes(Path.Combine(fullPath, "gated.bin")));
+            // ExecuteCallback registers the command before it enters the provider, so the command is
+            // already part of what Stop drains once the provider is entered
+            await vfs.Entered.WaitAsync(TimeSpan.FromSeconds(30));
+
+            var holdFor = TimeSpan.FromSeconds(2);
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(holdFor);
+                vfs.Release();
+            });
+
+            var start = Stopwatch.GetTimestamp();
+            var stop = Task.Run(vfs.Stop);
+            await stop.WaitAsync(TimeSpan.FromSeconds(60));
+            var elapsed = Stopwatch.GetElapsedTime(start);
+
+            Assert.True(elapsed >= holdFor / 2, $"Stop returned after {elapsed} without waiting for the pending command");
+
+            // The read itself may fail once the instance is stopped; only Stop ordering matters here
+            try { await read.WaitAsync(TimeSpan.FromSeconds(30)); } catch (IOException) { }
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
+    private sealed class BufferSizeVirtualFileSystem : ProjectedFileSystemBase
+    {
+        public BufferSizeVirtualFileSystem(string rootFolder) : base(rootFolder) { }
+
+        public void SetBufferSize(int value) => BufferSize = value;
+        public int GetBufferSize() => BufferSize;
+
+        protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
+            => ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
+
+        protected override ValueTask<Stream?> OpenReadAsync(string path) => ValueTask.FromResult<Stream?>(null);
+    }
+
+    private sealed class InstanceHelpersVirtualFileSystem : ProjectedFileSystemBase
+    {
+        public InstanceHelpersVirtualFileSystem(string rootFolder) : base(rootFolder) { }
+
+        public void ClearCache() => ClearNegativePathCache();
+
+        public bool Delete(string relativePath) => DeleteFile(relativePath, PRJ_UPDATE_TYPES.PRJ_UPDATE_NONE, out _);
+
+        protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
+            => ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
+
+        protected override ValueTask<Stream?> OpenReadAsync(string path) => ValueTask.FromResult<Stream?>(null);
     }
 }

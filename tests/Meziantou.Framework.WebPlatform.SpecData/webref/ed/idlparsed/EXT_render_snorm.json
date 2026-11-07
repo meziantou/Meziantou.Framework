@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL EXT_render_snorm Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_render_snorm/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_render_snorm"
+        ],
+        "Worker": [
+          "EXT_render_snorm"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_render_snorm": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_render_snorm {\n};",
+        "type": "interface",
+        "name": "EXT_render_snorm",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_render_snorm"
+      ],
+      "Worker": [
+        "EXT_render_snorm"
+      ]
+    },
+    "dependencies": {
+      "EXT_render_snorm": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

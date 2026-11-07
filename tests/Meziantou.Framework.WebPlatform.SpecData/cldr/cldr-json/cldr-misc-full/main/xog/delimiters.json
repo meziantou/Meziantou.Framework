@@ -1,0 +1,15 @@
+{
+  "main": {
+    "xog": {
+      "identity": {
+        "language": "xog"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

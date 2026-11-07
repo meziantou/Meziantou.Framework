@@ -1,0 +1,1 @@
+{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello "},{"type":"text","text":"bold","marks":[{"type":"strong"},{"type":"mysteryMark"}]},{"type":"text","text":" and "},{"type":"text","text":"italic","marks":[{"type":"em"}]},{"type":"text","text":"!","marks":[{"type":"mysteryBang"}]}]}]}

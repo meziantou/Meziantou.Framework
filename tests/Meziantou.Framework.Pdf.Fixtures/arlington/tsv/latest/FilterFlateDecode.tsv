@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Predictor	integer	1.2		FALSE	FALSE	FALSE		[1,2,10,11,12,13,14,15]			Table 8 and Table 10
+Colors	integer	1.2		FALSE	FALSE	FALSE	1	[fn:Eval((@Colors>=1) && fn:BeforeVersion(1.3,fn:Eval(@Colors<=4)))]	[fn:Ignore(@Predictor<=1)]		
+BitsPerComponent	integer	1.2		FALSE	FALSE	FALSE	8	[1,2,4,8,fn:SinceVersion(1.5,16)]	[fn:Ignore(@Predictor<=1)]		
+Columns	integer	1.2		FALSE	FALSE	FALSE	1		[fn:Ignore(@Predictor<=1)]		

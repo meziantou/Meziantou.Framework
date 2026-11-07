@@ -67,19 +67,9 @@ internal sealed class YamlListObjectConverter : YamlConverter<List<object?>?>
             return;
         }
 
-        if (writer.ReferenceWriter is not null)
+        if (writer.TryWriteReference(value))
         {
-            if (writer.ReferenceWriter.TryGetAnchor(value, out var existing))
-            {
-                writer.WriteAlias(existing);
-                return;
-            }
-
-            var anchor = writer.ReferenceWriter.GetOrAddAnchor(value);
-            if (anchor is not null)
-            {
-                writer.WriteAnchor(anchor);
-            }
+            return;
         }
 
         writer.WriteStartSequence();

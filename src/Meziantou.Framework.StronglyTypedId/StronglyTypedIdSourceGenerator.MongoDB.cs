@@ -41,6 +41,16 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock($"public override void Serialize(global::MongoDB.Bson.Serialization.BsonSerializationContext context, global::MongoDB.Bson.Serialization.BsonSerializationArgs args, {context.TypeName}{(context.IsReferenceType ? "?" : "")} value)"))
             {
+                // The null check must be done before using 'value', whatever the underlying type is.
+                if (context.IsReferenceType)
+                {
+                    using (writer.BeginBlock($"if (value == null)"))
+                    {
+                        writer.WriteLine($"context.Writer.WriteNull();");
+                        writer.WriteLine($"return;");
+                    }
+                }
+
                 if (context.IdType is IdType.System_Half)
                 {
                     writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<float>();");
@@ -53,15 +63,6 @@ public partial class StronglyTypedIdSourceGenerator
                 }
                 else
                 {
-                    if (context.IsReferenceType)
-                    {
-                        using (writer.BeginBlock($"if (value == null)"))
-                        {
-                            writer.WriteLine($"context.Writer.WriteNull();");
-                            writer.WriteLine($"return;");
-                        }
-                    }
-
                     if (context.IsValueTypeNullable)
                     {
                         using (writer.BeginBlock($"if (value.Value == null)"))

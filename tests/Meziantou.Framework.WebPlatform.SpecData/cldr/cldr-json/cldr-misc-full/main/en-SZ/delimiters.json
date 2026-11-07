@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-SZ": {
+      "identity": {
+        "language": "en",
+        "territory": "SZ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

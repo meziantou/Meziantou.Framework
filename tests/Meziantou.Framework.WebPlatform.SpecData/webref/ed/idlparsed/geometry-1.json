@@ -1,0 +1,5072 @@
+{
+  "spec": {
+    "title": "Geometry Interfaces Module Level 1",
+    "url": "https://drafts.csswg.org/geometry-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "DOMPointReadOnly",
+          "DOMPoint",
+          "DOMRectReadOnly",
+          "DOMRect",
+          "DOMQuad",
+          "DOMMatrixReadOnly",
+          "DOMMatrix"
+        ],
+        "Worker": [
+          "DOMPointReadOnly",
+          "DOMPoint",
+          "DOMRectReadOnly",
+          "DOMRect",
+          "DOMQuad",
+          "DOMMatrixReadOnly",
+          "DOMMatrix"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "DOMRectList"
+        ]
+      }
+    },
+    "idlNames": {
+      "DOMPointReadOnly": {
+        "fragment": "[Exposed=(Window,Worker),\n Serializable]\ninterface DOMPointReadOnly {\n    constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,\n            optional unrestricted double z = 0, optional unrestricted double w = 1);\n\n    [NewObject] static DOMPointReadOnly fromPoint(optional DOMPointInit other = {});\n\n    readonly attribute unrestricted double x;\n    readonly attribute unrestricted double y;\n    readonly attribute unrestricted double z;\n    readonly attribute unrestricted double w;\n\n    [NewObject] DOMPoint matrixTransform(optional DOMMatrixInit matrix = {});\n\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "DOMPointReadOnly",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "z",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "w",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-dompointreadonly"
+          },
+          {
+            "type": "operation",
+            "name": "fromPoint",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-frompoint"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-z"
+          },
+          {
+            "type": "attribute",
+            "name": "w",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-w"
+          },
+          {
+            "type": "operation",
+            "name": "matrixTransform",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "matrix",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMMatrixInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-matrixtransform"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dompointreadonly"
+      },
+      "DOMPoint": {
+        "fragment": "[Exposed=(Window,Worker),\n Serializable,\n LegacyWindowAlias=SVGPoint]\ninterface DOMPoint : DOMPointReadOnly {\n    constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,\n            optional unrestricted double z = 0, optional unrestricted double w = 1);\n\n    [NewObject] static DOMPoint fromPoint(optional DOMPointInit other = {});\n\n    inherit attribute unrestricted double x;\n    inherit attribute unrestricted double y;\n    inherit attribute unrestricted double z;\n    inherit attribute unrestricted double w;\n};",
+        "type": "interface",
+        "name": "DOMPoint",
+        "inheritance": "DOMPointReadOnly",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "z",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "w",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompoint-dompoint"
+          },
+          {
+            "type": "operation",
+            "name": "fromPoint",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompoint-frompoint"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-z"
+          },
+          {
+            "type": "attribute",
+            "name": "w",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointreadonly-w"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyWindowAlias",
+            "rhs": {
+              "type": "identifier",
+              "value": "SVGPoint"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dompoint"
+      },
+      "DOMPointInit": {
+        "fragment": "dictionary DOMPointInit {\n    unrestricted double x = 0;\n    unrestricted double y = 0;\n    unrestricted double z = 0;\n    unrestricted double w = 1;\n};",
+        "type": "dictionary",
+        "name": "DOMPointInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "x",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointinit-x"
+          },
+          {
+            "type": "field",
+            "name": "y",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointinit-y"
+          },
+          {
+            "type": "field",
+            "name": "z",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointinit-z"
+          },
+          {
+            "type": "field",
+            "name": "w",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dompointinit-w"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dictdef-dompointinit"
+      },
+      "DOMRectReadOnly": {
+        "fragment": "[Exposed=(Window,Worker),\n Serializable]\ninterface DOMRectReadOnly {\n    constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,\n            optional unrestricted double width = 0, optional unrestricted double height = 0);\n\n    [NewObject] static DOMRectReadOnly fromRect(optional DOMRectInit other = {});\n\n    readonly attribute unrestricted double x;\n    readonly attribute unrestricted double y;\n    readonly attribute unrestricted double width;\n    readonly attribute unrestricted double height;\n    readonly attribute unrestricted double top;\n    readonly attribute unrestricted double right;\n    readonly attribute unrestricted double bottom;\n    readonly attribute unrestricted double left;\n\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "DOMRectReadOnly",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "width",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "height",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-domrectreadonly"
+          },
+          {
+            "type": "operation",
+            "name": "fromRect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMRectInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-fromrect"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-y"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-height"
+          },
+          {
+            "type": "attribute",
+            "name": "top",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-top"
+          },
+          {
+            "type": "attribute",
+            "name": "right",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-right"
+          },
+          {
+            "type": "attribute",
+            "name": "bottom",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-bottom"
+          },
+          {
+            "type": "attribute",
+            "name": "left",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-left"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectreadonly-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#domrectreadonly"
+      },
+      "DOMRect": {
+        "fragment": "[Exposed=(Window,Worker),\n Serializable,\n LegacyWindowAlias=SVGRect]\ninterface DOMRect : DOMRectReadOnly {\n    constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,\n            optional unrestricted double width = 0, optional unrestricted double height = 0);\n\n    [NewObject] static DOMRect fromRect(optional DOMRectInit other = {});\n\n    inherit attribute unrestricted double x;\n    inherit attribute unrestricted double y;\n    inherit attribute unrestricted double width;\n    inherit attribute unrestricted double height;\n};",
+        "type": "interface",
+        "name": "DOMRect",
+        "inheritance": "DOMRectReadOnly",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "width",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "height",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrect-domrect"
+          },
+          {
+            "type": "operation",
+            "name": "fromRect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRect"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMRectInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrect-fromrect"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrect-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrect-y"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrect-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrect-height"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyWindowAlias",
+            "rhs": {
+              "type": "identifier",
+              "value": "SVGRect"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#domrect"
+      },
+      "DOMRectInit": {
+        "fragment": "dictionary DOMRectInit {\n    unrestricted double x = 0;\n    unrestricted double y = 0;\n    unrestricted double width = 0;\n    unrestricted double height = 0;\n};",
+        "type": "dictionary",
+        "name": "DOMRectInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "x",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectinit-x"
+          },
+          {
+            "type": "field",
+            "name": "y",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectinit-y"
+          },
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectinit-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectinit-height"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dictdef-domrectinit"
+      },
+      "DOMRectList": {
+        "fragment": "[Exposed=Window]\ninterface DOMRectList {\n    readonly attribute unsigned long length;\n    getter DOMRect? item(unsigned long index);\n};",
+        "type": "interface",
+        "name": "DOMRectList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domrectlist-length"
+          },
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMRect"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#domrectlist"
+      },
+      "DOMQuad": {
+        "fragment": "[Exposed=(Window,Worker),\n Serializable]\ninterface DOMQuad {\n    constructor(optional DOMPointInit p1 = {}, optional DOMPointInit p2 = {},\n            optional DOMPointInit p3 = {}, optional DOMPointInit p4 = {});\n\n    [NewObject] static DOMQuad fromRect(optional DOMRectInit other = {});\n    [NewObject] static DOMQuad fromQuad(optional DOMQuadInit other = {});\n\n    [SameObject] readonly attribute DOMPoint p1;\n    [SameObject] readonly attribute DOMPoint p2;\n    [SameObject] readonly attribute DOMPoint p3;\n    [SameObject] readonly attribute DOMPoint p4;\n    [NewObject] DOMRect getBounds();\n\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "DOMQuad",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "p1",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "p2",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "p3",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "p4",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-domquad"
+          },
+          {
+            "type": "operation",
+            "name": "fromRect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMQuad"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMRectInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-fromrect"
+          },
+          {
+            "type": "operation",
+            "name": "fromQuad",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMQuad"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMQuadInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-fromquad"
+          },
+          {
+            "type": "attribute",
+            "name": "p1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-p1"
+          },
+          {
+            "type": "attribute",
+            "name": "p2",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-p2"
+          },
+          {
+            "type": "attribute",
+            "name": "p3",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-p3"
+          },
+          {
+            "type": "attribute",
+            "name": "p4",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-p4"
+          },
+          {
+            "type": "operation",
+            "name": "getBounds",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRect"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-getbounds"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquad-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#domquad"
+      },
+      "DOMQuadInit": {
+        "fragment": "dictionary DOMQuadInit {\n  DOMPointInit p1;\n  DOMPointInit p2;\n  DOMPointInit p3;\n  DOMPointInit p4;\n};",
+        "type": "dictionary",
+        "name": "DOMQuadInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "p1",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquadinit-p1"
+          },
+          {
+            "type": "field",
+            "name": "p2",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquadinit-p2"
+          },
+          {
+            "type": "field",
+            "name": "p3",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquadinit-p3"
+          },
+          {
+            "type": "field",
+            "name": "p4",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-domquadinit-p4"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dictdef-domquadinit"
+      },
+      "DOMMatrixReadOnly": {
+        "fragment": "[Exposed=(Window,Worker),\n Serializable]\ninterface DOMMatrixReadOnly {\n    constructor(optional (DOMString or sequence<unrestricted double>) init);\n\n    [NewObject] static DOMMatrixReadOnly fromMatrix(optional DOMMatrixInit other = {});\n    [NewObject] static DOMMatrixReadOnly fromFloat32Array(Float32Array array32);\n    [NewObject] static DOMMatrixReadOnly fromFloat64Array(Float64Array array64);\n\n    // These attributes are simple aliases for certain elements of the 4x4 matrix\n    readonly attribute unrestricted double a;\n    readonly attribute unrestricted double b;\n    readonly attribute unrestricted double c;\n    readonly attribute unrestricted double d;\n    readonly attribute unrestricted double e;\n    readonly attribute unrestricted double f;\n\n    readonly attribute unrestricted double m11;\n    readonly attribute unrestricted double m12;\n    readonly attribute unrestricted double m13;\n    readonly attribute unrestricted double m14;\n    readonly attribute unrestricted double m21;\n    readonly attribute unrestricted double m22;\n    readonly attribute unrestricted double m23;\n    readonly attribute unrestricted double m24;\n    readonly attribute unrestricted double m31;\n    readonly attribute unrestricted double m32;\n    readonly attribute unrestricted double m33;\n    readonly attribute unrestricted double m34;\n    readonly attribute unrestricted double m41;\n    readonly attribute unrestricted double m42;\n    readonly attribute unrestricted double m43;\n    readonly attribute unrestricted double m44;\n\n    readonly attribute boolean is2D;\n    readonly attribute boolean isIdentity;\n\n    // Immutable transform methods\n    [NewObject] DOMMatrix translate(optional unrestricted double tx = 0,\n                                    optional unrestricted double ty = 0,\n                                    optional unrestricted double tz = 0);\n    [NewObject] DOMMatrix scale(optional unrestricted double scaleX = 1,\n                                optional unrestricted double scaleY,\n                                optional unrestricted double scaleZ = 1,\n                                optional unrestricted double originX = 0,\n                                optional unrestricted double originY = 0,\n                                optional unrestricted double originZ = 0);\n    [NewObject] DOMMatrix scaleNonUniform(optional unrestricted double scaleX = 1,\n                                          optional unrestricted double scaleY = 1);\n    [NewObject] DOMMatrix scale3d(optional unrestricted double scale = 1,\n                                  optional unrestricted double originX = 0,\n                                  optional unrestricted double originY = 0,\n                                  optional unrestricted double originZ = 0);\n    [NewObject] DOMMatrix rotate(optional unrestricted double rotX = 0,\n                                 optional unrestricted double rotY,\n                                 optional unrestricted double rotZ);\n    [NewObject] DOMMatrix rotateFromVector(optional unrestricted double x = 0,\n                                           optional unrestricted double y = 0);\n    [NewObject] DOMMatrix rotateAxisAngle(optional unrestricted double x = 0,\n                                          optional unrestricted double y = 0,\n                                          optional unrestricted double z = 0,\n                                          optional unrestricted double angle = 0);\n    [NewObject] DOMMatrix skewX(optional unrestricted double sx = 0);\n    [NewObject] DOMMatrix skewY(optional unrestricted double sy = 0);\n    [NewObject] DOMMatrix multiply(optional DOMMatrixInit other = {});\n    [NewObject] DOMMatrix flipX();\n    [NewObject] DOMMatrix flipY();\n    [NewObject] DOMMatrix inverse();\n\n    [NewObject] DOMPoint transformPoint(optional DOMPointInit point = {});\n    [NewObject] Float32Array toFloat32Array();\n    [NewObject] Float64Array toFloat64Array();\n\n    [Exposed=Window] stringifier;\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "DOMMatrixReadOnly",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "unrestricted double"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-dommatrixreadonly"
+          },
+          {
+            "type": "operation",
+            "name": "fromMatrix",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrixReadOnly"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMMatrixInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-frommatrix"
+          },
+          {
+            "type": "operation",
+            "name": "fromFloat32Array",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrixReadOnly"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "array32",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Float32Array"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-fromfloat32array"
+          },
+          {
+            "type": "operation",
+            "name": "fromFloat64Array",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrixReadOnly"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "array64",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Float64Array"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-fromfloat64array"
+          },
+          {
+            "type": "attribute",
+            "name": "a",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-a"
+          },
+          {
+            "type": "attribute",
+            "name": "b",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-b"
+          },
+          {
+            "type": "attribute",
+            "name": "c",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-c"
+          },
+          {
+            "type": "attribute",
+            "name": "d",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-d"
+          },
+          {
+            "type": "attribute",
+            "name": "e",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-e"
+          },
+          {
+            "type": "attribute",
+            "name": "f",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-f"
+          },
+          {
+            "type": "attribute",
+            "name": "m11",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m11"
+          },
+          {
+            "type": "attribute",
+            "name": "m12",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m12"
+          },
+          {
+            "type": "attribute",
+            "name": "m13",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m13"
+          },
+          {
+            "type": "attribute",
+            "name": "m14",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m14"
+          },
+          {
+            "type": "attribute",
+            "name": "m21",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m21"
+          },
+          {
+            "type": "attribute",
+            "name": "m22",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m22"
+          },
+          {
+            "type": "attribute",
+            "name": "m23",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m23"
+          },
+          {
+            "type": "attribute",
+            "name": "m24",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m24"
+          },
+          {
+            "type": "attribute",
+            "name": "m31",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m31"
+          },
+          {
+            "type": "attribute",
+            "name": "m32",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m32"
+          },
+          {
+            "type": "attribute",
+            "name": "m33",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m33"
+          },
+          {
+            "type": "attribute",
+            "name": "m34",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m34"
+          },
+          {
+            "type": "attribute",
+            "name": "m41",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m41"
+          },
+          {
+            "type": "attribute",
+            "name": "m42",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m42"
+          },
+          {
+            "type": "attribute",
+            "name": "m43",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m43"
+          },
+          {
+            "type": "attribute",
+            "name": "m44",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m44"
+          },
+          {
+            "type": "attribute",
+            "name": "is2D",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-is2d"
+          },
+          {
+            "type": "attribute",
+            "name": "isIdentity",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-isidentity"
+          },
+          {
+            "type": "operation",
+            "name": "translate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tx",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "ty",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "tz",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-translate"
+          },
+          {
+            "type": "operation",
+            "name": "scale",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "scaleX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "scaleY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "scaleZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-scale"
+          },
+          {
+            "type": "operation",
+            "name": "scaleNonUniform",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "scaleX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "scaleY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-scalenonuniform"
+          },
+          {
+            "type": "operation",
+            "name": "scale3d",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "scale",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-scale3d"
+          },
+          {
+            "type": "operation",
+            "name": "rotate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rotX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "rotY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "rotZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-rotate"
+          },
+          {
+            "type": "operation",
+            "name": "rotateFromVector",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-rotatefromvector"
+          },
+          {
+            "type": "operation",
+            "name": "rotateAxisAngle",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "z",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "angle",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-rotateaxisangle"
+          },
+          {
+            "type": "operation",
+            "name": "skewX",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sx",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-skewx"
+          },
+          {
+            "type": "operation",
+            "name": "skewY",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sy",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-skewy"
+          },
+          {
+            "type": "operation",
+            "name": "multiply",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMMatrixInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-multiply"
+          },
+          {
+            "type": "operation",
+            "name": "flipX",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-flipx"
+          },
+          {
+            "type": "operation",
+            "name": "flipY",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-flipy"
+          },
+          {
+            "type": "operation",
+            "name": "inverse",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-inverse"
+          },
+          {
+            "type": "operation",
+            "name": "transformPoint",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "point",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMPointInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-transformpoint"
+          },
+          {
+            "type": "operation",
+            "name": "toFloat32Array",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-tofloat32array"
+          },
+          {
+            "type": "operation",
+            "name": "toFloat64Array",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float64Array"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-tofloat64array"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "stringifier"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dommatrixreadonly"
+      },
+      "DOMMatrix": {
+        "fragment": "[Exposed=(Window,Worker),\n Serializable,\n LegacyWindowAlias=(SVGMatrix,WebKitCSSMatrix)]\ninterface DOMMatrix : DOMMatrixReadOnly {\n    constructor(optional (DOMString or sequence<unrestricted double>) init);\n\n    [NewObject] static DOMMatrix fromMatrix(optional DOMMatrixInit other = {});\n    [NewObject] static DOMMatrix fromFloat32Array(Float32Array array32);\n    [NewObject] static DOMMatrix fromFloat64Array(Float64Array array64);\n\n    // These attributes are simple aliases for certain elements of the 4x4 matrix\n    inherit attribute unrestricted double a;\n    inherit attribute unrestricted double b;\n    inherit attribute unrestricted double c;\n    inherit attribute unrestricted double d;\n    inherit attribute unrestricted double e;\n    inherit attribute unrestricted double f;\n\n    inherit attribute unrestricted double m11;\n    inherit attribute unrestricted double m12;\n    inherit attribute unrestricted double m13;\n    inherit attribute unrestricted double m14;\n    inherit attribute unrestricted double m21;\n    inherit attribute unrestricted double m22;\n    inherit attribute unrestricted double m23;\n    inherit attribute unrestricted double m24;\n    inherit attribute unrestricted double m31;\n    inherit attribute unrestricted double m32;\n    inherit attribute unrestricted double m33;\n    inherit attribute unrestricted double m34;\n    inherit attribute unrestricted double m41;\n    inherit attribute unrestricted double m42;\n    inherit attribute unrestricted double m43;\n    inherit attribute unrestricted double m44;\n\n    // Mutable transform methods\n    DOMMatrix multiplySelf(optional DOMMatrixInit other = {});\n    DOMMatrix preMultiplySelf(optional DOMMatrixInit other = {});\n    DOMMatrix translateSelf(optional unrestricted double tx = 0,\n                            optional unrestricted double ty = 0,\n                            optional unrestricted double tz = 0);\n    DOMMatrix scaleSelf(optional unrestricted double scaleX = 1,\n                        optional unrestricted double scaleY,\n                        optional unrestricted double scaleZ = 1,\n                        optional unrestricted double originX = 0,\n                        optional unrestricted double originY = 0,\n                        optional unrestricted double originZ = 0);\n    DOMMatrix scale3dSelf(optional unrestricted double scale = 1,\n                          optional unrestricted double originX = 0,\n                          optional unrestricted double originY = 0,\n                          optional unrestricted double originZ = 0);\n    DOMMatrix rotateSelf(optional unrestricted double rotX = 0,\n                         optional unrestricted double rotY,\n                         optional unrestricted double rotZ);\n    DOMMatrix rotateFromVectorSelf(optional unrestricted double x = 0,\n                                   optional unrestricted double y = 0);\n    DOMMatrix rotateAxisAngleSelf(optional unrestricted double x = 0,\n                                  optional unrestricted double y = 0,\n                                  optional unrestricted double z = 0,\n                                  optional unrestricted double angle = 0);\n    DOMMatrix skewXSelf(optional unrestricted double sx = 0);\n    DOMMatrix skewYSelf(optional unrestricted double sy = 0);\n    DOMMatrix invertSelf();\n\n    [Exposed=Window] DOMMatrix setMatrixValue(DOMString transformList);\n};",
+        "type": "interface",
+        "name": "DOMMatrix",
+        "inheritance": "DOMMatrixReadOnly",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "unrestricted double"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-dommatrix"
+          },
+          {
+            "type": "operation",
+            "name": "fromMatrix",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMMatrixInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-frommatrix"
+          },
+          {
+            "type": "operation",
+            "name": "fromFloat32Array",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "array32",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Float32Array"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-fromfloat32array"
+          },
+          {
+            "type": "operation",
+            "name": "fromFloat64Array",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "array64",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Float64Array"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-fromfloat64array"
+          },
+          {
+            "type": "attribute",
+            "name": "a",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-a"
+          },
+          {
+            "type": "attribute",
+            "name": "b",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-b"
+          },
+          {
+            "type": "attribute",
+            "name": "c",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-c"
+          },
+          {
+            "type": "attribute",
+            "name": "d",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-d"
+          },
+          {
+            "type": "attribute",
+            "name": "e",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-e"
+          },
+          {
+            "type": "attribute",
+            "name": "f",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-f"
+          },
+          {
+            "type": "attribute",
+            "name": "m11",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m11"
+          },
+          {
+            "type": "attribute",
+            "name": "m12",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m12"
+          },
+          {
+            "type": "attribute",
+            "name": "m13",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m13"
+          },
+          {
+            "type": "attribute",
+            "name": "m14",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m14"
+          },
+          {
+            "type": "attribute",
+            "name": "m21",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m21"
+          },
+          {
+            "type": "attribute",
+            "name": "m22",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m22"
+          },
+          {
+            "type": "attribute",
+            "name": "m23",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m23"
+          },
+          {
+            "type": "attribute",
+            "name": "m24",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m24"
+          },
+          {
+            "type": "attribute",
+            "name": "m31",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m31"
+          },
+          {
+            "type": "attribute",
+            "name": "m32",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m32"
+          },
+          {
+            "type": "attribute",
+            "name": "m33",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m33"
+          },
+          {
+            "type": "attribute",
+            "name": "m34",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m34"
+          },
+          {
+            "type": "attribute",
+            "name": "m41",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m41"
+          },
+          {
+            "type": "attribute",
+            "name": "m42",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m42"
+          },
+          {
+            "type": "attribute",
+            "name": "m43",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m43"
+          },
+          {
+            "type": "attribute",
+            "name": "m44",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "inherit",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixreadonly-m44"
+          },
+          {
+            "type": "operation",
+            "name": "multiplySelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMMatrixInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-multiplyself"
+          },
+          {
+            "type": "operation",
+            "name": "preMultiplySelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "other",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMMatrixInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-premultiplyself"
+          },
+          {
+            "type": "operation",
+            "name": "translateSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tx",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "ty",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "tz",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-translateself"
+          },
+          {
+            "type": "operation",
+            "name": "scaleSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "scaleX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "scaleY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "scaleZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-scaleself"
+          },
+          {
+            "type": "operation",
+            "name": "scale3dSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "scale",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "originZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-scale3dself"
+          },
+          {
+            "type": "operation",
+            "name": "rotateSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rotX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "rotY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "rotZ",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-rotateself"
+          },
+          {
+            "type": "operation",
+            "name": "rotateFromVectorSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-rotatefromvectorself"
+          },
+          {
+            "type": "operation",
+            "name": "rotateAxisAngleSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "z",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "angle",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-rotateaxisangleself"
+          },
+          {
+            "type": "operation",
+            "name": "skewXSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sx",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-skewxself"
+          },
+          {
+            "type": "operation",
+            "name": "skewYSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sy",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-skewyself"
+          },
+          {
+            "type": "operation",
+            "name": "invertSelf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-invertself"
+          },
+          {
+            "type": "operation",
+            "name": "setMatrixValue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrix"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "transformList",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix-setmatrixvalue"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyWindowAlias",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "SVGMatrix"
+                },
+                {
+                  "value": "WebKitCSSMatrix"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dommatrix"
+      },
+      "DOMMatrix2DInit": {
+        "fragment": "dictionary DOMMatrix2DInit {\n    unrestricted double a;\n    unrestricted double b;\n    unrestricted double c;\n    unrestricted double d;\n    unrestricted double e;\n    unrestricted double f;\n    unrestricted double m11;\n    unrestricted double m12;\n    unrestricted double m21;\n    unrestricted double m22;\n    unrestricted double m41;\n    unrestricted double m42;\n};",
+        "type": "dictionary",
+        "name": "DOMMatrix2DInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "a",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-a"
+          },
+          {
+            "type": "field",
+            "name": "b",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-b"
+          },
+          {
+            "type": "field",
+            "name": "c",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-c"
+          },
+          {
+            "type": "field",
+            "name": "d",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-d"
+          },
+          {
+            "type": "field",
+            "name": "e",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-e"
+          },
+          {
+            "type": "field",
+            "name": "f",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-f"
+          },
+          {
+            "type": "field",
+            "name": "m11",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-m11"
+          },
+          {
+            "type": "field",
+            "name": "m12",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-m12"
+          },
+          {
+            "type": "field",
+            "name": "m21",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-m21"
+          },
+          {
+            "type": "field",
+            "name": "m22",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-m22"
+          },
+          {
+            "type": "field",
+            "name": "m41",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-m41"
+          },
+          {
+            "type": "field",
+            "name": "m42",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrix2dinit-m42"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dictdef-dommatrix2dinit"
+      },
+      "DOMMatrixInit": {
+        "fragment": "dictionary DOMMatrixInit : DOMMatrix2DInit {\n    unrestricted double m13 = 0;\n    unrestricted double m14 = 0;\n    unrestricted double m23 = 0;\n    unrestricted double m24 = 0;\n    unrestricted double m31 = 0;\n    unrestricted double m32 = 0;\n    unrestricted double m33 = 1;\n    unrestricted double m34 = 0;\n    unrestricted double m43 = 0;\n    unrestricted double m44 = 1;\n    boolean is2D;\n};",
+        "type": "dictionary",
+        "name": "DOMMatrixInit",
+        "inheritance": "DOMMatrix2DInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "m13",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m13"
+          },
+          {
+            "type": "field",
+            "name": "m14",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m14"
+          },
+          {
+            "type": "field",
+            "name": "m23",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m23"
+          },
+          {
+            "type": "field",
+            "name": "m24",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m24"
+          },
+          {
+            "type": "field",
+            "name": "m31",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m31"
+          },
+          {
+            "type": "field",
+            "name": "m32",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m32"
+          },
+          {
+            "type": "field",
+            "name": "m33",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m33"
+          },
+          {
+            "type": "field",
+            "name": "m34",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m34"
+          },
+          {
+            "type": "field",
+            "name": "m43",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m43"
+          },
+          {
+            "type": "field",
+            "name": "m44",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-m44"
+          },
+          {
+            "type": "field",
+            "name": "is2D",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/geometry-1/#dom-dommatrixinit-is2d"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/geometry-1/#dictdef-dommatrixinit"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "DOMPointReadOnly",
+        "DOMPoint",
+        "DOMRectReadOnly",
+        "DOMRect",
+        "DOMRectList",
+        "DOMQuad",
+        "DOMMatrixReadOnly",
+        "DOMMatrix"
+      ],
+      "Worker": [
+        "DOMPointReadOnly",
+        "DOMPoint",
+        "DOMRectReadOnly",
+        "DOMRect",
+        "DOMQuad",
+        "DOMMatrixReadOnly",
+        "DOMMatrix"
+      ]
+    },
+    "dependencies": {
+      "DOMPointReadOnly": [
+        "DOMPointReadOnly",
+        "DOMPointInit",
+        "DOMPoint",
+        "DOMMatrixInit"
+      ],
+      "DOMPoint": [
+        "DOMPointReadOnly",
+        "DOMPoint",
+        "DOMPointInit"
+      ],
+      "DOMPointInit": [],
+      "DOMRectReadOnly": [
+        "DOMRectReadOnly",
+        "DOMRectInit"
+      ],
+      "DOMRect": [
+        "DOMRectReadOnly",
+        "DOMRect",
+        "DOMRectInit"
+      ],
+      "DOMRectInit": [],
+      "DOMRectList": [
+        "DOMRect"
+      ],
+      "DOMQuad": [
+        "DOMPointInit",
+        "DOMQuad",
+        "DOMRectInit",
+        "DOMQuadInit",
+        "DOMPoint",
+        "DOMRect"
+      ],
+      "DOMQuadInit": [
+        "DOMPointInit"
+      ],
+      "DOMMatrixReadOnly": [
+        "DOMMatrixReadOnly",
+        "DOMMatrixInit",
+        "Float32Array",
+        "Float64Array",
+        "DOMMatrix",
+        "DOMPoint",
+        "DOMPointInit"
+      ],
+      "DOMMatrix": [
+        "DOMMatrixReadOnly",
+        "DOMMatrix",
+        "DOMMatrixInit",
+        "Float32Array",
+        "Float64Array"
+      ],
+      "DOMMatrix2DInit": [],
+      "DOMMatrixInit": [
+        "DOMMatrix2DInit"
+      ]
+    },
+    "externalDependencies": [
+      "Float32Array",
+      "Float64Array"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

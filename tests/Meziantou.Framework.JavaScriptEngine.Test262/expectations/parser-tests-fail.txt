@@ -1,0 +1,9 @@
+parser-tests/fail/0d5e450f1da8a92a.js:sloppy # outdated (ES2017): \9 is a NonOctalDecimalEscapeSequence, valid in sloppy mode since ES2021
+parser-tests/fail/748656edbfb2d0bb.js:sloppy # outdated (ES2017): \8 is a NonOctalDecimalEscapeSequence, valid in sloppy mode since ES2021
+parser-tests/fail/79f882da06f88c9f.js:sloppy # outdated (ES2017): \8 is a NonOctalDecimalEscapeSequence, valid in sloppy mode since ES2021
+parser-tests/fail/92b6af54adef3624.js:sloppy # outdated (ES2017): \9 is a NonOctalDecimalEscapeSequence, valid in sloppy mode since ES2021
+parser-tests/fail/98204d734f8c72b3.js:sloppy # outdated (ES2017): class fields are valid since ES2022
+parser-tests/fail/a8beb1480f385441.js:sloppy # outdated: a call as an assignment target is a runtime ReferenceError in sloppy mode (web compatibility, test262 annexB/language/expressions/assignmenttargettype)
+parser-tests/fail/c060a3014ad24dfd.js:sloppy # outdated: U+2B81E is an ID_Start code point in recent Unicode versions (it was unassigned in Unicode 9)
+parser-tests/fail/e3fbcf63d7e43ead.js:sloppy # outdated (ES2017): a var initializer in a for-in head is valid in sloppy mode (Annex B.3.5)
+parser-tests/fail/ef81b93cf9bdb4ec.js:sloppy # outdated (ES2017): class fields are valid since ES2022

@@ -1,0 +1,142 @@
+{
+  "spec": {
+    "title": "CSS Line Grid Module Level 1",
+    "url": "https://drafts.csswg.org/css-line-grid-1/"
+  },
+  "properties": [
+    {
+      "name": "line-grid",
+      "href": "https://drafts.csswg.org/css-line-grid-1/#propdef-line-grid",
+      "value": "match-parent | create",
+      "initial": "match-parent",
+      "appliesTo": "block, flex and grid containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "match-parent",
+          "prose": "Box assumes the line grid of its parent if its writing mode is the same as its parent. If the box has a writing mode that is different than its parent, then the box creates a new line grid as create below.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-line-grid-match-parent",
+          "type": "value",
+          "value": "match-parent"
+        },
+        {
+          "name": "create",
+          "prose": "Box creates a new line grid using its own font and line layout settings, including any adjustment to the line height caused by the line-height-step property. The line grid consists of a series of horizontal lines corresponding to all the baselines (alphabetic, text-top, text-bottom, mathematic, central, hanging, etc.) and to the line-over and line-under edges, positioned where they would fall if the contents of this element consisted entirely of line boxes filled with text (no sub-elements) using the first available font. If the box is paginated, the line grid is restarted on each page; since line boxes cannot be fragmented, no page begins with the bottom part of a line’s grid.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-line-grid-create",
+          "type": "value",
+          "value": "create"
+        }
+      ],
+      "styleDeclaration": [
+        "line-grid",
+        "lineGrid"
+      ]
+    },
+    {
+      "name": "line-snap",
+      "href": "https://drafts.csswg.org/css-line-grid-1/#propdef-line-snap",
+      "value": "none | baseline | contain",
+      "initial": "none",
+      "appliesTo": "block container elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Line boxes do not snap to the grid; they stack normally.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-line-snap-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "baseline",
+          "prose": "The dominant baseline snaps with the matching baseline on the line grid applying to the element.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-line-snap-baseline",
+          "type": "value",
+          "value": "baseline"
+        },
+        {
+          "name": "contain",
+          "prose": "Two baselines are used to align the line box: the line box is snapped so that its central baseline is centered between one of the line grid’s text-over-edge baselines and a subsequent (but not necessarily consecutive) text-under-edge baseline.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-line-snap-contain",
+          "type": "value",
+          "value": "contain"
+        }
+      ],
+      "styleDeclaration": [
+        "line-snap",
+        "lineSnap"
+      ]
+    },
+    {
+      "name": "box-snap",
+      "href": "https://drafts.csswg.org/css-line-grid-1/#propdef-box-snap",
+      "value": "none | block-start | block-end | center | baseline | last-baseline",
+      "initial": "none",
+      "appliesTo": "block-level boxes and internal table elements except table cells",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The block is not snapped to any grid.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-box-snap-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "block-start",
+          "prose": "The block-start edge is snapped to the nearest grid line.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-box-snap-block-start",
+          "type": "value",
+          "value": "block-start"
+        },
+        {
+          "name": "block-end",
+          "prose": "The block-end edge is snapped to the nearest grid line.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-box-snap-block-end",
+          "type": "value",
+          "value": "block-end"
+        },
+        {
+          "name": "center",
+          "prose": "The block is centered between one of the baseline grid’s text-over baselines and a subsequent (but not necessarily consecutive) text-under baseline.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-box-snap-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "baseline",
+          "prose": "The first line box’s dominant baseline is snapped to the nearest grid line.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-box-snap-baseline",
+          "type": "value",
+          "value": "baseline"
+        },
+        {
+          "name": "last-baseline",
+          "prose": "The last line box’s dominant baseline is snapped to the nearest grid line.",
+          "href": "https://drafts.csswg.org/css-line-grid-1/#valdef-box-snap-last-baseline",
+          "type": "value",
+          "value": "last-baseline"
+        }
+      ],
+      "styleDeclaration": [
+        "box-snap",
+        "boxSnap"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

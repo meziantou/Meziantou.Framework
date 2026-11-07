@@ -1,8 +1,8 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Filtering;
+using Meziantou.Framework.Diagnostics;
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -70,6 +70,53 @@ public sealed class FilterEngineProviderTests
     }
 
     [Fact]
+    public async Task RefreshAsync_DoesNotReportRulesBeforeTheEngineMatchesThem()
+    {
+        using var cacheDirectory = TemporaryDirectory.Create();
+        var options = Options.Create(new DnsProxyOptions
+        {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
+            Filters =
+            [
+                new FilterListOption
+                {
+                    Url = "https://filters.example/list.txt",
+                    Format = nameof(DnsFilterListFormat.AdBlock),
+                },
+            ],
+        });
+
+        // A large list makes building the engine slow enough for a reader to observe a rule count published before the
+        // engine that matches it.
+        var listText = string.Join('\n', Enumerable.Range(0, 20_000).Select(i => $"||blocked{i}.example.com^"));
+        using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(listText),
+        });
+        var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        var provider = new FilterEngineProvider(
+            factory,
+            options,
+            NullLogger<FilterEngineProvider>.Instance);
+
+        // Callers use the rule count as a readiness signal, so the engine must already match the rules it reports.
+        using var readerTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var reader = Task.Factory.StartNew(() =>
+        {
+            while (provider.RuleCount is 0 && !readerTimeout.IsCancellationRequested)
+            {
+            }
+
+            return provider.Engine.Evaluate("blocked0.example.com").IsMatched;
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        await provider.RefreshAsync(CancellationToken.None);
+
+        Assert.True(await reader, "The provider reported loaded rules while the engine was still matching the previous rule set.");
+    }
+
+    [Fact]
     public async Task RefreshAsync_EmitsActivitiesWhenLoadingRemoteFilters()
     {
         using var cacheDirectory = TemporaryDirectory.Create();
@@ -87,9 +134,8 @@ public sealed class FilterEngineProviderTests
             ],
         });
 
-        var activities = new ConcurrentQueue<Activity>();
-        using var listener = CreateDnsProxyActivityListener(activities.Enqueue);
-        ActivitySource.AddActivityListener(listener);
+        // The scope only reports the activities started by this test, so no extra filtering is needed to ignore the other tests
+        using var listener = new ScopedActivityListener(new ScopedActivityListenerOptions { SourceNames = ["Meziantou.DnsProxy"] });
 
         using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -104,12 +150,8 @@ public sealed class FilterEngineProviderTests
 
         await provider.RefreshAsync(CancellationToken.None);
 
-        var loadActivity = Assert.Single(activities, activity =>
-            activity.OperationName == "dns_proxy.filters.load" &&
-            Equals(filterUrl, activity.GetTagItem("dns_proxy.filter.url")));
-        var refreshActivity = Assert.Single(activities, activity =>
-            activity.OperationName == "dns_proxy.filters.refresh" &&
-            activity.SpanId == loadActivity.ParentSpanId);
+        var loadActivity = Assert.Single(listener.Activities, activity => activity.OperationName == "dns_proxy.filters.load");
+        var refreshActivity = Assert.Single(listener.Activities, activity => activity.OperationName == "dns_proxy.filters.refresh");
 
         Assert.Equal(refreshActivity.SpanId, loadActivity.ParentSpanId);
         Assert.Equal(ActivityStatusCode.Ok, refreshActivity.Status);
@@ -268,17 +310,6 @@ public sealed class FilterEngineProviderTests
             .AddHttpClient(Options.DefaultName)
             .ConfigurePrimaryHttpMessageHandler(() => new DelegateHttpMessageHandler(responseFactory));
         return services.BuildServiceProvider();
-    }
-
-    private static ActivityListener CreateDnsProxyActivityListener(Action<Activity> activityStopped)
-    {
-        return new ActivityListener
-        {
-            ShouldListenTo = static source => source.Name == "Meziantou.DnsProxy",
-            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = activityStopped,
-        };
     }
 
     private sealed class DelegateHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory) : HttpMessageHandler

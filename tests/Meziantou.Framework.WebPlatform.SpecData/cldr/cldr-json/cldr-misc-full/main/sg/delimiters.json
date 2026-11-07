@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sg": {
+      "identity": {
+        "language": "sg"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

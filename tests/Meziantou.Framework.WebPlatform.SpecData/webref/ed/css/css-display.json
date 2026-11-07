@@ -1,0 +1,444 @@
+{
+  "spec": {
+    "title": "CSS Display Module Level 4",
+    "url": "https://drafts.csswg.org/css-display-4/"
+  },
+  "properties": [
+    {
+      "name": "display",
+      "href": "https://drafts.csswg.org/css-display-4/#propdef-display",
+      "value": "[ <display-outside> || <display-inside> ] | <display-listitem> | <display-internal> | <display-box> | <display-legacy>",
+      "initial": "inline",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "a pair of keywords representing the inner and outer display types plus optional list-item flag, or a <display-internal> or <display-box> keyword; see prose in a variety of specs for computation rules",
+      "canonicalOrder": "per grammar",
+      "animationType": "see § 2.9 Animating and Interpolating display",
+      "values": [
+        {
+          "name": "list-item",
+          "prose": "The list-item keyword causes the element to generate a ::marker pseudo-element [CSS-PSEUDO-4] with the content specified by its list-style properties (CSS 2.1§12.5 Lists) [CSS2] together with a principal box of the specified type for its own contents.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-list-item",
+          "type": "value",
+          "value": "list-item"
+        }
+      ],
+      "styleDeclaration": [
+        "display"
+      ]
+    },
+    {
+      "name": "order",
+      "href": "https://drafts.csswg.org/css-display-4/#propdef-order",
+      "value": "<integer>",
+      "initial": "0",
+      "appliesTo": "flex items and grid items",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<integer>",
+          "prose": "Specifically, the order property controls the order in which flex items or grid items appear within their container, by assigning them to ordinal groups. It takes a single <integer> value, which specifies which ordinal group the item belongs to.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-order-integer",
+          "type": "value",
+          "value": "<integer>"
+        }
+      ],
+      "styleDeclaration": [
+        "order"
+      ]
+    },
+    {
+      "name": "reading-flow",
+      "href": "https://drafts.csswg.org/css-display-4/#propdef-reading-flow",
+      "value": "normal | source-order | flex-visual | flex-flow | grid-rows | grid-columns | grid-order",
+      "initial": "normal",
+      "appliesTo": "block, flex and grid containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Follow the order of elements in the DOM.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-flow-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "source-order",
+          "prose": "Applies to grid, flex, and block layouts. Creates a reading flow container, and enables the use of the reading-order property on direct children. Other than respecting the reading-order property, follows the order of elements in the DOM.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-flow-source-order",
+          "type": "value",
+          "value": "source-order"
+        },
+        {
+          "name": "flex-visual",
+          "prose": "Only takes effect on flex containers. Follows the visual reading order of flex items, taking the writing mode into account. Therefore, a document in English, with flex-direction: row-reverse and reading-flow: flex-visual would have a reading order of left to right.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-flow-flex-visual",
+          "type": "value",
+          "value": "flex-visual"
+        },
+        {
+          "name": "flex-flow",
+          "prose": "Only takes effect on flex containers. Follows the flex-flow direction.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-flow-flex-flow",
+          "type": "value",
+          "value": "flex-flow"
+        },
+        {
+          "name": "grid-rows",
+          "prose": "Only takes effect on grid containers. Follows the visual order of grid items by row, taking the writing mode into account.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-flow-grid-rows",
+          "type": "value",
+          "value": "grid-rows"
+        },
+        {
+          "name": "grid-columns",
+          "prose": "Only takes effect on grid containers. Follows the visual order of grid items by column, taking the writing mode into account.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-flow-grid-columns",
+          "type": "value",
+          "value": "grid-columns"
+        },
+        {
+          "name": "grid-order",
+          "prose": "Only takes effect on grid containers. Follows the order-modified document order. Therefore, as normal unless the order property has been used to change the order of items.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-flow-grid-order",
+          "type": "value",
+          "value": "grid-order"
+        }
+      ],
+      "styleDeclaration": [
+        "reading-flow",
+        "readingFlow"
+      ]
+    },
+    {
+      "name": "reading-order",
+      "href": "https://drafts.csswg.org/css-display-4/#propdef-reading-order",
+      "value": "<integer>",
+      "initial": "0",
+      "appliesTo": "Direct block-level, grid item, or flex item children of a reading flow container.",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<integer>",
+          "prose": "The reading-order property lets the author change where in the reading flow an item is visited, overriding the position set by the reading-flow property on its parent. It takes a single <integer> value, which specifies which ordinal group the item belongs to. Sibling elements are ordered starting from the lowest numbered ordinal group and going up.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-reading-order-integer",
+          "type": "value",
+          "value": "<integer>"
+        }
+      ],
+      "styleDeclaration": [
+        "reading-order",
+        "readingOrder"
+      ]
+    },
+    {
+      "name": "visibility",
+      "href": "https://drafts.csswg.org/css-display-4/#propdef-visibility",
+      "value": "visible | hidden | force-hidden | collapse",
+      "initial": "visible",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "visible",
+          "prose": "The generated box is visible, as normal.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-visibility-visible",
+          "type": "value",
+          "value": "visible"
+        },
+        {
+          "name": "hidden",
+          "prose": "Any boxes generated by the element are invisible. Descendants of the element can, however, be visible if they have visibility: visible.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-visibility-hidden",
+          "type": "value",
+          "value": "hidden"
+        },
+        {
+          "name": "force-hidden",
+          "prose": "Any boxes generated by the element and its descendants are invisible (regardless of their visibility value).",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-visibility-force-hidden",
+          "type": "value",
+          "value": "force-hidden"
+        },
+        {
+          "name": "collapse",
+          "prose": "Indicates that the box is collapsed, which can cause it to take up less space than otherwise in a formatting-context–specific way. See dynamic row and column effects in tables [CSS2] and collapsed flex items in flex layout [CSS-FLEXBOX-1]. In all other cases, however, (i.e. unless otherwise specified) this simply makes the box invisible, just like hidden.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-visibility-collapse",
+          "type": "value",
+          "value": "collapse"
+        }
+      ],
+      "styleDeclaration": [
+        "visibility"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<display-outside>",
+      "href": "https://drafts.csswg.org/css-display-4/#typedef-display-outside",
+      "type": "type",
+      "value": "block | inline | run-in",
+      "values": [
+        {
+          "name": "block",
+          "prose": "The element generates a box that is block-level when placed in flow layout. [CSS2]",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "The element generates a box that is inline-level when placed in flow layout. [CSS2]",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "run-in",
+          "prose": "The element generates an run-in box, which is a type of inline-level box with special behavior that attempts to merge it into a subsequent block container. See § 6 Run-In Layout for details.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-run-in",
+          "type": "value",
+          "value": "run-in"
+        }
+      ]
+    },
+    {
+      "name": "<display-inside>",
+      "href": "https://drafts.csswg.org/css-display-4/#typedef-display-inside",
+      "type": "type",
+      "value": "flow | flow-root | table | flex | grid | ruby",
+      "values": [
+        {
+          "name": "flow",
+          "prose": "The element lays out its contents using flow layout (block-and-inline layout). If its outer display type is inline or run-in, and it is participating in a block or inline formatting context, then it generates an inline box. Otherwise it generates a block container box. Depending on the value of other properties (such as position, float, or overflow) and whether it is itself participating in a block or inline formatting context, it either establishes a new block formatting context for its contents or integrates its contents into its parent formatting context. See CSS2.1 Chapter 9. [CSS2] A block container that establishes a new block formatting context is considered to have a used inner display type of flow-root.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-flow",
+          "type": "value",
+          "value": "flow"
+        },
+        {
+          "name": "flow-root",
+          "prose": "The element generates a block container box, and lays out its contents using flow layout. It always establishes a new block formatting context for its contents. [CSS2]",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-flow-root",
+          "type": "value",
+          "value": "flow-root"
+        },
+        {
+          "name": "table",
+          "prose": "The element generates a principal table wrapper box that establishes a block formatting context, and which contains an additionally-generated table grid box that establishes a table formatting context. [CSS2]",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table",
+          "type": "value",
+          "value": "table"
+        },
+        {
+          "name": "flex",
+          "prose": "The element generates a principal flex container box and establishes a flex formatting context. [CSS-FLEXBOX-1]",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-flex",
+          "type": "value",
+          "value": "flex"
+        },
+        {
+          "name": "grid",
+          "prose": "The element generates a principal grid container box, and establishes a grid formatting context. [CSS-GRID-1] (Grids using subgrid might not generate a new grid formatting context; see [CSS-GRID-2] for details.)",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-grid",
+          "type": "value",
+          "value": "grid"
+        },
+        {
+          "name": "ruby",
+          "prose": "The element generates a ruby container box and establishes a ruby formatting context in addition to integrating its base-level contents into its parent formatting context (if it is inline) or generating a wrapper box of the appropriate outer display type (if it is not). [CSS-RUBY-1]",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-ruby",
+          "type": "value",
+          "value": "ruby"
+        }
+      ]
+    },
+    {
+      "name": "<display-listitem>",
+      "href": "https://drafts.csswg.org/css-display-4/#typedef-display-listitem",
+      "type": "type",
+      "value": "<display-outside>? && [ flow | flow-root ]? && list-item"
+    },
+    {
+      "name": "<display-internal>",
+      "href": "https://drafts.csswg.org/css-display-4/#typedef-display-internal",
+      "type": "type",
+      "value": "table-row-group | table-header-group | table-footer-group | table-row | table-cell | table-column-group | table-column | table-caption | ruby-base | ruby-text | ruby-base-container | ruby-text-container",
+      "values": [
+        {
+          "name": "table-row-group",
+          "prose": "The element is an internal table element. It generates the appropriate internal table box which participates in a table formatting context. See CSS2§17.2 [CSS2]. table-cell boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-row-group",
+          "type": "value",
+          "value": "table-row-group"
+        },
+        {
+          "name": "table-header-group",
+          "prose": "The element is an internal table element. It generates the appropriate internal table box which participates in a table formatting context. See CSS2§17.2 [CSS2]. table-cell boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-header-group",
+          "type": "value",
+          "value": "table-header-group"
+        },
+        {
+          "name": "table-footer-group",
+          "prose": "The element is an internal table element. It generates the appropriate internal table box which participates in a table formatting context. See CSS2§17.2 [CSS2]. table-cell boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-footer-group",
+          "type": "value",
+          "value": "table-footer-group"
+        },
+        {
+          "name": "table-row",
+          "prose": "The element is an internal table element. It generates the appropriate internal table box which participates in a table formatting context. See CSS2§17.2 [CSS2]. table-cell boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-row",
+          "type": "value",
+          "value": "table-row"
+        },
+        {
+          "name": "table-cell",
+          "prose": "The element is an internal table element. It generates the appropriate internal table box which participates in a table formatting context. See CSS2§17.2 [CSS2]. table-cell boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-cell",
+          "type": "value",
+          "value": "table-cell"
+        },
+        {
+          "name": "table-column-group",
+          "prose": "The element is an internal table element. It generates the appropriate internal table box which participates in a table formatting context. See CSS2§17.2 [CSS2]. table-cell boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-column-group",
+          "type": "value",
+          "value": "table-column-group"
+        },
+        {
+          "name": "table-column",
+          "prose": "The element is an internal table element. It generates the appropriate internal table box which participates in a table formatting context. See CSS2§17.2 [CSS2]. table-cell boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-column",
+          "type": "value",
+          "value": "table-column"
+        },
+        {
+          "name": "table-caption",
+          "prose": "The element generates a table caption box, which is a block box with special behavior with respect to table and table wrapper boxes. See CSS2§17.2 [CSS2]. table-caption boxes have a flow-root inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-table-caption",
+          "type": "value",
+          "value": "table-caption"
+        },
+        {
+          "name": "ruby-base",
+          "prose": "The element is an internal ruby element. It generates the appropriate internal ruby box which participates in a ruby formatting context. [CSS-RUBY-1] ruby-base and ruby-text have a flow inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-ruby-base",
+          "type": "value",
+          "value": "ruby-base"
+        },
+        {
+          "name": "ruby-text",
+          "prose": "The element is an internal ruby element. It generates the appropriate internal ruby box which participates in a ruby formatting context. [CSS-RUBY-1] ruby-base and ruby-text have a flow inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-ruby-text",
+          "type": "value",
+          "value": "ruby-text"
+        },
+        {
+          "name": "ruby-base-container",
+          "prose": "The element is an internal ruby element. It generates the appropriate internal ruby box which participates in a ruby formatting context. [CSS-RUBY-1] ruby-base and ruby-text have a flow inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-ruby-base-container",
+          "type": "value",
+          "value": "ruby-base-container"
+        },
+        {
+          "name": "ruby-text-container",
+          "prose": "The element is an internal ruby element. It generates the appropriate internal ruby box which participates in a ruby formatting context. [CSS-RUBY-1] ruby-base and ruby-text have a flow inner display type.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-ruby-text-container",
+          "type": "value",
+          "value": "ruby-text-container"
+        }
+      ]
+    },
+    {
+      "name": "<display-box>",
+      "href": "https://drafts.csswg.org/css-display-4/#typedef-display-box",
+      "type": "type",
+      "value": "contents | none",
+      "values": [
+        {
+          "name": "contents",
+          "prose": "The element itself does not generate any boxes, but its children and pseudo-elements still generate boxes and text sequences as normal. For the purposes of box generation and layout, the element must be treated as if it had been replaced in the element tree by its contents (including both its source-document children and its pseudo-elements, such as ::before and ::after pseudo-elements, which are generated before/after the element’s children as normal). This value computes to display: none on replaced elements and other elements whose rendering is not entirely controlled by CSS; see Appendix B: Effects of display: contents on Unusual Elements for details.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-contents",
+          "type": "value",
+          "value": "contents"
+        },
+        {
+          "name": "none",
+          "prose": "The element and its descendants generate no boxes or text sequences. Similarly, if a text node is defined to behave as display: none, it generates no text sequences.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-none",
+          "type": "value",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "name": "<display-legacy>",
+      "href": "https://drafts.csswg.org/css-display-4/#typedef-display-legacy",
+      "type": "type",
+      "value": "inline-block | inline-table | inline-flex | inline-grid",
+      "values": [
+        {
+          "name": "inline-block",
+          "prose": "Computes to inline flow-root.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-inline-block",
+          "type": "value",
+          "value": "inline-block"
+        },
+        {
+          "name": "inline-table",
+          "prose": "Computes to inline table.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-inline-table",
+          "type": "value",
+          "value": "inline-table"
+        },
+        {
+          "name": "inline-flex",
+          "prose": "Computes to inline flex.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-inline-flex",
+          "type": "value",
+          "value": "inline-flex"
+        },
+        {
+          "name": "inline-grid",
+          "prose": "Computes to inline grid.",
+          "href": "https://drafts.csswg.org/css-display-4/#valdef-display-inline-grid",
+          "type": "value",
+          "value": "inline-grid"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "list-item",
+      "prose": "The list-item keyword causes the element to generate a ::marker pseudo-element [CSS-PSEUDO-4] with the content specified by its list-style properties (CSS 2.1§12.5 Lists) [CSS2] together with a principal box of the specified type for its own contents.",
+      "href": "https://drafts.csswg.org/css-display-4/#valdef-display-list-item",
+      "type": "value",
+      "value": "list-item",
+      "for": "<display-list-item>"
+    }
+  ]
+}

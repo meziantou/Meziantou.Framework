@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Meziantou.Framework.Win32.Natives;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.JobObjects;
@@ -11,27 +10,53 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>A utility class that represents a Windows job object. Job objects allow groups of processes to be managed as a unit.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.Jobs.Tests/JobObjectTests.cs" ref:region="JobObject_KillOnJobClose" ref:dedent="true">
 /// using var job = new JobObject();
 /// job.SetLimits(new JobObjectLimits
 /// {
-///     Flags = JobObjectLimitFlags.KillOnJobClose
+///     Flags = JobObjectLimitFlags.KillOnJobClose,
 /// });
-/// job.AssignProcess(Process.GetCurrentProcess());
-/// 
-/// // Start a child process that will be terminated when the job is disposed
-/// var childProcess = Process.Start("child.exe");
+///
+/// // Start a child process and assign it to the job
+/// using var childProcess = Process.Start(new ProcessStartInfo("ping", "127.0.0.1 -n 100") { CreateNoWindow = true })!;
+/// job.AssignProcess(childProcess);
+///
+/// // Disposing the job terminates the child process
+/// job.Dispose();
+/// childProcess.WaitForExit();
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class JobObject : IDisposable
 {
+    // CPU rates are expressed as a percentage times 100, so 10,000 is 100%.
+    private const int MaxCpuRate = 10_000;
+    private const int MinCpuWeight = 1;
+    private const int MaxCpuWeight = 9;
+
     private readonly SafeFileHandle _jobHandle;
 
     private JobObject(SafeFileHandle jobHandle)
     {
         _jobHandle = jobHandle;
+        CreatedNew = false;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether this instance created the underlying job object.
+    /// </summary>
+    /// <value>
+    /// <see langword="true"/> when the constructor created a new job object;
+    /// <see langword="false"/> when a job object with the requested name already existed and this
+    /// instance attached to it, or when the instance was returned by <see cref="Open"/> or <see cref="TryOpen"/>.
+    /// </value>
+    /// <remarks>
+    /// Job objects share a namespace with events, semaphores, mutexes, waitable timers and file-mapping
+    /// objects, and <c>CreateJobObject</c> returns a handle to the existing object rather than failing when
+    /// the name is taken. Check this property when the caller needs an isolated job: attaching to a job
+    /// created elsewhere means inheriting its limits, its process set and its lifetime.
+    /// </remarks>
+    public bool CreatedNew { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JobObject"/> class. The associated job object will have no name.
@@ -55,6 +80,10 @@ public sealed class JobObject : IDisposable
     /// </summary>
     /// <param name="name">The job object name. May be null.</param>
     /// <param name="inheritHandle">A Boolean value that specifies whether the returned handle is inherited when a new process is created. If this member is <see langword="true" />, the new process inherits the handle.</param>
+    /// <remarks>
+    /// When <paramref name="name"/> matches a job object that already exists, this attaches to that job
+    /// object instead of creating a new one. Inspect <see cref="CreatedNew"/> to tell the two apart.
+    /// </remarks>
     public unsafe JobObject(string? name, bool inheritHandle)
     {
         var atts = new Windows.Win32.Security.SECURITY_ATTRIBUTES
@@ -65,12 +94,14 @@ public sealed class JobObject : IDisposable
         };
 
         _jobHandle = Windows.Win32.PInvoke.CreateJobObject(atts, name);
+        var lastError = Marshal.GetLastWin32Error();
         if (_jobHandle.IsInvalid)
         {
             _jobHandle.Dispose();
-            var lastError = Marshal.GetLastWin32Error();
             throw new Win32Exception(lastError);
         }
+
+        CreatedNew = lastError != (int)WIN32_ERROR.ERROR_ALREADY_EXISTS;
     }
 
     /// <summary>Opens an existing job object.</summary>
@@ -122,6 +153,7 @@ public sealed class JobObject : IDisposable
     public void Dispose() => _jobHandle.Dispose();
 
     /// <summary>Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.</summary>
+    /// <exception cref="Win32Exception">The processes could not be terminated.</exception>
     public void Terminate()
     {
         Terminate(1);
@@ -129,9 +161,14 @@ public sealed class JobObject : IDisposable
 
     /// <summary>Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.</summary>
     /// <param name="exitCode">The exit code to be used by all processes and threads in the job object.</param>
+    /// <exception cref="Win32Exception">The processes could not be terminated. This happens when the handle does not have the <see cref="JobObjectAccessRights.Terminate"/> access right.</exception>
     public void Terminate(int exitCode)
     {
-        Windows.Win32.PInvoke.TerminateJobObject(_jobHandle, unchecked((uint)exitCode));
+        if (!Windows.Win32.PInvoke.TerminateJobObject(_jobHandle, unchecked((uint)exitCode)))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
     }
 
     /// <summary>Assigns a process to an existing job object.</summary>
@@ -140,11 +177,17 @@ public sealed class JobObject : IDisposable
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        AssignProcess(process.Handle);
+        // The SafeHandle overload keeps the process handle alive (DangerousAddRef/DangerousRelease) during the native call,
+        // so it cannot be closed by the finalizer of an unreferenced Process and reused by another process.
+        if (!Windows.Win32.PInvoke.AssignProcessToJobObject(_jobHandle, process.SafeHandle))
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
     }
 
     /// <summary>Assigns a process to an existing job object.</summary>
     /// <param name="processHandle">The process handle.</param>
+    /// <remarks>The caller must keep <paramref name="processHandle"/> open for the duration of the call. Prefer <see cref="AssignProcess(Process)"/> when a <see cref="Process"/> instance is available.</remarks>
     public void AssignProcess(IntPtr processHandle)
     {
         var addedRef = false;
@@ -175,18 +218,18 @@ public sealed class JobObject : IDisposable
         {
             BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
             {
-                ActiveProcessLimit = limits.ActiveProcessLimit,
-                Affinity = limits.Affinity,
-                MaximumWorkingSetSize = limits.MaximumWorkingSetSize,
-                MinimumWorkingSetSize = limits.MinimumWorkingSetSize,
-                PerJobUserTimeLimit = limits.PerJobUserTimeLimit,
-                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit,
-                PriorityClass = limits.PriorityClass,
-                SchedulingClass = limits.SchedulingClass,
-                LimitFlags = limits.InternalFlags,
+                ActiveProcessLimit = limits.ActiveProcessLimit.GetValueOrDefault(),
+                Affinity = limits.Affinity.GetValueOrDefault(),
+                MaximumWorkingSetSize = limits.MaximumWorkingSetSize.GetValueOrDefault(),
+                MinimumWorkingSetSize = limits.MinimumWorkingSetSize.GetValueOrDefault(),
+                PerJobUserTimeLimit = limits.PerJobUserTimeLimit.GetValueOrDefault(),
+                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit.GetValueOrDefault(),
+                PriorityClass = limits.PriorityClass.GetValueOrDefault(),
+                SchedulingClass = limits.SchedulingClass.GetValueOrDefault(),
+                LimitFlags = limits.ComputeLimitFlags(),
             },
-            ProcessMemoryLimit = limits.ProcessMemoryLimit,
-            JobMemoryLimit = limits.JobMemoryLimit,
+            ProcessMemoryLimit = limits.ProcessMemoryLimit.GetValueOrDefault(),
+            JobMemoryLimit = limits.JobMemoryLimit.GetValueOrDefault(),
         };
 
         using var handleScope = new SafeHandleValue(_jobHandle);
@@ -225,8 +268,12 @@ public sealed class JobObject : IDisposable
     /// can use during each scheduling interval, as the number of cycles per 10,000 cycles.
     /// For example, to let the job use 20% of the CPU, set CpuRate to 20 times 100, or 2,000.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="cpuRate"/> is not between 1 and 10,000.</exception>
     public unsafe void SetCpuRateHardCap(int cpuRate)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(cpuRate, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(cpuRate, MaxCpuRate);
+
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
         {
             ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
@@ -244,8 +291,13 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>Get the job's CPU rate limit enabled status and value.</summary>
-    /// <returns>Bool indicating if CPU rate control is enabled and the job's CPU rate limit.</returns>
+    /// <summary>Get the job's CPU rate control policy and the values that belong to it.</summary>
+    /// <returns>
+    /// A <see cref="JobObjectCpuHardCap"/> describing the active policy. Windows stores the rate, the
+    /// weight and the min/max pair in a union, so only the members matching
+    /// <see cref="JobObjectCpuHardCap.Mode"/> carry a meaningful value.
+    /// </returns>
+    /// <exception cref="Win32Exception">The operation failed.</exception>
     public unsafe JobObjectCpuHardCap GetCpuRateHardCap()
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
@@ -257,12 +309,40 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
 
-        var cpuRateEnabled = restriction.ControlFlags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE);
-
-        return new JobObjectCpuHardCap
+        var mode = restriction.ControlFlags switch
         {
-            Enabled = cpuRateEnabled,
-            Rate = (int)restriction.Anonymous.CpuRate,
+            var flags when !flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE) => JobObjectCpuRateControlMode.Disabled,
+            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED) => JobObjectCpuRateControlMode.Weight,
+            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE) => JobObjectCpuRateControlMode.MinMaxRate,
+            _ => JobObjectCpuRateControlMode.HardCap,
+        };
+
+        return mode switch
+        {
+            JobObjectCpuRateControlMode.Weight => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                Weight = (int)restriction.Anonymous.Weight,
+            },
+            JobObjectCpuRateControlMode.MinMaxRate => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                MinRate = restriction.Anonymous.Anonymous.MinRate,
+                MaxRate = restriction.Anonymous.Anonymous.MaxRate,
+            },
+            JobObjectCpuRateControlMode.HardCap => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                Rate = (int)restriction.Anonymous.CpuRate,
+            },
+            _ => new JobObjectCpuHardCap
+            {
+                Enabled = false,
+                Mode = JobObjectCpuRateControlMode.Disabled,
+            },
         };
     }
 
@@ -284,8 +364,12 @@ public sealed class JobObject : IDisposable
     /// Specifies the scheduling weight of the job object, which determines the share of processor time given to the job relative to other workloads on the processor.
     /// This member can be a value from 1 through 9, where 1 is the smallest share and 9 is the largest share.The default is 5, which should be used for most workloads.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="weight"/> is not between 1 and 9.</exception>
     public unsafe void SetCpuRateWeight(int weight)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(weight, MinCpuWeight);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, MaxCpuWeight);
+
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
         {
             ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED,
@@ -314,8 +398,15 @@ public sealed class JobObject : IDisposable
     ///
     /// After the job reaches this limit for a scheduling interval, no threads associated with the job can run until the next scheduling interval.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="minRate"/> or <paramref name="maxRate"/> is not between 1 and 10,000, or <paramref name="minRate"/> is greater than <paramref name="maxRate"/>.</exception>
     public unsafe void SetCpuRate(int minRate, int maxRate)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(minRate, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, MaxCpuRate);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxRate, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(maxRate, MaxCpuRate);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, maxRate);
+
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
         {
             ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE,
@@ -370,6 +461,7 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
     }
+
     /// <summary>Sets I/O limits on a job object.</summary>
     [SupportedOSPlatform("windows10.0.10240")]
     public unsafe void SetIoLimits(JobIoRateLimits limits)
@@ -486,26 +578,13 @@ public sealed class JobObject : IDisposable
     /// <returns><see langword="true"/> if the process is assigned to the job object; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="process"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">The operation failed.</exception>
-    public unsafe bool IsAssignedToProcess(Process process)
+    public bool IsAssignedToProcess(Process process)
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        var addedRef = false;
-        try
-        {
-            _jobHandle.DangerousAddRef(ref addedRef);
-
-            BOOL result = default;
-            if (Windows.Win32.PInvoke.IsProcessInJob((HANDLE)process.Handle, (HANDLE)_jobHandle.DangerousGetHandle(), &result))
-                return result;
-        }
-        finally
-        {
-            if (addedRef)
-            {
-                _jobHandle.DangerousRelease();
-            }
-        }
+        // The SafeHandle overload keeps both handles alive (DangerousAddRef/DangerousRelease) during the native call.
+        if (Windows.Win32.PInvoke.IsProcessInJob(process.SafeHandle, _jobHandle, out var result))
+            return result;
 
         var err = Marshal.GetLastWin32Error();
         throw new Win32Exception(err);

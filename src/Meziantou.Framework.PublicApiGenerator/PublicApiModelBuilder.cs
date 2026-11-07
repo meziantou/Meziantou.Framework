@@ -1,17 +1,23 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiModelBuilder
 {
-    private static readonly NullabilityInfoContext NullabilityInfoContext = new();
+    private static readonly ConditionalWeakTable<Module, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
+    private static readonly ConditionalWeakTable<Type, InheritedMemberSet> InheritedMembersCache = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
     private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
     private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
     private const string UnionAttributeFullName = "System.Runtime.CompilerServices.UnionAttribute";
     private const string IUnionInterfaceFullName = "System.Runtime.CompilerServices.IUnion";
+    private const string MemorySafetyRulesAttributeFullName = "System.Runtime.CompilerServices.MemorySafetyRulesAttribute";
+    private const string RequiresUnsafeAttributeFullName = "System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute";
+    private const string MemberNotNullAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute";
+    private const string MemberNotNullWhenAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
@@ -32,6 +38,7 @@ internal static class PublicApiModelBuilder
         "System.Runtime.CompilerServices.NullableAttribute",
         "System.Runtime.CompilerServices.NullableContextAttribute",
         "System.Runtime.CompilerServices.IsUnmanagedAttribute",
+        PublicApiMetadataReader.PreserveBaseOverridesAttributeFullName,
         "System.Reflection.DefaultMemberAttribute",
         "System.Diagnostics.DebuggableAttribute",
         "System.Diagnostics.DebuggerNonUserCodeAttribute",
@@ -46,6 +53,8 @@ internal static class PublicApiModelBuilder
         "System.Runtime.CompilerServices.ScopedRefAttribute",
         "System.Runtime.CompilerServices.ClosedAttribute",
         "System.Runtime.CompilerServices.IsClosedTypeAttribute",
+        MemorySafetyRulesAttributeFullName,
+        RequiresUnsafeAttributeFullName,
         "System.Reflection.AssemblyCompanyAttribute",
         "System.Reflection.AssemblyConfigurationAttribute",
         "System.Reflection.AssemblyCopyrightAttribute",
@@ -55,6 +64,29 @@ internal static class PublicApiModelBuilder
         "System.Reflection.AssemblyProductAttribute",
         "System.Reflection.AssemblyTitleAttribute",
         "System.Reflection.AssemblyTrademarkAttribute",
+
+        // Represented with the C# syntax: tuple element names, dynamic, nint and decimal default values
+        "System.Runtime.CompilerServices.TupleElementNamesAttribute",
+        "System.Runtime.CompilerServices.DynamicAttribute",
+        "System.Runtime.CompilerServices.NativeIntegerAttribute",
+        "System.Runtime.CompilerServices.DecimalConstantAttribute",
+
+        // A P/Invoke is written as any other method: the attribute read by the interop source generator is an implementation detail,
+        // and so is the attribute that the generator adds to skip the initialization of the locals
+        "System.Runtime.InteropServices.LibraryImportAttribute",
+        "System.Runtime.CompilerServices.SkipLocalsInitAttribute",
+
+        // Pseudo-attributes: reflection creates them from metadata flags, they are not stored as custom attributes
+        "System.SerializableAttribute",
+        "System.NonSerializedAttribute",
+        "System.Runtime.InteropServices.ComImportAttribute",
+        "System.Runtime.InteropServices.DllImportAttribute",
+        "System.Runtime.InteropServices.FieldOffsetAttribute",
+        "System.Runtime.InteropServices.MarshalAsAttribute",
+        "System.Runtime.InteropServices.PreserveSigAttribute",
+        "System.Runtime.InteropServices.StructLayoutAttribute",
+        "System.Runtime.CompilerServices.SpecialNameAttribute",
+        "System.Runtime.CompilerServices.TypeForwardedToAttribute",
     };
 
     private static readonly HashSet<string> CompilerRuntimeAttributes = new(StringComparer.Ordinal)
@@ -68,13 +100,11 @@ internal static class PublicApiModelBuilder
         "System.Diagnostics.CodeAnalysis.NotNullAttribute",
         "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
         "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
-        "System.SerializableAttribute",
         "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
         "System.Runtime.CompilerServices.CallerFilePathAttribute",
         "System.Runtime.CompilerServices.CallerLineNumberAttribute",
         "System.Runtime.CompilerServices.CallerMemberNameAttribute",
         "System.Runtime.CompilerServices.ReferenceAssemblyAttribute",
-        "System.Runtime.CompilerServices.NativeIntegerAttribute",
         "System.Runtime.Versioning.SupportedOSPlatformAttribute",
         "System.Runtime.Versioning.UnsupportedOSPlatformAttribute",
         "System.Runtime.Versioning.SupportedOSPlatformGuardAttribute",
@@ -98,11 +128,10 @@ internal static class PublicApiModelBuilder
     private static string BuildAssemblyAttributesSource(IEnumerable<CustomAttributeData> attributes)
     {
         var sb = new StringBuilder();
-        foreach (var attribute in attributes.Where(IsRequiresPreviewFeaturesAttribute))
+        foreach (var attribute in SortAttributes(attributes.Where(IsRequiresPreviewFeaturesAttribute)))
         {
             sb.Append("[assembly: ");
-            sb.Append(BuildAttributeName(attribute.AttributeType));
-            sb.Append(BuildAttributeArguments(attribute));
+            sb.Append(attribute);
             sb.AppendLine("]");
         }
 
@@ -147,10 +176,7 @@ internal static class PublicApiModelBuilder
         AppendIndentedLine(sb, indentationLevel, typeHeader.Declaration + FormatConstraintsInline(typeHeader.Constraints));
 
         AppendIndentedLine(sb, indentationLevel, "{");
-        if (!IsRecordClass(type) && !IsRecordStruct(type))
-        {
-            AppendMembers(sb, type, indentationLevel + 1, isUnionDeclaration);
-        }
+        AppendMembers(sb, type, indentationLevel + 1, isUnionDeclaration);
         AppendNestedTypes(sb, type, indentationLevel + 1);
         AppendIndentedLine(sb, indentationLevel, "}");
         return sb.ToString();
@@ -179,73 +205,88 @@ internal static class PublicApiModelBuilder
 
     private static void AppendMembers(StringBuilder sb, Type type, int indentationLevel, bool isUnionDeclaration)
     {
-        var members = new List<string>();
+        var members = new List<(MemberSortKey SortKey, string Text)>();
 
         foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
                      .Where(IsExternallyVisible)
-                     .Where(static field => !field.IsSpecialName)
-                     .OrderBy(static field => field.MetadataToken))
+                     .Where(static field => !field.IsSpecialName))
         {
-            members.Add(BuildField(field, indentationLevel));
+            members.Add((new MemberSortKey(MemberSortKind.Field, field.Name), BuildField(field, indentationLevel)));
         }
 
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                     .Where(IsExternallyVisible)
-                     .OrderBy(static property => property.MetadataToken))
+                     .Where(IsExternallyVisible))
         {
             if (isUnionDeclaration && IsGeneratedUnionValueProperty(property))
                 continue;
 
-            members.Add(BuildProperty(property, indentationLevel));
+            var indexParameters = GetIndexParameters(property);
+            var sortKey = new MemberSortKey(MemberSortKind.Property, property.Name, parameterCount: indexParameters.Length, signature: GetSignatureSortText(indexParameters));
+            members.Add((sortKey, BuildProperty(property, indentationLevel)));
         }
 
         foreach (var @event in type.GetEvents(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                     .Where(IsExternallyVisible)
-                     .OrderBy(static @event => @event.MetadataToken))
+                     .Where(IsExternallyVisible))
         {
-            members.Add(BuildEvent(@event, indentationLevel));
+            members.Add((new MemberSortKey(MemberSortKind.Event, @event.Name), BuildEvent(@event, indentationLevel)));
         }
 
         foreach (var constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                     .Where(IsExternallyVisible)
-                     .OrderBy(static constructor => constructor.MetadataToken))
+                     .Where(IsExternallyVisible))
         {
             if (isUnionDeclaration && IsGeneratedUnionCaseConstructor(constructor))
                 continue;
 
-            var constructorText = BuildConstructor(constructor, indentationLevel);
+            var constructorText = BuildConstructor(constructor, indentationLevel, out var sortKey);
             if (constructorText is not null)
             {
-                members.Add(constructorText);
+                members.Add((sortKey, constructorText));
             }
         }
 
         var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
             .Where(IsExternallyVisible)
             .Where(static method => !method.IsSpecialName || IsOperatorMethod(method))
-            .Where(static method => !method.Name.Contains('<', StringComparison.Ordinal))
+            .Where(static method => !IsUnspeakableName(method))
             .OrderBy(static method => method.MetadataToken)
             .ToArray();
 
-        var extensionPropertyBlocks = BuildExtensionPropertyBlocks(methods, indentationLevel);
-        var extensionPropertyAccessors = extensionPropertyBlocks.SelectMany(static block => block.Accessors).ToHashSet();
+        var extensionBlocks = BuildExtensionBlocks(type, methods, indentationLevel);
+        var extensionImplementations = extensionBlocks.SelectMany(block => block.Implementations).ToHashSet();
         foreach (var method in methods)
         {
-            if (extensionPropertyAccessors.Contains(method))
+            if (extensionImplementations.Contains(method))
                 continue;
 
-            members.Add(BuildMethod(method, indentationLevel));
+            var methodText = BuildMethod(method, indentationLevel, out var sortKey);
+            members.Add((sortKey, methodText));
         }
 
-        foreach (var extensionPropertyBlock in extensionPropertyBlocks.OrderBy(static block => block.Order))
+        // The members are sorted as the metadata reader does, so the output does not depend on the order of the declarations.
+        // The members that the sort key cannot tell apart (e.g. methods that only differ by a custom modifier) are sorted by text.
+        foreach (var (_, text) in members.OrderBy(static member => member.SortKey, MemberSortKey.Comparer).ThenBy(static member => member.Text, StringComparer.Ordinal))
         {
-            members.Add(extensionPropertyBlock.Content);
+            sb.Append(text);
         }
 
-        for (var i = 0; i < members.Count; i++)
+        // Each member is written in its own block, as the metadata reader does
+        foreach (var extensionBlock in extensionBlocks
+                     .OrderBy(block => block.ReceiverType, StringComparer.Ordinal)
+                     .ThenBy(block => block.SortKey, MemberSortKey.Comparer)
+                     .ThenBy(block => block.Content, StringComparer.Ordinal))
         {
-            sb.Append(members[i]);
+            sb.Append(extensionBlock.Content);
         }
+    }
+
+    private static ParameterInfo[] GetIndexParameters(PropertyInfo property)
+    {
+        return property.GetMethod?.GetParameters() ?? property.SetMethod?.GetParameters().SkipLast(1).ToArray() ?? [];
+    }
+
+    private static string GetSignatureSortText(ParameterInfo[] parameters)
+    {
+        return string.Join(", ", parameters.Select(static parameter => BuildParameterDeclaration(parameter, isExtensionReceiver: false).SortText));
     }
 
     private static string BuildDelegate(Type type, int indentationLevel)
@@ -254,8 +295,9 @@ internal static class PublicApiModelBuilder
         var sb = new StringBuilder();
         AppendAttributes(sb, type.CustomAttributes, indentationLevel);
 
-        var modifiers = GetTypeAccessibility(type);
-        var unsafeModifier = RequiresUnsafeContext(invokeMethod) ? " unsafe" : string.Empty;
+        var modifiers = GetTypeAccessibility(type) + (HidesInheritedMember(type) ? " new" : string.Empty);
+        // The unsafe modifier is not allowed on type declarations under the updated memory safety rules
+        var unsafeModifier = !HasUpdatedMemorySafetyRules(type.Module) && RequiresUnsafeContext(invokeMethod) ? " unsafe" : string.Empty;
         var genericArguments = BuildGenericArguments(type);
         var parameters = string.Join(", ", invokeMethod.GetParameters().Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)));
         var returnType = FormatReturnType(invokeMethod.ReturnParameter);
@@ -273,17 +315,17 @@ internal static class PublicApiModelBuilder
 
         var baseType = Enum.GetUnderlyingType(type);
         var baseTypeSuffix = baseType == typeof(int) ? string.Empty : " : " + FormatType(baseType);
-        AppendIndentedLine(sb, indentationLevel, $"{GetTypeAccessibility(type)} enum {EscapeIdentifier(type.Name)}{baseTypeSuffix}");
+        AppendIndentedLine(sb, indentationLevel, $"{GetTypeAccessibility(type)}{(HidesInheritedMember(type) ? " new" : string.Empty)} enum {EscapeIdentifier(type.Name)}{baseTypeSuffix}");
         AppendIndentedLine(sb, indentationLevel, "{");
 
+        // Sorted by value, then by name, as the metadata reader does
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
-            .OrderBy(static field => field.MetadataToken)
-            .ToArray();
-        for (var i = 0; i < fields.Length; i++)
+            .Select(static field => (Field: field, Value: field.GetRawConstantValue()))
+            .Order(Comparer<(FieldInfo Field, object? Value)>.Create(static (x, y) => PublicApiOrdering.CompareEnumMembers(x.Value, x.Field.Name, y.Value, y.Field.Name)));
+        foreach (var (field, rawValue) in fields)
         {
-            var separator = i == fields.Length - 1 ? string.Empty : ",";
-            var value = Convert.ChangeType(fields[i].GetRawConstantValue(), baseType, System.Globalization.CultureInfo.InvariantCulture);
-            AppendIndentedLine(sb, indentationLevel + 1, $"{EscapeIdentifier(fields[i].Name)} = {FormatConstant(value)}{separator}");
+            var value = Convert.ChangeType(rawValue, baseType, System.Globalization.CultureInfo.InvariantCulture);
+            AppendIndentedLine(sb, indentationLevel + 1, $"{EscapeIdentifier(field.Name)} = {FormatConstant(value)},");
         }
 
         AppendIndentedLine(sb, indentationLevel, "}");
@@ -297,29 +339,47 @@ internal static class PublicApiModelBuilder
 
         var modifiers = new List<string> { GetFieldAccessibility(field) };
         var isByRefField = field.FieldType.IsByRef;
-        if (field.IsStatic && !field.IsLiteral)
+        if (GetInheritedMembers(field.DeclaringType!).IsHiddenBy(InheritedMemberKind.Field, field.Name))
+        {
+            modifiers.Add("new");
+        }
+
+        // A decimal constant is compiled to a static readonly field, and its value is stored in a DecimalConstantAttribute
+        var decimalConstant = field is { IsStatic: true, IsInitOnly: true } && field.FieldType == typeof(decimal) ? GetDecimalConstant(field.GetCustomAttributesData()) : null;
+        var isConst = field.IsLiteral || decimalConstant is not null;
+        if (field.IsStatic && !isConst)
         {
             modifiers.Add("static");
         }
 
-        if (field.IsInitOnly && !isByRefField)
+        if (field.IsInitOnly && !isByRefField && !isConst)
         {
             modifiers.Add("readonly");
         }
 
-        if (field.IsLiteral)
+        if (isConst)
         {
             modifiers.Add("const");
         }
 
-        var fieldNullability = NullabilityInfoContext.Create(field);
-        var fieldType = isByRefField
-            ? BuildByRefFieldType(field, fieldNullability)
-            : FormatType(field.FieldType, fieldNullability);
-        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {fieldType} {EscapeIdentifier(field.Name)}";
-        if (field.IsLiteral)
+        if (IsRequiresUnsafeMember(field))
         {
-            declaration += " = " + FormatConstant(field.GetRawConstantValue());
+            modifiers.Add("unsafe");
+        }
+
+        var fieldNullability = new NullabilityInfoContext().Create(field);
+        var fieldAnnotations = CreateTypeAnnotations(field);
+        var fieldType = isByRefField
+            ? BuildByRefFieldType(field, fieldNullability, fieldAnnotations)
+            : FormatType(field.FieldType, fieldNullability, fieldAnnotations);
+        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {fieldType} {EscapeIdentifier(field.Name)}";
+        if (decimalConstant is not null)
+        {
+            declaration += " = " + FormatConstant(decimalConstant);
+        }
+        else if (field.IsLiteral)
+        {
+            declaration += " = " + FormatConstant(field.FieldType, field.GetRawConstantValue());
         }
 
         declaration += ";";
@@ -330,60 +390,128 @@ internal static class PublicApiModelBuilder
     private static string BuildProperty(PropertyInfo property, int indentationLevel)
     {
         var sb = new StringBuilder();
-        AppendAttributes(sb, property.CustomAttributes, indentationLevel);
+        AppendAttributes(sb, property.CustomAttributes, indentationLevel, property.DeclaringType);
+
+        // The compiler moves the flow analysis attributes of a property to its accessors
+        var propertyAttributes = property.GetCustomAttributesData();
+        if (property.SetMethod is { } valueSetter && IsExternallyVisible(valueSetter))
+        {
+            AppendAccessorFlowAttributes(sb, propertyAttributes, valueSetter.GetParameters()[^1].GetCustomAttributesData(), indentationLevel, "System.Diagnostics.CodeAnalysis.AllowNullAttribute", "System.Diagnostics.CodeAnalysis.DisallowNullAttribute");
+        }
+
+        if (property.GetMethod is { } valueGetter && IsExternallyVisible(valueGetter))
+        {
+            AppendAccessorFlowAttributes(sb, propertyAttributes, valueGetter.ReturnParameter.GetCustomAttributesData(), indentationLevel, "System.Diagnostics.CodeAnalysis.MaybeNullAttribute", "System.Diagnostics.CodeAnalysis.NotNullAttribute");
+        }
 
         var accessors = new[] { property.GetMethod, property.SetMethod }.Where(static method => method is not null).Cast<MethodInfo>().ToArray();
         var representativeAccessor = accessors.OrderByDescending(GetAccessibilityRank).First();
         var propertyAccessibility = GetMethodAccessibility(representativeAccessor);
         var modifiers = new List<string>();
-        var shouldEmitAccessibility = !(representativeAccessor.DeclaringType?.IsInterface == true && representativeAccessor.IsAbstract);
-        if (shouldEmitAccessibility && !string.IsNullOrEmpty(propertyAccessibility))
+        var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(representativeAccessor);
+        if (!isExplicitInterfaceImplementation)
         {
-            modifiers.Add(propertyAccessibility);
+            var shouldEmitAccessibility = !(representativeAccessor.DeclaringType?.IsInterface == true && representativeAccessor.IsAbstract);
+            if (shouldEmitAccessibility && !string.IsNullOrEmpty(propertyAccessibility))
+            {
+                modifiers.Add(propertyAccessibility);
+            }
+
+            if (CanHideInheritedMember(representativeAccessor) &&
+                GetInheritedMembers(property.DeclaringType!).IsHiddenBy(InheritedMemberKind.Property, property.Name, arity: 0, GetHidingParameterList(property.GetIndexParameters())))
+            {
+                modifiers.Add("new");
+            }
+
+            if (representativeAccessor.IsStatic)
+            {
+                modifiers.Add("static");
+            }
+
+            if (representativeAccessor.DeclaringType?.IsInterface != true)
+            {
+                AddInheritanceModifiers(modifiers, representativeAccessor);
+            }
+
+            if (IsRequiredMember(property.CustomAttributes))
+            {
+                modifiers.Add("required");
+            }
         }
 
-        if (representativeAccessor.IsStatic)
+        var getMethod = property.GetMethod is { } getter && IsExternallyVisible(getter) ? getter : null;
+        var setMethod = property.SetMethod is { } setter && IsExternallyVisible(setter) ? setter : null;
+        var isGetReadOnly = getMethod is not null && IsReadOnlyMember(getMethod);
+        var isSetReadOnly = setMethod is not null && IsReadOnlyMember(setMethod);
+
+        // readonly can be set on the property or on its accessors, but not on both
+        var isPropertyReadOnly = isGetReadOnly == (getMethod is not null) && isSetReadOnly == (setMethod is not null);
+        if (isPropertyReadOnly)
         {
-            modifiers.Add("static");
+            modifiers.Add("readonly");
+            isGetReadOnly = false;
+            isSetReadOnly = false;
         }
 
-        if (IsRequiredMember(property.CustomAttributes))
+        var isGetUnsafe = getMethod is not null && IsRequiresUnsafeMember(getMethod);
+        var isSetUnsafe = setMethod is not null && IsRequiresUnsafeMember(setMethod);
+
+        // The unsafe modifier can be set on the property or on its accessors, but not on both
+        var isPropertyUnsafe = IsRequiresUnsafeMember(property) ||
+                               (isGetUnsafe || isSetUnsafe) && isGetUnsafe == (getMethod is not null) && isSetUnsafe == (setMethod is not null);
+        if (isPropertyUnsafe)
         {
-            modifiers.Add("required");
+            modifiers.Add("unsafe");
+            isGetUnsafe = false;
+            isSetUnsafe = false;
         }
 
-        var indexParameters = property.GetMethod?.GetParameters() ?? property.SetMethod?.GetParameters().SkipLast(1).ToArray() ?? [];
+        var indexParameters = GetIndexParameters(property);
+        var explicitInterfaceQualifier = isExplicitInterfaceImplementation ? GetExplicitInterfaceQualifier(property.Name) : string.Empty;
         var propertyName = indexParameters.Length > 0
-            ? $"this[{string.Join(", ", indexParameters.Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)))}]"
-            : EscapeIdentifier(property.Name);
-        var propertyNullability = property.GetMethod is not null
-            ? NullabilityInfoContext.Create(property.GetMethod.ReturnParameter)
-            : property.SetMethod is not null
-                ? NullabilityInfoContext.Create(property.SetMethod.GetParameters().Last())
-                : null;
+            ? $"{explicitInterfaceQualifier}this[{string.Join(", ", indexParameters.Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)))}]"
+            : isExplicitInterfaceImplementation
+                ? BuildExplicitInterfaceMethodName(property.Name)
+                : EscapeIdentifier(property.Name);
+        var propertyTypeParameter = property.GetMethod?.ReturnParameter ?? property.SetMethod?.GetParameters().Last();
+        var propertyNullability = propertyTypeParameter is not null ? new NullabilityInfoContext().Create(propertyTypeParameter) : null;
+        var propertyAnnotations = propertyTypeParameter is not null ? CreateTypeAnnotations(propertyTypeParameter, property.GetCustomAttributesData()) : null;
         var accessorDeclarations = new List<string>();
 
-        var getMethod = property.GetMethod;
-        if (getMethod is not null && IsExternallyVisible(getMethod))
+        if (getMethod is not null)
         {
-            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor);
+            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor) + (isGetReadOnly ? "readonly " : string.Empty) + (isGetUnsafe ? "unsafe " : string.Empty);
             var getAccessor = getMethod.IsAbstract ? "get;" : "get => throw null;";
             accessorDeclarations.Add($"{accessorModifier}{getAccessor}");
         }
 
-        var setMethod = property.SetMethod;
-        if (setMethod is not null && IsExternallyVisible(setMethod))
+        if (setMethod is not null)
         {
             var accessorKeyword = IsInitOnly(setMethod) ? "init" : "set";
-            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor);
+            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor) + (isSetReadOnly ? "readonly " : string.Empty) + (isSetUnsafe ? "unsafe " : string.Empty);
             var setAccessor = setMethod.IsAbstract ? $"{accessorKeyword};" : $"{accessorKeyword} {{ }}";
             accessorDeclarations.Add($"{accessorModifier}{setAccessor}");
         }
 
         var accessorText = string.Join(' ', accessorDeclarations);
         var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
-        AppendIndentedLine(sb, indentationLevel, $"{modifiersPrefix}{FormatType(property.PropertyType, propertyNullability)} {propertyName} {{ {accessorText} }}");
+        AppendIndentedLine(sb, indentationLevel, $"{modifiersPrefix}{FormatType(property.PropertyType, propertyNullability, propertyAnnotations)} {propertyName} {{ {accessorText} }}");
         return sb.ToString();
+    }
+
+    private static void AppendAccessorFlowAttributes(StringBuilder sb, IList<CustomAttributeData> propertyAttributes, IList<CustomAttributeData> accessorAttributes, int indentationLevel, string firstAttributeName, string secondAttributeName)
+    {
+        var attributes = accessorAttributes.Where(attribute =>
+        {
+            var fullName = attribute.AttributeType.FullName;
+            return (fullName == firstAttributeName || fullName == secondAttributeName) &&
+                   !propertyAttributes.Any(propertyAttribute => propertyAttribute.AttributeType.FullName == fullName);
+        });
+
+        foreach (var attribute in SortAttributes(attributes))
+        {
+            AppendIndentedLine(sb, indentationLevel, "[" + attribute + "]");
+        }
     }
 
     private static string BuildEvent(EventInfo @event, int indentationLevel)
@@ -399,30 +527,57 @@ internal static class PublicApiModelBuilder
             modifiers.Add(accessibility);
         }
 
+        if (CanHideInheritedMember(addMethod) && GetInheritedMembers(@event.DeclaringType!).IsHiddenBy(InheritedMemberKind.Event, @event.Name))
+        {
+            modifiers.Add("new");
+        }
+
         if (addMethod.IsStatic)
         {
             modifiers.Add("static");
         }
 
-        var eventNullability = NullabilityInfoContext.Create(addMethod.GetParameters().Single());
-        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} event {FormatType(@event.EventHandlerType!, eventNullability)} {EscapeIdentifier(@event.Name)};");
+        if (addMethod.DeclaringType?.IsInterface != true)
+        {
+            AddInheritanceModifiers(modifiers, addMethod);
+        }
+
+        // Event accessors cannot be marked as unsafe individually
+        if (IsRequiresUnsafeMember(@event))
+        {
+            modifiers.Add("unsafe");
+        }
+
+        var eventNullability = new NullabilityInfoContext().Create(addMethod.GetParameters().Single());
+        var eventType = FormatType(@event.EventHandlerType!, eventNullability, CreateTypeAnnotations(addMethod.GetParameters().Single()));
+        if (IsExplicitInterfaceImplementation(addMethod))
+        {
+            // The explicit implementation of an event has no modifiers, and must declare its accessors
+            AppendIndentedLine(sb, indentationLevel, $"event {eventType} {BuildExplicitInterfaceMethodName(@event.Name)} {{ add {{ }} remove {{ }} }}");
+            return sb.ToString();
+        }
+
+        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} event {eventType} {EscapeIdentifier(@event.Name)};");
         return sb.ToString();
     }
 
-    private static string? BuildConstructor(ConstructorInfo constructor, int indentationLevel)
+    private static string? BuildConstructor(ConstructorInfo constructor, int indentationLevel, out MemberSortKey sortKey)
     {
         var sb = new StringBuilder();
         AppendAttributes(sb, constructor.CustomAttributes, indentationLevel);
 
         var accessibility = GetMethodAccessibility(constructor);
         var modifiersPrefix = string.IsNullOrEmpty(accessibility) ? string.Empty : accessibility + " ";
-        var unsafeModifier = RequiresUnsafeContext(constructor) ? "unsafe " : string.Empty;
+        var requiresUnsafe = RequiresUnsafe(constructor);
+        var unsafeModifier = requiresUnsafe ? "unsafe " : string.Empty;
         var typeName = EscapeIdentifier(RemoveGenericArity(constructor.DeclaringType!.Name));
         var parametersList = constructor.GetParameters();
         var parameters = parametersList.Select(static parameter => BuildParameterDeclaration(parameter, isExtensionReceiver: false)).ToArray();
+        sortKey = new MemberSortKey(MemberSortKind.Constructor, metadataName: string.Empty, parameterCount: parameters.Length, signature: GetSignatureSortText(parameters));
         var requiresNullableDisableDirective = parametersList.Any(static parameter => RequiresNullableDisableDirective(parameter));
         var initializer = BuildConstructorInitializer(constructor);
-        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer) && !constructor.CustomAttributes.Any(IsRequiresPreviewFeaturesAttribute))
+        // A parameterless constructor requiring an unsafe context is not equivalent to the implicit one as it doesn't satisfy the new() constraint
+        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer) && !requiresUnsafe && !constructor.CustomAttributes.Any(IsRequiresPreviewFeaturesAttribute))
             return null;
 
         AppendMemberWithParameters(
@@ -435,21 +590,20 @@ internal static class PublicApiModelBuilder
         return sb.ToString();
     }
 
-    private static string BuildMethod(MethodInfo method, int indentationLevel)
+    private static string BuildMethod(MethodInfo method, int indentationLevel, out MemberSortKey sortKey)
     {
         var sb = new StringBuilder();
         var isDestructor = IsDestructor(method);
         var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(method);
-        var methodAttributes = method.CustomAttributes;
-        if (IsLibraryImportMethod(method))
-        {
-            methodAttributes = methodAttributes
-                .Where(static attribute => !IsDllImportAttribute(attribute.AttributeType.FullName))
-                .Where(static attribute => attribute.AttributeType.FullName != "System.Runtime.InteropServices.PreserveSigAttribute");
-        }
-
-        AppendAttributes(sb, methodAttributes, indentationLevel);
+        AppendAttributes(sb, method.CustomAttributes, indentationLevel, method.DeclaringType);
         AppendReturnAttributes(sb, method, indentationLevel);
+
+        var isExtensionMethod = IsExtensionMethod(method);
+        var parameters = method.GetParameters().Select((parameter, index) => BuildParameterDeclaration(parameter, isExtensionMethod && index == 0)).ToArray();
+        var sortKind = isDestructor
+            ? MemberSortKind.Destructor
+            : IsOperatorMethod(method) ? PublicApiOrdering.GetOperatorSortKind(method.Name) : MemberSortKind.Method;
+        sortKey = new MemberSortKey(sortKind, method.Name, method.GetGenericArguments().Length, parameters.Length, GetSignatureSortText(parameters), FormatReturnTypeParts(method.ReturnParameter).Type);
 
         if (isDestructor)
         {
@@ -462,12 +616,13 @@ internal static class PublicApiModelBuilder
         var methodName = isExplicitInterfaceImplementation
             ? BuildExplicitInterfaceMethodName(method.Name)
             : EscapeIdentifier(method.Name);
-        var isExtensionMethod = IsExtensionMethod(method);
-        var parameters = method.GetParameters().Select((parameter, index) => BuildParameterDeclaration(parameter, isExtensionMethod && index == 0)).ToArray();
         var genericArguments = BuildGenericArguments(method);
-        var constraints = BuildMethodConstraints(method, indentationLevel);
+        var isOverride = method.GetBaseDefinition() != method;
+        var constraints = isExplicitInterfaceImplementation || isOverride
+            ? BuildInheritedConstraints(method, [.. parameters.Select(static parameter => parameter.Text), FormatReturnType(method.ReturnParameter)])
+            : BuildMethodConstraints(method, indentationLevel);
         var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
-        var unsafeModifier = RequiresUnsafeContext(method) ? "unsafe " : string.Empty;
+        var unsafeModifier = RequiresUnsafe(method) ? "unsafe " : string.Empty;
         var requiresNullableDisableDirective = RequiresNullableDisableDirective(method.ReturnParameter) ||
                                                method.GetParameters().Any(static parameter => RequiresNullableDisableDirective(parameter));
         var methodBody = BuildMethodBody(method);
@@ -567,7 +722,8 @@ internal static class PublicApiModelBuilder
         if (baseConstructors.Count == 0 || baseConstructors.Any(static ctor => ctor.GetParameters().Length == 0))
             return string.Empty;
 
-        var selectedConstructor = baseConstructors[0];
+        // The selected constructor must not depend on the order of the declarations
+        var selectedConstructor = baseConstructors.MinBy(GetBaseConstructorSortKey, Comparer<(bool RequiresVariable, int ParameterCount, string Signature)>.Create(PublicApiOrdering.CompareBaseConstructors))!;
         var arguments = string.Join(", ", selectedConstructor.GetParameters().Select(static parameter =>
         {
             var parameterType = parameter.ParameterType.IsByRef
@@ -578,15 +734,16 @@ internal static class PublicApiModelBuilder
         return " : base(" + arguments + ")";
     }
 
+    private static (bool RequiresVariable, int ParameterCount, string Signature) GetBaseConstructorSortKey(ConstructorInfo constructor)
+    {
+        var parameters = constructor.GetParameters();
+        var requiresVariable = parameters.Any(static parameter => PublicApiOrdering.RequiresVariable(GetRefKindSortText(parameter)));
+        return (requiresVariable, parameters.Length, GetSignatureSortText(parameters));
+    }
+
     private static string BuildMethodBody(MethodInfo method)
     {
         if (method.IsAbstract)
-            return ";";
-
-        if (IsLibraryImportMethod(method))
-            return ";";
-
-        if (method.GetMethodBody() is null)
             return ";";
 
         if (method.ReturnType == typeof(void))
@@ -617,9 +774,19 @@ internal static class PublicApiModelBuilder
             }
         }
 
+        if (HidesInheritedMember(method))
+        {
+            modifiers.Add("new");
+        }
+
         if (method.IsStatic)
         {
             modifiers.Add("static");
+        }
+
+        if (IsReadOnlyMember(method))
+        {
+            modifiers.Add("readonly");
         }
 
         if (declaringTypeIsInterface)
@@ -627,44 +794,189 @@ internal static class PublicApiModelBuilder
             return modifiers;
         }
 
+        AddInheritanceModifiers(modifiers, method);
+        return modifiers;
+    }
+
+    private static void AddInheritanceModifiers(List<string> modifiers, MethodInfo method)
+    {
         if (method.IsAbstract)
         {
             modifiers.Add("abstract");
-            return modifiers;
+            return;
         }
 
+        var isOverride = method.GetBaseDefinition() != method || IsCovariantOverride(method);
         if (method.IsVirtual && !method.IsFinal)
         {
-            if (method.GetBaseDefinition() == method)
-            {
-                modifiers.Add("virtual");
-            }
-            else
-            {
-                modifiers.Add("override");
-            }
+            // A method that is its own base definition introduces the member, otherwise it overrides an inherited one
+            modifiers.Add(isOverride ? "override" : "virtual");
         }
-        else if (method.IsVirtual && method.IsFinal && method.GetBaseDefinition() != method)
+        else if (method.IsVirtual && method.IsFinal && isOverride)
         {
             modifiers.Add("sealed");
             modifiers.Add("override");
         }
-
-        if (IsLibraryImportMethod(method))
-        {
-            modifiers.Add("partial");
-        }
-        else if (method.GetMethodBody() is null && method.GetCustomAttributesData().Any(static attribute => IsDllImportAttribute(attribute.AttributeType.FullName)))
-        {
-            modifiers.Add("extern");
-        }
-
-        return modifiers;
     }
 
-    private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver)
+    // The new modifier is not stored in metadata. A member hides the inherited members with the same name, or the same signature for methods and indexers.
+    private static bool HidesInheritedMember(MethodInfo method)
+    {
+        // Accessors and operators do not hide inherited members
+        if (method.IsSpecialName || !CanHideInheritedMember(method))
+            return false;
+
+        var inheritedMembers = GetInheritedMembers(method.DeclaringType!);
+        return inheritedMembers.ContainsName(method.Name) &&
+               inheritedMembers.IsHiddenBy(InheritedMemberKind.Method, method.Name, method.GetGenericArguments().Length, GetHidingParameterList(method.GetParameters()));
+    }
+
+    private static bool HidesInheritedMember(Type nestedType)
+    {
+        var declaringType = nestedType.DeclaringType;
+        if (declaringType is null)
+            return false;
+
+        var arity = nestedType.GetGenericArguments().Length - declaringType.GetGenericArguments().Length;
+        return GetInheritedMembers(declaringType).IsHiddenBy(InheritedMemberKind.Type, RemoveGenericArity(nestedType.Name), arity);
+    }
+
+    // An override or an explicit interface implementation cannot have the new modifier, and neither can the members of an extension block:
+    // they are not declared in a class hierarchy
+    private static bool CanHideInheritedMember(MethodInfo method)
+    {
+        var isOverride = method.IsVirtual && (!method.Attributes.HasFlag(MethodAttributes.NewSlot) || IsCovariantOverride(method));
+        return !isOverride && !IsExplicitInterfaceImplementation(method) && !IsExtensionGroupingType(method.DeclaringType);
+    }
+
+    // An override with a covariant return type has its own slot. The compiler marks it with PreserveBaseOverridesAttribute.
+    private static bool IsCovariantOverride(MethodInfo method)
+    {
+        return method.CustomAttributes.Any(attribute => attribute.AttributeType.FullName == PublicApiMetadataReader.PreserveBaseOverridesAttributeFullName);
+    }
+
+    private static InheritedMemberSet GetInheritedMembers(Type type) => InheritedMembersCache.GetValue(type, BuildInheritedMembers);
+
+    private static InheritedMemberSet BuildInheritedMembers(Type type)
+    {
+        var result = new InheritedMemberSet();
+        if (type.IsInterface)
+        {
+            foreach (var baseInterface in type.GetInterfaces())
+            {
+                AddInheritedMembers(result, baseInterface);
+            }
+        }
+        else
+        {
+            for (var baseType = type.BaseType; baseType is not null; baseType = baseType.BaseType)
+            {
+                AddInheritedMembers(result, baseType);
+            }
+        }
+
+        return result;
+    }
+
+    // Only the members that are visible outside the assembly are part of the public API, so the others are not considered as hidden
+    private static void AddInheritedMembers(InheritedMemberSet result, Type type)
+    {
+        const BindingFlags DeclaredMembers = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        foreach (var field in type.GetFields(DeclaredMembers))
+        {
+            if (IsExternallyVisible(field) && !field.IsSpecialName)
+            {
+                result.Add(InheritedMemberKind.Field, field.Name);
+            }
+        }
+
+        foreach (var property in type.GetProperties(DeclaredMembers))
+        {
+            if (IsInheritedMemberVisible(property.GetMethod) || IsInheritedMemberVisible(property.SetMethod))
+            {
+                result.Add(InheritedMemberKind.Property, property.Name, arity: 0, GetHidingParameterList(property.GetIndexParameters()));
+            }
+        }
+
+        foreach (var @event in type.GetEvents(DeclaredMembers))
+        {
+            if (IsInheritedMemberVisible(@event.AddMethod) || IsInheritedMemberVisible(@event.RemoveMethod))
+            {
+                result.Add(InheritedMemberKind.Event, @event.Name);
+            }
+        }
+
+        foreach (var method in type.GetMethods(DeclaredMembers))
+        {
+            if (!IsInheritedMemberVisible(method) || method.IsSpecialName)
+                continue;
+
+            var parameters = method.GetParameters();
+            if (InheritedMemberSet.IsDestructor(method.Name, method.IsStatic, parameters.Length))
+                continue;
+
+            result.Add(InheritedMemberKind.Method, method.Name, method.GetGenericArguments().Length, GetHidingParameterList(parameters));
+        }
+
+        var genericParameterCount = type.GetGenericArguments().Length;
+        foreach (var nestedType in type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (nestedType.IsNestedPublic || nestedType.IsNestedFamily || nestedType.IsNestedFamORAssem)
+            {
+                result.Add(InheritedMemberKind.Type, RemoveGenericArity(nestedType.Name), nestedType.GetGenericArguments().Length - genericParameterCount);
+            }
+        }
+    }
+
+    private static bool IsInheritedMemberVisible(MethodInfo? method)
+    {
+        return method is not null && (method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly);
+    }
+
+    private static string GetHidingParameterList(ParameterInfo[] parameters)
+    {
+        return InheritedMemberSet.GetParameterList(parameters.Select(parameter => InheritedMemberSet.GetParameterName(
+            GetHidingTypeName(parameter.ParameterType),
+            parameter.ParameterType.IsByRef,
+            parameter.IsOut,
+            isReadOnly: parameter.ParameterType.IsByRef && parameter.CustomAttributes.Any(attribute => InheritedMemberSet.IsReadOnlyReferenceAttribute(attribute.AttributeType.FullName)))));
+    }
+
+    private static string GetHidingTypeName(Type type)
+    {
+        if (type.IsGenericMethodParameter)
+            return InheritedMemberSet.GetGenericMethodParameterName(type.GenericParameterPosition);
+
+        if (type.IsGenericTypeParameter)
+            return InheritedMemberSet.GetGenericTypeParameterName(type.GenericParameterPosition);
+
+        if (type.IsByRef)
+            return InheritedMemberSet.GetByReferenceName(GetHidingTypeName(type.GetElementType()!));
+
+        if (type.IsPointer)
+            return InheritedMemberSet.GetPointerName(GetHidingTypeName(type.GetElementType()!));
+
+        if (type.IsArray)
+            return InheritedMemberSet.GetArrayName(GetHidingTypeName(type.GetElementType()!), type.GetArrayRank(), type.IsSZArray);
+
+        if (type.IsFunctionPointer)
+            return InheritedMemberSet.GetFunctionPointerName(GetHidingTypeName(type.GetFunctionPointerReturnType()), type.GetFunctionPointerParameterTypes().Select(GetHidingTypeName), type.IsUnmanagedFunctionPointer);
+
+        if (type.IsConstructedGenericType)
+            return InheritedMemberSet.GetGenericInstantiationName(type.GetGenericTypeDefinition().FullName ?? type.Name, type.GetGenericArguments().Select(GetHidingTypeName));
+
+        return type.FullName ?? type.Name;
+    }
+
+    private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver, bool includeName = true)
     {
         var sb = new StringBuilder();
+        var usesDefaultValueSyntax = UsesDefaultValueSyntax(parameter);
+        if (parameter.IsOptional && !usesDefaultValueSyntax)
+        {
+            AppendOptionalParameterAttributes(sb, parameter);
+        }
+
         AppendInlineAttributes(sb, parameter.CustomAttributes);
 
         if (isExtensionReceiver)
@@ -672,25 +984,15 @@ internal static class PublicApiModelBuilder
             sb.Append("this ");
         }
 
-        if (IsScopedParameter(parameter) && !parameter.IsOut && !IsParamsParameter(parameter))
+        var refKind = GetRefKindSortText(parameter);
+        if (IsScopedParameter(parameter) && refKind != "out " && !IsParamsParameter(parameter))
         {
             sb.Append("scoped ");
         }
 
-        if (parameter.IsOut)
+        if (refKind.Length > 0)
         {
-            sb.Append("out ");
-        }
-        else if (parameter.ParameterType.IsByRef)
-        {
-            if (parameter.IsIn)
-            {
-                sb.Append(IsRefReadOnlyParameter(parameter) ? "ref readonly " : "in ");
-            }
-            else
-            {
-                sb.Append("ref ");
-            }
+            sb.Append(refKind);
         }
         else if (IsParamsParameter(parameter))
         {
@@ -698,17 +1000,43 @@ internal static class PublicApiModelBuilder
         }
 
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
-        var parameterNullability = NullabilityInfoContext.Create(parameter);
-        sb.Append(FormatType(parameterType, parameterNullability));
-        sb.Append(' ');
-        sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
-        if (parameter.HasDefaultValue)
+        var parameterNullability = new NullabilityInfoContext().Create(parameter);
+        var parameterTypeText = FormatType(parameterType, parameterNullability, CreateTypeAnnotations(parameter));
+        sb.Append(parameterTypeText);
+        if (includeName)
         {
-            sb.Append(" = ");
-            sb.Append(FormatConstant(parameter.DefaultValue));
+            sb.Append(' ');
+            sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
         }
 
-        return new ParameterDeclaration(sb.ToString(), RequiresNullableDirectives(parameterType, parameterNullability));
+        if (usesDefaultValueSyntax)
+        {
+            sb.Append(" = ");
+            sb.Append(FormatDefaultValue(parameterType, parameter.DefaultValue));
+        }
+
+        return new ParameterDeclaration(sb.ToString(), RequiresNullableDirectives(parameterType, parameterNullability), refKind + parameterTypeText);
+    }
+
+    // The modifier of a parameter passed by reference, followed by a space. It is the same text as PublicApiOrdering.GetRefKindSortText.
+    private static string GetRefKindSortText(ParameterInfo parameter)
+    {
+        if (!parameter.ParameterType.IsByRef)
+            return string.Empty;
+
+        // The [In] and [Out] attributes can also be set on parameters that are not passed by reference (e.g. arrays in interop signatures)
+        if (parameter.IsOut && !parameter.IsIn)
+            return "out ";
+
+        if (IsRefReadOnlyParameter(parameter))
+            return "ref readonly ";
+
+        return IsInParameter(parameter) ? "in " : "ref ";
+    }
+
+    private static string GetSignatureSortText(ParameterDeclaration[] parameters)
+    {
+        return string.Join(", ", parameters.Select(static parameter => parameter.SortText));
     }
 
     private static string BuildParameter(ParameterInfo parameter, bool isExtensionReceiver)
@@ -727,6 +1055,7 @@ internal static class PublicApiModelBuilder
         }
 
         return !parameterType.IsValueType &&
+               !parameterType.IsFunctionPointer &&
                !parameterType.IsGenericParameter &&
                nullabilityInfo.ReadState == NullabilityState.Unknown;
     }
@@ -734,8 +1063,42 @@ internal static class PublicApiModelBuilder
     private static bool RequiresNullableDisableDirective(ParameterInfo parameter)
     {
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
-        var parameterNullability = NullabilityInfoContext.Create(parameter);
+        var parameterNullability = new NullabilityInfoContext().Create(parameter);
         return RequiresNullableDirectives(parameterType, parameterNullability);
+    }
+
+    private static bool HasUpdatedMemorySafetyRules(Module module)
+    {
+        return UpdatedMemorySafetyRulesCache.GetValue(
+            module,
+            static value => new StrongBox<bool>(HasAttribute(value.GetCustomAttributesData(), MemorySafetyRulesAttributeFullName))).Value;
+    }
+
+    private static bool HasAttribute(IEnumerable<CustomAttributeData> attributes, string attributeTypeFullName)
+    {
+        return attributes.Any(attribute => attribute.AttributeType.FullName == attributeTypeFullName);
+    }
+
+    private static bool IsReadOnlyMember(MethodInfo method)
+    {
+        // Members of a readonly struct are implicitly readonly and carry no attribute, so this only matches per-member readonly
+        return method.DeclaringType is { IsValueType: true, IsInterface: false } &&
+               HasAttribute(method.GetCustomAttributesData(), "System.Runtime.CompilerServices.IsReadOnlyAttribute");
+    }
+
+    private static bool IsRequiresUnsafeMember(MemberInfo member)
+    {
+        return HasUpdatedMemorySafetyRules(member.Module) &&
+               HasAttribute(member.GetCustomAttributesData(), RequiresUnsafeAttributeFullName);
+    }
+
+    private static bool RequiresUnsafe(MethodBase method)
+    {
+        // Under the updated memory safety rules, the compiler marks the members requiring an unsafe context with an attribute.
+        // Otherwise, a member requires an unsafe context when a pointer type appears in its signature (compiler compat mode).
+        return HasUpdatedMemorySafetyRules(method.Module)
+            ? HasAttribute(method.GetCustomAttributesData(), RequiresUnsafeAttributeFullName)
+            : RequiresUnsafeContext(method);
     }
 
     private static bool RequiresUnsafeContext(MethodBase method)
@@ -748,7 +1111,7 @@ internal static class PublicApiModelBuilder
 
     private static bool ContainsPointer(Type type)
     {
-        if (type.IsPointer)
+        if (type.IsPointer || type.IsFunctionPointer)
             return true;
 
         if (type.IsByRef || type.IsArray)
@@ -774,135 +1137,205 @@ internal static class PublicApiModelBuilder
         return method.IsSpecialName && method.Name.StartsWith("op_", StringComparison.Ordinal);
     }
 
-    private static List<ExtensionPropertyBlockReflection> BuildExtensionPropertyBlocks(IReadOnlyList<MethodInfo> methods, int indentationLevel)
+    // C# 14 extension blocks. See PublicApiMetadataReader.Extensions.cs for how the compiler emits them.
+    // The members of a block are written in the block, and their implementation methods are not written: the compiler generates them.
+    // Instance methods are the exception: their implementation is a classic extension method, which declares the same API.
+    private static List<ExtensionBlockReflection> BuildExtensionBlocks(Type type, IReadOnlyList<MethodInfo> methods, int indentationLevel)
     {
-        var blocks = new Dictionary<(Type ReceiverType, string PropertyName), ExtensionPropertyBuilderReflection>();
-        foreach (var method in methods)
+        var result = new List<ExtensionBlockReflection>();
+        if (!(type.IsAbstract && type.IsSealed))
+            return result;
+
+        var usedImplementations = new HashSet<MethodInfo>();
+        foreach (var groupingType in type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Where(IsExternallyVisible).OrderBy(nestedType => nestedType.MetadataToken))
         {
-            if (!TryGetExtensionPropertyAccessorInfo(method, out var accessorType, out var propertyName))
+            if (!IsExtensionType(groupingType, "<G>$") || !groupingType.GetCustomAttributesData().Any(attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute"))
                 continue;
 
-            var parameters = method.GetParameters();
-            var receiverParameter = parameters[0];
-            var receiverType = receiverParameter.ParameterType.IsByRef
-                ? receiverParameter.ParameterType.GetElementType()!
-                : receiverParameter.ParameterType;
-            var key = (receiverType, propertyName);
-            if (!blocks.TryGetValue(key, out var block))
+            foreach (var markerType in groupingType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Where(IsExternallyVisible).OrderBy(nestedType => nestedType.MetadataToken))
             {
-                block = new ExtensionPropertyBuilderReflection(receiverParameter, propertyName, Getter: null, Setter: null, Order: method.MetadataToken);
-            }
+                if (!IsExtensionType(markerType, "<M>$"))
+                    continue;
 
-            if (accessorType == "get")
-            {
-                blocks[key] = block with { Getter = method, Order = Math.Min(block.Order, method.MetadataToken) };
-            }
-            else
-            {
-                blocks[key] = block with { Setter = method, Order = Math.Min(block.Order, method.MetadataToken) };
-            }
-        }
+                var receiverMethod = markerType.GetMethod("<Extension>$", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                if (receiverMethod?.GetParameters() is not [var receiver])
+                    continue;
 
-        var result = new List<ExtensionPropertyBlockReflection>();
-        foreach (var block in blocks.Values)
-        {
-            if (block.Getter is null && block.Setter is null)
-                continue;
+                // The members use the type parameters of the grouping type ($T0, $T1...). The ones of the marker type have the names written in source.
+                var blockTypeParameters = markerType.GetGenericArguments();
+                Type blockMembersType;
+                try
+                {
+                    blockMembersType = blockTypeParameters.Length == 0 ? groupingType : groupingType.MakeGenericType(blockTypeParameters);
+                }
+                catch (ArgumentException)
+                {
+                    continue;
+                }
 
-            var content = BuildExtensionPropertyBlock(block, indentationLevel);
-            var accessors = new List<MethodInfo>();
-            if (block.Getter is not null)
-            {
-                accessors.Add(block.Getter);
+                var header = BuildExtensionBlockHeader(receiver, blockTypeParameters);
+                var receiverType = receiver.ParameterType.IsByRef ? receiver.ParameterType.GetElementType()! : receiver.ParameterType;
+                var receiverTypeText = FormatType(receiverType, new NullabilityInfoContext().Create(receiver), CreateTypeAnnotations(receiver));
+                foreach (var member in GetExtensionBlockMembers(blockMembersType, markerType.Name))
+                {
+                    var accessors = member switch
+                    {
+                        MethodInfo method => [method],
+                        PropertyInfo extensionProperty => new[] { extensionProperty.GetMethod, extensionProperty.SetMethod }.OfType<MethodInfo>().ToArray(),
+                        _ => [],
+                    };
+
+                    var implementations = new List<MethodInfo>();
+                    foreach (var accessor in accessors)
+                    {
+                        var implementation = methods.FirstOrDefault(method => !usedImplementations.Contains(method) && IsExtensionImplementation(accessor, receiver, blockTypeParameters.Length, method));
+                        if (implementation is not null)
+                        {
+                            usedImplementations.Add(implementation);
+                            implementations.Add(implementation);
+                        }
+                    }
+
+                    if (member is MethodInfo { IsStatic: false, IsSpecialName: false } && implementations is [var classicExtensionMethod] && IsExtensionMethod(classicExtensionMethod))
+                        continue;
+
+                    var sb = new StringBuilder();
+                    AppendIndentedLine(sb, indentationLevel, header);
+                    AppendIndentedLine(sb, indentationLevel, "{");
+                    MemberSortKey sortKey;
+                    if (member is PropertyInfo property)
+                    {
+                        var indexParameters = GetIndexParameters(property);
+                        sortKey = new MemberSortKey(MemberSortKind.Property, property.Name, parameterCount: indexParameters.Length, signature: GetSignatureSortText(indexParameters));
+                        sb.Append(BuildProperty(property, indentationLevel + 1));
+                    }
+                    else
+                    {
+                        sb.Append(BuildMethod((MethodInfo)member, indentationLevel + 1, out sortKey));
+                    }
+
+                    AppendIndentedLine(sb, indentationLevel, "}");
+                    result.Add(new ExtensionBlockReflection(sb.ToString(), implementations, receiverTypeText, sortKey));
+                }
             }
-
-            if (block.Setter is not null)
-            {
-                accessors.Add(block.Setter);
-            }
-
-            result.Add(new ExtensionPropertyBlockReflection(content, accessors, block.Order));
         }
 
         return result;
     }
 
-    private static bool TryGetExtensionPropertyAccessorInfo(MethodInfo method, out string accessorType, out string propertyName)
+    private static bool IsExtensionType(Type type, string namePrefix)
     {
-        accessorType = string.Empty;
-        propertyName = string.Empty;
-
-        var declaringType = method.DeclaringType;
-        if (declaringType is null || !(declaringType.IsAbstract && declaringType.IsSealed))
-            return false;
-
-        if (!method.IsStatic || method.IsSpecialName)
-            return false;
-
-        if (method.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute"))
-            return false;
-
-        if (method.Name.StartsWith("get_", StringComparison.Ordinal))
-        {
-            if (method.GetParameters().Length < 1)
-                return false;
-
-            accessorType = "get";
-            propertyName = method.Name[4..];
-            return true;
-        }
-
-        if (method.Name.StartsWith("set_", StringComparison.Ordinal))
-        {
-            if (method.GetParameters().Length < 2)
-                return false;
-
-            accessorType = "set";
-            propertyName = method.Name[4..];
-            return true;
-        }
-
-        return false;
+        return type.IsSpecialName && type.Name.StartsWith(namePrefix, StringComparison.Ordinal);
     }
 
-    private static string BuildExtensionPropertyBlock(ExtensionPropertyBuilderReflection block, int indentationLevel)
+    private static bool IsExtensionGroupingType(Type? type)
     {
-        var sb = new StringBuilder();
-        var receiverParameter = block.ReceiverParameter;
-        var receiverNullability = NullabilityInfoContext.Create(receiverParameter);
-        var receiverType = receiverParameter.ParameterType.IsByRef
-            ? receiverParameter.ParameterType.GetElementType()!
-            : receiverParameter.ParameterType;
-        var receiverTypeText = FormatType(receiverType, receiverNullability);
-        var receiverName = EscapeIdentifier(receiverParameter.Name ?? "value");
+        return type is not null && type.IsNested && IsExtensionType(type, "<G>$");
+    }
 
-        string propertyType;
-        if (block.Getter is not null)
-        {
-            propertyType = FormatReturnType(block.Getter.ReturnParameter);
-        }
-        else
-        {
-            var setterValueParameter = block.Setter!.GetParameters()[1];
-            propertyType = FormatType(setterValueParameter.ParameterType, NullabilityInfoContext.Create(setterValueParameter));
-        }
+    private static IEnumerable<MemberInfo> GetExtensionBlockMembers(Type groupingType, string markerName)
+    {
+        const BindingFlags Flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        IEnumerable<MemberInfo> properties = groupingType.GetProperties(Flags).Where(IsExternallyVisible);
+        IEnumerable<MemberInfo> methods = groupingType.GetMethods(Flags).Where(IsExternallyVisible).Where(method => !method.IsSpecialName || IsOperatorMethod(method));
+        return properties.Concat(methods).Where(member => string.Equals(GetExtensionMarkerName(member), markerName, StringComparison.Ordinal));
+    }
 
-        var accessorDeclarations = new List<string>();
-        if (block.Getter is not null)
+    private static string? GetExtensionMarkerName(MemberInfo member)
+    {
+        foreach (var attribute in member.GetCustomAttributesData())
         {
-            accessorDeclarations.Add("get => throw null;");
+            if (attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionMarkerAttribute" &&
+                attribute.ConstructorArguments is [{ Value: string name }])
+            {
+                return name;
+            }
         }
 
-        if (block.Setter is not null)
+        return null;
+    }
+
+    // extension<T>(Receiver receiver) where T : constraint
+    private static string BuildExtensionBlockHeader(ParameterInfo receiver, Type[] typeParameters)
+    {
+        var genericArguments = typeParameters.Length == 0 ? string.Empty : "<" + string.Join(", ", typeParameters.Select(typeParameter => EscapeIdentifier(typeParameter.Name))) + ">";
+        var receiverText = BuildParameterDeclaration(receiver, isExtensionReceiver: false, includeName: !string.IsNullOrEmpty(receiver.Name)).Text;
+        return $"extension{genericArguments}({receiverText}){FormatConstraintsInline(BuildConstraints(typeParameters, indentationLevel: 0))}";
+    }
+
+    // The compiler matches an implementation with its member by signature. The implementation takes the type parameters of the block followed by
+    // the ones of the member, and the receiver as its first parameter for instance members.
+    private static bool IsExtensionImplementation(MethodInfo member, ParameterInfo receiver, int blockTypeParameterCount, MethodInfo implementation)
+    {
+        if (!implementation.IsStatic || !string.Equals(implementation.Name, member.Name, StringComparison.Ordinal))
+            return false;
+
+        if (implementation.GetGenericArguments().Length != blockTypeParameterCount + member.GetGenericArguments().Length)
+            return false;
+
+        var memberParameters = member.GetParameters();
+        var implementationParameters = implementation.GetParameters();
+        var offset = member.IsStatic ? 0 : 1;
+        if (implementationParameters.Length != memberParameters.Length + offset)
+            return false;
+
+        if (offset == 1 && !IsSameParameterType(receiver, implementationParameters[0], blockTypeParameterCount))
+            return false;
+
+        for (var i = 0; i < memberParameters.Length; i++)
         {
-            accessorDeclarations.Add("set { }");
+            if (!IsSameParameterType(memberParameters[i], implementationParameters[i + offset], blockTypeParameterCount))
+                return false;
         }
 
-        AppendIndentedLine(sb, indentationLevel, $"extension({receiverTypeText} {receiverName})");
-        AppendIndentedLine(sb, indentationLevel, "{");
-        AppendIndentedLine(sb, indentationLevel + 1, $"public {propertyType} {EscapeIdentifier(block.PropertyName)} {{ {string.Join(' ', accessorDeclarations)} }}");
-        AppendIndentedLine(sb, indentationLevel, "}");
-        return sb.ToString();
+        return IsSameSignatureType(member.ReturnType, implementation.ReturnType, blockTypeParameterCount);
+    }
+
+    // in, ref readonly and ref are the same in signatures
+    private static bool IsSameParameterType(ParameterInfo x, ParameterInfo y, int blockTypeParameterCount)
+    {
+        return (x.IsOut && !x.IsIn) == (y.IsOut && !y.IsIn) && IsSameSignatureType(x.ParameterType, y.ParameterType, blockTypeParameterCount);
+    }
+
+    // A type parameter of the block is the type parameter of the implementation at the same position. A type parameter of the member follows them.
+    private static bool IsSameSignatureType(Type x, Type y, int blockTypeParameterCount)
+    {
+        if (x.IsGenericParameter || y.IsGenericParameter)
+        {
+            if (!x.IsGenericParameter || !y.IsGenericMethodParameter)
+                return false;
+
+            var position = x.IsGenericMethodParameter ? blockTypeParameterCount + x.GenericParameterPosition : x.GenericParameterPosition;
+            return y.GenericParameterPosition == position;
+        }
+
+        if (x.HasElementType || y.HasElementType)
+        {
+            return x.HasElementType && y.HasElementType &&
+                   x.IsByRef == y.IsByRef &&
+                   x.IsPointer == y.IsPointer &&
+                   x.IsSZArray == y.IsSZArray &&
+                   (!x.IsArray || (y.IsArray && x.GetArrayRank() == y.GetArrayRank())) &&
+                   IsSameSignatureType(x.GetElementType()!, y.GetElementType()!, blockTypeParameterCount);
+        }
+
+        if (x.IsFunctionPointer || y.IsFunctionPointer)
+        {
+            return x.IsFunctionPointer && y.IsFunctionPointer &&
+                   x.IsUnmanagedFunctionPointer == y.IsUnmanagedFunctionPointer &&
+                   IsSameSignatureType(x.GetFunctionPointerReturnType(), y.GetFunctionPointerReturnType(), blockTypeParameterCount) &&
+                   x.GetFunctionPointerParameterTypes().Length == y.GetFunctionPointerParameterTypes().Length &&
+                   x.GetFunctionPointerParameterTypes().Zip(y.GetFunctionPointerParameterTypes()).All(pair => IsSameSignatureType(pair.First, pair.Second, blockTypeParameterCount));
+        }
+
+        if (x.IsConstructedGenericType || y.IsConstructedGenericType)
+        {
+            return x.IsConstructedGenericType && y.IsConstructedGenericType &&
+                   x.GetGenericTypeDefinition() == y.GetGenericTypeDefinition() &&
+                   x.GenericTypeArguments.Zip(y.GenericTypeArguments).All(pair => IsSameSignatureType(pair.First, pair.Second, blockTypeParameterCount));
+        }
+
+        return x == y;
     }
 
     private static bool CanEmitOperator(MethodInfo method)
@@ -972,20 +1405,26 @@ internal static class PublicApiModelBuilder
 
     private static string FormatReturnType(ParameterInfo returnParameter)
     {
+        var (refKind, type) = FormatReturnTypeParts(returnParameter);
+        return refKind + type;
+    }
+
+    // The modifier of a value returned by reference, followed by a space, and the type of the value
+    private static (string RefKind, string Type) FormatReturnTypeParts(ParameterInfo returnParameter)
+    {
         var returnType = returnParameter.ParameterType;
         if (!returnType.IsByRef)
         {
-            var returnNullability = NullabilityInfoContext.Create(returnParameter);
-            return FormatType(returnType, returnNullability);
+            var returnNullability = new NullabilityInfoContext().Create(returnParameter);
+            return (string.Empty, FormatType(returnType, returnNullability, CreateTypeAnnotations(returnParameter)));
         }
 
         var elementType = returnType.GetElementType()!;
-        var returnNullabilityInfo = NullabilityInfoContext.Create(returnParameter);
+        var returnNullabilityInfo = new NullabilityInfoContext().Create(returnParameter);
         var elementNullability = returnNullabilityInfo.ElementType;
-        if (returnParameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute"))
-            return "ref readonly " + FormatType(elementType, elementNullability);
-
-        return "ref " + FormatType(elementType, elementNullability);
+        var elementAnnotations = CreateTypeAnnotations(returnParameter);
+        var isReadOnly = returnParameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute");
+        return (isReadOnly ? "ref readonly " : "ref ", FormatType(elementType, elementNullability, elementAnnotations));
     }
 
     private static string BuildAccessorModifier(MethodInfo accessor, MethodInfo representativeAccessor)
@@ -1009,8 +1448,12 @@ internal static class PublicApiModelBuilder
         if (!type.IsGenericTypeDefinition)
             return string.Empty;
 
+        // A type nested in a generic type is a generic type definition, even when it does not declare any generic parameter
         var declaringTypeGenericArgumentsCount = type.DeclaringType?.GetGenericArguments().Length ?? 0;
-        var currentTypeGenericArguments = type.GetGenericArguments().Skip(declaringTypeGenericArgumentsCount);
+        var currentTypeGenericArguments = type.GetGenericArguments().Skip(declaringTypeGenericArgumentsCount).ToArray();
+        if (currentTypeGenericArguments.Length == 0)
+            return string.Empty;
+
         return "<" + string.Join(", ", currentTypeGenericArguments.Select(static argument => EscapeIdentifier(argument.Name))) + ">";
     }
 
@@ -1036,10 +1479,58 @@ internal static class PublicApiModelBuilder
         if (!method.IsGenericMethodDefinition)
             return [];
 
-        return BuildConstraints(method.GetGenericArguments(), indentationLevel);
+        // Reflection does not substitute the type arguments of a constructed type in the constraints of the type parameters of its generic methods
+        // (e.g. the members of an extension block, read from the grouping type constructed with the type parameters of the block)
+        return BuildConstraints(method.GetGenericArguments(), indentationLevel, method.DeclaringType is { IsConstructedGenericType: true } declaringType ? declaringType.GenericTypeArguments : null);
     }
 
-    private static List<string> BuildConstraints(IEnumerable<Type> genericArguments, int indentationLevel)
+    // The constraints of an override or of an explicit implementation are inherited, and cannot be repeated.
+    // Only the ones that tell what T? means can be written: class, struct, or default when T has none of them.
+    private static List<string> BuildInheritedConstraints(MethodInfo method, string[] signatureTypes)
+    {
+        var constraints = new List<string>();
+        if (!method.IsGenericMethodDefinition)
+            return constraints;
+
+        foreach (var genericArgument in method.GetGenericArguments())
+        {
+            var name = EscapeIdentifier(genericArgument.Name);
+            var attributes = genericArgument.GenericParameterAttributes;
+            if (attributes.HasFlag(GenericParameterAttributes.ReferenceTypeConstraint))
+            {
+                constraints.Add($"where {name} : class");
+            }
+            else if (attributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint))
+            {
+                constraints.Add($"where {name} : struct");
+            }
+            else if (signatureTypes.Any(type => ContainsAnnotatedTypeParameter(type, name)))
+            {
+                constraints.Add($"where {name} : default");
+            }
+        }
+
+        return constraints;
+    }
+
+    // Searches "T?" in a formatted type, where T is not part of a longer or qualified name
+    private static bool ContainsAnnotatedTypeParameter(string type, string name)
+    {
+        var index = 0;
+        while ((index = type.IndexOf(name, index, StringComparison.Ordinal)) >= 0)
+        {
+            var end = index + name.Length;
+            var isStartOfName = index == 0 || !(char.IsLetterOrDigit(type[index - 1]) || type[index - 1] is '_' or '.' or '@');
+            if (isStartOfName && end < type.Length && type[end] == '?')
+                return true;
+
+            index = end;
+        }
+
+        return false;
+    }
+
+    private static List<string> BuildConstraints(IEnumerable<Type> genericArguments, int indentationLevel, Type[]? declaringTypeArguments = null)
     {
         _ = indentationLevel;
         var constraints = new List<string>();
@@ -1050,24 +1541,46 @@ internal static class PublicApiModelBuilder
 
             var values = new List<string>();
             var genericParameterAttributes = genericArgument.GenericParameterAttributes;
+            var hasStructConstraint = genericParameterAttributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint);
+
+            // The nullable flag of a generic parameter encodes the 'class?' and 'notnull' constraints
+            var nullableFlags = GetNullableFlags(genericArgument.GetCustomAttributesData(), (MemberInfo?)genericArgument.DeclaringMethod ?? genericArgument.DeclaringType);
+            var nullableFlag = nullableFlags is { Length: > 0 } ? nullableFlags[0] : (byte)0;
             if (genericParameterAttributes.HasFlag(GenericParameterAttributes.ReferenceTypeConstraint))
             {
-                values.Add("class");
+                values.Add(nullableFlag == 2 ? "class?" : "class");
+            }
+            else if (!hasStructConstraint && nullableFlag == 1)
+            {
+                values.Add("notnull");
             }
 
-            if (genericParameterAttributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint))
+            if (hasStructConstraint)
             {
-                values.Add("struct");
+                var isUnmanaged = genericArgument.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsUnmanagedAttribute");
+                values.Add(isUnmanaged ? "unmanaged" : "struct");
             }
 
-            var hasStructConstraint = genericParameterAttributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint);
-            foreach (var constraint in genericArgument.GetGenericParameterConstraints())
+            var constraintTypes = GetGenericParameterConstraints(genericArgument, declaringTypeArguments);
+            var typeConstraints = new List<string>();
+            var isFirstConstraintBaseType = false;
+            for (var i = 0; i < constraintTypes.Length; i++)
             {
-                if (hasStructConstraint && constraint == typeof(ValueType))
+                if (hasStructConstraint && constraintTypes[i] == typeof(ValueType))
                     continue;
 
-                values.Add(FormatType(constraint));
+                if (typeConstraints.Count == 0)
+                {
+                    isFirstConstraintBaseType = !constraintTypes[i].IsInterface && !constraintTypes[i].IsGenericParameter;
+                }
+
+                typeConstraints.Add(FormatType(constraintTypes[i], nullabilityInfo: null, CreateConstraintAnnotations(genericArgument, i, constraintTypes.Length)));
             }
+
+            // The base type constraint must be the first one in C#. The other constraints are sorted, as the metadata reader does.
+            var baseTypeCount = isFirstConstraintBaseType ? 1 : 0;
+            values.AddRange(typeConstraints.Take(baseTypeCount));
+            values.AddRange(typeConstraints.Skip(baseTypeCount).Order(StringComparer.Ordinal));
 
             if (genericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint) && !hasStructConstraint)
             {
@@ -1088,12 +1601,112 @@ internal static class PublicApiModelBuilder
         return constraints;
     }
 
+    private static Type[] GetGenericParameterConstraints(Type genericParameter, Type[]? declaringTypeArguments)
+    {
+        var constraints = genericParameter.GetGenericParameterConstraints();
+        if (declaringTypeArguments is null)
+            return constraints;
+
+        try
+        {
+            return [.. constraints.Select(constraint => SubstituteTypeArguments(constraint, declaringTypeArguments))];
+        }
+        catch (ArgumentException)
+        {
+            return constraints;
+        }
+    }
+
+    private static Type SubstituteTypeArguments(Type type, Type[] typeArguments)
+    {
+        if (type.IsGenericTypeParameter)
+            return typeArguments[type.GenericParameterPosition];
+
+        if (type.IsByRef)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakeByRefType();
+
+        if (type.IsPointer)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakePointerType();
+
+        if (type.IsSZArray)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakeArrayType();
+
+        if (type.IsArray)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakeArrayType(type.GetArrayRank());
+
+        if (type.IsConstructedGenericType)
+            return type.GetGenericTypeDefinition().MakeGenericType([.. type.GenericTypeArguments.Select(argument => SubstituteTypeArguments(argument, typeArguments))]);
+
+        return type;
+    }
+
     private static string FormatConstraintsInline(IReadOnlyList<string> constraints)
     {
         if (constraints.Count == 0)
             return string.Empty;
 
         return " " + string.Join(" ", constraints);
+    }
+
+    // A DateTime default value is stored in a DateTimeConstantAttribute, and cannot be written as a constant
+    private static bool HasConstantDefaultValue(ParameterInfo parameter)
+    {
+        return parameter.HasDefaultValue && parameter.DefaultValue is not DateTime;
+    }
+
+    // A default value can only be written with the C# syntax when all the following parameters have one too, except a params parameter.
+    // Otherwise, the parameter is written with the attributes the default value is compiled to.
+    private static bool UsesDefaultValueSyntax(ParameterInfo parameter)
+    {
+        if (!HasConstantDefaultValue(parameter))
+            return false;
+
+        var parameters = parameter.Member switch
+        {
+            MethodBase method => method.GetParameters(),
+            PropertyInfo property => property.GetIndexParameters(),
+            _ => [],
+        };
+
+        // The value parameter of a setter follows the parameters of the indexer
+        var count = parameter.Member is MethodInfo { IsSpecialName: true } accessor && accessor.Name.StartsWith("set_", StringComparison.Ordinal) ? parameters.Length - 1 : parameters.Length;
+        for (var i = parameter.Position + 1; i < count; i++)
+        {
+            if (!IsParamsParameter(parameters[i]) && !HasConstantDefaultValue(parameters[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    // [Optional], followed by the attribute that stores the default value when the parameter has one
+    private static void AppendOptionalParameterAttributes(StringBuilder sb, ParameterInfo parameter)
+    {
+        sb.Append("[System.Runtime.InteropServices.Optional] ");
+        if (!HasConstantDefaultValue(parameter))
+            return;
+
+        if (parameter.DefaultValue is decimal decimalValue)
+        {
+            var bits = decimal.GetBits(decimalValue);
+            object[] arguments = [(byte)(bits[3] >> 16), (byte)(bits[3] < 0 ? 128 : 0), unchecked((uint)bits[2]), unchecked((uint)bits[1]), unchecked((uint)bits[0])];
+            sb.Append("[System.Runtime.CompilerServices.DecimalConstant(").AppendJoin(", ", arguments.Select(FormatConstant)).Append(")] ");
+            return;
+        }
+
+        // The default value of a value type or of a type parameter needs no attribute
+        var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
+        var value = FormatDefaultValue(parameterType, parameter.DefaultValue);
+        if (value is "default")
+            return;
+
+        sb.Append("[System.Runtime.InteropServices.DefaultParameterValue(").Append(value).Append(")] ");
+    }
+
+    private static bool IsInParameter(ParameterInfo parameter)
+    {
+        return parameter.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute") ||
+               parameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute");
     }
 
     private static bool IsRefReadOnlyParameter(ParameterInfo parameter)
@@ -1106,7 +1719,7 @@ internal static class PublicApiModelBuilder
         return parameter.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ScopedRefAttribute");
     }
 
-    private static string BuildByRefFieldType(FieldInfo field, NullabilityInfo fieldNullability)
+    private static string BuildByRefFieldType(FieldInfo field, NullabilityInfo fieldNullability, TypeAnnotations? annotations)
     {
         var elementType = field.FieldType.GetElementType()!;
         var elementNullability = fieldNullability.ElementType;
@@ -1114,18 +1727,23 @@ internal static class PublicApiModelBuilder
         if (field.IsInitOnly)
         {
             return isRefReadonly
-                ? "readonly ref readonly " + FormatType(elementType, elementNullability)
-                : "readonly ref " + FormatType(elementType, elementNullability);
+                ? "readonly ref readonly " + FormatType(elementType, elementNullability, annotations)
+                : "readonly ref " + FormatType(elementType, elementNullability, annotations);
         }
 
         return isRefReadonly
-            ? "ref readonly " + FormatType(elementType, elementNullability)
-            : "ref " + FormatType(elementType, elementNullability);
+            ? "ref readonly " + FormatType(elementType, elementNullability, annotations)
+            : "ref " + FormatType(elementType, elementNullability, annotations);
     }
 
     private static (string Declaration, IReadOnlyList<string> Constraints) BuildTypeHeader(Type type, bool isUnionDeclaration)
     {
         var modifiers = new List<string> { GetTypeAccessibility(type) };
+        if (HidesInheritedMember(type))
+        {
+            modifiers.Add("new");
+        }
+
         var isClosedType = IsClosedType(type);
         if (type.IsAbstract && type.IsSealed)
         {
@@ -1148,13 +1766,6 @@ internal static class PublicApiModelBuilder
             }
         }
 
-        var hasLibraryImport = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Any(IsLibraryImportMethod);
-        if (hasLibraryImport && !type.IsInterface)
-        {
-            modifiers.Add("partial");
-        }
-
         var keyword = GetTypeKeyword(type);
         var typeName = EscapeIdentifier(RemoveGenericArity(type.Name));
         var genericArguments = BuildGenericArguments(type);
@@ -1175,6 +1786,22 @@ internal static class PublicApiModelBuilder
             attribute.AttributeType.FullName is ClosedAttributeFullName or IsClosedTypeAttributeFullName);
     }
 
+    // Reflection does not tell which interfaces a type declares. When the metadata of the assembly cannot be read,
+    // the ones implemented by the base type are considered inherited.
+    private static IEnumerable<Type> GetDeclaredInterfaces(Type type)
+    {
+        var interfaces = type.GetInterfaces();
+        if (type.IsInterface || type.BaseType is null)
+            return interfaces;
+
+        return interfaces.Except(type.BaseType.GetInterfaces());
+    }
+
+    private static bool IsVisibleInterface(Type @interface)
+    {
+        return IsExternallyVisible(@interface) || @interface.IsPublic;
+    }
+
     private static string BuildInheritance(Type type, bool isUnionDeclaration)
     {
         var baseTypes = new List<string>();
@@ -1185,15 +1812,36 @@ internal static class PublicApiModelBuilder
             type.BaseType != typeof(object) &&
             type.BaseType != typeof(ValueType))
         {
-            baseTypes.Add(FormatType(type.BaseType));
+            // The NullableAttribute of a type describes its base type
+            var typeAttributes = type.GetCustomAttributesData();
+            baseTypes.Add(FormatType(type.BaseType, nullabilityInfo: null, CreateTypeAnnotations(typeAttributes, nullableFlags: GetNullableFlags(typeAttributes, type))));
         }
 
-        var interfaces = type.GetInterfaces()
-            .Where(@interface => IsExternallyVisible(@interface) || @interface.IsPublic)
-            .Where(@interface => !isUnionDeclaration || @interface.FullName != IUnionInterfaceFullName)
-            .OrderBy(static @interface => @interface.FullName, StringComparer.Ordinal)
-            .Select(static @interface => FormatType(@interface))
-            .ToList();
+        // The interface list is sorted using the formatted names, so the generated API does not depend on the order reported by the runtime.
+        // The base type stays first as C# requires it to precede the interfaces.
+        // Reflection does not expose the interface implementations of a type, so the interfaces it declares are read from the metadata of the assembly,
+        // with their nullable flags and the names of their tuple elements. An interface without flags uses the nullable context of the type.
+        byte[]? nullableContextFlags = null;
+        if (LoadedAssemblyMetadata.TryGetDeclaredInterfaces(type, out var declaredInterfaces))
+        {
+            nullableContextFlags = GetNullableFlags([], type);
+        }
+        else
+        {
+            declaredInterfaces = [.. GetDeclaredInterfaces(type).Select(static @interface => (@interface, (byte[]?)null, (string?[]?)null))];
+        }
+
+        var interfaces = declaredInterfaces
+            .Where(static declaration => IsVisibleInterface(declaration.Interface))
+            .Where(declaration => !isUnionDeclaration || declaration.Interface.FullName != IUnionInterfaceFullName)
+            .Select(declaration =>
+            {
+                var nullableFlags = declaration.NullableFlags ?? nullableContextFlags;
+                return nullableFlags is null && declaration.TupleElementNames is null
+                    ? FormatType(declaration.Interface)
+                    : FormatType(declaration.Interface, nullabilityInfo: null, new TypeAnnotations(declaration.TupleElementNames, dynamicFlags: null, dynamicIndex: 0, declaredNullability: null, nullableFlags));
+            })
+            .OrderBy(static value => value, StringComparer.Ordinal);
         baseTypes.AddRange(interfaces);
 
         if (baseTypes.Count == 0)
@@ -1216,12 +1864,6 @@ internal static class PublicApiModelBuilder
         if (IsDelegate(type))
             return "delegate";
 
-        if (IsRecordStruct(type))
-            return "record struct";
-
-        if (IsRecordClass(type))
-            return "record";
-
         if (type.IsValueType)
         {
             if (type.IsByRefLike)
@@ -1234,22 +1876,6 @@ internal static class PublicApiModelBuilder
         }
 
         return "class";
-    }
-
-    private static bool IsRecordClass(Type type)
-    {
-        if (type.IsValueType || type.IsInterface || type.IsEnum)
-            return false;
-
-        return type.GetMethod("<Clone>$", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly) is not null;
-    }
-
-    private static bool IsRecordStruct(Type type)
-    {
-        if (!type.IsValueType || type.IsEnum)
-            return false;
-
-        return type.GetMethod("PrintMembers", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly) is not null;
     }
 
     private static bool IsReadOnlyStruct(Type type)
@@ -1271,7 +1897,7 @@ internal static class PublicApiModelBuilder
         var caseTypes = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(IsGeneratedUnionCaseConstructor)
             .OrderBy(static constructor => constructor.MetadataToken)
-            .Select(constructor => FormatType(constructor.GetParameters()[0].ParameterType, NullabilityInfoContext.Create(constructor.GetParameters()[0])))
+            .Select(constructor => FormatType(constructor.GetParameters()[0].ParameterType, new NullabilityInfoContext().Create(constructor.GetParameters()[0]), CreateTypeAnnotations(constructor.GetParameters()[0])))
             .ToArray();
         return "(" + string.Join(", ", caseTypes) + ")";
     }
@@ -1327,7 +1953,7 @@ internal static class PublicApiModelBuilder
             return false;
 
         if (method is MethodInfo methodInfo && IsExplicitInterfaceImplementation(methodInfo))
-            return IsExternallyVisible(method.DeclaringType!);
+            return IsExternallyVisible(method.DeclaringType!) && ImplementsVisibleInterface(methodInfo);
 
         if (method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly)
             return IsExternallyVisible(method.DeclaringType!);
@@ -1354,20 +1980,108 @@ internal static class PublicApiModelBuilder
                method.Name.Contains('.', StringComparison.Ordinal);
     }
 
+    // The name of a compiler-generated method contains angle brackets, and so does the name of the explicit implementation of a member of a generic interface (e.g. "System.IEquatable<T>.Equals")
+    private static bool IsUnspeakableName(MethodInfo method)
+    {
+        var name = method.Name;
+        if (IsExplicitInterfaceImplementation(method))
+            return name.StartsWith('<', StringComparison.Ordinal) || name[(name.LastIndexOf('.', StringComparison.Ordinal) + 1)..].Contains('<', StringComparison.Ordinal);
+
+        return name.Contains('<', StringComparison.Ordinal);
+    }
+
+    // The explicit implementation of a member of an interface that is not visible outside the assembly is not part of the public API.
+    // Reflection does not expose the implemented member, so the interface is found from the name of the method (e.g. "Namespace.IInterface<T>.Member").
+    private static bool ImplementsVisibleInterface(MethodInfo method)
+    {
+        var separatorIndex = method.Name.LastIndexOf('.', StringComparison.Ordinal);
+        if (separatorIndex < 0)
+            return true;
+
+        var interfaceName = RemoveTypeArguments(method.Name.AsSpan(0, separatorIndex));
+        foreach (var @interface in method.DeclaringType!.GetInterfaces())
+        {
+            if (IsVisibleInterface(@interface))
+                continue;
+
+            var definition = @interface.IsGenericType ? @interface.GetGenericTypeDefinition() : @interface;
+            if (definition.FullName is { } fullName && string.Equals(RemoveGenericArities(fullName), interfaceName, StringComparison.Ordinal))
+                return false;
+        }
+
+        return true;
+    }
+
+    // "Namespace.Outer<T>.IInterface<System.Int32>" => "Namespace.Outer.IInterface"
+    private static string RemoveTypeArguments(ReadOnlySpan<char> name)
+    {
+        var sb = new StringBuilder(name.Length);
+        var depth = 0;
+        foreach (var c in name)
+        {
+            if (c == '<')
+            {
+                depth++;
+            }
+            else if (c == '>')
+            {
+                depth--;
+            }
+            else if (depth == 0)
+            {
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    // "Namespace.Outer`1+IInterface`1" => "Namespace.Outer.IInterface"
+    private static string RemoveGenericArities(string fullName)
+    {
+        var sb = new StringBuilder(fullName.Length);
+        for (var i = 0; i < fullName.Length; i++)
+        {
+            var c = fullName[i];
+            if (c == '`')
+            {
+                while (i + 1 < fullName.Length && char.IsAsciiDigit(fullName[i + 1]))
+                {
+                    i++;
+                }
+            }
+            else
+            {
+                sb.Append(c == '+' ? '.' : c);
+            }
+        }
+
+        return sb.ToString();
+    }
+
     private static string BuildExplicitInterfaceMethodName(string methodName)
     {
         var separatorIndex = methodName.LastIndexOf('.', StringComparison.Ordinal);
         if (separatorIndex < 0)
             return EscapeIdentifier(methodName);
 
-        var interfaceName = methodName[..separatorIndex];
+        return GetExplicitInterfaceQualifier(methodName) + EscapeIdentifier(methodName[(separatorIndex + 1)..]);
+    }
+
+    // Returns the interface of an explicit implementation, followed by a dot (e.g. "System.IDisposable.")
+    private static string GetExplicitInterfaceQualifier(string memberName)
+    {
+        var separatorIndex = memberName.LastIndexOf('.', StringComparison.Ordinal);
+        if (separatorIndex < 0)
+            return string.Empty;
+
+        var interfaceName = memberName[..separatorIndex];
         if (interfaceName.StartsWith("global::", StringComparison.Ordinal))
         {
             interfaceName = interfaceName["global::".Length..];
         }
 
-        var memberName = methodName[(separatorIndex + 1)..];
-        return interfaceName + "." + EscapeIdentifier(memberName);
+        return interfaceName + ".";
     }
 
     private static bool IsExternallyVisible(FieldInfo field)
@@ -1445,28 +2159,33 @@ internal static class PublicApiModelBuilder
         return 0;
     }
 
-    private static void AppendAttributes(StringBuilder sb, IEnumerable<CustomAttributeData> attributes, int indentationLevel)
+    /// <param name="sb">The builder to append the attributes to.</param>
+    /// <param name="attributes">The attributes to append.</param>
+    /// <param name="indentationLevel">The indentation level of the attributes.</param>
+    /// <param name="declaringType">The type that declares the method or property the attributes are applied to. When set, the members named by <c>MemberNotNull</c> and <c>MemberNotNullWhen</c> that are not visible from outside the assembly are removed.</param>
+    private static void AppendAttributes(StringBuilder sb, IEnumerable<CustomAttributeData> attributes, int indentationLevel, Type? declaringType = null)
     {
-        foreach (var attribute in attributes.Where(ShouldIncludeAttribute))
+        foreach (var attribute in SortAttributes(attributes.Where(ShouldIncludeAttribute), declaringType))
         {
-            AppendIndentedLine(sb, indentationLevel, BuildAttribute(attribute));
+            AppendIndentedLine(sb, indentationLevel, "[" + attribute + "]");
         }
     }
 
     private static void AppendReturnAttributes(StringBuilder sb, MethodInfo method, int indentationLevel)
     {
-        foreach (var attribute in method.ReturnParameter.CustomAttributes.Where(ShouldIncludeAttribute))
+        foreach (var attribute in SortAttributes(method.ReturnParameter.CustomAttributes.Where(ShouldIncludeAttribute)))
         {
-            AppendIndentedLine(sb, indentationLevel, "[return: " + BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute) + "]");
+            AppendIndentedLine(sb, indentationLevel, "[return: " + attribute + "]");
         }
     }
 
     private static void AppendInlineAttributes(StringBuilder sb, IEnumerable<CustomAttributeData> attributes)
     {
-        foreach (var attribute in attributes.Where(ShouldIncludeAttribute))
+        foreach (var attribute in SortAttributes(attributes.Where(ShouldIncludeAttribute)))
         {
-            sb.Append(BuildAttribute(attribute));
-            sb.Append(' ');
+            sb.Append('[');
+            sb.Append(attribute);
+            sb.Append("] ");
         }
     }
 
@@ -1527,19 +2246,76 @@ internal static class PublicApiModelBuilder
         return attributes.Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.RequiredMemberAttribute");
     }
 
-    private static bool IsLibraryImportMethod(MethodInfo method)
+    // The attributes without the brackets, sorted as the metadata reader does, so the output does not depend on the order of the declarations
+    private static IEnumerable<string> SortAttributes(IEnumerable<CustomAttributeData> attributes, Type? declaringType = null)
     {
-        return method.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.InteropServices.LibraryImportAttribute");
+        return attributes
+            .Select(attribute => BuildAttribute(attribute, declaringType))
+            .OfType<string>()
+            .Order(PublicApiOrdering.AttributeComparer);
     }
 
-    private static bool IsDllImportAttribute(string? fullName)
+    private static string? BuildAttribute(CustomAttributeData attribute, Type? declaringType)
     {
-        return string.Equals(fullName, "System.Runtime.InteropServices.DllImportAttribute", StringComparison.Ordinal);
+        if (declaringType is null || attribute.AttributeType.FullName is not (MemberNotNullAttributeFullName or MemberNotNullWhenAttributeFullName) || attribute.ConstructorArguments.Count == 0)
+            return BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute);
+
+        // MemberNotNull and MemberNotNullWhen often name private fields, which are not part of the public API
+        var membersArgument = attribute.ConstructorArguments[^1];
+        string formattedMembers;
+        switch (membersArgument.Value)
+        {
+            case string memberName:
+                if (IsNonPublicFieldOrProperty(declaringType, memberName))
+                    return null;
+
+                formattedMembers = FormatAttributeArgument(membersArgument);
+                break;
+
+            case IReadOnlyCollection<CustomAttributeTypedArgument> memberNames:
+                var publicMemberNames = memberNames.Where(argument => argument.Value is not string name || !IsNonPublicFieldOrProperty(declaringType, name)).ToArray();
+                if (publicMemberNames.Length == 0)
+                    return null;
+
+                formattedMembers = FormatAttributeArgument(new CustomAttributeTypedArgument(membersArgument.ArgumentType, publicMemberNames));
+                break;
+
+            default:
+                return BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute);
+        }
+
+        var values = attribute.ConstructorArguments.Take(attribute.ConstructorArguments.Count - 1).Select(FormatAttributeArgument).Append(formattedMembers);
+        return BuildAttributeName(attribute.AttributeType) + "(" + string.Join(", ", values) + ")";
     }
 
-    private static string BuildAttribute(CustomAttributeData attribute)
+    // The member is searched in the type and its base types declared in the same assembly, as the metadata reader does.
+    // A member that is not found, such as a member of a base type declared in another assembly, is considered visible.
+    private static bool IsNonPublicFieldOrProperty(Type declaringType, string memberName)
     {
-        return "[" + BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute) + "]";
+        const BindingFlags Flags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        for (var type = declaringType; type is not null && type.Assembly == declaringType.Assembly; type = type.BaseType)
+        {
+            var members = type.GetMember(memberName, MemberTypes.Field | MemberTypes.Property, Flags);
+            if (members.Length > 0)
+                return !members.Any(IsVisibleFieldOrProperty);
+        }
+
+        return false;
+
+        static bool IsVisibleFieldOrProperty(MemberInfo member)
+        {
+            return member switch
+            {
+                FieldInfo field => IsExternallyVisible(field),
+                PropertyInfo property => IsVisibleAccessor(property.GetMethod) || IsVisibleAccessor(property.SetMethod),
+                _ => false,
+            };
+        }
+
+        static bool IsVisibleAccessor(MethodInfo? accessor)
+        {
+            return accessor is not null && (accessor.IsPublic || accessor.IsFamily || accessor.IsFamilyOrAssembly);
+        }
     }
 
     private static string BuildAttributeName(Type attributeType)
@@ -1560,7 +2336,7 @@ internal static class PublicApiModelBuilder
 
         var values = new List<string>(attribute.ConstructorArguments.Count + attribute.NamedArguments.Count);
         values.AddRange(attribute.ConstructorArguments.Select(FormatAttributeArgument));
-        values.AddRange(attribute.NamedArguments.Select(FormatNamedAttributeArgument));
+        values.AddRange(attribute.NamedArguments.OrderBy(static argument => argument.MemberName, StringComparer.Ordinal).Select(FormatNamedAttributeArgument));
         return "(" + string.Join(", ", values) + ")";
     }
 
@@ -1581,7 +2357,7 @@ internal static class PublicApiModelBuilder
             return FormatConstant(argument.Value);
 
         if (argument.ArgumentType == typeof(Type))
-            return "typeof(" + FormatType((Type)argument.Value) + ")";
+            return "typeof(" + FormatTypeOfOperand((Type)argument.Value) + ")";
 
         if (argument.ArgumentType.IsEnum)
             return FormatEnumValue(argument.ArgumentType, argument.Value);
@@ -1598,23 +2374,42 @@ internal static class PublicApiModelBuilder
         return FormatConstant(argument.Value);
     }
 
-    private static string FormatType(Type type, NullabilityInfo? nullabilityInfo = null)
+    private static string FormatType(Type type, NullabilityInfo? nullabilityInfo = null, TypeAnnotations? annotations = null)
     {
-        var nullableReference = nullabilityInfo?.ReadState == NullabilityState.Nullable;
+        // The dynamic flags are stored in a pre-order traversal of the type, with one flag per type
+        var isDynamic = annotations?.ReadDynamicFlag() ?? false;
         if (type.IsByRef)
-            return FormatType(type.GetElementType()!, nullabilityInfo?.ElementType);
+            return FormatType(type.GetElementType()!, nullabilityInfo?.ElementType, annotations);
 
+        var declaredNullability = annotations?.TakeDeclaredNullability();
         if (type.IsPointer)
-            return FormatType(type.GetElementType()!, nullabilityInfo?.ElementType) + "*";
+            return FormatType(type.GetElementType()!, nullabilityInfo?.ElementType, annotations) + "*";
+
+        // The nullable flags are stored in a pre-order traversal of the type: non-generic value types and Nullable<T> have no flag
+        var hasNullableFlag = type.IsGenericParameter || !type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() != typeof(Nullable<>));
+        var nullableFlag = hasNullableFlag ? annotations?.ReadNullableFlag() : null;
+
+        // The flags are used when reflection has no nullability information for the type (e.g. the constraints of a generic parameter)
+        var nullableReference = declaredNullability ?? (nullabilityInfo is not null ? nullabilityInfo.ReadState == NullabilityState.Nullable : nullableFlag == 2);
+
+        if (type.IsFunctionPointer)
+        {
+            return CSharpTypeFormatter.FormatFunctionPointer(
+                type.IsUnmanagedFunctionPointer,
+                [.. type.GetFunctionPointerParameterTypes().Select(parameterType => FormatType(parameterType))],
+                FormatType(type.GetFunctionPointerReturnType()));
+        }
 
         if (type.IsArray)
         {
-            var arrayType = FormatType(type.GetElementType()!, nullabilityInfo?.ElementType) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
+            var arrayType = FormatType(type.GetElementType()!, nullabilityInfo?.ElementType, annotations) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
             return AppendNullableSuffix(type, arrayType, nullableReference);
         }
 
+        // NullabilityInfo tells whether a value of the type parameter can be null, which depends on its constraints.
+        // The annotation of the type is read from the flags instead.
         if (type.IsGenericParameter)
-            return EscapeIdentifier(type.Name);
+            return EscapeIdentifier(type.Name) + (nullableFlag == 2 ? "?" : string.Empty);
 
         if (type == typeof(void))
             return "void";
@@ -1658,49 +2453,323 @@ internal static class PublicApiModelBuilder
         if (type == typeof(char))
             return "char";
 
+        if (type == typeof(nint))
+            return "nint";
+
+        if (type == typeof(nuint))
+            return "nuint";
+
         if (type == typeof(string))
             return nullableReference ? "string?" : "string";
 
         if (type == typeof(object))
-            return nullableReference ? "object?" : "object";
+            return (isDynamic ? "dynamic" : "object") + (nullableReference ? "?" : string.Empty);
 
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
         {
-            var nullableGenericArgument = nullabilityInfo?.GenericTypeArguments is { Length: > 0 } genericArguments
-                ? genericArguments[0]
-                : null;
-            return FormatType(type.GetGenericArguments()[0], nullableGenericArgument) + "?";
+            // The nullability of a Nullable<T> describes its underlying type
+            return FormatType(type.GetGenericArguments()[0], nullabilityInfo, annotations) + "?";
         }
 
-        return BuildNamedType(type, nullabilityInfo, nullableReference);
+        if (IsValueTuple(type))
+            return FormatValueTuple(type, nullabilityInfo, annotations);
+
+        return BuildNamedType(type, nullabilityInfo, nullableReference, annotations);
     }
 
-    private static string BuildNamedType(Type type, NullabilityInfo? nullabilityInfo, bool nullableReference)
+    // The type arguments of an unbound generic type are omitted (e.g. typeof(Dictionary<,>))
+    private static string FormatTypeOfOperand(Type type)
+    {
+        return type.IsGenericTypeDefinition
+            ? BuildNamedType(type, type.GetGenericArguments(), nullabilityInfo: null, omitTypeArguments: true)
+            : FormatType(type);
+    }
+
+    private static string BuildNamedType(Type type, NullabilityInfo? nullabilityInfo, bool nullableReference, TypeAnnotations? annotations)
+    {
+        // The generic arguments of a nested type start with the ones of its containing types
+        var name = BuildNamedType(type, type.GetGenericArguments(), nullabilityInfo, annotations: annotations);
+        return AppendNullableSuffix(type, name, nullableReference);
+    }
+
+    private static bool IsValueTuple(Type type)
+    {
+        return type.IsConstructedGenericType && type.Namespace is "System" && type.DeclaringType is null && type.Name.StartsWith("ValueTuple`", StringComparison.Ordinal);
+    }
+
+    // A tuple of more than 7 elements stores the 8th and following elements in its last type argument, which is a tuple itself
+    private static bool IsValueTupleRest(Type[] typeArguments, int index)
+    {
+        return index == 7 && typeArguments.Length == 8 && IsValueTuple(typeArguments[index]);
+    }
+
+    private static int GetValueTupleCardinality(Type type)
+    {
+        var typeArguments = type.GetGenericArguments();
+        return IsValueTupleRest(typeArguments, 7) ? 7 + GetValueTupleCardinality(typeArguments[7]) : typeArguments.Length;
+    }
+
+    // A tuple is written with the tuple syntax when its elements are named (e.g. (int Count, string Name))
+    private static string FormatValueTuple(Type type, NullabilityInfo? nullabilityInfo, TypeAnnotations? annotations)
+    {
+        var names = annotations?.ReadTupleElementNames(GetValueTupleCardinality(type));
+        var elements = new List<string>();
+        AppendValueTupleElements(type, nullabilityInfo, annotations, elements);
+        if (names is not null && names.Length == elements.Count && elements.Count > 1)
+            return "(" + string.Join(", ", elements.Select((element, index) => names[index] is { } name ? element + " " + EscapeIdentifier(name) : element)) + ")";
+
+        return BuildUnnamedValueTuple(elements, startIndex: 0);
+    }
+
+    private static void AppendValueTupleElements(Type type, NullabilityInfo? nullabilityInfo, TypeAnnotations? annotations, List<string> elements)
+    {
+        var typeArguments = type.GetGenericArguments();
+        for (var i = 0; i < typeArguments.Length; i++)
+        {
+            var typeArgumentNullability = GetGenericTypeArgumentNullability(nullabilityInfo, i, nestedOffset: 0);
+            if (IsValueTupleRest(typeArguments, i))
+            {
+                // The last type argument is a type of its own in the attributes: it has a dynamic flag, a nullable flag, and unused element names
+                _ = annotations?.ReadDynamicFlag();
+                _ = annotations?.ReadNullableFlag();
+                _ = annotations?.ReadTupleElementNames(GetValueTupleCardinality(typeArguments[i]));
+                AppendValueTupleElements(typeArguments[i], typeArgumentNullability, annotations, elements);
+            }
+            else
+            {
+                elements.Add(FormatType(typeArguments[i], typeArgumentNullability, annotations));
+            }
+        }
+    }
+
+    private static string BuildUnnamedValueTuple(List<string> elements, int startIndex)
+    {
+        var count = elements.Count - startIndex;
+        if (count <= 7)
+            return "System.ValueTuple<" + string.Join(", ", elements.Skip(startIndex)) + ">";
+
+        return "System.ValueTuple<" + string.Join(", ", elements.Skip(startIndex).Take(7)) + ", " + BuildUnnamedValueTuple(elements, startIndex + 7) + ">";
+    }
+
+    private static string BuildNamedType(Type type, Type[] genericArguments, NullabilityInfo? nullabilityInfo, bool omitTypeArguments = false, TypeAnnotations? annotations = null)
     {
         var name = EscapeIdentifier(RemoveGenericArity(type.Name));
-        var genericArguments = type.GetGenericArguments();
-        if (type.IsNested)
+        var declaringTypeArgumentCount = 0;
+        if (type.DeclaringType is { } declaringType)
         {
-            var declaringTypeArgumentCount = type.DeclaringType?.GetGenericArguments().Length ?? 0;
-            var currentTypeArguments = genericArguments.Skip(declaringTypeArgumentCount);
-            var nestedName = BuildNamedType(type.DeclaringType!, nullabilityInfo: null, nullableReference: false) + "." + name;
-            if (currentTypeArguments.Any())
+            // Type.DeclaringType is always a generic type definition, so each level takes its type arguments from the nested type
+            declaringTypeArgumentCount = declaringType.GetGenericArguments().Length;
+            name = BuildNamedType(declaringType, genericArguments, nullabilityInfo, omitTypeArguments, annotations) + "." + name;
+        }
+        else if (!string.IsNullOrEmpty(type.Namespace))
+        {
+            name = type.Namespace + "." + name;
+        }
+
+        var typeArgumentCount = type.GetGenericArguments().Length;
+        if (typeArgumentCount > declaringTypeArgumentCount && omitTypeArguments)
+        {
+            name += "<" + new string(',', typeArgumentCount - declaringTypeArgumentCount - 1) + ">";
+        }
+        else if (typeArgumentCount > declaringTypeArgumentCount)
+        {
+            var currentTypeArguments = genericArguments[declaringTypeArgumentCount..typeArgumentCount];
+            name += "<" + string.Join(", ", currentTypeArguments.Select((argument, index) => FormatType(argument, GetGenericTypeArgumentNullability(nullabilityInfo, index, declaringTypeArgumentCount), annotations))) + ">";
+        }
+
+        return name;
+    }
+
+    private static TypeAnnotations? CreateTypeAnnotations(ParameterInfo parameter, IList<CustomAttributeData>? memberAttributes = null)
+    {
+        var attributes = parameter.GetCustomAttributesData();
+
+        // A by-ref type and each custom modifier have a dynamic flag before the one of the type
+        var skippedDynamicFlags = (parameter.ParameterType.IsByRef ? 1 : 0) + parameter.GetRequiredCustomModifiers().Length + parameter.GetOptionalCustomModifiers().Length;
+        var hasFlowAttribute = attributes.Any(IsNullableFlowAttribute) || (memberAttributes is not null && memberAttributes.Any(IsNullableFlowAttribute));
+        var declaredNullability = hasFlowAttribute ? GetDeclaredNullability(attributes, parameter.Member) : null;
+        var nullableFlags = parameter.ParameterType.ContainsGenericParameters ? GetNullableFlags(attributes, parameter.Member) : null;
+        return CreateTypeAnnotations(attributes, skippedDynamicFlags, declaredNullability, nullableFlags);
+    }
+
+    // Reflection does not expose the attributes of the constraints, so they are read from the metadata of the assembly
+    private static TypeAnnotations? CreateConstraintAnnotations(Type genericParameter, int constraintIndex, int constraintCount)
+    {
+        if (!LoadedAssemblyMetadata.TryGetConstraintAnnotations(genericParameter, constraintIndex, constraintCount, out var nullableFlags, out var tupleElementNames))
+            return null;
+
+        nullableFlags ??= GetNullableFlags([], (MemberInfo?)genericParameter.DeclaringMethod ?? genericParameter.DeclaringType);
+        if (nullableFlags is null && tupleElementNames is null)
+            return null;
+
+        return new TypeAnnotations(tupleElementNames, dynamicFlags: null, dynamicIndex: 0, declaredNullability: null, nullableFlags);
+    }
+
+    private static TypeAnnotations? CreateTypeAnnotations(FieldInfo field)
+    {
+        var attributes = field.GetCustomAttributesData();
+        var skippedDynamicFlags = (field.FieldType.IsByRef ? 1 : 0) + field.GetRequiredCustomModifiers().Length + field.GetOptionalCustomModifiers().Length;
+        var declaredNullability = attributes.Any(IsNullableFlowAttribute) ? GetDeclaredNullability(attributes, field.DeclaringType) : null;
+        var nullableFlags = field.FieldType.ContainsGenericParameters ? GetNullableFlags(attributes, field.DeclaringType) : null;
+        return CreateTypeAnnotations(attributes, skippedDynamicFlags, declaredNullability, nullableFlags);
+    }
+
+    private static TypeAnnotations? CreateTypeAnnotations(IList<CustomAttributeData> attributes, int skippedDynamicFlags = 0, bool? declaredNullability = null, byte[]? nullableFlags = null)
+    {
+        string?[]? tupleElementNames = null;
+        bool[]? dynamicFlags = null;
+        foreach (var attribute in attributes)
+        {
+            switch (attribute.AttributeType.FullName)
             {
-                nestedName += "<" + string.Join(", ", currentTypeArguments.Select((argument, index) => FormatType(argument, GetGenericTypeArgumentNullability(nullabilityInfo, index, declaringTypeArgumentCount)))) + ">";
+                case "System.Runtime.CompilerServices.TupleElementNamesAttribute" when attribute.ConstructorArguments is [{ Value: IReadOnlyCollection<CustomAttributeTypedArgument> names }]:
+                    tupleElementNames = [.. names.Select(static name => name.Value as string)];
+                    break;
+
+                case "System.Runtime.CompilerServices.DynamicAttribute":
+                    // Without flags, the type itself is dynamic
+                    dynamicFlags = attribute.ConstructorArguments is [{ Value: IReadOnlyCollection<CustomAttributeTypedArgument> flags }]
+                        ? [.. flags.Select(static flag => flag.Value is true)]
+                        : [.. Enumerable.Repeat(false, skippedDynamicFlags), true];
+                    break;
+            }
+        }
+
+        if (tupleElementNames is null && dynamicFlags is null && declaredNullability is null && nullableFlags is null)
+            return null;
+
+        return new TypeAnnotations(tupleElementNames, dynamicFlags, skippedDynamicFlags, declaredNullability, nullableFlags);
+    }
+
+    // These attributes change the nullability reported by NullabilityInfo for the type they are applied to
+    private static bool IsNullableFlowAttribute(CustomAttributeData attribute)
+    {
+        return attribute.AttributeType.FullName is "System.Diagnostics.CodeAnalysis.NotNullAttribute"
+            or "System.Diagnostics.CodeAnalysis.MaybeNullAttribute"
+            or "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute";
+    }
+
+    // Reads the annotation of the type as written in the source code
+    private static bool? GetDeclaredNullability(IList<CustomAttributeData> attributes, MemberInfo? nullableContext)
+    {
+        // The first flag is the one of the type itself
+        return GetNullableFlags(attributes, nullableContext) switch
+        {
+            [1, ..] => false,
+            [2, ..] => true,
+            _ => null,
+        };
+    }
+
+    // Returns the flags of the NullableAttribute, or the flag of the NullableContextAttribute of the containing members. A single flag applies to every type.
+    private static byte[]? GetNullableFlags(IList<CustomAttributeData> attributes, MemberInfo? nullableContext)
+    {
+        var flags = GetNullableFlags(attributes, "System.Runtime.CompilerServices.NullableAttribute");
+        for (var member = nullableContext; flags is null && member is not null; member = member.DeclaringType)
+        {
+            flags = GetNullableFlags(member.GetCustomAttributesData(), "System.Runtime.CompilerServices.NullableContextAttribute");
+        }
+
+        if (flags is null && nullableContext is not null)
+        {
+            flags = GetNullableFlags(nullableContext.Module.Assembly.GetCustomAttributesData(), "System.Runtime.CompilerServices.NullableContextAttribute");
+        }
+
+        return flags;
+    }
+
+    private static byte[]? GetNullableFlags(IList<CustomAttributeData> attributes, string attributeFullName)
+    {
+        foreach (var attribute in attributes)
+        {
+            if (attribute.AttributeType.FullName != attributeFullName || attribute.ConstructorArguments.Count != 1)
+                continue;
+
+            return attribute.ConstructorArguments[0].Value switch
+            {
+                byte value => [value],
+                IReadOnlyCollection<CustomAttributeTypedArgument> values => [.. values.Select(static value => value.Value is byte flag ? flag : (byte)0)],
+                _ => null,
+            };
+        }
+
+        return null;
+    }
+
+    private static decimal? GetDecimalConstant(IList<CustomAttributeData> attributes)
+    {
+        foreach (var attribute in attributes)
+        {
+            if (attribute.AttributeType.FullName != "System.Runtime.CompilerServices.DecimalConstantAttribute" || attribute.ConstructorArguments.Count != 5)
+                continue;
+
+            var arguments = attribute.ConstructorArguments;
+            if (arguments[0].Value is not byte scale || arguments[1].Value is not byte sign)
+                continue;
+
+            var high = unchecked((int)Convert.ToInt64(arguments[2].Value, CultureInfo.InvariantCulture));
+            var middle = unchecked((int)Convert.ToInt64(arguments[3].Value, CultureInfo.InvariantCulture));
+            var low = unchecked((int)Convert.ToInt64(arguments[4].Value, CultureInfo.InvariantCulture));
+            return new decimal(low, middle, high, sign != 0, scale);
+        }
+
+        return null;
+    }
+
+    // The data that the compiler stores in attributes next to a signature: the names of the tuple elements, the dynamic flags and the nullable flags
+    // (all in a pre-order traversal of the type), and the annotation of the type when the flow analysis attributes hide it.
+    private sealed class TypeAnnotations(string?[]? tupleElementNames, bool[]? dynamicFlags, int dynamicIndex, bool? declaredNullability, byte[]? nullableFlags)
+    {
+        private int _tupleElementNameIndex;
+        private int _dynamicIndex = dynamicIndex;
+        private int _nullableIndex;
+        private bool? _declaredNullability = declaredNullability;
+
+        // 1: not annotated, 2: annotated, 0: oblivious
+        public byte? ReadNullableFlag()
+        {
+            if (nullableFlags is null)
+                return null;
+
+            var index = _nullableIndex++;
+            if (nullableFlags.Length == 1)
+                return nullableFlags[0];
+
+            return index < nullableFlags.Length ? nullableFlags[index] : (byte)0;
+        }
+
+        public bool ReadDynamicFlag()
+        {
+            if (dynamicFlags is null)
+                return false;
+
+            var index = _dynamicIndex++;
+            return index < dynamicFlags.Length && dynamicFlags[index];
+        }
+
+        // Returns null when none of the elements is named
+        public string?[]? ReadTupleElementNames(int count)
+        {
+            if (tupleElementNames is null)
+                return null;
+
+            var names = new string?[count];
+            for (var i = 0; i < count; i++)
+            {
+                names[i] = _tupleElementNameIndex < tupleElementNames.Length ? tupleElementNames[_tupleElementNameIndex] : null;
+                _tupleElementNameIndex++;
             }
 
-            return AppendNullableSuffix(type, nestedName, nullableReference);
+            return names.Any(static name => name is not null) ? names : null;
         }
 
-        if (genericArguments.Length > 0)
+        // Only applies to the outermost type
+        public bool? TakeDeclaredNullability()
         {
-            name += "<" + string.Join(", ", genericArguments.Select((argument, index) => FormatType(argument, GetGenericTypeArgumentNullability(nullabilityInfo, index, 0)))) + ">";
+            var result = _declaredNullability;
+            _declaredNullability = null;
+            return result;
         }
-
-        if (!string.IsNullOrEmpty(type.Namespace))
-            return AppendNullableSuffix(type, type.Namespace + "." + name, nullableReference);
-
-        return AppendNullableSuffix(type, name, nullableReference);
     }
 
     private static NullabilityInfo? GetGenericTypeArgumentNullability(NullabilityInfo? nullabilityInfo, int index, int nestedOffset)
@@ -1726,49 +2795,127 @@ internal static class PublicApiModelBuilder
         return name + "?";
     }
 
+    // The default value of a value type or of a type parameter is read as null
+    private static string FormatDefaultValue(Type type, object? value)
+    {
+        if (value is null && (type.IsGenericParameter || (type.IsValueType && Nullable.GetUnderlyingType(type) is null)))
+            return "default";
+
+        return FormatConstant(type, value);
+    }
+
+    // A constant of an enum type, or of a nullable enum type, can be read as its underlying value
+    private static string FormatConstant(Type type, object? value)
+    {
+        var enumType = Nullable.GetUnderlyingType(type) ?? type;
+        return value is not null && enumType.IsEnum
+            ? FormatEnumValue(enumType, value)
+            : FormatConstant(value);
+    }
+
     private static string FormatConstant(object? value)
     {
         return value switch
         {
-            null => "null",
-            string text => "\"" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"",
-            char character => "'" + (character == '\'' ? "\\'" : character.ToString()) + "'",
-            bool boolean => boolean ? "true" : "false",
-            float floatValue => floatValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f",
-            double doubleValue => doubleValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "d",
-            decimal decimalValue => decimalValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "m",
-            long longValue => longValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "L",
-            ulong ulongValue => ulongValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "UL",
-            uint uintValue => uintValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "U",
-            short shortValue => shortValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ushort ushortValue => ushortValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            byte byteValue => byteValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            sbyte sbyteValue => sbyteValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            int intValue => intValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Enum enumValue => FormatEnumValue(enumValue.GetType(), enumValue),
-            _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "default",
+            _ => CSharpLiteralFormatter.Format(value),
         };
     }
 
     private static string FormatEnumValue(Type enumType, object enumValue)
     {
-        var typedEnumValue = Enum.ToObject(enumType, enumValue);
-        var text = typedEnumValue.ToString();
-        if (string.IsNullOrEmpty(text))
-            return "(" + FormatType(enumType) + ")" + Convert.ToString(enumValue, System.Globalization.CultureInfo.InvariantCulture);
+        var formattedTypeName = FormatType(enumType);
+        var underlyingValue = enumValue is Enum
+            ? Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), System.Globalization.CultureInfo.InvariantCulture)
+            : enumValue;
 
-        if (char.IsDigit(text[0]) || text[0] == '-')
-            return "(" + FormatType(enumType) + ")" + Convert.ToString(enumValue, System.Globalization.CultureInfo.InvariantCulture);
+        if (TryFormatEnumValueUsingMembers(enumType, formattedTypeName, underlyingValue, out var result))
+            return result;
 
-        if (text.Contains(", ", StringComparison.Ordinal))
+        return "(" + formattedTypeName + ")" + Convert.ToString(underlyingValue, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryFormatEnumValueUsingMembers(Type enumType, string formattedTypeName, object? enumValue, out string result)
+    {
+        result = string.Empty;
+        if (enumValue is null || !TryGetEnumValueBits(enumValue, out var enumValueBits))
+            return false;
+
+        var members = GetEnumMembersDescending(enumType);
+        if (members.Length == 0)
+            return false;
+
+        foreach (var member in members)
         {
-            return string.Join(
-                " | ",
-                text.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(memberName => FormatType(enumType) + "." + memberName));
+            if (member.Value == enumValueBits)
+            {
+                result = formattedTypeName + "." + member.Name;
+                return true;
+            }
         }
 
-        return FormatType(enumType) + "." + text;
+        if (!HasAttribute(enumType.GetCustomAttributesData(), "System.FlagsAttribute"))
+            return false;
+
+        var remainingValue = enumValueBits;
+        var formattedMemberNames = new List<string>();
+        foreach (var member in members)
+        {
+            if (member.Value == 0)
+                continue;
+
+            if ((remainingValue & member.Value) != member.Value)
+                continue;
+
+            formattedMemberNames.Add(formattedTypeName + "." + member.Name);
+            remainingValue &= ~member.Value;
+        }
+
+        if (remainingValue != 0 || formattedMemberNames.Count == 0)
+            return false;
+
+        // The members are matched from the largest value to the smallest one, but they are formatted from the smallest to the largest one
+        formattedMemberNames.Reverse();
+        result = string.Join(" | ", formattedMemberNames);
+        return true;
+    }
+
+    private static ImmutableArray<EnumMember> GetEnumMembersDescending(Type enumType)
+    {
+        var members = new List<EnumMember>();
+        foreach (var field in enumType.GetFields(BindingFlags.Public | BindingFlags.Static))
+        {
+            if (field.GetRawConstantValue() is { } constantValue && TryGetEnumValueBits(constantValue, out var memberValue))
+            {
+                members.Add(new EnumMember(memberValue, field.Name));
+            }
+        }
+
+        // Several members can share the same value, so they are ordered by name to always use the same one
+        return
+        [
+            .. members
+                .OrderByDescending(static member => member.Value)
+                .ThenBy(static member => member.Name, StringComparer.Ordinal),
+        ];
+    }
+
+    private static bool TryGetEnumValueBits(object value, out ulong bits)
+    {
+        bits = value switch
+        {
+            sbyte sbyteValue => unchecked((ulong)sbyteValue),
+            byte byteValue => byteValue,
+            short shortValue => unchecked((ulong)shortValue),
+            ushort ushortValue => ushortValue,
+            int intValue => unchecked((ulong)intValue),
+            uint uintValue => uintValue,
+            long longValue => unchecked((ulong)longValue),
+            ulong ulongValue => ulongValue,
+            _ => 0,
+        };
+
+        return value is sbyte or byte or short or ushort or int or uint or long or ulong;
     }
 
     private static string RemoveGenericArity(string name)
@@ -1792,7 +2939,11 @@ internal static class PublicApiModelBuilder
         sb.AppendLine(text);
     }
 
-    private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives);
-    private sealed record ExtensionPropertyBuilderReflection(ParameterInfo ReceiverParameter, string PropertyName, MethodInfo? Getter, MethodInfo? Setter, int Order);
-    private sealed record ExtensionPropertyBlockReflection(string Content, IReadOnlyList<MethodInfo> Accessors, int Order);
+    private readonly record struct EnumMember(ulong Value, string Name);
+
+    // SortText is the modifier (ref, in...) and the type of the parameter, as compared by MemberSortKey
+    private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives, string SortText);
+
+    // The blocks are sorted by the type of the receiver, then by the member
+    private sealed record ExtensionBlockReflection(string Content, IReadOnlyList<MethodInfo> Implementations, string ReceiverType, MemberSortKey SortKey);
 }

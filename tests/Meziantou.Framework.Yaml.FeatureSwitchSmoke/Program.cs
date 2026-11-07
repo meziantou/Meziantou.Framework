@@ -73,7 +73,7 @@ if (bList[1] is not long bLong || bLong != 2)
     return 6;
 }
 
-if (bList[2] is not Dictionary<string, object?> inner || inner.Count != 1 || inner["c"] is not bool b || !b)
+if (bList[2] is not Dictionary<object, object?> inner || inner.Count != 1 || inner["c"] is not bool b || !b)
 {
     return 7;
 }
@@ -86,6 +86,18 @@ if (!model.TryGetValue("c", out var cValue) || cValue is not List<object?> cList
 if (cList[0] is not null || cList[1] is not string cy || cy != "y")
 {
     return 9;
+}
+
+// A plain System.Object resolves back to the untyped converter. This runs out of process because a converter that
+// recurses instead of stopping there overflows the stack, which cannot be caught inside a test host.
+if (YamlSerializer.Serialize<object>(new object()) is not "{}\n")
+{
+    return 10;
+}
+
+if (YamlSerializer.Serialize<List<object>>([new object()]) is not "- {}\n")
+{
+    return 11;
 }
 
 return 0;

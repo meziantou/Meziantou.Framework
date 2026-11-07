@@ -1,0 +1,71 @@
+{
+  "css/css-namespaces/prefix-001.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/prefix-002.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/prefix-003.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/prefix-004.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/prefix-005.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/prefix-006.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/scope-001.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/scope-002.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-001.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-002.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-003.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-004.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-005.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-006.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-007.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-008.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-009.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-010.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-011.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-012.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-013.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-014.xml": {
+    "reftest": "PASS"
+  },
+  "css/css-namespaces/syntax-015.xml": {
+    "reftest": "PASS"
+  }
+}

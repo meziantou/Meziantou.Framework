@@ -1,0 +1,308 @@
+{
+  "spec": {
+    "title": "Opus WebCodecs Registration",
+    "url": "https://w3c.github.io/webcodecs/opus_codec_registration.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "OpusEncoderConfig": {
+        "fragment": "dictionary OpusEncoderConfig {\n  OpusBitstreamFormat format = \"opus\";\n  OpusSignal signal = \"auto\";\n  OpusApplication application = \"audio\";\n  [EnforceRange] unsigned long long frameDuration = 20000;\n  [EnforceRange] unsigned long complexity;\n  [EnforceRange] unsigned long packetlossperc = 0;\n  boolean useinbandfec = false;\n  boolean usedtx = false;\n};",
+        "type": "dictionary",
+        "name": "OpusEncoderConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "format",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "OpusBitstreamFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "opus"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-format"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "OpusSignal"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-signal"
+          },
+          {
+            "type": "field",
+            "name": "application",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "OpusApplication"
+            },
+            "default": {
+              "type": "string",
+              "value": "audio"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-application"
+          },
+          {
+            "type": "field",
+            "name": "frameDuration",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "20000"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-frameduration"
+          },
+          {
+            "type": "field",
+            "name": "complexity",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-complexity"
+          },
+          {
+            "type": "field",
+            "name": "packetlossperc",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-packetlossperc"
+          },
+          {
+            "type": "field",
+            "name": "useinbandfec",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-useinbandfec"
+          },
+          {
+            "type": "field",
+            "name": "usedtx",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-usedtx"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dictdef-opusencoderconfig"
+      },
+      "OpusBitstreamFormat": {
+        "fragment": "enum OpusBitstreamFormat {\n  \"opus\",\n  \"ogg\",\n};",
+        "type": "enum",
+        "name": "OpusBitstreamFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "opus",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusbitstreamformat-opus"
+          },
+          {
+            "type": "enum-value",
+            "value": "ogg",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusbitstreamformat-ogg"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#enumdef-opusbitstreamformat"
+      },
+      "OpusSignal": {
+        "fragment": "enum OpusSignal {\n  \"auto\",\n  \"music\",\n  \"voice\",\n};",
+        "type": "enum",
+        "name": "OpusSignal",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opussignal-auto"
+          },
+          {
+            "type": "enum-value",
+            "value": "music",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opussignal-music"
+          },
+          {
+            "type": "enum-value",
+            "value": "voice",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opussignal-voice"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#enumdef-opussignal"
+      },
+      "OpusApplication": {
+        "fragment": "enum OpusApplication {\n  \"voip\",\n  \"audio\",\n  \"lowdelay\",\n};",
+        "type": "enum",
+        "name": "OpusApplication",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "voip",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusapplication-voip"
+          },
+          {
+            "type": "enum-value",
+            "value": "audio",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusapplication-audio"
+          },
+          {
+            "type": "enum-value",
+            "value": "lowdelay",
+            "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusapplication-lowdelay"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#enumdef-opusapplication"
+      }
+    },
+    "idlExtendedNames": {
+      "AudioEncoderConfig": [
+        {
+          "fragment": "partial dictionary AudioEncoderConfig {\n  OpusEncoderConfig opus;\n};",
+          "type": "dictionary",
+          "name": "AudioEncoderConfig",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "opus",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "OpusEncoderConfig"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-audioencoderconfig-opus"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "AudioEncoderConfig": [
+        "OpusEncoderConfig"
+      ],
+      "OpusEncoderConfig": [
+        "OpusBitstreamFormat",
+        "OpusSignal",
+        "OpusApplication"
+      ]
+    },
+    "externalDependencies": [
+      "AudioEncoderConfig"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

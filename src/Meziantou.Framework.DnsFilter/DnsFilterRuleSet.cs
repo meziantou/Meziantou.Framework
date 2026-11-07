@@ -3,14 +3,20 @@ namespace Meziantou.Framework.DnsFilter;
 /// <summary>
 /// An aggregated collection of DNS filter rules from one or more parsed sources.
 /// </summary>
+/// <remarks>
+/// This type is not thread-safe for concurrent mutation. It is safe to hand a rule set to
+/// <see cref="DnsFilterEngine"/> and keep mutating it afterwards: the engine snapshots the rules
+/// when it builds.
+/// </remarks>
 public sealed class DnsFilterRuleSet
 {
     private readonly List<DnsFilterRule> _rules = [];
+    private readonly Lock _lock = new();
 
     /// <summary>
-    /// Gets the rules in this rule set.
+    /// Gets a snapshot of the rules in this rule set.
     /// </summary>
-    public IReadOnlyList<DnsFilterRule> Rules => _rules;
+    public IReadOnlyList<DnsFilterRule> Rules => ToArray();
 
     /// <summary>
     /// Adds a single rule to this rule set.
@@ -19,7 +25,10 @@ public sealed class DnsFilterRuleSet
     public void Add(DnsFilterRule rule)
     {
         ArgumentNullException.ThrowIfNull(rule);
-        _rules.Add(rule);
+        lock (_lock)
+        {
+            _rules.Add(rule);
+        }
     }
 
     /// <summary>
@@ -29,7 +38,10 @@ public sealed class DnsFilterRuleSet
     public void AddRange(IEnumerable<DnsFilterRule> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
-        _rules.AddRange(rules);
+        lock (_lock)
+        {
+            _rules.AddRange(rules);
+        }
     }
 
     /// <summary>
@@ -37,10 +49,12 @@ public sealed class DnsFilterRuleSet
     /// </summary>
     /// <param name="reader">The text reader containing the filter list.</param>
     /// <param name="format">The format of the filter list.</param>
-    public void AddFromList(TextReader reader, DnsFilterListFormat format = DnsFilterListFormat.AutoDetect)
+    /// <returns>A diagnostic for each line that did not produce a rule.</returns>
+    public IReadOnlyList<DnsFilterParseDiagnostic> AddFromList(TextReader reader, DnsFilterListFormat format = DnsFilterListFormat.AutoDetect)
     {
-        var parsed = DnsFilterListReader.Parse(reader, format);
-        _rules.AddRange(parsed);
+        var parsed = DnsFilterListReader.ParseWithDiagnostics(reader, format);
+        AddRange(parsed.Rules);
+        return parsed.Diagnostics;
     }
 
     /// <summary>
@@ -48,14 +62,44 @@ public sealed class DnsFilterRuleSet
     /// </summary>
     /// <param name="text">The filter list text.</param>
     /// <param name="format">The format of the filter list.</param>
-    public void AddFromList(string text, DnsFilterListFormat format = DnsFilterListFormat.AutoDetect)
+    /// <returns>A diagnostic for each line that did not produce a rule.</returns>
+    public IReadOnlyList<DnsFilterParseDiagnostic> AddFromList(string text, DnsFilterListFormat format = DnsFilterListFormat.AutoDetect)
     {
-        var parsed = DnsFilterListReader.Parse(text, format);
-        _rules.AddRange(parsed);
+        var parsed = DnsFilterListReader.ParseWithDiagnostics(text, format);
+        AddRange(parsed.Rules);
+        return parsed.Diagnostics;
+    }
+
+    /// <summary>
+    /// Gets the number of rules in this rule set.
+    /// </summary>
+    public int Count
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _rules.Count;
+            }
+        }
     }
 
     /// <summary>
     /// Removes all rules from this rule set.
     /// </summary>
-    public void Clear() => _rules.Clear();
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            _rules.Clear();
+        }
+    }
+
+    internal DnsFilterRule[] ToArray()
+    {
+        lock (_lock)
+        {
+            return [.. _rules];
+        }
+    }
 }

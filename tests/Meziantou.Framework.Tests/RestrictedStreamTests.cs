@@ -66,10 +66,21 @@ public sealed class RestrictedStreamTests
     public void Length_ReturnsUnderlyingStreamLength()
     {
         using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
-        var options = new RestrictedStreamOptions();
+        var options = new RestrictedStreamOptions { AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         Assert.Equal(5, restrictedStream.Length);
+    }
+
+    [Fact]
+    public void Length_WhenSeekingNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var options = new RestrictedStreamOptions { AllowSeeking = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.Length);
+        Assert.Equal("Seeking is not allowed on this stream.", exception.Message);
     }
 
     [Fact]
@@ -77,10 +88,21 @@ public sealed class RestrictedStreamTests
     {
         using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
         baseStream.Position = 3;
-        var options = new RestrictedStreamOptions();
+        var options = new RestrictedStreamOptions { AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         Assert.Equal(3, restrictedStream.Position);
+    }
+
+    [Fact]
+    public void Position_Get_WhenSeekingNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var options = new RestrictedStreamOptions { AllowSeeking = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.Position);
+        Assert.Equal("Seeking is not allowed on this stream.", exception.Message);
     }
 
     [Fact]
@@ -129,14 +151,26 @@ public sealed class RestrictedStreamTests
     }
 
     [Fact]
-    public void Flush_WhenWritingNotAllowed_ThrowsNotSupportedException()
+    public void Flush_WhenWritingNotAllowed_DoesNothing()
     {
         using var baseStream = new MemoryStream();
         var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = false };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
-        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.Flush());
-        Assert.Equal("Writing is not allowed on this stream.", exception.Message);
+        restrictedStream.Flush();
+    }
+
+    [Fact]
+    public void Flush_WhenWrappedInBufferedStreamAndWritingNotAllowed_ReadsData()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true };
+        using var bufferedStream = new BufferedStream(new RestrictedStream(baseStream, options));
+        var buffer = new byte[5];
+
+        Assert.Equal(5, bufferedStream.TryReadAll(buffer));
+        bufferedStream.Flush();
+        Assert.Equal([1, 2, 3, 4, 5], buffer);
     }
 
     [Fact]
@@ -441,7 +475,7 @@ public sealed class RestrictedStreamTests
     public void SetLength_WhenWritingAllowed_SetsLength()
     {
         using var baseStream = new MemoryStream();
-        var options = new RestrictedStreamOptions { AllowWriting = true };
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = true, AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         restrictedStream.SetLength(10);
@@ -454,11 +488,34 @@ public sealed class RestrictedStreamTests
     public void SetLength_WhenWritingNotAllowed_ThrowsNotSupportedException()
     {
         using var baseStream = new MemoryStream();
-        var options = new RestrictedStreamOptions { AllowWriting = false };
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = false, AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.SetLength(10));
         Assert.Equal("Writing is not allowed on this stream.", exception.Message);
+    }
+
+    [Fact]
+    public void SetLength_WhenSeekingNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream();
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = true, AllowSeeking = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.SetLength(10));
+        Assert.Equal("Seeking is not allowed on this stream.", exception.Message);
+        Assert.Equal(0, baseStream.Length);
+    }
+
+    [Fact]
+    public void SetLength_WhenSynchronousNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream();
+        var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowWriting = true, AllowSeeking = true };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.SetLength(10));
+        Assert.Equal("Synchronous operations are not allowed on this stream.", exception.Message);
     }
 
     [Fact]
@@ -545,6 +602,16 @@ public sealed class RestrictedStreamTests
     }
 
     [Fact]
+    public async Task FlushAsync_WhenWritingNotAllowed_DoesNothing()
+    {
+        using var baseStream = new MemoryStream();
+        var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowWriting = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        await restrictedStream.FlushAsync();
+    }
+
+    [Fact]
     public void BeginRead_WhenAsynchronousAndReadingAllowed_BeginsRead()
     {
         using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
@@ -553,8 +620,12 @@ public sealed class RestrictedStreamTests
         var buffer = new byte[3];
 
         var result = restrictedStream.BeginRead(buffer, 0, 3, null, null);
+        result.AsyncWaitHandle.WaitOne();
+        var bytesRead = restrictedStream.EndRead(result);
 
         Assert.NotNull(result);
+        Assert.Equal(3, bytesRead);
+        Assert.Equal([1, 2, 3], buffer);
     }
 
     [Fact]
@@ -588,7 +659,7 @@ public sealed class RestrictedStreamTests
         var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowReading = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
         var buffer = new byte[3];
-        var asyncResult = baseStream.BeginRead(buffer, 0, 3, null, null);
+        var asyncResult = restrictedStream.BeginRead(buffer, 0, 3, null, null);
         asyncResult.AsyncWaitHandle.WaitOne();
 
         var bytesRead = restrictedStream.EndRead(asyncResult);
@@ -617,8 +688,11 @@ public sealed class RestrictedStreamTests
         var data = new byte[] { 1, 2, 3 };
 
         var result = restrictedStream.BeginWrite(data, 0, 3, null, null);
+        result.AsyncWaitHandle.WaitOne();
+        restrictedStream.EndWrite(result);
 
         Assert.NotNull(result);
+        Assert.Equal([1, 2, 3], baseStream.ToArray());
     }
 
     [Fact]
@@ -652,7 +726,7 @@ public sealed class RestrictedStreamTests
         var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowWriting = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
         var data = new byte[] { 1, 2, 3 };
-        var asyncResult = baseStream.BeginWrite(data, 0, 3, null, null);
+        var asyncResult = restrictedStream.BeginWrite(data, 0, 3, null, null);
         asyncResult.AsyncWaitHandle.WaitOne();
 
         restrictedStream.EndWrite(asyncResult);
@@ -786,7 +860,7 @@ public sealed class RestrictedStreamTests
         var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowReading = true, MaxReadLength = 5 };
         using var restrictedStream = new RestrictedStream(baseStream, options);
         var buffer = new byte[10];
-        var asyncResult = baseStream.BeginRead(buffer, 0, 5, null, null);
+        var asyncResult = restrictedStream.BeginRead(buffer, 0, 5, null, null);
         asyncResult.AsyncWaitHandle.WaitOne();
 
         var bytesRead = restrictedStream.EndRead(asyncResult);
@@ -825,5 +899,153 @@ public sealed class RestrictedStreamTests
         Assert.Equal(3, bytesRead2);
         Assert.Equal(3, bytesRead3);
         Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9], buffer.AsSpan(0, 9));
+    }
+
+    [Fact]
+    public void CopyTo_HonorsMaxReadLength()
+    {
+        var inner = new CountingStream(new MemoryStream(new byte[1000]));
+        using var stream = new RestrictedStream(inner, new RestrictedStreamOptions
+        {
+            AllowSynchronousCalls = true,
+            AllowReading = true,
+            MaxReadLength = 10,
+        });
+
+        using var destination = new MemoryStream();
+        stream.CopyTo(destination, bufferSize: 256);
+
+        Assert.Equal(1000, destination.Length);
+        Assert.True(inner.MaxReadRequested <= 10, $"A single read asked for {inner.MaxReadRequested} bytes, above the 10-byte cap");
+    }
+
+    [Fact]
+    public async Task CopyToAsync_HonorsMaxReadLength()
+    {
+        var inner = new CountingStream(new MemoryStream(new byte[1000]));
+        await using var stream = new RestrictedStream(inner, new RestrictedStreamOptions
+        {
+            AllowAsynchronousCalls = true,
+            AllowReading = true,
+            MaxReadLength = 10,
+        });
+
+        using var destination = new MemoryStream();
+        await stream.CopyToAsync(destination, bufferSize: 256);
+
+        Assert.Equal(1000, destination.Length);
+        Assert.True(inner.MaxReadRequested <= 10, $"A single read asked for {inner.MaxReadRequested} bytes, above the 10-byte cap");
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesTheWrappedStreamOnce()
+    {
+        var inner = new CountingStream(new MemoryStream());
+        var stream = new RestrictedStream(inner, new RestrictedStreamOptions { AllowReading = true });
+
+        await stream.DisposeAsync();
+
+        Assert.Equal(1, inner.DisposeCount);
+    }
+
+    [Fact]
+    public void Dispose_DisposesTheWrappedStreamOnce()
+    {
+        var inner = new CountingStream(new MemoryStream());
+        var stream = new RestrictedStream(inner, new RestrictedStreamOptions { AllowReading = true });
+
+        stream.Dispose();
+        stream.Dispose();
+
+        Assert.Equal(1, inner.DisposeCount);
+    }
+
+    private sealed class CountingStream(Stream inner) : Stream
+    {
+        private bool _insideDisposeAsync;
+
+        public int MaxReadRequested { get; private set; }
+        public int DisposeCount { get; private set; }
+
+        public override bool CanRead => inner.CanRead;
+        public override bool CanSeek => inner.CanSeek;
+        public override bool CanWrite => inner.CanWrite;
+        public override long Length => inner.Length;
+        public override long Position { get => inner.Position; set => inner.Position = value; }
+        public override void Flush() => inner.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+        public override void SetLength(long value) => inner.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, count);
+            return inner.Read(buffer, offset, count);
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, buffer.Length);
+            return inner.Read(buffer);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, buffer.Length);
+            return inner.ReadAsync(buffer, cancellationToken);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, count);
+            return inner.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            // Stream.DisposeAsync routes through Dispose, so that inner call is not counted twice
+            if (!_insideDisposeAsync)
+            {
+                DisposeCount++;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            DisposeCount++;
+            _insideDisposeAsync = true;
+            try
+            {
+                await base.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _insideDisposeAsync = false;
+            }
+        }
+    }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region RestrictedStream_Usage
+        using var inner = new MemoryStream([1, 2, 3, 4]);
+
+        // Give code a read-only, forward-only view of a stream, that returns at most 1 byte per read
+        using var stream = new RestrictedStream(inner, new RestrictedStreamOptions
+        {
+            AllowReading = true,
+            AllowSynchronousCalls = true,
+            MaxReadLength = 1,
+        });
+
+        var buffer = new byte[4];
+        Assert.Equal(1, stream.Read(buffer));
+        Assert.False(stream.CanWrite);
+        Assert.False(stream.CanSeek);
+        Assert.Throws<NotSupportedException>(() => stream.Write([5]));
+        #endregion
     }
 }

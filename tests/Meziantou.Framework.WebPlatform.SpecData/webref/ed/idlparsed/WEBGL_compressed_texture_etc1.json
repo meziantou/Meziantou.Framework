@@ -1,0 +1,86 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_compressed_texture_etc1 Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_compressed_texture_etc1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_compressed_texture_etc1"
+        ],
+        "Worker": [
+          "WEBGL_compressed_texture_etc1"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_compressed_texture_etc1": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_compressed_texture_etc1 {\n    /* Compressed Texture Format */\n    const GLenum COMPRESSED_RGB_ETC1_WEBGL = 0x8D64;\n};",
+        "type": "interface",
+        "name": "WEBGL_compressed_texture_etc1",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGB_ETC1_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8D64"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_compressed_texture_etc1"
+      ],
+      "Worker": [
+        "WEBGL_compressed_texture_etc1"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_compressed_texture_etc1": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

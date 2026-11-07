@@ -1,0 +1,115 @@
+{
+  "spec": {
+    "title": "CSS Environment Variables Module Level 1",
+    "url": "https://drafts.csswg.org/css-env-1/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "env()",
+      "value": "env( <custom-ident> <integer [0,∞]>*, <declaration-value>? )",
+      "href": "https://drafts.csswg.org/css-env-1/#funcdef-env",
+      "type": "function",
+      "values": [
+        {
+          "name": "safe-area-inset-top",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-inset-top",
+          "type": "value",
+          "value": "safe-area-inset-top"
+        },
+        {
+          "name": "safe-area-inset-right",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-inset-right",
+          "type": "value",
+          "value": "safe-area-inset-right"
+        },
+        {
+          "name": "safe-area-inset-bottom",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-inset-bottom",
+          "type": "value",
+          "value": "safe-area-inset-bottom"
+        },
+        {
+          "name": "safe-area-inset-left",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-inset-left",
+          "type": "value",
+          "value": "safe-area-inset-left"
+        },
+        {
+          "name": "safe-area-max-inset-top",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-max-inset-top",
+          "type": "value",
+          "value": "safe-area-max-inset-top"
+        },
+        {
+          "name": "safe-area-max-inset-right",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-max-inset-right",
+          "type": "value",
+          "value": "safe-area-max-inset-right"
+        },
+        {
+          "name": "safe-area-max-inset-bottom",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-max-inset-bottom",
+          "type": "value",
+          "value": "safe-area-max-inset-bottom"
+        },
+        {
+          "name": "safe-area-max-inset-left",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-safe-area-max-inset-left",
+          "type": "value",
+          "value": "safe-area-max-inset-left"
+        },
+        {
+          "name": "viewport-segment-width",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-viewport-segment-width",
+          "type": "value",
+          "value": "viewport-segment-width"
+        },
+        {
+          "name": "viewport-segment-height",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-viewport-segment-height",
+          "type": "value",
+          "value": "viewport-segment-height"
+        },
+        {
+          "name": "viewport-segment-top",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-viewport-segment-top",
+          "type": "value",
+          "value": "viewport-segment-top"
+        },
+        {
+          "name": "viewport-segment-left",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-viewport-segment-left",
+          "type": "value",
+          "value": "viewport-segment-left"
+        },
+        {
+          "name": "viewport-segment-bottom",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-viewport-segment-bottom",
+          "type": "value",
+          "value": "viewport-segment-bottom"
+        },
+        {
+          "name": "viewport-segment-right",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-viewport-segment-right",
+          "type": "value",
+          "value": "viewport-segment-right"
+        },
+        {
+          "name": "preferred-text-scale",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-preferred-text-scale",
+          "type": "value",
+          "value": "preferred-text-scale"
+        }
+      ]
+    },
+    {
+      "name": "<env-args>",
+      "href": "https://drafts.csswg.org/css-env-1/#typedef-env-args",
+      "type": "type",
+      "value": "env( <declaration-value>, <declaration-value>? )"
+    }
+  ]
+}

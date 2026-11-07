@@ -43,4 +43,31 @@ public sealed class BooleanToValueConverterTests
         _converter.NullValue = null;
         Assert.Equal(_converter.FalseValue, Convert(null));
     }
+
+    [Fact]
+    public void FallbackToFalseValueWhenTheStringCannotBeParsed()
+    {
+        _converter.NullValue = null;
+        Assert.Equal(_converter.FalseValue, Convert("abc"));
+    }
+
+    [Fact]
+    public void FallbackToFalseValueWhenTheValueCannotBeCast()
+    {
+        _converter.NullValue = null;
+        Assert.Equal(_converter.FalseValue, Convert(DateTime.UnixEpoch));
+    }
+
+    [Fact]
+    public void FallbackToFalseValueWhenTheValueIsNotConvertible()
+    {
+        _converter.NullValue = null;
+        Assert.Equal(_converter.FalseValue, Convert(new object()));
+    }
+
+    [Fact]
+    public void ConvertBackIsNotSupported()
+    {
+        Assert.Throws<NotSupportedException>(() => _converter.ConvertBack(value: true, typeof(object), parameter: null, culture: null));
+    }
 }

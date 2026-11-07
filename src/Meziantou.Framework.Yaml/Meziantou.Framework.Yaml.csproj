@@ -1,11 +1,17 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
+    <!-- Converts culture names to CultureInfo -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <IsAotCompatible>true</IsAotCompatible>
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance .NET YAML library providing parsing and serialization of object graphs, NativeAOT ready.</Description>
-    <Version>1.0.3</Version>
+    <PackageTags>yaml, parser, serialization, nativeaot, performance</PackageTags>
+    <Version>2.0.10</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="System.Numerics" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />

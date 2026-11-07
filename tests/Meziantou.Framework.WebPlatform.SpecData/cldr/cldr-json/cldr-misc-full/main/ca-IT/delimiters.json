@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ca-IT": {
+      "identity": {
+        "language": "ca",
+        "territory": "IT"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

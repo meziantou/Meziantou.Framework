@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<title>Text</title>
+<style>
+  body { margin: 24px; color: #222; line-height: 1.4 }
+  h1 { font-size: 40px; margin: 0 0 8px }
+  .sizes span { display: inline-block; margin-right: 12px }
+  .decor u { text-decoration-color: red }
+  .decor s { text-decoration-thickness: 3px }
+  .over { text-decoration: overline wavy blue }
+  .shadow { font-size: 32px; text-shadow: 2px 2px 0 #f80, 4px 4px 6px rgba(0, 0, 0, .4) }
+  .stroke { font-size: 36px; -webkit-text-stroke: 1px #039; color: #cdf }
+  .columns { columns: 3; column-gap: 24px; column-rule: 1px solid #ccc; width: 700px }
+  .ellipsis { width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid #ccc }
+  ul { margin: 8px 0 } ol { margin: 8px 0 }
+  .center { text-align: center; width: 400px; border: 1px solid #ccc }
+  .white { background: #123; color: #f8f8f8; padding: 8px; width: 400px }
+</style>
+<h1>The quick brown fox</h1>
+<p class="sizes"><span style="font-size:10px">10px</span><span style="font-size:14px">14px</span><span style="font-size:20px">20px</span><span style="font-size:28px">28px</span><b>Bold</b> <i>Italic</i> <b><i>Bold italic</i></b></p>
+<p class="decor"><u>Underline</u>, <s>strike through</s>, <span class="over">overline wavy</span>, <small>small</small>, x<sup>2</sup>, H<sub>2</sub>O</p>
+<p class="shadow">Text shadow</p>
+<p class="stroke">Text stroke</p>
+<div class="columns">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</div>
+<p class="ellipsis">This line is too long to fit in its box and ends with an ellipsis</p>
+<ul><li>First item</li><li>Second item</li></ul>
+<ol><li>One</li><li>Two</li></ol>
+<p class="center">Centered text that wraps on two lines in a box of 400 pixels</p>
+<p class="white">Light text on a dark background</p>

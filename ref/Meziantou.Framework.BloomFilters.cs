@@ -4,493 +4,808 @@
 
 namespace Meziantou.Framework.BloomFilters
 {
-    public abstract class BloomFilter
+    public closed class BlockedBloomFilter
     {
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterCrc64 CreateCrc64(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
         public double GetEstimateCount() => throw null;
-        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.BloomFilterCrc64 CreateCrc64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterAdler32 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterCrc32 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterCrc64 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public readonly struct BlockedBloomFilterSize
+    {
+        public long BitCount { get => throw null; }
+        public long BlockCount { get => throw null; }
+        public int HashCount { get => throw null; }
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterSize CreateExact(long blockCount, int hashCount) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterSize CreateOptimalSize(long expectedItemCount, double falsePositiveProbability) => throw null;
+        public double GetFalsePositiveProbability(long itemCount) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash128 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash3 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash32 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash64 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public closed class BloomFilter
+    {
+        public static Meziantou.Framework.BloomFilters.BloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterCrc64 CreateCrc64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public double GetEstimateCount() => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilter Load(System.IO.Stream stream) => throw null;
+        public static TFilter Load<TFilter>(System.IO.Stream stream) where TFilter : Meziantou.Framework.BloomFilters.BloomFilter => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.BloomFilters.BloomFilter> LoadAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<TFilter> LoadAsync<TFilter>(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) where TFilter : Meziantou.Framework.BloomFilters.BloomFilter => throw null;
+        public void Save(System.IO.Stream stream) { }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void UnionWith(Meziantou.Framework.BloomFilters.BloomFilter other) { }
+    }
+
+    public sealed class BloomFilterAdler32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
     }
 
     public sealed class BloomFilterCrc32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
-        public void Add(int value) { }
-        public bool MayContain(int value) => throw null;
-        public void Add(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public void Add(long value) { }
-        public bool MayContain(long value) => throw null;
-        public void Add(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public bool MayContain(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
     }
 
     public sealed class BloomFilterCrc64 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
-        public void Add(int value) { }
-        public bool MayContain(int value) => throw null;
-        public void Add(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public void Add(long value) { }
-        public bool MayContain(long value) => throw null;
-        public void Add(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public bool MayContain(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
     }
 
     public readonly struct BloomFilterSize
     {
         public long BitCount { get => throw null; }
         public int HashCount { get => throw null; }
-        public static Meziantou.Framework.BloomFilters.BloomFilterSize CreateOptimalSize(long expectedItemCount, double falsePositiveProbability) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterSize CreateExact(long bitCount, int hashCount) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterSize CreateOptimalSize(long expectedItemCount, double falsePositiveProbability) => throw null;
     }
 
     public sealed class BloomFilterXXHash128 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
-        public void Add(int value) { }
-        public bool MayContain(int value) => throw null;
-        public void Add(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public void Add(long value) { }
-        public bool MayContain(long value) => throw null;
-        public void Add(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public bool MayContain(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
         public void AddRange(params System.ReadOnlySpan<long> values) { }
         public void AddRange(params System.ReadOnlySpan<ulong> values) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
     }
 
     public sealed class BloomFilterXXHash3 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
-        public void Add(int value) { }
-        public bool MayContain(int value) => throw null;
-        public void Add(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public void Add(long value) { }
-        public bool MayContain(long value) => throw null;
-        public void Add(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public bool MayContain(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
     }
 
     public sealed class BloomFilterXXHash32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
-        public void Add(int value) { }
-        public bool MayContain(int value) => throw null;
-        public void Add(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public void Add(long value) { }
-        public bool MayContain(long value) => throw null;
-        public void Add(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public bool MayContain(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
         public void AddRange(params System.ReadOnlySpan<int> values) { }
         public void AddRange(params System.ReadOnlySpan<uint> values) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
     }
 
     public sealed class BloomFilterXXHash64 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
-        public void Add(int value) { }
-        public bool MayContain(int value) => throw null;
-        public void Add(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public void Add(long value) { }
-        public bool MayContain(long value) => throw null;
-        public void Add(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public bool MayContain(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
         public void AddRange(params System.ReadOnlySpan<long> values) { }
         public void AddRange(params System.ReadOnlySpan<ulong> values) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
     }
 
-    public abstract class CountingBloomFilter
+    public closed class CountingBloomFilter
     {
-        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
-        public static Meziantou.Framework.BloomFilters.CountingBloomFilterCrc64 CreateCrc64(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.CountingBloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilterCrc64 CreateCrc64(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilter Load(System.IO.Stream stream) => throw null;
+        public static TFilter Load<TFilter>(System.IO.Stream stream) where TFilter : Meziantou.Framework.BloomFilters.CountingBloomFilter => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.BloomFilters.CountingBloomFilter> LoadAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<TFilter> LoadAsync<TFilter>(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) where TFilter : Meziantou.Framework.BloomFilters.CountingBloomFilter => throw null;
+        public void Save(System.IO.Stream stream) { }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class CountingBloomFilterAdler32 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public int GetEstimatedCount(System.Guid value) => throw null;
+        public int GetEstimatedCount(System.Int128 value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
+        public int GetEstimatedCount(System.UInt128 value) => throw null;
+        public int GetEstimatedCount(int value) => throw null;
+        public int GetEstimatedCount(long value) => throw null;
+        public int GetEstimatedCount(string value) => throw null;
+        public int GetEstimatedCount(uint value) => throw null;
+        public int GetEstimatedCount(ulong value) => throw null;
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+        public void Remove(System.Guid value) { }
+        public void Remove(System.Int128 value) { }
+        public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
+        public void Remove(System.UInt128 value) { }
+        public void Remove(int value) { }
+        public void Remove(long value) { }
+        public void Remove(string value) { }
+        public void Remove(uint value) { }
+        public void Remove(ulong value) { }
     }
 
     public sealed class CountingBloomFilterCrc32 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter
     {
-        public void Add(int value) { }
-        public void Remove(int value) { }
-        public bool MayContain(int value) => throw null;
-        public int GetEstimatedCount(int value) => throw null;
-        public void Add(uint value) { }
-        public void Remove(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public int GetEstimatedCount(uint value) => throw null;
-        public void Add(long value) { }
-        public void Remove(long value) { }
-        public bool MayContain(long value) => throw null;
-        public int GetEstimatedCount(long value) => throw null;
-        public void Add(ulong value) { }
-        public void Remove(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
-        public int GetEstimatedCount(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public void Remove(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public int GetEstimatedCount(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public void Remove(string value) { }
-        public bool MayContain(string value) => throw null;
-        public int GetEstimatedCount(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public void Remove(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
-        public int GetEstimatedCount(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public void Remove(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
-        public int GetEstimatedCount(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public void Remove(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public int GetEstimatedCount(System.Guid value) => throw null;
+        public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
+        public int GetEstimatedCount(System.UInt128 value) => throw null;
+        public int GetEstimatedCount(int value) => throw null;
+        public int GetEstimatedCount(long value) => throw null;
+        public int GetEstimatedCount(string value) => throw null;
+        public int GetEstimatedCount(uint value) => throw null;
+        public int GetEstimatedCount(ulong value) => throw null;
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+        public void Remove(System.Guid value) { }
+        public void Remove(System.Int128 value) { }
+        public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
+        public void Remove(System.UInt128 value) { }
+        public void Remove(int value) { }
+        public void Remove(long value) { }
+        public void Remove(string value) { }
+        public void Remove(uint value) { }
+        public void Remove(ulong value) { }
     }
 
     public sealed class CountingBloomFilterCrc64 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter
     {
-        public void Add(int value) { }
-        public void Remove(int value) { }
-        public bool MayContain(int value) => throw null;
-        public int GetEstimatedCount(int value) => throw null;
-        public void Add(uint value) { }
-        public void Remove(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public int GetEstimatedCount(uint value) => throw null;
-        public void Add(long value) { }
-        public void Remove(long value) { }
-        public bool MayContain(long value) => throw null;
-        public int GetEstimatedCount(long value) => throw null;
-        public void Add(ulong value) { }
-        public void Remove(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
-        public int GetEstimatedCount(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public void Remove(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public int GetEstimatedCount(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public void Remove(string value) { }
-        public bool MayContain(string value) => throw null;
-        public int GetEstimatedCount(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public void Remove(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
-        public int GetEstimatedCount(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public void Remove(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
-        public int GetEstimatedCount(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public void Remove(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public int GetEstimatedCount(System.Guid value) => throw null;
+        public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
+        public int GetEstimatedCount(System.UInt128 value) => throw null;
+        public int GetEstimatedCount(int value) => throw null;
+        public int GetEstimatedCount(long value) => throw null;
+        public int GetEstimatedCount(string value) => throw null;
+        public int GetEstimatedCount(uint value) => throw null;
+        public int GetEstimatedCount(ulong value) => throw null;
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+        public void Remove(System.Guid value) { }
+        public void Remove(System.Int128 value) { }
+        public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
+        public void Remove(System.UInt128 value) { }
+        public void Remove(int value) { }
+        public void Remove(long value) { }
+        public void Remove(string value) { }
+        public void Remove(uint value) { }
+        public void Remove(ulong value) { }
     }
 
     public readonly struct CountingBloomFilterSize
     {
         public long CounterCount { get => throw null; }
         public int HashCount { get => throw null; }
-        public static Meziantou.Framework.BloomFilters.CountingBloomFilterSize CreateOptimalSize(long expectedItemCount, double falsePositiveProbability) => throw null;
         public static Meziantou.Framework.BloomFilters.CountingBloomFilterSize CreateExact(long counterCount, int hashCount) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilterSize CreateOptimalSize(long expectedItemCount, double falsePositiveProbability) => throw null;
     }
 
     public sealed class CountingBloomFilterXXHash128 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter
     {
-        public void Add(int value) { }
-        public void Remove(int value) { }
-        public bool MayContain(int value) => throw null;
-        public int GetEstimatedCount(int value) => throw null;
-        public void Add(uint value) { }
-        public void Remove(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public int GetEstimatedCount(uint value) => throw null;
-        public void Add(long value) { }
-        public void Remove(long value) { }
-        public bool MayContain(long value) => throw null;
-        public int GetEstimatedCount(long value) => throw null;
-        public void Add(ulong value) { }
-        public void Remove(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
-        public int GetEstimatedCount(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public void Remove(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public int GetEstimatedCount(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public void Remove(string value) { }
-        public bool MayContain(string value) => throw null;
-        public int GetEstimatedCount(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public void Remove(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
-        public int GetEstimatedCount(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public void Remove(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
-        public int GetEstimatedCount(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public void Remove(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
-        public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
         public void AddRange(params System.ReadOnlySpan<long> values) { }
-        public void RemoveRange(params System.ReadOnlySpan<long> values) { }
         public void AddRange(params System.ReadOnlySpan<ulong> values) { }
+        public int GetEstimatedCount(System.Guid value) => throw null;
+        public int GetEstimatedCount(System.Int128 value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
+        public int GetEstimatedCount(System.UInt128 value) => throw null;
+        public int GetEstimatedCount(int value) => throw null;
+        public int GetEstimatedCount(long value) => throw null;
+        public int GetEstimatedCount(string value) => throw null;
+        public int GetEstimatedCount(uint value) => throw null;
+        public int GetEstimatedCount(ulong value) => throw null;
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+        public void Remove(System.Guid value) { }
+        public void Remove(System.Int128 value) { }
+        public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
+        public void Remove(System.UInt128 value) { }
+        public void Remove(int value) { }
+        public void Remove(long value) { }
+        public void Remove(string value) { }
+        public void Remove(uint value) { }
+        public void Remove(ulong value) { }
+        public void RemoveRange(params System.ReadOnlySpan<long> values) { }
         public void RemoveRange(params System.ReadOnlySpan<ulong> values) { }
     }
 
     public sealed class CountingBloomFilterXXHash3 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter
     {
-        public void Add(int value) { }
-        public void Remove(int value) { }
-        public bool MayContain(int value) => throw null;
-        public int GetEstimatedCount(int value) => throw null;
-        public void Add(uint value) { }
-        public void Remove(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public int GetEstimatedCount(uint value) => throw null;
-        public void Add(long value) { }
-        public void Remove(long value) { }
-        public bool MayContain(long value) => throw null;
-        public int GetEstimatedCount(long value) => throw null;
-        public void Add(ulong value) { }
-        public void Remove(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
-        public int GetEstimatedCount(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public void Remove(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public int GetEstimatedCount(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public void Remove(string value) { }
-        public bool MayContain(string value) => throw null;
-        public int GetEstimatedCount(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public void Remove(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
-        public int GetEstimatedCount(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public void Remove(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
-        public int GetEstimatedCount(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public void Remove(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public int GetEstimatedCount(System.Guid value) => throw null;
+        public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
+        public int GetEstimatedCount(System.UInt128 value) => throw null;
+        public int GetEstimatedCount(int value) => throw null;
+        public int GetEstimatedCount(long value) => throw null;
+        public int GetEstimatedCount(string value) => throw null;
+        public int GetEstimatedCount(uint value) => throw null;
+        public int GetEstimatedCount(ulong value) => throw null;
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+        public void Remove(System.Guid value) { }
+        public void Remove(System.Int128 value) { }
+        public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
+        public void Remove(System.UInt128 value) { }
+        public void Remove(int value) { }
+        public void Remove(long value) { }
+        public void Remove(string value) { }
+        public void Remove(uint value) { }
+        public void Remove(ulong value) { }
     }
 
     public sealed class CountingBloomFilterXXHash32 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter
     {
-        public void Add(int value) { }
-        public void Remove(int value) { }
-        public bool MayContain(int value) => throw null;
-        public int GetEstimatedCount(int value) => throw null;
-        public void Add(uint value) { }
-        public void Remove(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public int GetEstimatedCount(uint value) => throw null;
-        public void Add(long value) { }
-        public void Remove(long value) { }
-        public bool MayContain(long value) => throw null;
-        public int GetEstimatedCount(long value) => throw null;
-        public void Add(ulong value) { }
-        public void Remove(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
-        public int GetEstimatedCount(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public void Remove(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public int GetEstimatedCount(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public void Remove(string value) { }
-        public bool MayContain(string value) => throw null;
-        public int GetEstimatedCount(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public void Remove(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
-        public int GetEstimatedCount(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public void Remove(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
-        public int GetEstimatedCount(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public void Remove(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
-        public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
         public void AddRange(params System.ReadOnlySpan<int> values) { }
-        public void RemoveRange(params System.ReadOnlySpan<int> values) { }
         public void AddRange(params System.ReadOnlySpan<uint> values) { }
+        public int GetEstimatedCount(System.Guid value) => throw null;
+        public int GetEstimatedCount(System.Int128 value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
+        public int GetEstimatedCount(System.UInt128 value) => throw null;
+        public int GetEstimatedCount(int value) => throw null;
+        public int GetEstimatedCount(long value) => throw null;
+        public int GetEstimatedCount(string value) => throw null;
+        public int GetEstimatedCount(uint value) => throw null;
+        public int GetEstimatedCount(ulong value) => throw null;
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+        public void Remove(System.Guid value) { }
+        public void Remove(System.Int128 value) { }
+        public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
+        public void Remove(System.UInt128 value) { }
+        public void Remove(int value) { }
+        public void Remove(long value) { }
+        public void Remove(string value) { }
+        public void Remove(uint value) { }
+        public void Remove(ulong value) { }
+        public void RemoveRange(params System.ReadOnlySpan<int> values) { }
         public void RemoveRange(params System.ReadOnlySpan<uint> values) { }
     }
 
     public sealed class CountingBloomFilterXXHash64 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter
     {
-        public void Add(int value) { }
-        public void Remove(int value) { }
-        public bool MayContain(int value) => throw null;
-        public int GetEstimatedCount(int value) => throw null;
-        public void Add(uint value) { }
-        public void Remove(uint value) { }
-        public bool MayContain(uint value) => throw null;
-        public int GetEstimatedCount(uint value) => throw null;
-        public void Add(long value) { }
-        public void Remove(long value) { }
-        public bool MayContain(long value) => throw null;
-        public int GetEstimatedCount(long value) => throw null;
-        public void Add(ulong value) { }
-        public void Remove(ulong value) { }
-        public bool MayContain(ulong value) => throw null;
-        public int GetEstimatedCount(ulong value) => throw null;
         public void Add(System.Guid value) { }
-        public void Remove(System.Guid value) { }
-        public bool MayContain(System.Guid value) => throw null;
-        public int GetEstimatedCount(System.Guid value) => throw null;
-        public void Add(string value) { }
-        public void Remove(string value) { }
-        public bool MayContain(string value) => throw null;
-        public int GetEstimatedCount(string value) => throw null;
-        public void Add(System.UInt128 value) { }
-        public void Remove(System.UInt128 value) { }
-        public bool MayContain(System.UInt128 value) => throw null;
-        public int GetEstimatedCount(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
-        public void Remove(System.Int128 value) { }
-        public bool MayContain(System.Int128 value) => throw null;
-        public int GetEstimatedCount(System.Int128 value) => throw null;
         public void Add(System.ReadOnlySpan<byte> value) { }
-        public void Remove(System.ReadOnlySpan<byte> value) { }
-        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
-        public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public void Add(System.ReadOnlySpan<char> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
         public void AddRange(params System.ReadOnlySpan<long> values) { }
-        public void RemoveRange(params System.ReadOnlySpan<long> values) { }
         public void AddRange(params System.ReadOnlySpan<ulong> values) { }
+        public int GetEstimatedCount(System.Guid value) => throw null;
+        public int GetEstimatedCount(System.Int128 value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
+        public int GetEstimatedCount(System.UInt128 value) => throw null;
+        public int GetEstimatedCount(int value) => throw null;
+        public int GetEstimatedCount(long value) => throw null;
+        public int GetEstimatedCount(string value) => throw null;
+        public int GetEstimatedCount(uint value) => throw null;
+        public int GetEstimatedCount(ulong value) => throw null;
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+        public void Remove(System.Guid value) { }
+        public void Remove(System.Int128 value) { }
+        public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
+        public void Remove(System.UInt128 value) { }
+        public void Remove(int value) { }
+        public void Remove(long value) { }
+        public void Remove(string value) { }
+        public void Remove(uint value) { }
+        public void Remove(ulong value) { }
+        public void RemoveRange(params System.ReadOnlySpan<long> values) { }
         public void RemoveRange(params System.ReadOnlySpan<ulong> values) { }
     }
 
     public interface IBloomFilter
     {
-        double GetEstimateCount();
-        void Add(int value);
-        bool MayContain(int value);
-        void Add(uint value);
-        bool MayContain(uint value);
-        void Add(long value);
-        bool MayContain(long value);
-        void Add(ulong value);
-        bool MayContain(ulong value);
         void Add(System.Guid value);
-        bool MayContain(System.Guid value);
-        void Add(string value);
-        bool MayContain(string value);
-        void Add(System.UInt128 value);
-        bool MayContain(System.UInt128 value);
         void Add(System.Int128 value);
-        bool MayContain(System.Int128 value);
         void Add(System.ReadOnlySpan<byte> value);
+        void Add(System.ReadOnlySpan<char> value);
+        void Add(System.UInt128 value);
+        void Add(int value);
+        void Add(long value);
+        void Add(string value);
+        void Add(uint value);
+        void Add(ulong value);
+        double GetEstimateCount();
+        bool MayContain(System.Guid value);
+        bool MayContain(System.Int128 value);
         bool MayContain(System.ReadOnlySpan<byte> value);
+        bool MayContain(System.ReadOnlySpan<char> value);
+        bool MayContain(System.UInt128 value);
+        bool MayContain(int value);
+        bool MayContain(long value);
+        bool MayContain(string value);
+        bool MayContain(uint value);
+        bool MayContain(ulong value);
     }
 
     public interface ICountingBloomFilter
     {
-        void Add(int value);
-        void Remove(int value);
-        bool MayContain(int value);
-        int GetEstimatedCount(int value);
-        void Add(uint value);
-        void Remove(uint value);
-        bool MayContain(uint value);
-        int GetEstimatedCount(uint value);
-        void Add(long value);
-        void Remove(long value);
-        bool MayContain(long value);
-        int GetEstimatedCount(long value);
-        void Add(ulong value);
-        void Remove(ulong value);
-        bool MayContain(ulong value);
-        int GetEstimatedCount(ulong value);
         void Add(System.Guid value);
-        void Remove(System.Guid value);
-        bool MayContain(System.Guid value);
-        int GetEstimatedCount(System.Guid value);
-        void Add(string value);
-        void Remove(string value);
-        bool MayContain(string value);
-        int GetEstimatedCount(string value);
-        void Add(System.UInt128 value);
-        void Remove(System.UInt128 value);
-        bool MayContain(System.UInt128 value);
-        int GetEstimatedCount(System.UInt128 value);
         void Add(System.Int128 value);
-        void Remove(System.Int128 value);
-        bool MayContain(System.Int128 value);
-        int GetEstimatedCount(System.Int128 value);
         void Add(System.ReadOnlySpan<byte> value);
-        void Remove(System.ReadOnlySpan<byte> value);
-        bool MayContain(System.ReadOnlySpan<byte> value);
+        void Add(System.ReadOnlySpan<char> value);
+        void Add(System.UInt128 value);
+        void Add(int value);
+        void Add(long value);
+        void Add(string value);
+        void Add(uint value);
+        void Add(ulong value);
+        int GetEstimatedCount(System.Guid value);
+        int GetEstimatedCount(System.Int128 value);
         int GetEstimatedCount(System.ReadOnlySpan<byte> value);
+        int GetEstimatedCount(System.ReadOnlySpan<char> value);
+        int GetEstimatedCount(System.UInt128 value);
+        int GetEstimatedCount(int value);
+        int GetEstimatedCount(long value);
+        int GetEstimatedCount(string value);
+        int GetEstimatedCount(uint value);
+        int GetEstimatedCount(ulong value);
+        bool MayContain(System.Guid value);
+        bool MayContain(System.Int128 value);
+        bool MayContain(System.ReadOnlySpan<byte> value);
+        bool MayContain(System.ReadOnlySpan<char> value);
+        bool MayContain(System.UInt128 value);
+        bool MayContain(int value);
+        bool MayContain(long value);
+        bool MayContain(string value);
+        bool MayContain(uint value);
+        bool MayContain(ulong value);
+        void Remove(System.Guid value);
+        void Remove(System.Int128 value);
+        void Remove(System.ReadOnlySpan<byte> value);
+        void Remove(System.ReadOnlySpan<char> value);
+        void Remove(System.UInt128 value);
+        void Remove(int value);
+        void Remove(long value);
+        void Remove(string value);
+        void Remove(uint value);
+        void Remove(ulong value);
     }
 }

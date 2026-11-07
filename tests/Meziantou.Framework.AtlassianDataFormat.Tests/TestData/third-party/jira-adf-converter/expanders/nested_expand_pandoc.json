@@ -1,0 +1,1 @@
+{"version":1,"type":"doc","content":[{"type":"expand","attrs":{"title":"Outer"},"content":[{"type":"paragraph","content":[{"type":"text","text":"Outer content"}]},{"type":"nestedExpand","attrs":{"title":"Inner"},"content":[{"type":"paragraph","content":[{"type":"text","text":"Inner content"}]}]}]}]}

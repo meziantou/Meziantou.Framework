@@ -1,0 +1,17 @@
+{
+  "main": {
+    "yue-Hant-MO": {
+      "identity": {
+        "language": "yue",
+        "script": "Hant",
+        "territory": "MO"
+      },
+      "delimiters": {
+        "quotationStart": "「",
+        "quotationEnd": "」",
+        "alternateQuotationStart": "『",
+        "alternateQuotationEnd": "』"
+      }
+    }
+  }
+}

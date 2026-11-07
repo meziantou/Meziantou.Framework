@@ -1,0 +1,120 @@
+{
+  "spec": {
+    "title": "WebGL OES_shader_multisample_interpolation Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/OES_shader_multisample_interpolation/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "OES_shader_multisample_interpolation"
+        ],
+        "Worker": [
+          "OES_shader_multisample_interpolation"
+        ]
+      }
+    },
+    "idlNames": {
+      "OES_shader_multisample_interpolation": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface OES_shader_multisample_interpolation {\n    const GLenum MIN_FRAGMENT_INTERPOLATION_OFFSET_OES  = 0x8E5B;\n    const GLenum MAX_FRAGMENT_INTERPOLATION_OFFSET_OES  = 0x8E5C;\n    const GLenum FRAGMENT_INTERPOLATION_OFFSET_BITS_OES = 0x8E5D;\n};",
+        "type": "interface",
+        "name": "OES_shader_multisample_interpolation",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "MIN_FRAGMENT_INTERPOLATION_OFFSET_OES",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8E5B"
+            }
+          },
+          {
+            "type": "const",
+            "name": "MAX_FRAGMENT_INTERPOLATION_OFFSET_OES",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8E5C"
+            }
+          },
+          {
+            "type": "const",
+            "name": "FRAGMENT_INTERPOLATION_OFFSET_BITS_OES",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8E5D"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "OES_shader_multisample_interpolation"
+      ],
+      "Worker": [
+        "OES_shader_multisample_interpolation"
+      ]
+    },
+    "dependencies": {
+      "OES_shader_multisample_interpolation": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

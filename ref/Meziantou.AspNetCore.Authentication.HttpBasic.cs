@@ -22,6 +22,7 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic
         public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder) where TUser : class => throw null;
         public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) where TUser : class => throw null;
         public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) where TUser : class => throw null;
         public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
         public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, string? displayName, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
     }
@@ -29,8 +30,9 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic
     public sealed class HttpBasicAuthenticationOptions : Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions
     {
         public const int DefaultMaxCredentialLength = 4096;
-        public string? Realm { get => throw null; set { } }
+        public bool AllowTwoFactorEnabledAccounts { get => throw null; set { } }
         public int MaxCredentialLength { get => throw null; set { } }
+        public string? Realm { get => throw null; set { } }
         public Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicCredentialValidator ValidateCredentials { get => throw null; set { } }
     }
 

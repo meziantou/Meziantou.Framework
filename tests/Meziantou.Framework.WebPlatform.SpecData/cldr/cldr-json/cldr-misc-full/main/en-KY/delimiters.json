@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-KY": {
+      "identity": {
+        "language": "en",
+        "territory": "KY"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -2,15 +2,15 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides constants for Windows privilege names that can be enabled or disabled on access tokens.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Win32.AccessTokenConsole/AccessTokenExamples.cs" ref:region="Privileges_EnableAndDisable" ref:dedent="true">
 /// using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.AdjustPrivileges | TokenAccessLevels.Query);
-/// 
+///
 /// // Enable debug privilege to access other processes
 /// token.EnablePrivilege(Privileges.SE_DEBUG_NAME);
-/// 
+///
 /// // Enable backup privilege to bypass file security checks
 /// token.EnablePrivilege(Privileges.SE_BACKUP_NAME);
-/// 
+///
 /// // Disable a privilege
 /// token.DisablePrivilege(Privileges.SE_SHUTDOWN_NAME);
 /// </code>
@@ -75,7 +75,7 @@ public static class Privileges
     public const string SE_MACHINE_ACCOUNT_NAME = "SeMachineAccountPrivilege";
 
     /// <summary>Required to enable volume management privileges.</summary>
-  public const string SE_MANAGE_VOLUME_NAME = "SeManageVolumePrivilege";
+    public const string SE_MANAGE_VOLUME_NAME = "SeManageVolumePrivilege";
 
     /// <summary>Required to gather profiling information for a single process.</summary>
     public const string SE_PROF_SINGLE_PROCESS_NAME = "SeProfileSingleProcessPrivilege";
@@ -114,7 +114,7 @@ public static class Privileges
     public const string SE_TCB_NAME = "SeTcbPrivilege";
 
     /// <summary>Required to adjust the time zone associated with the computer's internal clock.</summary>
-  public const string SE_TIME_ZONE_NAME = "SeTimeZonePrivilege";
+    public const string SE_TIME_ZONE_NAME = "SeTimeZonePrivilege";
 
     /// <summary>Required to access Credential Manager as a trusted caller.</summary>
     public const string SE_TRUSTED_CREDMAN_ACCESS_NAME = "SeTrustedCredManAccessPrivilege";

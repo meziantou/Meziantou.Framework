@@ -1,0 +1,56 @@
+{
+  "orientation-sensor/AbsoluteOrientationSensor-disabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "orientation-sensor/AbsoluteOrientationSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 2
+  },
+  "orientation-sensor/AbsoluteOrientationSensor-enabled-by-permissions-policy-attribute.https.html": {
+    "total": 2
+  },
+  "orientation-sensor/AbsoluteOrientationSensor-enabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "orientation-sensor/AbsoluteOrientationSensor-enabled-on-self-origin-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "orientation-sensor/AbsoluteOrientationSensor-iframe-access.https.html": {
+    "total": 4
+  },
+  "orientation-sensor/AbsoluteOrientationSensor.https.html": {
+    "total": 22,
+    "failures": {
+      "AbsoluteOrientationSensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
+    }
+  },
+  "orientation-sensor/OrientationSensor_insecure_context.html": {
+    "total": 2
+  },
+  "orientation-sensor/RelativeOrientationSensor-disabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "orientation-sensor/RelativeOrientationSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 2
+  },
+  "orientation-sensor/RelativeOrientationSensor-enabled-by-permissions-policy-attribute.https.html": {
+    "total": 2
+  },
+  "orientation-sensor/RelativeOrientationSensor-enabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "orientation-sensor/RelativeOrientationSensor-enabled-on-self-origin-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "orientation-sensor/RelativeOrientationSensor-iframe-access.https.html": {
+    "total": 4
+  },
+  "orientation-sensor/RelativeOrientationSensor.https.html": {
+    "total": 22,
+    "failures": {
+      "RelativeOrientationSensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
+    }
+  },
+  "orientation-sensor/idlharness.https.window.js": {
+    "total": 29
+  }
+}

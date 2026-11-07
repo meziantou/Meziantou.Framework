@@ -11,21 +11,15 @@ public static class SnapshotSettingsHumanReadableSerializerExtensions
             if (options is null)
                 return;
 
-            var serializers = settings.Serializers.ToList();
-            var index = serializers.FindIndex(serializer => serializer is HumanReadableSnapshotSerializer);
-            if (index < 0)
-                return;
-
-            var serializer = (HumanReadableSnapshotSerializer)serializers[index];
-            var clone = new HumanReadableSnapshotSerializer(serializer.Options with { });
-            options(clone.Options);
-
-            serializers[index] = clone;
-            settings.Serializers.Clear();
-            foreach (var item in serializers)
+            // Two concurrent calls, such as test classes adding converters to SnapshotSettings.Default from their
+            // constructors, must both apply. Cloning the options of a serializer read outside the lock would let the
+            // second call start from the options without the first converter.
+            settings.Serializers.ReplaceFirst<HumanReadableSnapshotSerializer>(serializer =>
             {
-                settings.Serializers.Add(item);
-            }
+                var clone = new HumanReadableSnapshotSerializer(serializer.Options with { });
+                options(clone.Options);
+                return clone;
+            });
         }
 
         public void AddConverter(HumanReadableConverter converter)

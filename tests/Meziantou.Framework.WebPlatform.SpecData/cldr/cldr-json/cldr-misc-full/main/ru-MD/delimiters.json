@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ru-MD": {
+      "identity": {
+        "language": "ru",
+        "territory": "MD"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

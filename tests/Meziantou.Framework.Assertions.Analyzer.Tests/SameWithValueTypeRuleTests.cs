@@ -72,4 +72,97 @@ public sealed class SameWithValueTypeRuleTests : AssertionsAnalyzerTestBase
 
         await CreateCodeFixTest<SameWithValueTypeAnalyzerType, SameWithValueTypeCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertSameWithValueTypeAndReferenceType()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(object expected, int actual)
+                {
+                    {|MFAS0010:Assert.Same(expected, actual)|};
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(object expected, int actual)
+                {
+                    Assert.Equal(expected, actual);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<SameWithValueTypeAnalyzerType, SameWithValueTypeCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertNotSameWithReferenceTypeAndValueType()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(int expected, object actual)
+                {
+                    {|MFAS0011:Assert.NotSame(expected, actual)|};
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(int expected, object actual)
+                {
+                    Assert.NotEqual(expected, actual);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<SameWithValueTypeAnalyzerType, SameWithValueTypeCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_NoDiagnostic_WhenReferenceIdentityCanSucceed()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M<T>(object obj, string str, int? nullable, T value)
+                {
+                    Assert.Same(obj, str);
+                    Assert.NotSame(obj, str);
+                    Assert.Same(obj, nullable);
+                    Assert.Same(null, nullable);
+                    Assert.NotSame(nullable, obj);
+                    Assert.Same(obj, value);
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<SameWithValueTypeAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

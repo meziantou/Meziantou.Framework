@@ -1,0 +1,213 @@
+{
+  "spec": {
+    "title": "CSS Transforms Module Level 1",
+    "url": "https://drafts.csswg.org/css-transforms-1/"
+  },
+  "properties": [
+    {
+      "name": "transform",
+      "href": "https://drafts.csswg.org/css-transforms-1/#propdef-transform",
+      "value": "none | <transform-list>",
+      "initial": "none",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "refer to the size of reference box",
+      "computedValue": "as specified, but with lengths made absolute",
+      "canonicalOrder": "per grammar",
+      "animationType": "transform list, see interpolation rules",
+      "values": [
+        {
+          "name": "matrix()",
+          "value": "matrix( <number>#{6} )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-matrix",
+          "type": "function"
+        },
+        {
+          "name": "translate()",
+          "value": "translate( <length-percentage> , <length-percentage>? )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-translate",
+          "type": "function"
+        },
+        {
+          "name": "translateX()",
+          "value": "translateX( <length-percentage> )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-translatex",
+          "type": "function"
+        },
+        {
+          "name": "translateY()",
+          "value": "translateY( <length-percentage> )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-translatey",
+          "type": "function"
+        },
+        {
+          "name": "scale()",
+          "value": "scale( <number> , <number>? )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-scale",
+          "type": "function"
+        },
+        {
+          "name": "scaleX()",
+          "value": "scaleX( <number> )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-scalex",
+          "type": "function"
+        },
+        {
+          "name": "scaleY()",
+          "value": "scaleY( <number> )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-scaley",
+          "type": "function"
+        },
+        {
+          "name": "rotate()",
+          "value": "rotate( [ <angle> | <zero> ] )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-rotate",
+          "type": "function"
+        },
+        {
+          "name": "skew()",
+          "value": "skew( [ <angle> | <zero> ] , [ <angle> | <zero> ]? )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-skew",
+          "type": "function"
+        },
+        {
+          "name": "skewX()",
+          "value": "skewX( [ <angle> | <zero> ] )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-skewx",
+          "type": "function"
+        },
+        {
+          "name": "skewY()",
+          "value": "skewY( [ <angle> | <zero> ] )",
+          "href": "https://drafts.csswg.org/css-transforms-1/#funcdef-transform-skewy",
+          "type": "function"
+        }
+      ],
+      "styleDeclaration": [
+        "transform"
+      ]
+    },
+    {
+      "name": "transform-origin",
+      "href": "https://drafts.csswg.org/css-transforms-1/#propdef-transform-origin",
+      "value": "[ left | center | right | top | bottom | <length-percentage> ] | [ left | center | right | <length-percentage> ] [ top | center | bottom | <length-percentage> ] <length>? | [ [ center | left | right ] && [ center | top | bottom ] ] <length>?",
+      "initial": "50% 50%",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "refer to the size of reference box",
+      "computedValue": "see background-position",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "top",
+          "prose": "Computes to 0% for the vertical position.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-origin-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "right",
+          "prose": "Computes to 100% for the horizontal position.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-origin-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "bottom",
+          "prose": "Computes to 100% for the vertical position.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-origin-bottom",
+          "type": "value",
+          "value": "bottom"
+        },
+        {
+          "name": "left",
+          "prose": "Computes to 0% for the horizontal position.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-origin-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "center",
+          "prose": "Computes to 50% (left 50%) for the horizontal position if the horizontal position is not otherwise specified, or 50% (top 50%) for the vertical position if it is.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-origin-center",
+          "type": "value",
+          "value": "center"
+        }
+      ],
+      "styleDeclaration": [
+        "transform-origin",
+        "transformOrigin"
+      ]
+    },
+    {
+      "name": "transform-box",
+      "href": "https://drafts.csswg.org/css-transforms-1/#propdef-transform-box",
+      "value": "content-box | border-box | fill-box | stroke-box | view-box",
+      "initial": "view-box",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "content-box",
+          "prose": "Uses the content box as reference box. The reference box of a table is the border box of its table wrapper box, not its table box.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-box-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "Uses the border box as reference box. The reference box of a table is the border box of its table wrapper box, not its table box.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-box-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "fill-box",
+          "prose": "Uses the object bounding box as reference box.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-box-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "Uses the stroke bounding box as reference box.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-box-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        },
+        {
+          "name": "view-box",
+          "prose": "Uses the nearest SVG viewport as reference box.",
+          "href": "https://drafts.csswg.org/css-transforms-1/#valdef-transform-box-view-box",
+          "type": "value",
+          "value": "view-box"
+        }
+      ],
+      "styleDeclaration": [
+        "transform-box",
+        "transformBox"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<transform-list>",
+      "href": "https://drafts.csswg.org/css-transforms-1/#typedef-transform-list",
+      "type": "type",
+      "value": "<transform-function>+"
+    },
+    {
+      "name": "<transform-function>",
+      "prose": "The value of the transform property is a list of <transform-function>. The set of allowed transform functions is given below. In the following functions, a <zero> behaves the same as 0deg (\"unitless 0\" angles are preserved for legacy compat). A percentage for horizontal translations is relative to the width of the reference box. A percentage for vertical translations is relative to the height of the reference box.",
+      "href": "https://drafts.csswg.org/css-transforms-1/#typedef-transform-function",
+      "type": "type"
+    }
+  ]
+}

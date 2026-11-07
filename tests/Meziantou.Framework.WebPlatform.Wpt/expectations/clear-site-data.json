@@ -1,0 +1,60 @@
+{
+  "clear-site-data/clear-cache-bfcache-partitioning.tentative.https.html": {
+    "total": 2
+  },
+  "clear-site-data/clear-cache-bfcache.https.html": {
+    "total": 4
+  },
+  "clear-site-data/clear-cache-partitioning.tentative.https.html": {
+    "total": 10
+  },
+  "clear-site-data/clear-cache.https.html": {
+    "total": 13
+  },
+  "clear-site-data/executionContexts.sub.html": {
+    "total": 2
+  },
+  "clear-site-data/navigation-insecure.html": {
+    "total": 4
+  },
+  "clear-site-data/navigation.https.html": {
+    "total": 4
+  },
+  "clear-site-data/no-cors-fetch-iframe.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "Clearing site data via no-cors cross-site request should work on partitioned data.": "FAIL"
+    }
+  },
+  "clear-site-data/no-cors-fetch-window.https.sub.html": {
+    "total": 1
+  },
+  "clear-site-data/resource.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "http resource on a http page": "NOTRUN",
+      "http resource on a https page": "TIMEOUT"
+    }
+  },
+  "clear-site-data/set-cookie-after-clear-all.https.html": {
+    "total": 1
+  },
+  "clear-site-data/set-cookie-after-clear-cookies.https.html": {
+    "total": 1
+  },
+  "clear-site-data/set-cookie-before-clear-all.https.html": {
+    "total": 1
+  },
+  "clear-site-data/set-cookie-before-clear-cookies.https.html": {
+    "total": 1
+  },
+  "clear-site-data/storage.https.html": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "Service worker no longer responds to requests": "FAIL",
+      "controllerchange event fires and client no longer has controller": "TIMEOUT"
+    }
+  }
+}

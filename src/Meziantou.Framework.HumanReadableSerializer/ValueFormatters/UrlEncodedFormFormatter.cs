@@ -43,7 +43,10 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
 
         if (!_options.PrettyFormat)
         {
-            writer.WriteValue(string.Join('&', items.Select(item => $"{item.Key}={item.Value}")));
+            // Unescaped values may contain the separators, which must stay escaped to keep the items apart
+            writer.WriteValue(_options.UnescapeValues
+                ? string.Join('&', items.Select(item => $"{EscapeSeparators(item.Key)}={EscapeSeparators(item.Value)}"))
+                : string.Join('&', items.Select(item => $"{item.Key}={item.Value}")));
             return;
         }
 
@@ -58,6 +61,17 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
     }
 
     private static string Unescape(string value) => Uri.UnescapeDataString(value.Replace('+', ' '));
+
+    private static string EscapeSeparators(string value)
+    {
+        if (value.AsSpan().IndexOfAny("%&+=") < 0)
+            return value;
+
+        return value.Replace("%", "%25", StringComparison.Ordinal)
+            .Replace("&", "%26", StringComparison.Ordinal)
+            .Replace("+", "%2B", StringComparison.Ordinal)
+            .Replace("=", "%3D", StringComparison.Ordinal);
+    }
 
     private static List<(string Key, string Value)> ParseValue(string urlEncodedValue)
     {

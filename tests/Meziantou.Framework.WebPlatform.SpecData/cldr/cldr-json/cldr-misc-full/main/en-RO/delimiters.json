@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-RO": {
+      "identity": {
+        "language": "en",
+        "territory": "RO"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

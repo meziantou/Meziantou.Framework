@@ -1,5 +1,6 @@
 ﻿@typeparam TRowData
 @using System.Linq.Expressions
+@implements IDisposable
 @code {
     /// <summary>Gets or sets the parent <see cref="DataGrid{TRowData}"/> component. This is set automatically via cascading parameter.</summary>
     [CascadingParameter]
@@ -34,6 +35,13 @@
             throw new InvalidOperationException("The column must be a child of a DataGrid component");
 
         OwnerGrid.AddColumn(this);
+    }
+
+    public void Dispose()
+    {
+        // Without this, a column removed from the ChildContent stays in the grid and keeps rendering,
+        // and toggling it back on registers it a second time
+        OwnerGrid?.RemoveColumn(this);
     }
 
     protected override void OnParametersSet()
@@ -96,7 +104,7 @@
         {
             MemberExpression m => m.Member.Name,
             UnaryExpression u when u.Operand is MemberExpression m => m.Member.Name,
-            _ => throw new NotSupportedException("Expression of type '" + expression.GetType().ToString() + "' is not supported")
+            _ => throw new NotSupportedException("Expression body of type '" + expression.Body.GetType().ToString() + "' is not supported. Only simple member accessors such as 'row => row.Name' can be used to infer a column title; set Title explicitly instead.")
         };
     }
 }

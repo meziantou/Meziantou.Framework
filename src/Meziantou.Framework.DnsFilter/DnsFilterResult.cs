@@ -11,17 +11,18 @@ public sealed class DnsFilterResult
 
     /// <summary>
     /// Gets a result indicating the query did not match any filter rule.
+    /// Its <see cref="Action"/> is <see cref="DnsFilterAction.None"/>.
     /// </summary>
-    public static DnsFilterResult NotMatched { get; } = new() { IsMatched = false, Action = DnsFilterAction.Block };
+    public static DnsFilterResult NotMatched { get; } = new() { Action = DnsFilterAction.None };
 
     /// <summary>
     /// Gets a value indicating whether the query matched a filter rule.
     /// </summary>
-    public bool IsMatched { get; private init; }
+    public bool IsMatched => Action is not DnsFilterAction.None;
 
     /// <summary>
-    /// Gets the action determined by the matching rule.
-    /// Only meaningful when <see cref="IsMatched"/> is <see langword="true"/>.
+    /// Gets the action determined by the matching rule, or <see cref="DnsFilterAction.None"/>
+    /// when no rule matched.
     /// </summary>
     public DnsFilterAction Action { get; private init; }
 
@@ -31,7 +32,8 @@ public sealed class DnsFilterResult
     public DnsFilterRule? MatchingRule { get; private init; }
 
     /// <summary>
-    /// Gets the rewrite directive from the matching rule, if any.
+    /// Gets the rewrite directive from the matching rule. Non-<see langword="null"/> if and only if
+    /// <see cref="Action"/> is <see cref="DnsFilterAction.Rewrite"/>.
     /// </summary>
     public DnsFilterRewriteRule? Rewrite { get; private init; }
 
@@ -39,8 +41,7 @@ public sealed class DnsFilterResult
     {
         return new DnsFilterResult
         {
-            IsMatched = true,
-            Action = DnsFilterAction.Block,
+            Action = rule.Rewrite is null ? DnsFilterAction.Block : DnsFilterAction.Rewrite,
             MatchingRule = rule,
             Rewrite = rule.Rewrite,
         };
@@ -50,7 +51,6 @@ public sealed class DnsFilterResult
     {
         return new DnsFilterResult
         {
-            IsMatched = true,
             Action = DnsFilterAction.Allow,
             MatchingRule = rule,
         };

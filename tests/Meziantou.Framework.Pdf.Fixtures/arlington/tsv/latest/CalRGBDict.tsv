@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+WhitePoint	array	1.1		TRUE	FALSE	FALSE				[WhitepointArray]	Table 63
+BlackPoint	array	1.1		FALSE	FALSE	FALSE	[0.0 0.0 0.0]			[BlackpointArray]	
+Gamma	array	1.1		FALSE	FALSE	FALSE	[1.0 1.0 1.0]			[GammaArray]	
+Matrix	array	1.1		FALSE	FALSE	FALSE	[1 0 0 0 1 0 0 0 1]			[ArrayOf_9Numbers]	

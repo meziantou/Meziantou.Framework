@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+K	dictionary	1.3		FALSE	FALSE	FALSE				[ActionECMAScript]	Table 199
+F	dictionary	1.3		FALSE	FALSE	FALSE				[ActionECMAScript]	
+V	dictionary	1.3		FALSE	FALSE	FALSE				[ActionECMAScript]	
+C	dictionary	1.3		FALSE	FALSE	FALSE				[ActionECMAScript]	

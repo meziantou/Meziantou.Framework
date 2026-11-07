@@ -6,10 +6,12 @@ Source generator and analyzer to create fixed-length string structs.
 
 Add a partial struct and decorate it with `FixedStringBuilderAttribute`:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.FixedStringBuilder.Tests/FixedStringBuilderTests.cs;region=FixedStringBuilderGenerator_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 [FixedStringBuilderAttribute(10)]
 public partial struct FixedStringBuilder10;
-````
+```
+<!-- endref -->
 
 The generator emits:
 
@@ -27,4 +29,7 @@ Generated fixed strings enforce capacity and throw `ArgumentException` when data
 | `MFFSG0001` | FixedStringBuilderGenerator | FixedStringBuilderAttribute requires one argument | Error | ✔️ |
 | `MFFSG0002` | FixedStringBuilderGenerator | FixedStringBuilderAttribute argument type is invalid | Error | ✔️ |
 | `MFFSG0003` | FixedStringBuilderGenerator | FixedStringBuilderAttribute length must be positive | Error | ✔️ |
+| `MFFSG0004` | FixedStringBuilderGenerator | FixedStringBuilderAttribute length is too large | Error | ✔️ |
+| `MFFSG0005` | FixedStringBuilderGenerator | FixedStringBuilderAttribute requires a partial struct | Error | ✔️ |
+| `MFFSG0006` | FixedStringBuilderGenerator | FixedStringBuilderAttribute does not support readonly or ref structs | Error | ✔️ |
 <!-- analyzer-rules -->

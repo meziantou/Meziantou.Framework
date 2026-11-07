@@ -4,8 +4,9 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
-    <Version>3.0.1</Version>
+    <Version>3.0.10</Version>
     <Description>Allow to manipulate Windows Access Tokens</Description>
+    <PackageTags>windows, win32, access-token, privileges, security</PackageTags>
 
     <MeziantouPolyfill_ExcludedPolyfills>T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>
   </PropertyGroup>
@@ -15,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298">
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.367">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

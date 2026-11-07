@@ -1,0 +1,16 @@
+{
+  "main": {
+    "az-Latn": {
+      "identity": {
+        "language": "az",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

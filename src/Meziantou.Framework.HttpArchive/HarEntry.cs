@@ -20,19 +20,19 @@ public sealed class HarEntry
 
     /// <summary>Gets or sets the detailed info about the request.</summary>
     [JsonPropertyName("request")]
-    public HarRequest Request { get; set; } = new();
+    public HarRequest? Request { get; set; } = new();
 
     /// <summary>Gets or sets the detailed info about the response.</summary>
     [JsonPropertyName("response")]
-    public HarResponse Response { get; set; } = new();
+    public HarResponse? Response { get; set; } = new();
 
     /// <summary>Gets or sets the info about cache usage.</summary>
     [JsonPropertyName("cache")]
-    public HarCache Cache { get; set; } = new();
+    public HarCache? Cache { get; set; } = new();
 
     /// <summary>Gets or sets the detailed timing info about request/response round trip.</summary>
     [JsonPropertyName("timings")]
-    public HarTimings Timings { get; set; } = new();
+    public HarTimings? Timings { get; set; } = new();
 
     /// <summary>Gets or sets the IP address of the server that was connected.</summary>
     [JsonPropertyName("serverIPAddress")]

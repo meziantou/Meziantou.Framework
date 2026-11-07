@@ -6,31 +6,122 @@ namespace Meziantou.Framework.ResxSourceGenerator.GeneratorTests;
 
 public class ResxGeneratorTests
 {
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
-    public void FormatString()
+    [Fact]
+    public void ReadmeExample_Format()
     {
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-        Assert.Equal("Hello world!", Resource1.FormatHello("world"));
-
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
-        Assert.Equal("Bonjour le monde!", Resource1.FormatHello("le monde"));
+        #region ResxSourceGenerator_Format
+        Assert.Equal("Hello {0}!", Sample.Hello);
+        Assert.Equal("Hello meziantou!", Sample.FormatHello("meziantou"));
+        #endregion
     }
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact]
+    public void Documentation_KeyNames()
+    {
+        #region ResxSourceGenerator_KeyNames
+        Assert.Equal("Hello", SampleNames.Hello);
+        Assert.Equal("Hello {0}!", Sample.GetString(SampleNames.Hello));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GetString()
+    {
+        #region ResxSourceGenerator_GetString
+        Assert.Equal("Hello {0}!", Sample.GetString("Hello"));
+
+        // Unknown resources
+        Assert.Null(Sample.GetString("Unknown"));
+        Assert.Equal("Default value", Sample.GetString("Unknown", defaultValue: "Default value"));
+        #endregion
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_Culture()
+    {
+        #region ResxSourceGenerator_Culture
+        var french = CultureInfo.GetCultureInfo("fr");
+
+        // Resource1.resx and Resource1.fr.resx
+        Assert.Equal("valeur", Resource1.GetString(french, "Sample"));
+        Assert.Equal("Bonjour le monde!", Resource1.FormatHello(french, "le monde"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FormatParameters()
+    {
+        #region ResxSourceGenerator_FormatParameters
+        // <mfrg:parameter name="name" typename="global::System.String" comment="Name to greet." />
+        string? message = Resource1.FormatHello(name: "world");
+        Assert.NotNull(message);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FileResources()
+    {
+        #region ResxSourceGenerator_FileResources
+        // Resources\Image1.png;System.Byte[]
+        byte[]? image = Resource1.Image1;
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47], image!.AsSpan()[..4]);
+
+        // Resources\TextFile1.txt;System.String
+        string? text = Resource1.TextFile1;
+        Assert.Equal("test", text);
+        #endregion
+    }
+
+    // Ambient UI culture is restored in a finally block, but a leak would be observed by anything running beside this test
+    [Fact(DisableParallelization = true), RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void FormatString()
+    {
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("Hello world!", Resource1.FormatHello("world"));
+
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+            Assert.Equal("Bonjour le monde!", Resource1.FormatHello("le monde"));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUICulture;
+        }
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void ResxWithCustomParameterElementsCanBeReadByResourceManager()
+    {
+        Assert.Equal("Hello {0}!", Resource1.ResourceManager.GetString("Hello", CultureInfo.GetCultureInfo("en-US")));
+        Assert.Equal("Bonjour {0}!", Resource1.ResourceManager.GetString("Hello", CultureInfo.GetCultureInfo("fr")));
+    }
+
+    // Ambient UI culture is restored in a finally block, but a leak would be observed by anything running beside this test
+    [Fact(DisableParallelization = true), RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void StringValue()
     {
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-        Assert.Equal("value", Resource1.Sample);
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("value", Resource1.Sample);
 
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
-        Assert.Equal("valeur", Resource1.Sample);
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+            Assert.Equal("valeur", Resource1.Sample);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUICulture;
+        }
     }
 
     [Fact]
     public void GetStringWithDefaultValue()
     {
         // Ensure the value is not nullable
-        Assert.Equal(3, Resource1.GetString("UnknownValue", defaultValue: "abc").Length);
+        Assert.HasCount(3, Resource1.GetString("UnknownValue", defaultValue: "abc"));
     }
 
     [Fact]
@@ -40,8 +131,33 @@ public class ResxGeneratorTests
     }
 
     [Fact]
+    public void EachResourceUsesItsOwnManifestResourceName()
+    {
+        Assert.Equal("value", Resource1.Sample);
+        Assert.Equal("value from Folder1", Folder1.Resource2.Sample);
+    }
+
+    [Fact]
+    public void ResxFilesWithSameFileNameAreBothGenerated()
+    {
+        Assert.Equal("value from Folder1", Folder1.Resource2.Sample);
+        Assert.Equal("value from Folder2", Folder2.Resource2.Sample);
+    }
+
+    [Fact]
     public void BinaryFile()
     {
         Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], Resource1.Image1!.AsSpan()[..8]);
+    }
+
+    [Fact]
+    public void GenerateKeyNamesTypeMetadataIsHonored()
+    {
+        // Resource3.resx sets GenerateKeyNamesType="false" in the csproj, so only its resource type must be generated.
+        // Resource1.resx leaves the metadata unset, which proves the names type is generated by default.
+        var assembly = typeof(Resource1).Assembly;
+        Assert.NotNull(assembly.GetType(typeof(Resource1).Namespace + ".Resource1Names"));
+        Assert.NotNull(assembly.GetType(typeof(Resource1).Namespace + ".Resource3"));
+        Assert.Null(assembly.GetType(typeof(Resource1).Namespace + ".Resource3Names"));
     }
 }

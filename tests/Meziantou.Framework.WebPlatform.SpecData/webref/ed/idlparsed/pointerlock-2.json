@@ -1,0 +1,309 @@
+{
+  "spec": {
+    "title": "Pointer Lock 2.0",
+    "url": "https://w3c.github.io/pointerlock/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "PointerLockOptions": {
+        "fragment": "dictionary PointerLockOptions {\n  boolean unadjustedMovement = false;\n};",
+        "type": "dictionary",
+        "name": "PointerLockOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "unadjustedMovement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/pointerlock/#dom-pointerlockoptions-unadjustedmovement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/pointerlock/#dom-pointerlockoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n  Promise<undefined> requestPointerLock(optional PointerLockOptions options = {});\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestPointerLock",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PointerLockOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/pointerlock/#dom-element-requestpointerlock"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n  attribute EventHandler onpointerlockchange;\n  attribute EventHandler onpointerlockerror;\n  undefined exitPointerLock();\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onpointerlockchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerlock/#dom-document-onpointerlockchange"
+            },
+            {
+              "type": "attribute",
+              "name": "onpointerlockerror",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/pointerlock/#dom-document-onpointerlockerror"
+            },
+            {
+              "type": "operation",
+              "name": "exitPointerLock",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/pointerlock/#dom-document-exitpointerlock"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "DocumentOrShadowRoot": [
+        {
+          "fragment": "partial interface mixin DocumentOrShadowRoot {\n  readonly attribute Element? pointerLockElement;\n};",
+          "type": "interface mixin",
+          "name": "DocumentOrShadowRoot",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "pointerLockElement",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "Element"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/pointerlock/#dom-documentorshadowroot-pointerlockelement"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MouseEvent": [
+        {
+          "fragment": "partial interface MouseEvent {\n  readonly attribute double movementX;\n  readonly attribute double movementY;\n};",
+          "type": "interface",
+          "name": "MouseEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "movementX",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/pointerlock/#dom-mouseevent-movementx"
+            },
+            {
+              "type": "attribute",
+              "name": "movementY",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/pointerlock/#dom-mouseevent-movementy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MouseEventInit": [
+        {
+          "fragment": "partial dictionary MouseEventInit {\n  double movementX = 0;\n  double movementY = 0;\n};",
+          "type": "dictionary",
+          "name": "MouseEventInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "movementX",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": {
+                "type": "number",
+                "value": "0"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/pointerlock/#dom-mouseeventinit-movementx"
+            },
+            {
+              "type": "field",
+              "name": "movementY",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": {
+                "type": "number",
+                "value": "0"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/pointerlock/#dom-mouseeventinit-movementy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "PointerLockOptions": [],
+      "Element": [
+        "PointerLockOptions"
+      ],
+      "Document": [
+        "EventHandler"
+      ],
+      "DocumentOrShadowRoot": [
+        "Element"
+      ],
+      "MouseEvent": [],
+      "MouseEventInit": []
+    },
+    "externalDependencies": [
+      "Element",
+      "Document",
+      "EventHandler",
+      "DocumentOrShadowRoot",
+      "MouseEvent",
+      "MouseEventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

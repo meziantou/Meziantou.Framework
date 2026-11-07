@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.4		FALSE	FALSE	FALSE		[Group]			Table 94 and Table 145
+S	name	1.4		TRUE	FALSE	FALSE		[Transparency]			
+CS	array;name	1.4		FALSE	FALSE	FALSE		[];[DeviceCMYK,DeviceRGB,DeviceGray]		[DeviceGrayColorSpace,DeviceRGBColorSpace,DeviceCMYKColorSpace,CalGrayColorSpace,CalRGBColorSpace,ICCBasedColorSpace];[]	
+I	boolean	1.4		FALSE	FALSE	FALSE	false				
+K	boolean	1.4		FALSE	FALSE	FALSE	false				

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.TaggedValues.CodeFix/Meziantou.Framework.TaggedValues.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.TaggedValues/Meziantou.Framework.TaggedValues.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.TaggedValues.Analyzer.Tests/Meziantou.Framework.TaggedValues.Analyzer.Tests.csproj" />
+  </Folder>
+</Solution>

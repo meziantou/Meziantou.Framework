@@ -1,0 +1,194 @@
+{
+  "spec": {
+    "title": "High Resolution Time",
+    "url": "https://w3c.github.io/hr-time/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Performance"
+        ],
+        "Worker": [
+          "Performance"
+        ]
+      }
+    },
+    "idlNames": {
+      "DOMHighResTimeStamp": {
+        "fragment": "typedef double DOMHighResTimeStamp;",
+        "type": "typedef",
+        "name": "DOMHighResTimeStamp",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "double"
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp"
+      },
+      "EpochTimeStamp": {
+        "fragment": "typedef unsigned long long EpochTimeStamp;",
+        "type": "typedef",
+        "name": "EpochTimeStamp",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "unsigned long long"
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/hr-time/#typedefdef-epochtimestamp"
+      },
+      "Performance": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Performance : EventTarget {\n    DOMHighResTimeStamp now();\n    readonly attribute DOMHighResTimeStamp timeOrigin;\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "Performance",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "now",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/hr-time/#dom-performance-now"
+          },
+          {
+            "type": "attribute",
+            "name": "timeOrigin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/hr-time/#dom-performance-timeorigin"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/hr-time/#dom-performance-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/hr-time/#performance"
+      }
+    },
+    "idlExtendedNames": {
+      "WindowOrWorkerGlobalScope": [
+        {
+          "fragment": "partial interface mixin WindowOrWorkerGlobalScope {\n  [Replaceable] readonly attribute Performance performance;\n};",
+          "type": "interface mixin",
+          "name": "WindowOrWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "performance",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Performance"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "Replaceable",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/hr-time/#the-performance-attr"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Performance"
+      ],
+      "Worker": [
+        "Performance"
+      ]
+    },
+    "dependencies": {
+      "Performance": [
+        "EventTarget",
+        "DOMHighResTimeStamp"
+      ],
+      "WindowOrWorkerGlobalScope": [
+        "Performance"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "WindowOrWorkerGlobalScope"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

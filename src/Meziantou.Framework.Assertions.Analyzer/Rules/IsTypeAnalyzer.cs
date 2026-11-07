@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -45,13 +46,13 @@ public sealed class IsTypeAnalyzer : DiagnosticAnalyzer
 
         if (IsStaticClass(expectedType))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), $"Type '{expectedType.ToDisplayString()}' is static and cannot be used with Assert.IsType"));
+            context.ReportDiagnostic(Descriptor, invocationOperation, $"Type '{expectedType.ToDisplayString()}' is static and cannot be used with Assert.IsType");
             return;
         }
 
         if (expectedType.IsAbstract)
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), $"Type '{expectedType.ToDisplayString()}' is abstract and cannot be used with Assert.IsType. Use Assert.IsAssignableTo instead"));
+            context.ReportDiagnostic(Descriptor, invocationOperation, $"Type '{expectedType.ToDisplayString()}' is abstract and cannot be used with Assert.IsType. Use Assert.IsAssignableTo instead");
         }
     }
 
@@ -68,7 +69,7 @@ public sealed class IsTypeAnalyzer : DiagnosticAnalyzer
             if (argument.Parameter?.Ordinal is not 0)
                 continue;
 
-            var operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(argument.Value);
+            var operation = argument.Value.UnwrapImplicitConversions();
             if (operation is ITypeOfOperation { TypeOperand: INamedTypeSymbol typeOfSymbol })
             {
                 expectedType = typeOfSymbol;

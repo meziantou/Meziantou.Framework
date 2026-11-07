@@ -1,0 +1,43 @@
+{
+  "prefix": "test",
+  "info": {
+    "name": "Test Icons",
+    "total": 9,
+    "version": "1.2.3",
+    "author": { "name": "Meziantou", "url": "https://www.meziantou.net" },
+    "license": { "title": "MIT", "spdx": "MIT", "url": "https://opensource.org/licenses/MIT" },
+    "category": "General",
+    "palette": false
+  },
+  "lastModified": 1737398331,
+  "width": 24,
+  "height": 24,
+  "icons": {
+    "home": { "body": "<path fill=\"currentColor\" d=\"M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8z\"/>" },
+    "wide": { "body": "<path d=\"M0 0h32v16H0z\"/>", "width": 32, "height": 16 },
+    "offset": { "body": "<path d=\"M2 4h20v16H2z\"/>", "left": 2, "top": 4, "width": 20, "height": 16 },
+    "rotated": { "body": "<path d=\"M0 0h10v20H0z\"/>", "width": 10, "height": 20, "rotate": 1 },
+    "flipped": { "body": "<path d=\"M1 2h3v4H1z\"/>", "left": 1, "top": 2, "width": 3, "height": 4, "hFlip": true },
+    "both-flips": { "body": "<path d=\"M1 2h3v4H1z\"/>", "width": 3, "height": 5, "hFlip": true, "vFlip": true },
+    "link": { "body": "<use xlink:href=\"#a\"/>" },
+    "old": { "body": "<path d=\"M0 0h1v1H0z\"/>", "hidden": true },
+    "fraction": { "body": "<path d=\"M0 0h1v1H0z\"/>", "width": 25.9, "height": 12.5, "vFlip": true }
+  },
+  "aliases": {
+    "house": { "parent": "home" },
+    "home-left": { "parent": "home", "rotate": 3 },
+    "home-down": { "parent": "home-left", "rotate": 3, "hFlip": true },
+    "wide-180": { "parent": "wide", "rotate": 2 },
+    "wide-90": { "parent": "wide", "rotate": 1 },
+    "wide-270": { "parent": "wide", "rotate": 3 },
+    "wide-vflip": { "parent": "wide", "vFlip": true },
+    "rotated-back": { "parent": "rotated", "rotate": 3 },
+    "flipped-back": { "parent": "flipped", "hFlip": true },
+    "offset-flip-rotate": { "parent": "offset", "vFlip": true, "rotate": 1 },
+    "home-big": { "parent": "home", "width": 48, "height": 48 },
+    "old-alias": { "parent": "old" },
+    "missing": { "parent": "does-not-exist" },
+    "cycle-a": { "parent": "cycle-b" },
+    "cycle-b": { "parent": "cycle-a" }
+  }
+}

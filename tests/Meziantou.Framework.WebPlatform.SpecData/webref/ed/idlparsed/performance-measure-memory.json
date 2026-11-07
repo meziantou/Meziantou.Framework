@@ -1,0 +1,331 @@
+{
+  "spec": {
+    "title": "Measure Memory API",
+    "url": "https://wicg.github.io/performance-measure-memory/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "MemoryMeasurement": {
+        "fragment": "dictionary MemoryMeasurement {\n  unsigned long long bytes;\n  sequence<MemoryBreakdownEntry> breakdown;\n};",
+        "type": "dictionary",
+        "name": "MemoryMeasurement",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "bytes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memorymeasurement-bytes"
+          },
+          {
+            "type": "field",
+            "name": "breakdown",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MemoryBreakdownEntry"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memorymeasurement-breakdown"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/performance-measure-memory/#dictdef-memorymeasurement"
+      },
+      "MemoryBreakdownEntry": {
+        "fragment": "dictionary MemoryBreakdownEntry {\n  unsigned long long bytes;\n  sequence<MemoryAttribution> attribution;\n  sequence<DOMString> types;\n};",
+        "type": "dictionary",
+        "name": "MemoryBreakdownEntry",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "bytes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memorybreakdownentry-bytes"
+          },
+          {
+            "type": "field",
+            "name": "attribution",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MemoryAttribution"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memorybreakdownentry-attribution"
+          },
+          {
+            "type": "field",
+            "name": "types",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memorybreakdownentry-types"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/performance-measure-memory/#dictdef-memorybreakdownentry"
+      },
+      "MemoryAttribution": {
+        "fragment": "dictionary MemoryAttribution {\n  USVString url;\n  MemoryAttributionContainer container;\n  DOMString scope;\n};",
+        "type": "dictionary",
+        "name": "MemoryAttribution",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memoryattribution-url"
+          },
+          {
+            "type": "field",
+            "name": "container",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MemoryAttributionContainer"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memoryattribution-container"
+          },
+          {
+            "type": "field",
+            "name": "scope",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memoryattribution-scope"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/performance-measure-memory/#dictdef-memoryattribution"
+      },
+      "MemoryAttributionContainer": {
+        "fragment": "dictionary MemoryAttributionContainer {\n  DOMString id;\n  USVString src;\n};",
+        "type": "dictionary",
+        "name": "MemoryAttributionContainer",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memoryattributioncontainer-id"
+          },
+          {
+            "type": "field",
+            "name": "src",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/performance-measure-memory/#dom-memoryattributioncontainer-src"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/performance-measure-memory/#dictdef-memoryattributioncontainer"
+      }
+    },
+    "idlExtendedNames": {
+      "Performance": [
+        {
+          "fragment": "partial interface Performance {\n  [Exposed=(Window,ServiceWorker,SharedWorker), CrossOriginIsolated] Promise<MemoryMeasurement> measureUserAgentSpecificMemory();\n};",
+          "type": "interface",
+          "name": "Performance",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "measureUserAgentSpecificMemory",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "MemoryMeasurement"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "Exposed",
+                  "rhs": {
+                    "type": "identifier-list",
+                    "value": [
+                      {
+                        "value": "Window"
+                      },
+                      {
+                        "value": "ServiceWorker"
+                      },
+                      {
+                        "value": "SharedWorker"
+                      }
+                    ]
+                  },
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "CrossOriginIsolated",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://wicg.github.io/performance-measure-memory/#dom-performance-measureuseragentspecificmemory"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "MemoryMeasurement": [
+        "MemoryBreakdownEntry"
+      ],
+      "MemoryBreakdownEntry": [
+        "MemoryAttribution"
+      ],
+      "MemoryAttribution": [
+        "MemoryAttributionContainer"
+      ],
+      "MemoryAttributionContainer": [],
+      "Performance": [
+        "MemoryMeasurement"
+      ]
+    },
+    "externalDependencies": [
+      "Performance"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

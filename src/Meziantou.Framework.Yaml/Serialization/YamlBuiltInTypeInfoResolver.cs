@@ -11,7 +11,7 @@ internal static class YamlBuiltInTypeInfoResolver
         ArgumentNullException.ThrowIfNull(options);
 
         var converter = GetConverter(type);
-        return converter is null ? null : new BuiltInYamlTypeInfo(type, options, converter);
+        return converter is null ? null : new BuiltInYamlTypeInfo(type, options);
     }
 
     private static YamlConverter? GetConverter(Type type)
@@ -116,6 +116,16 @@ internal static class YamlBuiltInTypeInfoResolver
             return YamlTimeSpanConverter.Instance;
         }
 
+        if (type == typeof(Uri))
+        {
+            return YamlUriConverter.Instance;
+        }
+
+        if (type == typeof(CultureInfo))
+        {
+            return YamlCultureInfoConverter.Instance;
+        }
+
         if (type == typeof(DateOnly))
         {
             return YamlDateOnlyConverter.Instance;
@@ -140,6 +150,43 @@ internal static class YamlBuiltInTypeInfoResolver
         {
             return YamlUInt128Converter.Instance;
         }
+
+        if (type == typeof(System.Numerics.BigInteger))
+        {
+            return YamlBigIntegerConverter.Instance;
+        }
+
+        if (type == typeof(System.Version))
+        {
+            return YamlVersionConverter.Instance;
+        }
+
+        if (type == typeof(System.Text.Rune))
+        {
+            return YamlRuneConverter.Instance;
+        }
+
+#if NET11_0_OR_GREATER
+        if (type == typeof(BFloat16))
+        {
+            return YamlBFloat16Converter.Instance;
+        }
+
+        if (type == typeof(Decimal32))
+        {
+            return YamlDecimal32Converter.Instance;
+        }
+
+        if (type == typeof(Decimal64))
+        {
+            return YamlDecimal64Converter.Instance;
+        }
+
+        if (type == typeof(Decimal128))
+        {
+            return YamlDecimal128Converter.Instance;
+        }
+#endif
 
         if (type == typeof(object))
         {
@@ -190,30 +237,37 @@ internal static class YamlBuiltInTypeInfoResolver
         if (type == typeof(Half?)) return YamlNullableConverter<Half>.Instance;
         if (type == typeof(Int128?)) return YamlNullableConverter<Int128>.Instance;
         if (type == typeof(UInt128?)) return YamlNullableConverter<UInt128>.Instance;
+        if (type == typeof(System.Numerics.BigInteger?)) return YamlNullableConverter<System.Numerics.BigInteger>.Instance;
+        if (type == typeof(System.Text.Rune?)) return YamlNullableConverter<System.Text.Rune>.Instance;
+#if NET11_0_OR_GREATER
+        if (type == typeof(BFloat16?)) return YamlNullableConverter<BFloat16>.Instance;
+        if (type == typeof(Decimal32?)) return YamlNullableConverter<Decimal32>.Instance;
+        if (type == typeof(Decimal64?)) return YamlNullableConverter<Decimal64>.Instance;
+        if (type == typeof(Decimal128?)) return YamlNullableConverter<Decimal128>.Instance;
+#endif
 
         return null;
     }
 
     private sealed class BuiltInYamlTypeInfo : YamlTypeInfo
     {
-        private readonly YamlConverter _converter;
-
-        public BuiltInYamlTypeInfo(Type type, YamlSerializerOptions options, YamlConverter converter)
+        public BuiltInYamlTypeInfo(Type type, YamlSerializerOptions options)
             : base(type, options)
         {
-            _converter = converter ?? throw new ArgumentNullException(nameof(converter));
         }
 
+        // The converter is resolved from the reader or the writer rather than captured, so a converter registered
+        // through YamlSerializerOptions.Converters or a YamlConverterAttribute applies to the root value too.
         public override void Write(YamlWriter writer, object? value)
         {
             ArgumentNullException.ThrowIfNull(writer);
-            _converter.Write(writer, value);
+            writer.GetConverter(Type).Write(writer, value);
         }
 
         public override object? ReadAsObject(YamlReader reader)
         {
             ArgumentNullException.ThrowIfNull(reader);
-            return _converter.Read(reader, Type);
+            return reader.GetConverter(Type).Read(reader, Type);
         }
     }
 }

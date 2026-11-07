@@ -9,7 +9,7 @@ public sealed class TokenPrivilegeEntry
 {
     internal TokenPrivilegeEntry(string name, PrivilegeAttribute attributes)
     {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Name = name;
         Attributes = attributes;
     }
 

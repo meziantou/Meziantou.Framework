@@ -33,4 +33,7 @@ public sealed class NuGetPackageValidationOptions
 
     /// <summary>Gets or sets an optional action to configure HTTP requests made during validation, such as adding authentication headers.</summary>
     public Action<HttpRequestMessage>? ConfigureRequest { get; set; }
+
+    /// <summary>Gets or sets the client that sends the HTTP requests made during validation. Tests set it to simulate network failures.</summary>
+    internal HttpClient? HttpClient { get; set; }
 }

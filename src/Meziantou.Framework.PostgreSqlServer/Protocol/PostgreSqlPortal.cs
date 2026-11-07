@@ -10,5 +10,6 @@ internal sealed class PostgreSqlPortal
 
     public IReadOnlyList<int> ResultFormatCodes { get; init; } = [];
 
-    public bool IsDescribed { get; set; }
+    /// <summary>The number of columns announced by Describe, or <see langword="null"/> when the portal was never described.</summary>
+    public int? DescribedColumnCount { get; set; }
 }

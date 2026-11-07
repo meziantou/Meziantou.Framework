@@ -17,12 +17,12 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
 
     private void AddRangeCore(ReadOnlySpan<long> values)
     {
-        AddRangeCore(MemoryMarshal.Cast<long, ulong>(values));
+        AddRangeCore(unsafe(MemoryMarshal.Cast<long, ulong>(values)));
     }
 
     private void RemoveRangeCore(ReadOnlySpan<long> values)
     {
-        RemoveRangeCore(MemoryMarshal.Cast<long, ulong>(values));
+        RemoveRangeCore(unsafe(MemoryMarshal.Cast<long, ulong>(values)));
     }
 
     private void AddRangeCore(ReadOnlySpan<ulong> values)
@@ -47,13 +47,12 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
             return;
         }
 
-        ref var valuesReference = ref MemoryMarshal.GetReference(values);
         var index = 0;
         if (AdvSimd.Arm64.IsSupported)
         {
             while (index <= values.Length - Vector128<ulong>.Count)
             {
-                var current = Vector128.LoadUnsafe(ref valuesReference, (nuint)index);
+                var current = Vector128.Create(values[index..]);
                 Multiply64To128(current ^ Vector128.Create(BitFlip), Prime1 + (sizeof(ulong) << 2), out var low, out var high);
                 high += low << 1;
                 low ^= high >> 3;
@@ -66,7 +65,7 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
 
                 for (var lane = 0; lane < Vector128<ulong>.Count; lane++)
                 {
-                    UpdateHash(new Hash128(low[lane], high[lane]), remove);
+                    UpdateHash(BloomFilterHash.FromUInt128(low[lane], high[lane]), remove);
                 }
 
                 index += Vector128<ulong>.Count;
@@ -77,7 +76,7 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
         {
             while (index <= values.Length - Vector256<ulong>.Count)
             {
-                var current = Vector256.LoadUnsafe(ref valuesReference, (nuint)index);
+                var current = Vector256.Create(values[index..]);
                 Multiply64To128(current ^ Vector256.Create(BitFlip), Prime1 + (sizeof(ulong) << 2), out var low, out var high);
                 high += low << 1;
                 low ^= high >> 3;
@@ -90,7 +89,7 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
 
                 for (var lane = 0; lane < Vector256<ulong>.Count; lane++)
                 {
-                    UpdateHash(new Hash128(low[lane], high[lane]), remove);
+                    UpdateHash(BloomFilterHash.FromUInt128(low[lane], high[lane]), remove);
                 }
 
                 index += Vector256<ulong>.Count;
@@ -104,7 +103,7 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void UpdateHash(Hash128 hash, bool remove)
+    private void UpdateHash(BloomFilterHash hash, bool remove)
     {
         if (remove)
         {
@@ -117,9 +116,9 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash128 Hash(ReadOnlySpan<byte> value)
+    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
-        return new(XxHash128.HashToUInt128(value));
+        return BloomFilterHash.FromUInt128(XxHash128.HashToUInt128(value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

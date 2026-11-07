@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	integer;string-byte	1.2	2.0	TRUE	FALSE	FALSE		[fn:Eval(@0>0)];[fn:Eval(fn:StringLength(0)==8)]			Table 307 - starting time
+1	integer	1.2	2.0	TRUE	FALSE	FALSE		[fn:Eval(@1>0)]			scale in units per second

@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary	1.5		FALSE	FALSE	FALSE				[SignatureReferenceDocMDP,SignatureReferenceFieldMDP,SignatureReferenceIdentity,SignatureReferenceUR]	Table 255, Reference cell - ISO 32000 does not mention Identity, but Adobe PDF 1.7 (2006) did, therefore noted as deprecated in 1.7

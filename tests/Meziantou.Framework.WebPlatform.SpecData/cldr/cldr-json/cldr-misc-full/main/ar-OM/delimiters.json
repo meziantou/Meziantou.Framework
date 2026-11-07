@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-OM": {
+      "identity": {
+        "language": "ar",
+        "territory": "OM"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

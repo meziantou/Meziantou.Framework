@@ -1,3 +1,4 @@
+using System.Reflection;
 using Meziantou.Framework.Collections;
 
 namespace Meziantou.Framework.Tests.Collections;
@@ -32,6 +33,21 @@ public class CircularBufferTests
 
         list.AddFirst(1);
         Assert.Equal([1], list);
+    }
+
+    [Fact]
+    public void CircularBuffer_AllowOverwrite_Example()
+    {
+        #region CircularBuffer_AllowOverwrite
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+        buffer.AddLast(3);
+        Assert.Equal([1, 2, 3], buffer);
+
+        buffer.AddLast(4); // overwrites 1
+        Assert.Equal([2, 3, 4], buffer);
+        #endregion
     }
 
     [Fact]
@@ -497,5 +513,121 @@ public class CircularBufferTests
 
         Assert.Equal([1, 2, 3], firstPass);
         Assert.Equal(firstPass, secondPass);
+    }
+
+    [Fact]
+    public void Clear_WrappedBufferOfReferenceType()
+    {
+        var list = new CircularBuffer<string>(3) { AllowOverwrite = true };
+        list.AddLast("a");
+        list.AddLast("b");
+        list.AddLast("c");
+        list.RemoveFirst();
+        list.RemoveFirst();
+
+        list.Clear();
+
+        Assert.Empty(list);
+    }
+
+    [Fact]
+    public void Clear_ReleasesTheReferencesOfAWrappedBuffer()
+    {
+        var list = new CircularBuffer<string>(2) { AllowOverwrite = true };
+        list.AddLast("a");
+        list.AddLast("b");
+        list.RemoveFirst();
+
+        list.Clear();
+
+        // Clear exists to let the GC reclaim the items, so no slot may still reference one
+        var items = (string?[])typeof(CircularBuffer<string>)
+            .GetField("_items", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(list)!;
+        Assert.All(items, item => Assert.Null(item));
+    }
+
+    [Fact]
+    public void Clear_BufferThatWrapsAroundTheEndOfTheArray()
+    {
+        var list = new CircularBuffer<string>(3) { AllowOverwrite = true };
+        list.AddLast("a");
+        list.AddLast("b");
+        list.AddLast("c");
+        list.AddLast("d");
+
+        list.Clear();
+
+        Assert.Empty(list);
+        list.AddLast("e");
+        Assert.Equal(["e"], list);
+    }
+
+    [Fact]
+    public void Documentation_Full()
+    {
+        #region CircularBuffer_Full
+        var buffer = new CircularBuffer<int>(2);
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+
+        // Without AllowOverwrite, adding to a full buffer throws
+        Assert.Throws<InvalidOperationException>(() => buffer.AddLast(3));
+
+        // Remove items from either end
+        Assert.Equal(1, buffer.RemoveFirst());
+        buffer.AddLast(3);
+        Assert.Equal([2, 3], buffer);
+        #endregion
+    }
+
+    [Fact]
+    public void Capacity_SetToZero_Throws()
+    {
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => buffer.Capacity = 0);
+        Assert.Equal(3, buffer.Capacity);
+    }
+
+    [Fact]
+    public void CopyTo_DestinationTooSmall_DoesNotWrite()
+    {
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+        buffer.AddLast(3);
+        buffer.AddLast(4); // wrapped: [2, 3, 4]
+
+        var destination = new int[2];
+        Assert.Throws<ArgumentException>("array", () => buffer.CopyTo(destination, 0));
+        Assert.Equal([0, 0], destination);
+    }
+
+    [Fact]
+    public void CopyTo_IndexGreaterThanLength_Throws()
+    {
+        var buffer = new CircularBuffer<int>(3);
+        Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => buffer.CopyTo(new int[2], 3));
+    }
+
+    [Fact]
+    public void CopyTo_Empty_AtEndOfArray()
+    {
+        var buffer = new CircularBuffer<int>(3);
+        buffer.CopyTo(new int[2], 2);
+    }
+
+    [Fact]
+    public void CopyTo_Wrapped_WithOffset()
+    {
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+        buffer.AddLast(3);
+        buffer.AddLast(4);
+
+        var destination = new int[4];
+        buffer.CopyTo(destination, 1);
+        Assert.Equal([0, 2, 3, 4], destination);
     }
 }

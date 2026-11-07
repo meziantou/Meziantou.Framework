@@ -1,0 +1,71 @@
+{
+  "spec": {
+    "title": "CSS Shadow Module Level 1",
+    "url": "https://drafts.csswg.org/css-shadow-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n  [SameObject, PutForwards=value] readonly attribute DOMTokenList part;\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "part",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMTokenList"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "PutForwards",
+                  "rhs": {
+                    "type": "identifier",
+                    "value": "value"
+                  },
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-shadow-1/#dom-element-part"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Element": [
+        "DOMTokenList"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "DOMTokenList"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

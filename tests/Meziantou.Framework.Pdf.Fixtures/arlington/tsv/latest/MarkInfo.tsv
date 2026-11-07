@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Marked	boolean	1.4		FALSE	FALSE	FALSE	false				Table 353
+UserProperties	boolean	1.6		FALSE	FALSE	FALSE	false				
+Suspects	boolean	1.6	2.0	FALSE	FALSE	FALSE	false				

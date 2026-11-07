@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	1.0		TRUE	FALSE	FALSE		[DeviceGray]			Clause 8.6.3 and https://github.com/pdf-association/pdf-issues/issues/552

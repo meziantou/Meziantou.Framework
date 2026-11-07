@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<title>Meta viewport device-width</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 8px }
+  .bar { height: 40px; background: linear-gradient(to right, #c33, #33c) }
+  .fixed { width: 300px; height: 60px; background: #fc0; margin-top: 8px }
+  .vw { width: 50vw; height: 30px; background: #3c3; margin-top: 8px }
+  p { font-size: 16px }
+</style>
+<div class="bar"></div>
+<div class="fixed">300px</div>
+<div class="vw"></div>
+<p>The layout viewport of a mobile device depends on the meta viewport of the page: device-width, a fixed width, or 980px without one.</p>

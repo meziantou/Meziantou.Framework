@@ -1,0 +1,5 @@
+parser-tests/early/0f5f47108da5c34e.js:sloppy # outdated (ES2017): a var of a for-of in a catch block may redeclare the catch parameter since ES2025 (Annex B, test262 annexB/language/statements/try/catch-redeclared-for-of-var.js)
+parser-tests/early/12a74c60f52a60de.js:sloppy # outdated: duplicate function declarations in a block are allowed in sloppy mode (Annex B.3.2.4)
+parser-tests/early/1aff49273f3e3a98.js:sloppy # outdated: duplicate function declarations in a block are allowed in sloppy mode (Annex B.3.2.4)
+parser-tests/early/be7329119eaa3d47.js:sloppy # outdated: duplicate function declarations in a block are allowed in sloppy mode (Annex B.3.2.4)
+parser-tests/early/ec31fa5e521c5df4.js:sloppy # outdated: duplicate function declarations in a block are allowed in sloppy mode (Annex B.3.2.4)

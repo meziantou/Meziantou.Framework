@@ -1,0 +1,4 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
+        wpf:WindowUtilities.CloseOnEscapeKeyDown="True">
+</Window>

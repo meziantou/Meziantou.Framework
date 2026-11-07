@@ -1,0 +1,152 @@
+{
+  "spec": {
+    "title": "CSS Animations Module Level 2",
+    "url": "https://drafts.csswg.org/css-animations-2/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "AnimationEvent",
+          "CSSAnimation"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSAnimation": {
+        "fragment": "[Exposed=Window]\ninterface CSSAnimation : Animation {\n  readonly attribute CSSOMString animationName;\n};",
+        "type": "interface",
+        "name": "CSSAnimation",
+        "inheritance": "Animation",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "animationName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-animations-2/#dom-cssanimation-animationname"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-animations-2/#cssanimation"
+      }
+    },
+    "idlExtendedNames": {
+      "AnimationEvent": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface AnimationEvent {\n  readonly attribute CSSAnimation? animation;\n};",
+          "type": "interface",
+          "name": "AnimationEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "animation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "CSSAnimation"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-animations-2/#dom-animationevent-animation"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "AnimationEventInit": [
+        {
+          "fragment": "partial dictionary AnimationEventInit {\n  CSSAnimation? animation = null;\n};",
+          "type": "dictionary",
+          "name": "AnimationEventInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "animation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "CSSAnimation"
+              },
+              "default": {
+                "type": "null"
+              },
+              "required": false,
+              "href": "https://drafts.csswg.org/css-animations-2/#dom-animationeventinit-animation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AnimationEvent",
+        "CSSAnimation"
+      ]
+    },
+    "dependencies": {
+      "AnimationEvent": [
+        "CSSAnimation"
+      ],
+      "AnimationEventInit": [
+        "CSSAnimation"
+      ],
+      "CSSAnimation": [
+        "Animation",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "AnimationEvent",
+      "AnimationEventInit",
+      "Animation",
+      "CSSOMString"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

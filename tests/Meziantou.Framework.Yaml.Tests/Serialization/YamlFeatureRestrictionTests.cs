@@ -80,7 +80,7 @@ public sealed class YamlFeatureRestrictionTests
     }
 
     [Fact]
-    public void Deserialize_MergeKey_AllowedByDefault()
+    public void Deserialize_MergeKey_IsApplied()
     {
         var yaml =
             "<<: { a: 1, b: 2 }\n" +
@@ -91,19 +91,6 @@ public sealed class YamlFeatureRestrictionTests
         Assert.NotNull(result);
         Assert.Equal(1, result["a"]);
         Assert.Equal(5, result["b"]);
-    }
-
-    [Fact]
-    public void Deserialize_MergeKey_Disallowed_Throws()
-    {
-        var yaml =
-            "<<: { a: 1, b: 2 }\n" +
-            "b: 5\n";
-        var options = new YamlSerializerOptions { AllowMergeKeys = false };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Dictionary<string, int>>(yaml, options));
-
-        Assert.Contains("merge keys are not allowed", exception.Message);
     }
 
     [Fact]

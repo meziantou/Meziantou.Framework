@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+DefaultRGB	array	1.1		FALSE	FALSE	FALSE				[CalRGBColorSpace,fn:SinceVersion(1.3,ICCBasedColorSpace),fn:SinceVersion(1.3,DeviceNColorSpace)]	Table 34
+DefaultCMYK	array	1.3		FALSE	FALSE	FALSE				[ICCBasedColorSpace,DeviceNColorSpace]	
+DefaultGray	array	1.1		FALSE	FALSE	FALSE				[CalGrayColorSpace,fn:SinceVersion(1.3,ICCBasedColorSpace),fn:SinceVersion(1.2,SeparationColorSpace),fn:SinceVersion(1.3,DeviceNColorSpace)]	
+*	array;name	1.0		FALSE	FALSE	FALSE		[];[DeviceCMYK,DeviceRGB,DeviceGray,fn:SinceVersion(1.2,Pattern)]		[fn:SinceVersion(1.1,CalGrayColorSpace),fn:SinceVersion(1.1,CalRGBColorSpace),fn:SinceVersion(1.1,LabColorSpace),fn:SinceVersion(1.3,ICCBasedColorSpace),IndexedColorSpace,fn:SinceVersion(1.2,SeparationColorSpace),fn:SinceVersion(1.3,DeviceNColorSpace),fn:SinceVersion(1.2,PatternColorSpace)];[]	https://github.com/pdf-association/pdf-issues/issues/280

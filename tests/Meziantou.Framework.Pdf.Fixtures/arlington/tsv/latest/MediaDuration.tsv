@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaDuration]			Table 292
+S	name	1.5		TRUE	FALSE	FALSE		[I,F,T]			
+T	dictionary	1.5		fn:IsRequired(@S==T)	FALSE	FALSE				[Timespan]	

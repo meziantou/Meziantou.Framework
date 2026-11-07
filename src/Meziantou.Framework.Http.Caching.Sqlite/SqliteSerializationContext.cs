@@ -4,7 +4,12 @@ namespace Meziantou.Framework.Http.Caching.Sqlite;
 
 [JsonSerializable(typeof(HttpCachePersistenceEntry))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
-[JsonSourceGenerationOptions(WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, PropertyNameCaseInsensitive = false)]
+[JsonSourceGenerationOptions(
+    WriteIndented = false,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+    PropertyNameCaseInsensitive = false,
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true)]
 internal sealed partial class SqliteSerializationContext : JsonSerializerContext
 {
 }

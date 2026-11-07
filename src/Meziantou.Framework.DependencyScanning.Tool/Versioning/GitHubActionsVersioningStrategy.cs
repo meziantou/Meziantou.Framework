@@ -70,40 +70,6 @@ internal sealed class GitHubActionsVersioningStrategy : VersioningStrategy
             value = suffix;
         }
 
-        var firstSuffixIndex = value.IndexOfAny(['-', '+']);
-        var numericPart = firstSuffixIndex >= 0 ? value[..firstSuffixIndex] : value;
-        componentCount = numericPart.Count(c => c == '.') + 1;
-        if (componentCount is < 1 or > 3)
-            return false;
-
-        if (numericPart.Split('.').Any(static part => !int.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out _)))
-            return false;
-
-        var normalizedVersion = NormalizeToThreeComponents(value, componentCount);
-
-        if (!SemanticVersion.TryParse(normalizedVersion, out var parsedVersion))
-            return false;
-
-        version = parsedVersion;
-        return true;
-    }
-
-    private static string NormalizeToThreeComponents(string value, int componentCount)
-    {
-        if (componentCount is 3)
-            return value;
-
-        var firstSuffixIndex = value.IndexOfAny(['-', '+']);
-        var core = firstSuffixIndex >= 0 ? value[..firstSuffixIndex] : value;
-        var suffix = firstSuffixIndex >= 0 ? value[firstSuffixIndex..] : string.Empty;
-
-        var sb = new StringBuilder(core);
-        for (var i = componentCount; i < 3; i++)
-        {
-            sb.Append(".0");
-        }
-
-        sb.Append(suffix);
-        return sb.ToString();
+        return PartialSemanticVersion.TryParse(value, out version, out componentCount);
     }
 }

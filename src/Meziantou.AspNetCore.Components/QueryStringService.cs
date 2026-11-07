@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text.Json;
 using Meziantou.AspNetCore.Components.Internals;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Primitives;
@@ -16,12 +15,15 @@ namespace Meziantou.AspNetCore.Components;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
-/// // In Program.cs or Startup.cs
+/// Register the service in <c>Program.cs</c>:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Program.cs" ref:region="QueryStringService_Registration" ref:dedent="true">
 /// builder.Services.AddQueryStringParameters();
-///
-/// // In a component
+/// </code>
+/// Use it in a component:
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Examples/QueryStringServiceExample.razor">
 /// @inject QueryStringService QueryStringService
+///
+/// &lt;input type="search" value="@SearchTerm" @onchange="e =&gt; UpdateSearch(e.Value as string)" /&gt;
 ///
 /// @code {
 ///     [Parameter]
@@ -38,7 +40,7 @@ namespace Meziantou.AspNetCore.Components;
 ///         QueryStringService.SetParametersFromQueryString(this);
 ///     }
 ///
-///     private async Task UpdateSearch(string newSearchTerm)
+///     private async Task UpdateSearch(string? newSearchTerm)
 ///     {
 ///         SearchTerm = newSearchTerm;
 ///         // Update the URL with new query string parameters
@@ -83,9 +85,12 @@ public sealed class QueryStringService
 
             if (queryString.TryGetValue(parameterName, out var value))
             {
-                // Convert the value from string to the actual property type
-                var convertedValue = ConvertValue(value, property.PropertyType);
-                property.SetValue(component, convertedValue);
+                // Convert the value from string to the actual property type. The query string is user-controlled,
+                // so an unparsable value must leave the property untouched instead of throwing.
+                if (ValueConverter.TryConvertFromString(value.Count > 0 ? value[0] : null, property.PropertyType, out var convertedValue))
+                {
+                    property.SetValue(component, convertedValue);
+                }
             }
         }
     }
@@ -93,7 +98,7 @@ public sealed class QueryStringService
     /// <summary>Updates the URL query string with values from component properties marked with <see cref="SupplyParameterFromQueryAttribute"/>.</summary>
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <param name="component">The component whose properties should be written to the query string.</param>
-    /// <param name="reloadPage">Whether to reload the page after updating the query string. If <see langword="false"/>, the URL is updated using the browser's history API without reloading.</param>
+    /// <param name="reloadPage">When <see langword="true"/> (the default), the new URL is applied by navigating to it, so the Blazor router re-renders the page. This is a client-side navigation, not a full browser reload. When <see langword="false"/>, the URL is updated in place using the browser's history API and nothing is re-rendered.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async ValueTask UpdateQueryString<T>(T component, bool reloadPage = true, CancellationToken cancellationToken = default)
@@ -117,13 +122,12 @@ public sealed class QueryStringService
             }
             else
             {
-                var convertedValue = ConvertToString(value);
-                parameters[parameterName] = convertedValue;
+                parameters[parameterName] = ValueConverter.ConvertToString(value);
             }
         }
 
         // Compute the new URL
-        var newUri = uri.GetComponents(UriComponents.Scheme | UriComponents.Host | UriComponents.Port | UriComponents.Path, UriFormat.UriEscaped);
+        var newUri = uri.GetComponents(UriComponents.Scheme | UriComponents.Host | UriComponents.Port | UriComponents.Path | UriComponents.Fragment, UriFormat.UriEscaped);
         foreach (var parameter in parameters)
         {
             foreach (var value in parameter.Value)
@@ -140,26 +144,6 @@ public sealed class QueryStringService
         {
             await _jsRuntime.SafeInvokeVoidAsync("window.history.replaceState", cancellationToken, args: [null, "", newUri]);
         }
-    }
-
-    private static object? ConvertValue(StringValues value, Type type)
-    {
-        var firstValue = value[0];
-        if (type == typeof(string))
-            return firstValue;
-
-        if (firstValue is null)
-            return Activator.CreateInstance(type);
-
-        return JsonSerializer.Deserialize(firstValue, type);
-    }
-
-    private static string ConvertToString(object value)
-    {
-        if (value is string s)
-            return s;
-
-        return JsonSerializer.Serialize(value);
     }
 
     private static PropertyInfo[] GetProperties<T>()

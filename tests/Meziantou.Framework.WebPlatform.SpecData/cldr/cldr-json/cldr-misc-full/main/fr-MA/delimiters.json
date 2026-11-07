@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-MA": {
+      "identity": {
+        "language": "fr",
+        "territory": "MA"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

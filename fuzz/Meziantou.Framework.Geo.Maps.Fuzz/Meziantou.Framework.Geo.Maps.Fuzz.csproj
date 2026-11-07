@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Geo.Maps and Meziantou.Framework.Geo.Maps.GeoPackage. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps\Meziantou.Framework.Geo.Maps.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.GeoPackage\Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
+  </ItemGroup>
+</Project>

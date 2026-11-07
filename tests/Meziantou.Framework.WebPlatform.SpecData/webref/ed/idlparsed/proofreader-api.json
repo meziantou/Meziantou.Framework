@@ -1,0 +1,645 @@
+{
+  "spec": {
+    "title": "Proofreader API",
+    "url": "https://webmachinelearning.github.io/proofreader-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Proofreader"
+        ]
+      }
+    },
+    "idlNames": {
+      "Proofreader": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface Proofreader {\n    static Promise<Proofreader> create(optional ProofreaderCreateOptions options = {});\n    static Promise<Availability> availability(optional ProofreaderCreateCoreOptions options = {});\n\n    Promise<ProofreadResult> proofread(\n        DOMString input,\n        optional ProofreaderProofreadOptions options = {}\n    );\n\n    readonly attribute boolean includeCorrectionTypes;\n    readonly attribute boolean includeCorrectionExplanations;\n\n    readonly attribute FrozenArray<DOMString>? expectedInputLanguages;\n    readonly attribute DOMString? correctionExplanationLanguage;\n};",
+        "type": "interface",
+        "name": "Proofreader",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Proofreader"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProofreaderCreateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreader-create"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProofreaderCreateCoreOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreader-availability"
+          },
+          {
+            "type": "operation",
+            "name": "proofread",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProofreadResult"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProofreaderProofreadOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreader-proofread"
+          },
+          {
+            "type": "attribute",
+            "name": "includeCorrectionTypes",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreader-includecorrectiontypes"
+          },
+          {
+            "type": "attribute",
+            "name": "includeCorrectionExplanations",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreader-includecorrectionexplanations"
+          },
+          {
+            "type": "attribute",
+            "name": "expectedInputLanguages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreader-expectedinputlanguages"
+          },
+          {
+            "type": "attribute",
+            "name": "correctionExplanationLanguage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreader-correctionexplanationlanguage"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/proofreader-api/#proofreader"
+      },
+      "ProofreaderCreateCoreOptions": {
+        "fragment": "dictionary ProofreaderCreateCoreOptions {\n    boolean includeCorrectionTypes = false;\n    boolean includeCorrectionExplanations = false;\n\n    sequence<DOMString> expectedInputLanguages;\n    DOMString correctionExplanationLanguage;\n};",
+        "type": "dictionary",
+        "name": "ProofreaderCreateCoreOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "includeCorrectionTypes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadercreatecoreoptions-includecorrectiontypes"
+          },
+          {
+            "type": "field",
+            "name": "includeCorrectionExplanations",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadercreatecoreoptions-includecorrectionexplanations"
+          },
+          {
+            "type": "field",
+            "name": "expectedInputLanguages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadercreatecoreoptions-expectedinputlanguages"
+          },
+          {
+            "type": "field",
+            "name": "correctionExplanationLanguage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadercreatecoreoptions-correctionexplanationlanguage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/proofreader-api/#dictdef-proofreadercreatecoreoptions"
+      },
+      "ProofreaderCreateOptions": {
+        "fragment": "dictionary ProofreaderCreateOptions : ProofreaderCreateCoreOptions {\n    AbortSignal signal;\n    CreateMonitorCallback monitor;\n};",
+        "type": "dictionary",
+        "name": "ProofreaderCreateOptions",
+        "inheritance": "ProofreaderCreateCoreOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadercreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitorCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadercreateoptions-monitor"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/proofreader-api/#dictdef-proofreadercreateoptions"
+      },
+      "ProofreaderProofreadOptions": {
+        "fragment": "dictionary ProofreaderProofreadOptions {\n    AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "ProofreaderProofreadOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreaderproofreadoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/proofreader-api/#dictdef-proofreaderproofreadoptions"
+      },
+      "ProofreadResult": {
+        "fragment": "dictionary ProofreadResult {\n    DOMString correctedInput;\n    sequence<ProofreadCorrection> corrections;\n};",
+        "type": "dictionary",
+        "name": "ProofreadResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "correctedInput",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadresult-correctedinput"
+          },
+          {
+            "type": "field",
+            "name": "corrections",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProofreadCorrection"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadresult-corrections"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/proofreader-api/#dictdef-proofreadresult"
+      },
+      "ProofreadCorrection": {
+        "fragment": "dictionary ProofreadCorrection {\n    unsigned long long startIndex;\n    unsigned long long endIndex;\n    DOMString correction;\n    sequence<CorrectionType> types;\n    DOMString explanation;\n};",
+        "type": "dictionary",
+        "name": "ProofreadCorrection",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "startIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadcorrection-startindex"
+          },
+          {
+            "type": "field",
+            "name": "endIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadcorrection-endindex"
+          },
+          {
+            "type": "field",
+            "name": "correction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadcorrection-correction"
+          },
+          {
+            "type": "field",
+            "name": "types",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CorrectionType"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadcorrection-types"
+          },
+          {
+            "type": "field",
+            "name": "explanation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-proofreadcorrection-explanation"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/proofreader-api/#dictdef-proofreadcorrection"
+      },
+      "CorrectionType": {
+        "fragment": "enum CorrectionType { \"spelling\", \"punctuation\", \"capitalization\", \"grammar\" };",
+        "type": "enum",
+        "name": "CorrectionType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "spelling",
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-correctiontype-spelling"
+          },
+          {
+            "type": "enum-value",
+            "value": "punctuation",
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-correctiontype-punctuation"
+          },
+          {
+            "type": "enum-value",
+            "value": "capitalization",
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-correctiontype-capitalization"
+          },
+          {
+            "type": "enum-value",
+            "value": "grammar",
+            "href": "https://webmachinelearning.github.io/proofreader-api/#dom-correctiontype-grammar"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/proofreader-api/#enumdef-correctiontype"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Proofreader"
+      ]
+    },
+    "dependencies": {
+      "Proofreader": [
+        "Proofreader",
+        "ProofreaderCreateOptions",
+        "Availability",
+        "ProofreaderCreateCoreOptions",
+        "ProofreadResult",
+        "ProofreaderProofreadOptions"
+      ],
+      "ProofreaderCreateCoreOptions": [],
+      "ProofreaderCreateOptions": [
+        "ProofreaderCreateCoreOptions",
+        "AbortSignal",
+        "CreateMonitorCallback"
+      ],
+      "ProofreaderProofreadOptions": [
+        "AbortSignal"
+      ],
+      "ProofreadResult": [
+        "ProofreadCorrection"
+      ],
+      "ProofreadCorrection": [
+        "CorrectionType"
+      ]
+    },
+    "externalDependencies": [
+      "Availability",
+      "AbortSignal",
+      "CreateMonitorCallback"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

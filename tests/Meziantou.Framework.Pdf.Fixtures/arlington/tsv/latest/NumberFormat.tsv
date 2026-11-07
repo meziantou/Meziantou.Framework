@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.6		FALSE	FALSE	FALSE		[NumberFormat]			Table 268
+U	string-text	1.6		TRUE	FALSE	FALSE					
+C	number	1.6		TRUE	FALSE	FALSE					
+F	name	1.6		FALSE	FALSE	FALSE	D	[D,F,R,T]	[fn:IsMeaningful(fn:IsLastInNumberFormatArray(parent))]		
+D	integer	1.6		FALSE	FALSE	FALSE	16	[fn:Eval(@D>0)]	[fn:IsMeaningful(fn:IsLastInNumberFormatArray(parent))]		
+FD	boolean	1.6		FALSE	FALSE	FALSE	false		[fn:IsMeaningful(fn:IsLastInNumberFormatArray(parent))]		
+RT	string-text	1.6		FALSE	FALSE	FALSE	','				
+RD	string-text	1.6		FALSE	FALSE	FALSE	'.'				
+PS	string-text	1.6		FALSE	FALSE	FALSE	' '				
+SS	string-text	1.6		FALSE	FALSE	FALSE	' '				
+O	name	1.6		FALSE	FALSE	FALSE	S	[S,P]			

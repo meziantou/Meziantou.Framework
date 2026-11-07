@@ -1,0 +1,343 @@
+{
+  "spec": {
+    "title": "CSS Lists and Counters Module Level 3",
+    "url": "https://drafts.csswg.org/css-lists-3/"
+  },
+  "properties": [
+    {
+      "name": "list-style-image",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-list-style-image",
+      "value": "<image> | none",
+      "initial": "none",
+      "appliesTo": "list items",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword noneor the computed <image>",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<image>",
+          "prose": "If the <image> represents a valid image, specifies the element’s marker image as the <image>. Otherwise, the element has no marker image.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-list-style-image-image",
+          "type": "value",
+          "value": "<image>"
+        },
+        {
+          "name": "none",
+          "prose": "The element has no marker image.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-list-style-image-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "list-style-image",
+        "listStyleImage"
+      ]
+    },
+    {
+      "name": "list-style-type",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-list-style-type",
+      "value": "<counter-style> | <string> | none",
+      "initial": "disc",
+      "appliesTo": "list items",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<counter-style>",
+          "prose": "Specifies the element’s marker string as the value of the list-item counter represented using the specified <counter-style>. Specifically, the marker string is the result of generating a counter representation of the list-item counter value using the specified <counter-style>, prefixed by the prefix of the <counter-style>, and followed by the suffix of the <counter-style>. If the specified <counter-style> does not exist, decimal is assumed.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-list-style-type-counter-style",
+          "type": "value",
+          "value": "<counter-style>"
+        },
+        {
+          "name": "<string>",
+          "prose": "The element’s marker string is the specified <string>.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-list-style-type-string",
+          "type": "value",
+          "value": "<string>"
+        },
+        {
+          "name": "none",
+          "prose": "The element has no marker string.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-list-style-type-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "list-style-type",
+        "listStyleType"
+      ]
+    },
+    {
+      "name": "list-style-position",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-list-style-position",
+      "value": "inside | outside",
+      "initial": "outside",
+      "appliesTo": "list items",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "keyword, but see prose",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "inside",
+          "prose": "No special effect. (The ::marker is an inline element at the start of the list item’s contents.)",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-list-style-position-inside",
+          "type": "value",
+          "value": "inside"
+        },
+        {
+          "name": "outside",
+          "prose": "If the list item is a block container: the marker box is a block container and is placed outside the principal block box; however, the position of the list-item marker adjacent to floats is undefined. CSS does not specify the precise location of the marker box or its position in the painting order, but does require that it be placed on the inline-start side of the box, using the writing mode of the box indicated by marker-side. The marker box is fixed with respect to the principal block box’s border and does not scroll with the principal box’s content. A UA may hide the marker if the element’s overflow is other than visible. (This allowance may change in the future.) The size or contents of the marker box may affect the height of the principal block box and/or the height of its first line box, and in some cases may cause the creation of a new line box; this interaction is also not defined. This is handwavey nonsense from CSS2, and needs a real definition. If the list item is an inline box: this value is equivalent to inside. Alternatively, outside could lay out the marker as a previous sibling of the principal inline box.",
+          "href": "https://drafts.csswg.org/css-lists-3/#list-style-position-outside",
+          "type": "value",
+          "value": "outside"
+        }
+      ],
+      "styleDeclaration": [
+        "list-style-position",
+        "listStylePosition"
+      ]
+    },
+    {
+      "name": "list-style",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-list-style",
+      "value": "<'list-style-position'> || <'list-style-image'> || <'list-style-type'>",
+      "initial": "see individual properties",
+      "appliesTo": "list items",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "list-style",
+        "listStyle"
+      ],
+      "longhands": [
+        "list-style-type",
+        "list-style-position",
+        "list-style-image"
+      ]
+    },
+    {
+      "name": "marker-side",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-marker-side",
+      "value": "match-self | match-parent",
+      "initial": "match-self",
+      "appliesTo": "list items",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "match-self",
+          "prose": "The marker box is positioned using the directionality of the ::marker’s originating element.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-marker-side-match-self",
+          "type": "value",
+          "value": "match-self"
+        },
+        {
+          "name": "match-parent",
+          "prose": "The marker box is positioned using the directionality of the ::marker’s originating element’s parent element.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-marker-side-match-parent",
+          "type": "value",
+          "value": "match-parent"
+        }
+      ],
+      "styleDeclaration": [
+        "marker-side",
+        "markerSide"
+      ]
+    },
+    {
+      "name": "counter-reset",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-counter-reset",
+      "value": "[ <counter-name> <integer>? | <reversed-counter-name> <integer>? ]+ | none",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none or a list, each item an identifier or a reversed() function paired with an integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "This element does not create any new counters.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-reset-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<counter-name> <integer>?",
+          "prose": "Instantiates a counter of the given <counter-name> with a starting value of the given <integer>, defaulting to 0.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-reset-counter-name-integer",
+          "type": "value",
+          "value": "<counter-name> <integer>?"
+        },
+        {
+          "name": "<reversed-counter-name> <integer>?",
+          "prose": "Instantiates a reversed counter of the given <counter-name> with a starting value of the given <integer>, or no starting value if not given.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-reset-reversed-counter-name-integer",
+          "type": "value",
+          "value": "<reversed-counter-name> <integer>?"
+        },
+        {
+          "name": "list-item",
+          "prose": "In addition to any explicitly defined counters that authors write in their styles, list items automatically increment a special list-item counter, which is used when generating the default marker string on list items (see list-style-type).",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-increment-list-item",
+          "type": "value",
+          "value": "list-item"
+        }
+      ],
+      "styleDeclaration": [
+        "counter-reset",
+        "counterReset"
+      ]
+    },
+    {
+      "name": "counter-increment",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-counter-increment",
+      "value": "[ <counter-name> <integer>? ]+ | none",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none or a list, each item an identifier paired with an integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "This element does not alter the value of any counters.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-set-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<counter-name> <integer>?",
+          "prose": "Sets (for counter-set) or increments (for counter-increment) the value of the named counter on the element to/by the specified <integer>. If the <integer> is omitted, it defaults to 1 (for counter-increment) or 0 (for counter-set). If there is not currently a counter of the given name on the element, the element instantiates a new counter of the given name with a starting value of 0 before setting or incrementing its value.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-set-counter-name-integer",
+          "type": "value",
+          "value": "<counter-name> <integer>?"
+        },
+        {
+          "name": "list-item",
+          "prose": "In addition to any explicitly defined counters that authors write in their styles, list items automatically increment a special list-item counter, which is used when generating the default marker string on list items (see list-style-type).",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-increment-list-item",
+          "type": "value",
+          "value": "list-item"
+        }
+      ],
+      "styleDeclaration": [
+        "counter-increment",
+        "counterIncrement"
+      ]
+    },
+    {
+      "name": "counter-set",
+      "href": "https://drafts.csswg.org/css-lists-3/#propdef-counter-set",
+      "value": "[ <counter-name> <integer>? ]+ | none",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none or a list, each item an identifier paired with an integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "This element does not alter the value of any counters.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-set-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<counter-name> <integer>?",
+          "prose": "Sets (for counter-set) or increments (for counter-increment) the value of the named counter on the element to/by the specified <integer>. If the <integer> is omitted, it defaults to 1 (for counter-increment) or 0 (for counter-set). If there is not currently a counter of the given name on the element, the element instantiates a new counter of the given name with a starting value of 0 before setting or incrementing its value.",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-set-counter-name-integer",
+          "type": "value",
+          "value": "<counter-name> <integer>?"
+        },
+        {
+          "name": "list-item",
+          "prose": "In addition to any explicitly defined counters that authors write in their styles, list items automatically increment a special list-item counter, which is used when generating the default marker string on list items (see list-style-type).",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-increment-list-item",
+          "type": "value",
+          "value": "list-item"
+        }
+      ],
+      "styleDeclaration": [
+        "counter-set",
+        "counterSet"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<counter-name>",
+      "prose": "Counters are referred to in CSS syntax using the <counter-name> type, which represents their name as a <custom-ident>. A <counter-name> name cannot match the keyword none; such an identifier is invalid as a <counter-name>.",
+      "href": "https://drafts.csswg.org/css-lists-3/#typedef-counter-name",
+      "type": "type",
+      "value": "<custom-ident>"
+    },
+    {
+      "name": "<reversed-counter-name>",
+      "href": "https://drafts.csswg.org/css-lists-3/#typedef-reversed-counter-name",
+      "type": "type",
+      "value": "reversed( <counter-name> )"
+    },
+    {
+      "name": "counter()",
+      "prose": "Counters have no visible effect by themselves, but their values can be used with the counter() and counters() functions, whose used values represent counter values as strings or images. They are defined as follows:",
+      "href": "https://drafts.csswg.org/css-lists-3/#funcdef-counter",
+      "type": "function",
+      "value": "counter( <counter-name>, <counter-style>? )",
+      "values": [
+        {
+          "name": "list-item",
+          "prose": "In addition to any explicitly defined counters that authors write in their styles, list items automatically increment a special list-item counter, which is used when generating the default marker string on list items (see list-style-type).",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-increment-list-item",
+          "type": "value",
+          "value": "list-item"
+        }
+      ]
+    },
+    {
+      "name": "counters()",
+      "prose": "Counters have no visible effect by themselves, but their values can be used with the counter() and counters() functions, whose used values represent counter values as strings or images. They are defined as follows:",
+      "href": "https://drafts.csswg.org/css-lists-3/#funcdef-counters",
+      "type": "function",
+      "value": "counters( <counter-name>, <string>, <counter-style>? )",
+      "values": [
+        {
+          "name": "list-item",
+          "prose": "In addition to any explicitly defined counters that authors write in their styles, list items automatically increment a special list-item counter, which is used when generating the default marker string on list items (see list-style-type).",
+          "href": "https://drafts.csswg.org/css-lists-3/#valdef-counter-increment-list-item",
+          "type": "value",
+          "value": "list-item"
+        }
+      ]
+    },
+    {
+      "name": "<counter>",
+      "href": "https://drafts.csswg.org/css-lists-3/#typedef-counter",
+      "type": "type",
+      "value": "<counter()> | <counters()>"
+    }
+  ]
+}

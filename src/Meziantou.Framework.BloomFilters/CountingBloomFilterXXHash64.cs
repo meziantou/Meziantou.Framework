@@ -15,12 +15,12 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
 
     private void AddRangeCore(ReadOnlySpan<long> values)
     {
-        AddRangeCore(MemoryMarshal.Cast<long, ulong>(values));
+        AddRangeCore(unsafe(MemoryMarshal.Cast<long, ulong>(values)));
     }
 
     private void RemoveRangeCore(ReadOnlySpan<long> values)
     {
-        RemoveRangeCore(MemoryMarshal.Cast<long, ulong>(values));
+        RemoveRangeCore(unsafe(MemoryMarshal.Cast<long, ulong>(values)));
     }
 
     private void AddRangeCore(ReadOnlySpan<ulong> values)
@@ -45,7 +45,6 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
             return;
         }
 
-        ref var valuesReference = ref MemoryMarshal.GetReference(values);
         var index = 0;
         var prime1 = new Vector<ulong>(Prime1);
         var prime2 = new Vector<ulong>(Prime2);
@@ -54,7 +53,7 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
         var hash = new Vector<ulong>(Prime5 + sizeof(ulong));
         while (index <= values.Length - Vector<ulong>.Count)
         {
-            var current = Vector.LoadUnsafe(ref valuesReference, (nuint)index);
+            var current = Vector.Create(values[index..]);
             var round = RotateLeft(current * prime2, 31) * prime1;
             var hashes = RotateLeft(hash ^ round, 27) * prime1 + prime4;
             hashes ^= hashes >> 33;
@@ -65,7 +64,7 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
 
             for (var lane = 0; lane < Vector<ulong>.Count; lane++)
             {
-                UpdateHash(new Hash64(hashes[lane]), remove);
+                UpdateHash(BloomFilterHash.FromUInt64(hashes[lane]), remove);
             }
 
             index += Vector<ulong>.Count;
@@ -78,7 +77,7 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void UpdateHash(Hash64 hash, bool remove)
+    private void UpdateHash(BloomFilterHash hash, bool remove)
     {
         if (remove)
         {
@@ -91,9 +90,9 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(ReadOnlySpan<byte> value)
+    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
-        return new(XxHash64.HashToUInt64(value));
+        return BloomFilterHash.FromUInt64(XxHash64.HashToUInt64(value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

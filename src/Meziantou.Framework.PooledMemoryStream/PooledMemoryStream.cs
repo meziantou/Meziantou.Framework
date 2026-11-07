@@ -19,6 +19,20 @@ namespace Meziantou.Framework;
 /// returned by the <see cref="IBufferWriter{T}"/> members) are owned by the stream and are returned to the pool when
 /// the stream is disposed. Accessing them after the stream is disposed is undefined behavior.
 /// </para>
+/// <para>
+/// An array returned by <see cref="GetBuffer"/> / <see cref="TryGetBuffer"/> is never returned to the pool before the
+/// stream is disposed, so no other stream can rent it while the caller may still hold it. As with
+/// <see cref="MemoryStream"/>, it stays the stream's storage (shrinking the stream with <see cref="SetLength"/> or
+/// <see cref="Capacity"/> keeps it, so later writes overwrite it) until a later <see cref="GetBuffer"/> /
+/// <see cref="TryGetBuffer"/> call has to consolidate several blocks into a new array; from then on it remains valid
+/// but no longer reflects the contents of the stream.
+/// </para>
+/// <para>
+/// Because the storage is a chain of blocks rather than one array, the stream is not bounded by
+/// <see cref="Array.MaxLength"/>: it can hold as many bytes as memory allows. The members that have to materialize
+/// the contents as a single array (<see cref="ToArray"/>, <see cref="GetBuffer"/> and <see cref="TryGetBuffer"/>)
+/// are still bounded by it and throw an <see cref="InvalidOperationException"/> on a longer stream.
+/// </para>
 /// <para>This type is not thread-safe; the shared pool is.</para>
 /// </remarks>
 public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
@@ -30,10 +44,30 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     private long _capacity;
     private bool _isOpen;
 
+    // Mirrors MemoryStream: the byte[] ReadAsync overload hands back the previous task when the count matches, so a
+    // sequence of same-sized reads doesn't allocate a Task each time.
+    private Task<int>? _lastReadTask;
+
     // Cursor caching the last located segment so sequential access doesn't re-walk from segment 0 every call.
     // _cursorStart is the logical offset at which segment _cursorIndex begins (sum of Used of earlier segments).
     private int _cursorIndex;
     private long _cursorStart;
+
+    // Index of the segment appends go into. Every segment after it is empty: either blocks reserved ahead of time by
+    // EnsureCapacityAtLeast, or the remainder of a reservation the append point has not reached yet. The index only
+    // ever moves forward, so segments before it are frozen and the logical order of the data is the segment order.
+    private int _appendIndex;
+
+    // The array last handed out by GetBuffer/TryGetBuffer while it is still part of the chain, and the arrays handed
+    // out earlier that the chain no longer uses. The caller may still hold them, so they must not go back to the
+    // shared pool, where another stream could rent them, until the stream is disposed.
+    private byte[]? _exposedBuffer;
+    private List<byte[]>? _detachedBuffers;
+
+    // The array of the last region handed out by IBufferWriter.GetMemory/GetSpan. Until Advance, the block holding it
+    // is empty, so without this the stream would see an unused block it can give back to the pool while the caller is
+    // still writing to it. It is kept out of the pool like the GetBuffer array.
+    private byte[]? _writerBuffer;
 
     /// <summary>Initializes a new instance using <see cref="PooledMemoryStreamOptions.Default"/>.</summary>
     public PooledMemoryStream()
@@ -111,7 +145,11 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         get
         {
             EnsureOpen();
-            return (int)_capacity;
+
+            // _capacity is a long and the stream is not bounded by Array.MaxLength, so the capacity can exceed the
+            // range of this int property. Clamp rather than wrap to a negative value; a getter that throws would be
+            // worse.
+            return _capacity > int.MaxValue ? int.MaxValue : (int)_capacity;
         }
         set
         {
@@ -144,14 +182,21 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     public override long Seek(long offset, SeekOrigin loc)
     {
         EnsureOpen();
-        var newPosition = loc switch
+
+        var origin = loc switch
         {
-            SeekOrigin.Begin => offset,
-            SeekOrigin.Current => _position + offset,
-            SeekOrigin.End => _length + offset,
+            SeekOrigin.Begin => 0L,
+            SeekOrigin.Current => _position,
+            SeekOrigin.End => _length,
             _ => throw new ArgumentException("Invalid seek origin.", nameof(loc)),
         };
 
+        // The position is not bounded by Array.MaxLength, so the only limit left is the range of Int64. The origin is
+        // never negative, so only a positive offset can overflow.
+        if (offset > 0 && origin > long.MaxValue - offset)
+            throw new ArgumentOutOfRangeException(nameof(offset), offset, "The resulting position would be greater than Int64.MaxValue.");
+
+        var newPosition = origin + offset;
         if (newPosition < 0)
             throw new IOException("An attempt was made to move the position before the beginning of the stream.");
 
@@ -164,7 +209,6 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     {
         EnsureOpen();
         ArgumentOutOfRangeException.ThrowIfNegative(value);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Array.MaxLength);
 
         if (value > _length)
         {
@@ -213,7 +257,9 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         try
         {
-            return Task.FromResult(Read(buffer, offset, count));
+            var read = Read(buffer, offset, count);
+            var lastTask = _lastReadTask;
+            return lastTask is not null && lastTask.Result == read ? lastTask : (_lastReadTask = Task.FromResult(read));
         }
         catch (Exception ex)
         {
@@ -243,7 +289,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         EnsureOpen();
         if (_position == _length)
         {
-            if (_length + 1 > Array.MaxLength)
+            if (_length == long.MaxValue)
                 throw new IOException("Stream was too long.");
 
             var index = EnsureAppendCapacity();
@@ -333,14 +379,23 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     }
 
     /// <inheritdoc />
-    public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
     {
+        // Validate before entering the state machine so bad arguments throw synchronously, as MemoryStream does.
         ValidateCopyToArguments(destination, bufferSize);
         EnsureOpen();
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_position >= _length)
-            return;
 
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
+
+        if (_position >= _length)
+            return Task.CompletedTask;
+
+        return CopyToAsyncCore(destination, cancellationToken);
+    }
+
+    private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+    {
         Locate(_position, out var segmentIndex, out var offset);
         var remaining = _length - _position;
         while (remaining > 0)
@@ -368,10 +423,13 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     }
 
     /// <summary>Returns a new array containing the contents of the stream.</summary>
+    /// <exception cref="InvalidOperationException">The stream is longer than <see cref="Array.MaxLength"/>.</exception>
     public override byte[] ToArray()
     {
         EnsureOpen();
-        var result = GC.AllocateUninitializedArray<byte>((int)_length);
+        ThrowIfLongerThanAnArray();
+        // CopyAllTo overwrites every byte of the array.
+        var result = unsafe(GC.AllocateUninitializedArray<byte>((int)_length));
         CopyAllTo(result);
         return result;
     }
@@ -379,8 +437,10 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     /// <summary>
     /// Consolidates the stream contents into a single contiguous array and returns it. The returned array may be
     /// larger than <see cref="Length"/>; only the first <see cref="Length"/> bytes are valid. The array is owned by
-    /// the stream and is returned to the pool when the stream is disposed.
+    /// the stream and is returned to the pool when the stream is disposed, not before: if a later operation replaces
+    /// it, it stays valid but no longer reflects the contents of the stream.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The stream is longer than <see cref="Array.MaxLength"/>.</exception>
     public override byte[] GetBuffer()
     {
         EnsureOpen();
@@ -388,6 +448,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     }
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">The stream is longer than <see cref="Array.MaxLength"/>.</exception>
     public override bool TryGetBuffer(out ArraySegment<byte> buffer)
     {
         EnsureOpen();
@@ -402,17 +463,24 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (count == 0)
+        {
+            _writerBuffer = null;
             return;
+        }
 
-        if (_segments.Count == 0 || count > _segments[^1].Array.Length - _segments[^1].Used)
+        if (_appendIndex >= _segments.Count || count > _segments[_appendIndex].Array.Length - _segments[_appendIndex].Used)
             throw new InvalidOperationException("Cannot advance past the end of the reserved buffer.");
 
-        if (_length + count > Array.MaxLength)
+        // Subtract rather than add: _length + count can overflow long on a stream near Int64.MaxValue.
+        if (_length > long.MaxValue - count)
             throw new IOException("Stream was too long.");
 
-        CollectionsMarshal.AsSpan(_segments)[_segments.Count - 1].Used += count;
+        CollectionsMarshal.AsSpan(_segments)[_appendIndex].Used += count;
         _length += count;
         _position = _length;
+
+        // The IBufferWriter contract ends the use of the region here: the caller asks for a new one to write more
+        _writerBuffer = null;
     }
 
     /// <summary>
@@ -423,6 +491,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     Memory<byte> IBufferWriter<byte>.GetMemory(int sizeHint)
     {
         var segment = _segments[ReserveTail(sizeHint)];
+        _writerBuffer = segment.Array;
         return segment.Array.AsMemory(segment.Used);
     }
 
@@ -430,6 +499,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     Span<byte> IBufferWriter<byte>.GetSpan(int sizeHint)
     {
         var segment = _segments[ReserveTail(sizeHint)];
+        _writerBuffer = segment.Array;
         return segment.Array.AsSpan(segment.Used);
     }
 
@@ -441,9 +511,20 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             _isOpen = false;
             ReturnSegmentsToPool();
             _segments.Clear();
+            if (_detachedBuffers is not null)
+            {
+                foreach (var array in _detachedBuffers)
+                    PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+
+                _detachedBuffers = null;
+            }
+
+            _exposedBuffer = null;
+            _writerBuffer = null;
             _length = 0;
             _position = 0;
             _capacity = 0;
+            _appendIndex = 0;
             ResetCursor();
         }
 
@@ -485,8 +566,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         if (source.IsEmpty)
             return;
 
-        var endPosition = _position + source.Length;
-        if (endPosition > Array.MaxLength)
+        // Subtract rather than add: _position + source.Length can overflow long for a far-out position.
+        if (_position > long.MaxValue - source.Length)
             throw new IOException("Stream was too long.");
 
         if (_position > _length)
@@ -554,44 +635,75 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         var needed = Math.Max(sizeHint, 1);
 
-        if (_segments.Count > 0)
+        if (_appendIndex < _segments.Count)
         {
-            var last = _segments[^1];
-            if (last.Array.Length - last.Used >= needed)
-                return _segments.Count - 1;
+            var current = _segments[_appendIndex];
+            if (current.Array.Length - current.Used >= needed)
+                return _appendIndex;
+
+            // The region has to be contiguous, so the only other candidate is the next reserved block. Move on to it
+            // only when the current one already holds data: skipping an empty block would strand its capacity, and
+            // inserting the new block in front of it keeps it available for later appends instead.
+            if (current.Used > 0 && _appendIndex + 1 < _segments.Count && _segments[_appendIndex + 1].Array.Length >= needed)
+                return ++_appendIndex;
         }
 
         var desired = Math.Max(needed, _options.GetBlockSize(_capacity));
-        return AddSegment(_options.GetContiguousBlockSize(desired));
+        return AddAppendSegment(_options.GetContiguousBlockSize(desired));
     }
 
     private int EnsureAppendCapacity()
     {
-        if (_segments.Count > 0)
+        // Walk forward through the blocks reserved after the append point instead of always targeting the last one:
+        // otherwise every block a reservation rented but the last stays empty and the stream grows past its capacity.
+        while (_appendIndex < _segments.Count)
         {
-            var last = _segments[^1];
-            if (last.Used < last.Array.Length)
-                return _segments.Count - 1;
+            var segment = _segments[_appendIndex];
+            if (segment.Used < segment.Array.Length)
+                return _appendIndex;
+
+            _appendIndex++;
         }
 
-        return AddSegment(_options.GetBlockSize(_capacity));
+        return AddAppendSegment(_options.GetBlockSize(_capacity));
     }
 
-    private int AddSegment(int size)
+    private int AddAppendSegment(int size)
+    {
+        // The new block belongs at the append point, which is not necessarily the end of the chain: blocks reserved
+        // by EnsureCapacityAtLeast sit after it and have to stay usable rather than be stranded behind the new one.
+        var index = _appendIndex < _segments.Count && _segments[_appendIndex].Used > 0 ? _appendIndex + 1 : _appendIndex;
+        var array = PooledBufferPool.Shared.Rent(size);
+        if (index < _segments.Count)
+        {
+            // Inserting shifts every later segment, and the cursor caches an index.
+            _segments.Insert(index, new Segment(array));
+            ResetCursor();
+        }
+        else
+        {
+            _segments.Add(new Segment(array));
+        }
+
+        _capacity += array.Length;
+        _appendIndex = index;
+        return index;
+    }
+
+    private void AddReservedSegment(int size)
     {
         var array = PooledBufferPool.Shared.Rent(size);
         _segments.Add(new Segment(array));
         _capacity += array.Length;
-        return _segments.Count - 1;
     }
 
     private void EnsureCapacityAtLeast(long target)
     {
+        // Compose the reservation out of configured tiers instead of rounding the whole thing up to the next one:
+        // GetContiguousBlockSize(70_000) is 1 MiB, so a 70 KB reservation used to allocate 15x what was asked for.
         while (_capacity < target)
         {
-            var remaining = target - _capacity;
-            var desired = Math.Max((int)Math.Min(remaining, Array.MaxLength), _options.GetBlockSize(_capacity));
-            AddSegment(_options.GetContiguousBlockSize(desired));
+            AddReservedSegment(_options.GetReservationBlockSize(target - _capacity));
         }
     }
 
@@ -599,14 +711,21 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     {
         while (_segments.Count > 0)
         {
+            // The arrays handed out by GetBuffer and IBufferWriter cannot go back to the pool yet, so keep using them as
+            // storage rather than holding them aside until the stream is disposed: the capacity stays at least the
+            // requested value.
             var last = _segments[^1];
-            if (last.Used != 0 || _capacity - last.Array.Length < targetCapacity)
+            if (last.Used != 0 || _capacity - last.Array.Length < targetCapacity || IsHandedOut(last.Array))
                 break;
 
             _capacity -= last.Array.Length;
             _segments.RemoveAt(_segments.Count - 1);
             PooledBufferPool.Shared.Return(last.Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
         }
+
+        // Only empty trailing blocks are dropped, so whatever is left last still holds data and can host appends.
+        if (_appendIndex >= _segments.Count)
+            _appendIndex = Math.Max(_segments.Count - 1, 0);
     }
 
     private void Truncate(long value)
@@ -619,25 +738,49 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             if (value <= cumulative + segment.Used)
             {
                 var newUsed = (int)(value - cumulative);
-                for (var j = _segments.Count - 1; j > i; j--)
+                var firstRemoved = newUsed == 0 ? i : i + 1;
+                byte[]? exposed = null;
+                byte[]? writerBuffer = null;
+                for (var j = _segments.Count - 1; j >= firstRemoved; j--)
                 {
-                    _capacity -= _segments[j].Array.Length;
-                    PooledBufferPool.Shared.Return(_segments[j].Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+                    var array = _segments[j].Array;
                     _segments.RemoveAt(j);
+                    if (ReferenceEquals(array, _exposedBuffer))
+                    {
+                        exposed = array;
+                    }
+                    else if (ReferenceEquals(array, _writerBuffer))
+                    {
+                        writerBuffer = array;
+                    }
+                    else
+                    {
+                        _capacity -= array.Length;
+                        PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+                    }
                 }
 
-                if (newUsed == 0)
-                {
-                    _capacity -= segment.Array.Length;
-                    _segments.RemoveAt(i);
-                    PooledBufferPool.Shared.Return(segment.Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
-                }
-                else
+                if (newUsed > 0)
                 {
                     CollectionsMarshal.AsSpan(_segments)[i].Used = newUsed;
                 }
 
                 _length = value;
+                _appendIndex = Math.Max(_segments.Count - 1, 0);
+
+                // The arrays handed out by GetBuffer and IBufferWriter cannot go back to the pool yet. Keep them as
+                // empty blocks after the append point instead, like MemoryStream keeps its buffer: the stream reuses
+                // them for the next writes rather than holding one more array per cycle until it is disposed.
+                if (exposed is not null)
+                {
+                    _segments.Add(new Segment(exposed));
+                }
+
+                if (writerBuffer is not null)
+                {
+                    _segments.Add(new Segment(writerBuffer));
+                }
+
                 return;
             }
 
@@ -647,25 +790,61 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
     private byte[] Consolidate()
     {
+        ThrowIfLongerThanAnArray();
         if (_length == 0)
             return Array.Empty<byte>();
 
         if (_segments.Count == 1)
-            return _segments[0].Array;
+            return Expose(_segments[0].Array);
 
         var size = _options.GetContiguousBlockSize((int)_length);
         var array = PooledBufferPool.Shared.Rent(size);
         CopyAllTo(array);
 
-        ReturnSegmentsToPool();
+        foreach (var segment in _segments)
+            ReleaseArray(segment.Array);
+
         _segments.Clear();
         _capacity = 0;
 
         _segments.Add(new Segment(array) { Used = (int)_length });
         _capacity = array.Length;
+        _appendIndex = 0;
         ResetCursor();
+        return Expose(array);
+    }
+
+    private byte[] Expose(byte[] array)
+    {
+        // GetBuffer/TryGetBuffer hand out the whole array, not just [0, Length). Arrays come from a pool shared by
+        // every instance, so the region past Length would otherwise expose whatever its previous tenant wrote.
+        var length = (int)_length;
+        Array.Clear(array, length, array.Length - length);
+
+        _exposedBuffer = array;
         return array;
     }
+
+    // Gives back an array the open stream no longer uses. The ones handed out by GetBuffer/TryGetBuffer and by
+    // IBufferWriter are kept until the stream is disposed instead, since the caller may still be using them.
+    private void ReleaseArray(byte[] array)
+    {
+        if (IsHandedOut(array))
+        {
+            (_detachedBuffers ??= []).Add(array);
+            if (ReferenceEquals(array, _exposedBuffer))
+                _exposedBuffer = null;
+
+            if (ReferenceEquals(array, _writerBuffer))
+                _writerBuffer = null;
+        }
+        else
+        {
+            PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+        }
+    }
+
+    private bool IsHandedOut(byte[] array) => ReferenceEquals(array, _exposedBuffer) || ReferenceEquals(array, _writerBuffer);
 
     private void CopyAllTo(Span<byte> destination)
     {
@@ -726,6 +905,13 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     {
         _cursorIndex = 0;
         _cursorStart = 0;
+    }
+
+    // The stream itself is not bounded by Array.MaxLength, but the members handing back a single byte[] are.
+    private void ThrowIfLongerThanAnArray()
+    {
+        if (_length > Array.MaxLength)
+            throw new InvalidOperationException("The stream is longer than Array.MaxLength and cannot be represented as a single array.");
     }
 
     private void EnsureOpen()

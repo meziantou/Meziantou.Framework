@@ -16,7 +16,7 @@ public sealed class HarContent
 
     /// <summary>Gets or sets the MIME type of the response text.</summary>
     [JsonPropertyName("mimeType")]
-    public string MimeType { get; set; } = "";
+    public string? MimeType { get; set; } = "";
 
     /// <summary>Gets or sets the response body sent from the server or loaded from the browser cache.</summary>
     [JsonPropertyName("text")]

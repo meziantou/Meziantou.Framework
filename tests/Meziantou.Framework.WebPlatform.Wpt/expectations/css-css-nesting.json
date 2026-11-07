@@ -1,0 +1,125 @@
+{
+  "css/css-nesting/block-skipping.html": {
+    "total": 1
+  },
+  "css/css-nesting/conditional-properties.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/conditional-rules.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/contextually-invalid-selectors-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/contextually-invalid-selectors-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/contextually-invalid-selectors-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/cssom.html": {
+    "total": 14
+  },
+  "css/css-nesting/has-nesting.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/host-nesting-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/host-nesting-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/host-nesting-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/host-nesting-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/host-nesting-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/implicit-nesting-ident-recovery.html": {
+    "total": 2
+  },
+  "css/css-nesting/implicit-nesting-ident.html": {
+    "total": 1
+  },
+  "css/css-nesting/implicit-nesting.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/invalid-inner-rules.html": {
+    "total": 2
+  },
+  "css/css-nesting/invalidation-001.html": {
+    "total": 1
+  },
+  "css/css-nesting/invalidation-002.html": {
+    "total": 1
+  },
+  "css/css-nesting/invalidation-003.html": {
+    "total": 1
+  },
+  "css/css-nesting/invalidation-004.html": {
+    "total": 1
+  },
+  "css/css-nesting/mixed-declarations-rules.html": {
+    "total": 1
+  },
+  "css/css-nesting/nest-containing-forgiving.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/nested-declarations-cssom-whitespace.html": {
+    "total": 2
+  },
+  "css/css-nesting/nested-declarations-cssom.html": {
+    "total": 12
+  },
+  "css/css-nesting/nested-declarations-matching.html": {
+    "total": 11
+  },
+  "css/css-nesting/nested-error-recovery.html": {
+    "total": 4
+  },
+  "css/css-nesting/nested-media-in-layer.html": {
+    "total": 1
+  },
+  "css/css-nesting/nested-rule-cssom-invalidation.html": {
+    "total": 1
+  },
+  "css/css-nesting/nesting-basic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/nesting-braces-in-strings.html": {
+    "total": 8
+  },
+  "css/css-nesting/nesting-layer.html": {
+    "total": 1
+  },
+  "css/css-nesting/nesting-revert-rule.html": {
+    "total": 4
+  },
+  "css/css-nesting/nesting-type-selector.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/parsing.html": {
+    "total": 32
+  },
+  "css/css-nesting/serialize-group-rules-with-decls.html": {
+    "total": 15
+  },
+  "css/css-nesting/set-selector-text.html": {
+    "total": 7
+  },
+  "css/css-nesting/supports-is-consistent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/supports-rule.html": {
+    "reftest": "PASS"
+  },
+  "css/css-nesting/top-level-is-scope.html": {
+    "total": 2
+  },
+  "css/css-nesting/top-level-parent-pseudo-specificity.html": {
+    "total": 1
+  }
+}

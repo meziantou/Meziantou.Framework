@@ -1,7 +1,42 @@
+using System.Diagnostics;
+using System.IO.Enumeration;
+
 namespace Meziantou.Framework.Globbing.Tests;
 
 public class GlobTests
 {
+    [Fact]
+    public void ReadmeExample_IsMatch()
+    {
+        #region Glob_IsMatchIgnoreCase
+        Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase);
+        Assert.True(glob.IsMatch("src/abc.txt"));
+        Assert.True(glob.IsMatch("SRC/a/b/abc.TXT"));
+        Assert.False(glob.IsMatch("src/abc.png"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EnumerateFiles()
+    {
+        #region Glob_EnumerateFiles
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/a/abc.txt");
+        rootDirectory.CreateEmptyFile("src/a/abc.png");
+        rootDirectory.CreateEmptyFile("docs/readme.txt");
+
+        // Enumerate files that match the glob in the folder rootDirectory
+        Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
+        var files = new List<string>();
+        foreach (var file in glob.EnumerateFiles(rootDirectory.FullPath))
+        {
+            files.Add(file);
+        }
+
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "a", "abc.txt")], files);
+        #endregion
+    }
+
     [Theory]
     [InlineData("")] // Empty is not valid
     [InlineData("../*.txt")] // Cannot start with '..'
@@ -12,8 +47,11 @@ public class GlobTests
     [InlineData("a[/]b")]  // literal contains '/'
     [InlineData("a[a/]b")]  // literal contains '/'
     [InlineData("a[.-0]b")] // literal contains '/'
-    [InlineData("a{/}b")]  // literal contains '/'
-    [InlineData("a{a,/}b")] // literal contains '/'
+    [InlineData("{a,[/]}")] // literal contains '/'
+    [InlineData("{a,{b}")] // Missing '}'
+    [InlineData("{a,\\")] // Cannot ends with the escape character '\'
+    [InlineData("{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}")] // expands into 2048 patterns
+    [InlineData("[z-a]")] // reversed range
     public void ParseInvalid(string pattern)
     {
         Assert.False(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
@@ -31,6 +69,7 @@ public class GlobTests
     [InlineData("test/**/a*.txt", "test/a")]
     [InlineData("test/**/a*.txt", "test/a/b/c/d")]
     [InlineData("!test/**/a*.txt", "test/a/b/c/d")]
+    [InlineData("{.github,docs}/*.yml", ".github")]
     public void ShouldRecurse(string pattern, string folderPath)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard);
@@ -92,6 +131,8 @@ public class GlobTests
     [InlineData("[,--]", "-")]
     [InlineData("[--.]", "-")]
     [InlineData("[!a-d]", "e")]
+    [InlineData("[!a-df-g][!z]", "eb")]
+    [InlineData("[!a-df-g][!z]", "ee")]
     [InlineData("[a-df-i]", "d")]
     [InlineData("[a-df-i]", "g")]
     [InlineData("[a-df-ik]", "i")]
@@ -157,6 +198,8 @@ public class GlobTests
     [InlineData("**/*/", "a/b/")]
     [InlineData("**/test/", "test/")]
     [InlineData("**/test/", "a/test/")]
+    [InlineData(@"a\/b", "a/b")] // an escaped separator is still a separator
+    [InlineData(@"**\/b", "a/b")]
     public void Match(string pattern, string path)
     {
         var isDirectory = path.EndsWith('/', StringComparison.Ordinal);
@@ -179,6 +222,282 @@ public class GlobTests
             Assert.True(glob.IsMatch(path.Replace('/', '\\')));
             Assert.True(glob.IsMatch(directoryName!.Replace('/', '\\'), fileName, itemType));
         }
+    }
+
+    [Fact]
+    public void GlobExample()
+    {
+        #region Glob_IsMatch
+        var glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("src/folder/file.txt"));
+        Assert.False(glob.IsMatch("docs/file.txt"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Wildcards()
+    {
+        #region Glob_Wildcards
+        // '*' matches any characters in one path segment, but not a '/'
+        Assert.True(Glob.Parse("*.txt", GlobDialect.Standard).IsMatch("readme.txt"));
+        Assert.False(Glob.Parse("*.txt", GlobDialect.Standard).IsMatch("docs/readme.txt"));
+
+        // '?' matches one character, and brackets one character of a set or a range
+        Assert.True(Glob.Parse("file?.txt", GlobDialect.Standard).IsMatch("file1.txt"));
+        Assert.True(Glob.Parse("file[0-9].txt", GlobDialect.Standard).IsMatch("file7.txt"));
+        Assert.False(Glob.Parse("file[!0-9].txt", GlobDialect.Standard).IsMatch("file7.txt"));
+
+        // Braces match one of the alternatives
+        Assert.True(Glob.Parse("*.{png,jpg}", GlobDialect.Standard).IsMatch("photo.jpg"));
+
+        // '**' matches zero or more directories
+        Assert.True(Glob.Parse("**/*.txt", GlobDialect.Standard).IsMatch("readme.txt"));
+        Assert.True(Glob.Parse("**/*.txt", GlobDialect.Standard).IsMatch("docs/guides/readme.txt"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Braces()
+    {
+        #region Glob_Braces
+        // An alternative can hold wildcards and other braces
+        var projects = Glob.Parse("*.{cs,*proj,{props,targets}}", GlobDialect.Standard);
+        Assert.True(projects.IsMatch("App.csproj"));
+        Assert.True(projects.IsMatch("Directory.Build.props"));
+        Assert.False(projects.IsMatch("readme.md"));
+
+        // An alternative can hold a '/' or a '**'
+        var sources = Glob.Parse("{src/**,tests}/*.cs", GlobDialect.Standard);
+        Assert.True(sources.IsMatch("src/App/Program.cs"));
+        Assert.True(sources.IsMatch("tests/AppTests.cs"));
+        Assert.False(sources.IsMatch("tests/unit/AppTests.cs"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FilesAndDirectories()
+    {
+        #region Glob_FilesAndDirectories
+        // A pattern matches files only
+        var files = Glob.Parse("src/*", GlobDialect.Standard);
+        Assert.True(files.IsMatch("src", "Program.cs", PathItemType.File));
+        Assert.False(files.IsMatch("src", "App", PathItemType.Directory));
+
+        // A pattern that ends with a '/' matches directories only
+        var directories = Glob.Parse("src/*/", GlobDialect.Standard);
+        Assert.True(directories.IsMatch("src", "App", PathItemType.Directory));
+        Assert.False(directories.IsMatch("src", "Program.cs", PathItemType.File));
+
+        // A path that ends with a separator is a directory
+        Assert.True(directories.IsMatch("src/App/"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_AbsolutePath()
+    {
+        #region Glob_AbsolutePath
+        var glob = Glob.Parse("/home/*.txt", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("/home/notes.txt"));
+        Assert.False(glob.IsMatch("home/notes.txt"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_LeadingDot()
+    {
+        #region Glob_LeadingDot
+        // Wildcards do not match a name that starts with a dot
+        Assert.False(Glob.Parse("**/*.json", GlobDialect.Standard).IsMatch(".vscode/settings.json"));
+
+        // Unless you write the dot in the pattern...
+        Assert.True(Glob.Parse(".vscode/*.json", GlobDialect.Standard).IsMatch(".vscode/settings.json"));
+
+        // ...or set the MatchLeadingDot option
+        Assert.True(Glob.Parse("**/*.json", GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(".vscode/settings.json"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Escape()
+    {
+        #region Glob_Escape
+        // '\' makes the next character an ordinary character
+        var glob = Glob.Parse(@"report\*.txt", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("report*.txt"));
+        Assert.False(glob.IsMatch("report2024.txt"));
+
+        // A leading '!' negates the pattern; escape it to match a name that starts with '!'
+        Assert.Equal(GlobMode.Exclude, Glob.Parse("!*.log", GlobDialect.Standard).Mode);
+        Assert.True(Glob.Parse(@"\!readme.txt", GlobDialect.Standard).IsMatch("!readme.txt"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TryParse()
+    {
+        #region Glob_TryParse
+        // The bracket expression is not closed
+        Assert.False(Glob.TryParse("src/[abc", GlobDialect.Standard, GlobOptions.None, out var glob));
+        Assert.Null(glob);
+
+        // Parse throws instead
+        Assert.Throws<ArgumentException>("pattern", () => Glob.Parse("src/[abc", GlobDialect.Standard));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GitDialect()
+    {
+        #region Glob_GitDialect
+        // A pattern without a '/' matches a name at any depth
+        Assert.True(Glob.Parse("*.log", GlobDialect.Git).IsMatch("logs/trace.log"));
+
+        // A pattern with a '/' is relative to the root
+        Assert.True(Glob.Parse("/build", GlobDialect.Git).IsMatch("build"));
+        Assert.False(Glob.Parse("/build", GlobDialect.Git).IsMatch("src/build"));
+
+        // A pattern that ends with a '/' matches the directory and everything below it
+        Assert.True(Glob.Parse("bin/", GlobDialect.Git).IsMatch("src/App/bin/Debug/App.dll"));
+
+        // Character classes, and braces are ordinary characters
+        Assert.True(Glob.Parse("[[:digit:]]*.md", GlobDialect.Git).IsMatch("1-intro.md"));
+        Assert.True(Glob.Parse("{a,b}.txt", GlobDialect.Git).IsMatch("{a,b}.txt"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_MSBuildDialect()
+    {
+        #region Glob_MSBuildDialect
+        // '/' and '\' are both path separators
+        Assert.True(Glob.Parse(@"src\**\*.cs", GlobDialect.MSBuild).IsMatch("src/Generated/Program.cs"));
+
+        // A file name made of '*.*' matches every file, even without an extension
+        Assert.True(Glob.Parse("**/*.*", GlobDialect.MSBuild).IsMatch("LICENSE"));
+
+        // Wildcards match names that start with a dot
+        Assert.True(Glob.Parse("*", GlobDialect.MSBuild).IsMatch(".editorconfig"));
+
+        // '%XX' escapes a character, and a leading '..' is kept
+        Assert.True(Glob.Parse("%2A.cs", GlobDialect.MSBuild).IsMatch("*.cs"));
+        Assert.True(Glob.Parse("../shared/*.cs", GlobDialect.MSBuild).IsMatch("../shared/Helpers.cs"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_PosixDialects()
+    {
+        #region Glob_PosixDialects
+        // Posix matches a plain string: '*' also matches a '/'
+        Assert.True(Glob.Parse("*.cs", GlobDialect.Posix).IsMatch("src/Program.cs"));
+
+        // PosixPath only matches a '/' with a '/' of the pattern
+        Assert.False(Glob.Parse("*.cs", GlobDialect.PosixPath).IsMatch("src/Program.cs"));
+        Assert.True(Glob.Parse("src/*.cs", GlobDialect.PosixPath).IsMatch("src/Program.cs"));
+
+        // Both support character classes and '^' as a negation
+        Assert.True(Glob.Parse("[[:upper:]]*", GlobDialect.Posix).IsMatch("Readme"));
+        Assert.True(Glob.Parse("[^a]*", GlobDialect.Posix).IsMatch("Readme"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_IsMatchDirectoryAndFileName()
+    {
+        #region Glob_IsMatchDirectoryAndFileName
+        var glob = Glob.Parse("src/**/*.cs", GlobDialect.Standard);
+
+        // The whole relative path
+        Assert.True(glob.IsMatch("src/App/Program.cs"));
+
+        // The directory and the file name, without concatenating them
+        Assert.True(glob.IsMatch("src/App", "Program.cs"));
+
+        // The kind of item, when the path alone does not say it
+        Assert.False(glob.IsMatch("src/App", "Folder.cs", PathItemType.Directory));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_IsPartialMatch()
+    {
+        #region Glob_IsPartialMatch
+        var glob = Glob.Parse("src/**/*.cs", GlobDialect.Standard);
+
+        // A file below 'src/App' can match the pattern
+        Assert.True(glob.IsPartialMatch("src/App"));
+
+        // No file below 'docs' can match it
+        Assert.False(glob.IsPartialMatch("docs"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFileSystemEntries()
+    {
+        #region Glob_EnumerateFileSystemEntries
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/App/bin/App.dll");
+        rootDirectory.CreateEmptyFile("src/Lib/bin/Lib.dll");
+
+        // The pattern ends with a '/': it matches directories only
+        var glob = Glob.Parse("**/bin/", GlobDialect.Standard);
+        var directories = glob.EnumerateFileSystemEntries(rootDirectory.FullPath).Order(StringComparer.Ordinal).ToList();
+
+        Assert.Equal(
+            [
+                Path.Combine(rootDirectory.FullPath, "src", "App", "bin"),
+                Path.Combine(rootDirectory.FullPath, "src", "Lib", "bin"),
+            ],
+            directories);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFilesWithOptions()
+    {
+        #region Glob_EnumerateFilesWithOptions
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("logs/app.log");
+        rootDirectory.CreateEmptyFile("logs/2024/app.log");
+
+        // The options replace the default ones: set RecurseSubdirectories to visit subdirectories
+        var options = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            MaxRecursionDepth = 1,
+        };
+
+        var glob = Glob.Parse("**/*.log", GlobDialect.Standard);
+        var files = glob.EnumerateFiles(rootDirectory.FullPath, options).ToList();
+
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "logs", "app.log")], files);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FileSystemEnumerable()
+    {
+        #region Glob_FileSystemEnumerable
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("docs/readme.txt");
+        rootDirectory.CreateEmptyFile("src/Program.cs");
+
+        var glob = Glob.Parse("docs/**/*.txt", GlobDialect.Standard);
+
+        // Return the name and the length of each file, and only visit the directories that can hold a match
+        var enumerable = new FileSystemEnumerable<(string Name, long Length)>(
+            rootDirectory.FullPath,
+            (ref FileSystemEntry entry) => (entry.FileName.ToString(), entry.Length),
+            new EnumerationOptions { RecurseSubdirectories = true })
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory && glob.IsMatch(ref entry),
+            ShouldRecursePredicate = (ref FileSystemEntry entry) => glob.IsPartialMatch(ref entry),
+        };
+
+        Assert.Equal([("readme.txt", 0L)], enumerable.ToList());
+        #endregion
     }
 
     [Theory]
@@ -242,6 +561,11 @@ public class GlobTests
     [InlineData("[.]", ".")]
     [InlineData("**/*.txt", ".hidden/test.txt")]
     [InlineData("**/*.txt", "src/.hidden/test.txt")]
+    [InlineData("{,a}*", ".hidden")]
+    [InlineData("{.a,}*", ".hidden")]
+    [InlineData("{a,b}?", ".a")]
+    [InlineData("{,a}[.]x", ".x")]
+    [InlineData("{,.a}[.]a", ".a")]
     public void DoesNotMatchLeadingDotByDefault(string pattern, string path)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard);
@@ -266,11 +590,29 @@ public class GlobTests
     [InlineData(".*", ".hidden")]
     [InlineData("**/.hidden/*.txt", ".hidden/test.txt")]
     [InlineData("**/.hidden/*.txt", "src/.hidden/test.txt")]
+    [InlineData("{.a,b}", ".a")]
+    [InlineData("{.a,b}*", ".ab")]
+    [InlineData("**/{.editorconfig,.gitignore}", "src/.gitignore")]
+    [InlineData("{.github,docs}/*.yml", ".github/ci.yml")]
+    [InlineData("{,a}.x", ".x")]
+    [InlineData("{}{,a}{.x,y}", ".x")]
     public void MatchExplicitLeadingDot(string pattern, string path)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard);
         Assert.True(glob.IsMatch(path));
         Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.Standard, @"a\\b")]
+    [InlineData(GlobDialect.Standard, @"a\\*")]
+    [InlineData(GlobDialect.Standard, @"*\\b")]
+    [InlineData(GlobDialect.Git, @"a\\*")]
+    [InlineData(GlobDialect.PosixPath, @"a\\b")]
+    public void EscapedBackslashIsAnOrdinaryCharacter(GlobDialect dialect, string pattern)
+    {
+        // '\' is a path separator on Windows, so no path segment can hold one there
+        Assert.Equal(!OperatingSystem.IsWindows(), Glob.Parse(pattern, dialect).IsMatch(@"a\b"));
     }
 
     [Theory]
@@ -288,8 +630,8 @@ public class GlobTests
     [InlineData("[!a-d]", "a")]
     [InlineData("[!abcd]", "d")]
     [InlineData("[!a-d]", "d")]
-    [InlineData("[!a-df-g][!z]", "eb")]
-    [InlineData("[!a-df-g][!z]", "ee")]
+    [InlineData("[!a-df-g][!z]", "az")]
+    [InlineData("[!a-df-g][!z]", "ez")]
     [InlineData("folder[0-1]/**/f{ab,il}[aei]*.{txt,png,ico}", "file001.txt")]
     [InlineData("a/b", "ab")]
     [InlineData("a/b", "acb")]
@@ -570,6 +912,7 @@ public class GlobTests
 
         AssertEnumerateFiles(directory, Glob.Parse("**/*.txt", GlobDialect.Standard), ["visible/f2.txt"]);
         AssertEnumerateFiles(directory, Glob.Parse("**/*.txt", GlobDialect.Standard, GlobOptions.MatchLeadingDot), [".hidden/f1.txt", "visible/f2.txt"]);
+        AssertEnumerateFiles(directory, Glob.Parse("{.hidden,visible}/*.txt", GlobDialect.Standard), [".hidden/f1.txt", "visible/f2.txt"]);
     }
 
     [Theory]
@@ -675,6 +1018,107 @@ public class GlobTests
         Assert.False(glob.IsMatch(directoryName, fileName, itemType));
     }
 
+    // The expected results were verified with 'git check-ignore', which evaluates an entry with wildmatch.
+    [Theory]
+    // Character classes
+    [InlineData("[[:digit:]]", "5", true)]
+    [InlineData("[[:digit:]]", "c", false)]
+    [InlineData("[[:upper:]]", "B", true)]
+    [InlineData("[[:upper:]]", "c", false)]
+    [InlineData("x[[:alpha:][:digit:]]", "x5", true)]
+    [InlineData("[![:digit:]]", "c", true)]
+    // '^' negates a bracket expression, like '!'
+    [InlineData("[^a]", "c", true)]
+    [InlineData("[^a]", "a", false)]
+    // A backslash escapes a character in a bracket expression too
+    [InlineData(@"[\]]", "]", true)]
+    [InlineData(@"[a\-c]", "-", true)]
+    [InlineData(@"[a\-c]", "b", false)]
+    // wildmatch compares the start of a range before it reads the '-', so a reversed range still matches its start
+    [InlineData("[c-a]", "c", true)]
+    [InlineData("[c-a]", "a", false)]
+    [InlineData("[c-a]", "b", false)]
+    [InlineData("[b--0]", "0", true)]
+    [InlineData("[b--0]", "-", false)]
+    // A '/' in a bracket expression never matches, but it does not split the entry
+    [InlineData("a[b/c]d", "abd", true)]
+    [InlineData("a[b/c]d", "a/d", false)]
+    [InlineData("[.-0]x", ".x", true)]
+    [InlineData("[.-0]x", "0x", true)]
+    // Any run of '*' that makes a whole path segment is a '**', and a run inside a segment is a '*'
+    [InlineData("***/x", "a/b/x", true)]
+    [InlineData("***/x", "x", true)]
+    [InlineData("a/***", "a/b/c", true)]
+    [InlineData("foo**/bar", "fooz/bar", true)]
+    [InlineData("foo**/bar", "foo/x/bar", false)]
+    [InlineData("a/**b", "a/b", true)]
+    [InlineData("a/**b", "a/x/b", false)]
+    // '.' and '..' are ordinary names, and git paths never contain them
+    [InlineData("./a", "a", false)]
+    [InlineData("a/./b", "a/b", false)]
+    [InlineData("a/../b", "b", false)]
+    [InlineData(".", "a", false)]
+    // An escaped character is the character itself, '/' included
+    [InlineData(@"a\/b", "a/b", true)]
+    [InlineData(@"\[a]", "[a]", true)]
+    public void GitMatchesLikeGitCheckIgnore(string pattern, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        Assert.Equal(expected, glob.IsMatch(path));
+
+        var index = path.AsSpan().LastIndexOf('/');
+        Assert.Equal(expected, glob.IsMatch(path.AsSpan(0, Math.Max(index, 0)), path.AsSpan(index + 1), PathItemType.File));
+    }
+
+    [Theory]
+    // 'abc/**' matches everything inside 'abc' but not 'abc' itself, and the trailing '/' does not change it
+    [InlineData("*/**/", "", "a", false)]
+    [InlineData("*/**/", "a", "b", true)]
+    [InlineData("a/**/", "", "a", false)]
+    [InlineData("a/**/", "a", "b", true)]
+    [InlineData("**/", "", "a", true)]
+    [InlineData("**/", "a/b", "c", true)]
+    public void GitDirectoryEntryEndingWithARecursiveWildcard(string pattern, string directory, string name, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Git).IsMatch(directory, name, PathItemType.Directory));
+    }
+
+    [Theory]
+    [InlineData("[a")] // unterminated bracket expression
+    [InlineData("a[b")]
+    [InlineData(@"a\")] // escape character without a character to escape
+    [InlineData(@"[\")]
+    [InlineData("[[:foo:]]")] // unknown character class
+    [InlineData("[[::]]")]
+    [InlineData("//a")] // empty path segment
+    [InlineData("a//b")]
+    [InlineData("a//")]
+    [InlineData("/")] // nothing is left once the '!' and the '/' are set aside
+    [InlineData("//")]
+    [InlineData("!")]
+    [InlineData("!/")]
+    public void GitRejectsEntriesThatNeverMatch(string pattern)
+    {
+        Assert.False(Glob.TryParse(pattern, GlobDialect.Git, GlobOptions.None, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("[[:upper:]]", "c")]
+    [InlineData("[[:lower:]]", "B")]
+    public void GitIgnoreCaseAppliesToCharacterClasses(string pattern, string path)
+    {
+        // Verified with 'git check-ignore' and core.ignorecase=true
+        Assert.True(Glob.Parse(pattern, GlobDialect.Git, GlobOptions.IgnoreCase).IsMatch(path));
+        Assert.False(Glob.Parse(pattern, GlobDialect.Git).IsMatch(path));
+    }
+
+    [Fact]
+    public void GitMatchesLeadingDotsWithoutTheOption()
+    {
+        Assert.True(Glob.Parse("*/*.txt", GlobDialect.Git).IsMatch(".a/.b.txt"));
+    }
+
     [Theory]
     [InlineData("**/*.cs", "src/Program.cs")]
     [InlineData(@"src\**\*.cs", "src/Generated/Program.cs")]
@@ -695,10 +1139,125 @@ public class GlobTests
     [InlineData("a**")]
     [InlineData("**a")]
     [InlineData("a**b")]
+    [InlineData("***")]
+    [InlineData("***/a")]
+    [InlineData("a/***")]
     public void MSBuildRecursiveWildcardMustBeAPathSegment(string pattern)
     {
         Assert.False(Glob.TryParse(pattern, GlobDialect.MSBuild, GlobOptions.None, out var result));
         Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("**/../a")]
+    [InlineData("*/../a")]
+    [InlineData("src/*/../a")]
+    public void MSBuildRejectsAParentSegmentAfterAWildcard(string pattern)
+    {
+        // MSBuild does not expand such a file spec, it keeps it as a literal item
+        Assert.False(Glob.TryParse(pattern, GlobDialect.MSBuild, GlobOptions.None, out var result));
+        Assert.Null(result);
+    }
+
+    // The expected results were verified with a real MSBuild item evaluation ('dotnet msbuild -getItem').
+    [Theory]
+    // MSBuild matches the names that start with a dot
+    [InlineData("*", ".editorconfig", true)]
+    [InlineData(".*", ".editorconfig", true)]
+    [InlineData("**/*.cs", ".git/x.cs", true)]
+    [InlineData("**/.git/*", ".git/config", true)]
+    [InlineData("src/**", "src/.hidden/a.cs", true)]
+    // A file name made of '*.*' matches every file, including the ones without an extension
+    [InlineData("*.*", "LICENSE", true)]
+    [InlineData("*.*", "a.b", true)]
+    [InlineData("wwwroot/**/*.*", "wwwroot/LICENSE", true)]
+    [InlineData("wwwroot/**/*.*", "wwwroot/css/site.css", true)]
+    [InlineData("a*.*", "abc", false)]
+    [InlineData("a*.*", "ab.c", true)]
+    [InlineData("*.*/f.cs", "dir1/f.cs", false)]
+    [InlineData("*.*/f.cs", "dir.2/f.cs", true)]
+    [InlineData("%2A.%2A", "abc", false)]
+    [InlineData("%2A.%2A", "*.*", true)]
+    // An escaped separator is still a separator
+    [InlineData("a%2Fb%2Fc.cs", "a/b/c.cs", true)]
+    [InlineData("a%5Cb%5Cc.cs", "a/b/c.cs", true)]
+    [InlineData("**%2F*.cs", "a/b/c.cs", true)]
+    // '.' and '..' are resolved, and a leading '..' goes above the project directory
+    [InlineData("src/./x.cs", "src/x.cs", true)]
+    [InlineData("src/../*.*", "LICENSE", true)]
+    [InlineData("../shared/*.cs", "../shared/s.cs", true)]
+    [InlineData("../shared/**/*.cs", "../shared/sub/t.cs", true)]
+    [InlineData("../shared/*.cs", "shared/s.cs", false)]
+    [InlineData("a/../../b/*.cs", "../b/c.cs", true)]
+    [InlineData("a/../../b/*.cs", "b/c.cs", false)]
+    // A leading separator makes the pattern absolute
+    [InlineData("/usr/src/*.cs", "/usr/src/a.cs", true)]
+    [InlineData("/usr/src/*.cs", "usr/src/a.cs", false)]
+    [InlineData(@"\usr\src\*.cs", "/usr/src/a.cs", true)]
+    [InlineData("/usr/**/*.cs", "/usr/src/a/b.cs", true)]
+    // Separators that follow another one are collapsed
+    [InlineData("src//*.cs", "src/a.cs", true)]
+    public void MSBuildMatchesLikeMSBuildItemEvaluation(string pattern, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.MSBuild);
+        Assert.Equal(expected, glob.IsMatch(path));
+
+        // The root directory keeps its separator: "/a" is the file "a" in the directory "/"
+        var index = path.AsSpan().LastIndexOf('/');
+        Assert.Equal(expected, glob.IsMatch(path.AsSpan(0, index <= 0 ? index + 1 : index), path.AsSpan(index + 1), PathItemType.File));
+    }
+
+    [Theory]
+    [InlineData("/home/*.txt", "/home/a.txt", true)]
+    [InlineData("/home/*.txt", "home/a.txt", false)]
+    [InlineData("/a/b", "/a/b", true)]
+    [InlineData("/a/b", "a/b", false)]
+    [InlineData("a/b", "/a/b", false)]
+    [InlineData("/**/*.cs", "/usr/src/a.cs", true)]
+    [InlineData("/**/*.cs", "usr/src/a.cs", false)]
+    [InlineData("/*", "/a", true)]
+    // Separators that follow another one are collapsed
+    [InlineData("/home//*.txt", "/home/a.txt", true)]
+    [InlineData("home//*.txt", "home/a.txt", true)]
+    public void StandardLeadingSeparatorMakesThePatternAbsolute(string pattern, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        Assert.Equal(expected, glob.IsMatch(path));
+
+        // The root directory keeps its separator: "/a" is the file "a" in the directory "/"
+        var index = path.AsSpan().LastIndexOf('/');
+        Assert.Equal(expected, glob.IsMatch(path.AsSpan(0, index <= 0 ? index + 1 : index), path.AsSpan(index + 1), PathItemType.File));
+
+        var roundTrip = Glob.Parse(glob.ToString(), GlobDialect.Standard);
+        Assert.Equal(expected, roundTrip.IsMatch(path));
+    }
+
+    [Fact]
+    public void StandardAbsolutePatternKeepsItsLeadingSeparator()
+    {
+        var glob = Glob.Parse("/home/*.txt", GlobDialect.Standard);
+        Assert.Equal("/home/*.txt", glob.ToString());
+        Assert.True(glob.IsMatch("/home", "a.txt"));
+        Assert.True(glob.IsMatch("/home/", "a.txt"));
+    }
+
+    [Fact]
+    public void MSBuildMatchesLeadingDotsWithoutTheOption()
+    {
+        Assert.True(Glob.Parse("**/*", GlobDialect.MSBuild).IsMatch(".git/config"));
+        Assert.True(((IGlobEvaluatable)Glob.Parse("**/*", GlobDialect.MSBuild)).TraverseDirectories);
+    }
+
+    [Fact]
+    public void EnumerateFiles_MSBuildIncludesHiddenFilesAndFilesWithoutExtension()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("LICENSE");
+        directory.CreateEmptyFile(".editorconfig");
+        directory.CreateEmptyFile("wwwroot/.well-known/a.json");
+        directory.CreateEmptyFile("wwwroot/css/site.css");
+
+        AssertEnumerateFiles(directory, Glob.Parse("**/*.*", GlobDialect.MSBuild), [".editorconfig", "LICENSE", "wwwroot/.well-known/a.json", "wwwroot/css/site.css"]);
     }
 
     [Theory]
@@ -752,9 +1311,1599 @@ public class GlobTests
         AssertEnumerateFiles(directory, Glob.Parse("*.cs", GlobDialect.Posix), ["Program.cs", "src/Program.cs"]);
     }
 
-    private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)
+    // The expected results were verified with glibc's fnmatch(3), using the flags 0 for Posix and FNM_PATHNAME for
+    // PosixPath. The BSD libc disagrees on the cases that POSIX leaves unspecified, and on an unterminated '[', which
+    // POSIX reads as an ordinary character.
+    [Theory]
+    // '^' negates a bracket expression, like '!'
+    [InlineData("[^a]", "b", true, true)]
+    [InlineData("[^a]", "a", false, false)]
+    [InlineData("[^]a]", "b", true, true)]
+    [InlineData("[^]a]", "]", false, false)]
+    // A backslash escapes a character in a bracket expression too
+    [InlineData(@"[\]]", "]", true, true)]
+    [InlineData(@"[\]]", @"\]", false, false)]
+    [InlineData(@"[!\]]", "a", true, true)]
+    [InlineData(@"[!\]]", "]", false, false)]
+    [InlineData(@"[a\-c]", "-", true, true)]
+    [InlineData(@"[a\-c]", "b", false, false)]
+    [InlineData(@"[\\]", @"\", true, true)]
+    [InlineData(@"[a-\c]", "b", true, true)]
+    // A range whose start comes after its end contains no character
+    [InlineData("[z-a]", "z", false, false)]
+    [InlineData("[z-a]", "a", false, false)]
+    [InlineData("[z-ab]", "b", true, true)]
+    [InlineData("[!z-a]", "z", true, true)]
+    // A '[' that does not open a complete bracket expression is an ordinary character
+    [InlineData("[", "[", true, true)]
+    [InlineData("[a", "[a", true, true)]
+    [InlineData("a[", "a[", true, true)]
+    [InlineData("[!", "[!", true, true)]
+    [InlineData("[]", "[]", true, true)]
+    [InlineData("[!]", "[!]", true, true)]
+    [InlineData("[a-z", "[a-z", true, true)]
+    [InlineData("[*", "[abc", true, true)]
+    [InlineData("[?", "[a", true, true)]
+    [InlineData("[[:alpha:]", "[a", true, true)]
+    [InlineData(@"[a\]", "[a]", true, true)]
+    // Character classes
+    [InlineData("[[:alpha:][:digit:]]", "5", true, true)]
+    [InlineData("[^[:alpha:]]", "5", true, true)]
+    [InlineData("[^[:alpha:]]", "a", false, false)]
+    [InlineData("[[:alpha:]-]", "-", true, true)]
+    [InlineData("[[:alpha:]-z]", "-", true, true)] // a class cannot start a range
+    [InlineData("[[:alpha:]-z]", "z", true, true)]
+    [InlineData("[[:DIGIT:]]", "D]", true, true)] // only lowercase letters make a class name
+    [InlineData("[[:a]", "a", true, true)]
+    [InlineData("[[:]", ":", true, true)]
+    // Equivalence classes hold a single character in the POSIX locale
+    [InlineData("[[=a=]]", "a", true, true)]
+    [InlineData("[[=a=]b]", "b", true, true)]
+    [InlineData("[[===]]", "=", true, true)]
+    [InlineData("[[==]]", "=]", true, true)] // not an equivalence class
+    [InlineData("[[=ab=]]", "a]", true, true)] // not an equivalence class
+    [InlineData("[[=a=]-z]", "-", true, true)] // an equivalence class cannot start a range
+    [InlineData("[[=a=]-z]", "z", true, true)]
+    [InlineData("[[=a=]-z]", "b", false, false)]
+    // Collating symbols can be a range bound
+    [InlineData("[[.-.]]", "-", true, true)]
+    [InlineData("[[...]]", ".", true, true)]
+    [InlineData("[[.].]]", "]", true, true)]
+    [InlineData("[[.[.]]", "[", true, true)]
+    [InlineData("[[.a.]-c]", "b", true, true)]
+    [InlineData("[a-[.c.]]", "b", true, true)]
+    // A '-' that comes first or last is an ordinary character
+    [InlineData("[-a]", "-", true, true)]
+    [InlineData("[a-]", "-", true, true)]
+    [InlineData("[!-a]", "-", false, false)]
+    [InlineData("[a-b-c]", "-", true, true)]
+    [InlineData("[a-b-c]", "c", true, true)]
+    [InlineData("[]-a]", "]", true, true)]
+    [InlineData("[]-a]", "^", true, true)]
+    [InlineData("[--/]", ".", true, true)]
+    // With FNM_PATHNAME, a '/' is only matched by a '/' of the pattern
+    [InlineData("a/b", "a/b", true, true)]
+    [InlineData("a?b", "a/b", true, false)]
+    [InlineData("a*b", "a/b", true, false)]
+    [InlineData("a[/]b", "a/b", true, false)]
+    [InlineData("a[!x]b", "a/b", true, false)]
+    [InlineData("a[b/c]d", "abd", true, true)]
+    [InlineData("a[b/c]d", "a/d", true, false)]
+    [InlineData("[.-0]", ".", true, true)]
+    [InlineData("[.-0]", "/", true, false)]
+    [InlineData(@"a\/b", "a/b", true, true)]
+    [InlineData("**", "a/b", true, false)]
+    [InlineData("**/b", "a/b", true, true)]
+    [InlineData("a/**/b", "a/b", false, false)]
+    [InlineData("a/**/b", "a/x/b", true, true)]
+    [InlineData("*/", "a/", true, true)]
+    // Every '/' is significant
+    [InlineData("/a", "/a", true, true)]
+    [InlineData("/a", "a", false, false)]
+    [InlineData("/*", "/a", true, true)]
+    [InlineData("/*/b", "/x/b", true, true)]
+    [InlineData("a//b", "a//b", true, true)]
+    [InlineData("a//b", "a/b", false, false)]
+    [InlineData("a/b", "a//b", false, false)]
+    // '.' and '..' are ordinary names
+    [InlineData("a/./b", "a/b", false, false)]
+    [InlineData("a/./b", "a/./b", true, true)]
+    [InlineData("a/../b", "b", false, false)]
+    [InlineData("./a", "./a", true, true)]
+    [InlineData(".", ".", true, true)]
+    [InlineData("..", "..", true, true)]
+    // Without FNM_PERIOD, a wildcard matches a leading dot
+    [InlineData("*", ".a", true, true)]
+    [InlineData("?a", ".a", true, true)]
+    [InlineData("a/*", "a/.b", true, true)]
+    public void PosixMatchesLikeFnmatch(string pattern, string text, bool expectedPosix, bool expectedPosixPath)
     {
-        var items = glob.EnumerateFiles(directory.FullPath)
+        Assert.Equal(expectedPosix, Glob.Parse(pattern, GlobDialect.Posix).IsMatch(text));
+
+        // PosixPath splits the path on the separators of the platform, and '\' is one on Windows
+        if (OperatingSystem.IsWindows() && text.Contains('\\', StringComparison.Ordinal))
+            return;
+
+        Assert.Equal(expectedPosixPath, Glob.Parse(pattern, GlobDialect.PosixPath).IsMatch(text));
+    }
+
+    [Theory]
+    [InlineData("[[:foo:]]")] // unknown character class
+    [InlineData("[a[:foo:]]")]
+    [InlineData("[[::]]")]
+    [InlineData("[[.a]")] // unterminated collating symbol
+    [InlineData("[[..]]")] // empty collating symbol
+    [InlineData("[[.ab.]]")] // multi-character collating element
+    [InlineData(@"[\")] // escape character without a character to escape
+    [InlineData(@"[a-\")]
+    [InlineData(@"a\")]
+    public void PosixRejectsPatternsThatFnmatchNeverMatches(string pattern)
+    {
+        Assert.False(Glob.TryParse(pattern, GlobDialect.Posix, GlobOptions.None, out _));
+        Assert.False(Glob.TryParse(pattern, GlobDialect.PosixPath, GlobOptions.None, out _));
+    }
+
+    [Fact]
+    public void PosixPathReadsATrailingSeparatorAsADirectory()
+    {
+        // fnmatch compares strings, so FNM_PATHNAME lets 'a/*' match "a/" with an empty '*'. Here a path that ends
+        // with a separator is a directory, and a pattern that does not end with one only matches files.
+        Assert.False(Glob.Parse("a/*", GlobDialect.PosixPath).IsMatch("a/"));
+        Assert.True(Glob.Parse("a/*", GlobDialect.PosixPath).IsMatch("a/b"));
+        Assert.True(Glob.Parse("a/*/", GlobDialect.PosixPath).IsMatch("a/b/"));
+    }
+
+    [Fact]
+    public void PosixMatchesAnyKindOfItem()
+    {
+        // fnmatch compares strings: a directory name is matched like a file name
+        var glob = Glob.Parse("*.d", GlobDialect.Posix);
+        Assert.True(glob.IsMatch("src", "x.d", PathItemType.Directory));
+        Assert.True(glob.IsMatch("src", "x.d", PathItemType.File));
+        Assert.False(glob.IsMatch("src", "x.e", PathItemType.Directory));
+    }
+
+    [Fact]
+    public void EnumerateFileSystemEntries_PosixMatchesDirectories()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("a.d");
+        directory.CreateEmptyFile("src/x.d/f.txt");
+
+        AssertEnumerateFileSystemEntries(directory, Glob.Parse("*.d", GlobDialect.Posix), ["a.d", "src/x.d"]);
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.Standard, "src/*.txt", "src/", "a.txt")]
+    [InlineData(GlobDialect.Standard, "**/a.txt", "src/", "a.txt")]
+    [InlineData(GlobDialect.Standard, "**/src/a.txt", "src/", "a.txt")]
+    [InlineData(GlobDialect.Git, "src/a.txt", "src/", "a.txt")]
+    [InlineData(GlobDialect.MSBuild, "src/*.txt", "src/", "a.txt")]
+    [InlineData(GlobDialect.Posix, "src/*.txt", "src/", "a.txt")]
+    [InlineData(GlobDialect.PosixPath, "src/*.txt", "src/", "a.txt")]
+    [InlineData(GlobDialect.PosixPath, "/*", "/", "a")]
+    [InlineData(GlobDialect.MSBuild, "/*", "/", "a")]
+    [InlineData(GlobDialect.MSBuild, "/usr/*", "/usr/", "a")]
+    public void DirectoryWithATrailingSeparator(GlobDialect dialect, string pattern, string directory, string filename)
+    {
+        // The trailing separator only separates the directory from the file name
+        var glob = Glob.Parse(pattern, dialect, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(directory, filename));
+        Assert.True(glob.IsMatch(directory, filename, PathItemType.File));
+    }
+
+    [Theory]
+    [InlineData("*?a", "ab")]
+    [InlineData("*.md?", "readme.md")]
+    [InlineData("v*.?", "v1.")]
+    [InlineData("***[ab]", "aaac")]
+    [InlineData("*[!a]b", "ab")]
+    [InlineData("*[a-c]d", "abe")]
+    [InlineData("*?a*?b", "ab")]
+    public void SingleCharacterSubSegmentDoesNotReadPastTheEndOfTheSegment(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*?a", "aba")]
+    [InlineData("*.md?", "readme.mdx")]
+    [InlineData("v*.?", "v1.2")]
+    [InlineData("***[ab]", "aaab")]
+    [InlineData("*[!a]b", "acb")]
+    [InlineData("*[a-c]d", "abd")]
+    [InlineData("*[ab]c", "ac")]
+    public void SingleCharacterSubSegmentStillMatchesWhenTheSegmentIsLongEnough(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*[!a]a", "aa/a")]
+    [InlineData("*[!a]*a", "aa/a")]
+    [InlineData("*[!a-c]a", "aa/a")]
+    [InlineData("*?a", "aa/a")]
+    public void SingleCharacterSubSegmentDoesNotMatchAPathSeparator(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Fact]
+    public void EnumerateFiles_TrailingAnyCharacterAfterWildcard()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("readme.md");
+        directory.CreateEmptyFile("readme.mdx");
+
+        AssertEnumerateFiles(directory, Glob.Parse("*.md?", GlobDialect.Standard), ["readme.mdx"]);
+    }
+
+    [Theory]
+    [InlineData("*a*?b", "abbcb")]
+    [InlineData("*b*a?", "baaaa")]
+    [InlineData("*a*[a-c]", "abba")]
+    [InlineData("*a*b*c", "axxbxxc")]
+    [InlineData("*[ab]*?", "acca")]
+    public void SegmentWithSeveralWildcardsTriesEverySplitPoint(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*a*b*c", "axxbxxd")]
+    [InlineData("*a*b*c", "axxcxxb")]
+    public void SegmentWithSeveralWildcardsStillRejectsNonMatchingPaths(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("**/b.txt", "b.txt")]
+    [InlineData("**/b.txt", "a/b.txt")]
+    [InlineData("**/b.txt", "a/nested/b.txt")]
+    [InlineData("a/**/b.txt", "a/b.txt")]
+    [InlineData("a/**/b.txt", "a/nested/b.txt")]
+    public void RecursiveWildcardFollowedByASingleSegmentMatchesAtEveryDepth(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("**/b.txt", "c.txt")]
+    [InlineData("**/b.txt", "a/c.txt")]
+    [InlineData("a/**/b.txt", "c/b.txt")]
+    public void RecursiveWildcardFollowedByASingleSegmentStillRejectsOtherPaths(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("**", "a.txt")]
+    [InlineData("**", "src/a.txt")]
+    [InlineData("src/**", "src/a.txt")]
+    [InlineData("src/**", "src/nested/a.txt")]
+    [InlineData("src/**/**", "src/nested/a.txt")]
+    public void TrailingRecursiveWildcardMatchesTheRestOfThePath(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("src/**", "src")]
+    [InlineData("src/**", "other/a.txt")]
+    [InlineData("src/**", "srcx/a.txt")]
+    public void TrailingRecursiveWildcardRequiresAtLeastOneSegment(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("src/**", "src/.hidden")]
+    [InlineData("src/**", "src/.hidden/a.txt")]
+    [InlineData("**", ".hidden")]
+    public void TrailingRecursiveWildcardHonorsLeadingDot(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Theory]
+    // The path reader trims one trailing '/' of a directory, and the matcher reads a second one as the end of the last
+    // segment. With MatchLeadingDot, '**' and the segments that follow it are rewritten into a single segment that
+    // must read the path the same way.
+    [InlineData("**/ba//", "x/ba//", true)]
+    [InlineData("**/ba//", "ba//", true)]
+    [InlineData("**/b?a//", "x/bxa//", true)]
+    [InlineData("**/a/ba//", "x/a/ba//", true)]
+    [InlineData("**/*.txt//", "x/a.txt//", true)]
+    [InlineData("**/bin/", "x/bin//", true)]
+    [InlineData("!**/bin/", "\0..x/bin//", true)]
+    [InlineData("**/ba//", "x/ba///", false)]
+    [InlineData("**/a/ba//", "x/a/ba///", false)]
+    [InlineData("**/*.txt//", "x/a.txt///", false)]
+    public void MatchLeadingDotDoesNotChangeTheMatchOfAPathWithoutDot(string pattern, string path, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.Git)]
+    [InlineData(GlobDialect.MSBuild)]
+    public void TrailingRecursiveWildcardMatchesTheRestOfThePathInEveryDialect(GlobDialect dialect)
+    {
+        var glob = Glob.Parse("src/**", dialect, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch("src/a.txt"));
+        Assert.True(glob.IsMatch("src/nested/a.txt"));
+    }
+
+    [Fact]
+    public void EnumerateFiles_TrailingRecursiveWildcard()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("src/a.txt");
+        directory.CreateEmptyFile("src/nested/b.txt");
+        directory.CreateEmptyFile("other/c.txt");
+
+        AssertEnumerateFiles(directory, Glob.Parse("src/**", GlobDialect.Standard), ["src/a.txt", "src/nested/b.txt"]);
+    }
+
+    [Theory]
+    // A negated bracket expression consumes exactly one character, whichever of its parts rejects the character.
+    [InlineData("[!a-cx]", "z")]
+    [InlineData("[!a-cx]z", "zz")]
+    [InlineData("[!a-cx]*", "zy")]
+    [InlineData("[!a-cx][!a-cx]", "yz")]
+    [InlineData("a[!b-cx]c", "azc")]
+    public void NegatedBracketExpressionWithBothARangeAndACharacterMatchesOneCharacter(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("[!a-cx]", "a")] // in the range
+    [InlineData("[!a-cx]", "x")] // in the character set
+    [InlineData("[!a-cx]", "")] // there is no character to consume
+    [InlineData("[!a-cx]", "yz")] // it consumes a single character
+    [InlineData("[!a-cx]z*", "zy")]
+    [InlineData("a[!x-zq]b", "a/b")] // it does not consume a path separator
+    public void NegatedBracketExpressionWithBothARangeAndACharacterRejectsOtherPaths(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    // The first alternative that matches is not necessarily the one that lets the rest of the pattern match.
+    [InlineData("{a,ab}", "ab")]
+    [InlineData("{ab,a}", "ab")]
+    [InlineData("{ab,a}b", "ab")]
+    [InlineData("{a,ab}b", "ab")]
+    [InlineData("{a,ab}c", "abc")]
+    [InlineData("*{a,ab}c", "xabc")]
+    [InlineData("{a,ab}*c", "abxc")]
+    public void LiteralSetTriesEveryAlternativeAgainstTheRestOfThePattern(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*.{cs,*proj}", "a.csproj")]
+    [InlineData("*.{cs,*proj}", "a.cs")]
+    [InlineData("{a,[bc]}", "b")]
+    [InlineData("{a,?}", "z")]
+    [InlineData("{a,{b,c}}", "c")]
+    [InlineData("{a,x{b,c{d,e}}}f", "xcef")]
+    [InlineData("{a,ab}{b,bc}c", "abcc")]
+    [InlineData("{*a,b*}{c,*d}", "xadd")]
+    [InlineData(@"{\*,a}", "*")]
+    [InlineData(@"{\,,a}", ",")]
+    [InlineData(@"{\},a}", "}")]
+    [InlineData("{[,}],a}", ",")]
+    [InlineData("{[,}],a}", "}")]
+    [InlineData("a{}b", "ab")]
+    [InlineData("{src/a,test}", "src/a")]
+    [InlineData("{src/a,test}", "test")]
+    [InlineData("a{a,/}b", "aab")]
+    [InlineData("a{a,/}b", "a/b")]
+    [InlineData(@"a{a,\/}b", "a/b")]
+    [InlineData("{src/**,tests}/*.cs", "src/a.cs")]
+    [InlineData("{src/**,tests}/*.cs", "src/a/b/c.cs")]
+    [InlineData("{src/**,tests}/*.cs", "tests/a.cs")]
+    [InlineData("x{a,b/{c,d/e}}y", "xb/d/ey")]
+    [InlineData("x{a,**}y", "xzy")]
+    [InlineData("x/{a,**}/y", "x/z/w/y")]
+    [InlineData("{!a/b,c}", "!a/b")]
+    [InlineData("!{!a,b}", "!a")]
+    [InlineData(@"{a\,b,c}", "a,b")]
+    [InlineData("{**/bin,obj}", "x/y/bin")]
+    [InlineData("src{,/a}", "src")]
+    [InlineData("src{,/a}", "src/a")]
+    public void BraceExpressionMatchesOneOfItsAlternatives(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+
+        var roundTripped = Glob.Parse(glob.ToString(), GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(roundTripped.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*.{cs,*proj}", "a.txt")]
+    [InlineData("*.{cs,*proj}", "a.csproja")]
+    [InlineData("{a,[bc]}", "d")]
+    [InlineData("{a,[bc]}", "[bc]")]
+    [InlineData("{a,{b,c}}", "{b,c}")]
+    [InlineData("{a,x{b,c{d,e}}}f", "xcf")]
+    [InlineData(@"{\*,a}", "b")]
+    [InlineData("{src/a,test}", "src")]
+    [InlineData("{src/a,test}", "src/a/b")]
+    [InlineData("{src/**,tests}/*.cs", "docs/a.cs")]
+    [InlineData("{src/**,tests}/*.cs", "tests/a/b.cs")]
+    [InlineData("x{a,**}y", "xz/wy")]
+    [InlineData("{!a/b,c}", "a/b")]
+    [InlineData("src/{,a}", "src")]
+    [InlineData("src/{,a}", "src/b")]
+    public void BraceExpressionRejectsPathsNoAlternativeMatches(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+
+        var roundTripped = Glob.Parse(glob.ToString(), GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(roundTripped.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("{.*,x}", ".a", true)]
+    [InlineData("{*,x}", ".a", false)]
+    [InlineData("{?a,x}", ".a", false)]
+    [InlineData("{?a,.a}", ".a", true)]
+    [InlineData("{{,.}a,x}", ".a", true)]
+    [InlineData("{{,*}a,x}", ".a", false)]
+    [InlineData("{.github/*,docs}/*.yml", ".github/workflows/ci.yml", true)]
+    [InlineData("{src/**,docs}/*.yml", "src/.github/ci.yml", false)]
+    public void BraceExpressionOnlyMatchesALeadingDotWrittenInThePattern(string pattern, string path, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Fact]
+    public void BraceExpressionWithASeparatorKeepsTheKindOfEachAlternative()
+    {
+        // The trailing '/' of an alternative only restricts that alternative to directories
+        var glob = Glob.Parse("{a/,b}", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("", "a", PathItemType.Directory));
+        Assert.False(glob.IsMatch("", "a", PathItemType.File));
+        Assert.True(glob.IsMatch("", "b", PathItemType.File));
+        Assert.False(glob.IsMatch("", "b", PathItemType.Directory));
+        Assert.Equal("{a/,b}", glob.ToString());
+    }
+
+    [Fact]
+    public void BraceExpressionWithASeparatorKeepsTheModeOfThePattern()
+    {
+        var glob = Glob.Parse("!{src/a,b}", GlobDialect.Standard);
+        Assert.Equal(GlobMode.Exclude, glob.Mode);
+        Assert.True(glob.IsMatch("src/a"));
+        Assert.Equal("!{src/a,b}", glob.ToString());
+    }
+
+    [Theory]
+    [InlineData("{src,tests/unit}/*.cs", "tests", true)]
+    [InlineData("{src,tests/unit}/*.cs", "src", true)]
+    [InlineData("{src,tests/unit}/*.cs", "docs", false)]
+    [InlineData("{src,tests/unit}/*.cs", "tests/integration", false)]
+    public void BraceExpressionWithASeparatorRecursesIntoTheDirectoriesOfEveryAlternative(string pattern, string folderPath, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard).IsPartialMatch(folderPath));
+    }
+
+    [Fact]
+    public void BraceExpressionWithASeparatorEnumeratesTheFilesOfEveryAlternative()
+    {
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/a/a.cs");
+        rootDirectory.CreateEmptyFile("tests/b.cs");
+        rootDirectory.CreateEmptyFile("tests/c/c.cs");
+        rootDirectory.CreateEmptyFile("docs/d.cs");
+
+        var glob = Glob.Parse("{src/**,tests}/*.cs", GlobDialect.Standard);
+        var files = glob.EnumerateFiles(rootDirectory.FullPath).Select(path => Path.GetRelativePath(rootDirectory.FullPath, path).Replace('\\', '/')).Order(StringComparer.Ordinal).ToList();
+
+        Assert.Equal(["src/a/a.cs", "tests/b.cs"], files);
+    }
+
+    [Theory]
+    [InlineData("*a*a*a*a*a*a*a*a*a*a*b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("*a*a*a*a*a*a*a*a*a*a*b*", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("*?*?*?*?*?*?*?*?*?*?*b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("**/a/**/a/**/a/**/a/**/a/**/a/**/a/b", "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/c")]
+    [InlineData("**/*a/**/*a/**/*a/**/*a/**/*a/**/*a/**/*a/b", "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/c")]
+    [InlineData("{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    public void MatchingTimeIsPolynomialInTheNumberOfWildcards(string pattern, string path)
+    {
+        // Each of these used to take from seconds to hours, as the matcher backtracked over every way the wildcards
+        // could split the path.
+        var stopwatch = Stopwatch.StartNew();
+        foreach (var options in new[] { GlobOptions.None, GlobOptions.MatchLeadingDot, GlobOptions.IgnoreCase })
+        {
+            Assert.False(Glob.Parse(pattern, GlobDialect.Standard, options).IsMatch(path));
+            Assert.True(Glob.Parse(pattern, GlobDialect.Standard, options).IsMatch(path[..^1] + "b"));
+        }
+
+        if (!pattern.Contains('{', StringComparison.Ordinal))
+        {
+            foreach (var dialect in new[] { GlobDialect.Git, GlobDialect.Posix, GlobDialect.PosixPath })
+            {
+                Assert.False(Glob.Parse(pattern, dialect).IsMatch(path));
+            }
+        }
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Matching took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    // A '**' cannot consume a name that starts with a dot, so a later '**' does not make the earlier ones useless:
+    // the earlier '**' must consume 'x' for '{.b,x}' to consume '.b'.
+    [InlineData("**/x/{.b,x}/**/c", "x/x/.b/c")]
+    [InlineData("**/x/{.b,x}/**/c/**/d", "x/x/.b/c/d")]
+    public void RecursiveWildcardsRetryTheEarlierOnesWhenALaterOneIsBlockedByALeadingDot(string pattern, string path)
+    {
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("{a,ab}", "b")]
+    [InlineData("{a,ab}", "abc")]
+    [InlineData("{a,ab}c", "abbc")]
+    [InlineData("*{a,ab}c", "xabd")]
+    public void LiteralSetStillRejectsNonMatchingPaths(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    // An empty alternative consumes nothing, so the segment requires no particular first character.
+    [InlineData("{,a}b", "b")]
+    [InlineData("{,a}b", "ab")]
+    [InlineData("{a,}b", "b")]
+    [InlineData("*{,a}b", "xb")]
+    [InlineData("*{,a}b", "xab")]
+    [InlineData("x{,a}", "x")]
+    [InlineData("x{,a}", "xa")]
+    public void LiteralSetWithAnEmptyAlternativeConsumesNothing(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("{,a}b", "cb")]
+    [InlineData("{,a}b", "aab")]
+    [InlineData("x{,a}", "xb")]
+    public void LiteralSetWithAnEmptyAlternativeStillRejectsNonMatchingPaths(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    // Ordinal case-insensitive comparison relates more than two characters to each other: it treats the greek
+    // capital sigma, the small sigma and the final small sigma as equal.
+    [InlineData("Σ?", "ςx")]
+    [InlineData("*Σ?", "aςx")]
+    [InlineData("σ", "ς")]
+    [InlineData("**/Σ", "a/ς")]
+    [InlineData("**/*Σ", "a/bς")]
+    [InlineData("a/Σ*", "a/ςb")]
+    public void IgnoreCaseMatchesEveryOrdinalCaseInsensitiveEquivalent(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    // The candidate must be tested against the range as written: lowering the bounds of '[@-B]' would drop both
+    // '@' and 'A', which the range does contain. '[@-B]' with 'a' covers a range that is not entirely uppercase
+    // matching through the uppercase form of the candidate. A range that runs from an uppercase letter to a
+    // lowercase one cannot be used here: it spans U+005C, which is a path separator on Windows, and the parser
+    // rejects such a range.
+    [InlineData("[@-B]", "A")]
+    [InlineData("[@-B]", "a")]
+    [InlineData("[@-B]", "@")]
+    [InlineData("[@-B]", "B")]
+    [InlineData("[A-Z]", "a")]
+    [InlineData("[a-z]", "A")]
+    public void IgnoreCaseRangeKeepsTheCharactersOfTheOriginalRange(string pattern, string path)
+    {
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot).IsMatch(path));
+        Assert.False(Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("[@-B]", "C")]
+    [InlineData("[@-B]", "c")]
+    [InlineData("[@-B]", "?")]
+    [InlineData("[A-Z]", "0")]
+    public void IgnoreCaseRangeRejectsCharactersOutsideOfTheRange(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot).IsMatch(path));
+        Assert.True(Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Theory]
+    // Ordinal case-insensitive comparison does not fold a non-ASCII character to an ASCII one: the long s (U+017F),
+    // the dotless i (U+0131) and the Kelvin sign (U+212A) are not 's', 'i' and 'k'. Ranges must agree with literals
+    // and sets.
+    [InlineData("S", "\u017F")]
+    [InlineData("s", "\u017F")]
+    [InlineData("[S]", "\u017F")]
+    [InlineData("[rs]", "\u017F")]
+    [InlineData("[r-s]", "\u017F")]
+    [InlineData("[R-S]", "\u017F")]
+    [InlineData("I", "\u0131")]
+    [InlineData("[I]", "\u0131")]
+    [InlineData("[H-I]", "\u0131")]
+    [InlineData("[h-i]", "\u0131")]
+    [InlineData("k", "\u212A")]
+    [InlineData("[k]", "\u212A")]
+    [InlineData("[J-K]", "\u212A")]
+    [InlineData("[j-k]", "\u212A")]
+    public void IgnoreCaseDoesNotFoldNonAsciiCharactersToAscii(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        if (pattern[0] is '[')
+        {
+            Assert.True(Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        }
+    }
+
+    [Theory]
+    // The final sigma (U+03C2) is equal to both the capital and the small sigma, although neither of them is a case
+    // variant of the final sigma. A range of a single character is a set, so the ranges hold two characters.
+    [InlineData("[\u03C1-\u03C2]", "\u03C3")]
+    [InlineData("[\u03C1-\u03C2]", "\u03A3")]
+    [InlineData("[\u03C3-\u03C4]", "\u03C2")]
+    [InlineData("[\u03A3-\u03A4]", "\u03C2")]
+    // The theta symbol (U+03D1) is equal to the capital theta (U+0398), and so to the small one (U+03B8)
+    [InlineData("[\u03D1-\u03D2]", "\u03B8")]
+    [InlineData("[\u03B8-\u03B9]", "\u03D1")]
+    public void IgnoreCaseRangeMatchesEveryOrdinalCaseInsensitiveEquivalent(string pattern, string path)
+    {
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        Assert.False(Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("[a-�]", "A", true)]
+    [InlineData("[a-�]", "@", false)]
+    [InlineData("[b-�]", "A", false)]
+    [InlineData("[b-�]", "B", true)]
+    [InlineData("[à-�]", "À", true)]
+    [InlineData("[á-�]", "À", false)]
+    [InlineData("[ς-�]", "Σ", true)]
+    [InlineData("[Ā-�]", "ÿ", true)]
+    [InlineData("[Ā-�]", "S", false)]
+    public void IgnoreCaseWideRangeMatchesTheCaseVariantsOfItsCharacters(string pattern, string path, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        Assert.Equal(!expected, Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+    }
+
+    [Fact]
+    public void IgnoreCaseWideRangesInExpandedBracesAreParsedQuickly()
+    {
+        // The braces expand into 512 patterns, and the parser used to walk every character of each range of each of
+        // them, which took several seconds
+        var pattern = string.Concat(Enumerable.Repeat("{a/,b}", 9)) + string.Concat(Enumerable.Repeat("[a-�]", 8));
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
+
+        Assert.True(glob.IsMatch("bbbbbbbbbAAAAAAAA"));
+        Assert.True(glob.IsMatch("a/a/a/a/a/a/a/a/a/ÉéAaZzΣς"));
+        Assert.False(glob.IsMatch("bbbbbbbbbAAAAAAA@"));
+    }
+
+    [Theory]
+    [InlineData('a', 'z')]
+    [InlineData('A', 'Z')]
+    [InlineData('R', 'S')]
+    [InlineData('j', 'k')]
+    [InlineData('\u00C0', '\u00FF')]
+    [InlineData('\u0100', '\u017F')]
+    [InlineData('\u0391', '\u03A9')]
+    [InlineData('\u03B1', '\u03C9')]
+    [InlineData('\u03C2', '\u03D1')]
+    [InlineData('\u0400', '\u042F')]
+    [InlineData('\u2120', '\u2130')]
+    public void IgnoreCaseRangeMatchesLikeTheSetOfItsCharacters(char min, char max)
+    {
+        // A set compares the characters with StringComparison.OrdinalIgnoreCase
+        var characters = new string([.. Enumerable.Range(min, max - min + 1).Select(c => (char)c)]);
+        var range = Glob.Parse($"[{min}-{max}]", GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot);
+        var inverseRange = Glob.Parse($"[!{min}-{max}]", GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot);
+        var mismatches = new List<string>();
+        for (var c = 0; c <= char.MaxValue; c++)
+        {
+            var path = ((char)c).ToString();
+            if (path is "/" or "\\" || char.IsSurrogate((char)c))
+                continue;
+
+            var expected = characters.Contains(path, StringComparison.OrdinalIgnoreCase);
+            if (range.IsMatch(path) != expected || inverseRange.IsMatch(path) == expected)
+            {
+                mismatches.Add($"U+{c:X4}");
+            }
+        }
+
+        Assert.Empty(mismatches);
+    }
+
+    [Theory]
+    // A 'char' counter wraps around when a range ends at char.MaxValue, which used to make the parser allocate
+    // until it ran out of memory, or read past the end of the array it was filling.
+    [InlineData("[￾-￿]", "￿")]
+    [InlineData("[￾-￿]x", "￾x")]
+    [InlineData("*[￾-￿]", "a￿")]
+    [InlineData("**/[￾-￿]/x", "a/￿/x")]
+    [InlineData("[￿-￿]", "￿")]
+    [InlineData("[￸-￿]", "\uFFFB")]
+    public void RangeEndingAtTheLastCharacterIsParsedAndMatched(string pattern, string path)
+    {
+        Assert.True(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot, out var glob));
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    // git reads '{' and '}' as ordinary characters.
+    [InlineData("{a,b}", "{a,b}")]
+    [InlineData("{a,b}.cs", "{a,b}.cs")]
+    [InlineData("a{b}c", "a{b}c")]
+    public void GitDoesNotSupportLiteralSets(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        Assert.True(glob.IsMatch(path));
+        Assert.False(glob.IsMatch("a"));
+        Assert.False(glob.IsMatch("b"));
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.Posix)]
+    [InlineData(GlobDialect.PosixPath)]
+    [InlineData(GlobDialect.Git)]
+    public void NamedCharacterClasses(GlobDialect dialect)
+    {
+        AssertMatch("[[:digit:]]", "5");
+        AssertNoMatch("[[:digit:]]", "a");
+        AssertMatch("[[:alpha:]]", "a");
+        AssertNoMatch("[[:alpha:]]", "5");
+        AssertMatch("[[:alnum:]]", "1");
+        AssertNoMatch("[[:alnum:]]", "-");
+        AssertMatch("[[:space:]]", " ");
+        AssertNoMatch("[[:space:]]", "a");
+        AssertMatch("[[:blank:]]", "\t");
+        AssertNoMatch("[[:blank:]]", "a");
+        AssertMatch("[[:cntrl:]]", "\u0001");
+        AssertNoMatch("[[:cntrl:]]", "a");
+        AssertMatch("[[:upper:]]", "A");
+        AssertNoMatch("[[:upper:]]", "a");
+        AssertMatch("[[:lower:]]", "a");
+        AssertNoMatch("[[:lower:]]", "A");
+        AssertMatch("[[:xdigit:]]", "F");
+        AssertNoMatch("[[:xdigit:]]", "g");
+        AssertMatch("[[:punct:]]", ".");
+        AssertNoMatch("[[:punct:]]", "a");
+        AssertMatch("[[:graph:]]", "a");
+        AssertNoMatch("[[:graph:]]", " ");
+        AssertMatch("[[:print:]]", " ");
+        AssertNoMatch("[[:print:]]", "\u0001");
+
+        // A negated class, and a class combined with ordinary characters, another class or a wildcard.
+        AssertMatch("[![:digit:]]", "a");
+        AssertNoMatch("[![:digit:]]", "5");
+        AssertMatch("[[:digit:]abc]", "b");
+        AssertMatch("[[:digit:]abc]", "5");
+        AssertNoMatch("[[:digit:]abc]", "z");
+        AssertMatch("[[:upper:][:digit:]]", "A");
+        AssertMatch("[[:upper:][:digit:]]", "5");
+        AssertNoMatch("[[:upper:][:digit:]]", "a");
+        AssertMatch("x[[:digit:]]y", "x5y");
+        AssertNoMatch("x[[:digit:]]y", "xay");
+        AssertMatch("[[:alpha:]]*", "abc");
+
+        void AssertMatch(string pattern, string path) => Assert.True(Glob.Parse(pattern, dialect).IsMatch(path));
+        void AssertNoMatch(string pattern, string path) => Assert.False(Glob.Parse(pattern, dialect).IsMatch(path));
+    }
+
+    [Fact]
+    public void NamedCharacterClassesAreNotSupportedByTheStandardDialect()
+    {
+        // The Standard dialect keeps reading '[[:digit:]' as an ordinary bracket expression holding the characters
+        // '[', ':', 'd', 'i', 'g', 't' and ']', followed by a literal ']'.
+        var glob = Glob.Parse("[[:digit:]]", GlobDialect.Standard);
+        Assert.False(glob.IsMatch("5"));
+        Assert.True(glob.IsMatch("g]"));
+    }
+
+    [Theory]
+    // A Posix pattern matches a plain string: it can be empty, and a trailing '/' is part of it.
+    [InlineData("*", "")]
+    [InlineData("**", "")]
+    [InlineData("*", "a")]
+    [InlineData("foo/", "foo/")]
+    [InlineData("*/", "foo/")]
+    [InlineData("foo*", "foo/")]
+    public void MatchPosixString(string pattern, string path)
+    {
+        Assert.True(Glob.Parse(pattern, GlobDialect.Posix).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("?", "")]
+    [InlineData("a*", "")]
+    [InlineData("*a", "")]
+    [InlineData("foo/", "foo")]
+    public void DoesNotMatchPosixString(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Posix).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.Standard)]
+    [InlineData(GlobDialect.PosixPath)]
+    public void AnEmptyPathIsNotMatchedByThePathSeparatorAwareDialects(GlobDialect dialect)
+    {
+        Assert.False(Glob.Parse("*", dialect, GlobOptions.MatchLeadingDot).IsMatch(""));
+    }
+
+    [Theory]
+    // A gitignore entry ending with a '/' matches the directory itself, at any depth.
+    [InlineData("bin/", "", "bin")]
+    [InlineData("bin/", "src", "bin")]
+    [InlineData("bin/", "src/a/b", "bin")]
+    [InlineData("/bin/", "", "bin")]
+    public void GitDirectoryPatternMatchesTheDirectoryItself(string pattern, string directory, string filename)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        Assert.True(glob.IsMatch(directory, filename, PathItemType.Directory));
+        Assert.False(glob.IsMatch(directory, filename, PathItemType.File));
+    }
+
+    [Theory]
+    // The wildcard has to consume the whole path before the trailing directory entry is given a chance to match
+    // what is left, which is nothing.
+    [InlineData("**/", "", "bin")]
+    [InlineData("**/", "src/a", "bin")]
+    [InlineData("*/", "", "bin")]
+    [InlineData("**/b*/", "src", "bin")]
+    public void GitDirectoryPatternWithAWildcardMatchesTheDirectoryItself(string pattern, string directory, string filename)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        Assert.True(glob.IsMatch(directory, filename, PathItemType.Directory));
+    }
+
+    [Theory]
+    [InlineData("bin/", "bin", "a.txt")]
+    [InlineData("bin/", "bin/nested", "a.txt")]
+    [InlineData("bin/", "src/bin", "a.txt")]
+    [InlineData("/bin/", "bin", "a.txt")]
+    public void GitDirectoryPatternMatchesTheDirectoryContent(string pattern, string directory, string filename)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        Assert.True(glob.IsMatch(directory, filename, PathItemType.File));
+        Assert.True(glob.IsMatch(directory, filename, PathItemType.Directory));
+    }
+
+    [Theory]
+    [InlineData("bin/", "", "obj")]
+    [InlineData("bin/", "", "binary")]
+    [InlineData("bin/", "obj", "a.txt")]
+    [InlineData("/bin/", "src", "bin")] // anchored to the root
+    public void GitDirectoryPatternRejectsOtherPaths(string pattern, string directory, string filename)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        Assert.False(glob.IsMatch(directory, filename, PathItemType.Directory));
+        Assert.False(glob.IsMatch(directory, filename, PathItemType.File));
+    }
+
+    [Fact]
+    public void GitNegatedDirectoryPatternMatchesTheDirectoryOnly()
+    {
+        // Excluding a directory excludes its content, but re-including one does not re-include its content.
+        var glob = Glob.Parse("!bin/", GlobDialect.Git);
+
+        Assert.True(glob.IsMatch("", "bin", PathItemType.Directory));
+        Assert.True(glob.IsMatch("src", "bin", PathItemType.Directory));
+        Assert.False(glob.IsMatch("bin", "keep.txt", PathItemType.File));
+        Assert.False(glob.IsMatch("bin", "nested", PathItemType.Directory));
+    }
+
+    [Fact]
+    public void EnumerateFileSystemEntries_GitDirectoryPattern()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("bin/a.txt");
+        directory.CreateEmptyFile("src/bin/b.txt");
+        directory.CreateEmptyFile("src/c.txt");
+
+        AssertEnumerateFileSystemEntries(directory, Glob.Parse("bin/", GlobDialect.Git), ["bin", "bin/a.txt", "src/bin", "src/bin/b.txt"]);
+    }
+
+    [Theory]
+    // A folder is only worth visiting when a pattern segment is left to match the file name below it.
+    [InlineData("src/*.txt", "src2")]
+    [InlineData("src/*.txt", "srcx/a")]
+    [InlineData("src/*.txt", "src/archive.txt")]
+    [InlineData("src/*.txt", "src/archive.txt/nested")]
+    [InlineData("src/a/*.txt", "src/ab")]
+    [InlineData("?/a.txt", "ab")]
+    public void ShouldNotRecurseIntoAFolderThatCannotContainAMatch(string pattern, string folderPath)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsPartialMatch(folderPath));
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot | GlobOptions.IgnoreCase).IsPartialMatch(folderPath));
+    }
+
+    [Fact]
+    public void EnumerateFiles_DoesNotVisitFoldersThatCannotContainAMatch()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("src/a.txt");
+        directory.CreateEmptyFile("src2/b.txt");
+        directory.CreateEmptyFile("src/archive.txt/c.txt");
+
+        using var enumerator = new RecordingGlobFileSystemEnumerator(Glob.Parse("src/*.txt", GlobDialect.Standard), directory.FullPath);
+
+        var files = new List<string>();
+        while (enumerator.MoveNext())
+        {
+            files.Add(MakeRelative(enumerator.Current, directory));
+        }
+
+        Assert.Equal(["src/a.txt"], files.Order(StringComparer.Ordinal).ToList());
+        Assert.Equal(["src"], enumerator.RecursedDirectories.Select(path => MakeRelative(path, directory)).Order(StringComparer.Ordinal).ToList());
+    }
+
+    private static string MakeRelative(string path, TemporaryDirectory directory)
+    {
+        return FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/');
+    }
+
+    private sealed class RecordingGlobFileSystemEnumerator : GlobFileSystemEnumerator<string>
+    {
+        public RecordingGlobFileSystemEnumerator(IGlobEvaluatable glob, string directory)
+            : base(glob, directory, new EnumerationOptions { RecurseSubdirectories = true })
+        {
+        }
+
+        public List<string> RecursedDirectories { get; } = [];
+
+        protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry)
+        {
+            var result = base.ShouldRecurseIntoEntry(ref entry);
+            if (result)
+            {
+                RecursedDirectories.Add(entry.ToFullPath());
+            }
+
+            return result;
+        }
+
+        protected override string TransformEntry(ref FileSystemEntry entry) => entry.ToFullPath();
+    }
+
+    [Fact]
+    public void DocumentationExample_EscapeText()
+    {
+        #region Glob_EscapeText
+        // Build a pattern from a folder name that holds special characters
+        var pattern = Glob.Escape("Reports [2024]", GlobDialect.Standard) + "/**/*.pdf";
+        Assert.Equal(@"Reports \[2024]/**/*.pdf", pattern);
+
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        Assert.True(glob.IsMatch("Reports [2024]/Q1/summary.pdf"));
+        Assert.False(glob.IsMatch("Reports 2/Q1/summary.pdf"));
+
+        // Each dialect has its own escaping rules
+        Assert.Equal("100%25 done.txt", Glob.Escape("100% done.txt", GlobDialect.MSBuild));
+        Assert.Equal(@"\#notes.txt", Glob.Escape("#notes.txt", GlobDialect.Git));
+        #endregion
+    }
+
+    public static TheoryData<string, GlobDialect> EscapeRoundTripData()
+    {
+        string[] texts =
+        [
+            "a",
+            "a*b",
+            "a?b",
+            "a**b",
+            "[abc]",
+            "[!abc]",
+            "a]b",
+            "{a,b}",
+            "a}b",
+            "a,b",
+            "!important",
+            "a!b",
+            "#comment",
+            "a#b",
+            " leading space",
+            "trailing space ",
+            "two trailing spaces  ",
+            "100%",
+            "100%25",
+            "a;b$(c)@'d'",
+            "a^b",
+            "-",
+            "é",
+            "a\tb",
+            "dir/file*.txt",
+            "dir/[x]/f?.txt",
+            "a/b/c",
+            ".hidden",
+            "dir/.hidden/file",
+            "*.*",
+            "**",
+            "a/**/b",
+        ];
+
+        var data = new TheoryData<string, GlobDialect>();
+        foreach (var text in texts)
+        {
+            foreach (var dialect in Enum.GetValues<GlobDialect>())
+            {
+                data.Add(text, dialect);
+            }
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            // '\' is an ordinary character of a file name outside Windows. MSBuild reads it as a separator, even escaped.
+            foreach (var dialect in Enum.GetValues<GlobDialect>().Where(dialect => dialect is not GlobDialect.MSBuild))
+            {
+                data.Add(@"a\b", dialect);
+                data.Add(@"dir/a\*b", dialect);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(EscapeRoundTripData))]
+    public void Escape_RoundTrip(string text, GlobDialect dialect)
+    {
+        var pattern = Glob.Escape(text, dialect);
+        Assert.Equal(pattern, Glob.Escape(text.AsSpan(), dialect));
+
+        var glob = Glob.Parse(pattern, dialect);
+        Assert.Equal(GlobMode.Include, glob.Mode);
+        Assert.True(glob.IsMatch(text), $"'{pattern}' does not match '{text}'");
+        Assert.False(glob.IsMatch(text + "z"), $"'{pattern}' matches '{text}z'");
+        Assert.False(glob.IsMatch("z" + text), $"'{pattern}' matches 'z{text}'");
+
+        if (dialect is GlobDialect.Git)
+        {
+            // The pattern can be written in a .gitignore file, which drops trailing spaces and comments
+            Assert.True(GlobCollection.ParseGitIgnore(pattern).IsMatch(text), $"The gitignore entry '{pattern}' does not match '{text}'");
+        }
+    }
+
+    [Theory]
+    [InlineData(".", GlobDialect.Standard, @"\.")]
+    [InlineData("..", GlobDialect.Standard, @"\..")]
+    [InlineData("a/../b", GlobDialect.Standard, @"a/\../b")]
+    [InlineData("a/./b", GlobDialect.MSBuild, "a/%2E/b")]
+    [InlineData("..", GlobDialect.Git, "..")]
+    [InlineData("a/b", GlobDialect.Posix, "a/b")]
+    [InlineData("a*/b", GlobDialect.PosixPath, @"a\*/b")]
+    [InlineData("{a}", GlobDialect.Git, "{a}")]
+    [InlineData("{a}", GlobDialect.Standard, @"\{a}")]
+    [InlineData("a b ", GlobDialect.Git, @"a b\ ")]
+    [InlineData("!a", GlobDialect.Posix, "!a")]
+    [InlineData("", GlobDialect.Standard, "")]
+    public void Escape(string text, GlobDialect dialect, string expected)
+    {
+        Assert.Equal(expected, Glob.Escape(text, dialect));
+    }
+
+    [Fact]
+    public void Escape_KeepsPathSeparators()
+    {
+        Assert.Equal("a/b", Glob.Escape("a/b", GlobDialect.Standard));
+        Assert.Equal("a/b", Glob.Escape("a/b", GlobDialect.Posix));
+
+        // MSBuild reads both '/' and '\' as separators
+        Assert.Equal(@"a/b\c", Glob.Escape(@"a/b\c", GlobDialect.MSBuild));
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Equal("a/b", Glob.Escape(@"a\b", GlobDialect.Standard));
+        }
+        else
+        {
+            Assert.Equal(@"a\\b", Glob.Escape(@"a\b", GlobDialect.Standard));
+        }
+    }
+
+    [Fact]
+    public void DocumentationExample_TrySplitBasePath()
+    {
+        #region Glob_TrySplitBasePath
+        var glob = Glob.Parse("src/app/**/*.cs", GlobDialect.Standard);
+        Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Equal("src/app", basePath);
+        Assert.Equal("**/*.cs", relativeGlob.ToString());
+        Assert.True(relativeGlob.IsMatch("Models/User.cs"));
+
+        // MSBuild resolves a leading '..' against the directory
+        Assert.True(Glob.Parse("../shared/*.cs", GlobDialect.MSBuild).TrySplitBasePath(out basePath, out _));
+        Assert.Equal("../shared", basePath);
+
+        // The pattern starts with a wildcard
+        Assert.False(Glob.Parse("**/*.cs", GlobDialect.Standard).TrySplitBasePath(out _, out _));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("src/*.cs", GlobDialect.Standard, GlobOptions.None, "src", "*.cs")]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, GlobOptions.None, "src/app", "**/*.cs")]
+    [InlineData("src/a*/b/*.cs", GlobDialect.Standard, GlobOptions.None, "src", "a*/b/*.cs")]
+    [InlineData("src/file.cs", GlobDialect.Standard, GlobOptions.None, "src", "file.cs")]
+    [InlineData("src/**", GlobDialect.Standard, GlobOptions.None, "src", "**")]
+    [InlineData("src/bin/", GlobDialect.Standard, GlobOptions.None, "src", "bin/")]
+    [InlineData("src/.vscode/*.json", GlobDialect.Standard, GlobOptions.None, "src/.vscode", "*.json")]
+    [InlineData("2024/*.log", GlobDialect.Standard, GlobOptions.IgnoreCase, "2024", "*.log")]
+    [InlineData("2024/logs/*.log", GlobDialect.Standard, GlobOptions.IgnoreCase, "2024", "logs/*.log")]
+    [InlineData(@"a\*b/c/*.txt", GlobDialect.Standard, GlobOptions.None, "a*b/c", "*.txt")]
+    [InlineData("/usr/src/*.cs", GlobDialect.Standard, GlobOptions.None, "/usr/src", "*.cs")]
+    [InlineData("/*.cs", GlobDialect.Standard, GlobOptions.None, "/", "*.cs")]
+    [InlineData("../shared/*.cs", GlobDialect.MSBuild, GlobOptions.None, "../shared", "*.cs")]
+    [InlineData("../../shared/src/*.cs", GlobDialect.MSBuild, GlobOptions.None, "../../shared/src", "*.cs")]
+    [InlineData(@"src\app\*.cs", GlobDialect.MSBuild, GlobOptions.None, "src/app", "*.cs")]
+    [InlineData("/usr/src/*.cs", GlobDialect.MSBuild, GlobOptions.None, "/usr/src", "*.cs")]
+    [InlineData("/*.cs", GlobDialect.MSBuild, GlobOptions.None, "/", "*.cs")]
+    [InlineData("/usr/src/*.c", GlobDialect.PosixPath, GlobOptions.None, "/usr/src", "*.c")]
+    [InlineData("a//b/*.c", GlobDialect.PosixPath, GlobOptions.None, "a", "/b/*.c")]
+    [InlineData("//server/share/*.c", GlobDialect.PosixPath, GlobOptions.None, "//server/share", "*.c")]
+    [InlineData("/src/*.cs", GlobDialect.Git, GlobOptions.None, "src", "/*.cs")]
+    [InlineData("src/app/Program.cs", GlobDialect.Git, GlobOptions.None, "src/app", "/Program.cs")]
+    [InlineData("/a/b/", GlobDialect.Git, GlobOptions.None, "a", "/b/")]
+    public void TrySplitBasePath(string pattern, GlobDialect dialect, GlobOptions options, string expectedBasePath, string expectedRelativePattern)
+    {
+        var glob = Glob.Parse(pattern, dialect, options);
+        Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Equal(expectedBasePath, basePath);
+        Assert.Equal(expectedRelativePattern, relativeGlob.ToString());
+        Assert.Equal(glob.Mode, relativeGlob.Mode);
+    }
+
+    [Theory]
+    [InlineData("*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("file.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("**/src/*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("{a,b}/*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("src/*.cs", GlobDialect.Standard, GlobOptions.IgnoreCase)]
+    [InlineData(@"\../*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("src/*", GlobDialect.Posix, GlobOptions.None)]
+    [InlineData("src/", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("*.log", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("/src/", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("/../x", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("*.cs", GlobDialect.MSBuild, GlobOptions.None)]
+    public void TrySplitBasePath_NoBasePath(string pattern, GlobDialect dialect, GlobOptions options)
+    {
+        var glob = Glob.Parse(pattern, dialect, options);
+        Assert.False(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Null(basePath);
+        Assert.Null(relativeGlob);
+    }
+
+    [Theory]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, "src/app/Models/User.cs", true)]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, "src/app/Program.cs", true)]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, "src/Program.cs", false)]
+    [InlineData("/a/b/", GlobDialect.Git, "a/b/", true)]
+    [InlineData("/a/b/", GlobDialect.Git, "a/b/c.txt", true)]
+    [InlineData("../shared/*.cs", GlobDialect.MSBuild, "../shared/a.cs", true)]
+    public void TrySplitBasePath_RelativeGlobMatchesSamePaths(string pattern, GlobDialect dialect, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, dialect);
+        Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Equal(expected, glob.IsMatch(path));
+
+        var prefix = basePath + "/";
+        if (path.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            Assert.Equal(expected, relativeGlob.IsMatch(path[prefix.Length..]));
+        }
+    }
+
+    [Fact]
+    public void EnumerateFiles_DoesNotReturnDirectories()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("a.log");
+        directory.CreateDirectory("docs");
+        directory.CreateEmptyFile("logs/a");
+        directory.CreateEmptyFile("logs/important/b");
+
+        AssertEnumerateFiles(directory, Glob.Parse("*", GlobDialect.Posix), ["a.log", "logs/a", "logs/important/b"]);
+        AssertEnumerateFiles(directory, Glob.Parse("logs/", GlobDialect.Git), ["logs/a", "logs/important/b"]);
+        AssertEnumerateFiles(directory, Glob.Parse("*", GlobDialect.Git), ["a.log", "logs/a", "logs/important/b"]);
+
+        // The directories are still returned with the files by EnumerateFileSystemEntries
+        AssertEnumerateFileSystemEntries(directory, Glob.Parse("logs/", GlobDialect.Git), ["logs", "logs/a", "logs/important", "logs/important/b"]);
+    }
+
+    [Fact]
+    public void EnumerateFiles_GitIgnore_DoesNotReturnDirectories()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("build/out.dll");
+        directory.CreateEmptyFile("src/build/obj.dll");
+        directory.CreateEmptyFile("q/tmp/file.txt");
+        directory.CreateEmptyFile("src/Program.cs");
+        directory.CreateDirectory("empty/tmp");
+
+        var gitIgnore = GlobCollection.ParseGitIgnore("build/\n**/tmp\n");
+        AssertEnumerateFiles(directory, gitIgnore, ["build/out.dll", "q/tmp/file.txt", "src/build/obj.dll"]);
+        AssertEnumerateFileSystemEntries(directory, gitIgnore, ["build", "build/out.dll", "empty/tmp", "q/tmp", "q/tmp/file.txt", "src/build", "src/build/obj.dll"]);
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFilesRelativePaths()
+    {
+        #region Glob_EnumerateFilesRelativePaths
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/App/Program.cs");
+        rootDirectory.CreateEmptyFile("src/Lib/Helper.cs");
+
+        // Return the paths relative to the enumerated directory, as the pattern matches them
+        var glob = Glob.Parse("src/**/*.cs", GlobDialect.Standard);
+        var files = glob.EnumerateFiles(rootDirectory.FullPath, GlobPathFormat.RelativePath).Order(StringComparer.Ordinal).ToList();
+
+        Assert.Equal(
+            [
+                Path.Combine("src", "App", "Program.cs"),
+                Path.Combine("src", "Lib", "Helper.cs"),
+            ],
+            files);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFileInfos()
+    {
+        #region Glob_EnumerateFileInfos
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateTextFile("logs/app.log", "started");
+        rootDirectory.CreateTextFile("logs/error.log", "");
+
+        // The FileInfo objects are filled during the enumeration: reading Length does not access the disk again
+        var glob = Glob.Parse("logs/*.log", GlobDialect.Standard);
+        var nonEmptyFiles = glob.EnumerateFileInfos(rootDirectory.FullPath)
+            .Where(file => file.Length > 0)
+            .Select(file => file.Name)
+            .ToList();
+
+        Assert.Equal(["app.log"], nonEmptyFiles);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFilesParentDirectory()
+    {
+        #region Glob_EnumerateFilesParentDirectory
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("shared/Helper.cs");
+        rootDirectory.CreateEmptyFile("app/Program.cs");
+        var projectDirectory = Path.Combine(rootDirectory.FullPath, "app");
+
+        // The enumeration starts at the base path of the pattern, which can be outside the directory
+        var glob = Glob.Parse("../shared/*.cs", GlobDialect.MSBuild);
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "shared", "Helper.cs")], glob.EnumerateFiles(projectDirectory).ToList());
+        Assert.Equal([Path.Combine("..", "shared", "Helper.cs")], glob.EnumerateFiles(projectDirectory, GlobPathFormat.RelativePath).ToList());
+        #endregion
+    }
+
+    [Fact]
+    public void EnumerateFileSystemInfos()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateTextFile("src/a.txt", "abc");
+        directory.CreateDirectory("src/sub");
+
+        var glob = Glob.Parse("src/*", GlobDialect.Git);
+        var items = glob.EnumerateFileSystemInfos(directory.FullPath).OrderBy(item => item.Name, StringComparer.Ordinal).ToList();
+        Assert.Collection(items,
+            item =>
+            {
+                var file = Assert.IsType<FileInfo>(item);
+                Assert.Equal(Path.Combine(directory.FullPath, "src", "a.txt"), file.FullName);
+                Assert.Equal(3, file.Length);
+            },
+            item => Assert.Equal(Path.Combine(directory.FullPath, "src", "sub"), Assert.IsType<DirectoryInfo>(item).FullName));
+
+        Assert.Equal(["a.txt"], glob.EnumerateFileInfos(directory.FullPath).Select(file => file.Name).ToList());
+    }
+
+    [Fact]
+    public void EnumerateFileSystemEntries_RelativePaths()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("a.txt");
+        directory.CreateEmptyFile("src/b.txt");
+
+        var glob = Glob.Parse("**/*", GlobDialect.Git);
+        var items = glob.EnumerateFileSystemEntries(directory.FullPath, GlobPathFormat.RelativePath).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["a.txt", "src", Path.Combine("src", "b.txt")], items);
+    }
+
+    [Fact]
+    public void EnumerateFiles_InvalidPathFormat()
+    {
+        var glob = Glob.Parse("*", GlobDialect.Standard);
+        Assert.Throws<ArgumentOutOfRangeException>("pathFormat", () => glob.EnumerateFiles(".", (GlobPathFormat)42));
+    }
+
+    [Fact]
+    public void EnumerateFiles_AbsolutePattern()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("shared/a.cs");
+        directory.CreateEmptyFile("shared/sub/b.cs");
+        directory.CreateDirectory("project");
+
+        var sharedDirectory = Path.Combine(directory.FullPath, "shared").Replace('\\', '/');
+        var glob = Glob.Parse(sharedDirectory + "/**/*.cs", GlobDialect.MSBuild);
+        var files = glob.EnumerateFiles(Path.Combine(directory.FullPath, "project")).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([Path.Combine(directory.FullPath, "shared", "a.cs"), Path.Combine(directory.FullPath, "shared", "sub", "b.cs")], files);
+    }
+
+    [Fact]
+    public void EnumerateFiles_StandardAbsolutePattern()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("shared/a.cs");
+        directory.CreateEmptyFile("shared/sub/b.cs");
+        directory.CreateDirectory("project");
+
+        // A Windows path such as "C:/" is not an absolute pattern: only a leading separator is
+        var sharedDirectory = Path.Combine(directory.FullPath, "shared").Replace('\\', '/');
+        global::Xunit.Assert.SkipUnless(sharedDirectory.StartsWith("/", StringComparison.Ordinal), "The temporary directory is not rooted at '/'");
+
+        var glob = Glob.Parse(sharedDirectory + "/**/*.cs", GlobDialect.Standard);
+        var files = glob.EnumerateFiles(Path.Combine(directory.FullPath, "project")).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([Path.Combine(directory.FullPath, "shared", "a.cs"), Path.Combine(directory.FullPath, "shared", "sub", "b.cs")], files);
+    }
+
+    [Fact]
+    public void EnumerateFiles_MissingBaseDirectory()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("file");
+
+        Assert.Empty(Glob.Parse("missing/*.cs", GlobDialect.Standard).EnumerateFiles(directory.FullPath));
+        Assert.Empty(Glob.Parse("file/*.cs", GlobDialect.Standard).EnumerateFiles(directory.FullPath));
+        Assert.Empty(Glob.Parse("../missing/*.cs", GlobDialect.MSBuild).EnumerateFiles(directory.FullPath));
+
+        // Enumerating a directory that does not exist throws, as it always did
+        var missingDirectory = Path.Combine(directory.FullPath, "missing");
+        Assert.Throws<DirectoryNotFoundException>(() => Glob.Parse("src/*.cs", GlobDialect.Standard).EnumerateFiles(missingDirectory).ToList());
+        Assert.Throws<DirectoryNotFoundException>(() => Glob.Parse("*.cs", GlobDialect.Standard).EnumerateFiles(missingDirectory).ToList());
+    }
+
+    [Fact]
+    public void EnumerateFiles_BaseDirectory_KeepsMaxRecursionDepth()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("logs/app.log");
+        directory.CreateEmptyFile("logs/2024/app.log");
+        directory.CreateEmptyFile("logs/2024/01/app.log");
+
+        var glob = Glob.Parse("logs/**/*.log", GlobDialect.Standard);
+        AssertEnumerateFiles(directory, glob, ["logs/2024/01/app.log", "logs/2024/app.log", "logs/app.log"]);
+        AssertEnumerateFiles(directory, glob, ["logs/app.log"], new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 1 });
+        AssertEnumerateFiles(directory, glob, ["logs/2024/app.log", "logs/app.log"], new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2 });
+        AssertEnumerateFiles(directory, glob, [], new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 0 });
+        AssertEnumerateFiles(directory, glob, [], new EnumerationOptions { RecurseSubdirectories = false });
+    }
+
+    public static TheoryData<string, GlobDialect, GlobOptions> EnumerationParityData()
+    {
+        return new TheoryData<string, GlobDialect, GlobOptions>
+        {
+            { "src/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/**/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/**", GlobDialect.Standard, GlobOptions.None },
+            { "src/sub/", GlobDialect.Standard, GlobOptions.None },
+            { "src/*/", GlobDialect.Standard, GlobOptions.None },
+            { "src/sub/deep/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/sub/deep/d.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/.cfg/*.json", GlobDialect.Standard, GlobOptions.None },
+            { ".cfg/*.json", GlobDialect.Standard, GlobOptions.None },
+            { ".cfg/*.json", GlobDialect.Standard, GlobOptions.MatchLeadingDot },
+            { "SRC/**/*.cs", GlobDialect.Standard, GlobOptions.IgnoreCase },
+            { "docs/*.md", GlobDialect.Standard, GlobOptions.IgnoreCase },
+            { "Docs/*.md", GlobDialect.Standard, GlobOptions.None },
+            { "notadir/*", GlobDialect.Standard, GlobOptions.None },
+            { "missing/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "logs/2024/", GlobDialect.Standard, GlobOptions.None },
+            { "logs/**/*.log", GlobDialect.Standard, GlobOptions.None },
+            { "**/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { @"weird \[x]/*.txt", GlobDialect.Standard, GlobOptions.None },
+            { "/src/sub/", GlobDialect.Git, GlobOptions.None },
+            { "/src/sub", GlobDialect.Git, GlobOptions.None },
+            { "logs/", GlobDialect.Git, GlobOptions.None },
+            { "/logs/2024/*.log", GlobDialect.Git, GlobOptions.None },
+            { "src/sub/deep/d.cs", GlobDialect.Git, GlobOptions.None },
+            { "/src/*.cs", GlobDialect.Git, GlobOptions.None },
+            { "/src/**", GlobDialect.Git, GlobOptions.None },
+            { "src/**/*.cs", GlobDialect.MSBuild, GlobOptions.None },
+            { @"src\sub\*.cs", GlobDialect.MSBuild, GlobOptions.None },
+            { "100%25/*.txt", GlobDialect.MSBuild, GlobOptions.None },
+            { "src/*.*", GlobDialect.MSBuild, GlobOptions.None },
+            { "src/*.cs", GlobDialect.PosixPath, GlobOptions.None },
+            { "src/sub/*", GlobDialect.PosixPath, GlobOptions.None },
+            { "src/*", GlobDialect.Posix, GlobOptions.None },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(EnumerationParityData))]
+    public void Enumerate_ReturnsSameEntriesAsFullTraversal(string pattern, GlobDialect dialect, GlobOptions options)
+    {
+        using var directory = CreateEnumerationFixture();
+        var glob = Glob.Parse(pattern, dialect, options);
+        AssertSameEntriesAsFullTraversal(directory, glob);
+    }
+
+    [Fact]
+    public void Enumerate_GlobCollection_ReturnsSameEntriesAsFullTraversal()
+    {
+        using var directory = CreateEnumerationFixture();
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("src/**/*.cs", GlobDialect.Standard),
+            Glob.Parse("logs/*.log", GlobDialect.Standard),
+            Glob.Parse("!src/sub/deep/**", GlobDialect.Standard)));
+
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("src/**/*.cs", GlobDialect.Standard),
+            Glob.Parse("src/sub/*.cs", GlobDialect.Standard),
+            Glob.Parse("missing/*.cs", GlobDialect.Standard)));
+
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("src/*.cs", GlobDialect.Standard),
+            Glob.Parse("**/*.md", GlobDialect.Standard, GlobOptions.IgnoreCase)));
+
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("logs/**/*.log", GlobDialect.Standard),
+            new GlobCollection(Glob.Parse("src/*.txt", GlobDialect.Standard))));
+
+        AssertSameEntriesAsFullTraversal(directory, GlobCollection.ParseGitIgnore("/src/sub/\n/logs/2024/\n!/logs/2024/app.log\n/src/*.txt\n"));
+    }
+
+    [Fact]
+    public void Enumerate_GlobCollection_ParentDirectory()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("shared/a.cs");
+        directory.CreateEmptyFile("shared/b.txt");
+        directory.CreateEmptyFile("app/Program.cs");
+        directory.CreateEmptyFile("app/src/Helper.cs");
+        var projectDirectory = Path.Combine(directory.FullPath, "app");
+
+        var globs = new GlobCollection(
+            Glob.Parse("**/*.cs", GlobDialect.MSBuild),
+            Glob.Parse("../shared/*.cs", GlobDialect.MSBuild),
+            Glob.Parse("!src/**", GlobDialect.Standard));
+
+        Assert.Equal(
+            [Path.Combine("..", "shared", "a.cs"), "Program.cs"],
+            globs.EnumerateFiles(projectDirectory, GlobPathFormat.RelativePath).Order(StringComparer.Ordinal).ToList());
+    }
+
+    [Fact]
+    public void Enumerate_GlobCollection_OverlappingBaseDirectories_ReturnsEachEntryOnce()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("app/src/a.cs");
+        var projectDirectory = Path.Combine(directory.FullPath, "app");
+
+        // Both patterns lead to the same directory
+        var globs = new GlobCollection(
+            Glob.Parse("src/*.cs", GlobDialect.MSBuild),
+            Glob.Parse("../app/src/*.cs", GlobDialect.MSBuild));
+
+        Assert.Equal([Path.Combine(directory.FullPath, "app", "src", "a.cs")], globs.EnumerateFiles(projectDirectory).ToList());
+    }
+
+    private static TemporaryDirectory CreateEnumerationFixture()
+    {
+        var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("a.txt");
+        directory.CreateEmptyFile(".hidden.txt");
+        directory.CreateEmptyFile("src/a.cs");
+        directory.CreateEmptyFile("src/b.txt");
+        directory.CreateEmptyFile("src/sub/c.cs");
+        directory.CreateEmptyFile("src/sub/deep/d.cs");
+        directory.CreateEmptyFile("src/.cfg/e.json");
+        directory.CreateEmptyFile(".cfg/f.json");
+        directory.CreateEmptyFile("Docs/readme.md");
+        directory.CreateEmptyFile("logs/app.log");
+        directory.CreateEmptyFile("logs/2024/app.log");
+        directory.CreateEmptyFile("logs/2024/01/app.log");
+        directory.CreateEmptyFile("notadir");
+        directory.CreateEmptyFile("weird [x]/y.txt");
+        directory.CreateEmptyFile("100%/z.txt");
+        return directory;
+    }
+
+    private static void AssertSameEntriesAsFullTraversal(TemporaryDirectory directory, IGlobEvaluatable glob)
+    {
+        EnumerationOptions?[] optionsList =
+        [
+            null,
+            new EnumerationOptions(),
+            new EnumerationOptions { RecurseSubdirectories = true },
+            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 1 },
+            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2 },
+            new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.None },
+            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2, AttributesToSkip = FileAttributes.None },
+        ];
+
+        foreach (var options in optionsList)
+        {
+            // The enumerator walks the whole tree from the directory, which is how EnumerateFiles used to work
+            var referenceOptions = options ?? GetDefaultEnumerationOptions(glob);
+            var expectedEntries = new List<string>();
+            using (var enumerator = new GlobFileSystemEnumerator(glob, directory.FullPath, referenceOptions))
+            {
+                while (enumerator.MoveNext())
+                {
+                    expectedEntries.Add(enumerator.Current);
+                }
+            }
+
+            expectedEntries.Sort(StringComparer.Ordinal);
+            var expectedFiles = expectedEntries.Where(path => !Directory.Exists(path)).ToList();
+            var expectedRelativeEntries = expectedEntries.Select(path => Path.GetRelativePath(directory.FullPath, path)).ToList();
+
+            var message = $"Options: {(options is null ? "default" : $"Recurse={options.RecurseSubdirectories} Depth={options.MaxRecursionDepth} Skip={options.AttributesToSkip}")}";
+            Assert.Equal(expectedEntries, glob.EnumerateFileSystemEntries(directory.FullPath, options).Order(StringComparer.Ordinal).ToList(), "EnumerateFileSystemEntries. " + message);
+            Assert.Equal(expectedFiles, glob.EnumerateFiles(directory.FullPath, options).Order(StringComparer.Ordinal).ToList(), "EnumerateFiles. " + message);
+            Assert.Equal(expectedRelativeEntries, glob.EnumerateFileSystemEntries(directory.FullPath, GlobPathFormat.RelativePath, options).Order(StringComparer.Ordinal).ToList(), "EnumerateFileSystemEntries(RelativePath). " + message);
+            Assert.Equal(expectedFiles, glob.EnumerateFileInfos(directory.FullPath, options).Select(file => file.FullName).Order(StringComparer.Ordinal).ToList(), "EnumerateFileInfos. " + message);
+            Assert.Equal(expectedEntries, glob.EnumerateFileSystemInfos(directory.FullPath, options).Select(file => file.FullName).Order(StringComparer.Ordinal).ToList(), "EnumerateFileSystemInfos. " + message);
+        }
+
+        static EnumerationOptions GetDefaultEnumerationOptions(IGlobEvaluatable glob)
+        {
+            var matchLeadingDot = glob is Glob { MatchLeadingDot: true } or GlobCollection { MatchLeadingDot: true };
+            return new EnumerationOptions
+            {
+                RecurseSubdirectories = glob.TraverseDirectories,
+                AttributesToSkip = matchLeadingDot ? FileAttributes.None : FileAttributes.Hidden | FileAttributes.System,
+            };
+        }
+    }
+
+    private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult, EnumerationOptions? options = null)
+    {
+        var items = glob.EnumerateFiles(directory.FullPath, options)
             .AsEnumerable()
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)

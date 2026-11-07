@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-UG": {
+      "identity": {
+        "language": "en",
+        "territory": "UG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

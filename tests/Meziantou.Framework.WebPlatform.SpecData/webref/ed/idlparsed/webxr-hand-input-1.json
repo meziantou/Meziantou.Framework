@@ -1,0 +1,591 @@
+{
+  "spec": {
+    "title": "WebXR Hand Input Module - Level 1",
+    "url": "https://immersive-web.github.io/webxr-hand-input/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "XRHand",
+          "XRJointSpace",
+          "XRJointPose"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRHandJoint": {
+        "fragment": "enum XRHandJoint {\n  \"wrist\",\n\n  \"thumb-metacarpal\",\n  \"thumb-phalanx-proximal\",\n  \"thumb-phalanx-distal\",\n  \"thumb-tip\",\n\n  \"index-finger-metacarpal\",\n  \"index-finger-phalanx-proximal\",\n  \"index-finger-phalanx-intermediate\",\n  \"index-finger-phalanx-distal\",\n  \"index-finger-tip\",\n\n  \"middle-finger-metacarpal\",\n  \"middle-finger-phalanx-proximal\",\n  \"middle-finger-phalanx-intermediate\",\n  \"middle-finger-phalanx-distal\",\n  \"middle-finger-tip\",\n\n  \"ring-finger-metacarpal\",\n  \"ring-finger-phalanx-proximal\",\n  \"ring-finger-phalanx-intermediate\",\n  \"ring-finger-phalanx-distal\",\n  \"ring-finger-tip\",\n\n  \"pinky-finger-metacarpal\",\n  \"pinky-finger-phalanx-proximal\",\n  \"pinky-finger-phalanx-intermediate\",\n  \"pinky-finger-phalanx-distal\",\n  \"pinky-finger-tip\"\n};",
+        "type": "enum",
+        "name": "XRHandJoint",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "wrist",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-wrist"
+          },
+          {
+            "type": "enum-value",
+            "value": "thumb-metacarpal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-thumb-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "thumb-phalanx-proximal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-thumb-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "thumb-phalanx-distal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-thumb-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "thumb-tip",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-thumb-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "index-finger-metacarpal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-index-finger-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "index-finger-phalanx-proximal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-index-finger-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "index-finger-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-index-finger-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "index-finger-phalanx-distal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-index-finger-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "index-finger-tip",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-index-finger-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "middle-finger-metacarpal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-middle-finger-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "middle-finger-phalanx-proximal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-middle-finger-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "middle-finger-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-middle-finger-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "middle-finger-phalanx-distal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-middle-finger-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "middle-finger-tip",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-middle-finger-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "ring-finger-metacarpal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-ring-finger-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "ring-finger-phalanx-proximal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-ring-finger-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "ring-finger-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-ring-finger-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "ring-finger-phalanx-distal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-ring-finger-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "ring-finger-tip",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-ring-finger-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "pinky-finger-metacarpal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-pinky-finger-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "pinky-finger-phalanx-proximal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-pinky-finger-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "pinky-finger-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-pinky-finger-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "pinky-finger-phalanx-distal",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-pinky-finger-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "pinky-finger-tip",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhandjoint-pinky-finger-tip"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/webxr-hand-input/#enumdef-xrhandjoint"
+      },
+      "XRHand": {
+        "fragment": "[Exposed=Window]\ninterface XRHand {\n    iterable<XRHandJoint, XRJointSpace>;\n\n    readonly attribute unsigned long size;\n    XRJointSpace get(XRHandJoint key);\n};",
+        "type": "interface",
+        "name": "XRHand",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRHandJoint"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRJointSpace"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhand-size"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRJointSpace"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRHandJoint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrhand-get"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/webxr-hand-input/#xrhand"
+      },
+      "XRJointSpace": {
+        "fragment": "[Exposed=Window]\ninterface XRJointSpace: XRSpace {\n  readonly attribute XRHandJoint jointName;\n};",
+        "type": "interface",
+        "name": "XRJointSpace",
+        "inheritance": "XRSpace",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "jointName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRHandJoint"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrjointspace-jointname"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/webxr-hand-input/#xrjointspace"
+      },
+      "XRJointPose": {
+        "fragment": "[Exposed=Window]\ninterface XRJointPose: XRPose {\n    readonly attribute float radius;\n};",
+        "type": "interface",
+        "name": "XRJointPose",
+        "inheritance": "XRPose",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "radius",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrjointpose-radius"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/webxr-hand-input/#xrjointpose"
+      }
+    },
+    "idlExtendedNames": {
+      "XRInputSource": [
+        {
+          "fragment": "partial interface XRInputSource {\n   [SameObject] readonly attribute XRHand? hand;\n};",
+          "type": "interface",
+          "name": "XRInputSource",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "hand",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRHand"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrinputsource-hand"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRFrame": [
+        {
+          "fragment": "partial interface XRFrame {\n    XRJointPose? getJointPose(XRJointSpace joint, XRSpace baseSpace);\n    boolean fillJointRadii(sequence<XRJointSpace> jointSpaces, Float32Array radii);\n\n    boolean fillPoses(sequence<XRSpace> spaces, XRSpace baseSpace, Float32Array transforms);\n};",
+          "type": "interface",
+          "name": "XRFrame",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getJointPose",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRJointPose"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "joint",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRJointSpace"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "baseSpace",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRSpace"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrframe-getjointpose"
+            },
+            {
+              "type": "operation",
+              "name": "fillJointRadii",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "jointSpaces",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "XRJointSpace"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "radii",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Float32Array"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrframe-filljointradii"
+            },
+            {
+              "type": "operation",
+              "name": "fillPoses",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "spaces",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "XRSpace"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "baseSpace",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRSpace"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "transforms",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Float32Array"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/webxr-hand-input/#dom-xrframe-fillposes"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRHand",
+        "XRJointSpace",
+        "XRJointPose"
+      ]
+    },
+    "dependencies": {
+      "XRInputSource": [
+        "XRHand"
+      ],
+      "XRHand": [
+        "XRHandJoint",
+        "XRJointSpace"
+      ],
+      "XRJointSpace": [
+        "XRSpace",
+        "XRHandJoint"
+      ],
+      "XRFrame": [
+        "XRJointPose",
+        "XRJointSpace",
+        "XRSpace",
+        "Float32Array"
+      ],
+      "XRJointPose": [
+        "XRPose"
+      ]
+    },
+    "externalDependencies": [
+      "XRInputSource",
+      "XRSpace",
+      "XRFrame",
+      "Float32Array",
+      "XRPose"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -60,6 +60,12 @@ internal sealed class YamlImmutableHashSetConverter<TElement> : YamlConverter<Im
 
         _elementConverter ??= writer.GetConverter(typeof(TElement));
 
+        // The set is read back through an alias, like the other immutable collections and the generated serializer.
+        if (writer.TryWriteReference(value))
+        {
+            return;
+        }
+
         writer.WriteStartSequence();
         foreach (var item in value)
         {

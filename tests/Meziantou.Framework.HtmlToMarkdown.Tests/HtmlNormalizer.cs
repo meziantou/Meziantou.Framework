@@ -1,6 +1,6 @@
-using AngleSharp.Dom;
-using AngleSharp.Html;
-using AngleSharp.Html.Parser;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Formatting;
 
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
@@ -15,34 +15,34 @@ internal static class HtmlNormalizer
 
     public static string Normalize(string html)
     {
-        var parser = new HtmlParser();
-        var document = parser.ParseDocument("<body>" + html + "</body>");
+        var document = HtmlDocumentParser.ParseDocument("<body>" + html + "</body>");
         Assert.NotNull(document.Body);
         var body = document.Body;
         NormalizeNode(body);
 
+        var formatter = new HtmlPrettyFormatter();
         using var sw = new StringWriter();
         foreach (var child in body.ChildNodes)
         {
-            child.ToHtml(sw, new PrettyMarkupFormatter());
+            child.ToHtml(sw, formatter);
         }
 
         return sw.ToString().Trim();
     }
 
-    private static void NormalizeNode(INode node)
+    private static void NormalizeNode(Node node)
     {
         // Sort attributes alphabetically for deterministic comparison
-        if (node is IElement element)
+        if (node is Element element)
         {
-            var attributes = element.Attributes.OrderBy(a => a.Name, StringComparer.Ordinal).ToList();
+            var attributes = element.Attributes.OrderBy(a => a.Name, StringComparer.Ordinal).Select(a => (a.Name, a.Value)).ToList();
             foreach (var attr in element.Attributes.ToList())
             {
-                element.RemoveAttribute(attr.NamespaceUri, attr.Name);
+                element.RemoveAttributeNode(attr);
             }
-            foreach (var attr in attributes)
+            foreach (var (name, value) in attributes)
             {
-                element.SetAttribute(attr.Name, attr.Value);
+                element.SetAttribute(name, value);
             }
         }
 

@@ -58,6 +58,18 @@ public sealed class Mp3Id3v1Tests
     }
 
     [Fact]
+    public void BuildTag_CommentEndingWithZeroAndNonZeroBytes_DoesNotReadBackAsATrackNumber()
+    {
+        // Bytes 28 and 29 of a 30-byte comment are where ID3v1.1 stores a zero byte and the track number
+        var tag = Id3v1Writer.BuildTag(new MediaTagInfo { Comment = new string('a', 28) + "\0\u0003" });
+
+        var tags = new MediaTagInfo();
+        Assert.True(Id3v1Reader.TryParseTag(tag, tags));
+        Assert.Null(tags.TrackNumber);
+        Assert.Equal(new string('a', 28), tags.Comment);
+    }
+
+    [Fact]
     public void ParseTag_NoTagMagic_ReturnsFalse()
     {
         var data = new byte[128];

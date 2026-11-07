@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -83,13 +84,13 @@ public sealed class PathGetExtensionWithFullPathCodeFixProvider : CodeFixProvide
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) &&
             invocationOperation.Arguments.Length == 1)
         {
-            var fullPathOperation = UnwrapImplicitConversion(invocationOperation.Arguments[0].Value);
+            var fullPathOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[0].Value, fullPathType);
             if (SymbolEqualityComparer.Default.Equals(fullPathOperation.Type, fullPathType) &&
                 fullPathOperation.Syntax is ExpressionSyntax fullPathExpression)
             {
                 replacementExpression = SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    fullPathExpression.WithoutTrivia(),
+                    fullPathExpression.WithoutTrivia().Parenthesize(),
                     SyntaxFactory.IdentifierName("Extension"));
                 return true;
             }
@@ -97,15 +98,5 @@ public sealed class PathGetExtensionWithFullPathCodeFixProvider : CodeFixProvide
 
         replacementExpression = null!;
         return false;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

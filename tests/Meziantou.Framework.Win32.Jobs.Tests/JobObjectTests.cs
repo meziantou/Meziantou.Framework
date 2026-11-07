@@ -8,6 +8,58 @@ namespace Meziantou.Framework.Win32.Jobs.Tests;
 public class JobObjectTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_Terminate()
+    {
+        using var job = new JobObject();
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        });
+        Assert.NotNull(process);
+        job.AssignProcess(process);
+
+        #region JobObject_Terminate
+        job.Terminate();
+        job.Terminate(exitCode: 1);
+        #endregion
+
+        process.WaitForExit();
+        Assert.Equal(1, process.ExitCode);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_AccountingInformation()
+    {
+        using var job = new JobObject();
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        });
+        Assert.NotNull(process);
+        job.AssignProcess(process);
+
+        #region JobObject_AccountingInformation
+        var basicInfo = job.GetBasicAccountingInformation();
+        var basicAndIoInfo = job.GetBasicAndIoAccountingInformation();
+        var memoryInfo = job.GetMemoryAccountingInformation();
+        #endregion
+
+        // Windows can add helper processes, such as the console host, to the job
+        Assert.NotEqual(0u, basicInfo.ActiveProcesses);
+        Assert.NotEqual(0u, basicAndIoInfo.BasicInfo.TotalProcesses);
+        Assert.NotEqual(0ul, memoryInfo.PeakJobMemoryUsed);
+
+        job.Terminate();
+        process.WaitForExit();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void ShouldKillProcessOnTerminate()
     {
         using var job = new JobObject();
@@ -62,6 +114,158 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JobObject_DocumentationExample()
+    {
+        #region JobObject_KillOnJobClose
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits
+        {
+            Flags = JobObjectLimitFlags.KillOnJobClose,
+        });
+
+        // Start a child process and assign it to the job
+        using var childProcess = Process.Start(new ProcessStartInfo("ping", "127.0.0.1 -n 100") { CreateNoWindow = true })!;
+        job.AssignProcess(childProcess);
+
+        // Disposing the job terminates the child process
+        job.Dispose();
+        childProcess.WaitForExit();
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JobObjectLimits_DocumentationExample()
+    {
+        #region JobObjectLimits_SetLimits
+        using var job = new JobObject();
+        var limits = new JobObjectLimits
+        {
+            Flags = JobObjectLimitFlags.KillOnJobClose,
+            ActiveProcessLimit = 10,
+            ProcessMemoryLimit = 100 * 1024 * 1024, // 100 MB
+        };
+        job.SetLimits(limits);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JobObjectLimits_CombineDocumentationExample()
+    {
+        #region JobObject_CombineLimits
+        using var job = new JobObject();
+
+        // SetLimits replaces every limit set by a previous call: set them all at once
+        job.SetLimits(new JobObjectLimits
+        {
+            Flags = JobObjectLimitFlags.KillOnJobClose | JobObjectLimitFlags.DieOnUnhandledException,
+            ActiveProcessLimit = 4,
+            ProcessMemoryLimit = 512 * 1024 * 1024, // 512 MB per process
+            PerProcessUserTimeLimit = TimeSpan.FromMinutes(5).Ticks,
+        });
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRate_DocumentationExample()
+    {
+        #region JobObject_CpuRate
+        using var job = new JobObject();
+
+        // The rate is a number of cycles per 10,000: 2,000 is 20% of the CPU
+        job.SetCpuRateHardCap(2_000);
+
+        var cpuRate = job.GetCpuRateHardCap();
+        Assert.Equal(JobObjectCpuRateControlMode.HardCap, cpuRate.Mode);
+        Assert.Equal(2_000, cpuRate.Rate);
+
+        job.DisableCpuRateHardCap();
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, job.GetCpuRateHardCap().Mode);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void NamedJob_DocumentationExample()
+    {
+        #region JobObject_NamedJob
+        var name = "MyApplication-" + Guid.NewGuid().ToString("N");
+
+        // CreatedNew is false when a job object with this name already exists: the instance attaches to it
+        using var job = new JobObject(name);
+        Assert.True(job.CreatedNew);
+
+        // Another process can open the job object by its name
+        if (JobObject.TryOpen(JobObjectAccessRights.Query | JobObjectAccessRights.AssignProcess, inherited: false, name, out var existingJob))
+        {
+            using (existingJob)
+            {
+                using var currentProcess = Process.GetCurrentProcess();
+                Assert.False(existingJob.IsAssignedToProcess(currentProcess));
+            }
+        }
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Flags_AreReplacedNotAccumulated()
+    {
+        var limits = new JobObjectLimits { Flags = JobObjectLimitFlags.KillOnJobClose };
+        limits.Flags = JobObjectLimitFlags.SilentBreakawayOk;
+
+        Assert.Equal(JobObjectLimitFlags.SilentBreakawayOk, limits.Flags);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(psi);
+        Assert.NotNull(process);
+        Assert.False(process.WaitForExit(500)); // Ensure process is started
+
+        using (var job = new JobObject())
+        {
+            job.SetLimits(limits);
+            job.AssignProcess(process);
+        }
+
+        // KillOnJobClose was replaced before SetLimits, so closing the job must leave the process alive
+        Assert.False(process.WaitForExit(1000));
+        process.Kill();
+        process.WaitForExit();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_UnsetAppliesNoLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { Flags = JobObjectLimitFlags.SilentBreakawayOk });
+
+        job.AssignProcess(Process.GetCurrentProcess());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_ZeroIsAnExplicitLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { ActiveProcessLimit = 0 });
+
+        Assert.Throws<Win32Exception>(() => job.AssignProcess(Process.GetCurrentProcess()));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Terminate_WithoutTerminateAccessRight()
+    {
+        var objectName = Guid.NewGuid().ToString("N");
+        using var job = new JobObject(objectName);
+        using var queryOnly = JobObject.Open(JobObjectAccessRights.Query, inherited: false, objectName);
+
+        Assert.Throws<Win32Exception>(queryOnly.Terminate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CreateAndOpenJobObject()
     {
         var objectName = Guid.NewGuid().ToString("N");
@@ -69,6 +273,31 @@ public class JobObjectTests
 
         using (JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName))
         {
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CreatedNew_DistinguishesCreateFromAttach()
+    {
+        using (var unnamed = new JobObject())
+        {
+            Assert.True(unnamed.CreatedNew);
+        }
+
+        var objectName = Guid.NewGuid().ToString("N");
+        using var first = new JobObject(objectName);
+        Assert.True(first.CreatedNew);
+
+        using var second = new JobObject(objectName);
+        Assert.False(second.CreatedNew);
+
+        using var opened = JobObject.Open(JobObjectAccessRights.Query, inherited: false, objectName);
+        Assert.False(opened.CreatedNew);
+
+        Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, inherited: false, objectName, out var tryOpened));
+        using (tryOpened)
+        {
+            Assert.False(tryOpened.CreatedNew);
         }
     }
 
@@ -124,22 +353,91 @@ public class JobObjectTests
 
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
 
         job.SetCpuRateHardCap(7654);
         cap = job.GetCpuRateHardCap();
         Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.HardCap, cap.Mode);
         Assert.Equal(7654, cap.Rate);
 
         job.DisableCpuRateHardCap();
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateWeight_IsReportedAsWeight()
+    {
+        using var job = new JobObject();
+        job.SetCpuRateWeight(5);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Weight, cap.Mode);
+        Assert.Equal(5, cap.Weight);
+
+        // The weight lives in the same union as the hard cap rate, so Rate must not report it
+        Assert.Equal(0, cap.Rate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateMinMax_IsReportedAsRange()
+    {
+        using var job = new JobObject();
+        job.SetCpuRate(minRate: 1000, maxRate: 3000);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.MinMaxRate, cap.Mode);
+        Assert.Equal(1000, cap.MinRate);
+        Assert.Equal(3000, cap.MaxRate);
+
+        // Reading CpuRate here used to yield 196609000: MaxRate and MinRate reinterpreted as one uint
+        Assert.Equal(0, cap.Rate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_OutOfRangeValues()
+    {
+        using var job = new JobObject();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(10_001));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(10));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(-1, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(0, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(70_000, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 10_001));
+
+        // Windows rejects an inverted range, so reject it before the P/Invoke
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(3000, 1000));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_BoundaryValuesAreAccepted()
+    {
+        using var job = new JobObject();
+
+        job.SetCpuRateHardCap(1);
+        job.SetCpuRateHardCap(10_000);
+        job.SetCpuRateWeight(1);
+        job.SetCpuRateWeight(9);
+        job.SetCpuRate(1, 10_000);
+        job.SetCpuRate(10_000, 10_000);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SetUILimits()
     {
         using var job = new JobObject();
-        job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
+        job.SetUIRestrictions(JobObjectUILimit.ReadClipboard);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -156,6 +454,21 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetIoRateLimits_DocumentationExample()
+    {
+        #region JobIoRateLimits_SetIoLimits
+        using var job = new JobObject();
+        var limits = new JobIoRateLimits
+        {
+            ControlFlags = JobIoRateFlags.Enable,
+            MaxBandwidth = 1024 * 1024, // 1 MB/s
+            MaxIops = 1000,
+        };
+        job.SetIoLimits(limits);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetBasicAccountingInformation()
     {
         using var job = new JobObject();
@@ -169,9 +482,30 @@ public class JobObjectTests
     {
         using var job = new JobObject();
         job.AssignProcess(Process.GetCurrentProcess());
-        var info = job.GetBasicAndIoAccountingInformation();
-        Assert.NotEqual(TimeSpan.Zero, info.BasicInfo.TotalUserTime);
-        Assert.NotEqual((ulong)0, info.IoInfo.ReadOperationCount);
+
+        // A job only accounts for I/O performed after a process joins it, so the counters are
+        // still zero right after AssignProcess. Perform I/O and assert the counters moved,
+        // instead of depending on whatever the runtime happens to do in the meantime.
+        var before = job.GetBasicAndIoAccountingInformation();
+
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllBytes(path, new byte[64 * 1024]);
+            _ = File.ReadAllBytes(path);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+
+        var after = job.GetBasicAndIoAccountingInformation();
+
+        Assert.NotEqual(TimeSpan.Zero, after.BasicInfo.TotalUserTime);
+        Assert.True(after.IoInfo.ReadOperationCount > before.IoInfo.ReadOperationCount, "The job should have accounted for the read operations");
+        Assert.True(after.IoInfo.WriteOperationCount > before.IoInfo.WriteOperationCount, "The job should have accounted for the write operations");
+        Assert.True(after.IoInfo.ReadTransferCount >= before.IoInfo.ReadTransferCount + (64 * 1024), "The job should have accounted for the bytes read");
+        Assert.True(after.IoInfo.WriteTransferCount >= before.IoInfo.WriteTransferCount + (64 * 1024), "The job should have accounted for the bytes written");
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+min	number	1.5		fn:IsRequired(fn:Not(fn:IsPresent(max)))	FALSE	FALSE	0.0	[fn:Eval((@min>=0.0) && (@min<=@max))]			Table 100, Zoom cell
+max	number	1.5		fn:IsRequired(fn:Not(fn:IsPresent(min)))	FALSE	FALSE	999999.9	[fn:Eval((@max>=0.0) && (@max>=@min))]			Default is really infinity

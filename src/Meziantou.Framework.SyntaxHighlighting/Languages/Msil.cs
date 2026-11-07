@@ -63,11 +63,12 @@ internal static class Msil
             new()
             {
                 Scope = "number",
+                // Not after a word character or a dot, so the digit of an opcode such as `ldarg.0` stays part of the keyword.
                 Variants =
                 [
-                    new Mode { Begin = @"\b0x[0-9A-Fa-f]+\b" },
-                    new Mode { Begin = @"\b[0-9A-Fa-f]{2}\b" },
-                    new Mode { Begin = @"[-+]?\b\d+(?:\.\d+)?\b" },
+                    new Mode { Begin = @"(?<![\w.])0x[0-9A-Fa-f]+\b" },
+                    new Mode { Begin = @"(?<![\w.])[0-9A-Fa-f]{2}\b" },
+                    new Mode { Begin = @"(?<![\w.])[-+]?\d+(?:\.\d+)?\b" },
                 ],
             },
             new()

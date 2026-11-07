@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- All the tests are skipped on non-Windows operating systems -->
+    <MinimumExpectedTests>0</MinimumExpectedTests>
     <RootNamespace>Meziantou.Framework.Win32.Tests</RootNamespace>
   </PropertyGroup>
 

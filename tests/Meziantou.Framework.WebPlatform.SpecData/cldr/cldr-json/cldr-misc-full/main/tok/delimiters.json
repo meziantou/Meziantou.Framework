@@ -1,0 +1,15 @@
+{
+  "main": {
+    "tok": {
+      "identity": {
+        "language": "tok"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

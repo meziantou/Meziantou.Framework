@@ -92,4 +92,26 @@ public sealed class UrlEncodedFormHttpJsonSerializerTests : SerializerTestsBase
             Value: a=d&z=b
             """);
     }
+
+    [Fact]
+    public void OrderProperties_UnescapeValues_KeepsSeparatorsEscaped()
+    {
+        var options = new UrlEncodedFormFormatterOptions { UnescapeValues = true, OrderProperties = true, PrettyFormat = false };
+        AssertUrlSerialization("z=a%26b%3Dc%2Bd+e&a=%25", options, """
+            Headers:
+              Content-Type: application/x-www-form-urlencoded
+            Value: a=%25&z=a%26b%3Dc%2Bd e
+            """);
+    }
+
+    [Fact]
+    public void OrderProperties_EscapedValues_KeptAsIs()
+    {
+        var options = new UrlEncodedFormFormatterOptions { UnescapeValues = false, OrderProperties = true, PrettyFormat = false };
+        AssertUrlSerialization("z=a%26b+c&a=%25", options, """
+            Headers:
+              Content-Type: application/x-www-form-urlencoded
+            Value: a=%25&z=a%26b+c
+            """);
+    }
 }

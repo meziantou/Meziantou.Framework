@@ -5,8 +5,9 @@ namespace Meziantou.Framework.WPF;
 
 /// <summary>Provides utility methods and attached properties for WPF windows.</summary>
 /// <example>
-/// <code>
-/// &lt;Window xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
+/// <code language="xml" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/CloseOnEscapeKeyDownExample.xaml">
+/// &lt;Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+///         xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
 ///         wpf:WindowUtilities.CloseOnEscapeKeyDown="True"&gt;
 /// &lt;/Window&gt;
 /// </code>
@@ -53,12 +54,12 @@ public static partial class WindowUtilities
 
     private static void CloseOnEscapeKeyDown_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (sender is Window target)
+        if (sender is Window target && e.Key is Key.Escape)
         {
-            if (e.Key == Key.Escape)
-            {
-                target.Close();
-            }
+            // Mark the event as handled before closing, so a Cancel button or a KeyDown handler on a child element
+            // does not also react to the key press on a window that is already closing.
+            e.Handled = true;
+            target.Close();
         }
     }
 }

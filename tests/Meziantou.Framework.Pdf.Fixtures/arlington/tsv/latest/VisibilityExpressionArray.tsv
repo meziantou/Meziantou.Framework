@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	1.6		TRUE	FALSE	FALSE		[And,Not,Or]			Table 97 and Clause 8.11.2.2
+1	array;dictionary	1.6		TRUE	FALSE	FALSE				[VisibilityExpressionArray];[OptContentGroup]	
+*	array;dictionary	1.6		FALSE	FALSE	FALSE				[VisibilityExpressionArray];[OptContentGroup]	

@@ -18,12 +18,25 @@ namespace Meziantou.Framework.Yaml.Serialization;
 public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
 {
     /// <summary>Gets or sets a value indicating whether emitted YAML should be indented.</summary>
+    /// <remarks>
+    /// When disabled, collections are written using the flow style, which keeps the whole document on a single line.
+    /// See <see cref="YamlSerializerOptions.WriteIndented"/>.
+    /// </remarks>
     public bool WriteIndented { get; set; }
 
     /// <summary>
     /// Gets or sets the number of spaces to use when <see cref="WriteIndented"/> is enabled.
     /// </summary>
     public int IndentSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a block sequence that is the value of a mapping key is indented
+    /// relative to that mapping.
+    /// </summary>
+    /// <remarks>
+    /// See <see cref="YamlSerializerOptions.IndentBlockSequences"/>.
+    /// </remarks>
+    public bool IndentBlockSequences { get; set; }
 
     /// <summary>Gets or sets the policy used to convert CLR property names.</summary>
     public YamlKnownNamingPolicy PropertyNamingPolicy { get; set; }
@@ -42,9 +55,6 @@ public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
 
     /// <summary>Gets or sets a value indicating whether read-only properties are ignored during serialization.</summary>
     public bool IgnoreReadOnlyProperties { get; set; }
-
-    /// <summary>Gets or sets a value indicating whether deserialization rejects properties that do not match a .NET member.</summary>
-    public bool RejectUnmatchedProperties { get; set; }
 
     /// <summary>Gets or sets a value indicating whether required constructor parameters must be present during deserialization.</summary>
     public bool RespectRequiredConstructorParameters { get; set; }
@@ -100,6 +110,10 @@ public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
     /// <summary>Gets or sets a value indicating whether quoted scalar style should be preferred for ambiguous scalars.</summary>
     public bool PreferQuotedForAmbiguousScalars { get; set; }
 
+    /// <summary>Gets or sets the style used to emit string values.</summary>
+    /// <remarks>See <see cref="YamlScalarStylePreferences.StringStyle"/>.</remarks>
+    public ScalarStyle StringStyle { get; set; }
+
     /// <summary>Gets or sets how type discriminators are represented during polymorphic serialization.</summary>
     public YamlTypeDiscriminatorStyle DiscriminatorStyle { get; set; }
 
@@ -108,6 +122,17 @@ public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
 
     /// <summary>Gets or sets behavior when an unknown derived type discriminator is encountered.</summary>
     public YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether derived type registrations are inferred from the compiler-provided
+    /// metadata of a <c>closed</c> type hierarchy.
+    /// </summary>
+    /// <remarks>
+    /// This is the source-generation counterpart of <see cref="YamlPolymorphismOptions.InferClosedTypePolymorphism"/>.
+    /// <see cref="YamlPolymorphicAttribute.InferClosedTypePolymorphism"/> overrides this value for the type it is
+    /// applied to.
+    /// </remarks>
+    public bool InferClosedTypePolymorphism { get; set; }
 
     /// <summary>Gets or sets converter types to be instantiated and registered on the generated options instance.</summary>
     /// <remarks>

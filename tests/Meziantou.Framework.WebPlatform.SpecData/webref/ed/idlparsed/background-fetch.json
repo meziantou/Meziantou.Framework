@@ -1,0 +1,1166 @@
+{
+  "spec": {
+    "title": "Background Fetch",
+    "url": "https://wicg.github.io/background-fetch/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "ServiceWorker": [
+          "BackgroundFetchEvent",
+          "BackgroundFetchUpdateUIEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "BackgroundFetchManager",
+          "BackgroundFetchRegistration",
+          "BackgroundFetchRecord"
+        ],
+        "Worker": [
+          "BackgroundFetchManager",
+          "BackgroundFetchRegistration",
+          "BackgroundFetchRecord"
+        ]
+      }
+    },
+    "idlNames": {
+      "BackgroundFetchManager": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface BackgroundFetchManager {\n  Promise<BackgroundFetchRegistration> fetch(DOMString id, (RequestInfo or sequence<RequestInfo>) requests, optional BackgroundFetchOptions options = {});\n  Promise<BackgroundFetchRegistration?> get(DOMString id);\n  Promise<sequence<DOMString>> getIds();\n};",
+        "type": "interface",
+        "name": "BackgroundFetchManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "fetch",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BackgroundFetchRegistration"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "id",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "requests",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "RequestInfo"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "RequestInfo"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BackgroundFetchOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchmanager-fetch"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "BackgroundFetchRegistration"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "id",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchmanager-get"
+          },
+          {
+            "type": "operation",
+            "name": "getIds",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchmanager-getids"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#backgroundfetchmanager"
+      },
+      "BackgroundFetchUIOptions": {
+        "fragment": "dictionary BackgroundFetchUIOptions {\n  sequence<ImageResource> icons;\n  DOMString title;\n};",
+        "type": "dictionary",
+        "name": "BackgroundFetchUIOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "icons",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ImageResource"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchuioptions-icons"
+          },
+          {
+            "type": "field",
+            "name": "title",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchuioptions-title"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#dictdef-backgroundfetchuioptions"
+      },
+      "BackgroundFetchOptions": {
+        "fragment": "dictionary BackgroundFetchOptions : BackgroundFetchUIOptions {\n  unsigned long long downloadTotal = 0;\n};",
+        "type": "dictionary",
+        "name": "BackgroundFetchOptions",
+        "inheritance": "BackgroundFetchUIOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "downloadTotal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchoptions-downloadtotal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#dictdef-backgroundfetchoptions"
+      },
+      "BackgroundFetchRegistration": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface BackgroundFetchRegistration : EventTarget {\n  readonly attribute DOMString id;\n  readonly attribute unsigned long long uploadTotal;\n  readonly attribute unsigned long long uploaded;\n  readonly attribute unsigned long long downloadTotal;\n  readonly attribute unsigned long long downloaded;\n  readonly attribute BackgroundFetchResult result;\n  readonly attribute BackgroundFetchFailureReason failureReason;\n  readonly attribute boolean recordsAvailable;\n\n  attribute EventHandler onprogress;\n\n  Promise<boolean> abort();\n  Promise<BackgroundFetchRecord> match(RequestInfo request, optional CacheQueryOptions options = {});\n  Promise<sequence<BackgroundFetchRecord>> matchAll(optional RequestInfo request, optional CacheQueryOptions options = {});\n};",
+        "type": "interface",
+        "name": "BackgroundFetchRegistration",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-id"
+          },
+          {
+            "type": "attribute",
+            "name": "uploadTotal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-uploadtotal"
+          },
+          {
+            "type": "attribute",
+            "name": "uploaded",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-uploaded"
+          },
+          {
+            "type": "attribute",
+            "name": "downloadTotal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-downloadtotal"
+          },
+          {
+            "type": "attribute",
+            "name": "downloaded",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-downloaded"
+          },
+          {
+            "type": "attribute",
+            "name": "result",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BackgroundFetchResult"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-result"
+          },
+          {
+            "type": "attribute",
+            "name": "failureReason",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BackgroundFetchFailureReason"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-failurereason"
+          },
+          {
+            "type": "attribute",
+            "name": "recordsAvailable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-recordsavailable"
+          },
+          {
+            "type": "attribute",
+            "name": "onprogress",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-onprogress"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-abort"
+          },
+          {
+            "type": "operation",
+            "name": "match",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BackgroundFetchRecord"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CacheQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-match"
+          },
+          {
+            "type": "operation",
+            "name": "matchAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BackgroundFetchRecord"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CacheQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchregistration-matchall"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#backgroundfetchregistration"
+      },
+      "BackgroundFetchResult": {
+        "fragment": "enum BackgroundFetchResult { \"\", \"success\", \"failure\" };",
+        "type": "enum",
+        "name": "BackgroundFetchResult",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchresult"
+          },
+          {
+            "type": "enum-value",
+            "value": "success",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchresult-success"
+          },
+          {
+            "type": "enum-value",
+            "value": "failure",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchresult-failure"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/background-fetch/#enumdef-backgroundfetchresult"
+      },
+      "BackgroundFetchFailureReason": {
+        "fragment": "enum BackgroundFetchFailureReason {\n  // The background fetch has not completed yet, or was successful.\n  \"\",\n  // The operation was aborted by the user, or abort() was called.\n  \"aborted\",\n  // A response had a not-ok-status.\n  \"bad-status\",\n  // A fetch failed for other reasons, e.g. CORS, MIX, an invalid partial response,\n  // or a general network failure for a fetch that cannot be retried.\n  \"fetch-error\",\n  // Storage quota was reached during the operation.\n  \"quota-exceeded\",\n  // The provided downloadTotal was exceeded.\n  \"download-total-exceeded\"\n};",
+        "type": "enum",
+        "name": "BackgroundFetchFailureReason",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchfailurereason"
+          },
+          {
+            "type": "enum-value",
+            "value": "aborted",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchfailurereason-aborted"
+          },
+          {
+            "type": "enum-value",
+            "value": "bad-status",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchfailurereason-bad-status"
+          },
+          {
+            "type": "enum-value",
+            "value": "fetch-error",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchfailurereason-fetch-error"
+          },
+          {
+            "type": "enum-value",
+            "value": "quota-exceeded",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchfailurereason-quota-exceeded"
+          },
+          {
+            "type": "enum-value",
+            "value": "download-total-exceeded",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchfailurereason-download-total-exceeded"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/background-fetch/#enumdef-backgroundfetchfailurereason"
+      },
+      "BackgroundFetchRecord": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface BackgroundFetchRecord {\n  readonly attribute Request request;\n  readonly attribute Promise<Response> responseReady;\n};",
+        "type": "interface",
+        "name": "BackgroundFetchRecord",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "request",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Request"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchrecord-request"
+          },
+          {
+            "type": "attribute",
+            "name": "responseReady",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Response"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchrecord-responseready"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#backgroundfetchrecord"
+      },
+      "BackgroundFetchEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface BackgroundFetchEvent : ExtendableEvent {\n  constructor(DOMString type, BackgroundFetchEventInit init);\n  readonly attribute BackgroundFetchRegistration registration;\n};",
+        "type": "interface",
+        "name": "BackgroundFetchEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BackgroundFetchEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchevent-backgroundfetchevent"
+          },
+          {
+            "type": "attribute",
+            "name": "registration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BackgroundFetchRegistration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchevent-registration"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#backgroundfetchevent"
+      },
+      "BackgroundFetchEventInit": {
+        "fragment": "dictionary BackgroundFetchEventInit : ExtendableEventInit {\n  required BackgroundFetchRegistration registration;\n};",
+        "type": "dictionary",
+        "name": "BackgroundFetchEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "registration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BackgroundFetchRegistration"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetcheventinit-registration"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#dictdef-backgroundfetcheventinit"
+      },
+      "BackgroundFetchUpdateUIEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface BackgroundFetchUpdateUIEvent : BackgroundFetchEvent {\n  constructor(DOMString type, BackgroundFetchEventInit init);\n  Promise<undefined> updateUI(optional BackgroundFetchUIOptions options = {});\n};",
+        "type": "interface",
+        "name": "BackgroundFetchUpdateUIEvent",
+        "inheritance": "BackgroundFetchEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BackgroundFetchEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchupdateuievent-backgroundfetchupdateuievent"
+          },
+          {
+            "type": "operation",
+            "name": "updateUI",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BackgroundFetchUIOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-fetch/#dom-backgroundfetchupdateuievent-updateui"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/background-fetch/#backgroundfetchupdateuievent"
+      }
+    },
+    "idlExtendedNames": {
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "partial interface ServiceWorkerGlobalScope {\n  attribute EventHandler onbackgroundfetchsuccess;\n  attribute EventHandler onbackgroundfetchfail;\n  attribute EventHandler onbackgroundfetchabort;\n  attribute EventHandler onbackgroundfetchclick;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onbackgroundfetchsuccess",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/background-fetch/#dom-serviceworkerglobalscope-onbackgroundfetchsuccess"
+            },
+            {
+              "type": "attribute",
+              "name": "onbackgroundfetchfail",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/background-fetch/#dom-serviceworkerglobalscope-onbackgroundfetchfail"
+            },
+            {
+              "type": "attribute",
+              "name": "onbackgroundfetchabort",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/background-fetch/#dom-serviceworkerglobalscope-onbackgroundfetchabort"
+            },
+            {
+              "type": "attribute",
+              "name": "onbackgroundfetchclick",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/background-fetch/#dom-serviceworkerglobalscope-onbackgroundfetchclick"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ServiceWorkerRegistration": [
+        {
+          "fragment": "partial interface ServiceWorkerRegistration {\n  readonly attribute BackgroundFetchManager backgroundFetch;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerRegistration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "backgroundFetch",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "BackgroundFetchManager"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/background-fetch/#dom-serviceworkerregistration-backgroundfetch"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "BackgroundFetchManager",
+        "BackgroundFetchRegistration",
+        "BackgroundFetchRecord"
+      ],
+      "Worker": [
+        "BackgroundFetchManager",
+        "BackgroundFetchRegistration",
+        "BackgroundFetchRecord"
+      ],
+      "ServiceWorker": [
+        "BackgroundFetchEvent",
+        "BackgroundFetchUpdateUIEvent"
+      ]
+    },
+    "dependencies": {
+      "ServiceWorkerGlobalScope": [
+        "EventHandler"
+      ],
+      "ServiceWorkerRegistration": [
+        "BackgroundFetchManager"
+      ],
+      "BackgroundFetchManager": [
+        "BackgroundFetchRegistration",
+        "RequestInfo",
+        "BackgroundFetchOptions"
+      ],
+      "BackgroundFetchUIOptions": [
+        "ImageResource"
+      ],
+      "BackgroundFetchOptions": [
+        "BackgroundFetchUIOptions"
+      ],
+      "BackgroundFetchRegistration": [
+        "EventTarget",
+        "BackgroundFetchResult",
+        "BackgroundFetchFailureReason",
+        "EventHandler",
+        "BackgroundFetchRecord",
+        "RequestInfo",
+        "CacheQueryOptions"
+      ],
+      "BackgroundFetchRecord": [
+        "Request",
+        "Response"
+      ],
+      "BackgroundFetchEvent": [
+        "ExtendableEvent",
+        "BackgroundFetchEventInit",
+        "BackgroundFetchRegistration"
+      ],
+      "BackgroundFetchEventInit": [
+        "ExtendableEventInit",
+        "BackgroundFetchRegistration"
+      ],
+      "BackgroundFetchUpdateUIEvent": [
+        "BackgroundFetchEvent",
+        "BackgroundFetchEventInit",
+        "BackgroundFetchUIOptions"
+      ]
+    },
+    "externalDependencies": [
+      "ServiceWorkerGlobalScope",
+      "EventHandler",
+      "ServiceWorkerRegistration",
+      "RequestInfo",
+      "ImageResource",
+      "EventTarget",
+      "CacheQueryOptions",
+      "Request",
+      "Response",
+      "ExtendableEvent",
+      "ExtendableEventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -9,6 +9,7 @@ namespace Meziantou.Framework.Json;
 /// This class is immutable and thread-safe; a single instance can be reused to evaluate
 /// multiple JSON documents.
 /// </summary>
+/// <remarks>Custom function implementations are shared and must also be thread-safe.</remarks>
 public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
 {
     private readonly string _expression;
@@ -38,6 +39,41 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     public static JsonPath Parse(ReadOnlySpan<char> expression)
     {
         return Parse(expression, originalString: null);
+    }
+
+    /// <summary>Parses an expression using an immutable opt-in custom function registry.</summary>
+    public static JsonPath Parse(string expression, JsonPathFunctionRegistry functions)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(functions);
+        return Parse(expression.AsSpan(), expression, functions);
+    }
+
+    /// <summary>Parses an expression span using an immutable opt-in custom function registry.</summary>
+    public static JsonPath Parse(ReadOnlySpan<char> expression, JsonPathFunctionRegistry functions)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
+        return Parse(expression, originalString: null, functions);
+    }
+
+    /// <summary>Tries to parse an expression using an immutable opt-in custom function registry.</summary>
+    public static bool TryParse(string? expression, JsonPathFunctionRegistry functions, [NotNullWhen(true)] out JsonPath? result)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
+        if (expression is null)
+        {
+            result = null;
+            return false;
+        }
+
+        return TryParse(expression.AsSpan(), expression, out result, functions);
+    }
+
+    /// <summary>Tries to parse an expression span using an immutable opt-in custom function registry.</summary>
+    public static bool TryParse(ReadOnlySpan<char> expression, JsonPathFunctionRegistry functions, [NotNullWhen(true)] out JsonPath? result)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
+        return TryParse(expression, originalString: null, out result, functions);
     }
 
     /// <summary>Tries to parse a JSONPath expression.</summary>
@@ -88,6 +124,35 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
         ArgumentNullException.ThrowIfNull(navigator);
 
         return JsonPathEvaluator.Evaluate(_ast, root, navigator, mode);
+    }
+
+    /// <summary>Evaluates with cooperative cancellation and resource limits. Exceeding a limit throws; no partial result is returned.</summary>
+    public JsonPathResult<TValue> Evaluate<TValue>(TValue? root, JsonPathNavigator<TValue> navigator, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(navigator);
+        ArgumentNullException.ThrowIfNull(options);
+        return JsonPathEvaluator.Evaluate(_ast, root, navigator, mode, options);
+    }
+
+    /// <summary>Evaluates with cooperative cancellation and resource limits. Exceeding a limit throws; no partial result is returned.</summary>
+    public JsonPathResult Evaluate(JsonNode? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return JsonPathEvaluator.Evaluate(_ast, root, mode, options);
+    }
+
+    /// <summary>Evaluates with cooperative cancellation and resource limits. Exceeding a limit throws; no partial result is returned.</summary>
+    public JsonPathResult<JsonElement> Evaluate(JsonDocument? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return JsonPathEvaluator.Evaluate(_ast, root is null ? default : root.RootElement, JsonElementNavigator.Instance, mode, options);
+    }
+
+    /// <summary>Evaluates with cooperative cancellation and resource limits. Exceeding a limit throws; no partial result is returned.</summary>
+    public JsonPathResult<JsonElement> Evaluate(JsonElement root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return JsonPathEvaluator.Evaluate(_ast, root, JsonElementNavigator.Instance, mode, options);
     }
 
     /// <summary>Evaluates this JSONPath expression against a JSON value.</summary>
@@ -170,8 +235,39 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
     public TValue? EvaluateValue<TValue>(TValue? root, JsonPathNavigator<TValue> navigator, JsonPathEvaluationMode mode)
     {
-        var result = Evaluate(root, navigator, mode);
-        return result.Count > 0 ? result[0].Value : default;
+        ArgumentNullException.ThrowIfNull(navigator);
+        return JsonPathEvaluator.EvaluateFirst(_ast, root, navigator, mode).Value;
+    }
+
+    /// <summary>Returns the first value with cooperative cancellation and resource limits. Strict mode validates later branches too.</summary>
+    public TValue? EvaluateValue<TValue>(TValue? root, JsonPathNavigator<TValue> navigator, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(navigator);
+        ArgumentNullException.ThrowIfNull(options);
+        return JsonPathEvaluator.EvaluateFirst(_ast, root, navigator, mode, options).Value;
+    }
+
+    /// <summary>Returns the first value with cooperative cancellation and resource limits. Strict mode validates later branches too.</summary>
+    public JsonNode? EvaluateValue(JsonNode? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return JsonPathEvaluator.EvaluateFirst(_ast, root, JsonNodeNavigator.Instance, mode, options).Value;
+    }
+
+    /// <summary>Returns the first value with cooperative cancellation and resource limits. Strict mode validates later branches too.</summary>
+    public JsonElement? EvaluateValue(JsonDocument? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var result = JsonPathEvaluator.EvaluateFirst(_ast, root is null ? default : root.RootElement, JsonElementNavigator.Instance, mode, options);
+        return result.Found ? result.Value : null;
+    }
+
+    /// <summary>Returns the first value with cooperative cancellation and resource limits. Strict mode validates later branches too.</summary>
+    public JsonElement? EvaluateValue(JsonElement root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var result = JsonPathEvaluator.EvaluateFirst(_ast, root, JsonElementNavigator.Instance, mode, options);
+        return result.Found ? result.Value : null;
     }
 
     /// <summary>
@@ -193,8 +289,7 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
     public JsonNode? EvaluateValue(JsonNode? root, JsonPathEvaluationMode mode)
     {
-        var result = Evaluate(root, mode);
-        return result.Count > 0 ? result[0].Value : null;
+        return JsonPathEvaluator.EvaluateFirst(_ast, root, JsonNodeNavigator.Instance, mode).Value;
     }
 
     /// <summary>
@@ -216,8 +311,8 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
     public JsonElement? EvaluateValue(JsonDocument? root, JsonPathEvaluationMode mode)
     {
-        var result = Evaluate(root, mode);
-        return result.Count > 0 ? result[0].Value : null;
+        var result = JsonPathEvaluator.EvaluateFirst(_ast, root is null ? default : root.RootElement, JsonElementNavigator.Instance, mode);
+        return result.Found ? result.Value : null;
     }
 
     /// <summary>
@@ -239,8 +334,8 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
     public JsonElement? EvaluateValue(JsonElement root, JsonPathEvaluationMode mode)
     {
-        var result = Evaluate(root, mode);
-        return result.Count > 0 ? result[0].Value : null;
+        var result = JsonPathEvaluator.EvaluateFirst(_ast, root, JsonElementNavigator.Instance, mode);
+        return result.Found ? result.Value : null;
     }
 
     /// <summary>Returns the original JSONPath expression string.</summary>
@@ -266,15 +361,15 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
         return TryParse(s, out result);
     }
 
-    private static JsonPath Parse(ReadOnlySpan<char> expression, string? originalString)
+    private static JsonPath Parse(ReadOnlySpan<char> expression, string? originalString, JsonPathFunctionRegistry? functions = null)
     {
-        var ast = JsonPathParser.Parse(expression);
+        var ast = JsonPathParser.Parse(expression, functions);
         return new JsonPath(originalString ?? expression.ToString(), ast);
     }
 
-    private static bool TryParse(ReadOnlySpan<char> expression, string? originalString, [NotNullWhen(true)] out JsonPath? result)
+    private static bool TryParse(ReadOnlySpan<char> expression, string? originalString, [NotNullWhen(true)] out JsonPath? result, JsonPathFunctionRegistry? functions = null)
     {
-        if (!JsonPathParser.TryParse(expression, out var ast))
+        if (!JsonPathParser.TryParse(expression, out var ast, functions))
         {
             result = null;
             return false;

@@ -5,7 +5,7 @@ internal sealed class DateTimeOffsetConverter : HumanReadableConverter<DateTimeO
     protected override void WriteValue(HumanReadableTextWriter writer, DateTimeOffset value, HumanReadableSerializerOptions options)
     {
         var format = "yyyy-MM-dd'T'HH:mm:ss";
-        if (value.Millisecond != 0)
+        if (value.Ticks % TimeSpan.TicksPerSecond != 0)
         {
             format += ".fffffff";
         }

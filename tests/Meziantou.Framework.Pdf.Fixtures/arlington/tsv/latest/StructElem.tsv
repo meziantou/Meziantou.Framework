@@ -1,0 +1,20 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		FALSE	FALSE	FALSE		[StructElem]			Table 355
+S	name	1.3		TRUE	FALSE	FALSE					
+P	dictionary	1.3		TRUE	TRUE	FALSE				[StructElem,StructTreeRoot]	
+ID	string-byte	1.3		FALSE	FALSE	FALSE					
+Ref	array	2.0		FALSE	FALSE	FALSE				[ArrayOfStructElem]	
+Pg	dictionary	1.3		FALSE	TRUE	FALSE				[PageObject]	
+K	array;dictionary;integer	1.3		FALSE	FALSE	FALSE				[ArrayOfStructElemKids];[StructElem,MarkedContentReference,ObjectReference];[]	
+A	array;dictionary;stream	1.3		FALSE	[FALSE];[FALSE];[TRUE]	FALSE		[fn:Eval(fn:ArrayLength(A)>=1)];[];[]		[ArrayOfAttributeRevisions];[StructureAttributesDict];[Stream]	
+C	array;name	1.3		FALSE	FALSE	FALSE				[ArrayOfClassNamesRevisions];[]	
+R	integer	1.3	2.0	FALSE	FALSE	FALSE	0	[fn:Eval(@R>=0)]			see https://github.com/pdf-association/pdf-issues/issues/93
+T	string-text	1.3		FALSE	FALSE	FALSE					
+Lang	string-text	1.4		FALSE	FALSE	FALSE					
+Alt	string-text	1.3		FALSE	FALSE	FALSE					
+E	string-text	1.5		FALSE	FALSE	FALSE					
+ActualText	string-text	1.4		FALSE	FALSE	FALSE					
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+NS	dictionary	2.0		FALSE	TRUE	FALSE				[Namespace]	
+PhoneticAlphabet	name	2.0		FALSE	FALSE	FALSE	ipa				
+Phoneme	string-text	2.0		FALSE	FALSE	FALSE					

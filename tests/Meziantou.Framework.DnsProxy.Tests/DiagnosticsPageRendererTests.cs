@@ -70,7 +70,7 @@ public sealed class DiagnosticsPageRendererTests
         var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
         var filterEngineProvider = new FilterEngineProvider(httpClientFactory, Options.Create(options), NullLogger<FilterEngineProvider>.Instance);
 
-        using var upstreamFactory = new UpstreamDnsClientFactory(Options.Create(options), NullLogger<UpstreamDnsClientFactory>.Instance);
+        using var upstreamFactory = new UpstreamDnsClientFactory(Options.Create(options), TimeProvider.System, NullLogger<UpstreamDnsClientFactory>.Instance);
 
         var historyEntry = new RequestHistoryEntry(
             DateTimeOffset.UtcNow,

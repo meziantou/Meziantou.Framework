@@ -6,12 +6,13 @@
         xmlns:local="clr-namespace:Meziantou.Framework.WPF.CollectionSamples"
         xmlns:utilities="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF" utilities:WindowUtilities.CloseOnEscapeKeyDown="True"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" Loaded="Window_Loaded">
     <Window.DataContext>
         <local:SampleViewModel />
     </Window.DataContext>
     <StackPanel Orientation="Vertical">
         <Button Command="{Binding AddItems}">Add items</Button>
         <ListBox Grid.Row="1" ItemsSource="{Binding Items.AsObservable}" />
+        <ListBox x:Name="listBox" />
     </StackPanel>
 </Window>

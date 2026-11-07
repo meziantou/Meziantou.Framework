@@ -2,17 +2,15 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
 /// <summary>A TagHelper that inlines image files as Base64-encoded data URIs to reduce HTTP requests.</summary>
 /// <example>
-/// <code language="razor">
-/// &lt;!-- Input --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/InlineImg.cshtml">
 /// &lt;inline-img src="logo.png" alt="Company Logo" /&gt;
-/// 
-/// &lt;!-- Output --&gt;
-/// &lt;img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..." alt="Company Logo" /&gt;
+/// @* Rendered as &lt;img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..." alt="Company Logo" /&gt; *@
 /// </code>
 /// </example>
 /// <remarks>
@@ -30,8 +28,9 @@ public sealed class InlineImgTagHelper : InlineTagHelper
     /// <summary>Initializes a new instance of the <see cref="InlineImgTagHelper"/> class.</summary>
     /// <param name="webHostEnvironment">The web host environment for accessing web root files.</param>
     /// <param name="cache">The memory cache for storing file contents.</param>
-    public InlineImgTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache)
-   : base(webHostEnvironment, cache)
+    /// <param name="logger">The logger used to report missing files.</param>
+    public InlineImgTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache, ILogger<InlineImgTagHelper> logger)
+        : base(webHostEnvironment, cache, logger)
     {
     }
 
@@ -59,7 +58,5 @@ public sealed class InlineImgTagHelper : InlineTagHelper
         output.Attributes.RemoveAll("src");
         output.Attributes.Add("src", srcAttribute);
         output.TagMode = TagMode.SelfClosing;
-        output.Content.AppendHtml(fileContent);
     }
 }
-

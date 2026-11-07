@@ -1,0 +1,29 @@
+{
+  "spec": {
+    "title": "CSS Custom Properties for Cascading Variables Module Level 2",
+    "url": "https://drafts.csswg.org/css-variables-2/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<custom-property-name>",
+      "prose": "A custom property is any property whose name starts with two dashes (U+002D HYPHEN-MINUS), like --foo. The <custom-property-name> production corresponds to this: it’s defined as any <dashed-ident> (a valid identifier that starts with two dashes), except -- itself, which is reserved for future use by CSS. Custom properties are solely for use by authors and users; CSS will never give them a meaning beyond what is presented here.",
+      "href": "https://drafts.csswg.org/css-variables-2/#typedef-custom-property-name",
+      "type": "type"
+    },
+    {
+      "name": "var()",
+      "value": "var( <custom-property-name> , <declaration-value>? )",
+      "href": "https://drafts.csswg.org/css-variables-2/#funcdef-var",
+      "type": "function"
+    },
+    {
+      "name": "<var-args>",
+      "href": "https://drafts.csswg.org/css-variables-2/#typedef-var-args",
+      "type": "type",
+      "value": "var( <declaration-value> , <declaration-value>? )"
+    }
+  ]
+}

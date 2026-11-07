@@ -1,0 +1,1 @@
+//text()[string-length() > 1]

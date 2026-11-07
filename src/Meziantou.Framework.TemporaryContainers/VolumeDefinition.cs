@@ -1,0 +1,112 @@
+using Meziantou.Framework.TemporaryContainers.Internals;
+
+namespace Meziantou.Framework.TemporaryContainers;
+
+/// <summary>Describes how a volume should be created. Configure an instance and call <see cref="CreateVolume"/> to obtain a <see cref="TemporaryVolume"/>.</summary>
+/// <example>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.TemporaryContainers.Samples/Examples.cs" ref:region="VolumeDefinition_Example" ref:dedent="true">
+/// await using var volume = new VolumeDefinition().CreateVolume();
+///
+/// var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+/// definition.Mounts.AddVolume(volume, "/data");
+///
+/// await using var container = definition.CreateContainer();
+/// await container.StartAsync();
+/// </code>
+/// </example>
+public sealed class VolumeDefinition
+{
+    private bool _isReadOnly;
+
+    /// <summary>Initializes a new instance of the <see cref="VolumeDefinition"/> class.</summary>
+    public VolumeDefinition()
+    {
+        Labels = new ContainerLabelCollection();
+        DriverOptions = new VolumeDriverOptionCollection();
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="VolumeDefinition"/> class by deep-copying another definition. The copy can be changed even when <paramref name="other"/> belongs to a volume.</summary>
+    /// <param name="other">The definition to copy.</param>
+    public VolumeDefinition(VolumeDefinition other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        Runtime = other.Runtime;
+        Name = other.Name;
+        Driver = other.Driver;
+        ReuseId = other.ReuseId;
+        Labels = new ContainerLabelCollection(other.Labels);
+        DriverOptions = new VolumeDriverOptionCollection(other.DriverOptions);
+        Identity = other.Identity;
+    }
+
+    /// <summary>Gets or sets the container runtime to use.</summary>
+    public ContainerRuntime Runtime
+    {
+        get;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    } = ContainerRuntime.Auto;
+
+    /// <summary>Gets or sets the volume name. When <see langword="null"/>, a random name is generated, or a name derived from <see cref="ReuseId"/> when that is set.</summary>
+    public string? Name
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets or sets the volume driver. When <see langword="null"/>, the runtime uses its default driver.</summary>
+    public string? Driver
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets or sets an identifier used to reuse an existing volume across runs. When set, the volume is not removed on dispose.</summary>
+    public string? ReuseId
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the labels.</summary>
+    public ContainerLabelCollection Labels { get; }
+
+    /// <summary>Gets the driver-specific options.</summary>
+    public VolumeDriverOptionCollection DriverOptions { get; }
+
+    /// <summary>Gets a value indicating whether the definition belongs to a volume, in which case it can no longer be changed.</summary>
+    public bool IsReadOnly => _isReadOnly;
+
+    /// <summary>The run recorded in the labels of the volume. Defaults to the current one; the tests use it to create a volume that looks like the leftover of a run that is over.</summary>
+    internal SessionIdentity? Identity { get; set; }
+
+    /// <summary>Creates a <see cref="TemporaryVolume"/> from a deep copy of this definition. Later changes to this definition do not affect the returned volume, and the copy the volume owns cannot be changed.</summary>
+    /// <returns>A new volume.</returns>
+    public TemporaryVolume CreateVolume()
+    {
+        return new TemporaryVolume(new VolumeDefinition(this));
+    }
+
+    internal void MakeReadOnly()
+    {
+        _isReadOnly = true;
+        Labels.MakeReadOnly();
+        DriverOptions.MakeReadOnly();
+    }
+}

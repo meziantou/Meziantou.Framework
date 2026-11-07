@@ -60,17 +60,15 @@ public static partial class StringBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
 
-        for (var i = 0; i < stringBuilder.Length; i++)
+        var count = 0;
+        while (count < stringBuilder.Length && stringBuilder[count] == trimChar)
         {
-            if (stringBuilder[i] == trimChar)
-                continue;
+            count++;
+        }
 
-            if (i > 0)
-            {
-                stringBuilder.Remove(0, i);
-            }
-
-            return;
+        if (count > 0)
+        {
+            stringBuilder.Remove(0, count);
         }
     }
 
@@ -78,18 +76,13 @@ public static partial class StringBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
 
-        for (var i = stringBuilder.Length - 1; i >= 0; i--)
+        var length = stringBuilder.Length;
+        while (length > 0 && stringBuilder[length - 1] == trimChar)
         {
-            if (stringBuilder[i] == trimChar)
-                continue;
-
-            if (i != stringBuilder.Length - 1)
-            {
-                stringBuilder.Remove(i + 1, stringBuilder.Length - i - 1);
-            }
-
-            return;
+            length--;
         }
+
+        stringBuilder.Length = length;
     }
 
     public static void Trim(this StringBuilder stringBuilder, char trimChar)

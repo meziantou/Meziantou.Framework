@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ku-Latn-IQ": {
+      "identity": {
+        "language": "ku",
+        "script": "Latn",
+        "territory": "IQ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

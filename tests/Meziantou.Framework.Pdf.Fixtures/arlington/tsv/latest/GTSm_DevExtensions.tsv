@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	fn:MustBeDirect()	FALSE		[DeveloperExtensions]			see ISO 21812-1:2019
+BaseVersion	name	fn:Extension(ISO_21812,1.7)		TRUE	fn:MustBeDirect()	FALSE		[1.7]			always 1.7
+ExtensionLevel	integer	fn:Extension(ISO_21812,1.7)		TRUE	fn:MustBeDirect()	FALSE		[1]			see ISO 21812-1:2019, Clause 5
+URL	string	fn:Extension(ISO_21812,2.0)		FALSE	fn:MustBeDirect()	FALSE					
+ExtensionRevision	string-text	fn:Extension(ISO_21812,2.0)		FALSE	fn:MustBeDirect()	FALSE					

@@ -6,7 +6,10 @@ namespace Meziantou.DnsProxy.Diagnostics;
 
 internal static class DiagnosticsPageRenderer
 {
-    public static string Render(DnsProxyOptions options, FilterEngineProvider filters, FilteringPauseState filteringPauseState, IReadOnlyList<UpstreamDnsClientInfo> upstreams, IReadOnlyList<RequestHistoryEntry> historyEntries)
+    /// <summary>Rows rendered by default. The full history can reach DiagnosticsHistoryCapacity entries, which is far too much HTML for one page.</summary>
+    public const int DefaultRenderedHistoryEntries = 200;
+
+    public static string Render(DnsProxyOptions options, FilterEngineProvider filters, FilteringPauseState filteringPauseState, IReadOnlyList<IUpstreamDnsClient> upstreams, IReadOnlyList<RequestHistoryEntry> historyEntries, string? antiforgeryFieldName = null, string? antiforgeryToken = null, int maxRenderedHistoryEntries = DefaultRenderedHistoryEntries)
     {
         var stringBuilder = new StringBuilder();
         stringBuilder.Append("""
@@ -58,18 +61,25 @@ internal static class DiagnosticsPageRenderer
         if (disabledUntilUtc is null)
         {
             stringBuilder.Append("<p>Filtering is enabled.</p>");
-            stringBuilder.Append("<form method='post' action='/filtering/disable'><button type='submit'>Disable filtering for 15 minutes</button></form>");
+            stringBuilder.Append("<form method='post' action='/filtering/disable'>")
+                .Append(RenderAntiforgeryField(antiforgeryFieldName, antiforgeryToken))
+                .Append("<button type='submit'>Disable filtering for 15 minutes</button></form>");
         }
         else
         {
             stringBuilder.Append("<p>Filtering is disabled until <span class='mono'>")
                 .Append(HtmlEncode(disabledUntilUtc.Value.ToString("u", System.Globalization.CultureInfo.InvariantCulture)))
                 .Append("</span>.</p>");
-            stringBuilder.Append("<form method='post' action='/filtering/disable'><button type='submit' disabled>Disable filtering for 15 minutes</button></form>");
+            stringBuilder.Append("<form method='post' action='/filtering/disable'>")
+                .Append(RenderAntiforgeryField(antiforgeryFieldName, antiforgeryToken))
+                .Append("<button type='submit' disabled>Disable filtering for 15 minutes</button></form>");
         }
 
+        var renderedCount = maxRenderedHistoryEntries > 0 ? Math.Min(maxRenderedHistoryEntries, historyEntries.Count) : historyEntries.Count;
         stringBuilder.Append("<h2>Recent Requests</h2>");
-        stringBuilder.Append("<p class='small'>Stored entries: ").Append(HtmlEncode(historyEntries.Count.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</p>");
+        stringBuilder.Append("<p class='small'>Showing ").Append(HtmlEncode(renderedCount.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+            .Append(" of ").Append(HtmlEncode(historyEntries.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+            .Append(" stored entries. Use <span class='mono'>?limit=N</span> to show more.</p>");
         stringBuilder.Append("""
             <table>
               <thead>
@@ -87,8 +97,9 @@ internal static class DiagnosticsPageRenderer
               </thead>
               <tbody>
             """);
-        foreach (var historyEntry in historyEntries)
+        for (var i = 0; i < renderedCount; i++)
         {
+            var historyEntry = historyEntries[i];
             stringBuilder.Append("<tr>");
             stringBuilder.Append("<td class='mono'>").Append(HtmlEncode(historyEntry.TimestampUtc.ToString("u", System.Globalization.CultureInfo.InvariantCulture))).Append("</td>");
             stringBuilder.Append("<td class='mono'>").Append(HtmlEncode(historyEntry.Client)).Append("</td>");
@@ -109,6 +120,16 @@ internal static class DiagnosticsPageRenderer
             </html>
             """);
         return stringBuilder.ToString();
+    }
+
+    private static string RenderAntiforgeryField(string? fieldName, string? token)
+    {
+        if (string.IsNullOrEmpty(fieldName) || string.IsNullOrEmpty(token))
+        {
+            return "";
+        }
+
+        return $"<input type='hidden' name='{HtmlEncode(fieldName)}' value='{HtmlEncode(token)}' />";
     }
 
     private static string FormatCustomRecordValues(CustomDnsRecordOption option)

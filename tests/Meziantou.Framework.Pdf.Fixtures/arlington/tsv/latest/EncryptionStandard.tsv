@@ -1,0 +1,18 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Filter	name	1.1		TRUE	FALSE	FALSE	Standard	[Standard]			Table 20 and Table 21
+SubFilter	name	1.3		FALSE	FALSE	FALSE					
+V	integer	1.1		TRUE	FALSE	FALSE		[fn:Deprecated(1.1,0),fn:Deprecated(2.0,1),fn:Deprecated(2.0,fn:SinceVersion(1.4,2)),fn:Deprecated(2.0,fn:SinceVersion(1.4,3)),fn:Deprecated(2.0,fn:SinceVersion(1.5,4)),fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,5)),fn:SinceVersion(2.0,5),fn:SinceVersion(2.0,fn:Extension(ISO_TS_32003,6))]			
+Length	integer	1.4	2.0	FALSE	FALSE	FALSE	40	[fn:Eval((@Length>=40) && ((@Length<=128) || fn:Extension(ADBE_Extn3,(@Length<=256))) && ((@Length mod 8)==0))]	[fn:IsMeaningful((@V==2) || (@V==3))]		
+CF	dictionary	1.5		FALSE	FALSE	FALSE			[fn:IsMeaningful((@V==4) || ((@V==5) && fn:SinceVersion(2.0)))]	[CryptFilterMap]	
+StmF	name	1.5		FALSE	FALSE	FALSE	Identity		[fn:IsMeaningful((@V==4) || ((@V==5) && (fn:Extension(ADBE_Extn3) || fn:SinceVersion(2.0))))]		
+StrF	name	1.5		FALSE	FALSE	FALSE	Identity		[fn:IsMeaningful((@V==4) || ((@V==5) && (fn:Extension(ADBE_Extn3) || fn:SinceVersion(2.0))))]		
+EFF	name	1.1		FALSE	FALSE	FALSE			[fn:IsMeaningful(((@V==4) && fn:SinceVersion(1.5)) || ((@V==5) && (fn:Extension(ADBE_Extn3) || fn:SinceVersion(2.0))))]		
+R	integer	1.1		TRUE	FALSE	FALSE		[fn:Deprecated(2.0,fn:RequiredValue(@V<2,2)),fn:Deprecated(2.0,fn:RequiredValue((@V==2) || (@V==3),3)),fn:Deprecated(2.0,fn:RequiredValue(@V==4,4)),fn:Deprecated(2.0,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,5))),fn:Deprecated(2.0,fn:SinceVersion(2.0,5)),fn:SinceVersion(2.0,fn:RequiredValue(@V==5,6)),fn:SinceVersion(2.0,fn:Extension(ISO_TS_32003,7))]			
+O	string-byte	1.1		TRUE	FALSE	FALSE			[fn:Eval(fn:AlwaysUnencrypted() && (((@R<=4) && (fn:StringLength(O)==32)) || (((@R==5) || (@R==6)) && (fn:StringLength(O)==48))))]		32 bytes long if the value of R is 4 or less and 48 bytes long if the value of R is 6
+U	string-byte	1.1		TRUE	FALSE	FALSE			[fn:Eval(fn:AlwaysUnencrypted() && (((@R<=4) && (fn:StringLength(U)==32)) || (((@R==5) || (@R==6)) && (fn:StringLength(U)==48))))]		32 bytes long if the value of R is 4 or less and 48 bytes long if the value of R is 6
+OE	string-byte	1.1		fn:IsRequired((@R==5) || (@R==6))	FALSE	FALSE			[fn:Eval(fn:AlwaysUnencrypted() && (fn:StringLength(OE)==32))]		32 byte string
+UE	string-byte	1.1		fn:IsRequired((@R==5) || (@R==6))	FALSE	FALSE			[fn:Eval(fn:AlwaysUnencrypted())]		
+P	bitmask	1.1		TRUE	FALSE	FALSE			[fn:Eval(fn:BitsClear(1,2) && fn:BitsSet(7,8) && fn:SinceVersion(2.0,fn:BitSet(10)) && (fn:SinceVersion(2.0,fn:Extension(ISO_TS_32004,fn:BitsSet(14,32))) || fn:BitsSet(13,32)))]		Table 22
+Perms	string-byte	1.1		fn:IsRequired((@R==5) || (@R==6))	FALSE	FALSE			[fn:Eval(fn:AlwaysUnencrypted())]		
+EncryptMetadata	boolean	1.5		FALSE	FALSE	FALSE	true		[fn:IsMeaningful((@V==4) || ((@V==5) && fn:SinceVersion(2.0)))]		
+KDFSalt	string-byte	fn:Extension(ISO_TS_32004,2.0)		FALSE	fn:MustBeDirect()	FALSE			[fn:Eval(fn:AlwaysUnencrypted())]		ISO/TS 32004 integrity protection

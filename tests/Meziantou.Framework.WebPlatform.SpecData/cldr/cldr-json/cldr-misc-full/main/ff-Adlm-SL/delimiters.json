@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ff-Adlm-SL": {
+      "identity": {
+        "language": "ff",
+        "script": "Adlm",
+        "territory": "SL"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

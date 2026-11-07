@@ -1,0 +1,119 @@
+[
+ [
+  [
+   "next Friday at 5pm",
+   11,
+   "2024-03-22T17:00:00.000Z",
+   null,
+   "hour,meridiem,minute,weekday"
+  ]
+ ],
+ [
+  [
+   "March 25th, 2024 11:59 PM EST",
+   16,
+   "2024-03-26T04:59:00.000Z",
+   null,
+   "day,hour,meridiem,minute,month,timezoneOffset,year"
+  ]
+ ],
+ [
+  [
+   "from 3 to 5pm tomorrow",
+   0,
+   "2024-03-14T15:00:00.000Z",
+   "2024-03-14T17:00:00.000Z",
+   "day,hour,minute,month,year"
+  ]
+ ],
+ [
+  [
+   "in 2 weeks",
+   0,
+   "2024-03-27T10:00:00.000Z",
+   null,
+   "day,month,year"
+  ]
+ ],
+ [
+  [
+   "5 days ago",
+   0,
+   "2024-03-08T10:00:00.000Z",
+   null,
+   "day,month,weekday,year"
+  ]
+ ],
+ [
+  [
+   "last month",
+   0,
+   "2024-02-13T10:00:00.000Z",
+   null,
+   "month,year"
+  ]
+ ],
+ [
+  [
+   "Sat Aug 17 2013 18:40:39 GMT+0900 (JST)",
+   0,
+   "2013-08-17T09:40:39.000Z",
+   null,
+   "day,hour,meridiem,minute,month,second,timezoneOffset,weekday,year"
+  ]
+ ],
+ [
+  [
+   "2014-11-30T08:15:30-05:30",
+   0,
+   "2014-11-30T13:45:30.000Z",
+   null,
+   "day,hour,minute,month,second,timezoneOffset,year"
+  ]
+ ],
+ [
+  [
+   "12/31",
+   0,
+   "2024-12-31T12:00:00.000Z",
+   null,
+   "day,month"
+  ]
+ ],
+ [
+  [
+   "noon",
+   0,
+   "2024-03-13T12:00:00.000Z",
+   null,
+   "hour"
+  ],
+  [
+   "4th of July",
+   12,
+   "2024-07-04T12:00:00.000Z",
+   null,
+   "day,month"
+  ]
+ ],
+ [
+  [
+   "the day after tomorrow at 9:30",
+   0,
+   "2024-03-15T09:30:00.000Z",
+   null,
+   "day,hour,minute,month,weekday,year"
+  ]
+ ],
+ [],
+ [
+  "2024-02-12T14:30:00.000Z"
+ ],
+ [
+  "2024-03-14T15:00:00.000Z"
+ ],
+ [
+  "2024-03-15T15:00:00.000Z"
+ ],
+ 0
+]

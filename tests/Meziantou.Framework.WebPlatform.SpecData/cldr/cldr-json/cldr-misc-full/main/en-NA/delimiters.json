@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-NA": {
+      "identity": {
+        "language": "en",
+        "territory": "NA"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

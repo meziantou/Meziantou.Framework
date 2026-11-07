@@ -1,0 +1,77 @@
+{
+  "node": "v24.15.0",
+  "workloads": {
+    "acorn": {
+      "length": 63,
+      "sha256": "9bc7e269d7bd61cf3b86d8cb8dbc32ece843de061fdb8ec5b7b0d7eb88118b51"
+    },
+    "babel": {
+      "length": 208833,
+      "sha256": "052f8a534d39d7d0e85c0f2a940c25d3634845eabf0d87fe55da6f7a39e7c28c"
+    },
+    "babel-minify": {
+      "length": 9262,
+      "sha256": "32c3e08663ca42dc6cca4ecd3e834e15cd7f8669129fa2c48bd3b03007e68b90"
+    },
+    "babylon": {
+      "length": 47071752,
+      "sha256": "1ca9c0880cbce07472b77cae80d126aed205e0dfffd5a429d917a6e25015dbe8"
+    },
+    "buble": {
+      "length": 612747,
+      "sha256": "2daf05b8ebe50f5f13ba580fc08f658e61cf712df69c432bf950c6bb06fd4f49"
+    },
+    "chai": {
+      "length": 6,
+      "sha256": "38ee3328d01827ebc3605ed4c74079f7011b1cff3555b8eab66d7f8caf62e086"
+    },
+    "coffeescript": {
+      "length": 64645,
+      "sha256": "12a9a72c691f5fd55889e6e4044150abfac22d6b412fa5f25b9b9f8e6129ad8b"
+    },
+    "espree": {
+      "length": 32,
+      "sha256": "948949c26f446d4c0412e2c0a3e24710e9e2c78f0ab7d9a490ebfd6f540f3822"
+    },
+    "esprima": {
+      "length": 32,
+      "sha256": "948949c26f446d4c0412e2c0a3e24710e9e2c78f0ab7d9a490ebfd6f540f3822"
+    },
+    "jshint": {
+      "length": 116159,
+      "sha256": "285f14608611246e18ec09e3c2248b744b49b25a0a1733cd5f554d130719f423"
+    },
+    "lebab": {
+      "length": 24526,
+      "sha256": "517b63864090164add6312b1a7ac68a270ec18fd26373fd5b9b90f820db15ef3"
+    },
+    "postcss": {
+      "length": 743932,
+      "sha256": "591cdeff46bff4409079ecb69eb6c910bd95bd296fb8ada1189ea8ce8bfb1096"
+    },
+    "prepack": {
+      "length": 28560,
+      "sha256": "892bd3879f7b0c5df8bdc7165c366fd6d4f63cb8310d47d4c947f5924394053a"
+    },
+    "prettier": {
+      "length": 150989,
+      "sha256": "a754bbfa327282426b2fbdcb55ac0544c0e5b4a0c9658a2ab3e9cb75814c689b"
+    },
+    "source-map": {
+      "length": 950103,
+      "sha256": "fda7df7e715d54f922e59c3062ea1133267b22bcb7109a86d68d6cbc30e7bca1"
+    },
+    "terser": {
+      "length": 9299,
+      "sha256": "13fd968d3e32e0cd65ee9e551b8988a54e6532cc2f54aad0ec3ed07862725ff3"
+    },
+    "typescript": {
+      "length": 17856,
+      "sha256": "a1b9593e3b4873bc379a4b7c6180a5b4ec7863f70a9b5044e3718e1144cdd71c"
+    },
+    "uglify-js": {
+      "length": 12264,
+      "sha256": "3a79e9f978e759dd462eb44aa8afa7fecb6f794b07b3f6023241976aeea9421a"
+    }
+  }
+}

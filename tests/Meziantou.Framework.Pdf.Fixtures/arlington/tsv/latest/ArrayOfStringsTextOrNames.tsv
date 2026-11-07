@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	fn:Extension(Malforms,name);string-text	1.5		FALSE	FALSE	FALSE					Adobe Acrobat DC generates an array of names which is undocumented in _Digital Signature Build Dictionary Specification_ Tables 2 and 3

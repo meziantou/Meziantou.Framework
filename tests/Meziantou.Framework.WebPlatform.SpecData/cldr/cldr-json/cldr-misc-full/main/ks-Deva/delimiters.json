@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ks-Deva": {
+      "identity": {
+        "language": "ks",
+        "script": "Deva"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

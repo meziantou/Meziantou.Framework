@@ -1,10 +1,33 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.VorbisComment;
 
 internal static class VorbisCommentWriter
 {
     private const string VendorString = "Meziantou.Framework.MediaTags";
+
+    /// <summary>
+    /// Checks that the tags can be stored as Vorbis Comments.
+    /// </summary>
+    /// <remarks>
+    /// A comment is "NAME=value", and the name ends at the first '='. A custom field name holding one would read
+    /// back as another field, with the rest of the name in its value.
+    /// </remarks>
+    public static bool TryValidate(MediaTagInfo tags, [NotNullWhen(false)] out string? errorMessage)
+    {
+        foreach (var key in tags.CustomFields.Keys)
+        {
+            if (key.Contains('=', StringComparison.Ordinal))
+            {
+                errorMessage = $"The custom field name '{key}' cannot contain '=' in a Vorbis comment.";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
+    }
 
     public static byte[] Build(MediaTagInfo tags, bool includePictures = true)
     {
@@ -40,25 +63,16 @@ internal static class VorbisCommentWriter
         if (tags.IsCompilation is not null)
             AddField(comments, VorbisCommentFieldNames.Compilation, tags.IsCompilation.Value ? "1" : "0");
 
-        // ReplayGain
-        if (tags.ReplayGain is not null)
+        // ReplayGain and MusicBrainz use the names and formats shared with the other key/value formats.
+        foreach (var (key, value) in TagFieldMapping.EnumerateReplayGainFields(tags))
         {
-            var rg = tags.ReplayGain.Value;
-            if (rg.TrackGain is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainTrackGain, rg.TrackGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
-            if (rg.TrackPeak is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainTrackPeak, rg.TrackPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
-            if (rg.AlbumGain is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainAlbumGain, rg.AlbumGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
-            if (rg.AlbumPeak is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainAlbumPeak, rg.AlbumPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
+            AddField(comments, key, value);
         }
 
-        // MusicBrainz
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzTrackId, tags.MusicBrainzTrackId);
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzArtistId, tags.MusicBrainzArtistId);
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzAlbumId, tags.MusicBrainzAlbumId);
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzReleaseGroupId, tags.MusicBrainzReleaseGroupId);
+        foreach (var (key, value) in TagFieldMapping.EnumerateMusicBrainzFields(tags, useVorbisNames: true))
+        {
+            AddField(comments, key, value);
+        }
 
         // Custom fields
         foreach (var (key, value) in tags.CustomFields)

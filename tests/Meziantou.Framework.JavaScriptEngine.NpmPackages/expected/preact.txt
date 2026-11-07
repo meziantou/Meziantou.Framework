@@ -1,0 +1,5 @@
+<h2 style="color:red;margin-top:10px;">Cart &lt;2></h2><ul><li>Book <span class="price">12,50 €</span></li><li>Pen &amp; Paper <span class="price">3,00 €</span></li></ul><p>Total: <span class="price">15,50 €</span> SAVE10</p><button aria-pressed="false">Clicks: 3</button><input type="checkbox" checked value="x &amp; y"/>
+----
+<h2 style="color:red;margin-top:10px;">Cart &lt;2></h2><ul><li>Book <span class="price">€12.50</span></li><li>Pen &amp; Paper <span class="price">€3.00</span></li></ul><p>Total: <span class="price">€15.50</span> SAVE10</p><button aria-pressed="false">Clicks: 3</button><input type="checkbox" checked value="x &amp; y"/>
+----
+<div><b>raw</b></div>

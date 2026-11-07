@@ -1,0 +1,231 @@
+{
+  "spec": {
+    "title": "Layout Instability API",
+    "url": "https://wicg.github.io/layout-instability/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "LayoutShift",
+          "LayoutShiftAttribution"
+        ]
+      }
+    },
+    "idlNames": {
+      "LayoutShift": {
+        "fragment": "[Exposed=Window]\ninterface LayoutShift : PerformanceEntry {\n  readonly attribute double value;\n  readonly attribute boolean hadRecentInput;\n  readonly attribute DOMHighResTimeStamp lastInputTime;\n  readonly attribute FrozenArray<LayoutShiftAttribution> sources;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "LayoutShift",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshift-value"
+          },
+          {
+            "type": "attribute",
+            "name": "hadRecentInput",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshift-hadrecentinput"
+          },
+          {
+            "type": "attribute",
+            "name": "lastInputTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshift-lastinputtime"
+          },
+          {
+            "type": "attribute",
+            "name": "sources",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LayoutShiftAttribution"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshift-sources"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshift-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/layout-instability/#layoutshift"
+      },
+      "LayoutShiftAttribution": {
+        "fragment": "[Exposed=Window]\ninterface LayoutShiftAttribution {\n  readonly attribute Node? node;\n  readonly attribute DOMRectReadOnly previousRect;\n  readonly attribute DOMRectReadOnly currentRect;\n};",
+        "type": "interface",
+        "name": "LayoutShiftAttribution",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "node",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Node"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshiftattribution-node"
+          },
+          {
+            "type": "attribute",
+            "name": "previousRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshiftattribution-previousrect"
+          },
+          {
+            "type": "attribute",
+            "name": "currentRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/layout-instability/#dom-layoutshiftattribution-currentrect"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/layout-instability/#layoutshiftattribution"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "LayoutShift",
+        "LayoutShiftAttribution"
+      ]
+    },
+    "dependencies": {
+      "LayoutShift": [
+        "PerformanceEntry",
+        "DOMHighResTimeStamp",
+        "LayoutShiftAttribution"
+      ],
+      "LayoutShiftAttribution": [
+        "Node",
+        "DOMRectReadOnly"
+      ]
+    },
+    "externalDependencies": [
+      "PerformanceEntry",
+      "DOMHighResTimeStamp",
+      "Node",
+      "DOMRectReadOnly"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

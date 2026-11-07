@@ -2,11 +2,21 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a class declaration.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="ClassDeclaration_Example" ref:dedent="true">
 /// var cls = new ClassDeclaration("MyClass");
 /// cls.Modifiers = Modifiers.Public;
 /// cls.BaseType = typeof(object);
-/// cls.Members.Add(new MethodDeclaration("MyMethod"));
+/// cls.Members.Add(new MethodDeclaration("MyMethod") { Statements = [] });
+///
+/// Assert.Equal("""
+///     public class MyClass : object
+///     {
+///         void MyMethod()
+///         {
+///         }
+///     }
+///
+///     """, cls.ToCsharpString());
 /// </code>
 /// </example>
 public class ClassDeclaration : ClassOrStructDeclaration, IInheritanceParameters

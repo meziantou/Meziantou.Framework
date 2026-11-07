@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>3.0.0</Version>
+    <Version>3.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Stopwatch without any allocation</Description>
+    <PackageTags>stopwatch, timing, performance, allocation-free, struct</PackageTags>
   </PropertyGroup>
 
 </Project>

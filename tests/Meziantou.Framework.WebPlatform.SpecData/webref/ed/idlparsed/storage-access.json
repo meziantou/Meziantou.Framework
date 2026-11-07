@@ -1,0 +1,86 @@
+{
+  "spec": {
+    "title": "The Storage Access API",
+    "url": "https://privacycg.github.io/storage-access/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n  Promise<boolean> hasStorageAccess();\n  Promise<undefined> requestStorageAccess();\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "hasStorageAccess",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://privacycg.github.io/storage-access/#dom-document-hasstorageaccess"
+            },
+            {
+              "type": "operation",
+              "name": "requestStorageAccess",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://privacycg.github.io/storage-access/#dom-document-requeststorageaccess"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Document": []
+    },
+    "externalDependencies": [
+      "Document"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

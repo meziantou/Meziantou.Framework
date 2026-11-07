@@ -8,10 +8,10 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 /// <summary>Provides methods for validating objects against inline snapshots in test code.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs" ref:region="InlineSnapshot_Validate" ref:dedent="true">
 /// var data = new { FirstName = "John", LastName = "Doe" };
 /// InlineSnapshot.Validate(data, """
-///     FirstName: John,
+///     FirstName: John
 ///     LastName: Doe
 ///     """);
 /// </code>
@@ -126,17 +126,34 @@ public static class InlineSnapshot
 
         if (!settings.SnapshotComparer.AreEqual(normalizedActual, normalizedExpected))
         {
-            var context = GetCallerContext();
-            if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
+            // Locating the call can fail, for instance without a PDB. That must not hide the snapshot difference when
+            // the environment does not allow updating the snapshot anyway.
+            if (SnapshotUpdateStrategy.IsUpdateDisabledByEnvironment(settings))
             {
-                FileEditor.UpdateFile(context, settings, expected, actual);
+                settings.AssertSnapshot(normalizedExpected, normalizedActual);
+            }
 
-                if (settings.SnapshotUpdateStrategy.MustReportError(settings, context.FilePath))
+            bool mustReportError;
+            try
+            {
+                var context = GetCallerContext();
+                if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
                 {
-                    settings.AssertSnapshot(normalizedExpected, normalizedActual);
+                    FileEditor.UpdateFile(context, settings, expected, actual);
+                    mustReportError = settings.SnapshotUpdateStrategy.MustReportError(settings, context.FilePath);
+                }
+                else
+                {
+                    mustReportError = true;
                 }
             }
-            else
+            catch (InlineSnapshotException ex) when (ex is not InlineSnapshotAssertionException)
+            {
+                // The reason the snapshot could not be updated is useless without the difference that required the update
+                throw new InlineSnapshotException(ex.Message + "\n\n" + settings.FormatSnapshotDifference(normalizedExpected, normalizedActual), ex);
+            }
+
+            if (mustReportError)
             {
                 settings.AssertSnapshot(normalizedExpected, normalizedActual);
             }
@@ -144,7 +161,13 @@ public static class InlineSnapshot
         else if (settings.ForceUpdateSnapshots)
         {
             var context = GetCallerContext();
-            FileEditor.UpdateFile(context, settings, expected, actual);
+
+            // Reformatting a matching snapshot writes to the source file just like updating a failing one, so it
+            // must go through the same gate: continuous integration and LLM detection, and the update strategy.
+            if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
+            {
+                FileEditor.UpdateFile(context, settings, expected, actual);
+            }
         }
     }
 }

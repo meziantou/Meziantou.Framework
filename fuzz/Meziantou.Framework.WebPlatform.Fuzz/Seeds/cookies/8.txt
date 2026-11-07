@@ -1,0 +1,3 @@
+a=1; Domain=co.uk
+b=2; Domain=example.co.uk
+c=3; Domain=sub.example.co.uk

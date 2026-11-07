@@ -1,0 +1,16 @@
+{
+  "main": {
+    "bal-Latn": {
+      "identity": {
+        "language": "bal",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

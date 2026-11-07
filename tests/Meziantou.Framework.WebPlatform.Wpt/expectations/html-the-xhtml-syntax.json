@@ -1,0 +1,47 @@
+{
+  "html/the-xhtml-syntax/parsing-xhtml-documents/adopt-while-parsing-001.html": {
+    "reftest": "PASS"
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/data-xhtml-with-dtd.html": {
+    "reftest": "PASS"
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-1.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-10.htm": {
+    "total": 2231
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-11.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-12.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-2.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-3.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-4.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-5.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-6.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-7.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-8.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-9.htm": {
+    "total": 2125
+  },
+  "html/the-xhtml-syntax/parsing-xhtml-documents/xml-stylesheet-blocking.xhtml": {
+    "total": 1
+  }
+}

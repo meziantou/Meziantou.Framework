@@ -1,0 +1,1830 @@
+{
+  "spec": {
+    "title": "JSON-LD 1.2 Processing Algorithms and API",
+    "url": "https://w3c.github.io/json-ld-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "JsonLd": [
+          "JsonLdProcessor",
+          "RdfDataset",
+          "RdfGraph",
+          "RdfTriple",
+          "RdfLiteral",
+          "RemoteDocument"
+        ]
+      },
+      "functions": {
+        "JsonLd": [
+          "JsonLd"
+        ]
+      }
+    },
+    "idlNames": {
+      "JsonLd": {
+        "fragment": "/*\n * The JsonLd interface is created to expose the JsonLdProcessor interface.\n */\n[Global=JsonLd, Exposed=JsonLd]\ninterface JsonLd {};",
+        "type": "interface",
+        "name": "JsonLd",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Global",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonld"
+      },
+      "JsonLdProcessor": {
+        "fragment": "[Exposed=JsonLd]\ninterface JsonLdProcessor {\n  constructor();\n  static Promise<JsonLdRecord> compact(\n    JsonLdInput input,\n    optional JsonLdContext context = null,\n    optional JsonLdOptions options = {});\n  static Promise<sequence<JsonLdRecord>> expand(\n    JsonLdInput input,\n    optional JsonLdOptions options = {});\n  static Promise<JsonLdRecord> flatten(\n    JsonLdInput input,\n    optional JsonLdContext context = null,\n    optional JsonLdOptions options = {});\n  static Promise<sequence<JsonLdRecord>> fromRdf(\n    RdfDataset input,\n    optional JsonLdOptions options = {});\n  static Promise<RdfDataset> toRdf(\n    JsonLdInput input,\n    optional JsonLdOptions options = {});\n};",
+        "type": "interface",
+        "name": "JsonLdProcessor",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldprocessor-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "compact",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdRecord"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdInput"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "context",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdContext"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldprocessor-compact"
+          },
+          {
+            "type": "operation",
+            "name": "expand",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "JsonLdRecord"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdInput"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldprocessor-expand"
+          },
+          {
+            "type": "operation",
+            "name": "flatten",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdRecord"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdInput"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "context",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdContext"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldprocessor-flatten"
+          },
+          {
+            "type": "operation",
+            "name": "fromRdf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "JsonLdRecord"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RdfDataset"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldprocessor-fromrdf"
+          },
+          {
+            "type": "operation",
+            "name": "toRdf",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RdfDataset"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdInput"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldprocessor-tordf"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonldprocessor"
+      },
+      "JsonLdRecord": {
+        "fragment": "typedef record<USVString, any> JsonLdRecord;",
+        "type": "typedef",
+        "name": "JsonLdRecord",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "record",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonldrecord"
+      },
+      "JsonLdInput": {
+        "fragment": "typedef (JsonLdRecord or sequence<JsonLdRecord> or USVString or RemoteDocument) JsonLdInput;",
+        "type": "typedef",
+        "name": "JsonLdInput",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "JsonLdRecord"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "JsonLdRecord"
+                }
+              ]
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RemoteDocument"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonldinput"
+      },
+      "JsonLdContext": {
+        "fragment": "typedef (JsonLdRecord or sequence<(JsonLdRecord or USVString)> or USVString) JsonLdContext;",
+        "type": "typedef",
+        "name": "JsonLdContext",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "JsonLdRecord"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "typedef-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "JsonLdRecord"
+                    },
+                    {
+                      "type": "typedef-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USVString"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonldcontext"
+      },
+      "RdfDataset": {
+        "fragment": "[Exposed=JsonLd]\ninterface RdfDataset {\n  constructor();\n  readonly attribute RdfGraph defaultGraph;\n  undefined add(USVString graphName, RdfGraph graph);\n  iterable<USVString?, RdfGraph>;\n};",
+        "type": "interface",
+        "name": "RdfDataset",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfdataset-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "defaultGraph",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RdfGraph"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfdataset-defaultgraph"
+          },
+          {
+            "type": "operation",
+            "name": "add",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "graphName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "graph",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RdfGraph"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfdataset-add"
+          },
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "USVString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RdfGraph"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-rdfdataset"
+      },
+      "RdfGraph": {
+        "fragment": "[Exposed=JsonLd]\ninterface RdfGraph {\n  constructor();\n  undefined add(RdfTriple triple);\n  iterable<RdfTriple>;\n};",
+        "type": "interface",
+        "name": "RdfGraph",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfgraph-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "add",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "triple",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RdfTriple"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfgraph-add"
+          },
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RdfTriple"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-rdfgraph"
+      },
+      "RdfTriple": {
+        "fragment": "[Exposed=JsonLd]\ninterface RdfTriple {\n  constructor();\n  readonly attribute USVString subject;\n  readonly attribute USVString predicate;\n  readonly attribute (USVString or RdfLiteral) _object;\n};",
+        "type": "interface",
+        "name": "RdfTriple",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdftriple-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "subject",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdftriple-subject"
+          },
+          {
+            "type": "attribute",
+            "name": "predicate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdftriple-predicate"
+          },
+          {
+            "type": "attribute",
+            "name": "object",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RdfLiteral"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdftriple-object"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-rdftriple"
+      },
+      "RdfLiteral": {
+        "fragment": "[Exposed=JsonLd]\ninterface RdfLiteral {\n  constructor();\n  readonly attribute USVString value;\n  readonly attribute USVString datatype;\n  readonly attribute USVString? language;\n};",
+        "type": "interface",
+        "name": "RdfLiteral",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfliteral-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfliteral-value"
+          },
+          {
+            "type": "attribute",
+            "name": "datatype",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfliteral-datatype"
+          },
+          {
+            "type": "attribute",
+            "name": "language",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-rdfliteral-language"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-rdfliteral"
+      },
+      "JsonLdOptions": {
+        "fragment": "dictionary JsonLdOptions {\n  USVString?             base = null;\n  boolean                compactArrays = true;\n  boolean                compactToRelative = true;\n  LoadDocumentCallback?  documentLoader = null;\n  (JsonLdRecord? or USVString) expandContext = null;\n  boolean                extractAllScripts = false;\n  boolean                frameExpansion = false;\n  boolean                ordered = false;\n  USVString              processingMode = \"json-ld-1.2\";\n  boolean                produceGeneralizedRdf = true;\n  USVString?             rdfDirection = null;\n  boolean                useNativeTypes = false;\n  boolean                useRdfType = false;\n};",
+        "type": "dictionary",
+        "name": "JsonLdOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "base",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-base"
+          },
+          {
+            "type": "field",
+            "name": "compactArrays",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-compactarrays"
+          },
+          {
+            "type": "field",
+            "name": "compactToRelative",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-compacttorelative"
+          },
+          {
+            "type": "field",
+            "name": "documentLoader",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "LoadDocumentCallback"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-documentloader"
+          },
+          {
+            "type": "field",
+            "name": "expandContext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "JsonLdRecord"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-expandcontext"
+          },
+          {
+            "type": "field",
+            "name": "extractAllScripts",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-extractallscripts"
+          },
+          {
+            "type": "field",
+            "name": "frameExpansion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-frameexpansion"
+          },
+          {
+            "type": "field",
+            "name": "ordered",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-ordered"
+          },
+          {
+            "type": "field",
+            "name": "processingMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": "json-ld-1.2"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-processingmode"
+          },
+          {
+            "type": "field",
+            "name": "produceGeneralizedRdf",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-producegeneralizedrdf"
+          },
+          {
+            "type": "field",
+            "name": "rdfDirection",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-rdfdirection"
+          },
+          {
+            "type": "field",
+            "name": "useNativeTypes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-usenativetypes"
+          },
+          {
+            "type": "field",
+            "name": "useRdfType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions-userdftype"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonldoptions"
+      },
+      "LoadDocumentCallback": {
+        "fragment": "callback LoadDocumentCallback = Promise<RemoteDocument> (\n  USVString url,\n  optional LoadDocumentOptions options = {}\n);",
+        "type": "callback",
+        "name": "LoadDocumentCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RemoteDocument"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "options",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LoadDocumentOptions"
+            },
+            "default": {
+              "type": "dictionary"
+            },
+            "optional": true,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/json-ld-api/#dom-loaddocumentcallback"
+      },
+      "LoadDocumentOptions": {
+        "fragment": "dictionary LoadDocumentOptions {\n  boolean  extractAllScripts = false;\n  USVString profile = null;\n  (USVString or sequence<USVString>) requestProfile = null;\n};",
+        "type": "dictionary",
+        "name": "LoadDocumentOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "extractAllScripts",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-loaddocumentoptions-extractallscripts"
+          },
+          {
+            "type": "field",
+            "name": "profile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-loaddocumentoptions-profile"
+          },
+          {
+            "type": "field",
+            "name": "requestProfile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USVString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-loaddocumentoptions-requestprofile"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-loaddocumentoptions"
+      },
+      "RemoteDocument": {
+        "fragment": "[Exposed=JsonLd]\ninterface RemoteDocument {\n  constructor();\n  readonly attribute USVString contentType;\n  readonly attribute USVString contextUrl;\n  attribute any document;\n  readonly attribute USVString documentUrl;\n  readonly attribute USVString profile;\n};",
+        "type": "interface",
+        "name": "RemoteDocument",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/json-ld-api/#dom-remotedocument-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "contentType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-remotedocument-contenttype"
+          },
+          {
+            "type": "attribute",
+            "name": "contextUrl",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-remotedocument-contexturl"
+          },
+          {
+            "type": "attribute",
+            "name": "document",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-remotedocument-document"
+          },
+          {
+            "type": "attribute",
+            "name": "documentUrl",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-remotedocument-documenturl"
+          },
+          {
+            "type": "attribute",
+            "name": "profile",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/json-ld-api/#dom-remotedocument-profile"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "JsonLd"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-remotedocument"
+      },
+      "JsonLdError": {
+        "fragment": "dictionary JsonLdError {\n  JsonLdErrorCode code;\n  USVString?      message = null;\n};",
+        "type": "dictionary",
+        "name": "JsonLdError",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "code",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "JsonLdErrorCode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderror-code"
+          },
+          {
+            "type": "field",
+            "name": "message",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderror-message"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderror"
+      },
+      "JsonLdErrorCode": {
+        "fragment": "enum JsonLdErrorCode {\n    \"colliding keywords\",\n    \"conflicting indexes\",\n    \"context overflow\",\n    \"cyclic IRI mapping\",\n    \"invalid @id value\",\n    \"invalid @import value\",\n    \"invalid @included value\",\n    \"invalid @index value\",\n    \"invalid @nest value\",\n    \"invalid @prefix value\",\n    \"invalid @propagate value\",\n    \"invalid @protected value\",\n    \"invalid @reverse value\",\n    \"invalid @version value\",\n    \"invalid base direction\",\n    \"invalid base IRI\",\n    \"invalid container mapping\",\n    \"invalid context entry\",\n    \"invalid context nullification\",\n    \"invalid default language\",\n    \"invalid IRI mapping\",\n    \"invalid JSON literal\",\n    \"invalid keyword alias\",\n    \"invalid language map value\",\n    \"invalid language mapping\",\n    \"invalid language-tagged string\",\n    \"invalid language-tagged value\",\n    \"invalid local context\",\n    \"invalid remote context\",\n    \"invalid reverse property map\",\n    \"invalid reverse property value\",\n    \"invalid reverse property\",\n    \"invalid scoped context\",\n    \"invalid script element\",\n    \"invalid set or list object\",\n    \"invalid term definition\",\n    \"invalid type mapping\",\n    \"invalid type value\",\n    \"invalid typed value\",\n    \"invalid value object value\",\n    \"invalid value object\",\n    \"invalid vocab mapping\",\n    \"IRI confused with prefix\",\n    \"keyword redefinition\",\n    \"loading document failed\",\n    \"loading remote context failed\",\n    \"multiple context link headers\",\n    \"processing mode conflict\",\n    \"protected term redefinition\"\n};",
+        "type": "enum",
+        "name": "JsonLdErrorCode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "colliding keywords",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-colliding-keywords"
+          },
+          {
+            "type": "enum-value",
+            "value": "conflicting indexes",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-conflicting-indexes"
+          },
+          {
+            "type": "enum-value",
+            "value": "context overflow",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-context-overflow"
+          },
+          {
+            "type": "enum-value",
+            "value": "cyclic IRI mapping",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-cyclic-iri-mapping"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @id value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40id-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @import value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40import-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @included value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40included-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @index value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40index-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @nest value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40nest-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @prefix value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40prefix-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @propagate value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40propagate-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @protected value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40protected-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @reverse value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40reverse-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid @version value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-%40version-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid base direction",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-base-direction"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid base IRI",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-base-iri"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid container mapping",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-container-mapping"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid context entry",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-context-entry"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid context nullification",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-context-nullification"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid default language",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-default-language"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid IRI mapping",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-iri-mapping"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid JSON literal",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-json-literal"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid keyword alias",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-keyword-alias"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid language map value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-language-map-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid language mapping",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-language-mapping"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid language-tagged string",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-language-tagged-string"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid language-tagged value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-language-tagged-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid local context",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-local-context"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid remote context",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-remote-context"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid reverse property map",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-reverse-property-map"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid reverse property value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-reverse-property-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid reverse property",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-reverse-property"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid scoped context",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-scoped-context"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid script element",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-script-element"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid set or list object",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-set-or-list-object"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid term definition",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-term-definition"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid type mapping",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-type-mapping"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid type value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-type-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid typed value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-typed-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid value object value",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-value-object-value"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid value object",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-value-object"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid vocab mapping",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-invalid-vocab-mapping"
+          },
+          {
+            "type": "enum-value",
+            "value": "IRI confused with prefix",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-iri-confused-with-prefix"
+          },
+          {
+            "type": "enum-value",
+            "value": "keyword redefinition",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-keyword-redefinition"
+          },
+          {
+            "type": "enum-value",
+            "value": "loading document failed",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-loading-document-failed"
+          },
+          {
+            "type": "enum-value",
+            "value": "loading remote context failed",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-loading-remote-context-failed"
+          },
+          {
+            "type": "enum-value",
+            "value": "multiple context link headers",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-multiple-context-link-headers"
+          },
+          {
+            "type": "enum-value",
+            "value": "processing mode conflict",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-processing-mode-conflict"
+          },
+          {
+            "type": "enum-value",
+            "value": "protected term redefinition",
+            "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode-protected-term-redefinition"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/json-ld-api/#dom-jsonlderrorcode"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {
+      "JsonLd": [
+        "JsonLd"
+      ]
+    },
+    "exposed": {
+      "JsonLd": [
+        "JsonLd",
+        "JsonLdProcessor",
+        "RdfDataset",
+        "RdfGraph",
+        "RdfTriple",
+        "RdfLiteral",
+        "RemoteDocument"
+      ]
+    },
+    "dependencies": {
+      "JsonLd": [],
+      "JsonLdProcessor": [
+        "JsonLdRecord",
+        "JsonLdInput",
+        "JsonLdContext",
+        "JsonLdOptions",
+        "RdfDataset"
+      ],
+      "RdfDataset": [
+        "RdfGraph"
+      ],
+      "RdfGraph": [
+        "RdfTriple"
+      ],
+      "RdfTriple": [
+        "RdfLiteral"
+      ],
+      "RdfLiteral": [],
+      "JsonLdOptions": [
+        "LoadDocumentCallback",
+        "JsonLdRecord"
+      ],
+      "LoadDocumentOptions": [],
+      "RemoteDocument": [],
+      "JsonLdError": [
+        "JsonLdErrorCode"
+      ]
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary	1.3		FALSE	FALSE	FALSE				[Data]	Table 350 and Clause 14.5 and https://github.com/pdf-association/pdf-issues/issues/69

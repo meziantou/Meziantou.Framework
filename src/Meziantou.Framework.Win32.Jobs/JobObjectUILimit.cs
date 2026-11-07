@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Win32.Natives;
+namespace Meziantou.Framework.Win32;
 
 /// <summary>Defines UI restrictions for processes in a job object.</summary>
 [Flags]
@@ -24,7 +24,7 @@ public enum JobObjectUILimit
 
     /// <summary>Prevents processes associated with the job from creating desktops and switching desktops using the CreateDesktop and SwitchDesktop functions.</summary>
     Desktop = 0x00000040,
+
     /// <summary>Prevents processes associated with the job from calling the ExitWindows or ExitWindowsEx function.</summary>
     ExitWindows = 0x00000080,
-
 }

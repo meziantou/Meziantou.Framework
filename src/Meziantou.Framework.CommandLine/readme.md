@@ -10,40 +10,35 @@ A .NET library that provides utilities for working with command-line arguments, 
 
 ## Usage
 
+The types are in the `Meziantou.Framework` namespace.
+
 ### CommandLineParser
 
 Parse command-line arguments with support for named arguments (with `/` or `-` prefix) and positional arguments.
 
+<!-- ref:../../tests/Meziantou.Framework.CommandLineTests/CommandLineParserTests.cs;region=CommandLineParser_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework;
-
 // Parse current process arguments
-var parser = CommandLineParser.Current;
+var currentParser = CommandLineParser.Current;
+Assert.NotNull(currentParser);
 
 // Or parse custom arguments
-var customParser = new CommandLineParser();
-customParser.Parse(new[] { "/name=John", "/verbose", "input.txt" });
+var parser = new CommandLineParser();
+parser.Parse(["/name=John", "/verbose", "input.txt"]);
 
 // Check if an argument exists
-if (parser.HasArgument("verbose"))
-{
-    Console.WriteLine("Verbose mode enabled");
-}
+Assert.True(parser.HasArgument("verbose"));
 
 // Get named argument value
-var name = parser.GetArgument("name");
-Console.WriteLine($"Name: {name}"); // Output: Name: John
+Assert.Equal("John", parser.GetArgument("name"));
 
-// Get positional argument
-var inputFile = parser.GetArgument(2); // Position-based argument
-Console.WriteLine($"Input file: {inputFile}"); // Output: Input file: input.txt
+// Get positional argument (the index in the array of arguments)
+Assert.Equal("input.txt", parser.GetArgument(2));
 
-// Check if help was requested
-if (parser.HelpRequested) // Detects -?, /?, -help, /help, --help
-{
-    ShowHelp();
-}
+// Check if help was requested: detects -?, /?, -help, /help, --help
+Assert.False(parser.HelpRequested);
 ```
+<!-- endref -->
 
 **Supported argument formats:**
 - Named with equals: `/name=value` or `-name=value`
@@ -55,24 +50,24 @@ if (parser.HelpRequested) // Detects -?, /?, -help, /help, --help
 
 Properly escape and quote arguments for safe command-line execution on Windows.
 
+<!-- ref:../../tests/Meziantou.Framework.CommandLineTests/CommandLineBuilderTests.cs;region=CommandLineBuilder_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework;
-
 // Quote a single argument for standard Windows applications
 var arg = CommandLineBuilder.WindowsQuotedArgument(@"path with spaces\file.txt");
-// Returns: "path with spaces\file.txt"
+Assert.Equal(@"""path with spaces\file.txt""", arg);
 
 // Quote multiple arguments
 var args = CommandLineBuilder.WindowsQuotedArguments("arg1", "path with spaces", "normal");
-// Returns: arg1 "path with spaces" normal
+Assert.Equal(@"arg1 ""path with spaces"" normal", args);
 
 // Quote for cmd.exe (handles special characters like &, |, ^, etc.)
 var cmdArg = CommandLineBuilder.WindowsCmdArgument(@"malicious argument"" & whoami");
-// Returns properly escaped argument safe for cmd.exe
+Assert.Equal(@"^""malicious argument\^"" ^& whoami^""", cmdArg);
 
 var cmdArgs = CommandLineBuilder.WindowsCmdArguments("echo", "Hello & Goodbye");
-// Returns arguments safe for cmd.exe execution
+Assert.Equal(@"echo ^""Hello ^& Goodbye^""", cmdArgs);
 ```
+<!-- endref -->
 
 **Why use CommandLineBuilder?**
 - Handles spaces, quotes, and backslashes correctly
@@ -84,9 +79,8 @@ var cmdArgs = CommandLineBuilder.WindowsCmdArguments("echo", "Hello & Goodbye");
 
 Create interactive yes/no prompts in console applications.
 
+<!-- ref:../../samples/Meziantou.Framework.CommandLine.Samples/ReadmeExamples.cs;region=Prompt_YesNo;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework;
-
 // Simple yes/no prompt with default value
 var proceed = Prompt.YesNo("Do you want to continue?", defaultValue: true);
 // Displays: Do you want to continue? [Y/n]
@@ -108,3 +102,4 @@ if (result)
     Console.WriteLine("Feature enabled!");
 }
 ```
+<!-- endref -->

@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+DC	dictionary	1.4		FALSE	FALSE	FALSE				[ActionECMAScript]	Table 200 - document close
+WS	dictionary	1.4		FALSE	FALSE	FALSE				[ActionECMAScript]	Table 200 - will save
+DS	dictionary	1.4		FALSE	FALSE	FALSE				[ActionECMAScript]	Table 200 - did save
+WP	dictionary	1.4		FALSE	FALSE	FALSE				[ActionECMAScript]	Table 200 - will print
+DP	dictionary	1.4		FALSE	FALSE	FALSE				[ActionECMAScript]	Table 200 - did print

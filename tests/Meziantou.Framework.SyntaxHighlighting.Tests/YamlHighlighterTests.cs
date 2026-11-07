@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.SyntaxHighlighting.Tests;
+﻿namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class YamlHighlighterTests
 {
@@ -1295,5 +1295,35 @@ name: alice
 <span class="hljs-attr">name:</span> <span class="hljs-string">alice</span>
 
 """);
+    }
+
+    [Fact]
+    public void Key_FollowedByLongSingleLineValue_IsStillHighlighted()
+    {
+        var code = "desc: " + string.Join(' ', Enumerable.Repeat("word", 500));
+
+        var result = SyntaxHighlighter.Highlight(code, "yaml");
+
+        Assert.StartsWith("""<span class="hljs-attr">desc:</span>""", result);
+    }
+
+    [Fact]
+    public void Key_AtTheYamlSimpleKeyLimit_IsHighlighted()
+    {
+        var code = new string('k', 1024) + ": value";
+
+        var result = SyntaxHighlighter.Highlight(code, "yaml");
+
+        Assert.StartsWith("""<span class="hljs-attr">""", result);
+    }
+
+    [Fact]
+    public void Key_BeyondTheYamlSimpleKeyLimit_IsNotHighlighted()
+    {
+        var code = new string('k', 1100) + ": value";
+
+        var result = SyntaxHighlighter.Highlight(code, "yaml");
+
+        Assert.DoesNotContain("hljs-attr", result);
     }
 }

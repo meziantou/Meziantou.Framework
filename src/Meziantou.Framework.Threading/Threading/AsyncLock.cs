@@ -5,26 +5,38 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides an asynchronous lock that can be awaited to ensure exclusive access to a resource.</summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/AsyncLockTests.cs" ref:region="AsyncLock_Usage" ref:dedent="true">
 /// var asyncLock = new AsyncLock();
-/// 
+/// var counter = 0;
+///
 /// async Task AccessResourceAsync()
 /// {
 ///     using (await asyncLock.LockAsync())
 ///     {
 ///         // Critical section - only one task can execute this at a time
-///         await DoWorkAsync();
+///         var value = counter;
+///         await Task.Yield();
+///         counter = value + 1;
 ///     }
 /// }
-/// ]]></code>
+///
+/// await Task.WhenAll(AccessResourceAsync(), AccessResourceAsync(), AccessResourceAsync());
+/// Assert.Equal(3, counter);
+/// </code>
 /// </example>
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncLock
 {
-    private readonly Queue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly WaiterQueue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly Lock _lock = new();
     private readonly bool _allowInliningAwaiters;
     private readonly Action<object> _onCancellationRequestHandler;
     private bool _signaled = true;
+
+    // Number of times the lock has been released. Every lease carries the value this counter had while its
+    // acquisition was current, and releasing advances it. A lease (or any copy of it) can therefore only
+    // release the acquisition it was created for: once that acquisition is over, its value is stale forever.
+    private long _releaseCount;
 
     /// <summary>Initializes a new instance of the <see cref="AsyncLock"/> class.</summary>
     public AsyncLock()
@@ -55,29 +67,35 @@ public sealed class AsyncLock
         if (cancellationToken.IsCancellationRequested)
             return ValueTask.FromCanceled<AsyncLockLease>(cancellationToken);
 
-        lock (_signalAwaiters)
+        WaiterCompletionSource waiter;
+        bool canceled;
+        lock (_lock)
         {
             if (_signaled)
             {
                 _signaled = false;
-                return new ValueTask<AsyncLockLease>(new AsyncLockLease(this));
+                return new ValueTask<AsyncLockLease>(CreateLease());
             }
-            else
-            {
-                var waiter = new WaiterCompletionSource(this, _allowInliningAwaiters, cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    waiter.TrySetCanceled(cancellationToken);
-                    waiter.Registration.Dispose();
-                }
-                else
-                {
-                    _signalAwaiters.Enqueue(waiter);
-                }
 
-                return new ValueTask<AsyncLockLease>(waiter.Task);
+            waiter = new WaiterCompletionSource(this, _allowInliningAwaiters, cancellationToken);
+            canceled = cancellationToken.IsCancellationRequested;
+            if (!canceled)
+            {
+                _signalAwaiters.Enqueue(waiter);
             }
         }
+
+        // The token was canceled between the registration and this check, so the waiter was never
+        // queued and must be completed here. This has to happen outside the lock: TrySetCanceled can
+        // inline continuations, and Registration.Dispose blocks until a callback running on another
+        // thread completes. That callback is OnCancellationRequest, which takes this same lock.
+        if (canceled)
+        {
+            waiter.TrySetCanceled(cancellationToken);
+            waiter.Registration.Dispose();
+        }
+
+        return new ValueTask<AsyncLockLease>(waiter.Task);
     }
 
     /// <summary>Attempts to acquire the lock synchronously without blocking.</summary>
@@ -85,14 +103,16 @@ public sealed class AsyncLock
     /// <returns><see langword="true"/> if the lock was acquired; otherwise, <see langword="false"/>.</returns>
     public bool TryLock(out AsyncLockLease lockObject)
     {
-        if (_signaled)
+        // Acquire read: _signaled is written under _lock, so an unsynchronized read could otherwise
+        // observe a stale value indefinitely and make a caller spinning on TryLock never see a release.
+        if (Volatile.Read(ref _signaled))
         {
-            lock (_signalAwaiters)
+            lock (_lock)
             {
                 if (_signaled)
                 {
                     _signaled = false;
-                    lockObject = new AsyncLockLease(this);
+                    lockObject = CreateLease();
                     return true;
                 }
             }
@@ -102,16 +122,27 @@ public sealed class AsyncLock
         return false;
     }
 
-    internal void Release()
+    /// <summary>Creates the lease for the acquisition that is now current. Must be called once the acquisition is
+    /// granted, so the lease carries the release count that is only valid while that acquisition lasts.</summary>
+    private AsyncLockLease CreateLease()
     {
-        WaiterCompletionSource? toRelease = null;
-        lock (_signalAwaiters)
+        return new AsyncLockLease(this, Interlocked.Read(ref _releaseCount));
+    }
+
+    /// <summary>Releases the acquisition identified by <paramref name="releaseCount"/>, if it is still the current one.</summary>
+    /// <returns><see langword="true"/> if this call released the lock; <see langword="false"/> if the acquisition was already released.</returns>
+    internal bool TryRelease(long releaseCount)
+    {
+        // Only the first release of a given acquisition wins the exchange, so disposing a lease twice, or disposing
+        // a copy of an already-disposed lease, cannot release a lock that somebody else acquired in the meantime.
+        if (Interlocked.CompareExchange(ref _releaseCount, releaseCount + 1, releaseCount) != releaseCount)
+            return false;
+
+        WaiterCompletionSource? toRelease;
+        lock (_lock)
         {
-            if (_signalAwaiters.Count > 0)
-            {
-                toRelease = _signalAwaiters.Dequeue();
-            }
-            else if (!_signaled)
+            toRelease = _signalAwaiters.Dequeue();
+            if (toRelease is null && !_signaled)
             {
                 _signaled = true;
             }
@@ -120,17 +151,22 @@ public sealed class AsyncLock
         if (toRelease is not null)
         {
             toRelease.Registration.Dispose();
-            toRelease.TrySetResult(new AsyncLockLease(this));
+
+            // The exchange above is the only one that can have advanced the counter, since the lease handed out here
+            // is the only one able to advance it next, so the next acquisition is identified by releaseCount + 1.
+            toRelease.TrySetResult(new AsyncLockLease(this, releaseCount + 1));
         }
+
+        return true;
     }
 
     private void OnCancellationRequest(object state)
     {
         var tcs = (WaiterCompletionSource)state;
         bool removed;
-        lock (_signalAwaiters)
+        lock (_lock)
         {
-            removed = RemoveMidQueue(_signalAwaiters, tcs);
+            removed = _signalAwaiters.Remove(tcs);
         }
 
         // We only cancel the task if we removed it from the queue.
@@ -145,48 +181,36 @@ public sealed class AsyncLock
         }
     }
 
-    private static bool RemoveMidQueue<T>(Queue<T> queue, T valueToRemove)
-        where T : class
-    {
-        var originalCount = queue.Count;
-        var dequeueCounter = 0;
-        var found = false;
-        while (dequeueCounter < originalCount)
-        {
-            dequeueCounter++;
-            var dequeued = queue.Dequeue();
-            if (!found && dequeued == valueToRemove)
-            { // only find 1 match
-                found = true;
-            }
-            else
-            {
-                queue.Enqueue(dequeued);
-            }
-        }
-
-        return found;
-    }
-
     /// <summary>Represents a disposable lease for an <see cref="AsyncLock"/>. Disposing the lease releases the lock.</summary>
+    /// <remarks>Only the first disposal of a lease releases the lock. Disposing the same lease again, or disposing a
+    /// copy of an already-disposed lease, does nothing instead of releasing an acquisition made in the meantime.</remarks>
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Not meant to be used directly")]
     public readonly struct AsyncLockLease : IDisposable
     {
         private readonly AsyncLock? _parent;
+        private readonly long _releaseCount;
 
-        internal AsyncLockLease(AsyncLock? parent)
+        internal AsyncLockLease(AsyncLock? parent, long releaseCount)
         {
             _parent = parent;
+            _releaseCount = releaseCount;
         }
 
         public void Dispose()
         {
-            _parent?.Release();
+            TryRelease();
+        }
+
+        /// <summary>Releases the lock unless this lease, or a copy of it, was already disposed.</summary>
+        /// <returns><see langword="true"/> if this call released the lock; otherwise, <see langword="false"/>.</returns>
+        internal bool TryRelease()
+        {
+            return _parent?.TryRelease(_releaseCount) is true;
         }
     }
 
-    private sealed class WaiterCompletionSource : TaskCompletionSource<AsyncLockLease>
+    private sealed class WaiterCompletionSource : TaskCompletionSource<AsyncLockLease>, IWaiterQueueNode<WaiterCompletionSource>
     {
         internal WaiterCompletionSource(AsyncLock owner, bool allowInliningContinuations, CancellationToken cancellationToken)
             : base(GetOptions(allowInliningContinuations))
@@ -197,6 +221,10 @@ public sealed class AsyncLock
 
         internal CancellationToken CancellationToken { get; }
         internal CancellationTokenRegistration Registration { get; }
+
+        public WaiterCompletionSource? Previous { get; set; }
+        public WaiterCompletionSource? Next { get; set; }
+        public int QueueGeneration { get; set; }
 
         private static TaskCreationOptions GetOptions(bool allowInliningContinuations)
         {

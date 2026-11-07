@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-YE": {
+      "identity": {
+        "language": "ar",
+        "territory": "YE"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

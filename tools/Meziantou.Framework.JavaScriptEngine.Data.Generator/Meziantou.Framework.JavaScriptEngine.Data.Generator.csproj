@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
+    <ValidateProjectTargets>false</ValidateProjectTargets>
+    <IncludeSharedHttpClient>true</IncludeSharedHttpClient>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
+  </ItemGroup>
+
+</Project>

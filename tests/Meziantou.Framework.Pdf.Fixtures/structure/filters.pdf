@@ -1,0 +1,81 @@
+%PDF-1.7
+% ò¤ô
+% Content streams encoded with the filters that can be written as text, alone and chained
+1 0 obj <<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj <<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+3 0 obj <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Resources << /Font << /F1 4 0 R >> >>
+  /Contents [5 0 R 6 0 R 7 0 R 8 0 R]
+>>
+endobj
+4 0 obj <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Courier
+>>
+endobj
+5 0 obj <<
+  /Filter /ASCIIHexDecode
+  /Length 64
+>>
+stream
+4254202F463120313220546620373220373230205464202848657829
+20546A>
+endstream
+endobj
+6 0 obj <<
+  /Filter /ASCII85Decode
+  /Length 31
+>>
+stream
+$8<SS1,'hMA0<9dF(8ou3&N--<,)a~>
+endstream
+endobj
+7 0 obj <<
+  /Filter [/ASCIIHexDecode /RunLengthDecode]
+  /Length 57
+>>
+stream
+FD201730202D3230205464202852756E4C656E6774682920546A0A80>
+endstream
+endobj
+8 0 obj <<
+  /Filter /ASCIIHexDecode
+  /DecodeParms null
+  /Length 5
+>>
+stream
+4554>
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000105 00000 n 
+0000000158 00000 n 
+0000000221 00000 n 
+0000000377 00000 n 
+0000000451 00000 n 
+0000000593 00000 n 
+0000000701 00000 n 
+0000000855 00000 n 
+
+trailer <<
+  /Root 1 0 R
+  /Size 9
+>>
+startxref
+957
+%%EOF

@@ -8,7 +8,8 @@ internal sealed class CultureInfoConverter : HumanReadableConverter<CultureInfo>
     {
         Debug.Assert(value is not null);
 
-        if (ReferenceEquals(value, CultureInfo.InvariantCulture))
+        // Other instances of the invariant culture exist, e.g. new CultureInfo("")
+        if (value.Name.Length is 0)
         {
             writer.WriteValue(value.EnglishName);
         }

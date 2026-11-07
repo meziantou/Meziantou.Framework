@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps.Tool/Meziantou.Framework.Geo.Maps.Tool.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+    <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
+    <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
+    <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Geo.Maps.Tool.Tests/Meziantou.Framework.Geo.Maps.Tool.Tests.csproj" />
+  </Folder>
+</Solution>

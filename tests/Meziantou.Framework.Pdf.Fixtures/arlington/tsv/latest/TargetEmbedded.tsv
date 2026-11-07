@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+R	name	1.6		TRUE	FALSE	FALSE		[P,C]			Table 205 and https://github.com/pdf-association/arlington-pdf-model/issues/108
+N	string-byte	1.6		fn:IsRequired(fn:Not(fn:IsPresent(P) || fn:IsPresent(A)))	FALSE	FALSE					
+P	integer;string-byte	1.6		fn:IsRequired((@R==C) && fn:IsPresent(A))	FALSE	FALSE		[fn:Eval(@P>=0)];[]			https://github.com/pdf-association/pdf-issues/issues/258
+A	integer;string-text	1.6		fn:IsRequired((@R==C) && fn:IsPresent(P))	FALSE	FALSE		[fn:Eval(@A>=0)];[]			
+T	dictionary	1.6		FALSE	FALSE	FALSE				[Target]	

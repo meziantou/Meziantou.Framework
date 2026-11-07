@@ -1,0 +1,15 @@
+{
+  "main": {
+    "az": {
+      "identity": {
+        "language": "az"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

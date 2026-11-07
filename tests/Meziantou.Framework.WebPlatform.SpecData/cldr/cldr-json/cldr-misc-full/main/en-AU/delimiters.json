@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-AU": {
+      "identity": {
+        "language": "en",
+        "territory": "AU"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

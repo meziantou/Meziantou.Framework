@@ -1,0 +1,12 @@
+level 0: 4662 bytes, hash a159dfb0, round trip true
+level 1: 351 bytes, hash ab0e3f75, round trip true
+level 6: 344 bytes, hash ce9fc41f, round trip true
+level 9: 302 bytes, hash 351be188, round trip true
+strategy 1: 311 e4152a9e 4651
+strategy 2: 3134 1d8b2472 4651
+strategy 3: 3134 1d8b2472 4651
+strategy 4: 369 a6206184 4651
+gzip 356 51477267 4651
+dictionary 78 true
+streaming 302 351be188 4651 0
+corrupted -3 invalid bit length repeat

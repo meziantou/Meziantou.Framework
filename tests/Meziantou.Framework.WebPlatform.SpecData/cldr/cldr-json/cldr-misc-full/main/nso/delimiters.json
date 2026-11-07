@@ -1,0 +1,15 @@
+{
+  "main": {
+    "nso": {
+      "identity": {
+        "language": "nso"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

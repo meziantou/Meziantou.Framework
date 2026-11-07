@@ -57,19 +57,10 @@ internal sealed class YamlEnumerableConverter<TElement> : YamlConverter<IEnumera
 
         _elementConverter ??= writer.GetConverter(typeof(TElement));
 
-        if (writer.ReferenceWriter is not null)
+        // The runtime type decides whether the value is tracked: a boxed value type is not an identity worth preserving.
+        if (writer.TryWriteReference(value))
         {
-            if (writer.ReferenceWriter.TryGetAnchor(value, out var existing))
-            {
-                writer.WriteAlias(existing);
-                return;
-            }
-
-            var anchor = writer.ReferenceWriter.GetOrAddAnchor(value);
-            if (anchor is not null)
-            {
-                writer.WriteAnchor(anchor);
-            }
+            return;
         }
 
         writer.WriteStartSequence();

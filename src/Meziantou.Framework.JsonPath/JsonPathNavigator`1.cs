@@ -4,6 +4,15 @@ namespace Meziantou.Framework.Json;
 /// <typeparam name="TValue">The node type used by the custom object model.</typeparam>
 public abstract class JsonPathNavigator<TValue>
 {
+    internal virtual JsonPathNavigator<TValue> CreateEvaluationNavigator()
+    {
+        return this;
+    }
+
+    /// <summary>Gets whether navigation is side-effect-free and values remain stable throughout an evaluation.</summary>
+    /// <remarks>Override with <see langword="true"/> to permit per-evaluation reuse of root-invariant built-in function results. The default is <see langword="false"/>.</remarks>
+    public virtual bool IsPure => false;
+
     /// <summary>Gets the JSON node kind represented by <paramref name="value"/>.</summary>
     /// <param name="value">The value to inspect. Navigators may use <see langword="null"/> or a model-specific value to represent JSON <c language="json">null</c>.</param>
     /// <returns>The JSON node kind represented by <paramref name="value"/>.</returns>
@@ -50,4 +59,34 @@ public abstract class JsonPathNavigator<TValue>
     /// <param name="result">When this method returns, contains the boolean value.</param>
     /// <returns><see langword="true"/> when <paramref name="value"/> represents a boolean; otherwise, <see langword="false"/>.</returns>
     public abstract bool TryGetBoolean(TValue? value, out bool result);
+
+    /// <summary>
+    /// Gets whether <see cref="TryGetElement"/> takes constant time. When it does not, the evaluator copies an array
+    /// with <see cref="CopyElements"/> before walking it, so that visiting every element stays linear.
+    /// </summary>
+    public virtual bool HasConstantTimeElementAccess => true;
+
+    /// <summary>Gets whether <see cref="TryGetPropertyValue"/> takes constant time.</summary>
+    /// <remarks>
+    /// When this is <see langword="false"/>, the evaluator enumerates the right object once to build an ordinal lookup
+    /// table when comparing objects for equality. If a name occurs more than once, the last value is used and earlier
+    /// values are ignored, matching the semantics of <see cref="TryGetPropertyValue"/>.
+    /// </remarks>
+    public virtual bool HasConstantTimePropertyLookup => true;
+
+    /// <summary>Copies the elements of an array, in index order, to the start of <paramref name="destination"/>.</summary>
+    /// <param name="value">The array value.</param>
+    /// <param name="destination">A buffer holding at least <see cref="GetArrayLength"/> items.</param>
+    /// <remarks>
+    /// Implementations must write the first <see cref="GetArrayLength"/> items in index order. If an element cannot
+    /// be retrieved, write <see langword="default"/> at its index.
+    /// </remarks>
+    public virtual void CopyElements(TValue? value, TValue?[] destination)
+    {
+        var length = GetArrayLength(value);
+        for (var i = 0; i < length; i++)
+        {
+            destination[i] = TryGetElement(value, i, out var element) ? element : default;
+        }
+    }
 }

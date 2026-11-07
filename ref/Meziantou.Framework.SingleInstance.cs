@@ -6,19 +6,19 @@ namespace Meziantou.Framework
 {
     public sealed class SingleInstance : System.IDisposable
     {
-        public bool StartServer { get => throw null; set { } }
         public System.TimeSpan ClientConnectionTimeout { get => throw null; set { } }
+        public bool StartServer { get => throw null; set { } }
         public event System.EventHandler<Meziantou.Framework.SingleInstanceEventArgs>? NewInstance;
         public SingleInstance(System.Guid applicationId) { }
-        public bool StartApplication() => throw null;
-        public bool NotifyFirstInstance(string[] args) => throw null;
         public void Dispose() { }
+        public bool NotifyFirstInstance(string[] args) => throw null;
+        public bool StartApplication() => throw null;
     }
 
     public sealed class SingleInstanceEventArgs : System.EventArgs
     {
-        public int ProcessId { get => throw null; }
         public string[] Arguments { get => throw null; }
+        public int ProcessId { get => throw null; }
         public SingleInstanceEventArgs(int processId, string[] arguments) { }
     }
 }

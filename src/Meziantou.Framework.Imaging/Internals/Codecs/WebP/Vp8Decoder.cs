@@ -1,0 +1,926 @@
+using System.Buffers.Binary;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>
+/// The VP8 key-frame decoder of WebP lossy images (RFC 6386, "VP8 Data Format and Decoding Guide"; WebP only uses key
+/// frames): frame header, segmentation, loop-filter and quantizer settings, token probability updates, per-macroblock intra
+/// modes, DCT/WHT token decoding with dequantization, intra prediction, the inverse transforms, and the normal and simple loop
+/// filters. The output is the reconstructed Y'CbCr 4:2:0 planes (<see cref="Vp8Planes"/>), bit-exact by definition of the
+/// format; the RGB conversion is a separate step (<see cref="WebPYuvConverter"/>).
+/// </summary>
+/// <remarks>
+/// <list type="bullet">
+/// <item><description>
+/// Rejected as <see cref="UnsupportedImageFeatureException"/>: interframes and frames that are not shown (a WebP image is a
+/// shown key frame). Rejected as <see cref="InvalidImageContentException"/>: a wrong start code, a version above 3, empty
+/// dimensions, a first partition or partition table extending past the chunk, and a partition read more than
+/// <see cref="MaxOverrunBytes"/> bytes past its end (truncated data).
+/// </description></item>
+/// <item><description>
+/// The color space and clamping bits and the upscaling bits of the dimensions are informative and ignored: reconstruction
+/// always clamps (identical for streams that declare clamping unnecessary), and no upscaling is applied.
+/// </description></item>
+/// <item><description>
+/// Intra prediction uses the unfiltered reconstruction: a macroblock row is filtered once the next one is reconstructed (it
+/// reads only the last pixel row of the row above it), and the result is the one of filtering the whole frame once it is
+/// reconstructed, in macroblock order. Edges outside the frame are 127 above (and above-left on the first row) and 129 on
+/// the left;
+/// sub-blocks on the right column of a macroblock take their above-right pixels from the macroblock row above, the last
+/// macroblock of a row replicating its above neighbor's last pixel.
+/// </description></item>
+/// <item><description>
+/// Dequantized coefficients are stored as 16-bit values (as in the reference decoders), and the inner edges of a
+/// macroblock are filtered when it is predicted per sub-block or has at least one decoded non-zero coefficient.
+/// </description></item>
+/// <item><description>
+/// <see cref="Decode"/> and <see cref="DecodePartial"/> return planes of the whole frame. <see cref="Open"/> decodes into a
+/// window of <see cref="WindowMacroblockRows"/> macroblock rows and 24 rows above them, and <see cref="DecodeRows"/> gives
+/// the pixel rows as soon as they are final, the loop filter of the next macroblock row and the chroma rows of their
+/// upsampling included: a pixel row is final 7 rows (and one macroblock row) after its macroblock row is reconstructed.
+/// </description></item>
+/// </list>
+/// </remarks>
+internal sealed class Vp8Decoder : IDisposable
+{
+    /// <summary>The length of the key-frame header before the first partition: 3-byte frame tag, start code, dimensions.</summary>
+    public const int FrameHeaderLength = 10;
+
+    /// <summary>The number of zero bytes a partition may be read past its end: the decoder's two-byte window looks ahead of the arithmetic decoder.</summary>
+    public const int MaxOverrunBytes = 2;
+
+    /// <summary>The number of macroblock rows decoded between two moves of the window of <see cref="Open"/>.</summary>
+    public const int WindowMacroblockRows = 8;
+
+    // The luma rows kept above the macroblock row being reconstructed when the window moves: 8 rows of the macroblock row
+    // above the previous one (not converted yet, and read and changed by the loop filter of the previous one) and the
+    // previous one (not filtered yet)
+    private const int WindowContextRows = 24;
+
+    private static ReadOnlySpan<sbyte> KeyFrameYModeTree => [-Vp8Tables.BPred, 2, 4, 6, -Vp8Tables.DcPred, -Vp8Tables.VPred, -Vp8Tables.HPred, -Vp8Tables.TmPred];
+
+    private static ReadOnlySpan<sbyte> UVModeTree => [-Vp8Tables.DcPred, 2, -Vp8Tables.VPred, 4, -Vp8Tables.HPred, -Vp8Tables.TmPred];
+
+    private static ReadOnlySpan<sbyte> BModeTree =>
+    [
+        -Vp8Tables.BDcPred, 2,
+        -Vp8Tables.BTmPred, 4,
+        -Vp8Tables.BVePred, 6,
+        8, 12,
+        -Vp8Tables.BHePred, 10,
+        -Vp8Tables.BRdPred, -Vp8Tables.BVrPred,
+        -Vp8Tables.BLdPred, 14,
+        -Vp8Tables.BVlPred, 16,
+        -Vp8Tables.BHdPred, -Vp8Tables.BHuPred,
+    ];
+
+    private static ReadOnlySpan<sbyte> SegmentTree => [2, 4, -0, -1, -2, -3];
+
+    // The offset of the probabilities of each coefficient position's band (Vp8Tables.Bands x 3 contexts x 11 nodes)
+    private static ReadOnlySpan<byte> BandOffsets => [0, 33, 66, 99, 198, 132, 165, 198, 198, 198, 198, 198, 198, 198, 198, 231, 0];
+
+    // The index of the above and of the left non-zero flag of each block (0-15 luma, 16-19 U, 20-23 V, 24 Y2)
+    private static ReadOnlySpan<byte> AboveContextIndexes => [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 4, 5, 6, 7, 6, 7, 8];
+
+    private static ReadOnlySpan<byte> LeftContextIndexes => [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8];
+
+    private readonly AllocationScope _scope;
+    private readonly CancellationToken _cancellationToken;
+    private readonly byte[] _data;
+    private readonly byte[] _tokenProbabilities = new byte[4 * 8 * 3 * Vp8Tables.TokenNodes];
+    private readonly short[] _coefficients = new short[25 * 16];
+    private readonly Quantizer[] _quantizers = new Quantizer[4];
+    private readonly byte[] _segmentFilterLevels = new byte[4];
+    private readonly int[] _segmentQuantizers = new int[4];
+    private readonly int[] _segmentLoopFilters = new int[4];
+    private readonly byte[] _segmentProbabilities = [255, 255, 255];
+    private readonly int[] _referenceDeltas = new int[4];
+    private readonly int[] _modeDeltas = new int[4];
+    private readonly List<PooledBuffer> _buffers = [];
+    private Vp8BoolDecoder _header;
+    private Vp8BoolDecoder[] _partitions = [];
+    private bool[] _truncatedPartitions = [];
+
+    // Frame settings
+    private int _width;
+    private int _height;
+    private int _mbWidth;
+    private int _mbHeight;
+    private bool _segmentationEnabled;
+    private bool _updateSegmentMap;
+    private bool _absoluteSegmentValues;
+    private bool _simpleFilter;
+    private int _filterLevel;
+    private int _sharpness;
+    private bool _filterDeltasEnabled;
+    private bool _skipEnabled;
+    private int _skipProbability;
+
+    // Contexts
+    private byte[] _aboveModes = [];
+    private readonly byte[] _leftModes = new byte[4];
+    private byte[] _aboveNonZero = [];
+    private readonly byte[] _leftNonZero = new byte[9];
+
+    // Per-macroblock loop-filter information: level (bits 0-5) and the inner-edge flag (bit 7)
+    private byte[] _filterInfo = [];
+
+    // Blocks of the current macroblock (bit i: block i, bit 24: Y2) that may have a non-zero coefficient (DC included), that
+    // may have a non-zero AC coefficient, and whose coefficients were written by the token decoder; whether the inverse WHT
+    // wrote the DC of the luma blocks
+    private uint _blocksWithCoefficients;
+    private uint _blocksWithAc;
+    private uint _blocksWritten;
+    private bool _lumaDcWritten;
+
+    private Vp8Planes? _planes;
+
+    // The frame row of the first luma row of the planes (a multiple of 8), the next macroblock row of DecodeRows (the
+    // macroblock row count when only the filter of the last one is left, more once every row is given) and the pixel rows
+    // given so far
+    private int _lumaOrigin;
+    private int _nextMacroblockRow;
+    private int _rowsDone;
+
+    private Vp8Decoder(AllocationScope scope, byte[] data, CancellationToken cancellationToken)
+    {
+        _scope = scope;
+        _data = data;
+        _cancellationToken = cancellationToken;
+    }
+
+    /// <summary>Parses the 10-byte key-frame header (frame tag, start code, dimensions).</summary>
+    /// <param name="data">At least the first 10 bytes of the payload.</param>
+    /// <param name="payloadLength">The payload length (the first partition must fit in it).</param>
+    /// <exception cref="InvalidImageContentException">The header is invalid.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The frame is an interframe or is not shown.</exception>
+    public static Vp8FrameHeader ReadFrameHeader(ReadOnlySpan<byte> data, long payloadLength)
+    {
+        if (data.Length < FrameHeaderLength || payloadLength < FrameHeaderLength)
+            throw Invalid("The WebP lossy (VP8) chunk is shorter than its 10-byte key-frame header.");
+
+        var tag = data[0] | (data[1] << 8) | (data[2] << 16);
+        var isKeyFrame = (tag & 1) == 0;
+        var version = (tag >> 1) & 7;
+        var showFrame = ((tag >> 4) & 1) != 0;
+        var firstPartitionSize = tag >> 5;
+        if (!isKeyFrame)
+            throw new UnsupportedImageFeatureException("The WebP lossy (VP8) frame is an interframe; WebP images are key frames.", ImageFormat.WebP, "VP8 interframe");
+
+        if (version > 3)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The VP8 version {version} is not defined (0 to 3)."));
+
+        if (!showFrame)
+            throw new UnsupportedImageFeatureException("The WebP lossy (VP8) frame is not shown.", ImageFormat.WebP, "VP8 hidden frame");
+
+        if (data[3] != 0x9D || data[4] != 0x01 || data[5] != 0x2A)
+            throw Invalid("The VP8 key-frame start code is invalid.");
+
+        var width = BinaryPrimitives.ReadUInt16LittleEndian(data[6..]) & 0x3FFF;
+        var height = BinaryPrimitives.ReadUInt16LittleEndian(data[8..]) & 0x3FFF;
+        if (width == 0 || height == 0)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The VP8 frame size {width}x{height} is empty."));
+
+        if (firstPartitionSize > payloadLength - FrameHeaderLength)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The VP8 first partition ({firstPartitionSize} bytes) extends past the end of the chunk."));
+
+        return new Vp8FrameHeader(width, height, firstPartitionSize);
+    }
+
+    /// <summary>Gets the planes of a decoder from <see cref="Open"/>: a window of the frame rows from <see cref="LumaOrigin"/>.</summary>
+    public Vp8Planes Planes => _planes ?? throw new ObjectDisposedException(nameof(Vp8Decoder));
+
+    /// <summary>Gets the frame row of the first luma row of <see cref="Planes"/> (a multiple of 8; half of it for chroma).</summary>
+    public int LumaOrigin => _lumaOrigin;
+
+    /// <summary>Decodes a VP8 chunk payload into Y'CbCr planes.</summary>
+    /// <returns>The planes; the caller disposes them.</returns>
+    public static Vp8Planes Decode(AllocationScope scope, byte[] data, int offset, int length, CancellationToken cancellationToken)
+    {
+        using var decoder = new Vp8Decoder(scope, data, cancellationToken);
+        return decoder.DecodeFrame(offset, length, length, out _)!;
+    }
+
+    /// <summary>
+    /// Parses the headers of a VP8 chunk payload and rents a window of planes; <see cref="DecodeRows"/> then decodes the
+    /// frame, macroblock row after macroblock row.
+    /// </summary>
+    /// <returns>The decoder; the caller disposes it.</returns>
+    public static Vp8Decoder Open(AllocationScope scope, byte[] data, int offset, int length, CancellationToken cancellationToken)
+    {
+        var decoder = new Vp8Decoder(scope, data, cancellationToken);
+        try
+        {
+            var paddedHeight = decoder.Start(offset, length, length) * 16;
+            var rows = Math.Min(paddedHeight, WindowContextRows + (WindowMacroblockRows * 16));
+            decoder._planes = Vp8Planes.Create(scope, decoder._width, decoder._height, rows);
+            return decoder;
+        }
+        catch
+        {
+            decoder.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Decodes the next macroblock row (or applies the loop filter to the last one) and gives the pixel rows that became
+    /// final: <see cref="Planes"/> holds them (with the chroma rows they need) until the next call.
+    /// </summary>
+    /// <param name="firstRow">The first final pixel row.</param>
+    /// <param name="endRow">The row after the last final pixel row (<paramref name="firstRow"/> when no row became final).</param>
+    /// <returns><see langword="false"/> once every row was given.</returns>
+    /// <exception cref="InvalidImageContentException">The data is truncated.</exception>
+    public bool DecodeRows(out int firstRow, out int endRow)
+    {
+        firstRow = endRow = _rowsDone;
+        var mbY = _nextMacroblockRow;
+        if (mbY > _mbHeight)
+            return false;
+
+        _cancellationToken.ThrowIfCancellationRequested();
+        int end;
+        if (mbY < _mbHeight)
+        {
+            var planes = Planes;
+            if ((mbY * 16) + 16 - _lumaOrigin > planes.Rows)
+            {
+                // Move the rows that are still needed to the top of the window
+                var origin = (mbY * 16) - WindowContextRows;
+                planes.Y.Slice((origin - _lumaOrigin) * planes.YStride, WindowContextRows * planes.YStride).CopyTo(planes.Y);
+                planes.U.Slice(((origin - _lumaOrigin) / 2) * planes.UVStride, (WindowContextRows / 2) * planes.UVStride).CopyTo(planes.U);
+                planes.V.Slice(((origin - _lumaOrigin) / 2) * planes.UVStride, (WindowContextRows / 2) * planes.UVStride).CopyTo(planes.V);
+                _lumaOrigin = origin;
+            }
+
+            if (!DecodeMacroblockRow(mbY))
+                throw Invalid("The VP8 data is truncated (a partition ends before the last macroblock that uses it).");
+
+            // Until the loop filter of this row: the last 3 luma rows of the row above, and the chroma rows of the luma rows
+            // after the 7 last ones
+            FilterMacroblockRow(mbY - 1);
+            end = mbY == 0 ? 0 : (mbY * 16) - 7;
+        }
+        else
+        {
+            FilterMacroblockRow(mbY - 1);
+            end = _height;
+        }
+
+        _nextMacroblockRow = mbY + 1;
+        endRow = Math.Max(firstRow, Math.Min(end, _height));
+        _rowsDone = endRow;
+        return true;
+    }
+
+    /// <summary>
+    /// Decodes the macroblock rows of a VP8 chunk payload received in part whose data was all received (the first
+    /// partition must be complete), and applies the loop filter to them.
+    /// </summary>
+    /// <param name="scope">The scope charged with the planes.</param>
+    /// <param name="data">The payload.</param>
+    /// <param name="offset">The offset of the payload in <paramref name="data"/>.</param>
+    /// <param name="receivedLength">The number of bytes of the payload that were received.</param>
+    /// <param name="length">The declared length of the payload.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="decodedRows">The number of pixel rows that were decoded.</param>
+    /// <returns>The planes, the caller disposes them; <see langword="null"/> when no macroblock row could be decoded.</returns>
+    public static Vp8Planes? DecodePartial(AllocationScope scope, byte[] data, int offset, int receivedLength, int length, CancellationToken cancellationToken, out int decodedRows)
+    {
+        using var decoder = new Vp8Decoder(scope, data, cancellationToken);
+        return decoder.DecodeFrame(offset, length, receivedLength, out decodedRows);
+    }
+
+    public void Dispose()
+    {
+        foreach (var buffer in _buffers)
+        {
+            buffer.Dispose();
+        }
+
+        _buffers.Clear();
+        _planes?.Dispose();
+        _planes = null;
+    }
+
+    private Vp8Planes? DecodeFrame(int offset, int length, int receivedLength, out int decodedRows)
+    {
+        decodedRows = 0;
+        var mbHeight = Start(offset, length, receivedLength);
+        if (mbHeight == 0)
+            return null;
+
+        _planes = Vp8Planes.Create(_scope, _width, _height);
+        var mbRows = mbHeight;
+        for (var mbY = 0; mbY < mbHeight; mbY++)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            if (!DecodeMacroblockRow(mbY))
+            {
+                if (receivedLength == length)
+                    throw Invalid("The VP8 data is truncated (a partition ends before the last macroblock that uses it).");
+
+                mbRows = mbY;
+                break;
+            }
+
+            FilterMacroblockRow(mbY - 1);
+        }
+
+        if (mbRows == 0)
+            return null;
+
+        _cancellationToken.ThrowIfCancellationRequested();
+        FilterMacroblockRow(mbRows - 1);
+        decodedRows = Math.Min(_height, mbRows * 16);
+        var planes = _planes;
+        _planes = null;
+        return planes;
+    }
+
+    /// <summary>Parses the frame header and the partitions, and rents the per-frame state (not the planes).</summary>
+    /// <returns>The number of macroblock rows; 0 when the headers were not received.</returns>
+    private int Start(int offset, int length, int receivedLength)
+    {
+        var isPartial = receivedLength < length;
+        if (isPartial && receivedLength < FrameHeaderLength)
+            return 0;
+
+        var frame = ReadFrameHeader(_data.AsSpan(offset, Math.Min(length, FrameHeaderLength)), length);
+        if (isPartial && receivedLength < FrameHeaderLength + frame.FirstPartitionSize)
+            return 0;
+
+        _width = frame.Width;
+        _height = frame.Height;
+        _mbWidth = (_width + 15) >> 4;
+        _mbHeight = (_height + 15) >> 4;
+        _header = new Vp8BoolDecoder(_data, offset + FrameHeaderLength, frame.FirstPartitionSize);
+        ParseFrameHeader();
+        SetupPartitions(offset + FrameHeaderLength + frame.FirstPartitionSize, length - FrameHeaderLength - frame.FirstPartitionSize, offset + receivedLength);
+        _aboveModes = new byte[_mbWidth * 4];
+        _aboveNonZero = new byte[_mbWidth * 9];
+        var filterBuffer = _scope.Rent(_mbWidth * _mbHeight, AllocationKind.DecoderState, clear: true);
+        _buffers.Add(filterBuffer);
+        _filterInfo = filterBuffer.RawBuffer;
+        return _mbHeight;
+    }
+
+    /// <summary>Decodes and reconstructs a macroblock row (not filtered).</summary>
+    /// <returns>
+    /// <see langword="false"/> when the row read past the end of a partition (a partition received in part has no byte past
+    /// what was received): the row is reconstructed, but its data is truncated.
+    /// </returns>
+    private bool DecodeMacroblockRow(int mbY)
+    {
+        var partition = mbY & (_partitions.Length - 1);
+        ref var tokens = ref _partitions[partition];
+        Array.Clear(_leftModes);
+        Array.Clear(_leftNonZero);
+        for (var mbX = 0; mbX < _mbWidth; mbX++)
+        {
+            DecodeMacroblock(mbX, mbY, ref tokens);
+        }
+
+        return _header.OverrunBytes <= MaxOverrunBytes && tokens.OverrunBytes <= (_truncatedPartitions[partition] ? 0 : MaxOverrunBytes);
+    }
+
+    /// <summary>Applies the loop filter to a reconstructed macroblock row (nothing for -1), once the next one is reconstructed or none follows.</summary>
+    private void FilterMacroblockRow(int mbY)
+    {
+        if (_filterLevel != 0 && mbY >= 0)
+        {
+            Vp8LoopFilter.ApplyRow(_planes!, _filterInfo.AsSpan(mbY * _mbWidth, _mbWidth), mbY, _lumaOrigin, _simpleFilter, _sharpness);
+        }
+    }
+
+    private void ParseFrameHeader()
+    {
+        ref var d = ref _header;
+        _ = d.ReadBit(); // color space: 0 is BT.601 (the only defined value)
+        _ = d.ReadBit(); // clamping type: reconstruction always clamps
+        _segmentationEnabled = d.ReadBit() != 0;
+        if (_segmentationEnabled)
+        {
+            _updateSegmentMap = d.ReadBit() != 0;
+            var updateData = d.ReadBit() != 0;
+            if (updateData)
+            {
+                _absoluteSegmentValues = d.ReadBit() != 0;
+                for (var i = 0; i < 4; i++)
+                {
+                    _segmentQuantizers[i] = d.ReadOptionalSigned(7);
+                }
+
+                for (var i = 0; i < 4; i++)
+                {
+                    _segmentLoopFilters[i] = d.ReadOptionalSigned(6);
+                }
+            }
+
+            if (_updateSegmentMap)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    _segmentProbabilities[i] = d.ReadBit() != 0 ? (byte)d.ReadLiteral(8) : (byte)255;
+                }
+            }
+        }
+
+        _simpleFilter = d.ReadBit() != 0;
+        _filterLevel = d.ReadLiteral(6);
+        _sharpness = d.ReadLiteral(3);
+        _filterDeltasEnabled = d.ReadBit() != 0;
+        if (_filterDeltasEnabled && d.ReadBit() != 0)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                _referenceDeltas[i] = d.ReadOptionalSigned(6);
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                _modeDeltas[i] = d.ReadOptionalSigned(6);
+            }
+        }
+
+        var partitionCount = 1 << d.ReadLiteral(2);
+        _partitions = new Vp8BoolDecoder[partitionCount];
+        ParseQuantizers();
+        _ = d.ReadBit(); // refresh_entropy_probs: irrelevant for a single key frame
+        Vp8Tables.DefaultTokenProbabilities.CopyTo(_tokenProbabilities);
+        var update = Vp8Tables.TokenUpdateProbabilities;
+        for (var i = 0; i < _tokenProbabilities.Length; i++)
+        {
+            if (d.ReadBool(update[i]))
+            {
+                _tokenProbabilities[i] = (byte)d.ReadLiteral(8);
+            }
+        }
+
+        _skipEnabled = d.ReadBit() != 0;
+        _skipProbability = _skipEnabled ? d.ReadLiteral(8) : 0;
+        if (d.OverrunBytes > MaxOverrunBytes)
+            throw Invalid("The VP8 frame header is truncated.");
+
+        ComputeFilterLevels();
+    }
+
+    private void ParseQuantizers()
+    {
+        ref var d = ref _header;
+        var yAc = d.ReadLiteral(7);
+        var yDcDelta = d.ReadOptionalSigned(4);
+        var y2DcDelta = d.ReadOptionalSigned(4);
+        var y2AcDelta = d.ReadOptionalSigned(4);
+        var uvDcDelta = d.ReadOptionalSigned(4);
+        var uvAcDelta = d.ReadOptionalSigned(4);
+        for (var segment = 0; segment < 4; segment++)
+        {
+            var q = yAc;
+            if (_segmentationEnabled)
+            {
+                q = _absoluteSegmentValues ? _segmentQuantizers[segment] : q + _segmentQuantizers[segment];
+            }
+
+            _quantizers[segment] = new Quantizer(
+                YDc: Vp8Tables.DcQuantizer[Clamp127(q + yDcDelta)],
+                YAc: Vp8Tables.AcQuantizer[Clamp127(q)],
+                Y2Dc: (short)(Vp8Tables.DcQuantizer[Clamp127(q + y2DcDelta)] * 2),
+                Y2Ac: (short)Math.Max(8, Vp8Tables.AcQuantizer[Clamp127(q + y2AcDelta)] * 155 / 100),
+                UVDc: (short)Math.Min(132, (int)Vp8Tables.DcQuantizer[Clamp127(q + uvDcDelta)]),
+                UVAc: Vp8Tables.AcQuantizer[Clamp127(q + uvAcDelta)]);
+        }
+
+        static int Clamp127(int value) => Math.Clamp(value, 0, 127);
+    }
+
+    private void ComputeFilterLevels()
+    {
+        for (var segment = 0; segment < 4; segment++)
+        {
+            var level = _filterLevel;
+            if (_segmentationEnabled)
+            {
+                level = _absoluteSegmentValues ? _segmentLoopFilters[segment] : level + _segmentLoopFilters[segment];
+            }
+
+            _segmentFilterLevels[segment] = (byte)Math.Clamp(level, 0, 63);
+        }
+    }
+
+    private void SetupPartitions(int start, int length, int receivedEnd)
+    {
+        var count = _partitions.Length;
+        _truncatedPartitions = new bool[count];
+        var tableLength = 3 * (count - 1);
+        if (length < tableLength)
+            throw Invalid("The VP8 partition size table extends past the end of the chunk.");
+
+        var position = start + tableLength;
+        var end = start + length;
+        for (var i = 0; i < count; i++)
+        {
+            int size;
+            if (i < count - 1)
+            {
+                var entry = start + (3 * i);
+                size = _data[entry] | (_data[entry + 1] << 8) | (_data[entry + 2] << 16);
+                if (size > end - position)
+                    throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The VP8 token partition {i} ({size} bytes) extends past the end of the chunk."));
+            }
+            else
+            {
+                size = end - position;
+                if (size <= 0)
+                    throw Invalid("The last VP8 token partition is empty: the data is truncated.");
+            }
+
+            // The bytes of the partition that were received
+            var received = Math.Clamp(receivedEnd - position, 0, size);
+            _truncatedPartitions[i] = received < size;
+            _partitions[i] = new Vp8BoolDecoder(_data, Math.Min(position, receivedEnd), received);
+            position += size;
+        }
+    }
+
+    private void DecodeMacroblock(int mbX, int mbY, ref Vp8BoolDecoder tokens)
+    {
+        // The header decoder state is held in locals (registers) for the modes of the macroblock
+        ref var d = ref _header;
+        d.Load(out var value, out var range, out var bits);
+        var segment = 0;
+        if (_updateSegmentMap)
+        {
+            segment = ReadTree(ref d, ref value, ref range, ref bits, SegmentTree, ref unsafe(MemoryMarshal.GetArrayDataReference(_segmentProbabilities)));
+        }
+
+        var skip = _skipEnabled && Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, _skipProbability);
+        var yMode = ReadTree(ref d, ref value, ref range, ref bits, KeyFrameYModeTree, ref unsafe(MemoryMarshal.GetReference(Vp8Tables.KeyFrameYModeProbabilities)));
+        Span<byte> subModes = stackalloc byte[16];
+        var aboveModes = _aboveModes.AsSpan(mbX * 4, 4);
+        if (yMode == Vp8Tables.BPred)
+        {
+            // Each sub-block mode selects 9 probabilities of the 10 x 10 x 9 table by the above and left modes (below 10)
+            ref var probabilities = ref unsafe(MemoryMarshal.GetReference(Vp8Tables.KeyFrameBModeProbabilities));
+            for (var y = 0; y < 4; y++)
+            {
+                var left = _leftModes[y];
+                for (var x = 0; x < 4; x++)
+                {
+                    var above = aboveModes[x];
+                    var mode = (byte)ReadSubBlockMode(ref d, ref value, ref range, ref bits, ref unsafe(Unsafe.Add(ref probabilities, ((above * 10) + left) * 9)));
+                    subModes[(y * 4) + x] = mode;
+                    aboveModes[x] = mode;
+                    left = mode;
+                }
+
+                _leftModes[y] = left;
+            }
+        }
+        else
+        {
+            // The implied sub-block mode of a 16x16 mode, for the contexts of later B_PRED macroblocks
+            var implied = yMode switch
+            {
+                Vp8Tables.VPred => Vp8Tables.BVePred,
+                Vp8Tables.HPred => Vp8Tables.BHePred,
+                Vp8Tables.TmPred => Vp8Tables.BTmPred,
+                _ => Vp8Tables.BDcPred,
+            };
+            aboveModes.Fill((byte)implied);
+            _leftModes.AsSpan().Fill((byte)implied);
+        }
+
+        var uvMode = ReadTree(ref d, ref value, ref range, ref bits, UVModeTree, ref unsafe(MemoryMarshal.GetReference(Vp8Tables.KeyFrameUVModeProbabilities)));
+        d.Store(value, range, bits);
+
+        // Residuals: the coefficients are all zero here (the blocks written by the previous macroblock were cleared)
+        var coefficients = _coefficients.AsSpan();
+        _blocksWithCoefficients = 0;
+        _blocksWithAc = 0;
+        _blocksWritten = 0;
+        _lumaDcWritten = false;
+        var hasY2 = yMode != Vp8Tables.BPred;
+        var nonZero = false;
+        var aboveNonZero = _aboveNonZero.AsSpan(mbX * 9, 9);
+        var leftNonZero = _leftNonZero.AsSpan();
+        if (!skip)
+        {
+            nonZero = DecodeResiduals(ref tokens, segment, hasY2, aboveNonZero, leftNonZero);
+        }
+        else
+        {
+            // Contexts of a skipped macroblock: no coefficient, except that a B_PRED macroblock leaves the Y2 contexts unchanged
+            aboveNonZero[..8].Clear();
+            leftNonZero[..8].Clear();
+            if (hasY2)
+            {
+                aboveNonZero[8] = 0;
+                leftNonZero[8] = 0;
+            }
+        }
+
+        // Loop-filter level and inner-edge flag of the macroblock
+        var level = (int)_segmentFilterLevels[segment];
+        if (_filterDeltasEnabled)
+        {
+            level += _referenceDeltas[0]; // intra frame
+            if (!hasY2)
+            {
+                level += _modeDeltas[0]; // B_PRED
+            }
+
+            level = Math.Clamp(level, 0, 63);
+        }
+
+        var inner = !hasY2 || nonZero;
+        _filterInfo[(mbY * _mbWidth) + mbX] = (byte)(level | (inner ? 0x80 : 0));
+
+        Vp8Reconstruction.ReconstructMacroblock(_planes!, mbX, mbY, _mbWidth, yMode, subModes, uvMode, coefficients, _blocksWithCoefficients, _blocksWithAc, _lumaOrigin);
+
+        // Clear only what was written, for the next macroblock
+        for (var written = _blocksWritten; written != 0; written &= written - 1)
+        {
+            coefficients.Slice(BitOperations.TrailingZeroCount(written) * 16, 16).Clear();
+        }
+
+        if (_lumaDcWritten)
+        {
+            for (var i = 0; i < 16; i++)
+            {
+                coefficients[i * 16] = 0;
+            }
+        }
+    }
+
+    /// <returns><see langword="true"/> when at least one block has a decoded non-zero coefficient.</returns>
+    /// <remarks>
+    /// The blocks are decoded in the order of the bitstream (Y2 first when present, then the 16 luma, 4 U and 4 V blocks)
+    /// by one inlined copy of the token loop, so that the arithmetic decoder state stays in registers for the whole
+    /// macroblock. The inverse WHT of the Y2 block runs after the tokens: the luma blocks of a macroblock with Y2 start at
+    /// position 1 and never write their DC.
+    /// </remarks>
+    private bool DecodeResiduals(ref Vp8BoolDecoder tokens, int segment, bool hasY2, Span<byte> above, Span<byte> left)
+    {
+        ref readonly var q = ref _quantizers[segment];
+        var coefficients = _coefficients.AsSpan();
+        _ = above[8];
+        _ = left[8];
+        ref var aboveFlags = ref unsafe(MemoryMarshal.GetReference(above));
+        ref var leftFlags = ref unsafe(MemoryMarshal.GetReference(left));
+        ref var aboveIndexes = ref unsafe(MemoryMarshal.GetReference(AboveContextIndexes));
+        ref var leftIndexes = ref unsafe(MemoryMarshal.GetReference(LeftContextIndexes));
+        ref var probabilities = ref unsafe(MemoryMarshal.GetArrayDataReference(_tokenProbabilities));
+        ref var blocks = ref unsafe(MemoryMarshal.GetArrayDataReference(_coefficients));
+        var lumaType = hasY2 ? 0 : 3;
+        var lumaFirst = hasY2 ? 1 : 0;
+        var withCoefficients = 0u;
+        var withAc = 0u;
+        var y2End = 0;
+        var block = hasY2 ? 24 : 0;
+        tokens.Load(out var value, out var range, out var bits);
+        while (true)
+        {
+            int type;
+            int first;
+            short dcFactor;
+            short acFactor;
+            if (block < 16)
+            {
+                type = lumaType;
+                first = lumaFirst;
+                dcFactor = q.YDc;
+                acFactor = q.YAc;
+            }
+            else if (block < 24)
+            {
+                type = 2;
+                first = 0;
+                dcFactor = q.UVDc;
+                acFactor = q.UVAc;
+            }
+            else
+            {
+                type = 1;
+                first = 0;
+                dcFactor = q.Y2Dc;
+                acFactor = q.Y2Ac;
+            }
+
+            // The flags and the block stay inside the 9 context flags and the 25 blocks of 16 coefficients (block < 25)
+            ref var aboveFlag = ref unsafe(Unsafe.Add(ref aboveFlags, Unsafe.Add(ref aboveIndexes, block)));
+            ref var leftFlag = ref unsafe(Unsafe.Add(ref leftFlags, Unsafe.Add(ref leftIndexes, block)));
+            ref var typeProbabilities = ref unsafe(Unsafe.Add(ref probabilities, type * 8 * 3 * Vp8Tables.TokenNodes));
+            ref var blockCoefficients = ref unsafe(Unsafe.Add(ref blocks, block * 16));
+            var end = DecodeBlock(ref tokens, ref value, ref range, ref bits, ref typeProbabilities, aboveFlag + leftFlag, first, ref blockCoefficients, dcFactor, acFactor);
+            var hasCoefficients = end > first;
+            aboveFlag = leftFlag = hasCoefficients ? (byte)1 : (byte)0;
+            if (hasCoefficients)
+            {
+                var bit = 1u << block;
+                withCoefficients |= bit;
+                if (end > 1)
+                {
+                    withAc |= bit;
+                }
+            }
+
+            if (block == 24)
+            {
+                y2End = end;
+                block = 0;
+            }
+            else if (++block == 24)
+            {
+                break;
+            }
+        }
+
+        tokens.Store(value, range, bits);
+        var nonZero = withCoefficients != 0;
+        _blocksWritten = withCoefficients;
+        if (y2End > 0)
+        {
+            // The Y2 block holds the DC of the 16 luma blocks: inverse WHT into coefficient 0 of each block. Without Y2
+            // coefficient the luma DCs stay zero; with a Y2 DC only, the transform gives (dc + 3) >> 3 everywhere
+            var y2 = coefficients.Slice(24 * 16, 16);
+            if (y2End == 1)
+            {
+                var dc = (short)((y2[0] + 3) >> 3);
+                for (var i = 0; i < 16; i++)
+                {
+                    coefficients[i * 16] = dc;
+                }
+            }
+            else
+            {
+                Vp8Transforms.InverseWalshHadamard(y2, coefficients);
+            }
+
+            withCoefficients |= 0xFFFF;
+            _lumaDcWritten = true;
+        }
+
+        _blocksWithCoefficients = withCoefficients;
+        _blocksWithAc = withAc;
+        return nonZero;
+    }
+
+    /// <summary>Decodes the tokens of one block (RFC 6386 section 13) into dequantized coefficients in raster order.</summary>
+    /// <returns>The position following the last decoded token (the end-of-block position, or 16).</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int DecodeBlock(ref Vp8BoolDecoder decoder, ref ulong value, ref uint range, ref int bits, ref byte probabilities, int context, int first, ref short coefficients, short dcFactor, short acFactor)
+    {
+        // The probabilities are addressed by reference: band < 8 and context < 3 keep every offset inside the 8 x 3 x 11
+        // table of the type, and the positions inside the 16-entry block and tables stay below 16 (17 for the band offsets)
+        ref var bandOffsets = ref unsafe(MemoryMarshal.GetReference(BandOffsets));
+        ref var zigzag = ref unsafe(MemoryMarshal.GetReference(Vp8Tables.Zigzag));
+        var i = first;
+        ref var p = ref unsafe(Unsafe.Add(ref probabilities, Unsafe.Add(ref bandOffsets, i) + (context * Vp8Tables.TokenNodes)));
+        while (Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, p))
+        {
+            while (!Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 1))))
+            {
+                // DCT_0: the next token cannot be an end of block
+                if (++i == 16)
+                    return i;
+
+                p = ref unsafe(Unsafe.Add(ref probabilities, Unsafe.Add(ref bandOffsets, i)));
+            }
+
+            int coefficient;
+            int nextContext;
+            if (!Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 2))))
+            {
+                coefficient = 1;
+                nextContext = 1;
+            }
+            else
+            {
+                coefficient = ReadLargeValue(ref decoder, ref value, ref range, ref bits, ref p);
+                nextContext = 2;
+            }
+
+            coefficient = Vp8BoolDecoder.ReadSigned(ref decoder, ref value, ref range, ref bits, coefficient);
+            unsafe
+            {
+                Unsafe.Add(ref coefficients, Unsafe.Add(ref zigzag, i)) = (short)(coefficient * (i > 0 ? acFactor : dcFactor));
+            }
+
+            if (++i == 16)
+                break;
+
+            p = ref unsafe(Unsafe.Add(ref probabilities, Unsafe.Add(ref bandOffsets, i) + (nextContext * Vp8Tables.TokenNodes)));
+        }
+
+        return i;
+    }
+
+    /// <summary>Decodes a sub-block mode (the tree <see cref="BModeTree"/>) with the arithmetic decoder state held by the caller.</summary>
+    /// <remarks>
+    /// The tree is walked by branches: the probability of each node is at a fixed offset, so that its load does not wait for
+    /// the previous decision (a table walk loads the next node index first).
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadSubBlockMode(ref Vp8BoolDecoder d, ref ulong value, ref uint range, ref int bits, ref byte p)
+    {
+        // The 9 probabilities of the node pairs 0, 2, ..., 16 of the tree
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, p))
+            return Vp8Tables.BDcPred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 1))))
+            return Vp8Tables.BTmPred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 2))))
+            return Vp8Tables.BVePred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 3))))
+        {
+            if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 4))))
+                return Vp8Tables.BHePred;
+
+            return Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 5))) ? Vp8Tables.BVrPred : Vp8Tables.BRdPred;
+        }
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 6))))
+            return Vp8Tables.BLdPred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 7))))
+            return Vp8Tables.BVlPred;
+
+        return Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 8))) ? Vp8Tables.BHuPred : Vp8Tables.BHdPred;
+    }
+
+    /// <summary>Decodes a tree-coded value (RFC 6386 section 8.1) with the arithmetic decoder state held by the caller.</summary>
+    /// <remarks>The probability of node <c>i</c> is at <c>probabilities + i / 2</c>: the trees have at most 9 inner nodes, like their probability tables.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadTree(ref Vp8BoolDecoder d, ref ulong value, ref uint range, ref int bits, ReadOnlySpan<sbyte> tree, ref byte probabilities)
+    {
+        var index = 0;
+        while ((index = tree[index + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref probabilities, index >> 1))) ? 1 : 0)]) > 0)
+        {
+        }
+
+        return -index;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadLargeValue(ref Vp8BoolDecoder d, ref ulong value, ref uint range, ref int bits, ref byte p)
+    {
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 3))))
+        {
+            if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 4))))
+                return 2;
+
+            return 3 + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 5))) ? 1 : 0);
+        }
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 6))))
+        {
+            if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 7))))
+                return 5 + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, 159) ? 1 : 0); // DCT_CAT1: 5-6
+
+            var high = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, 165) ? 2 : 0;
+            return 7 + high + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, 145) ? 1 : 0); // DCT_CAT2: 7-10
+        }
+
+        // Rare: the state goes through memory, so that the hot path keeps it in registers without inlining this part
+        d.Store(value, range, bits);
+        var large = ReadLargeCategory(ref d, ref p);
+        d.Load(out value, out range, out bits);
+        return large;
+    }
+
+    /// <summary>Decodes DCT_CAT3 to DCT_CAT6 (the subtree at node 8) and their extra bits.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadLargeCategory(ref Vp8BoolDecoder d, ref byte p)
+    {
+        d.Load(out var value, out var range, out var bits);
+        var b1 = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 8))) ? 1 : 0;
+        var b0 = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 9 + b1))) ? 1 : 0;
+        var category = (2 * b1) + b0; // DCT_CAT3 to DCT_CAT6
+        var extra = category switch
+        {
+            0 => Vp8Tables.Cat3Probabilities,
+            1 => Vp8Tables.Cat4Probabilities,
+            2 => Vp8Tables.Cat5Probabilities,
+            _ => Vp8Tables.Cat6Probabilities,
+        };
+        var extraBits = 0;
+        foreach (var probability in extra)
+        {
+            extraBits = (extraBits << 1) | (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, probability) ? 1 : 0);
+        }
+
+        d.Store(value, range, bits);
+        return extraBits + 3 + (8 << category);
+    }
+
+    private static InvalidImageContentException Invalid(string message) => new(message, ImageFormat.WebP);
+
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct Quantizer(short YDc, short YAc, short Y2Dc, short Y2Ac, short UVDc, short UVAc);
+}

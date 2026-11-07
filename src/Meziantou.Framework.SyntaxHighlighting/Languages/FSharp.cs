@@ -146,7 +146,7 @@ internal static class FSharp
 
         var typeDeclaration = new Mode
         {
-            BeginParts = [@"(^|\s+)", "type", @"\s+", IdentifierRe],
+            BeginParts = [@"(^|" + CommonModes.RunStart(@"\s") + @"\s+)", "type", @"\s+", IdentifierRe],
             BeginScope = new Dictionary<int, string> { [2] = "keyword", [4] = "title.class" },
             End = @"(?=\(|=|$)",
             Keywords = AllKeywords(),
@@ -164,7 +164,7 @@ internal static class FSharp
 
         var preprocessor = new Mode
         {
-            BeginParts = [@"^\s*", "#(?:" + string.Join('|', PreprocessorKeywords) + ")", @"\b"],
+            BeginParts = [CommonModes.IndentedLineStartRe, "#(?:" + string.Join('|', PreprocessorKeywords) + ")", @"\b"],
             BeginScope = new Dictionary<int, string> { [2] = "meta" },
             End = @"(?=\s|$)",
         };

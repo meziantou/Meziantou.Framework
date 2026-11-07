@@ -5,7 +5,7 @@ namespace Meziantou.AspNetCore.Components;
 
 internal static class LogHighlighter
 {
-    public static MarkupString Highlight(string? text, IEnumerable<ILogHighlighter> highlighters, string? attributeName)
+    public static MarkupString Highlight(string? text, IEnumerable<ILogHighlighter>? highlighters, string? attributeName)
     {
         if (text is null)
             return new MarkupString();
@@ -14,94 +14,115 @@ internal static class LogHighlighter
         var visibleText = parsedText.Text;
         var ansiRuns = parsedText.Runs;
 
-        if (highlighters is not null)
+        var sb = new StringBuilder();
+        var lastIndex = 0;
+        foreach (var match in SelectMatches(visibleText, highlighters))
         {
-            var allMatches = highlighters
-                .SelectMany(highlighter => highlighter.Process(visibleText))
-                .OrderBy(result => result.Index)
-                .ToArray();
+            AppendStyledText(sb, visibleText, ansiRuns, lastIndex, match.Index, attributeName);
+            AppendMatch(sb, visibleText, ansiRuns, match, attributeName);
+            lastIndex = match.Index + match.Length;
+        }
 
-            if (allMatches.Length > 0)
+        AppendStyledText(sb, visibleText, ansiRuns, lastIndex, visibleText.Length, attributeName);
+        return new MarkupString(sb.ToString());
+    }
+
+    // Selects the non-overlapping set of highlights to render. A higher-priority match always wins
+    // over every match it overlaps, even when the lower-priority one starts earlier. Ties are broken
+    // on the lowest index, then on the longest match. Results that fall outside the text are dropped.
+    private static List<LogHighlighterResult> SelectMatches(string text, IEnumerable<ILogHighlighter>? highlighters)
+    {
+        var selected = new List<LogHighlighterResult>();
+        if (highlighters is null)
+            return selected;
+
+        var candidates = highlighters
+            .SelectMany(highlighter => highlighter.Process(text))
+            .Where(result => result.Length > 0 && result.Index >= 0 && result.Index <= text.Length - result.Length)
+            .OrderByDescending(result => result.Priority)
+            .ThenBy(result => result.Index)
+            .ThenByDescending(result => result.Length);
+
+        foreach (var candidate in candidates)
+        {
+            var insertionIndex = FindInsertionIndex(selected, candidate.Index);
+
+            var previous = insertionIndex > 0 ? selected[insertionIndex - 1] : null;
+            if (previous is not null && previous.Index + previous.Length > candidate.Index)
+                continue;
+
+            var next = insertionIndex < selected.Count ? selected[insertionIndex] : null;
+            if (next is not null && candidate.Index + candidate.Length > next.Index)
+                continue;
+
+            selected.Insert(insertionIndex, candidate);
+        }
+
+        return selected;
+    }
+
+    // Returns the position of the first selected match whose index is greater than or equal to <paramref name="index"/>.
+    private static int FindInsertionIndex(List<LogHighlighterResult> selected, int index)
+    {
+        var low = 0;
+        var high = selected.Count;
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (selected[middle].Index < index)
             {
-                // highlights
-                var lastIndex = 0;
-                var sb = new StringBuilder();
-
-                for (var i = 0; i < allMatches.Length; i++)
-                {
-                    var match = allMatches[i];
-                    if (match.Index < lastIndex)
-                        continue; // overlap
-
-                    // Find the best match in case of overlaps (highest priority and lowest index)
-                    var matchEnd = match.Index + match.Length;
-                    for (var j = i + 1; j < allMatches.Length; j++)
-                    {
-                        var potentialMatch = allMatches[j];
-                        if (potentialMatch.Index > matchEnd)
-                            break; // allMatches is sorted by index
-
-                        if (potentialMatch.Priority < match.Priority)
-                            continue; // only consider higher priority match
-
-                        if (potentialMatch.Index > match.Index)
-                            continue; // only consider lowest index
-
-                        match = allMatches[j];
-                    }
-
-                    // Highlights
-                    AppendStyledText(sb, visibleText, ansiRuns, lastIndex, match.Index, attributeName);
-
-                    lastIndex = match.Index + match.Length;
-
-                    if (match.Link is not null)
-                    {
-                        sb.Append("<a ").Append(attributeName).Append(" class='log-message-match-link' target='_blank' href='");
-                        sb.Append(HtmlEncoder.Default.Encode(match.Link));
-                        sb.Append('\'');
-                    }
-                    else
-                    {
-                        sb.Append("<span ").Append(attributeName).Append(" class='log-message-match'");
-                    }
-
-                    if (match.Title is not null)
-                    {
-                        sb.Append(" title='")
-                          .Append(HtmlEncoder.Default.Encode(match.Title))
-                          .Append('\'');
-                    }
-
-                    sb.Append('>');
-
-                    if (match.ReplacementText is not null)
-                    {
-                        sb.Append(HtmlEncoder.Default.Encode(match.ReplacementText));
-                    }
-                    else
-                    {
-                        AppendStyledText(sb, visibleText, ansiRuns, match.Index, lastIndex, attributeName);
-                    }
-
-                    if (match.Link is not null)
-                    {
-                        sb.Append("</a>");
-                    }
-                    else
-                    {
-                        sb.Append("</span>");
-                    }
-                }
-
-                AppendStyledText(sb, visibleText, ansiRuns, lastIndex, visibleText.Length, attributeName);
-                return new MarkupString(sb.ToString());
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
             }
         }
 
-        var result = new StringBuilder();
-        AppendStyledText(result, visibleText, ansiRuns, 0, visibleText.Length, attributeName);
-        return new MarkupString(result.ToString());
+        return low;
+    }
+
+    private static void AppendMatch(StringBuilder sb, string text, IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.AnsiTextRun> ansiRuns, LogHighlighterResult match, string? attributeName)
+    {
+        // A highlighter can produce any string as a link, including "javascript:". Only http(s) links are
+        // rendered as anchors; anything else falls back to a plain highlight so the text is still visible.
+        var link = match.Link is not null && IsSafeLink(match.Link) ? match.Link : null;
+        if (link is not null)
+        {
+            sb.Append("<a ").Append(attributeName).Append(" class='log-message-match-link' target='_blank' rel='noopener noreferrer' href='");
+            sb.Append(HtmlEncoder.Default.Encode(link));
+            sb.Append('\'');
+        }
+        else
+        {
+            sb.Append("<span ").Append(attributeName).Append(" class='log-message-match'");
+        }
+
+        if (match.Title is not null)
+        {
+            sb.Append(" title='")
+              .Append(HtmlEncoder.Default.Encode(match.Title))
+              .Append('\'');
+        }
+
+        sb.Append('>');
+
+        if (match.ReplacementText is not null)
+        {
+            sb.Append(HtmlEncoder.Default.Encode(match.ReplacementText));
+        }
+        else
+        {
+            AppendStyledText(sb, text, ansiRuns, match.Index, match.Index + match.Length, attributeName);
+        }
+
+        sb.Append(link is not null ? "</a>" : "</span>");
+    }
+
+    private static bool IsSafeLink(string link)
+    {
+        return Uri.TryCreate(link, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
     private static void AppendStyledText(StringBuilder sb, string text, IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.AnsiTextRun> ansiRuns, int start, int end, string? attributeName)

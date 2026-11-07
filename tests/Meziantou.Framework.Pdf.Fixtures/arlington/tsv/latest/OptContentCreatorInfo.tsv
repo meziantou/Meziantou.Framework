@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Creator	string-text	1.5		TRUE	FALSE	FALSE					Table 100, CreatorInfo cell
+Subtype	name	1.5		TRUE	FALSE	FALSE		[Artwork,Technical,*]			
+SubType	name	fn:Extension(Malforms,1.5)		FALSE	FALSE	FALSE		[Artwork,Technical,*]			

@@ -6,7 +6,7 @@ internal sealed class AsyncDelegateCommand : IDelegateCommand
 {
     private readonly Func<object?, Task> _execute;
     private readonly Func<object?, bool> _canExecute;
-    private readonly Dispatcher _dispatcher;
+    private readonly Dispatcher? _dispatcher;
     private bool _isExecuting;
 
     public event EventHandler? CanExecuteChanged;
@@ -15,7 +15,7 @@ internal sealed class AsyncDelegateCommand : IDelegateCommand
     {
         _execute = execute;
         _canExecute = canExecute;
-        _dispatcher = Dispatcher.CurrentDispatcher;
+        _dispatcher = DelegateCommandDispatcher.GetCurrentThreadDispatcher();
     }
 
     public bool CanExecute(object? parameter)
@@ -44,17 +44,6 @@ internal sealed class AsyncDelegateCommand : IDelegateCommand
 
     public void RaiseCanExecuteChanged()
     {
-        var canExecuteChanged = CanExecuteChanged;
-        if (canExecuteChanged is not null)
-        {
-            if (_dispatcher is not null)
-            {
-                _dispatcher.Invoke(() => canExecuteChanged.Invoke(this, EventArgs.Empty));
-            }
-            else
-            {
-                canExecuteChanged.Invoke(this, EventArgs.Empty);
-            }
-        }
+        DelegateCommandDispatcher.RaiseCanExecuteChanged(_dispatcher, this, CanExecuteChanged);
     }
 }

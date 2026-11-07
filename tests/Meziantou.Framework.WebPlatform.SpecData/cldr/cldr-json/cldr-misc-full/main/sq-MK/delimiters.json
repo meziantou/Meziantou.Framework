@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sq-MK": {
+      "identity": {
+        "language": "sq",
+        "territory": "MK"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

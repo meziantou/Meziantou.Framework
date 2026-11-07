@@ -1,0 +1,16 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.6		FALSE	FALSE	FALSE		[3D]			Table 5 and Table 311
+Subtype	name	1.6		TRUE	FALSE	FALSE		[U3D,PRC,fn:SinceVersion(2.0,fn:Extension(ISO_TS_24064,STEP))]			
+VA	array	1.6		FALSE	FALSE	FALSE				[ArrayOf3DView]	
+DV	dictionary;integer;name;string	1.6		FALSE	FALSE	FALSE		[];[fn:Eval((@DV>=0) && (@DV<fn:ArrayLength(VA)))];[F,L];[]		[3DView];[];[];[]	
+Resources	name-tree	1.6	2.0	FALSE	FALSE	FALSE				[_UniversalDictionary]	https://github.com/pdf-association/pdf-issues/issues/362
+OnInstantiate	stream	1.6		FALSE	TRUE	FALSE				[Stream]	
+AN	dictionary	1.7		FALSE	FALSE	FALSE				[3DAnimationStyle]	
+ColorSpace	array;name	2.0		FALSE	FALSE	FALSE		[];[DeviceRGB]		[DeviceRGBColorSpace,CalRGBColorSpace,ICCBasedColorSpace];[]	
+Length	integer	1.6		TRUE	FALSE	FALSE					
+Filter	array;name	1.6		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,Crypt]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfCompressionFilterNames];[]	
+DecodeParms	array;dictionary	1.6		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCrypt]	
+F	dictionary;string	1.6		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.6		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,Crypt]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfCompressionFilterNames];[]	
+FDecodeParms	array;dictionary	1.6		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCrypt]	
+DL	integer	1.6		FALSE	FALSE	FALSE			[fn:Eval(@DL>=0)]		

@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+F	string-byte	1.1	2.0	TRUE	FALSE	FALSE					Table 208
+D	string-byte	1.1	2.0	FALSE	FALSE	FALSE					
+O	string-ascii	1.1	2.0	FALSE	FALSE	FALSE	'open'	['open','print']			
+P	string-byte	1.1	2.0	FALSE	FALSE	FALSE					

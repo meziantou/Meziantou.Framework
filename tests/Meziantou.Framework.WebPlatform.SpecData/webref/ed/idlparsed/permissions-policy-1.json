@@ -1,0 +1,391 @@
+{
+  "spec": {
+    "title": "Permissions Policy",
+    "url": "https://w3c.github.io/webappsec-permissions-policy/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "PermissionsPolicy"
+        ]
+      }
+    },
+    "idlNames": {
+      "PermissionsPolicy": {
+        "fragment": "[Exposed=Window]\ninterface PermissionsPolicy {\n  boolean allowsFeature(DOMString feature, optional DOMString origin);\n  sequence<DOMString> features();\n  sequence<DOMString> allowedFeatures();\n  sequence<DOMString> getAllowlistForFeature(DOMString feature);\n};",
+        "type": "interface",
+        "name": "PermissionsPolicy",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "allowsFeature",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "feature",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "origin",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-allowsfeature"
+          },
+          {
+            "type": "operation",
+            "name": "features",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-features"
+          },
+          {
+            "type": "operation",
+            "name": "allowedFeatures",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-allowedfeatures"
+          },
+          {
+            "type": "operation",
+            "name": "getAllowlistForFeature",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "feature",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-getallowlistforfeature"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webappsec-permissions-policy/#permissionspolicy"
+      },
+      "PermissionsPolicyViolationReportBody": {
+        "fragment": "dictionary PermissionsPolicyViolationReportBody : ReportBody {\n  DOMString featureId;\n  DOMString? sourceFile;\n  long? lineNumber;\n  long? columnNumber;\n  DOMString disposition;\n  DOMString? allowAttribute;\n  DOMString? srcAttribute;\n};",
+        "type": "dictionary",
+        "name": "PermissionsPolicyViolationReportBody",
+        "inheritance": "ReportBody",
+        "members": [
+          {
+            "type": "field",
+            "name": "featureId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "sourceFile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "lineNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "columnNumber",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "disposition",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "allowAttribute",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false
+          },
+          {
+            "type": "field",
+            "name": "srcAttribute",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false
+          }
+        ],
+        "extAttrs": [],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n    [SameObject] readonly attribute PermissionsPolicy permissionsPolicy;\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "permissionsPolicy",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PermissionsPolicy"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webappsec-permissions-policy/#dom-document-permissionspolicy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "HTMLIFrameElement": [
+        {
+          "fragment": "partial interface HTMLIFrameElement {\n    [SameObject] readonly attribute PermissionsPolicy permissionsPolicy;\n};",
+          "type": "interface",
+          "name": "HTMLIFrameElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "permissionsPolicy",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PermissionsPolicy"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webappsec-permissions-policy/#dom-htmliframeelement-permissionspolicy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PermissionsPolicy"
+      ]
+    },
+    "dependencies": {
+      "PermissionsPolicy": [],
+      "Document": [
+        "PermissionsPolicy"
+      ],
+      "HTMLIFrameElement": [
+        "PermissionsPolicy"
+      ],
+      "PermissionsPolicyViolationReportBody": [
+        "ReportBody"
+      ]
+    },
+    "externalDependencies": [
+      "Document",
+      "HTMLIFrameElement",
+      "ReportBody"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

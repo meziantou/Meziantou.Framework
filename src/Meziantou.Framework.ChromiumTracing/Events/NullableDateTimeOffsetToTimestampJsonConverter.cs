@@ -25,7 +25,7 @@ internal sealed class NullableDateTimeOffsetToTimestampJsonConverter : JsonConve
         }
         else
         {
-            writer.WriteNumberValue(value.GetValueOrDefault().Ticks / TicksPerMicroseconds);
+            writer.WriteNumberValue(value.GetValueOrDefault().UtcTicks / TicksPerMicroseconds);
         }
     }
 }

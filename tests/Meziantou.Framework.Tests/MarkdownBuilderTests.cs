@@ -1,4 +1,6 @@
+#pragma warning disable CS0618 // MarkdownBuilder is obsolete
 using System.Text.Encodings.Web;
+using Meziantou.Framework.Markdown;
 
 namespace Meziantou.Framework.Tests;
 public sealed class MarkdownBuilderTests
@@ -6,7 +8,7 @@ public sealed class MarkdownBuilderTests
     private static string EscapeAndConvertToHtml(string text)
     {
         var escaped = MarkdownBuilder.Escape(text);
-        var html = Markdig.Markdown.ToHtml(escaped);
+        var html = MarkdownConverter.ToHtml(escaped);
         return html;
     }
 
@@ -38,7 +40,7 @@ public sealed class MarkdownBuilderTests
     public void EscapeInLinkUrl(string url, string expected)
     {
         var markdown = $"[test]({MarkdownBuilder.Escape(url)})";
-        var html = Markdig.Markdown.ToHtml(markdown);
+        var html = MarkdownConverter.ToHtml(markdown);
         Assert.Equal(expected, html);
     }
 
@@ -51,10 +53,23 @@ public sealed class MarkdownBuilderTests
     [InlineData("` ` `")]
     [InlineData("`teste```testr`")]
     [InlineData("`tes````te```testr`")]
+    [InlineData(" a ")]
+    [InlineData("  a  ")]
+    [InlineData(" a")]
+    [InlineData("a ")]
+    [InlineData(" ")]
+    [InlineData("   ")]
+    [InlineData(" `a` ")]
     public void CreateInlineCode(string text)
     {
         var value = MarkdownBuilder.CreateCodeSpan(text);
-        var html = Markdig.Markdown.ToHtml(value);
+        var html = MarkdownConverter.ToHtml(value);
         Assert.Equal("<p><code>" + HtmlEncoder.Default.Encode(text) + "</code></p>\n", html);
+    }
+
+    [Fact]
+    public void CreateInlineCode_Empty()
+    {
+        Assert.Equal("", MarkdownBuilder.CreateCodeSpan(""));
     }
 }

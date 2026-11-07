@@ -1,0 +1,126 @@
+{
+  "spec": {
+    "title": "CSS Viewport Module Level 1",
+    "url": "https://drafts.csswg.org/css-viewport/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Viewport"
+        ]
+      }
+    },
+    "idlNames": {
+      "Viewport": {
+        "fragment": "[Exposed=Window]\ninterface Viewport {\n  readonly attribute FrozenArray<DOMRect>? segments;\n};",
+        "type": "interface",
+        "name": "Viewport",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "segments",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMRect"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-viewport/#dom-viewport-segments"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-viewport/#viewport"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n[SameObject, Replaceable] readonly attribute Viewport viewport;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "viewport",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Viewport"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Replaceable",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-viewport/#dom-window-viewport"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Viewport"
+      ]
+    },
+    "dependencies": {
+      "Window": [
+        "Viewport"
+      ],
+      "Viewport": [
+        "DOMRect"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "DOMRect"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

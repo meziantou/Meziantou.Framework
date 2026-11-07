@@ -1,0 +1,136 @@
+{
+  "spec": {
+    "title": "Proximity Sensor",
+    "url": "https://w3c.github.io/proximity/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "ProximitySensor"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "ProximitySensor": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface ProximitySensor : Sensor {\n  constructor(optional SensorOptions sensorOptions = {});\n  readonly attribute double? distance;\n  readonly attribute double? max;\n  readonly attribute boolean? near;\n};",
+        "type": "interface",
+        "name": "ProximitySensor",
+        "inheritance": "Sensor",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sensorOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SensorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/proximity/#dom-proximitysensor-proximitysensor"
+          },
+          {
+            "type": "attribute",
+            "name": "distance",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/proximity/#dom-proximitysensor-distance"
+          },
+          {
+            "type": "attribute",
+            "name": "max",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/proximity/#dom-proximitysensor-max"
+          },
+          {
+            "type": "attribute",
+            "name": "near",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/proximity/#dom-proximitysensor-near"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/proximity/#proximitysensor"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ProximitySensor"
+      ]
+    },
+    "dependencies": {
+      "ProximitySensor": [
+        "Sensor",
+        "SensorOptions"
+      ]
+    },
+    "externalDependencies": [
+      "Sensor",
+      "SensorOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

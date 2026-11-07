@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-BZ": {
+      "identity": {
+        "language": "es",
+        "territory": "BZ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

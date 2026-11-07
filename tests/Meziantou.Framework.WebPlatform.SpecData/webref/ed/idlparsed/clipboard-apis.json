@@ -1,0 +1,959 @@
+{
+  "spec": {
+    "title": "Clipboard API and events",
+    "url": "https://w3c.github.io/clipboard-apis/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "ClipboardEvent",
+          "ClipboardChangeEvent",
+          "ClipboardItem"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Clipboard"
+        ]
+      }
+    },
+    "idlNames": {
+      "ClipboardEventInit": {
+        "fragment": "dictionary ClipboardEventInit : EventInit {\n  DataTransfer? clipboardData = null;\n};",
+        "type": "dictionary",
+        "name": "ClipboardEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "clipboardData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataTransfer"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardeventinit-clipboarddata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#dictdef-clipboardeventinit"
+      },
+      "ClipboardEvent": {
+        "fragment": "[Exposed=Window]\ninterface ClipboardEvent : Event {\n  constructor(DOMString type, optional ClipboardEventInit eventInitDict = {});\n  readonly attribute DataTransfer? clipboardData;\n};",
+        "type": "interface",
+        "name": "ClipboardEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ClipboardEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardevent-clipboardevent"
+          },
+          {
+            "type": "attribute",
+            "name": "clipboardData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataTransfer"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardevent-clipboarddata"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#clipboardevent"
+      },
+      "ClipboardChangeEventInit": {
+        "fragment": "dictionary ClipboardChangeEventInit : EventInit {\n  sequence<DOMString> types = [];\n  bigint changeId = 0;\n};",
+        "type": "dictionary",
+        "name": "ClipboardChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "types",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardchangeeventinit-types"
+          },
+          {
+            "type": "field",
+            "name": "changeId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "bigint"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardchangeeventinit-changeid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#dictdef-clipboardchangeeventinit"
+      },
+      "ClipboardChangeEvent": {
+        "fragment": "[Exposed=Window]\ninterface ClipboardChangeEvent : Event {\n  constructor(DOMString type, optional ClipboardChangeEventInit eventInitDict = {});\n  readonly attribute FrozenArray<DOMString> types;\n  readonly attribute bigint changeId;\n};",
+        "type": "interface",
+        "name": "ClipboardChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ClipboardChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardchangeevent-clipboardchangeevent"
+          },
+          {
+            "type": "attribute",
+            "name": "types",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardchangeevent-types"
+          },
+          {
+            "type": "attribute",
+            "name": "changeId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "bigint"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardchangeevent-changeid"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#clipboardchangeevent"
+      },
+      "ClipboardItemData": {
+        "fragment": "typedef Promise<(DOMString or Blob)> ClipboardItemData;",
+        "type": "typedef",
+        "name": "ClipboardItemData",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                }
+              ]
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/clipboard-apis/#typedefdef-clipboarditemdata"
+      },
+      "ClipboardItem": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface ClipboardItem {\n  constructor(record<DOMString, ClipboardItemData> items,\n              optional ClipboardItemOptions options = {});\n\n  readonly attribute PresentationStyle presentationStyle;\n  readonly attribute FrozenArray<DOMString> types;\n\n  Promise<Blob> getType(DOMString type);\n\n  static boolean supports(DOMString type);\n};",
+        "type": "interface",
+        "name": "ClipboardItem",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "items",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "record",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ClipboardItemData"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ClipboardItemOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-clipboarditem"
+          },
+          {
+            "type": "attribute",
+            "name": "presentationStyle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PresentationStyle"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-presentationstyle"
+          },
+          {
+            "type": "attribute",
+            "name": "types",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-types"
+          },
+          {
+            "type": "operation",
+            "name": "getType",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-gettype"
+          },
+          {
+            "type": "operation",
+            "name": "supports",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-supports"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#clipboarditem"
+      },
+      "PresentationStyle": {
+        "fragment": "enum PresentationStyle { \"unspecified\", \"inline\", \"attachment\" };",
+        "type": "enum",
+        "name": "PresentationStyle",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "unspecified",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-presentationstyle-unspecified"
+          },
+          {
+            "type": "enum-value",
+            "value": "inline",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-presentationstyle-inline"
+          },
+          {
+            "type": "enum-value",
+            "value": "attachment",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-presentationstyle-attachment"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/clipboard-apis/#enumdef-presentationstyle"
+      },
+      "ClipboardItemOptions": {
+        "fragment": "dictionary ClipboardItemOptions {\n  PresentationStyle presentationStyle = \"unspecified\";\n};",
+        "type": "dictionary",
+        "name": "ClipboardItemOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "presentationStyle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PresentationStyle"
+            },
+            "default": {
+              "type": "string",
+              "value": "unspecified"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboarditemoptions-presentationstyle"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#dictdef-clipboarditemoptions"
+      },
+      "ClipboardItems": {
+        "fragment": "typedef sequence<ClipboardItem> ClipboardItems;",
+        "type": "typedef",
+        "name": "ClipboardItems",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "sequence",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ClipboardItem"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/clipboard-apis/#typedefdef-clipboarditems"
+      },
+      "Clipboard": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface Clipboard : EventTarget {\n  Promise<ClipboardItems> read(optional ClipboardUnsanitizedFormats formats = {});\n  Promise<DOMString> readText();\n  Promise<undefined> write(ClipboardItems data);\n  Promise<undefined> writeText(DOMString data);\n};",
+        "type": "interface",
+        "name": "Clipboard",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "read",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ClipboardItems"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "formats",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ClipboardUnsanitizedFormats"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboard-read"
+          },
+          {
+            "type": "operation",
+            "name": "readText",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboard-readtext"
+          },
+          {
+            "type": "operation",
+            "name": "write",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ClipboardItems"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboard-write"
+          },
+          {
+            "type": "operation",
+            "name": "writeText",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboard-writetext"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#clipboard"
+      },
+      "ClipboardUnsanitizedFormats": {
+        "fragment": "dictionary ClipboardUnsanitizedFormats {\n  sequence<DOMString> unsanitized;\n};",
+        "type": "dictionary",
+        "name": "ClipboardUnsanitizedFormats",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "unsanitized",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardunsanitizedformats-unsanitized"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#dictdef-clipboardunsanitizedformats"
+      },
+      "ClipboardPermissionDescriptor": {
+        "fragment": "dictionary ClipboardPermissionDescriptor : PermissionDescriptor {\n  boolean allowWithoutGesture = false;\n};",
+        "type": "dictionary",
+        "name": "ClipboardPermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "allowWithoutGesture",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/clipboard-apis/#dom-clipboardpermissiondescriptor-allowwithoutgesture"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/clipboard-apis/#dictdef-clipboardpermissiondescriptor"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext, SameObject] readonly attribute Clipboard clipboard;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "clipboard",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Clipboard"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/clipboard-apis/#dom-navigator-clipboard"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ClipboardEvent",
+        "ClipboardChangeEvent",
+        "ClipboardItem",
+        "Clipboard"
+      ]
+    },
+    "dependencies": {
+      "ClipboardEventInit": [
+        "EventInit",
+        "DataTransfer"
+      ],
+      "ClipboardEvent": [
+        "Event",
+        "ClipboardEventInit",
+        "DataTransfer"
+      ],
+      "ClipboardChangeEventInit": [
+        "EventInit"
+      ],
+      "ClipboardChangeEvent": [
+        "Event",
+        "ClipboardChangeEventInit"
+      ],
+      "Navigator": [
+        "Clipboard"
+      ],
+      "ClipboardItem": [
+        "ClipboardItemData",
+        "ClipboardItemOptions",
+        "PresentationStyle",
+        "Blob"
+      ],
+      "ClipboardItemOptions": [
+        "PresentationStyle"
+      ],
+      "Clipboard": [
+        "EventTarget",
+        "ClipboardItems",
+        "ClipboardUnsanitizedFormats"
+      ],
+      "ClipboardUnsanitizedFormats": [],
+      "ClipboardPermissionDescriptor": [
+        "PermissionDescriptor"
+      ]
+    },
+    "externalDependencies": [
+      "EventInit",
+      "DataTransfer",
+      "Event",
+      "Navigator",
+      "Blob",
+      "EventTarget",
+      "PermissionDescriptor"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

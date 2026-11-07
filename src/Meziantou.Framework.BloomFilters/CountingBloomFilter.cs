@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.BloomFilters;
 
-public abstract partial class CountingBloomFilter
+public closed partial class CountingBloomFilter
 {
     private protected readonly SegmentedCounterStorage Counters;
     private protected readonly int HashCount;
@@ -14,38 +14,48 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void AddHash(Hash128 hash)
+    private protected void AddHash(BloomFilterHash hash)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            Counters.Increment(Reduce(combined, counterCount));
+            Counters.Increment(BloomFilterHash.Reduce(combined, counterCount));
             combined += hash.Hash2;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void RemoveHash(Hash128 hash)
+    private protected void RemoveHash(BloomFilterHash hash)
     {
+        // A value with an empty counter is certainly not in the filter. Decrementing its other counters would take
+        // them away from the values that set them and turn those values into false negatives.
+        if (!MayContainHash(hash))
+            return;
+
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            Counters.Decrement(Reduce(combined, counterCount));
+            Counters.Decrement(BloomFilterHash.Reduce(combined, counterCount));
             combined += hash.Hash2;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected int GetEstimatedCountHash(Hash128 hash)
+    private protected int GetEstimatedCountHash(BloomFilterHash hash)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash.Hash1;
         var result = int.MaxValue;
         for (var i = 0; i < HashCount; i++)
         {
-            result = Math.Min(result, Counters.Get(Reduce(combined, counterCount)));
+            // Counters are never negative, so once a counter is zero the minimum is zero
+            var counter = Counters.Get(BloomFilterHash.Reduce(combined, counterCount));
+            if (counter == 0)
+                return 0;
+
+            result = Math.Min(result, counter);
             combined += hash.Hash2;
         }
 
@@ -53,122 +63,18 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void AddHash(Hash64 hash) => AddHashCore(hash.Hash1, hash.Hash2);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void RemoveHash(Hash64 hash) => RemoveHashCore(hash.Hash1, hash.Hash2);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected int GetEstimatedCountHash(Hash64 hash) => GetEstimatedCountHashCore(hash.Hash1, hash.Hash2);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void AddHash(Hash32 hash) => AddHashCore32(hash.Hash1, hash.Hash2);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void RemoveHash(Hash32 hash) => RemoveHashCore32(hash.Hash1, hash.Hash2);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected int GetEstimatedCountHash(Hash32 hash) => GetEstimatedCountHashCore32(hash.Hash1, hash.Hash2);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AddHashCore(ulong hash1, ulong hash2)
+    private protected bool MayContainHash(BloomFilterHash hash)
     {
         var counterCount = (ulong)Counters.CounterCount;
-        var combined = hash1;
+        var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            Counters.Increment(Reduce(combined, counterCount));
-            unchecked
-            {
-                combined += hash2;
-            }
-        }
-    }
+            if (Counters.Get(BloomFilterHash.Reduce(combined, counterCount)) == 0)
+                return false;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RemoveHashCore(ulong hash1, ulong hash2)
-    {
-        var counterCount = (ulong)Counters.CounterCount;
-        var combined = hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            Counters.Decrement(Reduce(combined, counterCount));
-            unchecked
-            {
-                combined += hash2;
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetEstimatedCountHashCore(ulong hash1, ulong hash2)
-    {
-        var counterCount = (ulong)Counters.CounterCount;
-        var combined = hash1;
-        var result = int.MaxValue;
-        for (var i = 0; i < HashCount; i++)
-        {
-            result = Math.Min(result, Counters.Get(Reduce(combined, counterCount)));
-            unchecked
-            {
-                combined += hash2;
-            }
+            combined += hash.Hash2;
         }
 
-        return result;
+        return true;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AddHashCore32(uint hash1, uint hash2)
-    {
-        var counterCount = (ulong)Counters.CounterCount;
-        var combined = hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            Counters.Increment(Reduce(combined, counterCount));
-            unchecked
-            {
-                combined += hash2;
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RemoveHashCore32(uint hash1, uint hash2)
-    {
-        var counterCount = (ulong)Counters.CounterCount;
-        var combined = hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            Counters.Decrement(Reduce(combined, counterCount));
-            unchecked
-            {
-                combined += hash2;
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetEstimatedCountHashCore32(uint hash1, uint hash2)
-    {
-        var counterCount = (ulong)Counters.CounterCount;
-        var combined = hash1;
-        var result = int.MaxValue;
-        for (var i = 0; i < HashCount; i++)
-        {
-            result = Math.Min(result, Counters.Get(Reduce(combined, counterCount)));
-            unchecked
-            {
-                combined += hash2;
-            }
-        }
-
-        return result;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static long Reduce(ulong hash, ulong range) => (long)(((UInt128)hash * range) >> 64);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static long Reduce(uint hash, ulong range) => (long)(((UInt128)hash * range) >> 32);
 }

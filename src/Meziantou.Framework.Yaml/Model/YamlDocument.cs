@@ -27,10 +27,31 @@ public class YamlDocument : YamlNode
     /// <summary>Loads data.</summary>
     public static YamlDocument Load(EventReader eventReader)
     {
+        return Load(eventReader, options: null);
+    }
+
+    /// <summary>Loads data, honoring the anchor, alias and alias-expansion limits of <paramref name="options"/>.</summary>
+    /// <param name="eventReader">The event reader.</param>
+    /// <param name="options">
+    /// The options used to bound alias expansion. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.
+    /// </param>
+    public static YamlDocument Load(EventReader eventReader, YamlSerializerOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(eventReader);
+        return Load(eventReader, CreateContext(options));
+    }
+
+    internal static YamlModelLoadContext CreateContext(YamlSerializerOptions? options)
+    {
+        var effectiveOptions = options ?? YamlSerializerOptions.Default;
+        return new YamlModelLoadContext(effectiveOptions.EffectiveMaxAliasExpansionNodeCount, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases);
+    }
+
+    internal static YamlDocument Load(EventReader eventReader, YamlModelLoadContext context)
+    {
         var documentStart = eventReader.Expect<DocumentStart>();
 
-        var anchors = new Dictionary<string, YamlElement>(StringComparer.Ordinal);
-        var contents = ReadElement(eventReader, anchors);
+        var contents = ReadElement(eventReader, context);
 
         var documentEnd = eventReader.Expect<DocumentEnd>();
 

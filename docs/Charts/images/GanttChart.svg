@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Project plan</title>
+<rect width="640" height="300" fill="#ffffff"/>
+<g class="grid">
+<line x1="202.94" y1="55.9" x2="202.94" y2="269.83" stroke="#e3e6ea"/>
+<line x1="348.64" y1="55.9" x2="348.64" y2="269.83" stroke="#e3e6ea"/>
+<line x1="504.39" y1="55.9" x2="504.39" y2="269.83" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="84.36" y="61.41" width="86.44" height="27.56" rx="3" fill="#4269d0"><title>Specification: Jan 8 - Jan 26</title></rect>
+<rect x="154.7" y="96.48" width="121.61" height="27.56" rx="3" fill="#efb118"><title>Design: Jan 22 - Feb 16</title></rect>
+<rect x="225.04" y="131.55" width="227.11" height="27.56" rx="3" fill="#ff725c"><title>Backend: Feb 5 - Mar 22</title></rect>
+<rect x="295.38" y="166.62" width="227.11" height="27.56" rx="3" fill="#ff725c"><title>Frontend: Feb 19 - Apr 5</title></rect>
+<rect x="436.06" y="201.69" width="156.78" height="27.56" rx="3" fill="#6cc5b0"><title>Testing: Mar 18 - Apr 19</title></rect>
+<rect x="576.73" y="236.76" width="51.27" height="27.56" rx="3" fill="#4269d0"><title>Release: Apr 15 - Apr 26</title></rect>
+</g>
+<g>
+<line x1="348.64" y1="55.9" x2="348.64" y2="269.83" stroke="#e5484d" stroke-dasharray="4 3"/>
+</g>
+</g>
+<g class="axes">
+<line x1="77.36" y1="75.19" x2="82.36" y2="75.19" stroke="#8c959f"/>
+<text x="74.36" y="78" text-anchor="end" font-size="11" fill="#59636e">Specification</text>
+<line x1="77.36" y1="110.26" x2="82.36" y2="110.26" stroke="#8c959f"/>
+<text x="74.36" y="113.07" text-anchor="end" font-size="11" fill="#59636e">Design</text>
+<line x1="77.36" y1="145.33" x2="82.36" y2="145.33" stroke="#8c959f"/>
+<text x="74.36" y="148.14" text-anchor="end" font-size="11" fill="#59636e">Backend</text>
+<line x1="77.36" y1="180.4" x2="82.36" y2="180.4" stroke="#8c959f"/>
+<text x="74.36" y="183.21" text-anchor="end" font-size="11" fill="#59636e">Frontend</text>
+<line x1="77.36" y1="215.47" x2="82.36" y2="215.47" stroke="#8c959f"/>
+<text x="74.36" y="218.28" text-anchor="end" font-size="11" fill="#59636e">Testing</text>
+<line x1="77.36" y1="250.54" x2="82.36" y2="250.54" stroke="#8c959f"/>
+<text x="74.36" y="253.35" text-anchor="end" font-size="11" fill="#59636e">Release</text>
+<line x1="202.94" y1="269.83" x2="202.94" y2="274.83" stroke="#8c959f"/>
+<text x="202.94" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">Feb</text>
+<line x1="348.64" y1="269.83" x2="348.64" y2="274.83" stroke="#8c959f"/>
+<text x="348.64" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">Mar</text>
+<line x1="504.39" y1="269.83" x2="504.39" y2="274.83" stroke="#8c959f"/>
+<text x="504.39" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">Apr</text>
+<line x1="82.36" y1="269.83" x2="630" y2="269.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Product</text>
+<rect x="80.35" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="95.35" y="41.42" font-size="12" fill="#1f2328">Design</text>
+<rect x="146.7" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="161.7" y="41.42" font-size="12" fill="#1f2328">Engineering</text>
+<rect x="239.91" y="33.35" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="254.91" y="41.42" font-size="12" fill="#1f2328">Quality</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Project plan</text>
+</svg>

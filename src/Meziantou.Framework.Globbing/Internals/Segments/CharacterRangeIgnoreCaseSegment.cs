@@ -2,29 +2,19 @@ namespace Meziantou.Framework.Globbing.Internals;
 
 internal sealed class CharacterRangeIgnoreCaseSegment : Segment
 {
-    private readonly CharacterRange _range;
+    private readonly IgnoreCaseCharacterRange _range;
 
     public CharacterRangeIgnoreCaseSegment(CharacterRange range)
     {
-        if (CharacterRangeSegment.IsAsciiUpper(range.Min) && CharacterRangeSegment.IsAsciiUpper(range.Max))
-        {
-            _range = new CharacterRange(char.ToLowerInvariant(range.Min), char.ToLowerInvariant(range.Max));
-        }
-        else
-        {
-            _range = range;
-        }
+        _range = new IgnoreCaseCharacterRange(range);
     }
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        var c = pathReader.CurrentText[0];
-        if (CharacterRangeSegment.IsAsciiUpper(c))
-        {
-            c = char.ToLowerInvariant(c);
-        }
+        if (pathReader.IsEndOfCurrentSegment)
+            return false;
 
-        var result = _range.IsInRange(c);
+        var result = _range.Contains(pathReader.CurrentText[0]);
         if (result)
         {
             pathReader.ConsumeInSegment(1);
@@ -37,9 +27,9 @@ internal sealed class CharacterRangeIgnoreCaseSegment : Segment
     {
         using var sb = new ValueStringBuilder();
         sb.Append('[');
-        sb.Append(_range.Min);
+        sb.Append(_range.Range.Min);
         sb.Append('-');
-        sb.Append(_range.Max);
+        sb.Append(_range.Range.Max);
         sb.Append(']');
         return sb.ToString();
     }

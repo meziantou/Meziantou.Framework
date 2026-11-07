@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE CAST(-'1' AS datetime) = Id

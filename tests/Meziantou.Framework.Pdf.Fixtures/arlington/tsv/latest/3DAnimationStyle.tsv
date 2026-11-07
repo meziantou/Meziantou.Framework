@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	FALSE	FALSE		[3DAnimationStyle]			Table 312
+Subtype	name	1.7		FALSE	FALSE	FALSE	None	[None,Linear,Oscillating]			Table 313
+PC	integer	1.7		FALSE	FALSE	FALSE	0		[fn:Ignore(@Subtype==None)]		
+TM	number	1.7		FALSE	FALSE	FALSE	1	[fn:Eval(@TM>0)]	[fn:Ignore(@Subtype==None)]		

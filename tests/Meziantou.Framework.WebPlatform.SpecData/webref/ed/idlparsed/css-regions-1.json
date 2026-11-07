@@ -1,0 +1,355 @@
+{
+  "spec": {
+    "title": "CSS Regions Module Level 1",
+    "url": "https://drafts.csswg.org/css-regions-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "NamedFlowMap",
+          "NamedFlow"
+        ]
+      }
+    },
+    "idlNames": {
+      "NamedFlowMap": {
+        "fragment": "[Exposed=Window] interface NamedFlowMap {\n  maplike<CSSOMString, NamedFlow>;\n};",
+        "type": "interface",
+        "name": "NamedFlowMap",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CSSOMString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "NamedFlow"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-regions-1/#namedflowmap"
+      },
+      "NamedFlow": {
+        "fragment": "[Exposed=Window]\ninterface NamedFlow : EventTarget {\n  readonly attribute CSSOMString name;\n  readonly attribute boolean overset;\n  sequence<Element> getRegions();\n  readonly attribute short firstEmptyRegionIndex;\n  sequence<Node> getContent();\n  sequence<Element> getRegionsByContent(Node node);\n};",
+        "type": "interface",
+        "name": "NamedFlow",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-namedflow-name"
+          },
+          {
+            "type": "attribute",
+            "name": "overset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-namedflow-overset"
+          },
+          {
+            "type": "operation",
+            "name": "getRegions",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-namedflow-getregions"
+          },
+          {
+            "type": "attribute",
+            "name": "firstEmptyRegionIndex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-namedflow-firstemptyregionindex"
+          },
+          {
+            "type": "operation",
+            "name": "getContent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Node"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-namedflow-getcontent"
+          },
+          {
+            "type": "operation",
+            "name": "getRegionsByContent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "node",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Node"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-namedflow-getregionsbycontent"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-regions-1/#namedflow"
+      },
+      "Region": {
+        "fragment": "interface mixin Region {\n  readonly attribute CSSOMString regionOverset;\n  sequence<Range>? getRegionFlowRanges();\n};",
+        "type": "interface mixin",
+        "name": "Region",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "regionOverset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-region-regionoverset"
+          },
+          {
+            "type": "operation",
+            "name": "getRegionFlowRanges",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": true,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Range"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-regions-1/#dom-region-getregionflowranges"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-regions-1/#region"
+      }
+    },
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n  readonly attribute NamedFlowMap namedFlows;\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "namedFlows",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "NamedFlowMap"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-regions-1/#dom-document-namedflows"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Element": [
+        {
+          "fragment": "Element includes Region;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Element",
+          "includes": "Region"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NamedFlowMap",
+        "NamedFlow"
+      ]
+    },
+    "dependencies": {
+      "Document": [
+        "NamedFlowMap"
+      ],
+      "NamedFlowMap": [
+        "CSSOMString",
+        "NamedFlow"
+      ],
+      "NamedFlow": [
+        "EventTarget",
+        "CSSOMString",
+        "Element",
+        "Node"
+      ],
+      "Region": [
+        "CSSOMString",
+        "Range"
+      ],
+      "Element": [
+        "Region"
+      ]
+    },
+    "externalDependencies": [
+      "Document",
+      "CSSOMString",
+      "EventTarget",
+      "Element",
+      "Node",
+      "Range"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "spec": {
+    "title": "WebGL EXT_texture_filter_anisotropic Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_texture_filter_anisotropic/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_texture_filter_anisotropic"
+        ],
+        "Worker": [
+          "EXT_texture_filter_anisotropic"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_texture_filter_anisotropic": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_texture_filter_anisotropic {\n  const GLenum TEXTURE_MAX_ANISOTROPY_EXT       = 0x84FE;\n  const GLenum MAX_TEXTURE_MAX_ANISOTROPY_EXT   = 0x84FF;\n};",
+        "type": "interface",
+        "name": "EXT_texture_filter_anisotropic",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "TEXTURE_MAX_ANISOTROPY_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x84FE"
+            }
+          },
+          {
+            "type": "const",
+            "name": "MAX_TEXTURE_MAX_ANISOTROPY_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x84FF"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_texture_filter_anisotropic"
+      ],
+      "Worker": [
+        "EXT_texture_filter_anisotropic"
+      ]
+    },
+    "dependencies": {
+      "EXT_texture_filter_anisotropic": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

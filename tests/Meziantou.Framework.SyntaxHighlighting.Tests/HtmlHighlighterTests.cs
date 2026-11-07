@@ -1784,4 +1784,38 @@ before<span class="hljs-tag">&lt;<span class="hljs-name">br</span>&gt;</span>aft
 <span class="hljs-tag">&lt;<span class="hljs-name">root</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">root</span>&gt;</span>
 """);
     }
+
+    [Fact]
+    public void ConsecutiveScriptAndStyleElementsDoNotShareState()
+    {
+        AssertHighlighter("html",
+"""
+<script>
+const tag = "</script>";
+</script>
+<script>
+let x = 1;
+</script>
+<style>
+a { content: "</style>";
+</style>
+<style>
+a { color: red; }
+</style>
+""",
+"""
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="language-javascript">
+<span class="hljs-keyword">const</span> tag = <span class="hljs-string">&quot;</span></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>&quot;;
+<span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="language-javascript">
+<span class="hljs-keyword">let</span> x = <span class="hljs-number">1</span>;
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">style</span>&gt;</span><span class="language-css">
+<span class="hljs-selector-tag">a</span> { <span class="hljs-attribute">content</span>: <span class="hljs-string">&quot;</span></span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>&quot;;
+<span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">style</span>&gt;</span><span class="language-css">
+<span class="hljs-selector-tag">a</span> { <span class="hljs-attribute">color</span>: red; }
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>
+""");
+    }
 }

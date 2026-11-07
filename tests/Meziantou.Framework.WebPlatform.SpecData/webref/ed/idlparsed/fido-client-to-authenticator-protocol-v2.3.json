@@ -1,0 +1,435 @@
+{
+  "spec": {
+    "title": "Client to Authenticator Protocol (CTAP)",
+    "url": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "HMACGetSecretInput": {
+        "fragment": "dictionary HMACGetSecretInput {\n  required ArrayBuffer salt1;   // 32-byte random data\n  ArrayBuffer salt2;  // Optional additional 32-byte random data\n};",
+        "type": "dictionary",
+        "name": "HMACGetSecretInput",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "salt1",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-hmacgetsecretinput-salt1"
+          },
+          {
+            "type": "field",
+            "name": "salt2",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-hmacgetsecretinput-salt2"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dictdef-hmacgetsecretinput"
+      },
+      "HMACGetSecretOutput": {
+        "fragment": "dictionary HMACGetSecretOutput {\n  required ArrayBuffer output1;\n  ArrayBuffer output2;\n};",
+        "type": "dictionary",
+        "name": "HMACGetSecretOutput",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "output1",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-hmacgetsecretoutput-output1"
+          },
+          {
+            "type": "field",
+            "name": "output2",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-hmacgetsecretoutput-output2"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dictdef-hmacgetsecretoutput"
+      }
+    },
+    "idlExtendedNames": {
+      "AuthenticationExtensionsClientInputs": [
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientInputs {\n  USVString credentialProtectionPolicy;\n  boolean enforceCredentialProtectionPolicy = false;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientInputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "credentialProtectionPolicy",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "USVString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-credentialprotectionpolicy"
+            },
+            {
+              "type": "field",
+              "name": "enforceCredentialProtectionPolicy",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": false
+              },
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-enforcecredentialprotectionpolicy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientInputs {\n  ArrayBuffer credBlob;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientInputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "credBlob",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ArrayBuffer"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-credblob"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientInputs {\n  boolean getCredBlob;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientInputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "getCredBlob",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-getcredblob"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientInputs {\n  boolean minPinLength;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientInputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "minPinLength",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-minpinlength"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientInputs {\n  boolean pinComplexityPolicy;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientInputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "pinComplexityPolicy",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-pincomplexitypolicy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientInputs {\n  boolean hmacCreateSecret;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientInputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "hmacCreateSecret",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-hmaccreatesecret"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientInputs {\n  HMACGetSecretInput hmacGetSecret;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientInputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "hmacGetSecret",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "HMACGetSecretInput"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientinputs-hmacgetsecret"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "AuthenticationExtensionsClientOutputs": [
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientOutputs {\n  boolean credBlob;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientOutputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "credBlob",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientoutputs-credblob"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientOutputs {\n  ArrayBuffer getCredBlob;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientOutputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "getCredBlob",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ArrayBuffer"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientoutputs-getcredblob"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientOutputs {\n  boolean hmacCreateSecret;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientOutputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "hmacCreateSecret",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientoutputs-hmaccreatesecret"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial dictionary AuthenticationExtensionsClientOutputs {\n  HMACGetSecretOutput hmacGetSecret;\n};",
+          "type": "dictionary",
+          "name": "AuthenticationExtensionsClientOutputs",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "hmacGetSecret",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "HMACGetSecretOutput"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#dom-authenticationextensionsclientoutputs-hmacgetsecret"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "AuthenticationExtensionsClientInputs": [
+        "ArrayBuffer",
+        "HMACGetSecretInput"
+      ],
+      "AuthenticationExtensionsClientOutputs": [
+        "ArrayBuffer",
+        "HMACGetSecretOutput"
+      ],
+      "HMACGetSecretInput": [
+        "ArrayBuffer"
+      ],
+      "HMACGetSecretOutput": [
+        "ArrayBuffer"
+      ]
+    },
+    "externalDependencies": [
+      "AuthenticationExtensionsClientInputs",
+      "ArrayBuffer",
+      "AuthenticationExtensionsClientOutputs"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

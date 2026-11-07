@@ -1,0 +1,74 @@
+{
+  "worklets/animation-worklet-credentials.https.html": {
+    "total": 8
+  },
+  "worklets/animation-worklet-csp.https.html": {
+    "total": 24
+  },
+  "worklets/animation-worklet-import.https.html": {
+    "total": 18
+  },
+  "worklets/animation-worklet-referrer.https.html": {
+    "total": 18
+  },
+  "worklets/animation-worklet-service-worker-interception.https.html": {
+    "total": 3
+  },
+  "worklets/audio-worklet-credentials.https.html": {
+    "total": 8
+  },
+  "worklets/audio-worklet-csp.https.html": {
+    "total": 24
+  },
+  "worklets/audio-worklet-import.https.html": {
+    "total": 18
+  },
+  "worklets/audio-worklet-referrer.https.html": {
+    "total": 18
+  },
+  "worklets/audio-worklet-service-worker-interception.https.html": {
+    "total": 3
+  },
+  "worklets/idlharness.https.any.js": {
+    "total": 1,
+    "failures": {
+      "idl_test setup": "FAIL"
+    }
+  },
+  "worklets/idlharness.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "idl_test setup": "FAIL"
+    }
+  },
+  "worklets/layout-worklet-credentials.https.html": {
+    "total": 8
+  },
+  "worklets/layout-worklet-csp.https.html": {
+    "total": 24
+  },
+  "worklets/layout-worklet-import.https.html": {
+    "total": 18
+  },
+  "worklets/layout-worklet-referrer.https.html": {
+    "total": 18
+  },
+  "worklets/layout-worklet-service-worker-interception.https.html": {
+    "total": 3
+  },
+  "worklets/paint-worklet-credentials.https.html": {
+    "total": 8
+  },
+  "worklets/paint-worklet-csp.https.html": {
+    "total": 24
+  },
+  "worklets/paint-worklet-import.https.html": {
+    "total": 18
+  },
+  "worklets/paint-worklet-referrer.https.html": {
+    "total": 18
+  },
+  "worklets/paint-worklet-service-worker-interception.https.html": {
+    "total": 3
+  }
+}

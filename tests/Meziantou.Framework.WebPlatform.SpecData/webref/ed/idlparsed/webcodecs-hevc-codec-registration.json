@@ -1,0 +1,167 @@
+{
+  "spec": {
+    "title": "HEVC (H.265) WebCodecs Registration",
+    "url": "https://w3c.github.io/webcodecs/hevc_codec_registration.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "HevcEncoderConfig": {
+        "fragment": "dictionary HevcEncoderConfig {\n  HevcBitstreamFormat format = \"hevc\";\n};",
+        "type": "dictionary",
+        "name": "HevcEncoderConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "format",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HevcBitstreamFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "hevc"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dom-hevcencoderconfig-format"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dictdef-hevcencoderconfig"
+      },
+      "HevcBitstreamFormat": {
+        "fragment": "enum HevcBitstreamFormat {\n  \"annexb\",\n  \"hevc\",\n};",
+        "type": "enum",
+        "name": "HevcBitstreamFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "annexb",
+            "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dom-hevcbitstreamformat-annexb"
+          },
+          {
+            "type": "enum-value",
+            "value": "hevc",
+            "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dom-hevcbitstreamformat-hevc"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#enumdef-hevcbitstreamformat"
+      },
+      "VideoEncoderEncodeOptionsForHevc": {
+        "fragment": "dictionary VideoEncoderEncodeOptionsForHevc {\n  unsigned short? quantizer;\n};",
+        "type": "dictionary",
+        "name": "VideoEncoderEncodeOptionsForHevc",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "quantizer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dom-videoencoderencodeoptionsforhevc-quantizer"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dictdef-videoencoderencodeoptionsforhevc"
+      }
+    },
+    "idlExtendedNames": {
+      "VideoEncoderConfig": [
+        {
+          "fragment": "partial dictionary VideoEncoderConfig {\n  HevcEncoderConfig hevc;\n};",
+          "type": "dictionary",
+          "name": "VideoEncoderConfig",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "hevc",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "HevcEncoderConfig"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dom-videoencoderconfig-hevc"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "VideoEncoderEncodeOptions": [
+        {
+          "fragment": "partial dictionary VideoEncoderEncodeOptions {\n  VideoEncoderEncodeOptionsForHevc hevc;\n};",
+          "type": "dictionary",
+          "name": "VideoEncoderEncodeOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "hevc",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "VideoEncoderEncodeOptionsForHevc"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/hevc_codec_registration.html#dom-videoencoderencodeoptions-hevc"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "VideoEncoderConfig": [
+        "HevcEncoderConfig"
+      ],
+      "HevcEncoderConfig": [
+        "HevcBitstreamFormat"
+      ],
+      "VideoEncoderEncodeOptions": [
+        "VideoEncoderEncodeOptionsForHevc"
+      ],
+      "VideoEncoderEncodeOptionsForHevc": []
+    },
+    "externalDependencies": [
+      "VideoEncoderConfig",
+      "VideoEncoderEncodeOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

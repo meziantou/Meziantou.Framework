@@ -2,14 +2,26 @@
 #pragma warning disable IDE0250 // Make struct readonly
 #pragma warning disable MA0182 // Unused internal type
 using System.ComponentModel;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
+using System.Text;
 using Meziantou.Framework.Annotations;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Newtonsoft.Json;
+
+// Validate the assembly-level configuration is applied to all the types of the assembly
+[assembly: StronglyTypedIdDefaults(AddCodeGeneratedAttribute = false)]
 
 namespace Meziantou.Framework.StronglyTypedId.GeneratorTests;
 
@@ -19,6 +31,291 @@ public sealed partial class StronglyTypedIdTests
     {
         BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
     }
+
+    [Fact]
+    public void ReadmeExample_Format()
+    {
+        #region StronglyTypedId_Format
+        var id = ProjectId.FromInt32(42);
+        Assert.Equal("ProjectId { Value = 42 }", $"{id}");
+        Assert.Equal("00042", $"{id:D5}");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GuidVersion7()
+    {
+        #region StronglyTypedId_GuidVersion7Usage
+        var id = InvoiceId.New(); // Uses Guid.CreateVersion7()
+        Assert.Equal(7, id.Value.Version);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GuidNone()
+    {
+        Assert.Null(typeof(ExternalId).GetMethod("New"));
+    }
+
+    [Fact]
+    public void ReadmeExample_Comparable()
+    {
+        #region StronglyTypedId_ComparableUsage
+        var low = Priority.FromInt32(1);
+        var high = Priority.FromInt32(2);
+
+        // IComparable<Priority> and the comparison operators are generated
+        Assert.True(low < high);
+        Assert.True(high >= low);
+        Assert.Equal(-1, low.CompareTo(high));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Interfaces()
+    {
+        #region StronglyTypedId_Interfaces
+        // The generated type implements IStronglyTypedId and IStronglyTypedId<int>
+        var userId = UserId.FromInt32(42);
+
+        // Access via interface
+        IStronglyTypedId stronglyTypedId = userId;
+        Assert.Equal("42", stronglyTypedId.ValueAsString);
+        Assert.Equal(typeof(int), stronglyTypedId.UnderlyingType);
+
+        // Access via generic interface
+        Assert.Equal(42, GetValue(userId));
+
+        static T GetValue<T>(IStronglyTypedId<T> id) => id.Value;
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_Usage()
+    {
+        #region StronglyTypedId_Usage
+        var id = ProjectId.FromInt32(42);
+        Assert.Equal(42, id.Value);
+        Assert.Equal("42", id.ValueAsString);
+        Assert.Equal("ProjectId { Value = 42 }", id.ToString());
+
+        // Two ids are equal when their values are equal
+        Assert.Equal(ProjectId.FromInt32(42), id);
+
+        Assert.Equal(id, ProjectId.Parse("42"));
+        Assert.True(ProjectId.TryParse("42", out var parsed));
+        Assert.Equal(id, parsed);
+        Assert.False(ProjectId.TryParse("abc", out _));
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_DeclarationKinds()
+    {
+        #region StronglyTypedId_DeclarationKindsUsage
+        var sku = Sku.FromString("ABC-123");
+        Assert.Equal("ABC-123", sku.Value);
+
+        var trackingNumber = TrackingNumber.FromInt64(1234567890);
+        Assert.Equal(1234567890L, trackingNumber.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_Validation()
+    {
+        #region StronglyTypedId_ValidationUsage
+        Assert.Equal(42, OrderNumber.FromInt32(42).Value);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => OrderNumber.FromInt32(0));
+
+        // TryParse returns false when the constructor throws, and Parse throws a FormatException
+        Assert.False(OrderNumber.TryParse("0", out _));
+        Assert.Throws<FormatException>(() => OrderNumber.Parse("0"));
+
+        // The default value of a struct does not call the constructor
+        Assert.Equal(0, default(OrderNumber).Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_ToStringAsValue()
+    {
+        #region StronglyTypedId_ToStringAsValueUsage
+        var number = InvoiceNumber.FromInt32(1042);
+        Assert.Equal("1042", number.ToString());
+        Assert.Equal("Invoice 1042", $"Invoice {number}");
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_StringComparison()
+    {
+        #region StronglyTypedId_StringComparisonUsage
+        var code = CountryCode.FromString("fr");
+        Assert.Equal(CountryCode.FromString("FR"), code);
+        Assert.Equal(CountryCode.FromString("FR").GetHashCode(), code.GetHashCode());
+
+        // The value is kept as it was created
+        Assert.Equal("fr", code.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_DisableConverters()
+    {
+        Assert.Null(typeof(TagId).GetCustomAttribute<Newtonsoft.Json.JsonConverterAttribute>());
+        Assert.Null(typeof(TagId).GetCustomAttribute<MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute>());
+        Assert.NotNull(typeof(TagId).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>());
+        Assert.NotNull(typeof(TagId).GetCustomAttribute<TypeConverterAttribute>());
+    }
+
+    [Fact]
+    public void Docs_SystemTextJson()
+    {
+        #region StronglyTypedId_SystemTextJson
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(line);
+        Assert.Equal("""{"ProductId":"0f8fad5b-d9cb-469f-a165-70867728950e","ProjectId":42,"Quantity":3}""", json);
+
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize<OrderLine>(json);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_SystemTextJsonDictionaryKey()
+    {
+        #region StronglyTypedId_SystemTextJsonDictionaryKey
+        var budgets = new Dictionary<ProjectId, decimal> { [ProjectId.FromInt32(42)] = 1500m };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(budgets);
+        Assert.Equal("""{"42":1500}""", json);
+
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize<Dictionary<ProjectId, decimal>>(json);
+        Assert.Equal(1500m, deserialized![ProjectId.FromInt32(42)]);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_SystemTextJsonObjectForm()
+    {
+        #region StronglyTypedId_SystemTextJsonObjectForm
+        // An object with a "Value" property is also accepted; the other properties are ignored
+        var id = System.Text.Json.JsonSerializer.Deserialize<ProjectId>("""{"Value":42,"Name":"Documentation"}""");
+        Assert.Equal(ProjectId.FromInt32(42), id);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_NewtonsoftJson()
+    {
+        #region StronglyTypedId_NewtonsoftJson
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(line);
+        Assert.Equal("""{"ProductId":"0f8fad5b-d9cb-469f-a165-70867728950e","ProjectId":42,"Quantity":3}""", json);
+
+        var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<OrderLine>(json);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_MongoDB()
+    {
+        #region StronglyTypedId_MongoDB
+        var project = new ProjectDocument { Id = ProjectId.FromInt32(42), Name = "Documentation" };
+
+        var document = project.ToBsonDocument();
+        Assert.Equal(42, document["_id"].AsInt32);
+
+        var deserialized = BsonSerializer.Deserialize<ProjectDocument>(document);
+        Assert.Equal(ProjectId.FromInt32(42), deserialized.Id);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_TypeConverter()
+    {
+        #region StronglyTypedId_TypeConverter
+        var converter = TypeDescriptor.GetConverter(typeof(ProjectId));
+
+        Assert.Equal(ProjectId.FromInt32(42), converter.ConvertFromInvariantString("42"));
+        Assert.Equal(ProjectId.FromInt32(42), converter.ConvertFrom(42));
+        Assert.Equal("42", converter.ConvertToInvariantString(ProjectId.FromInt32(42)));
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_BindConfiguration()
+    {
+        #region StronglyTypedId_BindConfiguration
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Import:DefaultProject"] = "42",
+                ["Import:ArchivedProjects:0"] = "7",
+                ["Import:ArchivedProjects:1"] = "8",
+            })
+            .Build();
+
+        // The configuration binder converts the strings with the generated TypeConverter
+        var options = configuration.GetSection("Import").Get<ImportOptions>();
+        Assert.Equal(ProjectId.FromInt32(42), options!.DefaultProject);
+        Assert.Equal([ProjectId.FromInt32(7), ProjectId.FromInt32(8)], options.ArchivedProjects);
+        #endregion
+    }
+
+#pragma warning disable xUnit1051 // Calls to methods which accept CancellationToken should use TestContext.Current.CancellationToken
+    [Fact]
+    public async Task Docs_AspNetCoreMinimalApi()
+    {
+        #region StronglyTypedId_AspNetCoreMinimalApi
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseTestServer(); // Runs the application in memory
+        await using var app = builder.Build();
+
+        // Route and query string values are parsed with the generated TryParse method
+        app.MapGet("/projects/{id}", (ProjectId id) => $"Project {id.Value}");
+        app.MapGet("/projects", (ProjectId? owner) => owner is { } value ? $"Projects of {value.Value}" : "All projects");
+        await app.StartAsync();
+
+        using var client = app.GetTestClient();
+        Assert.Equal("Project 42", await client.GetStringAsync(new Uri("/projects/42", UriKind.Relative)));
+        Assert.Equal("Projects of 7", await client.GetStringAsync(new Uri("/projects?owner=7", UriKind.Relative)));
+        Assert.Equal("All projects", await client.GetStringAsync(new Uri("/projects", UriKind.Relative)));
+
+        // A value that cannot be parsed is rejected
+        using var response = await client.GetAsync(new Uri("/projects/abc", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Docs_EntityFrameworkCore()
+    {
+        #region StronglyTypedId_EntityFrameworkCore
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<ProjectsContext>().UseSqlite(connection).Options;
+
+        await using (var context = new ProjectsContext(options))
+        {
+            await context.Database.EnsureCreatedAsync();
+            context.Projects.Add(new Project { Id = ProjectId.FromInt32(42), Name = "Documentation" });
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new ProjectsContext(options))
+        {
+            // The id in the query is converted to its value
+            var project = await context.Projects.SingleAsync(p => p.Id == ProjectId.FromInt32(42));
+            Assert.Equal("Documentation", project.Name);
+        }
+        #endregion
+    }
+#pragma warning restore xUnit1051
 
     public static TheoryData<Type, string, object> GetData()
     {
@@ -127,7 +424,9 @@ public sealed partial class StronglyTypedIdTests
     public void TestNullableClass()
     {
         IdClassInt32 value = IdClassInt32.FromInt32(42);
+#pragma warning disable MFAS0007 // Preserve the generated == operator validation
         Assert.False(value == null);
+#pragma warning restore MFAS0007
     }
 
     [Fact]
@@ -141,6 +440,9 @@ public sealed partial class StronglyTypedIdTests
     {
         Assert.NotNull(typeof(IdInt32WithCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
         Assert.Null(typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
+
+        // The assembly-level configuration sets AddCodeGeneratedAttribute to false
+        Assert.Null(typeof(IdInt32).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
     }
 
     [Fact]
@@ -160,6 +462,246 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void IUtf8SpanParsable_Int32()
+    {
+        Parse<IdInt32>("test");
+        static void Parse<T>(string _) where T : IUtf8SpanParsable<IdInt32>
+        { }
+    }
+
+    [Fact]
+    public void IFormattable_Int32()
+    {
+        Format<IdInt32>("test");
+        static void Format<T>(string _) where T : IFormattable, ISpanFormattable, IUtf8SpanFormattable
+        { }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetData))]
+    public void Format_WithoutFormat_IsSameAsToString(Type type, string fromMethodName, object value)
+    {
+        var from = (MethodInfo)type.GetMember(fromMethodName).Single();
+        var instance = from.Invoke(null, [value])!;
+        var expected = instance.ToString()!;
+
+        Assert.Equal(expected, ((IFormattable)instance).ToString(format: null, formatProvider: null));
+        Assert.Equal(expected, ((IFormattable)instance).ToString(format: "", CommaDecimalSeparatorProvider));
+        Assert.Equal(expected, FormattableString.Invariant($"{instance}"));
+
+        var chars = new char[expected.Length];
+        Assert.True(((ISpanFormattable)instance).TryFormat(chars, out var charsWritten, format: default, CommaDecimalSeparatorProvider));
+        Assert.Equal(expected, new string(chars, 0, charsWritten));
+        for (var length = 0; length < chars.Length; length++)
+        {
+            Assert.False(((ISpanFormattable)instance).TryFormat(chars.AsSpan(0, length), out charsWritten, format: default, provider: null));
+            Assert.Equal(0, charsWritten);
+        }
+
+        var bytes = new byte[Encoding.UTF8.GetByteCount(expected)];
+        Assert.True(((IUtf8SpanFormattable)instance).TryFormat(bytes, out var bytesWritten, format: default, CommaDecimalSeparatorProvider));
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes, 0, bytesWritten));
+        for (var length = 0; length < bytes.Length; length++)
+        {
+            Assert.False(((IUtf8SpanFormattable)instance).TryFormat(bytes.AsSpan(0, length), out bytesWritten, format: default, provider: null));
+            Assert.Equal(0, bytesWritten);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetData))]
+    public void IUtf8SpanParsable_RoundTrip(Type type, string fromMethodName, object value)
+    {
+        var from = (MethodInfo)type.GetMember(fromMethodName).Single();
+        var instance = from.Invoke(null, [value])!;
+        var utf8Text = Encoding.UTF8.GetBytes((string)type.GetProperty("ValueAsString")!.GetValue(instance)!);
+
+        var method = typeof(StronglyTypedIdTests).GetMethod(nameof(ParseUtf8), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type);
+        Assert.Equal(instance, method.Invoke(null, [utf8Text]));
+    }
+
+    private static T ParseUtf8<T>(byte[] utf8Text) where T : IUtf8SpanParsable<T>
+    {
+        Assert.True(T.TryParse(utf8Text, provider: null, out var result));
+        Assert.Equal(result, T.Parse(utf8Text, provider: null));
+        return result;
+    }
+
+    [Fact]
+    public void Format_WithFormat_FormatsValue()
+    {
+        var id = IdInt32.FromInt32(42);
+        Assert.Equal("00042", ((IFormattable)id).ToString("D5", formatProvider: null));
+        Assert.Equal("00042", FormattableString.Invariant($"{id:D5}"));
+        Assert.Equal("00042", FormatUtf8(id, "D5", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_WithFormat_IgnoresProvider()
+    {
+        var id = IdDouble.FromDouble(1.5);
+        Assert.Equal("1.50", ((IFormattable)id).ToString("F2", CommaDecimalSeparatorProvider));
+        Assert.Equal("1.50", string.Format(CommaDecimalSeparatorProvider, "{0:F2}", id));
+        Assert.Equal("1.50", FormatChars(id, "F2", CommaDecimalSeparatorProvider));
+        Assert.Equal("1.50", FormatUtf8(id, "F2", CommaDecimalSeparatorProvider));
+
+        var dateTime = IdDateTime.FromDateTime(new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+        Assert.Equal("01/02/2024", string.Format(CreateDateSeparatorProvider("-"), "{0:d}", dateTime));
+        Assert.Equal("01/02/2024", FormatChars(dateTime, "d", CreateDateSeparatorProvider("-")));
+        Assert.Equal("01/02/2024", FormatUtf8(dateTime, "d", CreateDateSeparatorProvider("-")));
+    }
+
+    [Fact]
+    public void Parse_IgnoresProvider()
+    {
+        Assert.Equal(1.5, ParseWithProvider<IdDouble>("1.5", CommaDecimalSeparatorProvider).Value);
+    }
+
+    private static T ParseWithProvider<T>(string value, IFormatProvider provider) where T : IParsable<T>, ISpanParsable<T>, IUtf8SpanParsable<T>
+    {
+        var result = T.Parse(value, provider);
+        Assert.Equal(result, T.Parse(value.AsSpan(), provider));
+        Assert.Equal(result, T.Parse(Encoding.UTF8.GetBytes(value), provider));
+
+        Assert.True(T.TryParse(value, provider, out var tryParseResult));
+        Assert.Equal(result, tryParseResult);
+        Assert.True(T.TryParse(value.AsSpan(), provider, out tryParseResult));
+        Assert.Equal(result, tryParseResult);
+        Assert.True(T.TryParse(Encoding.UTF8.GetBytes(value), provider, out tryParseResult));
+        Assert.Equal(result, tryParseResult);
+        return result;
+    }
+
+    [Fact]
+    public void Format_WithFormat_Guid()
+    {
+        var guid = Guid.NewGuid();
+        var id = IdGuid.FromGuid(guid);
+        Assert.Equal(guid.ToString("N"), FormattableString.Invariant($"{id:N}"));
+        Assert.Equal(guid.ToString("N"), FormatUtf8(id, "N", provider: null));
+    }
+
+    [Fact]
+    public void Format_WithFormat_BigInteger()
+    {
+        // BigInteger does not expose a public UTF-8 TryFormat method
+        var id = IdBigInteger.FromBigInteger(42);
+        Assert.Equal("00042", FormattableString.Invariant($"{id:D5}"));
+        Assert.Equal("00042", FormatUtf8(id, "D5", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_WithFormat_DateTimeOffset_KeepsOffset()
+    {
+        var id = IdDateTimeOffset.FromDateTimeOffset(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)));
+        Assert.Equal("IdDateTimeOffset { Value = 2024-01-02T01:04:05.0000000Z }", FormattableString.Invariant($"{id}"));
+        Assert.Equal("2024-01-02 03:04 +02:00", FormattableString.Invariant($"{id:yyyy-MM-dd HH:mm zzz}"));
+        Assert.Equal("2024-01-02 03:04 +02:00", FormatUtf8(id, "yyyy-MM-dd HH:mm zzz", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_WithFormat_NotFormattableValue_IgnoresFormat()
+    {
+        var id = IdString.FromString("test");
+        Assert.Equal("test", FormattableString.Invariant($"{id:X}"));
+        Assert.Equal("test", FormatUtf8(id, "X", provider: null));
+
+        var boolean = IdBoolean.FromBoolean(true);
+        Assert.Equal("True", FormattableString.Invariant($"{boolean:X}"));
+        Assert.Equal("True", FormatUtf8(boolean, "X", provider: null));
+    }
+
+    [Fact]
+    public void Format_NullString()
+    {
+        var id = IdClassString.FromString(null!);
+        Assert.Equal("IdClassString { Value = <null> }", FormattableString.Invariant($"{id}"));
+        Assert.Equal("IdClassString { Value = <null> }", FormatUtf8(id, format: null, provider: null));
+        Assert.Equal("", FormattableString.Invariant($"{id:X}"));
+
+        var raw = IdString_RawToString.FromString(null!);
+        Assert.Equal("", FormattableString.Invariant($"{raw}"));
+        Assert.Equal("", FormatUtf8(raw, format: null, provider: null));
+    }
+
+    [Fact]
+    public void Format_NonAsciiString()
+    {
+        var id = IdString_RawToString.FromString("é日本🎉");
+        Assert.Equal("é日本🎉", FormattableString.Invariant($"{id}"));
+        Assert.Equal("é日本🎉", FormatUtf8(id, format: null, provider: null));
+    }
+
+    [Fact]
+    public void Format_UserDefinedToString()
+    {
+        var id = IdToStringDefined.FromInt32(42);
+        Assert.Equal("", FormattableString.Invariant($"{id}"));
+        Assert.Equal("", FormatUtf8(id, format: null, provider: null));
+        Assert.Equal("042", FormattableString.Invariant($"{id:D3}"));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_InvalidUtf8_ReturnsFalse()
+    {
+        Assert.False(TryParseUtf8<IdInt32>([0x34, 0xFF], out _));
+        Assert.Throws<FormatException>(() => IUtf8SpanParsableParse<IdInt32>([0x34, 0xFF]));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_InvalidValue_ReturnsFalse()
+    {
+        Assert.False(TryParseUtf8<IdInt32>("abc"u8.ToArray(), out _));
+        Assert.Throws<FormatException>(() => IUtf8SpanParsableParse<IdInt32>("abc"u8.ToArray()));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(TryParseUtf8<IdStringValidated>([], out _));
+        Assert.False(TryParseUtf8<IdInt32Validated>("-1"u8.ToArray(), out _));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_String()
+    {
+        Assert.True(TryParseUtf8<IdString>("é日本🎉"u8.ToArray(), out var result));
+        Assert.Equal("é日本🎉", result.Value);
+
+        // Longer than the stack-allocated buffer
+        var value = new string('a', 1000) + "é";
+        Assert.True(TryParseUtf8<IdString>(Encoding.UTF8.GetBytes(value), out result));
+        Assert.Equal(value, result.Value);
+    }
+
+    private static bool TryParseUtf8<T>(byte[] utf8Text, out T? result) where T : IUtf8SpanParsable<T> => T.TryParse(utf8Text, provider: null, out result);
+
+    private static T IUtf8SpanParsableParse<T>(byte[] utf8Text) where T : IUtf8SpanParsable<T> => T.Parse(utf8Text, provider: null);
+
+    private static string FormatUtf8<T>(T value, string? format, IFormatProvider? provider) where T : IUtf8SpanFormattable
+    {
+        var buffer = new byte[256];
+        Assert.True(value.TryFormat(buffer, out var bytesWritten, format, provider));
+        return Encoding.UTF8.GetString(buffer, 0, bytesWritten);
+    }
+
+    private static string FormatChars<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
+    {
+        var buffer = new char[256];
+        Assert.True(value.TryFormat(buffer, out var charsWritten, format, provider));
+        return new string(buffer, 0, charsWritten);
+    }
+
+    private static readonly NumberFormatInfo CommaDecimalSeparatorProvider = new() { NumberDecimalSeparator = "," };
+
+    private static CultureInfo CreateDateSeparatorProvider(string dateSeparator)
+    {
+        var culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        culture.DateTimeFormat.DateSeparator = dateSeparator;
+        return culture;
+    }
+
+    [Fact]
     public void String_Parse()
     {
         Assert.Equal("test", IdString.Parse("test").Value);
@@ -169,6 +711,31 @@ public sealed partial class StronglyTypedIdTests
     public void String_Parse_ReadOnlySpan()
     {
         Assert.Equal("test", IdString.Parse("test".AsSpan()).Value);
+    }
+
+    [Fact]
+    public void String_TryParse_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdStringValidated.TryParse("", out _));
+    }
+
+    [Fact]
+    public void String_TryParse_ReadOnlySpan_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdStringValidated.TryParse("".AsSpan(), out _));
+    }
+
+    [Fact]
+    public void String_TryParse_ValidatingConstructor_ReturnsTrueForValidValue()
+    {
+        Assert.True(IdStringValidated.TryParse("test", out var result));
+        Assert.Equal("test", result.Value);
+    }
+
+    [Fact]
+    public void Int32_TryParse_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdInt32Validated.TryParse("-1", out _));
     }
 
     [Fact]
@@ -215,6 +782,27 @@ public sealed partial class StronglyTypedIdTests
     public void NewtonsoftJson_Int32_ParseNull()
     {
         Assert.Throws<JsonSerializationException>(() => Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("null"));
+    }
+
+    [Fact]
+    public void NewtonsoftJson_Int32_ParseObjectWithoutValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("{}");
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
+    public void NewtonsoftJson_Int32_ParseObjectWithUnknownProperties()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>(@"{ ""a"": {}, ""b"": false }");
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
+    public void SystemTextJson_Int32_ParseObjectWithoutValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdInt32>("{}");
+        Assert.Equal(default, value);
     }
 
     [Fact]
@@ -376,6 +964,51 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void StronglyTypedIdAttributeExample()
+    {
+        #region StronglyTypedIdAttribute_Usage
+        var userId = UserId.FromInt32(42);
+        var json = System.Text.Json.JsonSerializer.Serialize(userId);
+        Assert.Equal("42", json);
+        #endregion
+    }
+
+    [Fact]
+    public void StronglyTypedIdAttributeOfTExample()
+    {
+        #region StronglyTypedIdAttributeOfT_Usage
+        var productId = ProductId.New();
+        var json = System.Text.Json.JsonSerializer.Serialize(productId);
+        Assert.Equal($"\"{productId.Value}\"", json);
+        #endregion
+    }
+
+    [Fact]
+    public void IStronglyTypedIdExample()
+    {
+        #region IStronglyTypedId_Usage
+        var userId = UserId.FromInt32(42);
+        IStronglyTypedId stronglyTypedId = userId;
+        Assert.Equal("42", stronglyTypedId.ValueAsString);
+        Assert.Equal(typeof(int), stronglyTypedId.UnderlyingType);
+        #endregion
+    }
+
+    [Fact]
+    public void IStronglyTypedIdOfTExample()
+    {
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance
+        #region IStronglyTypedIdOfT_Usage
+        var guid = Guid.NewGuid();
+        var orderId = OrderId.FromGuid(guid);
+        IStronglyTypedId<Guid> typedId = orderId;
+        Guid value = typedId.Value; // Direct access to the typed value
+        Assert.Equal(guid, value);
+        #endregion
+#pragma warning restore CA1859
+    }
+
+    [Fact]
     public void IdInt32Comparable_ImplementsMembers()
     {
         var value = IdInt32Comparable.FromInt32(1);
@@ -423,6 +1056,31 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void New_Guid_DefaultStrategy()
+    {
+        Assert.Equal(4, IdGuid.New().Value.Version);
+    }
+
+    [Fact]
+    public void New_Guid_Version4()
+    {
+        Assert.Equal(4, IdGuidVersion4.New().Value.Version);
+    }
+
+    [Fact]
+    public void New_Guid_Version7()
+    {
+        Assert.Equal(7, IdGuidVersion7.New().Value.Version);
+    }
+
+    [Fact]
+    public void New_Guid_None()
+    {
+        Assert.Empty(typeof(IdGuidNoNew).GetMember("New"));
+        Assert.NotEmpty(typeof(IdGuidNoNew).GetMember("FromGuid"));
+    }
+
+    [Fact]
     public void Bson_Guid_Class_Null()
     {
         IdClassGuid? instance = null;
@@ -436,6 +1094,26 @@ public sealed partial class StronglyTypedIdTests
         var instance = IdClassGuid.FromGuid(Guid.Empty);
         var clone = BsonClone(instance);
         Assert.Equal(Guid.Empty, clone.Value);
+    }
+
+    [Fact]
+    public void Bson_Half_Class_Null() => Assert.Null(BsonClone<IdClassHalf?>(null));
+
+    [Fact]
+    public void Bson_Int128_Class_Null() => Assert.Null(BsonClone<IdClassInt128?>(null));
+
+    [Fact]
+    public void Bson_UInt128_Class_Null() => Assert.Null(BsonClone<IdClassUInt128?>(null));
+
+    [Fact]
+    public void Bson_BigInteger_Class_Null() => Assert.Null(BsonClone<IdClassBigInteger?>(null));
+
+    [Fact]
+    public void Bson_Int128_Class_Value()
+    {
+        var instance = IdClassInt128.FromInt128(Int128.MaxValue);
+        var clone = BsonClone(instance);
+        Assert.Equal(Int128.MaxValue, clone.Value);
     }
 
     [return: NotNullIfNotNull(nameof(value))]
@@ -455,6 +1133,27 @@ public sealed partial class StronglyTypedIdTests
     {
         public T? Value { get; set; }
     }
+
+    #region StronglyTypedIdAttribute_Declaration
+    [StronglyTypedId(typeof(int))]
+    public partial struct UserId
+    {
+    }
+    #endregion
+
+    #region StronglyTypedIdAttributeOfT_Declaration
+    [StronglyTypedId<Guid>]
+    public partial struct ProductId
+    {
+    }
+    #endregion
+
+    #region IStronglyTypedIdOfT_Declaration
+    [StronglyTypedId(typeof(Guid))]
+    public partial struct OrderId
+    {
+    }
+    #endregion
 
 #nullable enable
     [StronglyTypedId(typeof(bool))]
@@ -477,6 +1176,15 @@ public sealed partial class StronglyTypedIdTests
 
     [StronglyTypedId(typeof(Guid))]
     private partial struct IdGuid { }
+
+    [StronglyTypedId(typeof(Guid), GuidGenerationStrategy = GuidGenerationStrategy.Version4)]
+    private partial struct IdGuidVersion4 { }
+
+    [StronglyTypedId(typeof(Guid), GuidGenerationStrategy = GuidGenerationStrategy.Version7)]
+    private partial struct IdGuidVersion7 { }
+
+    [StronglyTypedId(typeof(Guid), GuidGenerationStrategy = GuidGenerationStrategy.None)]
+    private partial struct IdGuidNoNew { }
 
     [StronglyTypedId(typeof(short))]
     private partial struct IdInt16 { }
@@ -571,11 +1279,46 @@ public sealed partial class StronglyTypedIdTests
     [StronglyTypedId(typeof(ulong))]
     private sealed partial class IdClassUInt64 { }
 
+    [StronglyTypedId(typeof(Half))]
+    private sealed partial class IdClassHalf { }
+
+    [StronglyTypedId(typeof(Int128))]
+    private sealed partial class IdClassInt128 { }
+
+    [StronglyTypedId(typeof(UInt128))]
+    private sealed partial class IdClassUInt128 { }
+
+    [StronglyTypedId(typeof(BigInteger))]
+    private sealed partial class IdClassBigInteger { }
+
     [StronglyTypedId(typeof(int))]
     private partial struct IdCtorDefined
     {
         public IdCtorDefined(int value)
         {
+            _value = value;
+        }
+    }
+
+    [StronglyTypedId(typeof(string))]
+    private partial struct IdStringValidated
+    {
+        private IdStringValidated(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                throw new ArgumentException("The value cannot be empty", nameof(value));
+
+            _value = value;
+        }
+    }
+
+    [StronglyTypedId(typeof(int))]
+    private partial struct IdInt32Validated
+    {
+        private IdInt32Validated(int value)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+
             _value = value;
         }
     }
@@ -645,4 +1388,118 @@ public sealed partial class StronglyTypedIdTests
         {
         }
     }
+
+    #region StronglyTypedId_Declaration
+    [StronglyTypedId<int>]
+    public partial struct ProjectId { }
+    #endregion
+
+    #region StronglyTypedId_DeclarationTypeof
+    [StronglyTypedId(typeof(int))]
+    public partial struct CustomerId { }
+    #endregion
+
+    #region StronglyTypedId_Configuration
+    [StronglyTypedId(idType: typeof(long),
+                     generateSystemTextJsonConverter: true,
+                     generateNewtonsoftJsonConverter: true,
+                     generateSystemComponentModelTypeConverter: true,
+                     generateMongoDBBsonSerialization: true,
+                     addCodeGeneratedAttribute: true
+                     )]
+    public partial struct ShipmentId { }
+    #endregion
+
+    #region StronglyTypedId_GuidVersion7
+    [StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.Version7)]
+    public partial struct InvoiceId { }
+    #endregion
+
+    #region StronglyTypedId_GuidNone
+    [StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.None)]
+    public partial struct ExternalId { } // No New() method is generated
+    #endregion
+
+    #region StronglyTypedId_Comparable
+    [StronglyTypedId<int>]
+    public partial struct Priority : IComparable { }
+    #endregion
+
+    #region StronglyTypedId_DeclarationKinds
+    [StronglyTypedId<string>]
+    public sealed partial class Sku { }
+
+    [StronglyTypedId<long>]
+    public partial record struct TrackingNumber { }
+    #endregion
+
+    #region StronglyTypedId_Validation
+    [StronglyTypedId<int>]
+    public partial struct OrderNumber
+    {
+        // The generator uses this constructor instead of generating one
+        private OrderNumber(int value)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            _value = value;
+        }
+    }
+    #endregion
+
+    #region StronglyTypedId_ToStringAsValue
+    [StronglyTypedId<int>(GenerateToStringAsRecord = false)]
+    public partial struct InvoiceNumber { }
+    #endregion
+
+    #region StronglyTypedId_StringComparison
+    [StronglyTypedId<string>(StringComparison = StringComparison.OrdinalIgnoreCase)]
+    public partial struct CountryCode { }
+    #endregion
+
+    #region StronglyTypedId_DisableConverters
+    [StronglyTypedId<int>(generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+    public partial struct TagId { }
+    #endregion
+
+    #region StronglyTypedId_JsonModel
+    public sealed record OrderLine(ProductId ProductId, ProjectId ProjectId, int Quantity);
+    #endregion
+
+    #region StronglyTypedId_MongoDBModel
+    public sealed class ProjectDocument
+    {
+        public ProjectId Id { get; set; }
+        public string? Name { get; set; }
+    }
+    #endregion
+
+    #region StronglyTypedId_BindConfigurationModel
+    public sealed class ImportOptions
+    {
+        public ProjectId DefaultProject { get; set; }
+        public IList<ProjectId> ArchivedProjects { get; } = [];
+    }
+    #endregion
+
+    #region StronglyTypedId_EntityFrameworkCoreModel
+    public sealed class Project
+    {
+        public ProjectId Id { get; set; }
+        public required string Name { get; set; }
+    }
+
+    // Stores a ProjectId as its int value
+    public sealed class ProjectIdConverter() : ValueConverter<ProjectId, int>(id => id.Value, value => ProjectId.FromInt32(value));
+
+    public sealed class ProjectsContext(DbContextOptions<ProjectsContext> options) : DbContext(options)
+    {
+        public DbSet<Project> Projects => Set<Project>();
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            // Applies the converter to every ProjectId property of the model
+            configurationBuilder.Properties<ProjectId>().HaveConversion<ProjectIdConverter>();
+        }
+    }
+    #endregion
 }

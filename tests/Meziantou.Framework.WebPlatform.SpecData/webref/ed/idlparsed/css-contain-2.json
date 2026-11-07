@@ -1,0 +1,147 @@
+{
+  "spec": {
+    "title": "CSS Containment Module Level 2",
+    "url": "https://drafts.csswg.org/css-contain-2/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "ContentVisibilityAutoStateChangeEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "ContentVisibilityAutoStateChangeEvent": {
+        "fragment": "[Exposed=Window]\ninterface ContentVisibilityAutoStateChangeEvent : Event {\n  constructor(DOMString type, optional ContentVisibilityAutoStateChangeEventInit eventInitDict = {});\n  readonly attribute boolean skipped;\n};",
+        "type": "interface",
+        "name": "ContentVisibilityAutoStateChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ContentVisibilityAutoStateChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-contain-2/#dom-contentvisibilityautostatechangeevent-contentvisibilityautostatechangeevent"
+          },
+          {
+            "type": "attribute",
+            "name": "skipped",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-contain-2/#dom-contentvisibilityautostatechangeevent-skipped"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-contain-2/#contentvisibilityautostatechangeevent"
+      },
+      "ContentVisibilityAutoStateChangeEventInit": {
+        "fragment": "dictionary ContentVisibilityAutoStateChangeEventInit : EventInit {\n  boolean skipped = false;\n};",
+        "type": "dictionary",
+        "name": "ContentVisibilityAutoStateChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "skipped",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-contain-2/#dom-contentvisibilityautostatechangeeventinit-skipped"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-contain-2/#dictdef-contentvisibilityautostatechangeeventinit"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ContentVisibilityAutoStateChangeEvent"
+      ]
+    },
+    "dependencies": {
+      "ContentVisibilityAutoStateChangeEvent": [
+        "Event",
+        "ContentVisibilityAutoStateChangeEventInit"
+      ],
+      "ContentVisibilityAutoStateChangeEventInit": [
+        "EventInit"
+      ]
+    },
+    "externalDependencies": [
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "pa-Arab": {
+      "identity": {
+        "language": "pa",
+        "script": "Arab"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

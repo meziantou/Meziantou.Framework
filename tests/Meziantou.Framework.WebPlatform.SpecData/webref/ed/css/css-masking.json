@@ -1,0 +1,738 @@
+{
+  "spec": {
+    "title": "CSS Masking Module Level 1",
+    "url": "https://drafts.csswg.org/css-masking-1/"
+  },
+  "properties": [
+    {
+      "name": "clip-path",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-clip-path",
+      "value": "<clip-source> | [ <basic-shape> || <geometry-box> ] | none",
+      "initial": "none",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified, but with <url> values made absolute",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "values": [
+        {
+          "name": "fill-box",
+          "prose": "Uses the object bounding box as reference box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-clip-path-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "Uses the stroke bounding box as reference box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-clip-path-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        },
+        {
+          "name": "view-box",
+          "prose": "Uses the nearest SVG viewport as reference box. If a viewBox attribute is specified for the SVG viewport creating element: The reference box is positioned at the origin of the coordinate system established by the viewBox attribute. The dimension of the reference box is set to the width and height values of the viewBox attribute.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-clip-path-view-box",
+          "type": "value",
+          "value": "view-box"
+        }
+      ],
+      "styleDeclaration": [
+        "clip-path",
+        "clipPath"
+      ]
+    },
+    {
+      "name": "clip-rule",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-clip-rule",
+      "value": "nonzero | evenodd",
+      "initial": "nonzero",
+      "appliesTo": "Applies to SVG graphics elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "nonzero",
+          "prose": "See description of fill-rule property [SVG11].",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-clip-rule-nonzero",
+          "type": "value",
+          "value": "nonzero"
+        },
+        {
+          "name": "evenodd",
+          "prose": "See description of fill-rule property [SVG11].",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-clip-rule-evenodd",
+          "type": "value",
+          "value": "evenodd"
+        }
+      ],
+      "styleDeclaration": [
+        "clip-rule",
+        "clipRule"
+      ]
+    },
+    {
+      "name": "mask-image",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-image",
+      "value": "<mask-reference>#",
+      "initial": "none",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item the keyword none, a computed <image>, or a computed <url>",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "<url>",
+          "prose": "A URL reference to a mask element (for example url(commonmasks.svg#mask)) or to a CSS image.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-image-url",
+          "type": "value",
+          "value": "<url>"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-image",
+        "maskImage"
+      ]
+    },
+    {
+      "name": "mask-mode",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-mode",
+      "value": "<masking-mode>#",
+      "initial": "match-source",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item the keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "alpha",
+          "prose": "A value of alpha indicates that the alpha values of the mask layer image should be used as the mask values. See Calculating mask values.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-mode-alpha",
+          "type": "value",
+          "value": "alpha"
+        },
+        {
+          "name": "luminance",
+          "prose": "A value of luminance indicates that the luminance values of the mask layer image should be used as the mask values. See Calculating mask values.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-mode-luminance",
+          "type": "value",
+          "value": "luminance"
+        },
+        {
+          "name": "match-source",
+          "prose": "If the <mask-reference> of the mask-image property is of type <mask-source> the value specified by the referenced mask element’s mask-type property must be used. If the <mask-reference> of the mask-image property is of type <image> the alpha values of the mask layer image should be used as the mask values.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-mode-match-source",
+          "type": "value",
+          "value": "match-source"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-mode",
+        "maskMode"
+      ]
+    },
+    {
+      "name": "mask-repeat",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-repeat",
+      "value": "<repeat-style>#",
+      "initial": "repeat",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item a pair of keywords, one per dimension",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-repeat",
+        "maskRepeat"
+      ]
+    },
+    {
+      "name": "mask-position",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-position",
+      "value": "<position>#",
+      "initial": "0% 0%",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "refer to size of mask painting area minus size of mask layer image; see text background-position [CSS3BG]",
+      "computedValue": "list, each item consists of two keywords representing the origin and two offsets from that origin, each given as an absolute length (if given a <length>), otherwise as a percentage.",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-position",
+        "maskPosition"
+      ]
+    },
+    {
+      "name": "mask-clip",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-clip",
+      "value": "[ <coord-box> | no-clip ]#",
+      "initial": "border-box",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item the keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "content-box",
+          "prose": "The painted content is restricted to (clipped to) the content box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-clip-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "The painted content is restricted to (clipped to) the padding box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-clip-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "The painted content is restricted to (clipped to) the border box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-clip-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "fill-box",
+          "prose": "The painted content is restricted to (clipped to) the object bounding box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-clip-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "The painted content is restricted to (clipped to) the stroke bounding box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-clip-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        },
+        {
+          "name": "view-box",
+          "prose": "Uses the nearest SVG viewport as reference box. If a viewBox attribute is specified for the SVG viewport creating element: The reference box is positioned at the origin of the coordinate system established by the viewBox attribute. The dimension of the reference box is set to the width and height values of the viewBox attribute.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-clip-view-box",
+          "type": "value",
+          "value": "view-box"
+        },
+        {
+          "name": "no-clip",
+          "prose": "The painted content is not restricted (not clipped).",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-clip-no-clip",
+          "type": "value",
+          "value": "no-clip"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-clip",
+        "maskClip"
+      ]
+    },
+    {
+      "name": "mask-origin",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-origin",
+      "value": "<coord-box>#",
+      "initial": "border-box",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item the keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "content-box",
+          "prose": "The position is relative to the content box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-origin-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "The position is relative to the padding box. (For single boxes 0 0 is the upper left corner of the padding edge, 100% 100% is the lower right corner.)",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-origin-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "The position is relative to the border box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-origin-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "fill-box",
+          "prose": "The position is relative to the object bounding box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-origin-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "The position is relative to the stroke bounding box.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-origin-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        },
+        {
+          "name": "view-box",
+          "prose": "Uses the nearest SVG viewport as reference box. If a viewBox attribute is specified for the SVG viewport creating element: The reference box is positioned at the origin of the coordinate system established by the viewBox attribute. The dimension of the reference box is set to the width and height values of the viewBox attribute.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-origin-view-box",
+          "type": "value",
+          "value": "view-box"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-origin",
+        "maskOrigin"
+      ]
+    },
+    {
+      "name": "mask-size",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-size",
+      "value": "<bg-size>#",
+      "initial": "auto",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item as specified, but with lengths made absolute",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-size",
+        "maskSize"
+      ]
+    },
+    {
+      "name": "mask-composite",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-composite",
+      "value": "<compositing-operator>#",
+      "initial": "add",
+      "appliesTo": "All elements. In SVG, it applies to container elements without the defs element and all graphics elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item the keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "add",
+          "prose": "The source is placed over the destination. (See Porter-Duff compositing operator source over for more details.)",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-composite-add",
+          "type": "value",
+          "value": "add"
+        },
+        {
+          "name": "subtract",
+          "prose": "The source is placed, where it falls outside of the destination. (See Porter-Duff compositing operator source out for more details.)",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-composite-subtract",
+          "type": "value",
+          "value": "subtract"
+        },
+        {
+          "name": "intersect",
+          "prose": "The parts of source that overlap the destination, replace the destination. (See Porter-Duff compositing operator source in .)",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-composite-intersect",
+          "type": "value",
+          "value": "intersect"
+        },
+        {
+          "name": "exclude",
+          "prose": "The non-overlapping regions of source and destination are combined. (See Porter-Duff compositing operator XOR.)",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-composite-exclude",
+          "type": "value",
+          "value": "exclude"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-composite",
+        "maskComposite"
+      ]
+    },
+    {
+      "name": "mask",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask",
+      "value": "<mask-layer>#",
+      "initial": "see individual properties",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask"
+      ],
+      "longhands": [
+        "mask-image",
+        "mask-position",
+        "mask-size",
+        "mask-repeat",
+        "mask-origin",
+        "mask-clip",
+        "mask-composite",
+        "mask-mode"
+      ],
+      "resetLonghands": [
+        "mask-border"
+      ]
+    },
+    {
+      "name": "mask-border-source",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-border-source",
+      "value": "<'border-image-source'>",
+      "initial": "none",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "they keyword none or the computed <image>",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-border-source",
+        "maskBorderSource"
+      ]
+    },
+    {
+      "name": "mask-border-mode",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-border-mode",
+      "value": "luminance | alpha",
+      "initial": "alpha",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "alpha",
+          "prose": "A value of alpha indicates that the alpha values of the mask border image should be used as the mask values. See Calculating mask values.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-border-mode-alpha",
+          "type": "value",
+          "value": "alpha"
+        },
+        {
+          "name": "luminance",
+          "prose": "A value of luminance indicates that the luminance values of the mask border image should be used as the mask values. See Calculating mask values.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-border-mode-luminance",
+          "type": "value",
+          "value": "luminance"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-border-mode",
+        "maskBorderMode"
+      ]
+    },
+    {
+      "name": "mask-border-slice",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-border-slice",
+      "value": "<'border-image-slice'>",
+      "initial": "0",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "refer to size of the mask border image",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "values": [
+        {
+          "name": "fill",
+          "prose": "This property specifies inward offsets from the top, right, bottom, and left edges of the mask border image, dividing it into nine regions: four corners, four edges and a middle. The middle image part is discarded and treated as fully opaque white (the content covered by the middle part is not masked and shines through) unless the fill keyword is present.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-border-slice-fill",
+          "type": "value",
+          "value": "fill"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-border-slice",
+        "maskBorderSlice"
+      ]
+    },
+    {
+      "name": "mask-border-width",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-border-width",
+      "value": "<'border-image-width'>",
+      "initial": "auto",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "relative to width/height of the mask border image area",
+      "computedValue": "all <length>s made absolute, otherwise as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-border-width",
+        "maskBorderWidth"
+      ]
+    },
+    {
+      "name": "mask-border-outset",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-border-outset",
+      "value": "<'border-image-outset'>",
+      "initial": "0",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "all <length>s made absolute, otherwise as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-border-outset",
+        "maskBorderOutset"
+      ]
+    },
+    {
+      "name": "mask-border-repeat",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-border-repeat",
+      "value": "<'border-image-repeat'>",
+      "initial": "stretch",
+      "appliesTo": "All elements. In SVG, it applies to container elements excluding the defs element, all graphics elements and the use element",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-border-repeat",
+        "maskBorderRepeat"
+      ]
+    },
+    {
+      "name": "mask-border",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-border",
+      "value": "<'mask-border-source'> || <'mask-border-slice'> [ / <'mask-border-width'>? [ / <'mask-border-outset'> ]? ]? || <'mask-border-repeat'> || <'mask-border-mode'>",
+      "initial": "See individual properties",
+      "appliesTo": "See individual properties",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "See individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "See individual properties",
+      "media": "visual",
+      "styleDeclaration": [
+        "mask-border",
+        "maskBorder"
+      ],
+      "longhands": [
+        "mask-border-source",
+        "mask-border-slice",
+        "mask-border-width",
+        "mask-border-outset",
+        "mask-border-repeat",
+        "mask-border-mode"
+      ]
+    },
+    {
+      "name": "mask-type",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-mask-type",
+      "value": "luminance | alpha",
+      "initial": "luminance",
+      "appliesTo": "mask elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "luminance",
+          "prose": "Indicates that the luminance values of the mask should be used.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-type-luminance",
+          "type": "value",
+          "value": "luminance"
+        },
+        {
+          "name": "alpha",
+          "prose": "Indicates that the alpha values of the mask should be used.",
+          "href": "https://drafts.csswg.org/css-masking-1/#valdef-mask-type-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ],
+      "styleDeclaration": [
+        "mask-type",
+        "maskType"
+      ]
+    },
+    {
+      "name": "clip",
+      "href": "https://drafts.csswg.org/css-masking-1/#propdef-clip",
+      "value": "<rect()> | auto",
+      "initial": "auto",
+      "appliesTo": "Absolutely positioned elements. In SVG, it applies to elements which establish a new viewport, pattern elements and mask elements.",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "values": [
+        {
+          "name": "rect()",
+          "value": "rect( <top>, <right>, <bottom>, <left> )",
+          "href": "https://drafts.csswg.org/css-masking-1/#funcdef-clip-rect",
+          "type": "function"
+        },
+        {
+          "name": "<top>",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css-masking-1/#typedef-clip-top",
+          "type": "type"
+        },
+        {
+          "name": "<right>",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css-masking-1/#typedef-clip-right",
+          "type": "type"
+        },
+        {
+          "name": "<bottom>",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css-masking-1/#typedef-clip-bottom",
+          "type": "type"
+        },
+        {
+          "name": "<left>",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css-masking-1/#typedef-clip-left",
+          "type": "type"
+        }
+      ],
+      "styleDeclaration": [
+        "clip"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<clip-source>",
+      "href": "https://drafts.csswg.org/css-masking-1/#typedef-clip-source",
+      "type": "type",
+      "value": "<url>"
+    },
+    {
+      "name": "<geometry-box>",
+      "href": "https://drafts.csswg.org/css-masking-1/#typedef-geometry-box",
+      "type": "type",
+      "value": "<shape-box> | fill-box | stroke-box | view-box"
+    },
+    {
+      "name": "<mask-reference>",
+      "href": "https://drafts.csswg.org/css-masking-1/#typedef-mask-reference",
+      "type": "type",
+      "value": "none | <image> | <mask-source>"
+    },
+    {
+      "name": "<mask-source>",
+      "href": "https://drafts.csswg.org/css-masking-1/#typedef-mask-source",
+      "type": "type",
+      "value": "<url>"
+    },
+    {
+      "name": "<masking-mode>",
+      "href": "https://drafts.csswg.org/css-masking-1/#typedef-masking-mode",
+      "type": "type",
+      "value": "alpha | luminance | match-source"
+    },
+    {
+      "name": "<compositing-operator>",
+      "href": "https://drafts.csswg.org/css-masking-1/#typedef-compositing-operator",
+      "type": "type",
+      "value": "add | subtract | intersect | exclude"
+    },
+    {
+      "name": "<mask-layer>",
+      "href": "https://drafts.csswg.org/css-masking-1/#typedef-mask-layer",
+      "type": "type",
+      "value": "<mask-reference> || <position> [ / <bg-size> ]? || <repeat-style> || <geometry-box> || [ <geometry-box> | no-clip ] || <compositing-operator> || <masking-mode>"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "userSpaceOnUse",
+      "prose": "The contents of the clipPath represent values in the current user coordinate system in place at the time when the clipPath element is referenced (i.e., the user coordinate system for the element referencing the clipPath element via the clip-path property).",
+      "href": "https://drafts.csswg.org/css-masking-1/#valdef-clippathunits-userspaceonuse",
+      "type": "value",
+      "value": "userSpaceOnUse",
+      "for": "clipPathUnits"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "objectBoundingBox",
+      "prose": "The coordinate system has its origin at the top left corner of the bounding box of the element to which the clipping path applies to and the same width and height of this bounding box. User coordinates are sized equivalently to the CSS px unit.",
+      "href": "https://drafts.csswg.org/css-masking-1/#valdef-clippathunits-objectboundingbox",
+      "type": "value",
+      "value": "objectBoundingBox",
+      "for": "clipPathUnits"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "userSpaceOnUse",
+      "prose": "x, y, width and height represent values in the current user coordinate system [CSS3-TRANSFORMS] in place at the time when the mask element is referenced (i.e., the user coordinate system for the element referencing the mask element via the mask property).",
+      "href": "https://drafts.csswg.org/css-masking-1/#valdef-maskunits-userspaceonuse",
+      "type": "value",
+      "value": "userSpaceOnUse",
+      "for": "maskUnits"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "objectBoundingBox",
+      "prose": "x, y, width and height represent fractions or percentages of the object bounding box of the element to which the mask is applied. User coordinates are sized equivalently to the CSS px unit.",
+      "href": "https://drafts.csswg.org/css-masking-1/#valdef-maskunits-objectboundingbox",
+      "type": "value",
+      "value": "objectBoundingBox",
+      "for": "maskUnits"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "userSpaceOnUse",
+      "prose": "The user coordinate system for the contents of the mask element is the current user coordinate system in place at the time when the mask element is referenced (i.e., the user coordinate system for the element referencing the mask element via the mask property).",
+      "href": "https://drafts.csswg.org/css-masking-1/#valdef-maskcontentunits-userspaceonuse",
+      "type": "value",
+      "value": "userSpaceOnUse",
+      "for": "maskContentUnits"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "objectBoundingBox",
+      "prose": "The coordinate system has its origin at the top left corner of the bounding box of the element to which the clipping path applies to and the same width and height of this bounding box. User coordinates are sized equivalently to the CSS px unit.",
+      "href": "https://drafts.csswg.org/css-masking-1/#valdef-maskcontentunits-objectboundingbox",
+      "type": "value",
+      "value": "objectBoundingBox",
+      "for": "maskContentUnits"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -49,6 +50,6 @@ public sealed class IsAssignableToAnalyzer : DiagnosticAnalyzer
             return;
 
         var descriptor = match.AssertionMethodName == "IsAssignableTo" ? UseIsAssignableToDescriptor : UseIsNotAssignableToDescriptor;
-        context.ReportDiagnostic(Diagnostic.Create(descriptor, match.ActualOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(descriptor, match.ActualOperation);
     }
 }

@@ -103,17 +103,17 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     /// <summary>Loads data.</summary>
     public static YamlSequence Load(EventReader eventReader)
     {
-        return Load(eventReader, anchors: null);
+        return Load(eventReader, context: null);
     }
 
-    internal static YamlSequence Load(EventReader eventReader, Dictionary<string, YamlElement>? anchors)
+    internal static YamlSequence Load(EventReader eventReader, YamlModelLoadContext? context)
     {
         var sequenceStart = eventReader.Expect<SequenceStart>();
 
         var contents = new List<YamlElement>();
         while (!eventReader.Accept<SequenceEnd>())
         {
-            var item = ReadElement(eventReader, anchors);
+            var item = ReadElement(eventReader, context);
             if (item != null)
                 contents.Add(item);
         }

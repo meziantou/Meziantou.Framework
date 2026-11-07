@@ -71,13 +71,13 @@ internal static class FormatDetector
         // Need to look at the first page's payload to determine codec
         // OGG page header is at least 27 bytes + segment table
         if (header.Length < 28)
-            return MediaFormat.OggVorbis; // Default assumption
+            return null;
 
         var numSegments = header[26];
         var headerSize = 27 + numSegments;
 
         if (header.Length < headerSize + 8)
-            return MediaFormat.OggVorbis;
+            return null;
 
         var payload = header[headerSize..];
 
@@ -87,7 +87,15 @@ internal static class FormatDetector
             && payload[4] == 'H' && payload[5] == 'e' && payload[6] == 'a' && payload[7] == 'd')
             return MediaFormat.OggOpus;
 
-        // Vorbis: "\x01vorbis", or default to OggVorbis for unknown OGG streams
-        return MediaFormat.OggVorbis;
+        // Vorbis identification packet: 0x01 followed by "vorbis"
+        if (payload.Length >= 7
+            && payload[0] == 0x01
+            && payload[1] == 'v' && payload[2] == 'o' && payload[3] == 'r'
+            && payload[4] == 'b' && payload[5] == 'i' && payload[6] == 's')
+            return MediaFormat.OggVorbis;
+
+        // Some other codec in an OGG container (Ogg FLAC, Speex, Theora). Reporting it as Vorbis would make
+        // reading it succeed with no tags at all, which a caller cannot tell from a genuinely untagged file.
+        return null;
     }
 }

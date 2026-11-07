@@ -18,22 +18,25 @@ dotnet add package Meziantou.AspNetCore.Components
 
 Add the package namespace in your app:
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/_Imports.razor;format=md-fenced-code-block -->
 ```razor
 @using Meziantou.AspNetCore.Components
 ```
+<!-- endref -->
 
-Register optional services:
+Register optional services (the extension methods are in the `Meziantou.AspNetCore.Components` namespace):
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/ComponentsReadmeExamples.cs;region=Components_RegisterServices;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.AspNetCore.Components;
-
 builder.Services.AddClipboard();
 builder.Services.AddQueryStringParameters();
 builder.Services.AddTimeZoneServices();
 ```
+<!-- endref -->
 
 ### Example: Repeater component
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/RepeaterExample.razor;format=md-fenced-code-block -->
 ```razor
 <Repeater Items="items">
     <ItemTemplate Context="item">
@@ -48,9 +51,11 @@ builder.Services.AddTimeZoneServices();
     private List<string>? items = new() { "A", "B", "C" };
 }
 ```
+<!-- endref -->
 
 ### Example: Query string synchronization
 
+<!-- ref:../../samples/BlazorAppSample/ReadmeExamples/QueryStringExample.razor;format=md-fenced-code-block -->
 ```razor
 @inject QueryStringService QueryStringService
 
@@ -65,6 +70,7 @@ builder.Services.AddTimeZoneServices();
     }
 }
 ```
+<!-- endref -->
 
 ## Additional resources
 

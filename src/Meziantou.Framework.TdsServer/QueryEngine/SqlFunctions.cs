@@ -62,19 +62,22 @@ internal static class SqlFunctions
     private static Expression BuildUpperInvariantFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "UPPER");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.ToUpperInvariant), Type.EmptyTypes)!);
+        var value = EnsureString(arguments[0]);
+        return PropagateNull(Expression.Call(value, typeof(string).GetMethod(nameof(string.ToUpperInvariant), Type.EmptyTypes)!), value);
     }
 
     private static Expression BuildLowerInvariantFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "LOWER");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.ToLowerInvariant), Type.EmptyTypes)!);
+        var value = EnsureString(arguments[0]);
+        return PropagateNull(Expression.Call(value, typeof(string).GetMethod(nameof(string.ToLowerInvariant), Type.EmptyTypes)!), value);
     }
 
     private static Expression BuildLenFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "LEN");
-        return Expression.Property(EnsureString(arguments[0]), nameof(string.Length));
+        var value = EnsureString(arguments[0]);
+        return PropagateNull(Expression.Property(value, nameof(string.Length)), value);
     }
 
     private static Expression BuildConcatFunction(IReadOnlyList<Expression> arguments)
@@ -96,43 +99,40 @@ internal static class SqlFunctions
     private static Expression BuildLTrimFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "LTRIM");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.TrimStart), Type.EmptyTypes)!);
+        var value = EnsureString(arguments[0]);
+        return PropagateNull(Expression.Call(value, typeof(string).GetMethod(nameof(string.TrimStart), Type.EmptyTypes)!), value);
     }
 
     private static Expression BuildRTrimFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "RTRIM");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.TrimEnd), Type.EmptyTypes)!);
+        var value = EnsureString(arguments[0]);
+        return PropagateNull(Expression.Call(value, typeof(string).GetMethod(nameof(string.TrimEnd), Type.EmptyTypes)!), value);
     }
 
     private static Expression BuildTrimFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "TRIM");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.Trim), Type.EmptyTypes)!);
+        var value = EnsureString(arguments[0]);
+        return PropagateNull(Expression.Call(value, typeof(string).GetMethod(nameof(string.Trim), Type.EmptyTypes)!), value);
     }
 
     private static Expression BuildLeftFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 2, "LEFT");
         return Expression.Call(
-            typeof(SqlFunctions).GetMethod(nameof(SubstringCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            typeof(SqlFunctions).GetMethod(nameof(LeftCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
             EnsureString(arguments[0]),
-            Expression.Constant(0),
             EnsureInt(arguments[1]));
     }
 
     private static Expression BuildRightFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 2, "RIGHT");
-        var value = EnsureString(arguments[0]);
-        var length = EnsureInt(arguments[1]);
-        var start = Expression.Subtract(Expression.Property(value, nameof(string.Length)), length);
-
         return Expression.Call(
-            typeof(SqlFunctions).GetMethod(nameof(SubstringCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
-            value,
-            start,
-            length);
+            typeof(SqlFunctions).GetMethod(nameof(RightCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]),
+            EnsureInt(arguments[1]));
     }
 
     private static Expression BuildSubstringFunction(IReadOnlyList<Expression> arguments)
@@ -149,11 +149,22 @@ internal static class SqlFunctions
     private static Expression BuildReplaceFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 3, "REPLACE");
-        return Expression.Call(
-            EnsureString(arguments[0]),
-            typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!,
-            EnsureString(arguments[1]),
-            EnsureString(arguments[2]));
+        var value = EnsureString(arguments[0]);
+        var oldValue = EnsureString(arguments[1]);
+        var newValue = EnsureString(arguments[2]);
+        Expression replace = Expression.Call(value, typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!, oldValue, newValue);
+        if (oldValue is not ConstantExpression { Value: string { Length: > 0 } })
+        {
+            // An empty pattern matches nothing in T-SQL, while string.Replace throws. The tree keeps string.Replace,
+            // which a query provider such as EF Core can translate.
+            replace = Expression.Condition(Expression.Equal(oldValue, Expression.Constant(string.Empty)), value, replace);
+        }
+
+        return PropagateNull(
+            replace,
+            value,
+            oldValue,
+            newValue);
     }
 
     private static Expression BuildTranslateFunction(IReadOnlyList<Expression> arguments)
@@ -302,10 +313,49 @@ internal static class SqlFunctions
     private static Expression BuildRoundFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 2, "ROUND");
+
+        var value = EnsureDouble(arguments[0]);
+        var length = EnsureInt(arguments[1]);
+
+        // T-SQL rounds midpoint values away from zero whereas Math.Round(double, int) defaults to ties-to-even.
+        // Math.Round only takes 0 to 15 digits, so it stays in the tree, which a query provider such as EF Core
+        // can translate, for the lengths it accepts.
+        if (length is ConstantExpression { Value: int and >= 0 and <= 15 })
+        {
+            return Expression.Call(
+                typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int), typeof(MidpointRounding)])!,
+                value,
+                length,
+                Expression.Constant(MidpointRounding.AwayFromZero));
+        }
+
         return Expression.Call(
-            typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int)])!,
-            EnsureDouble(arguments[0]),
-            EnsureInt(arguments[1]));
+            typeof(SqlFunctions).GetMethod(nameof(RoundCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            value,
+            length);
+    }
+
+    private static double RoundCore(double value, int length)
+    {
+        if (length is >= 0 and <= 15)
+        {
+            return Math.Round(value, length, MidpointRounding.AwayFromZero);
+        }
+
+        // T-SQL accepts any length, and a negative one rounds the integer part: ROUND(748.58, -2) is 700
+        if (value == 0 || !double.IsFinite(value))
+        {
+            return value;
+        }
+
+        var scale = Math.Pow(10, length);
+        if (scale == 0)
+        {
+            return 0;
+        }
+
+        var scaled = value * scale;
+        return double.IsFinite(scaled) ? Math.Round(scaled, MidpointRounding.AwayFromZero) / scale : value;
     }
 
     private static Expression BuildCeilingFunction(IReadOnlyList<Expression> arguments)
@@ -467,6 +517,42 @@ internal static class SqlFunctions
         return Expression.Convert(converted, targetType);
     }
 
+    /// <summary>Builds an expression evaluating to NULL when any of <paramref name="values" /> is NULL, and to <paramref name="result" /> otherwise.</summary>
+    /// <remarks>SQL scalar functions propagate NULL, while the .NET members they map to throw on a null instance or argument.</remarks>
+    private static Expression PropagateNull(Expression result, params Expression[] values)
+    {
+        Expression? isNull = null;
+        foreach (var value in values)
+        {
+            if (!CanBeNull(value))
+            {
+                continue;
+            }
+
+            var check = Expression.Equal(value, Expression.Constant(null, value.Type));
+            isNull = isNull is null ? check : Expression.OrElse(isNull, check);
+        }
+
+        if (isNull is null)
+        {
+            return result;
+        }
+
+        result = EnsureNullable(result);
+        return Expression.Condition(isNull, Expression.Constant(null, result.Type), result);
+    }
+
+    /// <summary>Returns whether the expression can evaluate to NULL at run time.</summary>
+    private static bool CanBeNull(Expression expression)
+    {
+        if (expression.Type.IsValueType && Nullable.GetUnderlyingType(expression.Type) is null)
+        {
+            return false;
+        }
+
+        return expression is not ConstantExpression { Value: not null };
+    }
+
     private static Expression EnsureNullable(Expression expression)
     {
         if (!expression.Type.IsValueType || Nullable.GetUnderlyingType(expression.Type) is not null)
@@ -491,9 +577,18 @@ internal static class SqlFunctions
         }
 
         return Expression.Call(
-            typeof(Convert).GetMethod(nameof(Convert.ToString), [typeof(object), typeof(IFormatProvider)])!,
-            Expression.Convert(expression, typeof(object)),
-            Expression.Constant(CultureInfo.InvariantCulture));
+            typeof(SqlFunctions).GetMethod(nameof(ToStringCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            Expression.Convert(expression, typeof(object)));
+    }
+
+    private static string? ToStringCore(object? value)
+    {
+        if (value is null or DBNull)
+        {
+            return null;
+        }
+
+        return Convert.ToString(value, CultureInfo.InvariantCulture);
     }
 
     private static object? ConvertToTypeCore(object? value, Type targetType)
@@ -844,6 +939,11 @@ internal static class SqlFunctions
         {
             throw new TdsQueryEngineException($"{functionName} input is not a valid JSON document: {ex.Message}");
         }
+        catch (ArgumentException ex)
+        {
+            // The text contains an unpaired surrogate, which cannot be transcoded to UTF-8
+            throw new TdsQueryEngineException($"{functionName} input is not a valid JSON document: {ex.Message}");
+        }
     }
 
     private static string? JsonNodeToSqlScalarString(JsonNode? node, string functionName, string path, JsonPathEvaluationMode mode)
@@ -872,8 +972,9 @@ internal static class SqlFunctions
             document = JsonDocument.Parse(json);
             return true;
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
+            // ArgumentException: the text contains an unpaired surrogate, which cannot be transcoded to UTF-8
             document = null;
             return false;
         }

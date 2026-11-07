@@ -26,7 +26,7 @@ public static class OpenTelemetryCollectorInMemoryServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.TryAddSingleton<InMemoryOpenTelemetryHandler>(_ => new InMemoryOpenTelemetryHandler(options ?? new()));
+        services.TryAddSingleton<InMemoryOpenTelemetryHandler>(serviceProvider => new InMemoryOpenTelemetryHandler(options ?? new(), serviceProvider.GetRequiredService<TimeProvider>()));
         services.AddOpenTelemetryReceiver(static serviceProvider => serviceProvider.GetRequiredService<InMemoryOpenTelemetryHandler>(), configure);
         return services;
     }

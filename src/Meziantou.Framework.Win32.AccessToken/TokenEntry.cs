@@ -5,7 +5,7 @@ public sealed class TokenEntry
 {
     internal TokenEntry(SecurityIdentifier sid)
     {
-        Sid = sid ?? throw new ArgumentNullException(nameof(sid));
+        Sid = sid;
     }
 
     /// <summary>Gets the security identifier (SID) for this entry.</summary>

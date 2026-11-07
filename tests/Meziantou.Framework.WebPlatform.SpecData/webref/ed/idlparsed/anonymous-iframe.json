@@ -1,0 +1,82 @@
+{
+  "spec": {
+    "title": "Iframe credentialless",
+    "url": "https://wicg.github.io/anonymous-iframe/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "HTMLIFrameElement": [
+        {
+          "fragment": "partial interface HTMLIFrameElement {\n  attribute boolean credentialless;\n};",
+          "type": "interface",
+          "name": "HTMLIFrameElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "credentialless",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/anonymous-iframe/#dom-htmliframeelement-credentialless"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  readonly attribute boolean credentialless;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "credentialless",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/anonymous-iframe/#dom-window-credentialless"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "HTMLIFrameElement": [],
+      "Window": []
+    },
+    "externalDependencies": [
+      "HTMLIFrameElement",
+      "Window"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

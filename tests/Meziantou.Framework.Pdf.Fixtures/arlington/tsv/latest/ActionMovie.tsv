@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2	2.0	FALSE	FALSE	FALSE		[Action]			Table 196 and Table 213
+S	name	1.2	2.0	TRUE	FALSE	FALSE		[Movie]			
+Next	array;dictionary	1.2	2.0	FALSE	FALSE	FALSE				[ArrayOfActions];[ActionGoTo,ActionGoToR,fn:SinceVersion(1.6,ActionGoToE),fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,fn:IsPDFVersion(1.2,ActionNOP),fn:IsPDFVersion(1.2,ActionSetState),ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData,fn:SinceVersion(1.5,ActionSetOCGState),fn:SinceVersion(1.5,ActionRendition),fn:SinceVersion(1.5,ActionTransition),fn:SinceVersion(1.6,ActionGoTo3DView),fn:SinceVersion(1.3,ActionECMAScript),fn:SinceVersion(2.0,ActionRichMediaExecute)]	
+Annotation	dictionary	1.2	2.0	FALSE	FALSE	FALSE				[AnnotMovie]	
+T	string-text	1.2	2.0	FALSE	FALSE	FALSE					
+Operation	name	1.2	2.0	FALSE	FALSE	FALSE	Play	[Play,Stop,Pause,Resume]			

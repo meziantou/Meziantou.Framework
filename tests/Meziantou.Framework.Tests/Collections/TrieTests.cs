@@ -116,4 +116,93 @@ public sealed class TrieTests
         Assert.False(trie.TryGetValue("hello", out _));
         Assert.Empty(trie.StartsWith("he"));
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region Trie_Usage
+        var commands = new Trie<string>(ignoreCase: true);
+        commands.Add("status", "Show the working tree status");
+        commands.Add("stash", "Stash the changes");
+        commands.Add("commit", "Record changes");
+
+        Assert.True(commands.TryGetValue("COMMIT", out var description));
+        Assert.Equal("Record changes", description);
+
+        // Find all the keys that start with a prefix
+        var matches = commands.StartsWith("sta").Select(item => item.Key).Order(StringComparer.Ordinal);
+        Assert.Equal(["stash", "status"], matches);
+        #endregion
+    }
+
+    [Fact]
+    public void Enumerator_IsStruct_EnumeratesDeepKeys()
+    {
+        var trie = new Trie<int>();
+        var expected = new List<KeyValuePair<string, int>>();
+        for (var i = 0; i <= 200; i++)
+        {
+            var key = new string('a', i);
+            trie.Add(key, i);
+            expected.Add(new(key, i));
+        }
+
+        trie.Add("b", -1);
+        trie.Add("ab", -2);
+
+        Trie<int>.Enumerator enumerator = trie.GetEnumerator();
+        var actual = new List<KeyValuePair<string, int>>();
+        while (enumerator.MoveNext())
+        {
+            actual.Add(enumerator.Current);
+        }
+
+        Assert.HasCount(trie.Count, actual);
+        Assert.Equal(expected.Concat([new KeyValuePair<string, int>("b", -1), new KeyValuePair<string, int>("ab", -2)]).OrderBy(item => item.Key, StringComparer.Ordinal), actual.OrderBy(item => item.Key, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Enumerate_ParentBeforeChildren()
+    {
+        var trie = new Trie<int>();
+        trie.Add("abc", 3);
+        trie.Add("a", 1);
+        trie.Add("ab", 2);
+        trie.Add("x", 4);
+
+        var keys = trie.Select(item => item.Key).ToList();
+        Assert.True(keys.IndexOf("a") < keys.IndexOf("ab"));
+        Assert.True(keys.IndexOf("ab") < keys.IndexOf("abc"));
+        Assert.HasCount(4, keys);
+    }
+
+    [Fact]
+    public void Enumerate_Empty()
+    {
+        var trie = new Trie<int>();
+        Assert.Empty(trie);
+        Assert.Empty(trie.StartsWith("a"));
+    }
+
+    [Fact]
+    public void Enumerator_Reset()
+    {
+        var trie = new Trie<int>();
+        trie.Add("a", 1);
+        trie.Add("ab", 2);
+
+        IEnumerator<KeyValuePair<string, int>> enumerator = trie.GetEnumerator();
+        while (enumerator.MoveNext())
+        {
+        }
+
+        enumerator.Reset();
+        var count = 0;
+        while (enumerator.MoveNext())
+        {
+            count++;
+        }
+
+        Assert.Equal(2, count);
+    }
 }

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ka": {
+      "identity": {
+        "language": "ka"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

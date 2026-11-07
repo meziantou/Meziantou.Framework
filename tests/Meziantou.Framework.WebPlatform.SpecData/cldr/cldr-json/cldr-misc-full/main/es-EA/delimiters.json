@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-EA": {
+      "identity": {
+        "language": "es",
+        "territory": "EA"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
@@ -9,23 +10,8 @@ internal static class YamlDictionaryConverterHelper
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(referenceValue);
 
-        if (writer.ReferenceWriter is null)
-        {
-            return false;
-        }
-
-        if (writer.ReferenceWriter.TryGetAnchor(referenceValue, out var existing))
-        {
-            writer.WriteAlias(existing);
-            return true;
-        }
-
-        var anchor = writer.ReferenceWriter.GetOrAddAnchor(referenceValue);
-        if (anchor is not null)
-        {
-            writer.WriteAnchor(anchor);
-        }
-        return false;
+        // The runtime type decides whether the value is tracked: a boxed value type is not an identity worth preserving.
+        return writer.TryWriteReference(referenceValue);
     }
 
     internal static void WriteEntries<TValue>(YamlWriter writer, IEnumerable<KeyValuePair<string, TValue>> entries, YamlConverter valueConverter)
@@ -50,6 +36,7 @@ internal static class YamlDictionaryConverterHelper
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(valueConverter);
+        EnsureSupportedKeyType(writer, typeof(TKey));
 
         writer.WriteStartMapping();
         foreach (var pair in entries)
@@ -61,6 +48,56 @@ internal static class YamlDictionaryConverterHelper
         writer.WriteEndMapping();
     }
 
+    /// <summary>Throws when the keys of <paramref name="keyType"/> cannot be written as scalars and read back.</summary>
+    /// <remarks>
+    /// A key is written with its invariant text representation and read by the converter of its type, which only
+    /// round-trips for the scalar types the serializer knows, for <see cref="object"/>, and for a type handled by a
+    /// custom converter. Any other key, such as an object, used to be written as the text returned by
+    /// <see cref="object.ToString"/> and could not be read back. The source generator reports the same key types.
+    /// </remarks>
+    internal static void EnsureSupportedKeyType(YamlReaderWriterBase readerOrWriter, Type keyType)
+    {
+        if (IsSupportedKeyType(keyType) ||
+            keyType.GetCustomAttribute<YamlConverterAttribute>(inherit: false) is not null ||
+            readerOrWriter.TryGetCustomConverter(keyType, out _))
+        {
+            return;
+        }
+
+        throw new NotSupportedException($"Dictionary key type '{keyType}' is not supported. Use a string, an enum, a scalar type such as int or Guid, or object.");
+    }
+
+    internal static bool IsSupportedKeyType(Type keyType)
+    {
+        keyType = Nullable.GetUnderlyingType(keyType) ?? keyType;
+        return keyType.IsPrimitive ||
+               keyType.IsEnum ||
+               keyType == typeof(string) ||
+               keyType == typeof(object) ||
+               keyType == typeof(decimal) ||
+               keyType == typeof(DateTime) ||
+               keyType == typeof(DateTimeOffset) ||
+               keyType == typeof(DateOnly) ||
+               keyType == typeof(TimeOnly) ||
+               keyType == typeof(TimeSpan) ||
+               keyType == typeof(Guid) ||
+               keyType == typeof(Uri) ||
+               keyType == typeof(CultureInfo) ||
+               keyType == typeof(Half) ||
+               keyType == typeof(Int128) ||
+               keyType == typeof(UInt128) ||
+               keyType == typeof(System.Numerics.BigInteger) ||
+               keyType == typeof(System.Version) ||
+               keyType == typeof(System.Text.Rune)
+#if NET11_0_OR_GREATER
+               || keyType == typeof(BFloat16)
+               || keyType == typeof(Decimal32)
+               || keyType == typeof(Decimal64)
+               || keyType == typeof(Decimal128)
+#endif
+               ;
+    }
+
     internal static void WriteKey<TKey>(YamlWriter writer, TKey key)
     {
         if (key is null)
@@ -70,11 +107,40 @@ internal static class YamlDictionaryConverterHelper
 
         if (key is string textKey)
         {
-            writer.WritePropertyName(writer.ConvertDictionaryKey(textKey));
+            var name = writer.ConvertDictionaryKey(textKey);
+
+            // The key of a dictionary of any other key type is read by the converter of that type: a plain "1" key
+            // of a Dictionary<object, TValue> would be read back as a number.
+            if (typeof(TKey) != typeof(string) && writer.ShouldQuoteAmbiguousScalar(name))
+            {
+                writer.WritePropertyName(name, ScalarStyle.DoubleQuoted);
+                return;
+            }
+
+            writer.WritePropertyName(name);
             return;
         }
 
-        writer.WritePropertyName(FormatNonStringKey(key));
+        // An enum key is read through the built-in enum converter, which accepts the YamlEnumMemberName names, so it is
+        // written with the same names as an enum value, even when a custom converter handles the values of the enum.
+        if (key is Enum &&
+            (writer.GetConverter(key.GetType()) as IYamlEnumNameFormatter ?? YamlReaderWriterBase.YamlBuiltInConverters.CreateConverter(key.GetType()) as IYamlEnumNameFormatter) is { } enumNameFormatter)
+        {
+            writer.WritePropertyName(enumNameFormatter.FormatName(key));
+            return;
+        }
+
+        // ScalarStylePreferences.PreferPlainStyle = false quotes the keys, which would read a number or a boolean key
+        // back as a string
+        var text = FormatNonStringKey(key);
+
+        // The JSON schema has no spelling for the non-finite floats, which are tagged as they are when written as values
+        if (key is double or float or Half && text is ".inf" or "-.inf" or ".nan" && writer.Options.Schema is YamlSchemaKind.Json)
+        {
+            writer.WriteTag("!!float");
+        }
+
+        writer.WritePropertyName(text, writer.ReadsAsBooleanOrNumber(text) ? ScalarStyle.Plain : ScalarStyle.Any);
     }
 
     internal static string FormatNonStringKey<T>(T key)
@@ -84,44 +150,14 @@ internal static class YamlDictionaryConverterHelper
             return boolValue ? "true" : "false";
         }
 
-        if (key is double doubleValue)
+        switch (key)
         {
-            if (double.IsPositiveInfinity(doubleValue))
-            {
-                return ".inf";
-            }
-
-            if (double.IsNegativeInfinity(doubleValue))
-            {
-                return "-.inf";
-            }
-
-            if (double.IsNaN(doubleValue))
-            {
-                return ".nan";
-            }
-
-            return doubleValue.ToString("R", CultureInfo.InvariantCulture);
-        }
-
-        if (key is float floatValue)
-        {
-            if (float.IsPositiveInfinity(floatValue))
-            {
-                return ".inf";
-            }
-
-            if (float.IsNegativeInfinity(floatValue))
-            {
-                return "-.inf";
-            }
-
-            if (float.IsNaN(floatValue))
-            {
-                return ".nan";
-            }
-
-            return floatValue.ToString("R", CultureInfo.InvariantCulture);
+            case double doubleValue:
+                return YamlScalar.FormatFloatingPoint(doubleValue);
+            case float floatValue:
+                return YamlScalar.FormatFloatingPoint(floatValue);
+            case Half halfValue:
+                return YamlScalar.FormatFloatingPoint(halfValue);
         }
 
         if (key is DateTime dateTime)
@@ -152,6 +188,16 @@ internal static class YamlDictionaryConverterHelper
         if (key is TimeOnly timeOnly)
         {
             return timeOnly.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        if (key is Uri uri)
+        {
+            return uri.OriginalString;
+        }
+
+        if (key is CultureInfo culture)
+        {
+            return culture.Name;
         }
 
         if (key is IFormattable formattable)
@@ -196,7 +242,7 @@ internal static class YamlDictionaryConverterHelper
         var options = reader.Options;
         dictionary ??= createDictionary(options);
         var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-        var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
+        var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
         HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
@@ -212,16 +258,12 @@ internal static class YamlDictionaryConverterHelper
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
-                if (!options.AllowMergeKeys)
-                {
-                    throw new YamlException(reader.SourceName, reader.Start, reader.End, "YAML merge keys are not allowed.");
-                }
-
                 ReadAndApplyMerge<TDictionary, TValue>(reader, ref valueConverter, dictionary, explicitKeys, createDictionary, containerKind);
                 continue;
             }
@@ -279,7 +321,18 @@ internal static class YamlDictionaryConverterHelper
             throw YamlThrowHelper.ThrowExpectedMapping(reader);
         }
 
-        keyConverter ??= reader.GetConverter(typeof(TKey));
+        if (keyConverter is null)
+        {
+            EnsureSupportedKeyType(reader, typeof(TKey));
+
+            // A key of a scalar type is read by the built-in converter of its type, the way it is written: a custom
+            // converter of the key type only applies to values. A key of any other type is read by its custom converter.
+            var keyType = Nullable.GetUnderlyingType(typeof(TKey)) ?? typeof(TKey);
+            keyConverter = IsSupportedKeyType(keyType)
+                ? YamlReaderWriterBase.YamlBuiltInConverters.CreateConverter(keyType) ?? reader.GetConverter(typeof(TKey))
+                : reader.GetConverter(typeof(TKey));
+        }
+
         valueConverter ??= reader.GetConverter(typeof(TValue));
 
         dictionary ??= createDictionary();
@@ -371,6 +424,7 @@ internal static class YamlDictionaryConverterHelper
             return;
         }
 
+        YamlMergeKey.ReplayAlias(reader, typeof(TDictionary));
         if (reader.TokenType == YamlTokenType.StartMapping || reader.TokenType == YamlTokenType.Alias)
         {
             var merged = ReadStringDictionary<TDictionary, TValue>(reader, ref valueConverter, createDictionary, containerKind);
@@ -388,6 +442,7 @@ internal static class YamlDictionaryConverterHelper
             reader.Read();
             while (reader.TokenType != YamlTokenType.EndSequence)
             {
+                YamlMergeKey.ReplayAlias(reader, typeof(TDictionary));
                 if (reader.TokenType != YamlTokenType.StartMapping && reader.TokenType != YamlTokenType.Alias)
                 {
                     throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge sequence entries must be mappings.");
@@ -407,6 +462,10 @@ internal static class YamlDictionaryConverterHelper
         throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge key value must be a mapping or a sequence of mappings.");
     }
 
+    /// <remarks>
+    /// A key an earlier mapping of the merge already provided keeps its value, so the merged key is recorded
+    /// alongside the explicitly declared ones.
+    /// </remarks>
     private static void ApplyMergeDictionary<TValue>(
         IDictionary<string, TValue> target,
         IEnumerable<KeyValuePair<string, TValue>> merged,
@@ -414,7 +473,7 @@ internal static class YamlDictionaryConverterHelper
     {
         foreach (var pair in merged)
         {
-            if (explicitKeys is not null && explicitKeys.Contains(pair.Key))
+            if (explicitKeys is not null && !explicitKeys.Add(pair.Key))
             {
                 continue;
             }

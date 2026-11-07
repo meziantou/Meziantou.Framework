@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-PN": {
+      "identity": {
+        "language": "en",
+        "territory": "PN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

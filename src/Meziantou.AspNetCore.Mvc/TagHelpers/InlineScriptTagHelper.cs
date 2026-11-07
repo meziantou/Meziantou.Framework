@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
@@ -8,17 +9,9 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// A TagHelper that inlines JavaScript files into &lt;script&gt; elements to reduce HTTP requests.
 /// </summary>
 /// <example>
-/// <code language="razor">
-/// &lt;!-- Input --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/InlineScript.cshtml">
 /// &lt;inline-script src="app.js" /&gt;
-/// 
-/// &lt;!-- Output --&gt;
-/// &lt;script&gt;
-/// function init() {
-///     console.log('App initialized');
-/// }
-/// /* ... JavaScript content ... */
-/// &lt;/script&gt;
+/// @* Rendered as &lt;script&gt;/* content of wwwroot/app.js */&lt;/script&gt; *@
 /// </code>
 /// </example>
 /// <remarks>
@@ -35,8 +28,9 @@ public sealed class InlineScriptTagHelper : InlineTagHelper
     /// <summary>Initializes a new instance of the <see cref="InlineScriptTagHelper"/> class.</summary>
     /// <param name="webHostEnvironment">The web host environment for accessing web root files.</param>
     /// <param name="cache">The memory cache for storing file contents.</param>
-    public InlineScriptTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache)
-     : base(webHostEnvironment, cache)
+    /// <param name="logger">The logger used to report missing files.</param>
+    public InlineScriptTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache, ILogger<InlineScriptTagHelper> logger)
+        : base(webHostEnvironment, cache, logger)
     {
     }
 
@@ -55,7 +49,6 @@ public sealed class InlineScriptTagHelper : InlineTagHelper
         output.TagName = "script";
         output.Attributes.RemoveAll("src");
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Content.AppendHtml(fileContent);
+        output.Content.AppendHtml(EscapeClosingTag(fileContent, "script"));
     }
 }
-

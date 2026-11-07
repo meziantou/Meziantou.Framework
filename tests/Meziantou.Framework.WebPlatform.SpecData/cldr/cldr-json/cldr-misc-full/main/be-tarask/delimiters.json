@@ -1,0 +1,16 @@
+{
+  "main": {
+    "be-tarask": {
+      "identity": {
+        "language": "be",
+        "variant": "TARASK"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

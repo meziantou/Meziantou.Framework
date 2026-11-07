@@ -6,11 +6,11 @@ A comprehensive ASP.NET Core library that provides opinionated defaults and best
 
 ### Basic Setup
 
-Add the service defaults to your ASP.NET Core application:
+Add the service defaults to your ASP.NET Core application (the extension methods are in the
+`Meziantou.AspNetCore.ServiceDefaults` namespace):
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/ServiceDefaultsExamples.cs;region=ServiceDefaults_BasicSetup;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.AspNetCore.ServiceDefaults;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add Meziantou service defaults
@@ -25,15 +25,18 @@ app.MapGet("/", () => "Hello World!");
 
 app.Run();
 ```
+<!-- endref -->
 
 ### Try Pattern
 
 Use `TryUseMeziantouConventions` to avoid registering the service defaults multiple times:
 
+<!-- ref:../../tests/Meziantou.AspNetCore.ServiceDefaults.Tests/ServiceDefaultTests.cs;region=ServiceDefaults_TryPattern;format=md-fenced-code-block;dedent=true -->
 ```csharp
 builder.UseMeziantouConventions();
 builder.TryUseMeziantouConventions(); // Will not register again
 ```
+<!-- endref -->
 
 ## Validation
 

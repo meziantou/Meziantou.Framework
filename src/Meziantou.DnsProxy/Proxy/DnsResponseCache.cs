@@ -6,8 +6,12 @@ namespace Meziantou.DnsProxy.Proxy;
 
 internal sealed class DnsResponseCache
 {
+    /// <summary>Fraction of the cache removed once it is full, so trimming is amortized instead of running on every store.</summary>
+    private const int TrimDivisor = 10;
+
     private readonly ConcurrentDictionary<CacheKey, CacheEntry> _entries = new();
     private readonly Lock _evictionLock = new();
+    private int _approximateCount;
     private readonly IOptions<DnsProxyOptions> _options;
     private readonly TimeProvider _timeProvider;
 
@@ -28,7 +32,7 @@ internal sealed class DnsResponseCache
         var now = _timeProvider.GetUtcNow();
         if (entry.ExpiresAtUtc <= now)
         {
-            _entries.TryRemove(key, out _);
+            Remove(key);
             return false;
         }
 
@@ -62,7 +66,7 @@ internal sealed class DnsResponseCache
         var key = CacheKey.Create(question, ednsOptions);
         var now = _timeProvider.GetUtcNow();
         var expiresAtUtc = now.Add(cacheDuration);
-        _entries[key] = new CacheEntry(
+        var entry = new CacheEntry(
             expiresAtUtc,
             now,
             response.IsAuthoritative,
@@ -75,7 +79,20 @@ internal sealed class DnsResponseCache
             CloneRecords(response.Authorities),
             CloneRecords(response.AdditionalRecords));
 
-        TrimCache(now, options.MaxCacheEntries);
+        if (_entries.TryAdd(key, entry))
+        {
+            Interlocked.Increment(ref _approximateCount);
+        }
+        else
+        {
+            _entries[key] = entry;
+        }
+
+        // ConcurrentDictionary.Count locks every bucket, so the hot path uses an approximate counter instead.
+        if (Volatile.Read(ref _approximateCount) > options.MaxCacheEntries)
+        {
+            TrimCache(now, options.MaxCacheEntries);
+        }
     }
 
     private bool TryGetCacheDuration(DnsMessage response, out TimeSpan cacheDuration)
@@ -107,40 +124,51 @@ internal sealed class DnsResponseCache
         return false;
     }
 
+    private void Remove(CacheKey key)
+    {
+        if (_entries.TryRemove(key, out _))
+        {
+            Interlocked.Decrement(ref _approximateCount);
+        }
+    }
+
     private void TrimCache(DateTimeOffset now, int maxCacheEntries)
     {
-        if (_entries.Count <= maxCacheEntries)
-        {
-            return;
-        }
-
         lock (_evictionLock)
         {
+            var count = _entries.Count;
+            Volatile.Write(ref _approximateCount, count);
+            if (count <= maxCacheEntries)
+            {
+                return;
+            }
+
             foreach (var entry in _entries)
             {
                 if (entry.Value.ExpiresAtUtc <= now)
                 {
-                    _entries.TryRemove(entry.Key, out _);
+                    Remove(entry.Key);
                 }
             }
 
-            while (_entries.Count > maxCacheEntries)
+            count = _entries.Count;
+            Volatile.Write(ref _approximateCount, count);
+
+            // Trim below the limit in a single ordered pass so the cost is amortized over the next
+            // maxCacheEntries/TrimDivisor stores, instead of rescanning the whole cache on every store.
+            var target = Math.Max(1, maxCacheEntries - Math.Max(1, maxCacheEntries / TrimDivisor));
+            if (count <= target)
             {
-                KeyValuePair<CacheKey, CacheEntry>? oldestEntry = null;
-                foreach (var entry in _entries)
-                {
-                    if (oldestEntry is null || entry.Value.StoredAtUtc < oldestEntry.Value.Value.StoredAtUtc)
-                    {
-                        oldestEntry = entry;
-                    }
-                }
+                return;
+            }
 
-                if (oldestEntry is not { } entryToRemove)
-                {
-                    return;
-                }
+            var snapshot = _entries.ToArray();
+            Array.Sort(snapshot, static (x, y) => x.Value.StoredAtUtc.CompareTo(y.Value.StoredAtUtc));
 
-                _entries.TryRemove(entryToRemove.Key, out _);
+            var removalCount = Math.Min(count - target, snapshot.Length);
+            for (var i = 0; i < removalCount; i++)
+            {
+                Remove(snapshot[i].Key);
             }
         }
     }

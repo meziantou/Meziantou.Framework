@@ -1,0 +1,343 @@
+{
+  "spec": {
+    "title": "Magnetometer",
+    "url": "https://w3c.github.io/magnetometer/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "Magnetometer",
+          "UncalibratedMagnetometer"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "Magnetometer": {
+        "fragment": "[SecureContext,\n  Exposed=Window]\ninterface Magnetometer : Sensor {\n  constructor(optional MagnetometerSensorOptions sensorOptions = {});\n  readonly attribute double? x;\n  readonly attribute double? y;\n  readonly attribute double? z;\n};",
+        "type": "interface",
+        "name": "Magnetometer",
+        "inheritance": "Sensor",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sensorOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MagnetometerSensorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/magnetometer/#dom-magnetometer-magnetometer"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-magnetometer-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-magnetometer-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-magnetometer-z"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/magnetometer/#magnetometer"
+      },
+      "MagnetometerLocalCoordinateSystem": {
+        "fragment": "enum MagnetometerLocalCoordinateSystem { \"device\", \"screen\" };",
+        "type": "enum",
+        "name": "MagnetometerLocalCoordinateSystem",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "device",
+            "href": "https://w3c.github.io/magnetometer/#dom-magnetometerlocalcoordinatesystem-device"
+          },
+          {
+            "type": "enum-value",
+            "value": "screen",
+            "href": "https://w3c.github.io/magnetometer/#dom-magnetometerlocalcoordinatesystem-screen"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/magnetometer/#enumdef-magnetometerlocalcoordinatesystem"
+      },
+      "MagnetometerSensorOptions": {
+        "fragment": "dictionary MagnetometerSensorOptions : SensorOptions {\n  MagnetometerLocalCoordinateSystem referenceFrame = \"device\";\n};",
+        "type": "dictionary",
+        "name": "MagnetometerSensorOptions",
+        "inheritance": "SensorOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "referenceFrame",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MagnetometerLocalCoordinateSystem"
+            },
+            "default": {
+              "type": "string",
+              "value": "device"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/magnetometer/#dom-magnetometersensoroptions-referenceframe"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/magnetometer/#dictdef-magnetometersensoroptions"
+      },
+      "UncalibratedMagnetometer": {
+        "fragment": "[SecureContext,\n  Exposed=Window]\ninterface UncalibratedMagnetometer : Sensor {\n  constructor(optional MagnetometerSensorOptions sensorOptions = {});\n  readonly attribute double? x;\n  readonly attribute double? y;\n  readonly attribute double? z;\n  readonly attribute double? xBias;\n  readonly attribute double? yBias;\n  readonly attribute double? zBias;\n};",
+        "type": "interface",
+        "name": "UncalibratedMagnetometer",
+        "inheritance": "Sensor",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sensorOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MagnetometerSensorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/magnetometer/#dom-uncalibratedmagnetometer-uncalibratedmagnetometer"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-uncalibratedmagnetometer-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-uncalibratedmagnetometer-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-uncalibratedmagnetometer-z"
+          },
+          {
+            "type": "attribute",
+            "name": "xBias",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-uncalibratedmagnetometer-xbias"
+          },
+          {
+            "type": "attribute",
+            "name": "yBias",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-uncalibratedmagnetometer-ybias"
+          },
+          {
+            "type": "attribute",
+            "name": "zBias",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/magnetometer/#dom-uncalibratedmagnetometer-zbias"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/magnetometer/#uncalibratedmagnetometer"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Magnetometer",
+        "UncalibratedMagnetometer"
+      ]
+    },
+    "dependencies": {
+      "Magnetometer": [
+        "Sensor",
+        "MagnetometerSensorOptions"
+      ],
+      "MagnetometerSensorOptions": [
+        "SensorOptions",
+        "MagnetometerLocalCoordinateSystem"
+      ],
+      "UncalibratedMagnetometer": [
+        "Sensor",
+        "MagnetometerSensorOptions"
+      ]
+    },
+    "externalDependencies": [
+      "Sensor",
+      "SensorOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
@@ -8,15 +9,9 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// A TagHelper that inlines CSS files into &lt;style&gt; elements to reduce HTTP requests.
 /// </summary>
 /// <example>
-/// <code language="razor">
-/// &lt;!-- Input --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/InlineStyle.cshtml">
 /// &lt;inline-style href="site.css" /&gt;
-/// 
-/// &lt;!-- Output --&gt;
-/// &lt;style&gt;
-/// body { margin: 0; padding: 0; }
-/// /* ... CSS content ... */
-/// &lt;/style&gt;
+/// @* Rendered as &lt;style&gt;/* content of wwwroot/site.css */&lt;/style&gt; *@
 /// </code>
 /// </example>
 /// <remarks>
@@ -33,8 +28,9 @@ public sealed class InlineStyleTagHelper : InlineTagHelper
     /// <summary>Initializes a new instance of the <see cref="InlineStyleTagHelper"/> class.</summary>
     /// <param name="webHostEnvironment">The web host environment for accessing web root files.</param>
     /// <param name="cache">The memory cache for storing file contents.</param>
-    public InlineStyleTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache)
-        : base(webHostEnvironment, cache)
+    /// <param name="logger">The logger used to report missing files.</param>
+    public InlineStyleTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache, ILogger<InlineStyleTagHelper> logger)
+        : base(webHostEnvironment, cache, logger)
     {
     }
 
@@ -53,7 +49,6 @@ public sealed class InlineStyleTagHelper : InlineTagHelper
         output.TagName = "style";
         output.Attributes.RemoveAll("href");
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Content.AppendHtml(fileContent);
+        output.Content.AppendHtml(EscapeClosingTag(fileContent, "style"));
     }
 }
-

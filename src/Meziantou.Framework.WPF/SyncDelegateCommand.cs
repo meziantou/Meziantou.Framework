@@ -6,7 +6,7 @@ internal sealed class SyncDelegateCommand : IDelegateCommand
 {
     private readonly Action<object?> _execute;
     private readonly Func<object?, bool> _canExecute;
-    private readonly Dispatcher _dispatcher;
+    private readonly Dispatcher? _dispatcher;
 
     public event EventHandler? CanExecuteChanged;
 
@@ -14,7 +14,7 @@ internal sealed class SyncDelegateCommand : IDelegateCommand
     {
         _execute = execute;
         _canExecute = canExecute;
-        _dispatcher = Dispatcher.CurrentDispatcher;
+        _dispatcher = DelegateCommandDispatcher.GetCurrentThreadDispatcher();
     }
 
     public bool CanExecute(object? parameter)
@@ -29,13 +29,6 @@ internal sealed class SyncDelegateCommand : IDelegateCommand
 
     public void RaiseCanExecuteChanged()
     {
-        if (_dispatcher is not null)
-        {
-            _dispatcher.Invoke(() => CanExecuteChanged?.Invoke(this, EventArgs.Empty));
-        }
-        else
-        {
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-        }
+        DelegateCommandDispatcher.RaiseCanExecuteChanged(_dispatcher, this, CanExecuteChanged);
     }
 }

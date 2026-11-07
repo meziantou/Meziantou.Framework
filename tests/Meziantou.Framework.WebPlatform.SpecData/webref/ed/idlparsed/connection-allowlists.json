@@ -1,0 +1,168 @@
+{
+  "spec": {
+    "title": "Connection Allowlists",
+    "url": "https://wicg.github.io/connection-allowlists/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "ConnectionAllowlistDisposition": {
+        "fragment": "enum ConnectionAllowlistDisposition { \"enforce\", \"report\" };",
+        "type": "enum",
+        "name": "ConnectionAllowlistDisposition",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "enforce",
+            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistdisposition-enforce"
+          },
+          {
+            "type": "enum-value",
+            "value": "report",
+            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistdisposition-report"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/connection-allowlists/#enumdef-connectionallowlistdisposition"
+      },
+      "ConnectionAllowlistViolationReport": {
+        "fragment": "dictionary ConnectionAllowlistViolationReport : ReportBody {\n  USVString url;\n  USVString connection;\n  sequence<DOMString> allowlist;\n  ConnectionAllowlistDisposition disposition;\n};",
+        "type": "dictionary",
+        "name": "ConnectionAllowlistViolationReport",
+        "inheritance": "ReportBody",
+        "members": [
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-url"
+          },
+          {
+            "type": "field",
+            "name": "connection",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-connection"
+          },
+          {
+            "type": "field",
+            "name": "allowlist",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-allowlist"
+          },
+          {
+            "type": "field",
+            "name": "disposition",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConnectionAllowlistDisposition"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/connection-allowlists/#dom-connectionallowlistviolationreport-disposition"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/connection-allowlists/#dictdef-connectionallowlistviolationreport"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLIFrameElement": [
+        {
+          "fragment": "partial interface HTMLIFrameElement {\n  [CEReactions] attribute DOMString connectionAllowlist;\n};",
+          "type": "interface",
+          "name": "HTMLIFrameElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "connectionAllowlist",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/connection-allowlists/#dom-htmliframeelement-connectionallowlist"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "ConnectionAllowlistViolationReport": [
+        "ReportBody",
+        "ConnectionAllowlistDisposition"
+      ],
+      "HTMLIFrameElement": []
+    },
+    "externalDependencies": [
+      "ReportBody",
+      "HTMLIFrameElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

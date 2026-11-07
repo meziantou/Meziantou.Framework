@@ -6,6 +6,15 @@ internal static class NpmPackageSourceResolver
 {
     private static readonly StringComparer Comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
+    /// <summary>Resolves the registry of a package, preferring the registry declared next to the dependency, such as by a plugin marketplace, over the .npmrc files.</summary>
+    public static Uri ResolveRegistry(FullPath dependencyFile, string packageName, string? declaredRegistry)
+    {
+        if (!string.IsNullOrWhiteSpace(declaredRegistry) && Uri.TryCreate(declaredRegistry.EndsWith('/', StringComparison.Ordinal) ? declaredRegistry : declaredRegistry + "/", UriKind.Absolute, out var registry))
+            return registry;
+
+        return ResolveRegistry(dependencyFile, packageName);
+    }
+
     public static Uri ResolveRegistry(FullPath dependencyFile, string packageName)
     {
         var scopedRegistries = new Dictionary<string, string>(Comparer);

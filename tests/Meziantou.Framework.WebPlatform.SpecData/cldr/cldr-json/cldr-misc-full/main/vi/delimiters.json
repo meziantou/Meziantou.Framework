@@ -1,0 +1,15 @@
+{
+  "main": {
+    "vi": {
+      "identity": {
+        "language": "vi"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

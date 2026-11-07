@@ -115,4 +115,25 @@ public sealed class FormatDetectorTests
     {
         Assert.Null(FormatDetector.DetectFromExtension("test.xyz"));
     }
+
+    [Fact]
+    public void DetectFromHeader_OggStreamThatIsNotVorbisOrOpus_IsNotRecognized()
+    {
+        // Reporting an Ogg FLAC or Speex stream as Vorbis makes reading it succeed with no tags at all, which
+        // a caller cannot tell apart from a genuinely untagged file.
+        var ogg = File.ReadAllBytes(Path.Combine("TestFiles", "basic.ogg"));
+        var payloadStart = 27 + ogg[26];
+        ogg[payloadStart] = 0x7F;
+        "FLAC"u8.CopyTo(ogg.AsSpan(payloadStart + 1));
+
+        using var stream = new MemoryStream(ogg);
+        Assert.Null(MediaFile.DetectFormat(stream));
+    }
+
+    [Fact]
+    public void DetectFromHeader_OggVorbis_IsRecognized()
+    {
+        using var stream = File.OpenRead(Path.Combine("TestFiles", "basic.ogg"));
+        Assert.Equal(MediaFormat.OggVorbis, MediaFile.DetectFormat(stream));
+    }
 }

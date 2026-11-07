@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-SN": {
+      "identity": {
+        "language": "fr",
+        "territory": "SN"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

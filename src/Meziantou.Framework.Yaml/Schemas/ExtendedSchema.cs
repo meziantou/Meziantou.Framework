@@ -44,22 +44,10 @@ public class ExtendedSchema : CoreSchema
     protected override void PrepareScalarRules()
     {
         AddScalarRule<object>("!!null", @"null|Null|NULL|\~|", m => null, null);
-        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?(0|[1-9][0-9_]*))", JsonSchema.DecodeInteger, null);
-        AddScalarRule("!!int", @"([-+]?)0b([01_]+)", m =>
-        {
-            var v = Convert.ToInt32(m.Groups[2].Value.Replace("_", "", StringComparison.Ordinal), 2);
-            return m.Groups[1].Value == "-" ? -v : v;
-        }, null);
-        AddScalarRule("!!int", @"([-+]?)0o?([0-7_]+)", m =>
-        {
-            var v = Convert.ToInt32(m.Groups[2].Value.Replace("_", "", StringComparison.Ordinal), 8);
-            return m.Groups[1].Value == "-" ? -v : v;
-        }, null);
-        AddScalarRule("!!int", @"([-+]?)0x([0-9a-fA-F_]+)", m =>
-        {
-            var v = Convert.ToInt32(m.Groups[2].Value.Replace("_", "", StringComparison.Ordinal), 16);
-            return m.Groups[1].Value == "-" ? -v : v;
-        }, null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?(0|[1-9][0-9_]*))", m => SchemaScalarDecoder.DecodeInteger(m.Value), null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?)0b([01_]+)", m => SchemaScalarDecoder.DecodeInteger(m.Groups[1].Value, "0b", m.Groups[2].Value), null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?)0o?([0-7_]+)", m => SchemaScalarDecoder.DecodeInteger(m.Groups[1].Value, "0o", m.Groups[2].Value), null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?)0x([0-9a-fA-F_]+)", m => SchemaScalarDecoder.DecodeInteger(m.Groups[1].Value, "0x", m.Groups[2].Value), null);
         // http://yaml.org/type/float.html is wrong  => [0-9.] should be [0-9_]
         AddScalarRule("!!float", @"[-+]?(0|[1-9][0-9_]*)\.[0-9_]*([eE][-+]?[0-9]+)?",
             m => Convert.ToDouble(m.Value.Replace("_", "", StringComparison.Ordinal), CultureInfo.InvariantCulture), null);
@@ -73,19 +61,20 @@ public class ExtendedSchema : CoreSchema
         AddScalarRule("!!bool", @"y|Y|yes|Yes|YES|true|True|TRUE|on|On|ON", m => true, null);
         AddScalarRule("!!bool", @"n|N|no|No|NO|false|False|FALSE|off|Off|OFF", m => false, null);
         AddScalarRule("!!merge", @"<<", m => "<<", null);
-        AddScalarRule("!!timestamp", // spec is wrong (([ \t]*)Z|[-+][0-9][0-9]?(:[0-9][0-9])?)? should be (([ \t]*)(Z|[-+][0-9][0-9]?(:[0-9][0-9])?))? to accept "2001-12-14 21:59:43.10 -5"
+        AddScalarRule([typeof(DateTime)], "!!timestamp", // spec is wrong (([ \t]*)Z|[-+][0-9][0-9]?(:[0-9][0-9])?)? should be (([ \t]*)(Z|[-+][0-9][0-9]?(:[0-9][0-9])?))? to accept "2001-12-14 21:59:43.10 -5"
             @"([0-9]{4})-([0-9]{2})-([0-9]{2})" +
             @"(" +
             @"([Tt]|[\t ]+)" +
-            @"([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2})(\.([0-9]*))?" +
+            @"([0-9]{1,2}):([0-9]{2}):([0-9]{2})(\.([0-9]*))?" + // The minutes and the seconds have two digits
             @"(" +
             @"([ \t]*)" +
             @"(Z|([-+])([0-9]{1,2})(:([0-9][0-9]))?)" +
             @")?" +
             @")?",
-            match => DateTime.Parse(match.Value, CultureInfo.InvariantCulture),
-            datetime =>
+            match => SchemaScalarDecoder.DecodeTimestamp(match.Value),
+            value =>
             {
+                var datetime = (DateTime)value;
                 var z = datetime.ToString("%K", CultureInfo.InvariantCulture);
                 if (z is not "Z" and not "")
                     z = " " + z;

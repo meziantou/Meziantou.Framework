@@ -1,17 +1,27 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
+    <!-- Converts values with named cultures -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- The C# compiler of the .NET 11 RC2 and RC3 SDKs overflows its stack under the updated memory safety rules when a union
+       lists itself as a nullable case (YamlCSharpUnionTests.RecursiveUnion): https://github.com/dotnet/roslyn/issues/85762
+       Unions are only compiled for net11.0, so the other target frameworks keep the rules. -->
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <MeziantouUpdatedMemorySafetyRules>false</MeziantouUpdatedMemorySafetyRules>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="files\**\*.yaml" />
+    <EmbeddedResource Include="files/yaml-test-suite/cases.json" LogicalName="Meziantou.Framework.Yaml.Tests.files.yaml-test-suite.cases.json" />
     <EmbeddedResource Include="files\**\*.yaml" />
     <Compile Include="..\..\common\NuGetPackageFixture.cs" />
     <Compile Include="..\..\common\OutputPathHelper.cs" />
     <Compile Include="..\..\common\TargetFrameworkHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />

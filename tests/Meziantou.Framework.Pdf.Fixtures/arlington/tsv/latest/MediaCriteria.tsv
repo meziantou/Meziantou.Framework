@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaCriteria]			Table 279
+A	boolean	1.5		FALSE	FALSE	FALSE					hear audio description, equivalent to SMIL's systemAudioDesc attribute
+C	boolean	1.5		FALSE	FALSE	FALSE					see text captions, equivalent to SMIL's systemCaptions attribute
+O	boolean	1.5		FALSE	FALSE	FALSE					hear audio overdubs
+S	boolean	1.5		FALSE	FALSE	FALSE					see subtitles
+R	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@R>0)]		bits per second, equivalent to SMIL's systemBitrate attribute
+D	dictionary	1.5		FALSE	FALSE	FALSE				[MinimumBitDepth]	Equivalent to SMIL's systemScreenDepth attribute
+Z	dictionary	1.5		FALSE	FALSE	FALSE				[MinimumScreenSize]	Equivalent to SMIL's systemScreenSize attribute
+V	array	1.5		FALSE	FALSE	FALSE				[ArrayOfSoftwareIdentifiers]	
+P	array	1.5		FALSE	FALSE	FALSE				[ArrayOfNamesGeneral]	
+L	array	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsText]	Equivalent to SMIL's systemLanguage attribute

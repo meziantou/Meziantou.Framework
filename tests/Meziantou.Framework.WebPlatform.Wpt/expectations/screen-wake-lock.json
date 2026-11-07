@@ -1,0 +1,59 @@
+{
+  "screen-wake-lock/chrome-bug-1348019.https.html": {
+    "total": 1
+  },
+  "screen-wake-lock/idlharness.https.window.js": {
+    "total": 42
+  },
+  "screen-wake-lock/wakelock-active-document.https.window.js": {
+    "total": 3
+  },
+  "screen-wake-lock/wakelock-disabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "screen-wake-lock/wakelock-document-hidden.https.html": {
+    "total": 2
+  },
+  "screen-wake-lock/wakelock-enabled-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 2
+  },
+  "screen-wake-lock/wakelock-enabled-by-permissions-policy-attribute.https.html": {
+    "total": 2
+  },
+  "screen-wake-lock/wakelock-enabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "screen-wake-lock/wakelock-enabled-on-self-origin-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "screen-wake-lock/wakelock-insecure-context.any.js": {
+    "total": 1
+  },
+  "screen-wake-lock/wakelock-insecure-context.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "screen-wake-lock/wakelock-onrelease.https.html": {
+    "total": 3
+  },
+  "screen-wake-lock/wakelock-released.https.html": {
+    "total": 1
+  },
+  "screen-wake-lock/wakelock-request-denied.https.html": {
+    "total": 1
+  },
+  "screen-wake-lock/wakelock-screen-type-on-worker.https.worker.js": {
+    "total": 1,
+    "failures": {
+      "Screen wake lock should not be allowed in dedicated worker": "FAIL"
+    }
+  },
+  "screen-wake-lock/wakelock-supported-by-permissions-policy.html": {
+    "total": 1
+  },
+  "screen-wake-lock/wakelock-type.https.window.js": {
+    "total": 2
+  },
+  "screen-wake-lock/wakelockpermissiondescriptor.https.html": {
+    "total": 1
+  }
+}

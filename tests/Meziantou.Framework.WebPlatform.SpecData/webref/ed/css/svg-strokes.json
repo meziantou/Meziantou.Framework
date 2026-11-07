@@ -1,0 +1,59 @@
+{
+  "spec": {
+    "title": "SVG Strokes",
+    "url": "https://svgwg.org/specs/strokes/"
+  },
+  "properties": [
+    {
+      "name": "stroke-alignment",
+      "href": "https://svgwg.org/specs/strokes/#StrokeAlignmentProperty",
+      "value": "center | inner | outer",
+      "initial": "center",
+      "appliesTo": "shapes and text content elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "media": "visual",
+      "computedValue": "as specified",
+      "animatable": "yes",
+      "styleDeclaration": [
+        "stroke-alignment",
+        "strokeAlignment"
+      ]
+    },
+    {
+      "name": "stroke-dashcorner",
+      "href": "https://svgwg.org/specs/strokes/#StrokeDashcornerProperty",
+      "value": "none | <length>",
+      "initial": "none",
+      "appliesTo": "shapes and text content elements",
+      "inherited": "yes",
+      "percentages": "refer to the size of the current viewport (see Units)",
+      "media": "visual",
+      "computedValue": "absolute length or keyword specified",
+      "animatable": "yes",
+      "styleDeclaration": [
+        "stroke-dashcorner",
+        "strokeDashcorner"
+      ]
+    },
+    {
+      "name": "stroke-dashadjust",
+      "href": "https://svgwg.org/specs/strokes/#StrokeDashadjustProperty",
+      "value": "none | [stretch | compress] [dashes | gaps]?",
+      "initial": "none",
+      "appliesTo": "shapes and text content elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "media": "visual",
+      "computedValue": "as specified",
+      "animatable": "yes",
+      "styleDeclaration": [
+        "stroke-dashadjust",
+        "strokeDashadjust"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

@@ -1,0 +1,787 @@
+{
+  "spec": {
+    "title": "Performance Timeline",
+    "url": "https://w3c.github.io/performance-timeline/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "PerformanceObserver"
+        ],
+        "Worker": [
+          "PerformanceObserver"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "PerformanceEntry",
+          "PerformanceObserverEntryList"
+        ],
+        "Worker": [
+          "PerformanceEntry",
+          "PerformanceObserverEntryList"
+        ]
+      }
+    },
+    "idlNames": {
+      "PerformanceEntryList": {
+        "fragment": "typedef sequence<PerformanceEntry> PerformanceEntryList;",
+        "type": "typedef",
+        "name": "PerformanceEntryList",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "sequence",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceEntry"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/performance-timeline/#typedefdef-performanceentrylist"
+      },
+      "PerformanceEntry": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PerformanceEntry {\n  readonly    attribute unsigned long long  id;\n  readonly    attribute DOMString           name;\n  readonly    attribute DOMString           entryType;\n  readonly    attribute DOMHighResTimeStamp startTime;\n  readonly    attribute DOMHighResTimeStamp duration;\n  readonly    attribute unsigned long long  navigationId;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceEntry",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceentry-id"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceentry-name"
+          },
+          {
+            "type": "attribute",
+            "name": "entryType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceentry-entrytype"
+          },
+          {
+            "type": "attribute",
+            "name": "startTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceentry-starttime"
+          },
+          {
+            "type": "attribute",
+            "name": "duration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceentry-duration"
+          },
+          {
+            "type": "attribute",
+            "name": "navigationId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceentry-navigationid"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceentry-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/performance-timeline/#performanceentry"
+      },
+      "PerformanceObserverCallback": {
+        "fragment": "callback PerformanceObserverCallback = undefined (PerformanceObserverEntryList entries,\n                                                 PerformanceObserver observer,\n                                                 optional PerformanceObserverCallbackOptions options = {});",
+        "type": "callback",
+        "name": "PerformanceObserverCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "entries",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceObserverEntryList"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "observer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceObserver"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "options",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceObserverCallbackOptions"
+            },
+            "default": {
+              "type": "dictionary"
+            },
+            "optional": true,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/performance-timeline/#callbackdef-performanceobservercallback"
+      },
+      "PerformanceObserver": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PerformanceObserver {\n  constructor(PerformanceObserverCallback callback);\n  undefined observe (optional PerformanceObserverInit options = {});\n  undefined disconnect ();\n  PerformanceEntryList takeRecords();\n  [SameObject] static readonly attribute FrozenArray<DOMString> supportedEntryTypes;\n};",
+        "type": "interface",
+        "name": "PerformanceObserver",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PerformanceObserverCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserver-performanceobserver"
+          },
+          {
+            "type": "operation",
+            "name": "observe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PerformanceObserverInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserver-observe"
+          },
+          {
+            "type": "operation",
+            "name": "disconnect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserver-disconnect"
+          },
+          {
+            "type": "operation",
+            "name": "takeRecords",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceEntryList"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserver-takerecords"
+          },
+          {
+            "type": "attribute",
+            "name": "supportedEntryTypes",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "readonly": true,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserver-supportedentrytypes"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/performance-timeline/#performanceobserver"
+      },
+      "PerformanceObserverCallbackOptions": {
+        "fragment": "dictionary PerformanceObserverCallbackOptions {\n  unsigned long long droppedEntriesCount;\n};",
+        "type": "dictionary",
+        "name": "PerformanceObserverCallbackOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "droppedEntriesCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobservercallbackoptions-droppedentriescount"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/performance-timeline/#dictdef-performanceobservercallbackoptions"
+      },
+      "PerformanceObserverInit": {
+        "fragment": "dictionary PerformanceObserverInit {\n  sequence<DOMString> entryTypes;\n  DOMString type;\n  boolean buffered;\n};",
+        "type": "dictionary",
+        "name": "PerformanceObserverInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "entryTypes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-entrytypes"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-type"
+          },
+          {
+            "type": "field",
+            "name": "buffered",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-buffered"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/performance-timeline/#dictdef-performanceobserverinit"
+      },
+      "PerformanceObserverEntryList": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PerformanceObserverEntryList {\n  PerformanceEntryList getEntries();\n  PerformanceEntryList getEntriesByType (DOMString type);\n  PerformanceEntryList getEntriesByName (DOMString name, optional DOMString type);\n};",
+        "type": "interface",
+        "name": "PerformanceObserverEntryList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getEntries",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceEntryList"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentries"
+          },
+          {
+            "type": "operation",
+            "name": "getEntriesByType",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceEntryList"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentriesbytype"
+          },
+          {
+            "type": "operation",
+            "name": "getEntriesByName",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceEntryList"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentriesbyname"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/performance-timeline/#performanceobserverentrylist"
+      }
+    },
+    "idlExtendedNames": {
+      "Performance": [
+        {
+          "fragment": "partial interface Performance {\n  PerformanceEntryList getEntries ();\n  PerformanceEntryList getEntriesByType (DOMString type);\n  PerformanceEntryList getEntriesByName (DOMString name, optional DOMString type);\n};",
+          "type": "interface",
+          "name": "Performance",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getEntries",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PerformanceEntryList"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/performance-timeline/#dom-performance-getentries"
+            },
+            {
+              "type": "operation",
+              "name": "getEntriesByType",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PerformanceEntryList"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "type",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/performance-timeline/#dom-performance-getentriesbytype"
+            },
+            {
+              "type": "operation",
+              "name": "getEntriesByName",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PerformanceEntryList"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "name",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "type",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/performance-timeline/#dom-performance-getentriesbyname"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PerformanceEntry",
+        "PerformanceObserver",
+        "PerformanceObserverEntryList"
+      ],
+      "Worker": [
+        "PerformanceEntry",
+        "PerformanceObserver",
+        "PerformanceObserverEntryList"
+      ]
+    },
+    "dependencies": {
+      "Performance": [
+        "PerformanceEntryList"
+      ],
+      "PerformanceEntry": [
+        "DOMHighResTimeStamp"
+      ],
+      "PerformanceObserver": [
+        "PerformanceObserverCallback",
+        "PerformanceObserverInit",
+        "PerformanceEntryList"
+      ],
+      "PerformanceObserverCallbackOptions": [],
+      "PerformanceObserverInit": [],
+      "PerformanceObserverEntryList": [
+        "PerformanceEntryList"
+      ]
+    },
+    "externalDependencies": [
+      "Performance",
+      "DOMHighResTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kok": {
+      "identity": {
+        "language": "kok"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

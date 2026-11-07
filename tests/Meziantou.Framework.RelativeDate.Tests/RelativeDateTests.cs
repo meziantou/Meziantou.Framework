@@ -1,16 +1,77 @@
-#pragma warning disable MA0011 // IFormatProvider is missing
+﻿#pragma warning disable MA0011 // IFormatProvider is missing
+using System.Collections;
+using System.Resources;
+using Meziantou.Xunit;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Tests;
 
 public class RelativeDateTests
 {
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region RelativeDate_Usage
+        DateTime dateTime = DateTime.UtcNow.AddMinutes(-5);
+        var relativeDate = RelativeDate.Get(dateTime).ToString(); // Uses the current UI culture
+        var relativeDateInEnglish = RelativeDate.Get(dateTime).ToString(format: null, CultureInfo.GetCultureInfo("en-US"));
+        var relativeDateInFrench = RelativeDate.Get(dateTime).ToString(format: null, CultureInfo.GetCultureInfo("fr-FR"));
+
+        Assert.Equal("5 minutes ago", relativeDateInEnglish);
+        Assert.Equal("il y a 5 minutes", relativeDateInFrench);
+        #endregion
+
+        Assert.NotEmpty(relativeDate);
+    }
+#endif
+
     [Fact]
     public void DefaultDate_ToString()
     {
         var timeProvider = new FakeTimeProvider();
         timeProvider.SetUtcNow(new DateTimeOffset(2018, 1, 1, 0, 0, 0, TimeSpan.Zero));
         Assert.Throws<ArgumentException>(() => new RelativeDate(default, timeProvider).ToString());
+    }
+
+    [Fact]
+    public void DefaultInstance_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        // A default instance carries no TimeProvider and holds DateTime.MinValue, so it renders as a very distant past date
+        var result = default(RelativeDate).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
+    [Fact]
+    public void DefaultInstance_FromArray_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        var dates = new RelativeDate[1];
+        var result = dates[0].ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_Example()
+    {
+        #region RelativeDate_Example
+        // Basic usage
+        var pastDate = RelativeDate.Get(DateTime.UtcNow.AddHours(-2));
+        Assert.Equal("2 hours ago", pastDate.ToString(null, CultureInfo.InvariantCulture));
+
+        // With localization
+        var date = RelativeDate.Get(DateTime.UtcNow.AddMinutes(-30));
+        Assert.Equal("il y a 30 minutes", date.ToString(null, CultureInfo.GetCultureInfo("fr")));
+        Assert.Equal("30 minutes ago", date.ToString(null, CultureInfo.InvariantCulture));
+
+        // With custom TimeProvider for testing
+        var fakeTimeProvider = new FakeTimeProvider();
+        fakeTimeProvider.SetUtcNow(new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero));
+        var testDate = RelativeDate.Get(new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc), fakeTimeProvider);
+        Assert.Equal("2 hours ago", testDate.ToString(null, CultureInfo.InvariantCulture));
+
+        var futureDate = RelativeDate.Get(new DateTime(2024, 1, 4, 12, 0, 0, DateTimeKind.Utc), fakeTimeProvider);
+        Assert.Equal("in 3 days", futureDate.ToString(null, CultureInfo.InvariantCulture));
+        #endregion
     }
 
     [Theory]
@@ -28,8 +89,9 @@ public class RelativeDateTests
         Assert.NotEmpty(expectedValueFr);
 
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
-        var resultDe = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("de"));
-        Assert.Equal(expectedValueEn, resultDe);
+        // Swedish is not translated, so it falls back to the neutral (English) resources
+        var resultSv = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("sv"));
+        Assert.Equal(expectedValueEn, resultSv);
 
         var resultFr = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("fr"));
         Assert.Equal(expectedValueFr, resultFr);
@@ -47,6 +109,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:01:00Z", "a minute ago", "il y a une minute" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:10:00Z", "10 minutes ago", "il y a 10 minutes" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:00:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:30:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:59:00Z", "an hour ago", "il y a une heure" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 02:00:00Z", "2 hours ago", "il y a 2 heures" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/02 00:00:00Z", "yesterday", "hier" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/03 00:00:00Z", "2 days ago", "il y a 2 jours" };
@@ -59,6 +123,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:25Z", "2018/01/01 00:00:00Z", "in 25 seconds", "dans 25 secondes" };
             yield return new object[] { "2018/01/01 00:10:00Z", "2018/01/01 00:00:00Z", "in 10 minutes", "dans 10 minutes" };
             yield return new object[] { "2018/01/01 01:00:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:30:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:59:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
             yield return new object[] { "2018/01/01 00:01:00Z", "2018/01/01 00:00:00Z", "in a minute", "dans une minute" };
             yield return new object[] { "2018/01/01 02:00:00Z", "2018/01/01 00:00:00Z", "in 2 hours", "dans 2 heures" };
             yield return new object[] { "2018/01/02 00:00:00Z", "2018/01/01 00:00:00Z", "tomorrow", "demain" };
@@ -69,4 +135,459 @@ public class RelativeDateTests
             yield return new object[] { "2021/01/01 00:00:00Z", "2018/01/01 00:00:00Z", "in 3 years", "dans 3 ans" };
         }
     }
+
+    private static RelativeDate CreateDate(DateTime dateTime)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 0, 0, 0, TimeSpan.Zero));
+        return RelativeDate.Get(dateTime, timeProvider);
+    }
+
+    [Fact]
+    public void IComparable_CompareTo_ReturnsPositive_ForNull()
+    {
+        // null sorts first, even against the smallest representable date
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Equal(1, date.CompareTo(obj: null));
+    }
+
+    [Theory]
+    [InlineData(42)]
+    [InlineData("string")]
+    public void IComparable_CompareTo_Throws_ForAnotherType(object value)
+    {
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Throws<ArgumentException>(() => date.CompareTo(value));
+    }
+
+    [Fact]
+    public void NonGenericSort_OrdersByDate()
+    {
+        var min = CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var middle = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var max = CreateDate(new DateTime(2018, 1, 3, 0, 0, 0, DateTimeKind.Utc));
+
+        var items = new object[] { max, min, middle };
+        Array.Sort(items);
+
+        Assert.Equal(new object[] { min, middle, max }, items);
+    }
+
+    [Fact]
+    public void ComparisonOperators_AreConsistent()
+    {
+        var earlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var later = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var sameAsEarlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        Assert.True(earlier < later);
+        Assert.True(earlier <= later);
+        Assert.False(earlier > later);
+        Assert.False(earlier >= later);
+        Assert.True(later > earlier);
+        Assert.True(later >= earlier);
+
+        Assert.True(earlier == sameAsEarlier);
+        Assert.False(earlier != sameAsEarlier);
+        Assert.True(earlier <= sameAsEarlier);
+        Assert.True(earlier >= sameAsEarlier);
+        Assert.Equal(0, earlier.CompareTo(sameAsEarlier));
+        Assert.Equal(earlier.GetHashCode(), sameAsEarlier.GetHashCode());
+        Assert.True(earlier.Equals((object)sameAsEarlier));
+        // Assigned first so the analyzer does not rewrite this into Assert.NotEqual, which would not exercise Equals(object)
+        var equalsAnotherType = earlier.Equals("not a relative date");
+        Assert.False(equalsAnotherType);
+    }
+
+    [Fact]
+    public void Equality_IsDefinedOverTheInstantOnly()
+    {
+        var dateTime = new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc);
+
+        var twoHoursLater = new FakeTimeProvider();
+        twoHoursLater.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var twoYearsLater = new FakeTimeProvider();
+        twoYearsLater.SetUtcNow(new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var a = RelativeDate.Get(dateTime, twoHoursLater);
+        var b = RelativeDate.Get(dateTime, twoYearsLater);
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.Equal(0, a.CompareTo(b));
+
+        // The time provider is display state: it decides what an instance renders as, but takes no part in equality
+        Assert.Equal("2 hours ago", a.ToString(format: null, CultureInfo.InvariantCulture));
+        Assert.Equal("2 years ago", b.ToString(format: null, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("G")]
+    public void ToString_AcceptsTheSupportedFormats(string? format)
+    {
+        Assert.Equal("2 hours ago", CreateTwoHoursAgo().ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData("g")]
+    [InlineData("garbage")]
+    [InlineData("R")]
+    public void ToString_Throws_ForAnUnsupportedFormat(string format)
+    {
+        Assert.Throws<FormatException>(() => CreateTwoHoursAgo().ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void CompositeFormatting_Throws_ForAnUnsupportedFormat()
+    {
+        var date = CreateTwoHoursAgo();
+        Assert.Throws<FormatException>(() => string.Format(CultureInfo.InvariantCulture, "{0:garbage}", date));
+    }
+
+    private static RelativeDate CreateTwoHoursAgo()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        return RelativeDate.Get(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeProvider);
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Fact]
+    public void LocalDateTime_IsInterpretedInTheTimeProviderTimeZone()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 10:00 UTC expressed as a wall clock reading in the provider's time zone
+        var local = DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeZone), DateTimeKind.Local);
+
+        var result = RelativeDate.Get(local, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
+    [Fact]
+    public void LocalDateTime_SkippedByAForwardDstTransition_DoesNotThrow()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 3, 25, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 02:30 does not exist in Paris on 2018-03-25: the clock jumps from 02:00 to 03:00
+        var invalid = DateTime.SpecifyKind(new DateTime(2018, 3, 25, 2, 30, 0), DateTimeKind.Local);
+        Assert.True(timeZone.IsInvalidTime(DateTime.SpecifyKind(invalid, DateTimeKind.Unspecified)));
+
+        // Read against the standard-time offset (UTC+1), so 02:30 becomes 01:30 UTC
+        var result = RelativeDate.Get(invalid, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("10 hours ago", result);
+    }
+
+    [Fact]
+    public void UtcDateTime_IgnoresTheTimeProviderTimeZone()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo"));
+
+        var result = RelativeDate.Get(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
+    private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
+
+    /// <summary>Offsets from "now" reaching every branch of <see cref="RelativeDate.ToString(string, IFormatProvider)"/>, in both directions.</summary>
+    private static readonly TimeSpan[] AllBranchOffsets =
+    [
+        TimeSpan.Zero,
+        TimeSpan.FromSeconds(-1), TimeSpan.FromSeconds(-25), TimeSpan.FromSeconds(-90),
+        TimeSpan.FromMinutes(-10), TimeSpan.FromMinutes(-60), TimeSpan.FromHours(-2),
+        TimeSpan.FromHours(-30), TimeSpan.FromDays(-3), TimeSpan.FromDays(-31),
+        TimeSpan.FromDays(-90), TimeSpan.FromDays(-365), TimeSpan.FromDays(-1095),
+        TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(25), TimeSpan.FromSeconds(90),
+        TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(60), TimeSpan.FromHours(2),
+        TimeSpan.FromHours(30), TimeSpan.FromDays(3), TimeSpan.FromDays(31),
+        TimeSpan.FromDays(90), TimeSpan.FromDays(365), TimeSpan.FromDays(1095),
+    ];
+
+    public static TheoryData<string> LocalizedCulturesData => new(LocalizedCultures);
+
+    [Theory]
+    [MemberData(nameof(LocalizedCulturesData))]
+    public void RelativeDate_ToString_UsesLocalizedResources(string cultureName)
+    {
+        var culture = CultureInfo.GetCultureInfo(cultureName);
+        var now = new DateTimeOffset(2018, 1, 10, 0, 0, 0, TimeSpan.Zero);
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(now);
+
+        var seen = new Dictionary<string, TimeSpan>(StringComparer.Ordinal);
+        foreach (var offset in AllBranchOffsets)
+        {
+            var relativeDate = RelativeDate.Get(now + offset, timeProvider);
+            var neutral = relativeDate.ToString(format: null, CultureInfo.InvariantCulture);
+            var localized = relativeDate.ToString(format: null, culture);
+
+            Assert.NotEmpty(localized);
+
+            // A resource missing from the culture silently falls back to the neutral (English) value
+            Assert.NotEqual(neutral, localized);
+
+            // The count must survive the translation
+            var count = GetDigits(neutral);
+            if (count.Length > 0)
+                Assert.Contains(count, localized);
+
+            // Two branches producing the same text means a value was copied to the wrong key
+            // (e.g. "yesterday" translated with the word for "tomorrow")
+            Assert.False(seen.TryGetValue(localized, out var previousOffset), $"'{localized}' is produced by both {previousOffset} and {offset}");
+            seen.Add(localized, offset);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(LocalizedCulturesData))]
+    public void AllResourcesAreLocalized(string cultureName)
+    {
+        var resourceManager = new ResourceManager("Meziantou.Framework.RelativeDates", typeof(RelativeDate).Assembly);
+        var neutralResources = resourceManager.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: false);
+        Assert.NotNull(neutralResources);
+
+        var localizedResources = resourceManager.GetResourceSet(CultureInfo.GetCultureInfo(cultureName), createIfNotExists: true, tryParents: false);
+        Assert.NotNull(localizedResources);
+
+        foreach (DictionaryEntry entry in neutralResources)
+        {
+            var name = (string)entry.Key;
+            var neutralValue = (string?)entry.Value;
+            Assert.NotNull(neutralValue);
+
+            var localizedValue = localizedResources.GetString(name);
+            Assert.NotNull(localizedValue);
+            Assert.NotEmpty(localizedValue);
+
+            // A resource that formats a count must keep its placeholder
+            Assert.Equal(neutralValue.Contains("{0}", StringComparison.Ordinal), localizedValue.Contains("{0}", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    public void FormatProvider_ExposingACultureFromGetFormat_IsHonored()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        Assert.Equal("hier", date.ToString(format: null, new CultureFormatProvider(CultureInfo.GetCultureInfo("fr"))));
+    }
+
+    // Ambient culture is restored in a finally block, but a leak would be observed by anything running beside this test
+    [Fact(DisableParallelization = true)]
+    public void NoFormatProvider_UsesTheCurrentUICulture()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("hier", date.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUICulture;
+        }
+    }
+
+    // Swaps both LocalizationProvider.Current and the ambient culture, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void NoFormatProvider_PassesTheResolvedCultureToTheProvider()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        var previousProvider = LocalizationProvider.Current;
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            LocalizationProvider.Current = new CultureEchoLocalizationProvider();
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+
+            // Without resolution the provider receives null and has to guess the culture itself
+            Assert.Equal("fr", date.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUICulture;
+            LocalizationProvider.Current = previousProvider;
+        }
+    }
+
+    // Swaps LocalizationProvider.Current, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void Documentation_LocalizationProvider()
+    {
+        var previousProvider = LocalizationProvider.Current;
+        try
+        {
+            #region LocalizationProvider_Example
+            // Use custom localization provider
+            LocalizationProvider.Current = new UpperCaseLocalizationProvider();
+
+            var date = RelativeDate.Get(DateTime.UtcNow.AddHours(-2));
+            Assert.Equal("2 HOURS AGO", date.ToString(null, CultureInfo.InvariantCulture));
+
+            // Restore default
+            LocalizationProvider.Current = ResxLocalizationProvider.Instance;
+            #endregion
+        }
+        finally
+        {
+            LocalizationProvider.Current = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void Documentation_Thresholds()
+    {
+        #region RelativeDate_Thresholds
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        string Format(TimeSpan offset)
+        {
+            var date = RelativeDate.Get(timeProvider.GetUtcNow() + offset, timeProvider);
+            return date.ToString(format: null, CultureInfo.InvariantCulture);
+        }
+
+        Assert.Equal("now", Format(TimeSpan.Zero));
+        Assert.Equal("30 seconds ago", Format(TimeSpan.FromSeconds(-30)));
+        Assert.Equal("a minute ago", Format(TimeSpan.FromSeconds(-90)));
+        Assert.Equal("10 minutes ago", Format(TimeSpan.FromMinutes(-10)));
+        Assert.Equal("an hour ago", Format(TimeSpan.FromMinutes(-50)));
+        Assert.Equal("5 hours ago", Format(TimeSpan.FromHours(-5)));
+        Assert.Equal("yesterday", Format(TimeSpan.FromHours(-30)));
+        Assert.Equal("3 days ago", Format(TimeSpan.FromDays(-3)));
+        Assert.Equal("one month ago", Format(TimeSpan.FromDays(-45)));
+        Assert.Equal("3 months ago", Format(TimeSpan.FromDays(-100)));
+        Assert.Equal("one year ago", Format(TimeSpan.FromDays(-400)));
+        Assert.Equal("2 years ago", Format(TimeSpan.FromDays(-1000)));
+
+        // Dates in the future
+        Assert.Equal("in 2 hours", Format(TimeSpan.FromHours(2)));
+        Assert.Equal("tomorrow", Format(TimeSpan.FromHours(30)));
+        Assert.Equal("in 3 days", Format(TimeSpan.FromDays(3)));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Cultures()
+    {
+        #region RelativeDate_Cultures
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(timeProvider.GetUtcNow().AddDays(-3), timeProvider);
+
+        Assert.Equal("3 days ago", date.ToString(format: null, CultureInfo.GetCultureInfo("en-US")));
+        Assert.Equal("il y a 3 jours", date.ToString(format: null, CultureInfo.GetCultureInfo("fr-FR")));
+        Assert.Equal("vor 3 Tagen", date.ToString(format: null, CultureInfo.GetCultureInfo("de")));
+        Assert.Equal("hace 3 días", date.ToString(format: null, CultureInfo.GetCultureInfo("es")));
+
+        // A language without translations uses the English texts
+        Assert.Equal("3 days ago", date.ToString(format: null, CultureInfo.GetCultureInfo("sv-SE")));
+
+        // string.Format and interpolated strings pass their culture to RelativeDate
+        Assert.Equal("Modifié il y a 3 jours", string.Create(CultureInfo.GetCultureInfo("fr-FR"), $"Modifié {date}"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DateKinds()
+    {
+        #region RelativeDate_DateKinds
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+
+        // A DateTimeOffset is an instant: its offset does not matter
+        var fromOffset = RelativeDate.Get(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.FromHours(2)), timeProvider);
+        Assert.Equal("2 hours ago", fromOffset.ToString(format: null, CultureInfo.InvariantCulture));
+
+        // A UTC DateTime
+        var fromUtc = RelativeDate.Get(new DateTime(2024, 6, 15, 11, 0, 0, DateTimeKind.Utc), timeProvider);
+        Assert.Equal("an hour ago", fromUtc.ToString(format: null, CultureInfo.InvariantCulture));
+
+        // A DateTime of unspecified kind is rejected: it could be local or UTC
+        var unspecified = new DateTime(2024, 6, 15, 11, 0, 0, DateTimeKind.Unspecified);
+        Assert.Throws<ArgumentException>(() => _ = RelativeDate.Get(unspecified, timeProvider));
+        #endregion
+    }
+
+    // Swaps LocalizationProvider.Current, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void Documentation_CustomTexts()
+    {
+        var previousProvider = LocalizationProvider.Current;
+        try
+        {
+            #region RelativeDate_UseCustomTexts
+            // Wrap the current provider, so the built-in texts stay available
+            LocalizationProvider.Current = new CasualEnglishLocalizationProvider(LocalizationProvider.Current);
+
+            var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+            var date = RelativeDate.Get(timeProvider.GetUtcNow().AddSeconds(-20), timeProvider);
+
+            Assert.Equal("a few seconds ago", date.ToString(format: null, CultureInfo.GetCultureInfo("en-US")));
+            Assert.Equal("il y a 20 secondes", date.ToString(format: null, CultureInfo.GetCultureInfo("fr-FR")));
+            #endregion
+        }
+        finally
+        {
+            LocalizationProvider.Current = previousProvider;
+        }
+    }
+
+    #region RelativeDate_CustomTextsProvider
+    private sealed class CasualEnglishLocalizationProvider(ILocalizationProvider inner) : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture)
+        {
+            var text = (culture?.TwoLetterISOLanguageName, name) switch
+            {
+                ("en", "Now") => "just now",
+                ("en", "OneSecondAgo" or "ManySecondsAgo") => "a few seconds ago",
+                _ => null,
+            };
+
+            return text ?? inner.GetString(name, culture);
+        }
+    }
+    #endregion
+
+    private sealed class CultureFormatProvider(CultureInfo culture) : IFormatProvider
+    {
+        public object? GetFormat(Type? formatType) => formatType == typeof(CultureInfo) ? culture : null;
+    }
+
+    private sealed class CultureEchoLocalizationProvider : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture) => culture?.Name ?? "<null>";
+    }
+
+    #region LocalizationProvider_CustomProvider
+    private sealed class UpperCaseLocalizationProvider : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture)
+        {
+            return ResxLocalizationProvider.Instance.GetString(name, culture).ToUpperInvariant();
+        }
+    }
+    #endregion
+
+    private static string GetDigits(string value) => string.Concat(value.Where(char.IsAsciiDigit));
+#endif
 }

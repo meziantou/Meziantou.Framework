@@ -1,0 +1,15 @@
+{
+  "main": {
+    "tyv": {
+      "identity": {
+        "language": "tyv"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

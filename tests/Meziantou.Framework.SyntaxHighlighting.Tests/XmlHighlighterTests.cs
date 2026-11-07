@@ -1327,13 +1327,7 @@ just plain text
     public void SpecialEdge_BomLikePrefix()
     {
         AssertHighlighter("xml",
-"""
-﻿<?xml version="1.0"?>
-<root />
-""",
-"""
-﻿<span class="hljs-meta">&lt;?xml version=<span class="hljs-string">&quot;1.0&quot;</span>?&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">root</span> /&gt;</span>
-""");
+            "\uFEFF<?xml version=\"1.0\"?>\n<root />",
+            "\uFEFF<span class=\"hljs-meta\">&lt;?xml version=<span class=\"hljs-string\">&quot;1.0&quot;</span>?&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">root</span> /&gt;</span>");
     }
 }

@@ -7,8 +7,6 @@ namespace Meziantou.Framework.SnapshotTesting.Tool;
 
 internal static class Program
 {
-    private const string ActualMarker = ".actual.";
-
     public static Task<int> Main(string[] args)
     {
         return MainImpl(args, configure: null);
@@ -113,6 +111,11 @@ internal static class Program
         {
             foreach (var file in Directory.EnumerateFiles(snapshotDirectory, "*.actual.*", SearchOption.TopDirectoryOnly))
             {
+                // The pattern also matches a verified file whose name contains '.actual.', such as the snapshot of a test
+                // called 'Parse.actual.value': renaming it would take out a committed snapshot.
+                if (SnapshotFileName.GetVerifiedFileName(Path.GetFileName(file)) is null)
+                    continue;
+
                 yield return FullPath.FromPath(file);
             }
         }
@@ -152,11 +155,7 @@ internal static class Program
     private static FullPath GetVerifiedPath(FullPath actualFile)
     {
         var fileName = actualFile.Name;
-        var markerIndex = fileName.LastIndexOf(ActualMarker, StringComparison.Ordinal);
-        if (markerIndex < 0)
-            throw new InvalidOperationException($"Invalid snapshot file name '{fileName}'. Expected '.actual.' marker.");
-
-        var verifiedName = fileName[..markerIndex] + ".verified." + fileName[(markerIndex + ActualMarker.Length)..];
+        var verifiedName = SnapshotFileName.GetVerifiedFileName(fileName) ?? throw new InvalidOperationException($"Invalid snapshot file name '{fileName}'. Expected '.actual.' marker.");
         return actualFile.Parent / verifiedName;
     }
 

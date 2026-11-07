@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -8,15 +9,17 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 
 /// <summary>Provides extension methods for <see cref="ILoggingBuilder"/> to add xUnit.net logging support.</summary>
 /// <example>
-/// <code>
-/// using Microsoft.Extensions.Hosting;
-///
-/// var host = new HostBuilder()
-///     .ConfigureLogging(builder =>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs" ref:region="XUnitLoggerBuilderExtensions_Example" ref:dedent="true">
+/// var testOutputHelper = TestContext.Current.TestOutputHelper;
+/// using var host = new HostBuilder()
+///     .ConfigureLogging(builder =&gt;
 ///     {
 ///         builder.AddXunit(testOutputHelper);
 ///     })
 ///     .Build();
+///
+/// var logger = host.Services.GetRequiredService&lt;ILoggerFactory&gt;().CreateLogger("MyCategory");
+/// logger.LogInformation("This message will appear in the test output");
 /// </code>
 /// </example>
 public static class XUnitLoggerBuilderExtensions
@@ -24,9 +27,14 @@ public static class XUnitLoggerBuilderExtensions
     /// <summary>Adds an xUnit.net logger provider to the logging builder.</summary>
     /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the provider to.</param>
     /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+    /// <remarks>
+    /// Calling this method more than once registers a single provider. The logger resolves the
+    /// test output helper from <see cref="TestContext.Current"/> when it writes, so a second
+    /// registration would only duplicate the output.
+    /// </remarks>
     public static ILoggingBuilder AddXunit(this ILoggingBuilder builder)
     {
-        builder.Services.AddSingleton<ILoggerProvider, XUnitLoggerProvider>();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, XUnitLoggerProvider>());
         return builder;
     }
 
@@ -34,6 +42,7 @@ public static class XUnitLoggerBuilderExtensions
     /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the provider to.</param>
     /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
     /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+    /// <remarks>Each call adds a provider, so calling this method several times with a different test output helper writes the logs several times.</remarks>
     public static ILoggingBuilder AddXunit(this ILoggingBuilder builder, ITestOutputHelper? testOutputHelper)
     {
         builder.Services.AddSingleton<ILoggerProvider>(_ => new XUnitLoggerProvider(testOutputHelper));
@@ -44,6 +53,7 @@ public static class XUnitLoggerBuilderExtensions
     /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the provider to.</param>
     /// <param name="options">The logger options.</param>
     /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+    /// <remarks>Each call adds a provider, so calling this method several times with a different options writes the logs several times.</remarks>
     public static ILoggingBuilder AddXunit(this ILoggingBuilder builder, XUnitLoggerOptions? options)
     {
         builder.Services.AddSingleton<ILoggerProvider>(_ => new XUnitLoggerProvider(options));
@@ -55,6 +65,7 @@ public static class XUnitLoggerBuilderExtensions
     /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
     /// <param name="options">The logger options.</param>
     /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+    /// <remarks>Each call adds a provider, so calling this method several times with a different test output helper and options writes the logs several times.</remarks>
     public static ILoggingBuilder AddXunit(this ILoggingBuilder builder, ITestOutputHelper? testOutputHelper, XUnitLoggerOptions? options)
     {
         builder.Services.AddSingleton<ILoggerProvider>(_ => new XUnitLoggerProvider(testOutputHelper, options));

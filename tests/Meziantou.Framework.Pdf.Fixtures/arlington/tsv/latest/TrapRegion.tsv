@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+TP	name	1.3	2.0	TRUE	FALSE	FALSE					Adobe TechNote 5620 Clause 5.34 - trapping parameters
+TZ	array	1.3	2.0	FALSE	FALSE	FALSE				[ArrayOf_ArrayOfNumbers]	trap zone

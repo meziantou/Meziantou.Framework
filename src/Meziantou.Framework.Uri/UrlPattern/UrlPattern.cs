@@ -11,18 +11,19 @@ namespace Meziantou.Framework;
 /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API">MDN - URL Pattern API</see>
 /// </remarks>
 /// <example>
-/// <code language="csharp">
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Uri.Tests/UrlPatternTests.cs" ref:region="UrlPattern_Example" ref:dedent="true">
 /// // Create a pattern and test if a URL matches
 /// var pattern = UrlPattern.Create("https://example.com/users/:id");
-/// bool isMatch = pattern.IsMatch("https://example.com/users/123"); // true
+/// Assert.True(pattern.IsMatch("https://example.com/users/123"));
 ///
 /// // Extract captured groups from a URL
 /// var result = pattern.Match("https://example.com/users/456");
-/// string userId = result?.Pathname.Groups["id"]; // "456"
+/// Assert.NotNull(result);
+/// Assert.Equal("456", result.Pathname.Groups["id"]);
 ///
 /// // Use wildcards to match any value
 /// var wildcardPattern = UrlPattern.Create("https://*.example.com/*");
-/// wildcardPattern.IsMatch("https://api.example.com/data"); // true
+/// Assert.True(wildcardPattern.IsMatch("https://api.example.com/data"));
 /// </code>
 /// </example>
 public sealed class UrlPattern
@@ -35,31 +36,6 @@ public sealed class UrlPattern
     private readonly UrlPatternComponent _pathnameComponent;
     private readonly UrlPatternComponent _searchComponent;
     private readonly UrlPatternComponent _hashComponent;
-
-    /// <summary>
-    /// Special schemes per URL Standard.
-    /// </summary>
-    private static readonly HashSet<string> SpecialSchemes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ftp",
-        "file",
-        "http",
-        "https",
-        "ws",
-        "wss",
-    };
-
-    /// <summary>
-    /// Default ports for special schemes.
-    /// </summary>
-    private static readonly Dictionary<string, string> DefaultPorts = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["ftp"] = "21",
-        ["http"] = "80",
-        ["https"] = "443",
-        ["ws"] = "80",
-        ["wss"] = "443",
-    };
 
     private UrlPattern(
         UrlPatternComponent protocolComponent,
@@ -224,7 +200,7 @@ public sealed class UrlPattern
         ArgumentNullException.ThrowIfNull(init);
         options ??= new UrlPatternOptions();
 
-        var processedInit = ProcessUrlPatternInit(init);
+        var processedInit = ProcessUrlPatternInit(init, isPattern: true);
 
         // Default missing components to wildcard
         processedInit.Protocol ??= "*";
@@ -236,9 +212,8 @@ public sealed class UrlPattern
         processedInit.Search ??= "*";
         processedInit.Hash ??= "*";
 
-        // If protocol is a special scheme and port matches its default port, set port to empty string
-        if (SpecialSchemes.Contains(processedInit.Protocol) &&
-            DefaultPorts.TryGetValue(processedInit.Protocol, out var defaultPort) &&
+        // A pattern is not canonicalized as a whole, so the port is compared to the default port as written
+        if (SpecialSchemes.TryGetDefaultPort(processedInit.Protocol, out var defaultPort) &&
             processedInit.Port == defaultPort)
         {
             processedInit.Port = "";
@@ -246,38 +221,37 @@ public sealed class UrlPattern
 
         var ignoreCase = options.IgnoreCase;
 
-        // Compile components
-        var protocolComponent = UrlPatternComponent.Compile(processedInit.Protocol, CanonicalizeProtocol, PatternOptions.Default);
-        var usernameComponent = UrlPatternComponent.Compile(processedInit.Username, CanonicalizeUsername, PatternOptions.Default);
-        var passwordComponent = UrlPatternComponent.Compile(processedInit.Password, CanonicalizePassword, PatternOptions.Default);
+        // Compile components. Each callback canonicalizes the fixed-text parts of the pattern, so that the
+        // pattern and the values it is matched against are in the same form
+        var protocolComponent = UrlPatternComponent.Compile(processedInit.Protocol, UrlCanonicalizer.CanonicalizeProtocol, PatternOptions.Default);
+        var usernameComponent = UrlPatternComponent.Compile(processedInit.Username, UrlCanonicalizer.CanonicalizeUsername, PatternOptions.Default);
+        var passwordComponent = UrlPatternComponent.Compile(processedInit.Password, UrlCanonicalizer.CanonicalizePassword, PatternOptions.Default);
 
         UrlPatternComponent hostnameComponent;
         if (IsIPv6Hostname(processedInit.Hostname))
         {
-            hostnameComponent = UrlPatternComponent.Compile(processedInit.Hostname, CanonicalizeIPv6Hostname, PatternOptions.Hostname);
+            hostnameComponent = UrlPatternComponent.Compile(processedInit.Hostname, UrlCanonicalizer.CanonicalizeIPv6Hostname, PatternOptions.Hostname);
         }
         else
         {
-            hostnameComponent = UrlPatternComponent.Compile(processedInit.Hostname, CanonicalizeHostname, PatternOptions.Hostname);
+            hostnameComponent = UrlPatternComponent.Compile(processedInit.Hostname, UrlCanonicalizer.CanonicalizeHostname, PatternOptions.Hostname);
         }
 
-        var portComponent = UrlPatternComponent.Compile(processedInit.Port, CanonicalizePort, PatternOptions.Default);
+        // The single-argument overload leaves the dummy URL record without a scheme, so a value that happens
+        // to be a default port is kept rather than dropped
+        var portComponent = UrlPatternComponent.Compile(processedInit.Port, value => UrlCanonicalizer.CanonicalizePort(value), PatternOptions.Default);
 
         var compileOptions = PatternOptions.Default.WithIgnoreCase(ignoreCase);
         var pathCompileOptions = PatternOptions.Pathname.WithIgnoreCase(ignoreCase);
 
-        UrlPatternComponent pathnameComponent;
-        if (ProtocolMatchesSpecialScheme(protocolComponent))
-        {
-            pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, CanonicalizePathname, pathCompileOptions);
-        }
-        else
-        {
-            pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, CanonicalizeOpaquePathname, compileOptions);
-        }
+        // A pathname is canonicalized differently, and matched with different options, depending on whether
+        // the protocol can be a special scheme: only a special scheme has a "/"-separated path
+        var pathnameComponent = ProtocolMatchesSpecialScheme(protocolComponent)
+            ? UrlPatternComponent.Compile(processedInit.Pathname, UrlCanonicalizer.CanonicalizePathname, pathCompileOptions)
+            : UrlPatternComponent.Compile(processedInit.Pathname, UrlCanonicalizer.CanonicalizeOpaquePathname, compileOptions);
 
-        var searchComponent = UrlPatternComponent.Compile(processedInit.Search, CanonicalizeSearch, compileOptions);
-        var hashComponent = UrlPatternComponent.Compile(processedInit.Hash, CanonicalizeHash, compileOptions);
+        var searchComponent = UrlPatternComponent.Compile(processedInit.Search, UrlCanonicalizer.CanonicalizeSearch, compileOptions);
+        var hashComponent = UrlPatternComponent.Compile(processedInit.Hash, UrlCanonicalizer.CanonicalizeHash, compileOptions);
 
         return new UrlPattern(
             protocolComponent,
@@ -312,27 +286,26 @@ public sealed class UrlPattern
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        try
-        {
-            var uri = ParseUrl(url, baseUrl);
-            if (uri is null)
-                return false;
-
-            return IsMatchUrl(uri);
-        }
-        catch (UriFormatException)
-        {
+        var record = ParseUrl(url, baseUrl);
+        if (record is null)
             return false;
-        }
+
+        return IsMatchUrl(record);
     }
 
     /// <summary>Indicates whether the pattern finds a match in the specified URL.</summary>
     /// <param name="url">The URL to test.</param>
     /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>A relative URL never matches.</remarks>
     public bool IsMatch(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
-        return IsMatchUrl(url);
+
+        var record = ParseUrl(url);
+        if (record is null)
+            return false;
+
+        return IsMatchUrl(record);
     }
 
     /// <summary>Indicates whether the pattern finds a match in the specified URL input.</summary>
@@ -341,8 +314,7 @@ public sealed class UrlPattern
     public bool IsMatch(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);
-        var processed = ProcessUrlPatternInit(input);
-        return IsMatchInit(processed);
+        return IsMatchInit(input);
     }
 
     /// <summary>Searches the specified URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
@@ -367,27 +339,26 @@ public sealed class UrlPattern
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        try
-        {
-            var uri = ParseUrl(url, baseUrl);
-            if (uri is null)
-                return null;
-
-            return MatchUrl(uri, url);
-        }
-        catch (UriFormatException)
-        {
+        var record = ParseUrl(url, baseUrl);
+        if (record is null)
             return null;
-        }
+
+        return MatchUrl(record, url);
     }
 
     /// <summary>Searches the specified URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
     /// <param name="url">The URL to match.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <remarks>A relative URL never matches.</remarks>
     public UrlPatternResult? Match(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
-        return MatchUrl(url, url.ToString());
+
+        var record = ParseUrl(url);
+        if (record is null)
+            return null;
+
+        return MatchUrl(record, url.ToString());
     }
 
     /// <summary>Searches the specified URL input for the first occurrence of the pattern and returns the match result with captured groups.</summary>
@@ -396,39 +367,62 @@ public sealed class UrlPattern
     public UrlPatternResult? Match(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);
-        var processed = ProcessUrlPatternInit(input);
-        return MatchInit(processed);
+        return MatchInit(input);
     }
 
-    private UrlPatternResult? MatchUrl(Uri url, string originalInput)
+    private UrlPatternResult? MatchUrl(UrlRecord url, string originalInput)
     {
-        var protocol = url.Scheme;
-        var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
-        var password = url.UserInfo.Contains(':', StringComparison.Ordinal) ? Uri.UnescapeDataString(url.UserInfo[(url.UserInfo.IndexOf(':', StringComparison.Ordinal) + 1)..]) : "";
-        var hostname = url.Host;
-        var port = url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture);
-        var pathname = url.AbsolutePath;
-        var search = url.Query.TrimStart('?');
-        var hash = url.Fragment.TrimStart('#');
+        var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
         return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput);
     }
 
-    private UrlPatternResult? MatchInit(UrlPatternInit init)
+    /// <summary>Splits the URL into the eight component values that are matched against the pattern.</summary>
+    /// <remarks>
+    /// The URL parser already leaves each component in its canonical form, which is the form the fixed-text
+    /// parts of the pattern were canonicalized to.
+    /// <see href="https://urlpattern.spec.whatwg.org/#url-pattern-match">WHATWG URL Pattern Spec - Match</see>
+    /// </remarks>
+    private static (string Protocol, string Username, string Password, string Hostname, string Port, string Pathname, string Search, string Hash) GetUrlComponents(UrlRecord url)
     {
-        var protocol = init.Protocol ?? "";
-        var username = init.Username ?? "";
-        var password = init.Password ?? "";
-        var hostname = init.Hostname ?? "";
-        var port = init.Port ?? "";
-        var pathname = init.Pathname ?? "";
-        var search = init.Search ?? "";
-        var hash = init.Hash ?? "";
-
-        return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput: null);
+        return (
+            url.Scheme,
+            url.Username,
+            url.Password,
+            url.Host ?? "",
+            url.Port ?? "",
+            url.SerializePath(),
+            url.Query ?? "",
+            url.Fragment ?? "");
     }
 
-    private UrlPatternResult? MatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash, string? originalInput)
+    private UrlPatternResult? MatchInit(UrlPatternInit init)
+    {
+        UrlPatternInit processed;
+        try
+        {
+            processed = ProcessUrlPatternInit(init, isPattern: false);
+        }
+        catch (UrlPatternException)
+        {
+            // A component that cannot be canonicalized cannot match anything
+            return null;
+        }
+
+        return MatchComponents(
+            processed.Protocol ?? "",
+            processed.Username ?? "",
+            processed.Password ?? "",
+            processed.Hostname ?? "",
+            processed.Port ?? "",
+            processed.Pathname ?? "",
+            processed.Search ?? "",
+            processed.Hash ?? "",
+            originalInput: null,
+            originalInit: init);
+    }
+
+    private UrlPatternResult? MatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash, string? originalInput, UrlPatternInit? originalInit = null)
     {
         var protocolMatch = _protocolComponent.RegularExpression.Match(protocol);
         if (!protocolMatch.Success)
@@ -462,9 +456,10 @@ public sealed class UrlPattern
         if (!hashMatch.Success)
             return null;
 
+        // The result reports the input as it was supplied, not as it was canonicalized for matching
         var input = originalInput is not null
             ? new UrlPatternInput(originalInput)
-            : new UrlPatternInput(new UrlPatternInit
+            : new UrlPatternInput(originalInit ?? new UrlPatternInit
             {
                 Protocol = protocol,
                 Username = username,
@@ -478,18 +473,19 @@ public sealed class UrlPattern
 
         return new UrlPatternResult(
             [input],
-            CreateComponentResult(protocol, protocolMatch, _protocolComponent.GroupNameList),
-            CreateComponentResult(username, usernameMatch, _usernameComponent.GroupNameList),
-            CreateComponentResult(password, passwordMatch, _passwordComponent.GroupNameList),
-            CreateComponentResult(hostname, hostnameMatch, _hostnameComponent.GroupNameList),
-            CreateComponentResult(port, portMatch, _portComponent.GroupNameList),
-            CreateComponentResult(pathname, pathnameMatch, _pathnameComponent.GroupNameList),
-            CreateComponentResult(search, searchMatch, _searchComponent.GroupNameList),
-            CreateComponentResult(hash, hashMatch, _hashComponent.GroupNameList));
+            CreateComponentResult(protocol, protocolMatch, _protocolComponent),
+            CreateComponentResult(username, usernameMatch, _usernameComponent),
+            CreateComponentResult(password, passwordMatch, _passwordComponent),
+            CreateComponentResult(hostname, hostnameMatch, _hostnameComponent),
+            CreateComponentResult(port, portMatch, _portComponent),
+            CreateComponentResult(pathname, pathnameMatch, _pathnameComponent),
+            CreateComponentResult(search, searchMatch, _searchComponent),
+            CreateComponentResult(hash, hashMatch, _hashComponent));
     }
 
-    private static UrlPatternComponentResult CreateComponentResult(string input, Match match, List<string> groupNameList)
+    private static UrlPatternComponentResult CreateComponentResult(string input, Match match, UrlPatternComponent component)
     {
+        var groupNameList = component.GroupNameList;
         var groups = new Dictionary<string, string?>(StringComparer.Ordinal);
 
         // The GroupNameList contains the names in order, and they correspond to
@@ -502,7 +498,7 @@ public sealed class UrlPattern
             if (groupIndex < match.Groups.Count)
             {
                 var group = match.Groups[groupIndex];
-                groups[groupName] = group.Success ? group.Value : null;
+                groups[groupName] = group.Success && (group.Length > 0 || !component.EmptyGroupIsUnmatchedList[i]) ? group.Value : null;
             }
             else
             {
@@ -513,32 +509,35 @@ public sealed class UrlPattern
         return new UrlPatternComponentResult(input, groups);
     }
 
-    private bool IsMatchUrl(Uri url)
+    private bool IsMatchUrl(UrlRecord url)
     {
-        var protocol = url.Scheme;
-        var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
-        var password = url.UserInfo.Contains(':', StringComparison.Ordinal) ? Uri.UnescapeDataString(url.UserInfo[(url.UserInfo.IndexOf(':', StringComparison.Ordinal) + 1)..]) : "";
-        var hostname = url.Host;
-        var port = url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture);
-        var pathname = url.AbsolutePath;
-        var search = url.Query.TrimStart('?');
-        var hash = url.Fragment.TrimStart('#');
+        var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
         return IsMatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
     }
 
     private bool IsMatchInit(UrlPatternInit init)
     {
-        var protocol = init.Protocol ?? "";
-        var username = init.Username ?? "";
-        var password = init.Password ?? "";
-        var hostname = init.Hostname ?? "";
-        var port = init.Port ?? "";
-        var pathname = init.Pathname ?? "";
-        var search = init.Search ?? "";
-        var hash = init.Hash ?? "";
+        UrlPatternInit processed;
+        try
+        {
+            processed = ProcessUrlPatternInit(init, isPattern: false);
+        }
+        catch (UrlPatternException)
+        {
+            // A component that cannot be canonicalized cannot match anything
+            return false;
+        }
 
-        return IsMatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
+        return IsMatchComponents(
+            processed.Protocol ?? "",
+            processed.Username ?? "",
+            processed.Password ?? "",
+            processed.Hostname ?? "",
+            processed.Port ?? "",
+            processed.Pathname ?? "",
+            processed.Search ?? "",
+            processed.Hash ?? "");
     }
 
     private bool IsMatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash)
@@ -570,93 +569,214 @@ public sealed class UrlPattern
         return true;
     }
 
-    private static Uri? ParseUrl(string url, string? baseUrl)
+    private static UrlRecord? ParseUrl(string url, string? baseUrl)
     {
-        Uri? baseUri = null;
-        if (!string.IsNullOrEmpty(baseUrl))
-        {
-            if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out baseUri))
-            {
-                return null;
-            }
-        }
-
-        if (baseUri is not null)
-        {
-            if (Uri.TryCreate(baseUri, url, out var result))
-            {
-                return result;
-            }
-
+        UrlRecord? baseRecord = null;
+        if (!string.IsNullOrEmpty(baseUrl) && !UrlRecord.TryParse(baseUrl, baseUrl: null, out baseRecord))
             return null;
-        }
 
-        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        return UrlRecord.TryParse(url, baseRecord, out var result) ? result : null;
+    }
+
+    /// <summary>Parses a <see cref="Uri"/> again, with the URL parser of the URL Standard.</summary>
+    /// <remarks>
+    /// The text the <see cref="Uri"/> was created from is parsed, because its other forms follow RFC 3986
+    /// (for example, "/%41" becomes "/A"). A <see cref="Uri"/> created from a file path is the exception: that
+    /// text is not a URL, so its absolute form is parsed when the text does not give the same scheme.
+    /// </remarks>
+    private static UrlRecord? ParseUrl(Uri url)
+    {
+        if (!url.IsAbsoluteUri)
+            return null;
+
+        if (UrlRecord.TryParse(url.OriginalString, baseUrl: null, out var result) &&
+            string.Equals(result.Scheme, url.Scheme, StringComparison.OrdinalIgnoreCase))
         {
-            return uri;
+            return result;
         }
 
-        return null;
+        return UrlRecord.TryParse(url.AbsoluteUri, baseUrl: null, out result) ? result : null;
     }
 
     /// <summary>Processes a URLPatternInit to resolve base URL and fill in defaults.</summary>
     /// <remarks>
     /// <see href="https://urlpattern.spec.whatwg.org/#canon-processing-for-init">WHATWG URL Pattern Spec - URLPatternInit processing</see>
     /// </remarks>
-    private static UrlPatternInit ProcessUrlPatternInit(UrlPatternInit init)
+    private static UrlPatternInit ProcessUrlPatternInit(UrlPatternInit init, bool isPattern)
     {
-        var result = new UrlPatternInit
-        {
-            Protocol = init.Protocol,
-            Username = init.Username,
-            Password = init.Password,
-            Hostname = init.Hostname,
-            Port = init.Port,
-            Pathname = init.Pathname,
-            Search = init.Search,
-            Hash = init.Hash,
-        };
+        // A component the init does not specify stays null for a pattern, so that it can be defaulted to a
+        // wildcard, and is the empty string for a match input
+        var result = isPattern
+            ? new UrlPatternInit()
+            : new UrlPatternInit { Protocol = "", Username = "", Password = "", Hostname = "", Port = "", Pathname = "", Search = "", Hash = "" };
 
-        if (!string.IsNullOrEmpty(init.BaseUrl))
+        string? basePathname = null;
+        if (init.BaseUrl is not null)
         {
-            if (!Uri.TryCreate(init.BaseUrl, UriKind.Absolute, out var baseUri))
+            if (!UrlRecord.TryParse(init.BaseUrl, baseUrl: null, out var baseRecord))
             {
                 throw new UrlPatternException($"Invalid base URL: {init.BaseUrl}");
             }
 
-            // Inherit from base URL if not specified
-            result.Protocol ??= baseUri.Scheme;
-            result.Hostname ??= baseUri.Host;
-            result.Port ??= baseUri.IsDefaultPort ? "" : baseUri.Port.ToString(CultureInfo.InvariantCulture);
+            var baseComponents = GetUrlComponents(baseRecord);
 
-            // Pathname inheritance is more complex - only inherit if less specific
-            if (result.Pathname is null && result.Search is null && result.Hash is null)
+            // A relative pathname is only resolved against a base URL whose path is made of segments
+            basePathname = baseRecord.HasOpaquePath ? null : baseComponents.Pathname;
+
+            // A component is inherited only when the init specifies nothing at least as specific as it,
+            // following the two orders of the spec:
+            //   protocol, hostname, port, pathname, search, hash
+            //   protocol, hostname, port, username, password
+            var hasProtocol = init.Protocol is not null;
+            var hasHostname = hasProtocol || init.Hostname is not null;
+            var hasPort = hasHostname || init.Port is not null;
+            var hasPathname = hasPort || init.Pathname is not null;
+            var hasSearch = hasPathname || init.Search is not null;
+            var hasHash = hasSearch || init.Hash is not null;
+
+            if (!hasProtocol)
             {
-                result.Pathname = baseUri.AbsolutePath;
+                result.Protocol = ProcessBaseUrlString(baseComponents.Protocol, isPattern);
             }
-            else if (result.Pathname is null)
+
+            // The username and password are never inherited when building a pattern
+            if (!isPattern && !hasPort && init.Username is null)
             {
-                // If search or hash specified but not pathname, default pathname based on protocol
-                result.Pathname = IsSpecialScheme(result.Protocol ?? "") ? "/" : "";
-            }
-            else if (!IsAbsolutePathname(result.Pathname))
-            {
-                // Resolve relative pathname
-                var basePath = baseUri.AbsolutePath;
-                var slashIndex = basePath.LastIndexOf('/', StringComparison.Ordinal);
-                if (slashIndex >= 0)
+                result.Username = baseComponents.Username;
+
+                if (init.Password is null)
                 {
-                    result.Pathname = basePath[..(slashIndex + 1)] + result.Pathname;
+                    result.Password = baseComponents.Password;
                 }
             }
 
-            // Search and hash are not inherited from base URL
+            if (!hasHostname)
+            {
+                result.Hostname = ProcessBaseUrlString(baseComponents.Hostname, isPattern);
+            }
+
+            if (!hasPort)
+            {
+                result.Port = baseComponents.Port;
+            }
+
+            if (!hasPathname)
+            {
+                result.Pathname = ProcessBaseUrlString(baseComponents.Pathname, isPattern);
+            }
+
+            if (!hasSearch)
+            {
+                result.Search = ProcessBaseUrlString(baseComponents.Search, isPattern);
+            }
+
+            if (!hasHash)
+            {
+                result.Hash = ProcessBaseUrlString(baseComponents.Hash, isPattern);
+            }
+        }
+
+        // Each component the init does specify replaces what the base URL supplied, canonicalized unless a
+        // pattern is being built: a pattern is canonicalized one fixed-text part at a time when it compiles
+        if (init.Protocol is not null)
+        {
+            result.Protocol = ProcessProtocolForInit(init.Protocol, isPattern);
+        }
+
+        if (init.Username is not null)
+        {
+            result.Username = isPattern ? init.Username : UrlCanonicalizer.CanonicalizeUsername(init.Username);
+        }
+
+        if (init.Password is not null)
+        {
+            result.Password = isPattern ? init.Password : UrlCanonicalizer.CanonicalizePassword(init.Password);
+        }
+
+        if (init.Hostname is not null)
+        {
+            result.Hostname = isPattern ? init.Hostname : UrlCanonicalizer.CanonicalizeHostname(init.Hostname);
+        }
+
+        // The protocol decides both the default port and the shape of the pathname, so it has to be the
+        // value the init ended up with rather than the one it came in with
+        var resultProtocol = result.Protocol ?? "";
+
+        if (init.Port is not null)
+        {
+            result.Port = isPattern ? init.Port : UrlCanonicalizer.CanonicalizePort(init.Port, resultProtocol);
+        }
+
+        if (init.Pathname is not null)
+        {
+            var pathname = init.Pathname;
+
+            // Resolve a relative pathname against the directory of the base URL
+            if (basePathname is not null && !IsAbsolutePathname(pathname, isPattern))
+            {
+                var basePath = ProcessBaseUrlString(basePathname, isPattern);
+                var slashIndex = basePath.LastIndexOf('/', StringComparison.Ordinal);
+                if (slashIndex >= 0)
+                {
+                    pathname = basePath[..(slashIndex + 1)] + pathname;
+                }
+            }
+
+            result.Pathname = ProcessPathnameForInit(pathname, resultProtocol, isPattern);
+        }
+
+        if (init.Search is not null)
+        {
+            var strippedValue = init.Search.StartsWith('?', StringComparison.Ordinal) ? init.Search[1..] : init.Search;
+            result.Search = isPattern ? strippedValue : UrlCanonicalizer.CanonicalizeSearch(strippedValue);
+        }
+
+        if (init.Hash is not null)
+        {
+            var strippedValue = init.Hash.StartsWith('#', StringComparison.Ordinal) ? init.Hash[1..] : init.Hash;
+            result.Hash = isPattern ? strippedValue : UrlCanonicalizer.CanonicalizeHash(strippedValue);
         }
 
         return result;
     }
 
-    private static bool IsAbsolutePathname(string pathname)
+    /// <remarks>
+    /// <see href="https://urlpattern.spec.whatwg.org/#process-protocol-for-init">WHATWG URL Pattern Spec - Process protocol for init</see>
+    /// </remarks>
+    private static string ProcessProtocolForInit(string value, bool isPattern)
+    {
+        var strippedValue = value.EndsWith(':', StringComparison.Ordinal) ? value[..^1] : value;
+
+        return isPattern ? strippedValue : UrlCanonicalizer.CanonicalizeProtocol(strippedValue);
+    }
+
+    /// <remarks>
+    /// <see href="https://urlpattern.spec.whatwg.org/#process-pathname-for-init">WHATWG URL Pattern Spec - Process pathname for init</see>
+    /// </remarks>
+    private static string ProcessPathnameForInit(string value, string protocolValue, bool isPattern)
+    {
+        if (isPattern)
+            return value;
+
+        // An init that says nothing about the protocol is treated as a special scheme, which is the more
+        // common of the two canonicalizations
+        return protocolValue.Length == 0 || SpecialSchemes.Contains(protocolValue)
+            ? UrlCanonicalizer.CanonicalizePathname(value)
+            : UrlCanonicalizer.CanonicalizeOpaquePathname(value);
+    }
+
+    /// <summary>Prepares a value taken from the base URL for use as a component value.</summary>
+    /// <remarks>
+    /// A base URL supplies literal text, so when it feeds a pattern it must be escaped: without this,
+    /// a ':', '*', '{' or '(' in the base URL would be read as pattern syntax.
+    /// <see href="https://urlpattern.spec.whatwg.org/#process-a-base-url-string">WHATWG URL Pattern Spec - Process a base URL string</see>
+    /// </remarks>
+    private static string ProcessBaseUrlString(string input, bool isPattern)
+    {
+        return isPattern ? PatternParser.EscapePatternString(input) : input;
+    }
+
+    private static bool IsAbsolutePathname(string pathname, bool isPattern)
     {
         if (string.IsNullOrEmpty(pathname))
             return false;
@@ -664,7 +784,8 @@ public sealed class UrlPattern
         if (pathname[0] == '/')
             return true;
 
-        if (pathname.Length >= 2)
+        // The '\\/' and '{/' forms are pattern syntax, so they only make a pathname absolute in a pattern
+        if (isPattern && pathname.Length >= 2)
         {
             if (pathname[0] == '\\' && pathname[1] == '/')
                 return true;
@@ -673,11 +794,6 @@ public sealed class UrlPattern
         }
 
         return false;
-    }
-
-    private static bool IsSpecialScheme(string protocol)
-    {
-        return SpecialSchemes.Contains(protocol);
     }
 
     private static bool IsIPv6Hostname(string hostname)
@@ -699,7 +815,7 @@ public sealed class UrlPattern
 
     private static bool ProtocolMatchesSpecialScheme(UrlPatternComponent protocolComponent)
     {
-        foreach (var scheme in SpecialSchemes)
+        foreach (var scheme in SpecialSchemes.All)
         {
             if (protocolComponent.RegularExpression.IsMatch(scheme))
             {
@@ -708,103 +824,5 @@ public sealed class UrlPattern
         }
 
         return false;
-    }
-
-    // Canonicalization callbacks
-    // https://urlpattern.spec.whatwg.org/#canon-encoding-callbacks
-    private static string CanonicalizeProtocol(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        // Remove trailing colon if present
-        if (value.EndsWith(':', StringComparison.Ordinal))
-        {
-            value = value[..^1];
-        }
-
-        return value.ToLowerInvariant();
-    }
-
-    private static string CanonicalizeUsername(string value)
-    {
-        return Uri.EscapeDataString(value);
-    }
-
-    private static string CanonicalizePassword(string value)
-    {
-        return Uri.EscapeDataString(value);
-    }
-
-    private static string CanonicalizeHostname(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        return value.ToLowerInvariant();
-    }
-
-    private static string CanonicalizeIPv6Hostname(string value)
-    {
-        // IPv6 hostnames are already in a canonical form
-        return value.ToLowerInvariant();
-    }
-
-    private static string CanonicalizePort(string value)
-    {
-        // Validate that port is numeric or empty
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        foreach (var c in value)
-        {
-            if (!char.IsDigit(c))
-            {
-                return value;
-            }
-        }
-
-        return value;
-    }
-
-    private static string CanonicalizePathname(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        // Ensure starts with /
-        if (!value.StartsWith('/', StringComparison.Ordinal))
-        {
-            value = "/" + value;
-        }
-
-        return value;
-    }
-
-    private static string CanonicalizeOpaquePathname(string value)
-    {
-        return value;
-    }
-
-    private static string CanonicalizeSearch(string value)
-    {
-        // Remove leading ? if present
-        if (!string.IsNullOrEmpty(value) && value[0] == '?')
-        {
-            return value[1..];
-        }
-
-        return value;
-    }
-
-    private static string CanonicalizeHash(string value)
-    {
-        // Remove leading # if present
-        if (!string.IsNullOrEmpty(value) && value[0] == '#')
-        {
-            return value[1..];
-        }
-
-        return value;
     }
 }

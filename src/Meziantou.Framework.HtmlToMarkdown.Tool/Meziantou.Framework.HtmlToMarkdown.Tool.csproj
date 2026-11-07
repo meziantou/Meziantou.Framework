@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+    <RootNamespace>Meziantou.Framework.HtmlToMarkdownTool</RootNamespace>
+
+    <Version>1.0.21</Version>
+    <Description>CLI to convert HTML to Markdown using Meziantou.Framework.HtmlToMarkdown</Description>
+    <PackageTags>html, markdown, converter, cli, dotnet-tool</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.HtmlToMarkdown/Meziantou.Framework.HtmlToMarkdown.csproj" />
+  </ItemGroup>
+
+</Project>

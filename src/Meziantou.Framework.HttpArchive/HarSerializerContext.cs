@@ -6,5 +6,7 @@ namespace Meziantou.Framework.HttpArchive;
 [JsonSourceGenerationOptions(
     WriteIndented = false,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    PropertyNameCaseInsensitive = true)]
+    PropertyNameCaseInsensitive = true,
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true)]
 internal sealed partial class HarSerializerContext : JsonSerializerContext;

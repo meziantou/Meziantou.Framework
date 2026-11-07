@@ -3,6 +3,205 @@ namespace Meziantou.Framework.Csv.Tests;
 public class CsvReaderTests
 {
     [Fact]
+    public async Task ReadmeExample_ReadWithoutHeader()
+    {
+        #region CsvReader_ReadWithoutHeader
+        using var reader = new StringReader("""
+            Alice,30,New York
+            Bob,25,London
+            """);
+        var csvReader = new CsvReader(reader)
+        {
+            HasHeaderRow = false,
+        };
+
+        var lines = new List<string>();
+        while (await csvReader.ReadRowAsync() is { } row)
+        {
+            lines.Add($"{row[0]}, {row[1]}, {row[2]}");
+        }
+
+        Assert.Equal(["Alice, 30, New York", "Bob, 25, London"], lines);
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ReadWithHeader()
+    {
+        #region CsvReader_ReadWithHeader
+        using var reader = new StringReader("""
+            Name,Age
+            Alice,30
+            """);
+        var csvReader = new CsvReader(reader)
+        {
+            HasHeaderRow = true,
+        };
+
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+
+        // Access by column name
+        Assert.Equal("Alice", row["Name"]);
+        Assert.Equal("30", row["Age"]);
+
+        // Access by index
+        Assert.Equal("Alice", row[0]);
+
+        // Access by CsvColumn
+        var nameColumn = row.Columns?.FirstOrDefault(c => c.Name == "Name");
+        Assert.NotNull(nameColumn);
+        Assert.Equal("Alice", row[nameColumn]);
+
+        // ReadRowAsync returns null at the end of the data
+        Assert.Null(await csvReader.ReadRowAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CustomSeparatorAndQuote()
+    {
+        #region CsvReader_CustomSeparatorAndQuote
+        using var reader = new StringReader("Name\tComment\nAlice\t'Tab\tand ''quote'''");
+        var csvReader = new CsvReader(reader)
+        {
+            Separator = '\t',      // Tab-separated
+            Quote = '\'',          // Single quote instead of double quote
+            HasHeaderRow = true,
+        };
+
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+        Assert.Equal("Alice", row["Name"]);
+        Assert.Equal("Tab\tand 'quote'", row["Comment"]);
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_QuotedValues()
+    {
+        #region CsvReader_QuotedValues
+        using var reader = new StringReader(""""
+            "Value with, comma","Normal value","Value with ""quotes""","Multi-line
+            value"
+            """");
+        var csvReader = new CsvReader(reader);
+
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+        Assert.Equal("Value with, comma", row[0]);
+        Assert.Equal("Normal value", row[1]);
+        Assert.Equal("Value with \"quotes\"", row[2]);
+        Assert.Equal("Multi-line\nvalue", row[3], ignoreLineEndingDifferences: true);
+        #endregion
+    }
+
+    [Fact]
+    public async Task CsvReader_DocumentationExample()
+    {
+        #region CsvReader_ReadRowAsync
+        using var reader = new StringReader("Name,Age\nJohn,30\nJane,25");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+        var lines = new List<string>();
+        while (await csvReader.ReadRowAsync() is { } row)
+        {
+            lines.Add($"{row["Name"]} is {row["Age"]} years old");
+        }
+
+        Assert.Equal(["John is 30 years old", "Jane is 25 years old"], lines);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ReadFile()
+    {
+        await File.WriteAllTextAsync("people.csv", "Name,Age\nAlice,30\nBob,25\n", XunitCancellationToken);
+        try
+        {
+            #region CsvReader_ReadFile
+            using var reader = new StreamReader("people.csv");
+            var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+            var names = new List<string>();
+            var totalAge = 0;
+            while (await csvReader.ReadRowAsync() is { } row)
+            {
+                names.Add(row["Name"]!);
+                totalAge += int.Parse(row["Age"]!, CultureInfo.InvariantCulture);
+            }
+
+            Assert.Equal(["Alice", "Bob"], names);
+            Assert.Equal(55, totalAge);
+            #endregion
+        }
+        finally
+        {
+            File.Delete("people.csv");
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_BlankLinesAndShortRows()
+    {
+        #region CsvReader_BlankLinesAndShortRows
+        using var reader = new StringReader("Name,Age,City\nAlice,30\n\nBob,25,London");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+        var alice = await csvReader.ReadRowAsync();
+        Assert.NotNull(alice);
+        Assert.Equal(["Alice", "30"], alice.Values);
+        Assert.Null(alice["City"]);    // The row has no value for this column
+        Assert.Null(alice["Country"]); // The header row has no such column
+
+        var blankLine = await csvReader.ReadRowAsync();
+        Assert.NotNull(blankLine);
+        Assert.Empty(blankLine.Values);
+
+        var bob = await csvReader.ReadRowAsync();
+        Assert.NotNull(bob);
+        Assert.Equal("London", bob["City"]);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RowNumber()
+    {
+        #region CsvReader_RowNumber
+        using var reader = new StringReader("Name,Age\nAlice,30\nBob,unknown");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+        var errors = new List<string>();
+        while (await csvReader.ReadRowAsync() is { } row)
+        {
+            if (!int.TryParse(row["Age"], CultureInfo.InvariantCulture, out _))
+            {
+                errors.Add($"Row {csvReader.RowNumber}: invalid age '{row["Age"]}'");
+            }
+        }
+
+        // The header row is row 0
+        Assert.Equal(["Row 2: invalid age 'unknown'"], errors);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RowAsDictionary()
+    {
+        #region CsvRow_AsDictionary
+        using var reader = new StringReader("Name,Age\nAlice,30");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+
+        IReadOnlyDictionary<string, string?> values = row;
+        Assert.Equal(["Name", "Age"], values.Keys);
+        Assert.True(values.TryGetValue("Age", out var age));
+        Assert.Equal("30", age);
+        #endregion
+    }
+
+    [Fact]
     public async Task CsvReader_RowWithoutHeader()
     {
         var sb = new StringBuilder();
@@ -57,6 +256,63 @@ public class CsvReaderTests
         Assert.Equal("value2.3", row2["column3"]);
 
         Assert.Null(row3);
+    }
+
+    [Fact]
+    public async Task CsvReader_ColumnNumberCountsCharactersNotFields()
+    {
+        using var sr = new StringReader("A,B,C\nvalue");
+        var reader = new CsvReader(sr);
+
+        Assert.Equal(0, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(6, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(5, reader.ColumnNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_ColumnNumberCountsBothCharactersOfAnEscapedQuote()
+    {
+        using var sr = new StringReader("\"ab\"\"\"\n\"a\"\"b\"");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(7, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(6, reader.ColumnNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_LineNumberCountsConsumedLineTerminators()
+    {
+        using var sr = new StringReader("a\nb\nc");
+        var reader = new CsvReader(sr);
+
+        Assert.Equal(0, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.LineNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_LineNumberCountsLineTerminatorsInsideQuotedValues()
+    {
+        using var sr = new StringReader("\"a\nb\",c");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+
+        Assert.Equal(1, reader.LineNumber);
     }
 
     [Fact]
@@ -158,6 +414,161 @@ public class CsvReaderTests
         Assert.Null(await reader.ReadRowAsync());
     }
 
+    [Fact]
+    public async Task CsvReader_RowNumberIsTheZeroBasedIndexOfTheRowJustReturned()
+    {
+        using var sr = new StringReader("a\nb\nc");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(0, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.RowNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_RowNumberDoesNotAdvancePastTheLastRow()
+    {
+        using var sr = new StringReader("a\nb");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        Assert.Null(await reader.ReadRowAsync());
+        Assert.Equal(1, reader.RowNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_RowNumberCountsTheHeaderRow()
+    {
+        using var sr = new StringReader("A,B\n1,2\n3,4");
+        var reader = new CsvReader(sr) { HasHeaderRow = true };
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.RowNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_RowNumberIsIndependentOfTheLineTerminator()
+    {
+        using var sr = new StringReader("a\r\nb\rc");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(0, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.RowNumber);
+    }
+
+    [Theory]
+    [InlineData("a,b,", new[] { "a", "b", "" })]
+    [InlineData("a,b,\n", new[] { "a", "b", "" })]
+    [InlineData("a,b,\r\n", new[] { "a", "b", "" })]
+    [InlineData("a,b,\"\"", new[] { "a", "b", "" })]
+    [InlineData(",", new[] { "", "" })]
+    [InlineData(",,", new[] { "", "", "" })]
+    [InlineData("\"\"", new[] { "" })]
+    [InlineData("a,\"\",b", new[] { "a", "", "b" })]
+    [InlineData("\"a,b\",", new[] { "a,b", "" })]
+    [InlineData("a,b", new[] { "a", "b" })]
+    public async Task CsvReader_EmptyTrailingValueIsPreserved(string data, string[] expected)
+    {
+        using var sr = new StringReader(data);
+        var reader = new CsvReader(sr);
+
+        var row = await reader.ReadRowAsync();
+
+        Assert.NotNull(row);
+        Assert.Equal(expected, row.Values);
+    }
+
+    [Fact]
+    public async Task CsvReader_EmptyInputReturnsNoRow()
+    {
+        using var sr = new StringReader("");
+        var reader = new CsvReader(sr);
+
+        Assert.Null(await reader.ReadRowAsync());
+    }
+
+    [Fact]
+    public async Task CsvReader_TrailingNewLineDoesNotProduceAnExtraRow()
+    {
+        using var sr = new StringReader("a\nb\n");
+        var reader = new CsvReader(sr);
+
+        Assert.NotNull(await reader.ReadRowAsync());
+        Assert.NotNull(await reader.ReadRowAsync());
+        Assert.Null(await reader.ReadRowAsync());
+    }
+
+    [Fact]
+    public async Task CsvReader_BlankLineStillYieldsARowWithoutValues()
+    {
+        using var sr = new StringReader("a\n\nb");
+        var reader = new CsvReader(sr);
+
+        var row1 = await reader.ReadRowAsync();
+        Assert.NotNull(row1);
+        Assert.Equal(["a"], row1.Values);
+
+        var row2 = await reader.ReadRowAsync();
+        Assert.NotNull(row2);
+        Assert.Empty(row2.Values);
+
+        var row3 = await reader.ReadRowAsync();
+        Assert.NotNull(row3);
+        Assert.Equal(["b"], row3.Values);
+    }
+
+    [Fact]
+    public async Task CsvReader_EmptyTrailingValueIsAddressableByColumnName()
+    {
+        using var sr = new StringReader("A,B,C\n1,2,");
+        var reader = new CsvReader(sr) { HasHeaderRow = true };
+
+        var row = await reader.ReadRowAsync();
+
+        Assert.NotNull(row);
+        Assert.Equal(["1", "2", ""], row.Values);
+        Assert.Equal("", row["C"]);
+    }
+
+    [Fact]
+    public async Task CsvWriter_TrailingEmptyValue_RoundTripsThroughCsvReader()
+    {
+        using var sw = new StringWriter();
+        var writer = new CsvWriter(sw) { EndOfLine = "\n" };
+        await writer.WriteRowAsync("a", "b", "");
+        await writer.WriteRowAsync("", "", "");
+
+        using var sr = new StringReader(sw.ToString());
+        var reader = new CsvReader(sr);
+
+        var row1 = await reader.ReadRowAsync();
+        Assert.NotNull(row1);
+        Assert.Equal(["a", "b", ""], row1.Values);
+
+        var row2 = await reader.ReadRowAsync();
+        Assert.NotNull(row2);
+        Assert.Equal(["", "", ""], row2.Values);
+
+        Assert.Null(await reader.ReadRowAsync());
+    }
+
     private sealed class TruncatedCarriageReturnReader : TextReader
     {
         private readonly char[] _content = ['"', 'a', '\r'];
@@ -193,5 +604,32 @@ public class CsvReaderTests
         {
             return Task.FromResult(Read(buffer, index, count));
         }
+    }
+
+    [Fact]
+    public async Task CsvReader_CreateRowAndCreateColumnCanBeOverridden()
+    {
+        using var sr = new StringReader("A,B\n1,2");
+        var reader = new CustomReader(sr) { HasHeaderRow = true };
+
+        var row = await reader.ReadRowAsync();
+
+        var customRow = Assert.IsType<CustomRow>(row);
+        Assert.Equal("1", customRow["A"]);
+        Assert.NotNull(customRow.Columns);
+        Assert.IsType<CustomColumn>(customRow.Columns[0]);
+    }
+
+    private sealed class CustomColumn(string? name, int index) : CsvColumn(name, index);
+
+    private sealed class CustomRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+        : CsvRow(columns, values);
+
+    private sealed class CustomReader(TextReader reader) : CsvReader(reader)
+    {
+        protected override CsvColumn CreateColumn(string name, int index) => new CustomColumn(name, index);
+
+        protected override CsvRow CreateRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+            => new CustomRow(columns, values);
     }
 }

@@ -6,33 +6,33 @@ namespace Meziantou.Framework.NuGetPackageValidation
 {
     public sealed class NuGetPackageValidationContext : System.IDisposable
     {
-        public Meziantou.Framework.FullPath PackagePath { get => throw null; }
         public System.Threading.CancellationToken CancellationToken { get => throw null; }
         public NuGet.Packaging.PackageReaderBase Package { get => throw null; }
+        public Meziantou.Framework.FullPath PackagePath { get => throw null; }
         public NuGet.Packaging.PackageReaderBase? SymbolPackage { get => throw null; }
         public System.Collections.Generic.IEnumerable<System.Uri> SymbolServers { get => throw null; }
-        public bool IsRuleExcluded(int ruleId) => throw null;
         public void Dispose() { }
+        public bool IsRuleExcluded(int ruleId) => throw null;
         public void ReportError(int errorCode, string message, string? helpText = null, string? fileName = null) { }
     }
 
     public sealed class NuGetPackageValidationError
     {
         public int ErrorCode { get => throw null; }
-        public string Message { get => throw null; }
-        public string? HelpText { get => throw null; }
         public string? FileName { get => throw null; }
+        public string? HelpText { get => throw null; }
+        public string Message { get => throw null; }
         public NuGetPackageValidationError(int errorCode, string message, string? helpText, string? fileName = null) { }
         public override string ToString() => throw null;
     }
 
     public sealed class NuGetPackageValidationOptions
     {
-        public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions Default { get => throw null; }
-        public System.Collections.Generic.ICollection<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> Rules { get => throw null; }
-        public System.Collections.Generic.ICollection<int> ExcludedRuleIds { get => throw null; }
-        public System.Collections.Generic.IList<string> SymbolServers { get => throw null; }
         public System.Action<System.Net.Http.HttpRequestMessage>? ConfigureRequest { get => throw null; set { } }
+        public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions Default { get => throw null; }
+        public System.Collections.Generic.ICollection<int> ExcludedRuleIds { get => throw null; }
+        public System.Collections.Generic.ICollection<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> Rules { get => throw null; }
+        public System.Collections.Generic.IList<string> SymbolServers { get => throw null; }
     }
 
     public sealed class NuGetPackageValidationResult
@@ -51,24 +51,24 @@ namespace Meziantou.Framework.NuGetPackageValidation
     {
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule AssembliesMustBeOptimized { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule AuthorMustBeSet { get => throw null; }
+        public static System.Collections.Immutable.ImmutableArray<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> Default { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule DescriptionMustBeSet { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule IconMustBeSet { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule LicenseMustBeSet { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule PackageIdAvailableOnNuGetOrg { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule ProjectUrlMustBeSet { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule ReadmeMustBeSet { get => throw null; }
-        public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule RepositoryMustBeSet { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule RepositoryBranchMustBeSet { get => throw null; }
+        public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule RepositoryMustBeSet { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule Symbols { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule TagsMustBeSet { get => throw null; }
         public static Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule XmlDocumentationMustBePresent { get => throw null; }
-        public static System.Collections.Immutable.ImmutableArray<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> Default { get => throw null; }
     }
 
     public static class NuGetPackageValidator
     {
-        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Collections.Generic.IEnumerable<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> rules, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Collections.Generic.IEnumerable<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> rules, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 }

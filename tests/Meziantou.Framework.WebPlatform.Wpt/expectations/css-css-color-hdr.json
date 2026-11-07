@@ -1,0 +1,19 @@
+{
+  "css/css-color-hdr/computed.html": {
+    "total": 21
+  },
+  "css/css-color-hdr/inheritance.html": {
+    "total": 2
+  },
+  "css/css-color-hdr/interpolation.html": {
+    "total": 64
+  },
+  "css/css-color-hdr/parsing.html": {
+    "total": 29,
+    "failures": {
+      "e.style['dynamic-range-limit'] = \"dynamic-range-limit-mix(dynamic-range-limit-mix(no-limit 1%, standard 2%) 3%, dynamic-range-limit-mix(constrained 0%, no-limit 0%) 6%)\" should not set the property value": "FAIL",
+      "e.style['dynamic-range-limit'] = \"dynamic-range-limit-mix(no-limit 0%, standard 0%)\" should not set the property value": "FAIL",
+      "e.style['dynamic-range-limit'] = \"dynamic-range-limit-mix(no-limit 1%)\" should not set the property value": "FAIL"
+    }
+  }
+}

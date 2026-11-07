@@ -1,0 +1,598 @@
+{
+  "spec": {
+    "title": "Portals",
+    "url": "https://wicg.github.io/portals/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "HTMLPortalElement",
+          "PortalActivateEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "PortalHost"
+        ]
+      }
+    },
+    "idlNames": {
+      "HTMLPortalElement": {
+        "fragment": "[Exposed=Window]\ninterface HTMLPortalElement : HTMLElement {\n    [HTMLConstructor] constructor();\n\n    [CEReactions] attribute USVString src;\n    [CEReactions] attribute DOMString referrerPolicy;\n\n    [NewObject] Promise<undefined> activate(optional PortalActivateOptions options = {});\n    undefined postMessage(any message, optional StructuredSerializeOptions options = {});\n\n    attribute EventHandler onmessage;\n    attribute EventHandler onmessageerror;\n};",
+        "type": "interface",
+        "name": "HTMLPortalElement",
+        "inheritance": "HTMLElement",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "HTMLConstructor",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "href": "https://wicg.github.io/portals/#dom-htmlportalelement-htmlportalelement"
+          },
+          {
+            "type": "attribute",
+            "name": "src",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/portals/#dom-htmlportalelement-src"
+          },
+          {
+            "type": "attribute",
+            "name": "referrerPolicy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/portals/#dom-htmlportalelement-referrerpolicy"
+          },
+          {
+            "type": "operation",
+            "name": "activate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PortalActivateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://wicg.github.io/portals/#dom-htmlportalelement-activate"
+          },
+          {
+            "type": "operation",
+            "name": "postMessage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StructuredSerializeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/portals/#dom-htmlportalelement-postmessage"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/portals/#dom-htmlportalelement-onmessage"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessageerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/portals/#dom-htmlportalelement-onmessageerror"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/portals/#htmlportalelement"
+      },
+      "PortalActivateOptions": {
+        "fragment": "dictionary PortalActivateOptions : StructuredSerializeOptions {\n    any data;\n};",
+        "type": "dictionary",
+        "name": "PortalActivateOptions",
+        "inheritance": "StructuredSerializeOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/portals/#dom-portalactivateoptions-data"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/portals/#dictdef-portalactivateoptions"
+      },
+      "PortalHost": {
+        "fragment": "[Exposed=Window]\ninterface PortalHost : EventTarget {\n    undefined postMessage(any message, optional StructuredSerializeOptions options = {});\n\n    attribute EventHandler onmessage;\n    attribute EventHandler onmessageerror;\n};",
+        "type": "interface",
+        "name": "PortalHost",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "postMessage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StructuredSerializeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/portals/#dom-portalhost-postmessage"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/portals/#dom-portalhost-onmessage"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessageerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/portals/#dom-portalhost-onmessageerror"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/portals/#portalhost"
+      },
+      "PortalActivateEvent": {
+        "fragment": "[Exposed=Window]\ninterface PortalActivateEvent : Event {\n    constructor(DOMString type, optional PortalActivateEventInit eventInitDict = {});\n\n    readonly attribute any data;\n    HTMLPortalElement adoptPredecessor();\n};",
+        "type": "interface",
+        "name": "PortalActivateEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PortalActivateEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/portals/#dom-portalactivateevent-portalactivateevent"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/portals/#dom-portalactivateevent-data"
+          },
+          {
+            "type": "operation",
+            "name": "adoptPredecessor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HTMLPortalElement"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/portals/#dom-portalactivateevent-adoptpredecessor"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/portals/#portalactivateevent"
+      },
+      "PortalActivateEventInit": {
+        "fragment": "dictionary PortalActivateEventInit : EventInit {\n    any data = null;\n};",
+        "type": "dictionary",
+        "name": "PortalActivateEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/portals/#dom-portalactivateeventinit-data"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/portals/#dictdef-portalactivateeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n    readonly attribute PortalHost? portalHost;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "portalHost",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "PortalHost"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/portals/#dom-window-portalhost"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "WindowEventHandlers": [
+        {
+          "fragment": "partial interface mixin WindowEventHandlers {\n    attribute EventHandler onportalactivate;\n};",
+          "type": "interface mixin",
+          "name": "WindowEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onportalactivate",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/portals/#dom-windoweventhandlers-onportalactivate"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "HTMLPortalElement",
+        "PortalHost",
+        "PortalActivateEvent"
+      ]
+    },
+    "dependencies": {
+      "HTMLPortalElement": [
+        "HTMLElement",
+        "PortalActivateOptions",
+        "StructuredSerializeOptions",
+        "EventHandler"
+      ],
+      "PortalActivateOptions": [
+        "StructuredSerializeOptions"
+      ],
+      "Window": [
+        "PortalHost"
+      ],
+      "PortalHost": [
+        "EventTarget",
+        "StructuredSerializeOptions",
+        "EventHandler"
+      ],
+      "PortalActivateEvent": [
+        "Event",
+        "PortalActivateEventInit",
+        "HTMLPortalElement"
+      ],
+      "PortalActivateEventInit": [
+        "EventInit"
+      ],
+      "WindowEventHandlers": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLElement",
+      "StructuredSerializeOptions",
+      "EventHandler",
+      "Window",
+      "EventTarget",
+      "Event",
+      "EventInit",
+      "WindowEventHandlers"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

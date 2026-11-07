@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-GY": {
+      "identity": {
+        "language": "en",
+        "territory": "GY"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

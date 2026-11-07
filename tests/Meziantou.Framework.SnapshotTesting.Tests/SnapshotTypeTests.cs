@@ -20,6 +20,13 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Tiff, SnapshotType.Create("tif"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("gif"));
         Assert.Equal(SnapshotType.Ico, SnapshotType.Create("ico"));
+        Assert.Equal(SnapshotType.Avif, SnapshotType.Create("avif"));
+        Assert.Equal(SnapshotType.Heic, SnapshotType.Create("heic"));
+        Assert.Equal(SnapshotType.JpegXl, SnapshotType.Create("jxl"));
+        Assert.Equal(SnapshotType.Jpeg2000, SnapshotType.Create("jp2"));
+        Assert.Equal(SnapshotType.Pdf, SnapshotType.Create("pdf"));
+        Assert.Equal("application/pdf", SnapshotType.Create("PDF").MimeType);
+        Assert.Equal("image/jxl", SnapshotType.Create("JXL").MimeType);
     }
 
     [Fact]
@@ -63,6 +70,24 @@ public sealed class SnapshotTypeTests
     {
         var result = SnapshotType.Create(".json");
         Assert.Equal("json", result.Type);
+    }
+
+    [Fact]
+    public void Equals_UnknownType_IsCaseInsensitive()
+    {
+        Assert.Equal(SnapshotType.Create("json"), SnapshotType.Create("JSON"));
+        Assert.Equal(SnapshotType.Create("json").GetHashCode(), SnapshotType.Create("JSON").GetHashCode());
+        Assert.True(SnapshotType.Create("json") == SnapshotType.Create(".Json"));
+    }
+
+    [Fact]
+    public void Comparers_Get_FindsAComparerRegisteredWithADifferentCase()
+    {
+        var comparers = new SnapshotComparerCollection();
+        var comparer = TextSnapshotComparer.Instance;
+        comparers.Set(SnapshotType.Create("JSON"), comparer);
+
+        Assert.Same(comparer, comparers.Get(SnapshotType.Create("json")));
     }
 
     [Fact]

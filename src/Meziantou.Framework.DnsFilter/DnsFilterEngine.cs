@@ -1,10 +1,17 @@
+using System.Text.RegularExpressions;
+
 namespace Meziantou.Framework.DnsFilter;
 
 /// <summary>
 /// A DNS filter matching engine that evaluates DNS queries against a set of filter rules.
 /// Supports efficient exact domain matching, subdomain matching, wildcard, and regex patterns.
-/// Thread-safe for concurrent query evaluation; supports atomic rule-set replacement via <see cref="Reload"/>.
 /// </summary>
+/// <remarks>
+/// <see cref="Evaluate"/> is safe to call concurrently, and <see cref="Reload"/> swaps the rule set
+/// atomically. <see cref="DnsFilterRuleSet"/> itself is not thread-safe for concurrent mutation;
+/// the engine takes a snapshot when it builds, so mutating a rule set afterwards never affects an
+/// engine already built from it.
+/// </remarks>
 public sealed class DnsFilterEngine
 {
     private volatile FilterData _data;
@@ -20,7 +27,8 @@ public sealed class DnsFilterEngine
     }
 
     /// <summary>
-    /// Atomically replaces the current rule set with a new one. Thread-safe.
+    /// Atomically replaces the current rule set with a new one. Thread-safe with respect to
+    /// concurrent <see cref="Evaluate"/> calls.
     /// </summary>
     /// <param name="ruleSet">The new rule set.</param>
     public void Reload(DnsFilterRuleSet ruleSet)
@@ -32,158 +40,184 @@ public sealed class DnsFilterEngine
     /// <summary>
     /// Evaluates a DNS query against the filter rules.
     /// </summary>
-    /// <param name="domain">The queried domain name.</param>
-    /// <param name="queryType">The DNS query type.</param>
-    /// <param name="client">Optional client information for <c>$client</c> and <c>$ctag</c> matching.</param>
-    /// <returns>A <see cref="DnsFilterResult"/> indicating whether the query is blocked, allowed, or unmatched.</returns>
+    /// <param name="domain">The queried domain name. Internationalized names are converted to their
+    /// punycode form before matching.</param>
+    /// <param name="queryType">The DNS query type. Pass the raw QTYPE cast to
+    /// <see cref="DnsFilterQueryType"/> even when it is not a named member.</param>
+    /// <param name="client">Optional client information for <c>$client</c> and <c>$ctag</c> matching.
+    /// When a dimension is not supplied, rules scoped on it do not match.</param>
+    /// <returns>A <see cref="DnsFilterResult"/> indicating whether the query is blocked, allowed,
+    /// rewritten, or unmatched. This method does not throw for malformed or hostile input.</returns>
     public DnsFilterResult Evaluate(string domain, DnsFilterQueryType queryType = DnsFilterQueryType.A, DnsClientInfo client = default)
     {
         ArgumentNullException.ThrowIfNull(domain);
 
-        domain = domain.Trim().TrimEnd('.').ToLowerInvariant();
-        if (domain.Length == 0)
-        {
+        if (!DnsDomainName.TryNormalize(domain, out var name))
             return DnsFilterResult.NotMatched;
-        }
 
         var data = _data;
-        var candidates = FindCandidateRules(data, domain);
+        var state = default(MatchState);
 
-        // Apply filtering pipeline and resolve priority
-        DnsFilterRule? bestBlock = null;
-        DnsFilterRule? bestAllow = null;
-        DnsFilterRule? bestImportantBlock = null;
-        DnsFilterRule? bestImportantAllow = null;
-
-        foreach (var rule in candidates)
+        // 1. Exact domain match.
+        if (data.ExactDomainRules.Count > 0 && data.ExactDomainRules.TryGetValue(name, out var exact))
         {
-            // Skip $badfilter rules (they only disable other rules)
-            if (rule.IsBadFilter)
-                continue;
+            ConsiderBucket(exact, ref state, name, queryType, client, requirePatternMatch: false);
+        }
 
-            // Check if this rule is disabled by a $badfilter
-            if (IsDisabledByBadFilter(data, rule))
-                continue;
+        // 2. Suffix (subdomain) match: the name itself and each of its parents.
+        if (data.SuffixDomainRules.Count > 0 || data.SuffixPatternRules.Count > 0)
+        {
+            var suffixLookup = data.SuffixDomainRules.GetAlternateLookup<ReadOnlySpan<char>>();
+            var patternLookup = data.SuffixPatternRules.GetAlternateLookup<ReadOnlySpan<char>>();
 
-            // Filter by $dnstype
-            if (!MatchesDnsType(rule, queryType))
-                continue;
-
-            // Filter by $denyallow
-            if (IsExcludedByDenyAllow(rule, domain))
-                continue;
-
-            // Filter by $client
-            if (!MatchesClient(rule, client))
-                continue;
-
-            // Filter by $ctag
-            if (!MatchesCtag(rule, client))
-                continue;
-
-            // Categorize by priority
-            if (rule.IsImportant)
+            var current = name.AsSpan();
+            while (true)
             {
-                if (rule.Action == DnsFilterAction.Block)
+                if (suffixLookup.TryGetValue(current, out var suffixRules))
                 {
-                    bestImportantBlock ??= rule;
+                    ConsiderBucket(suffixRules, ref state, name, queryType, client, requirePatternMatch: false);
                 }
-                else
+
+                if (patternLookup.TryGetValue(current, out var patternRules))
                 {
-                    bestImportantAllow ??= rule;
+                    ConsiderBucket(patternRules, ref state, name, queryType, client, requirePatternMatch: true);
                 }
-            }
-            else
-            {
-                if (rule.Action == DnsFilterAction.Block)
-                {
-                    bestBlock ??= rule;
-                }
-                else
-                {
-                    bestAllow ??= rule;
-                }
+
+                var dotIndex = current.IndexOf('.');
+                if (dotIndex < 0)
+                    break;
+
+                current = current[(dotIndex + 1)..];
             }
         }
 
-        // Priority resolution:
-        // 1. $important block rules beat everything
-        // 2. $important allow rules beat normal rules
-        // 3. Normal allow (@@) rules beat normal block rules
-        // 4. Normal block rules
-        if (bestImportantBlock is not null)
-        {
-            return DnsFilterResult.Blocked(bestImportantBlock);
-        }
-
-        if (bestImportantAllow is not null)
-        {
-            return DnsFilterResult.Allowed(bestImportantAllow);
-        }
-
-        if (bestAllow is not null)
-        {
-            return DnsFilterResult.Allowed(bestAllow);
-        }
-
-        if (bestBlock is not null)
-        {
-            return DnsFilterResult.Blocked(bestBlock);
-        }
-
-        return DnsFilterResult.NotMatched;
-    }
-
-    private static List<DnsFilterRule> FindCandidateRules(FilterData data, string domain)
-    {
-        var candidates = new List<DnsFilterRule>();
-
-        // 1. Exact domain match
-        if (data.ExactDomainRules.TryGetValue(domain, out var exactRules))
-        {
-            candidates.AddRange(exactRules);
-        }
-
-        // 2. Suffix (subdomain) match: check domain itself and all parent domains
-        // For "sub.ads.example.com", check: "sub.ads.example.com", "ads.example.com", "example.com", "com"
-        var current = domain;
-        while (true)
-        {
-            if (data.SuffixDomainRules.TryGetValue(current, out var suffixRules))
-            {
-                candidates.AddRange(suffixRules);
-            }
-
-            var dotIndex = current.IndexOf('.', StringComparison.Ordinal);
-            if (dotIndex < 0)
-                break;
-
-            current = current[(dotIndex + 1)..];
-        }
-
-        // 3. Regex/wildcard pattern rules
+        // 3. Pattern rules with no indexable suffix, gated by a literal prefilter.
         foreach (var rule in data.PatternRules)
         {
-            if (rule.Pattern!.IsMatch(domain))
+            Consider(rule, ref state, name, queryType, client, requirePatternMatch: true);
+        }
+
+        if (state.Best is null)
+            return DnsFilterResult.NotMatched;
+
+        return state.Best.Action is DnsFilterAction.Allow
+            ? DnsFilterResult.Allowed(state.Best)
+            : DnsFilterResult.Blocked(state.Best);
+    }
+
+    private static void ConsiderBucket(object bucket, ref MatchState state, string name, DnsFilterQueryType queryType, in DnsClientInfo client, bool requirePatternMatch)
+    {
+        if (bucket is DnsFilterRule single)
+        {
+            Consider(single, ref state, name, queryType, client, requirePatternMatch);
+            return;
+        }
+
+        foreach (var rule in (List<DnsFilterRule>)bucket)
+        {
+            Consider(rule, ref state, name, queryType, client, requirePatternMatch);
+        }
+    }
+
+    private static void Consider(DnsFilterRule rule, ref MatchState state, string name, DnsFilterQueryType queryType, in DnsClientInfo client, bool requirePatternMatch)
+    {
+        // Cheap ordering checks first: a rule that cannot beat the incumbent needs no matching work.
+        var rank = GetRank(rule);
+        if (rank < state.Rank)
+            return;
+
+        var specificity = GetSpecificity(rule);
+        if (rank == state.Rank && specificity <= state.Specificity)
+            return;
+
+        if (requirePatternMatch && !MatchesPattern(rule, name))
+            return;
+
+        if (!MatchesDnsType(rule, queryType))
+            return;
+
+        if (IsExcludedByDenyAllow(rule, name))
+            return;
+
+        if (!MatchesClient(rule, client))
+            return;
+
+        if (!MatchesCtag(rule, client))
+            return;
+
+        state.Best = rule;
+        state.Rank = rank;
+        state.Specificity = specificity;
+    }
+
+    private struct MatchState
+    {
+        public DnsFilterRule? Best;
+        public int Rank;
+        public int Specificity;
+    }
+
+    /// <summary>
+    /// Priority of a rule, highest wins. An <c>$important</c> exception outranks an
+    /// <c>$important</c> block, which is what makes <c>@@…$important</c> usable as an override
+    /// against a blocklist the operator does not control.
+    /// </summary>
+    private static int GetRank(DnsFilterRule rule) => (rule.IsImportant, rule.Action) switch
+    {
+        (true, DnsFilterAction.Allow) => 4,
+        (true, _) => 3,
+        (false, DnsFilterAction.Allow) => 2,
+        _ => 1,
+    };
+
+    /// <summary>
+    /// Tie-break within a priority level: a rewrite beats a plain block, then the more specific
+    /// rule wins. Without this the winner would be whichever rule the index happened to yield first.
+    /// </summary>
+    private static int GetSpecificity(DnsFilterRule rule)
+    {
+        var score = rule.ExactDomain is not null ? 1_000_000
+            : rule.DomainSuffix is not null ? 1_000 + rule.DomainSuffix.Length
+            : 1;
+
+        if (rule.Rewrite is not null)
+        {
+            score += 10_000_000;
+        }
+
+        return score;
+    }
+
+    private static bool MatchesPattern(DnsFilterRule rule, string domain)
+    {
+        if (rule.RequiredLiterals is { } literals)
+        {
+            foreach (var literal in literals)
             {
-                candidates.Add(rule);
+                if (!domain.Contains(literal, StringComparison.Ordinal))
+                    return false;
             }
         }
 
-        return candidates;
+        try
+        {
+            return rule.Pattern!.IsMatch(domain);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // A pathological pattern in a third-party list must not take the resolver down. Treat it
+            // as a non-match; the rule is effectively inert for this query.
+            return false;
+        }
     }
 
     private static bool MatchesDnsType(DnsFilterRule rule, DnsFilterQueryType queryType)
     {
-        if (rule.AllowedDnsTypes is not null)
-        {
-            return rule.AllowedDnsTypes.Contains(queryType);
-        }
+        if (rule.AllowedDnsTypes is not null && !rule.AllowedDnsTypes.Contains(queryType))
+            return false;
 
-        if (rule.ExcludedDnsTypes is not null)
-        {
-            return !rule.ExcludedDnsTypes.Contains(queryType);
-        }
+        if (rule.ExcludedDnsTypes is not null && rule.ExcludedDnsTypes.Contains(queryType))
+            return false;
 
         return true;
     }
@@ -195,8 +229,10 @@ public sealed class DnsFilterEngine
 
         foreach (var allowed in rule.DenyAllowDomains)
         {
-            if (domain.Equals(allowed, StringComparison.OrdinalIgnoreCase) ||
-                domain.EndsWith("." + allowed, StringComparison.OrdinalIgnoreCase))
+            if (domain.Equals(allowed, StringComparison.Ordinal) ||
+                (domain.Length > allowed.Length &&
+                 domain[domain.Length - allowed.Length - 1] is '.' &&
+                 domain.EndsWith(allowed, StringComparison.Ordinal)))
             {
                 return true;
             }
@@ -210,58 +246,49 @@ public sealed class DnsFilterEngine
         if (rule.ClientSpecs is null)
             return true;
 
-        // If there are only exclusion specs, the rule matches unless the client matches an exclusion
         var hasInclusions = false;
         var matchedInclusion = false;
 
         foreach (var spec in rule.ClientSpecs)
         {
-            var matches = MatchesClientSpec(spec, client);
-
             if (spec.IsExclusion)
             {
-                if (matches)
-                {
-                    return false; // Excluded client
-                }
+                // The caller may not have supplied the dimension this spec is written against. An
+                // exclusion that cannot be evaluated must not be assumed satisfied, or a
+                // "block for everyone except X" rule would end up applying to X itself.
+                if (!CanEvaluate(spec, client) || MatchesClientSpec(spec, client))
+                    return false;
             }
             else
             {
                 hasInclusions = true;
-                if (matches)
+                if (CanEvaluate(spec, client) && MatchesClientSpec(spec, client))
                 {
                     matchedInclusion = true;
                 }
             }
         }
 
-        // If there are inclusion specs, at least one must match
-        if (hasInclusions)
-        {
-            return matchedInclusion;
-        }
+        return !hasInclusions || matchedInclusion;
+    }
 
-        return true;
+    private static bool CanEvaluate(DnsFilterClientSpec spec, DnsClientInfo client)
+    {
+        if (spec.Address is not null || spec.Network is not null)
+            return client.Address is not null;
+
+        return client.Name is not null;
     }
 
     private static bool MatchesClientSpec(DnsFilterClientSpec spec, DnsClientInfo client)
     {
-        if (spec.Address is not null && client.Address is not null)
-        {
+        if (spec.Address is not null)
             return spec.Address.Equals(client.Address);
-        }
 
-        if (spec.Network is not null && client.Address is not null)
-        {
-            return spec.Network.Value.Contains(client.Address);
-        }
+        if (spec.Network is not null)
+            return spec.Network.Value.Contains(client.Address!);
 
-        if (spec.Name is not null && client.Name is not null)
-        {
-            return spec.Name.Equals(client.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
+        return spec.Name is not null && spec.Name.Equals(client.Name, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool MatchesCtag(DnsFilterRule rule, DnsClientInfo client)
@@ -269,31 +296,25 @@ public sealed class DnsFilterEngine
         if (rule.TagSpec is null)
             return true;
 
-        // If no tags provided by caller, rules with $ctag never match
-        if (client.Tags is null || client.Tags.Count == 0)
+        if (client.Tags is null || client.Tags.Count is 0)
             return false;
 
+        // Exclusions and inclusions are both requirements, not alternatives.
         if (rule.TagSpec.ExcludedTags is not null)
         {
             foreach (var tag in rule.TagSpec.ExcludedTags)
             {
-                if (client.Tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
-                {
+                if (ContainsTag(client.Tags, tag))
                     return false;
-                }
             }
-
-            return true;
         }
 
         if (rule.TagSpec.IncludedTags is not null)
         {
             foreach (var tag in rule.TagSpec.IncludedTags)
             {
-                if (client.Tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
-                {
+                if (ContainsTag(client.Tags, tag))
                     return true;
-                }
             }
 
             return false;
@@ -302,105 +323,106 @@ public sealed class DnsFilterEngine
         return true;
     }
 
-    private static bool IsDisabledByBadFilter(FilterData data, DnsFilterRule rule)
+    private static bool ContainsTag(IReadOnlyList<string> tags, string tag)
     {
-        if (data.BadFilterTexts.Count == 0)
-            return false;
+        foreach (var candidate in tags)
+        {
+            if (candidate.Equals(tag, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
 
-        // A $badfilter rule disables a rule whose text matches (minus the $badfilter modifier)
-        return data.BadFilterTexts.Contains(rule.OriginalText);
+        return false;
     }
 
     private static FilterData BuildFilterData(DnsFilterRuleSet ruleSet)
     {
-        var exactDomainRules = new Dictionary<string, List<DnsFilterRule>>(StringComparer.OrdinalIgnoreCase);
-        var suffixDomainRules = new Dictionary<string, List<DnsFilterRule>>(StringComparer.OrdinalIgnoreCase);
-        var patternRules = new List<DnsFilterRule>();
-        var badFilterTexts = new HashSet<string>(StringComparer.Ordinal);
+        var rules = ruleSet.ToArray();
 
-        foreach (var rule in ruleSet.Rules)
+        // Pass 1: collect the identities disabled by $badfilter, so disabled rules are never
+        // indexed at all and the query path does not have to check for them.
+        HashSet<string>? badFilterKeys = null;
+        foreach (var rule in rules)
+        {
+            if (rule.IsBadFilter && rule.BadFilterKey is not null)
+            {
+                badFilterKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                badFilterKeys.Add(rule.BadFilterKey);
+            }
+        }
+
+        var exactDomainRules = new Dictionary<string, object>(rules.Length, StringComparer.OrdinalIgnoreCase);
+        var suffixDomainRules = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var suffixPatternRules = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var patternRules = new List<DnsFilterRule>();
+
+        foreach (var rule in rules)
         {
             if (rule.IsBadFilter)
-            {
-                // Compute what the original rule text would be (strip $badfilter from the original)
-                var originalText = ComputeBadFilterTarget(rule.OriginalText);
-                badFilterTexts.Add(originalText);
                 continue;
-            }
+
+            if (badFilterKeys is not null && rule.BadFilterKey is not null && badFilterKeys.Contains(rule.BadFilterKey))
+                continue;
 
             if (rule.ExactDomain is not null)
             {
-                if (!exactDomainRules.TryGetValue(rule.ExactDomain, out var list))
-                {
-                    list = [];
-                    exactDomainRules[rule.ExactDomain] = list;
-                }
-
-                list.Add(rule);
+                AddToIndex(exactDomainRules, rule.ExactDomain, rule);
             }
             else if (rule.DomainSuffix is not null)
             {
-                if (!suffixDomainRules.TryGetValue(rule.DomainSuffix, out var list))
-                {
-                    list = [];
-                    suffixDomainRules[rule.DomainSuffix] = list;
-                }
-
-                list.Add(rule);
+                AddToIndex(suffixDomainRules, rule.DomainSuffix, rule);
             }
             else if (rule.Pattern is not null)
             {
-                patternRules.Add(rule);
+                // A wildcard rule anchored on a concrete multi-label suffix can be reached through
+                // the parent-domain walk instead of being tested against every single query.
+                if (rule.PatternSuffix is not null)
+                {
+                    AddToIndex(suffixPatternRules, rule.PatternSuffix, rule);
+                }
+                else
+                {
+                    patternRules.Add(rule);
+                }
             }
         }
+
+        exactDomainRules.TrimExcess();
 
         return new FilterData
         {
             ExactDomainRules = exactDomainRules,
             SuffixDomainRules = suffixDomainRules,
+            SuffixPatternRules = suffixPatternRules,
             PatternRules = patternRules,
-            BadFilterTexts = badFilterTexts,
         };
     }
 
-    private static string ComputeBadFilterTarget(string originalText)
+    /// <summary>
+    /// Stores the rule directly for the ~76% of keys that hold exactly one, promoting to a list
+    /// only on the second insert.
+    /// </summary>
+    private static void AddToIndex(Dictionary<string, object> index, string key, DnsFilterRule rule)
     {
-        // Remove $badfilter from the original rule text to find what it targets
-        // e.g., "||example.com^$badfilter" → "||example.com^"
-        // e.g., "||example.com^$important,badfilter" → "||example.com^$important"
-        const string BadfilterStr = "badfilter";
-        var idx = originalText.LastIndexOf(BadfilterStr, StringComparison.OrdinalIgnoreCase);
-        if (idx < 0)
-            return originalText;
-
-        var before = originalText[..idx];
-        var after = originalText[(idx + BadfilterStr.Length)..];
-
-        // Remove trailing/leading comma
-        if (before.EndsWith(',', StringComparison.Ordinal))
+        if (!index.TryGetValue(key, out var existing))
         {
-            before = before[..^1];
-        }
-        else if (after.StartsWith(',', StringComparison.Ordinal))
-        {
-            after = after[1..];
+            index[key] = rule;
+            return;
         }
 
-        // If the $ sign is now trailing with nothing after, remove it
-        var result = before + after;
-        if (result.EndsWith('$', StringComparison.Ordinal))
+        if (existing is List<DnsFilterRule> list)
         {
-            result = result[..^1];
+            list.Add(rule);
+            return;
         }
 
-        return result;
+        index[key] = new List<DnsFilterRule> { (DnsFilterRule)existing, rule };
     }
 
     private sealed class FilterData
     {
-        public required Dictionary<string, List<DnsFilterRule>> ExactDomainRules { get; init; }
-        public required Dictionary<string, List<DnsFilterRule>> SuffixDomainRules { get; init; }
+        public required Dictionary<string, object> ExactDomainRules { get; init; }
+        public required Dictionary<string, object> SuffixDomainRules { get; init; }
+        public required Dictionary<string, object> SuffixPatternRules { get; init; }
         public required List<DnsFilterRule> PatternRules { get; init; }
-        public required HashSet<string> BadFilterTexts { get; init; }
     }
 }

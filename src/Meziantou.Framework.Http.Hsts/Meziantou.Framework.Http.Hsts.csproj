@@ -1,20 +1,30 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Converts internationalized domain names with IdnMapping -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Http</RootNamespace>
-    <Version>2.0.2</Version>
+    <Version>2.1.10</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Provide an HttpClientHandler to upgrade request from http to https if an HSTS policy is set for the domain</Description>
-    <DefineConstants Condition="'$(IsOfficialBuild)' == 'true'">$(DefineConstants);HSTS_PRELOAD_FULL</DefineConstants>
+    <Description>Provide an HTTP message handler that upgrades requests from http to https when an HSTS policy is set for the domain</Description>
+    <PackageTags>http, https, hsts, security, httpclient</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Http.Hsts.Tests" />
   </ItemGroup>
 
+  <!-- The preload resources are committed compressed with both gzip (.bin) and Zstandard (.zst). Only the
+       format the target framework can decompress is embedded, so the assembly never carries both copies.
+       Zstandard is part of the BCL from .NET 11 on. See HstsPreloadList.cs. -->
+  <PropertyGroup>
+    <HstsPreloadResourceExtension>.bin</HstsPreloadResourceExtension>
+    <HstsPreloadResourceExtension Condition="$([MSBuild]::VersionGreaterThanOrEquals($([MSBuild]::GetTargetFrameworkVersion('$(TargetFramework)')), '11.0'))">.zst</HstsPreloadResourceExtension>
+  </PropertyGroup>
+
   <ItemGroup>
-    <EmbeddedResource Include="*.bin">
+    <EmbeddedResource Include="*$(HstsPreloadResourceExtension)">
       <LogicalName>%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

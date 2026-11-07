@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
@@ -11,36 +12,48 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// and automatically invalidate the cache when files change. It supports reading files as both text
 /// and Base64-encoded strings.
 /// </remarks>
-public abstract class InlineTagHelper : TagHelper
+public abstract partial class InlineTagHelper : TagHelper
 {
-    private const string CacheKeyPrefix = "InlineTagHelper-";
+    // The text and Base64 representations of a file must not share a cache entry, otherwise a file inlined
+    // both ways (<inline-img> and <inline-style> for instance) serves whichever encoding was computed first.
+    private const string TextCacheKeyPrefix = "InlineTagHelper-text-";
+    private const string Base64CacheKeyPrefix = "InlineTagHelper-base64-";
 
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly IMemoryCache _cache;
+    private readonly ILogger _logger;
 
     /// <summary>Initializes a new instance of the <see cref="InlineTagHelper"/> class.</summary>
     /// <param name="webHostEnvironment">The web host environment for accessing web root files.</param>
     /// <param name="cache">The memory cache for storing file contents.</param>
-    protected InlineTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache)
+    /// <param name="logger">The logger used to report missing files.</param>
+    protected InlineTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache, ILogger logger)
     {
         _webHostEnvironment = webHostEnvironment;
         _cache = cache;
+        _logger = logger;
     }
 
-    private async Task<T?> GetContentAsync<T>(ICacheEntry entry, string path, Func<IFileInfo, Task<T>> getContent)
-        where T : class
+    private async Task<string?> GetContentAsync(ICacheEntry entry, string path, Func<IFileInfo, Task<string>> getContent)
     {
         var fileProvider = _webHostEnvironment.WebRootFileProvider;
-        var changeToken = fileProvider.Watch(path);
 
-        entry.SetPriority(CacheItemPriority.NeverRemove);
-        entry.AddExpirationToken(changeToken);
+        // Watch the path even when the file is missing, so the entry is invalidated if the file is created later
+        entry.AddExpirationToken(fileProvider.Watch(path));
 
         var file = fileProvider.GetFileInfo(path);
-        if (file is null || !file.Exists)
-            return default;
+        if (!file.Exists)
+        {
+            LogFileNotFound(path);
 
-        return await getContent(file);
+            // A size must be set on every entry when the application configures MemoryCacheOptions.SizeLimit
+            entry.SetSize(1);
+            return null;
+        }
+
+        var content = await getContent(file);
+        entry.SetSize(content.Length);
+        return content;
     }
 
     /// <summary>Gets the file content as a string with caching support.</summary>
@@ -51,7 +64,7 @@ public abstract class InlineTagHelper : TagHelper
         if (path is null)
             return Task.FromResult<string?>(null);
 
-        return _cache.GetOrCreateAsync(CacheKeyPrefix + path, entry =>
+        return _cache.GetOrCreateAsync(TextCacheKeyPrefix + path, entry =>
         {
             return GetContentAsync(entry, path, ReadFileContentAsStringAsync);
         });
@@ -65,10 +78,18 @@ public abstract class InlineTagHelper : TagHelper
         if (path is null)
             return Task.FromResult<string?>(null);
 
-        return _cache.GetOrCreateAsync(CacheKeyPrefix + path, entry =>
+        return _cache.GetOrCreateAsync(Base64CacheKeyPrefix + path, entry =>
         {
             return GetContentAsync(entry, path, ReadFileContentAsBase64Async);
         });
+    }
+
+    // The content of <script> and <style> is raw text: the element ends at the first matching close sequence,
+    // whatever the JavaScript or CSS syntax around it. "<\/tag" is equivalent inside strings and regexes,
+    // and "</tag" cannot legally appear anywhere else.
+    internal static string EscapeClosingTag(string content, string tagName)
+    {
+        return content.Replace("</" + tagName, "<\\/" + tagName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task<string> ReadFileContentAsStringAsync(IFileInfo file)
@@ -88,4 +109,7 @@ public abstract class InlineTagHelper : TagHelper
         writer.Seek(0, SeekOrigin.Begin);
         return Convert.ToBase64String(writer.ToArray());
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Cannot inline '{Path}': the file does not exist in the web root")]
+    private partial void LogFileNotFound(string path);
 }

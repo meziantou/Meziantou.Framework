@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Language.Shell</RootNamespace>
+    <Description>Immutable, round-trip shell script concrete syntax tree for bash, sh, zsh, PowerShell, PowerShell Core, and cmd, with diagnostics, trivia, source locations, and editing helpers.</Description>
+    <PackageTags>shell, bash, powershell, syntax-tree, cst, parser</PackageTags>
+    <Version>3.0.6</Version>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Shell.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+  </ItemGroup>
+
+</Project>

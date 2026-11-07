@@ -1,0 +1,60 @@
+{
+  "spec": {
+    "title": "CSS Color Module Level 6",
+    "url": "https://drafts.csswg.org/css-color-6/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "contrast-color()",
+      "prose": "The contrast-color() functional notation identifies a sufficiently contrasting color against a specified background or foreground color without requiring manual computation.",
+      "href": "https://drafts.csswg.org/css-color-6/#funcdef-contrast-color",
+      "type": "function",
+      "value": "contrast-color( [ [ <color> && [ tbd-fg | tbd-bg ] && <target-contrast>? ] | [ <color> && [ tbd-fg | tbd-bg ] && <target-contrast>, <color># ] ] )",
+      "values": [
+        {
+          "name": "text",
+          "prose": "The tbd-fg and tbd-bg keywords indicate the role of the base color in calculating the contrast: as text against a list of candidate background colors (text) or as a background against a list of candidate text colors. (The effective contrast of a pair of colors depends on their usage.)",
+          "href": "https://drafts.csswg.org/css-color-6/#valdef-contrast-color-text",
+          "type": "value",
+          "value": "text"
+        },
+        {
+          "name": "wcag2",
+          "prose": "The wcag2 keyword and wcag2() functional notations indicate use of the [WCAG21] luminance contrast algorithm. Their syntax is:",
+          "href": "https://drafts.csswg.org/css-color-6/#valdef-contrast-color-wcag2",
+          "type": "value",
+          "value": "wcag2"
+        },
+        {
+          "name": "wcag2()",
+          "prose": "The wcag2 keyword and wcag2() functional notations indicate use of the [WCAG21] luminance contrast algorithm. Their syntax is:",
+          "href": "https://drafts.csswg.org/css-color-6/#funcdef-contrast-color-wcag2",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "name": "<target-contrast>",
+      "prose": "The <target-contrast> argument specifies the contrast algorithm(s) to use. If no color candidates have been provided, <target-contrast> may be omitted, in which case a UA-chosen algorithm is used.",
+      "href": "https://drafts.csswg.org/css-color-6/#typedef-target-contrast",
+      "type": "type",
+      "value": "<wcag2>"
+    },
+    {
+      "name": "<wcag2>",
+      "href": "https://drafts.csswg.org/css-color-6/#typedef-wcag2",
+      "type": "type",
+      "value": "wcag2 | wcag2([<number> | [ aa | aaa ] && large? ])"
+    },
+    {
+      "name": "color-layers()",
+      "prose": "The color-layers() functional notation takes an optional <blend-mode> followed by a list of two or more <color> layers.",
+      "href": "https://drafts.csswg.org/css-color-6/#funcdef-color-layers",
+      "type": "function",
+      "value": "color-layers([ <blend-mode>, ]? <color># )"
+    }
+  ]
+}

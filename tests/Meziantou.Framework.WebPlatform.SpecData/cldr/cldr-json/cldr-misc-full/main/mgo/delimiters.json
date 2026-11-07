@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mgo": {
+      "identity": {
+        "language": "mgo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

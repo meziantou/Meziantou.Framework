@@ -1,0 +1,14 @@
+﻿<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- All the tests are skipped on non-Windows operating systems -->
+    <MinimumExpectedTests>0</MinimumExpectedTests>
+    <RootNamespace>Meziantou.Framework.Win32.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Win32.Dialogs/Meziantou.Framework.Win32.Dialogs.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -148,11 +148,16 @@ internal static class PublicApiMultiTargetModelMerger
         {
             var parsedType = parsedTypes[symbol];
             var parsedPrefix = parsedPrefixes[symbol];
-            if (!string.Equals(firstParsedPrefix.Declaration, parsedPrefix.Declaration, StringComparison.Ordinal) ||
+            if (!string.Equals(firstParsedPrefix.Body, parsedPrefix.Body, StringComparison.Ordinal) ||
                 !string.Equals(firstParsedType.Suffix, parsedType.Suffix, StringComparison.Ordinal))
             {
                 return false;
             }
+        }
+
+        if (!TryMergeDeclarations(parsedPrefixes, orderedSymbols, out var mergedDeclaration))
+        {
+            return false;
         }
 
         var membersBySymbol = orderedSymbols.ToDictionary(
@@ -167,7 +172,7 @@ internal static class PublicApiMultiTargetModelMerger
             StringComparer.Ordinal);
 
         AppendConditionalSegment(sb, typeAttributesBySymbol, orderedSymbols, indentationLevel: 0);
-        sb.Append(firstParsedPrefix.Declaration);
+        sb.Append(mergedDeclaration);
         var commonAnchors = FindCommonAnchors(membersBySymbol, orderedSymbols);
         var previousIndexesBySymbol = orderedSymbols.ToDictionary(symbol => symbol, _ => -1, StringComparer.Ordinal);
         foreach (var commonAnchor in commonAnchors)
@@ -438,6 +443,217 @@ internal static class PublicApiMultiTargetModelMerger
         return true;
     }
 
+    /// <summary>
+    /// Merges the type declaration lines of every target framework. When they only differ by their base type list, the
+    /// shared leading base types stay on the declaration line and only the target-specific ones are wrapped in a
+    /// conditional block, which keeps the type itself unconditional.
+    /// </summary>
+    private static bool TryMergeDeclarations(IReadOnlyDictionary<string, ParsedTypePrefix> parsedPrefixes, string[] orderedSymbols, out string mergedDeclaration)
+    {
+        mergedDeclaration = string.Empty;
+
+        var firstPrefix = parsedPrefixes[orderedSymbols[0]];
+        var allDeclarationsAreIdentical = orderedSymbols.All(symbol => string.Equals(firstPrefix.DeclarationLine, parsedPrefixes[symbol].DeclarationLine, StringComparison.Ordinal));
+        if (allDeclarationsAreIdentical)
+        {
+            mergedDeclaration = firstPrefix.DeclarationLine + Environment.NewLine + firstPrefix.Body;
+            return true;
+        }
+
+        var parsedDeclarations = new Dictionary<string, ParsedDeclaration>(StringComparer.Ordinal);
+        foreach (var symbol in orderedSymbols)
+        {
+            if (!TryParseDeclarationLine(parsedPrefixes[symbol].DeclarationLine, out var parsedDeclaration))
+            {
+                return false;
+            }
+
+            parsedDeclarations[symbol] = parsedDeclaration;
+        }
+
+        var firstDeclaration = parsedDeclarations[orderedSymbols[0]];
+        foreach (var symbol in orderedSymbols)
+        {
+            var declaration = parsedDeclarations[symbol];
+            if (!string.Equals(firstDeclaration.Head, declaration.Head, StringComparison.Ordinal) ||
+                !string.Equals(firstDeclaration.Trailer, declaration.Trailer, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        var commonBaseTypeCount = GetCommonBaseTypeCount(parsedDeclarations, orderedSymbols);
+        var remainingBaseTypesBySymbol = orderedSymbols.ToDictionary(
+            symbol => symbol,
+            symbol => Slice(parsedDeclarations[symbol].BaseTypes, commonBaseTypeCount, parsedDeclarations[symbol].BaseTypes.Length),
+            StringComparer.Ordinal);
+        var groups = GroupSegmentBySymbols(remainingBaseTypesBySymbol, orderedSymbols)
+            .Where(group => group.Members.Length > 0)
+            .OrderBy(group => BuildCondition(group.Symbols), StringComparer.Ordinal)
+            .ThenBy(group => string.Join(", ", group.Members), StringComparer.Ordinal)
+            .ToArray();
+        if (groups.Length == 0)
+        {
+            return false;
+        }
+
+        var sb = new StringBuilder();
+        sb.Append(firstDeclaration.Head);
+        if (commonBaseTypeCount > 0)
+        {
+            sb.Append(" : ");
+            sb.AppendJoin(", ", firstDeclaration.BaseTypes.Take(commonBaseTypeCount));
+        }
+
+        sb.AppendLine();
+
+        var baseTypeSeparator = commonBaseTypeCount > 0 ? ", " : ": ";
+        for (var index = 0; index < groups.Length; index++)
+        {
+            AppendConditionalDirective(sb, index == 0 ? "#if" : "#elif", groups[index].Symbols, indentationLevel: 0);
+            sb.Append(' ', Indentation.Length);
+            sb.Append(baseTypeSeparator);
+            sb.AppendJoin(", ", groups[index].Members);
+            sb.AppendLine();
+        }
+
+        AppendIndentedDirective(sb, "#endif", indentationLevel: 0);
+
+        // Generic constraints must follow the base type list, so they cannot stay on the declaration line
+        if (firstDeclaration.Trailer.Length > 0)
+        {
+            sb.Append(' ', Indentation.Length);
+            sb.AppendLine(firstDeclaration.Trailer.Trim());
+        }
+
+        sb.Append(firstPrefix.Body);
+        mergedDeclaration = sb.ToString();
+        return true;
+    }
+
+    private static int GetCommonBaseTypeCount(IReadOnlyDictionary<string, ParsedDeclaration> parsedDeclarations, string[] orderedSymbols)
+    {
+        var referenceBaseTypes = parsedDeclarations[orderedSymbols[0]].BaseTypes;
+        var count = referenceBaseTypes.Length;
+        foreach (var symbol in orderedSymbols)
+        {
+            var baseTypes = parsedDeclarations[symbol].BaseTypes;
+            count = Math.Min(count, baseTypes.Length);
+            for (var index = 0; index < count; index++)
+            {
+                if (!string.Equals(referenceBaseTypes[index], baseTypes[index], StringComparison.Ordinal))
+                {
+                    count = index;
+                    break;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    private static bool TryParseDeclarationLine(string declarationLine, out ParsedDeclaration parsedDeclaration)
+    {
+        parsedDeclaration = null!;
+
+        var constraintsIndex = IndexOfTopLevelToken(declarationLine, " where ");
+        var baseTypesEndIndex = constraintsIndex < 0 ? declarationLine.Length : constraintsIndex;
+        var trailer = declarationLine[baseTypesEndIndex..];
+        var separatorIndex = IndexOfTopLevelToken(declarationLine[..baseTypesEndIndex], " : ");
+        if (separatorIndex < 0)
+        {
+            parsedDeclaration = new ParsedDeclaration(declarationLine[..baseTypesEndIndex], [], trailer);
+            return true;
+        }
+
+        if (!TrySplitTopLevel(declarationLine[(separatorIndex + 3)..baseTypesEndIndex], out var baseTypes))
+        {
+            return false;
+        }
+
+        parsedDeclaration = new ParsedDeclaration(declarationLine[..separatorIndex], baseTypes, trailer);
+        return true;
+    }
+
+    /// <summary>Returns the index of <paramref name="token"/> when it appears outside of any bracket, or -1.</summary>
+    private static int IndexOfTopLevelToken(string value, string token)
+    {
+        var depth = 0;
+        for (var index = 0; index < value.Length; index++)
+        {
+            if (depth == 0 && value.AsSpan(index).StartsWith(token, StringComparison.Ordinal))
+            {
+                return index;
+            }
+
+            switch (value[index])
+            {
+                case '<' or '(' or '[':
+                    depth++;
+                    break;
+
+                case '>' or ')' or ']':
+                    depth--;
+                    if (depth < 0)
+                        return -1;
+
+                    break;
+            }
+        }
+
+        return -1;
+    }
+
+    private static bool TrySplitTopLevel(string value, out ImmutableArray<string> parts)
+    {
+        parts = [];
+
+        var builder = ImmutableArray.CreateBuilder<string>();
+        var depth = 0;
+        var startIndex = 0;
+        for (var index = 0; index < value.Length; index++)
+        {
+            switch (value[index])
+            {
+                case '<' or '(' or '[':
+                    depth++;
+                    break;
+
+                case '>' or ')' or ']':
+                    depth--;
+                    if (depth < 0)
+                        return false;
+
+                    break;
+
+                case ',' when depth == 0:
+                    if (!TryAddPart(builder, value[startIndex..index]))
+                        return false;
+
+                    startIndex = index + 1;
+                    break;
+            }
+        }
+
+        if (depth != 0 || !TryAddPart(builder, value[startIndex..]))
+        {
+            return false;
+        }
+
+        parts = builder.ToImmutable();
+        return true;
+
+        static bool TryAddPart(ImmutableArray<string>.Builder builder, string part)
+        {
+            var trimmed = part.Trim();
+            if (trimmed.Length == 0)
+                return false;
+
+            builder.Add(trimmed);
+            return true;
+        }
+    }
+
     private static bool TryParseTypePrefix(string prefix, out ParsedTypePrefix parsedPrefix)
     {
         parsedPrefix = null!;
@@ -485,13 +701,14 @@ internal static class PublicApiMultiTargetModelMerger
             .Where(static line => !string.IsNullOrWhiteSpace(line))
             .ToImmutableArray();
 
-        var declaration = string.Join(Environment.NewLine, lines.Skip(declarationStartIndex));
-        if (!declaration.EndsWith(Environment.NewLine, StringComparison.Ordinal))
+        var declarationLine = lines[declarationStartIndex];
+        var body = string.Join(Environment.NewLine, lines.Skip(declarationStartIndex + 1));
+        if (body.Length > 0 && !body.EndsWith(Environment.NewLine, StringComparison.Ordinal))
         {
-            declaration += Environment.NewLine;
+            body += Environment.NewLine;
         }
 
-        parsedPrefix = new ParsedTypePrefix(attributes, declaration);
+        parsedPrefix = new ParsedTypePrefix(attributes, declarationLine, body);
         return true;
     }
 
@@ -758,7 +975,9 @@ internal static class PublicApiMultiTargetModelMerger
 
     private sealed record ParsedTypeSource(string Prefix, ImmutableArray<string> Members, string Suffix);
 
-    private sealed record ParsedTypePrefix(ImmutableArray<string> Attributes, string Declaration);
+    private sealed record ParsedTypePrefix(ImmutableArray<string> Attributes, string DeclarationLine, string Body);
+
+    private sealed record ParsedDeclaration(string Head, ImmutableArray<string> BaseTypes, string Trailer);
 
     private sealed record MemberAnchor(string Member, IReadOnlyDictionary<string, int> IndexesBySymbol);
 

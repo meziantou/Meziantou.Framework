@@ -1,0 +1,16 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+FT	name	1.2		TRUE	FALSE	TRUE		[Btn]			Table 226
+Parent	dictionary	1.2		FALSE	FALSE	FALSE				[FieldTx,FieldBtnPush,FieldBtnCheckbox,FieldBtnRadio,FieldChoice,fn:SinceVersion(1.3,FieldSig),Field]	
+Kids	array	1.2		FALSE	FALSE	FALSE				[ArrayOfFields]	
+T	string-text	1.2		FALSE	FALSE	FALSE					
+TU	string-text	1.3		FALSE	FALSE	FALSE					
+TM	string-text	1.3		FALSE	FALSE	FALSE					
+Ff	bitmask	1.2		FALSE	FALSE	TRUE			[fn:Eval(fn:BitsClear(4,14) && fn:BitSet(16) && fn:BitsClear(17,25) && fn:BitsClear(27,32))]		Table 227 and Table 229
+AA	dictionary	1.3		FALSE	FALSE	FALSE				[AddActionFormField]	
+DA	string-byte	1.2		TRUE	FALSE	TRUE					https://github.com/pdf-association/pdf-issues/issues/318
+Q	integer	1.2		FALSE	FALSE	FALSE	0	[0,1,2]			
+DS	string-text	1.5		FALSE	FALSE	FALSE					
+RV	stream;string-text	1.5		FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	
+Opt	array	1.4		FALSE	FALSE	TRUE				[ArrayOfStringsText]	Table 227 and Table 230
+V	name	1.2		FALSE	FALSE	TRUE	Off				
+DV	name	1.2		FALSE	FALSE	TRUE					

@@ -1,15 +1,15 @@
-using Markdig;
+using Meziantou.Framework.Markdown;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
 public sealed class MarkdownRoundTrippingTests
 {
-    private static readonly Lazy<List<MarkdigTestCase>> AllCases = new(LoadAllCases);
+    private static readonly Lazy<List<MarkdownSpecTestCase>> AllCases = new(LoadAllCases);
 
-    private static List<MarkdigTestCase> LoadAllCases()
+    private static List<MarkdownSpecTestCase> LoadAllCases()
     {
-        var cases = new List<MarkdigTestCase>();
+        var cases = new List<MarkdownSpecTestCase>();
         var assembly = typeof(MarkdownRoundTrippingTests).Assembly;
 
         // Find all embedded .md resources in the Specs folder
@@ -32,13 +32,13 @@ public sealed class MarkdownRoundTrippingTests
         return cases;
     }
 
-    public static TheoryData<MarkdigTestCase> GetTestCases()
+    public static TheoryData<MarkdownSpecTestCase> GetTestCases()
     {
-        var data = new TheoryData<MarkdigTestCase>();
+        var data = new TheoryData<MarkdownSpecTestCase>();
         foreach (var testCase in AllCases.Value)
         {
             // Some tests may not round-trip due to extension-specific parsing behaviors
-            if (!ShouldSkip(testCase, out _))
+            if (!ShouldSkip(testCase))
             {
                 data.Add(testCase);
             }
@@ -47,44 +47,54 @@ public sealed class MarkdownRoundTrippingTests
     }
 
     /// <summary>
-    /// Round-trip test: take the HTML from Markdig's spec files, convert to Markdown using our converter,
-    /// then convert back to HTML using Markdig with advanced extensions, and verify the HTML is semantically equivalent.
+    /// Round-trip test: take the HTML from the extension spec files, convert to Markdown using our converter,
+    /// then convert back to HTML using Meziantou.Framework.Markdown with advanced extensions, and verify the HTML is semantically equivalent.
     /// </summary>
     [Theory]
     [MemberData(nameof(GetTestCases))]
-    public void RoundTrip(MarkdigTestCase testCase)
+    public void RoundTrip(MarkdownSpecTestCase testCase)
     {
         // 1. Convert the spec HTML to Markdown using our converter
         var markdown = HtmlToMarkdown.Convert(testCase.Html);
 
-        // 2. Convert the Markdown back to HTML using Markdig with advanced extensions
+        // 2. Convert the Markdown back to HTML using Meziantou.Framework.Markdown with advanced extensions
         var pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .Build();
-        var roundTrippedHtml = Markdown.ToHtml(markdown, pipeline);
+        var roundTrippedHtml = MarkdownConverter.ToHtml(markdown, pipeline);
 
         // 3. Compare the HTML outputs
         HtmlNormalizer.AssertEquivalent(testCase.Html, roundTrippedHtml);
     }
 
-    private static bool ShouldSkip(MarkdigTestCase testCase, out string reason)
+    [Fact]
+    public void DocumentationExample_RoundTrip()
+    {
+        #region HtmlToMarkdown_RoundTrip
+        var markdown = HtmlToMarkdown.Convert("<table><tr><th>Name</th><th>Price</th></tr><tr><td>Apple</td><td><del>1.50</del> 1.20</td></tr></table>");
+        Assert.Equal("""
+            | Name | Price |
+            | --- | --- |
+            | Apple | ~~1.50~~ 1.20 |
+            """, markdown);
+
+        // Pipe tables and strikethrough are extensions of CommonMark: enable them to render the Markdown
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .Build();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        Assert.Contains("<td><del>1.50</del> 1.20</td>", html, StringComparison.Ordinal);
+        #endregion
+    }
+
+    private static bool ShouldSkip(MarkdownSpecTestCase testCase)
     {
         // CommonMark.md contains the full CommonMark spec. We test those separately
         // in CommonMarkSpecTests. Skip the duplicate here to avoid 600+ duplicate tests.
         if (testCase.FileName == "CommonMark.md")
-        {
-            reason = "CommonMark spec is tested separately in CommonMarkSpecTests";
             return true;
-        }
 
-        if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out var skippedReason))
-        {
-            reason = skippedReason;
-            return true;
-        }
-
-        reason = "";
-        return false;
+        return SkippedExamples.ContainsKey((testCase.FileName, testCase.Example));
     }
 
     private static readonly Dictionary<(string FileName, int Example), string> SkippedExamples = new()
@@ -103,7 +113,7 @@ public sealed class MarkdownRoundTrippingTests
 }
 
 #pragma warning disable MA0048 // File name must match type name
-public sealed class MarkdigTestCase : IXunitSerializable
+public sealed class MarkdownSpecTestCase : IXunitSerializable
 {
     public string Markdown { get; set; } = "";
     public string Html { get; set; } = "";

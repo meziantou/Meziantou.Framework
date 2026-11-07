@@ -1,0 +1,377 @@
+{
+  "spec": {
+    "title": "Fullscreen API Standard",
+    "url": "https://fullscreen.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "FullscreenNavigationUI": {
+        "fragment": "enum FullscreenNavigationUI {\n  \"auto\",\n  \"show\",\n  \"hide\"\n};",
+        "type": "enum",
+        "name": "FullscreenNavigationUI",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-auto"
+          },
+          {
+            "type": "enum-value",
+            "value": "show",
+            "href": "https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-show"
+          },
+          {
+            "type": "enum-value",
+            "value": "hide",
+            "href": "https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-hide"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fullscreen.spec.whatwg.org/#enumdef-fullscreennavigationui"
+      },
+      "FullscreenKeyboardLock": {
+        "fragment": "enum FullscreenKeyboardLock {\n  \"browser\",\n  \"none\"\n};",
+        "type": "enum",
+        "name": "FullscreenKeyboardLock",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "browser",
+            "href": "https://fullscreen.spec.whatwg.org/#dom-fullscreenkeyboardlock-browser"
+          },
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://fullscreen.spec.whatwg.org/#dom-fullscreenkeyboardlock-none"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fullscreen.spec.whatwg.org/#enumdef-fullscreenkeyboardlock"
+      },
+      "FullscreenOptions": {
+        "fragment": "dictionary FullscreenOptions {\n  FullscreenKeyboardLock keyboardLock = \"none\";\n  FullscreenNavigationUI navigationUI = \"auto\";\n};",
+        "type": "dictionary",
+        "name": "FullscreenOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "keyboardLock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FullscreenKeyboardLock"
+            },
+            "default": {
+              "type": "string",
+              "value": "none"
+            },
+            "required": false,
+            "href": "https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-keyboardlock"
+          },
+          {
+            "type": "field",
+            "name": "navigationUI",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FullscreenNavigationUI"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-navigationui"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fullscreen.spec.whatwg.org/#dictdef-fullscreenoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n  Promise<undefined> requestFullscreen(optional FullscreenOptions options = {});\n\n  attribute EventHandler onfullscreenchange;\n  attribute EventHandler onfullscreenerror;\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestFullscreen",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FullscreenOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://fullscreen.spec.whatwg.org/#dom-element-requestfullscreen"
+            },
+            {
+              "type": "attribute",
+              "name": "onfullscreenchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenchange"
+            },
+            {
+              "type": "attribute",
+              "name": "onfullscreenerror",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenerror"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n  [LegacyLenientSetter] readonly attribute boolean fullscreenEnabled;\n  [LegacyLenientSetter, Unscopable] readonly attribute boolean fullscreen; // historical\n\n  Promise<undefined> exitFullscreen();\n\n  attribute EventHandler onfullscreenchange;\n  attribute EventHandler onfullscreenerror;\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "fullscreenEnabled",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyLenientSetter",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://fullscreen.spec.whatwg.org/#dom-document-fullscreenenabled"
+            },
+            {
+              "type": "attribute",
+              "name": "fullscreen",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyLenientSetter",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Unscopable",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://fullscreen.spec.whatwg.org/#dom-document-fullscreen"
+            },
+            {
+              "type": "operation",
+              "name": "exitFullscreen",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://fullscreen.spec.whatwg.org/#dom-document-exitfullscreen"
+            },
+            {
+              "type": "attribute",
+              "name": "onfullscreenchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenchange"
+            },
+            {
+              "type": "attribute",
+              "name": "onfullscreenerror",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenerror"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "DocumentOrShadowRoot": [
+        {
+          "fragment": "partial interface mixin DocumentOrShadowRoot {\n  [LegacyLenientSetter] readonly attribute Element? fullscreenElement;\n};",
+          "type": "interface mixin",
+          "name": "DocumentOrShadowRoot",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "fullscreenElement",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "Element"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyLenientSetter",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "FullscreenOptions": [
+        "FullscreenKeyboardLock",
+        "FullscreenNavigationUI"
+      ],
+      "Element": [
+        "FullscreenOptions",
+        "EventHandler"
+      ],
+      "Document": [
+        "EventHandler"
+      ],
+      "DocumentOrShadowRoot": [
+        "Element"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "EventHandler",
+      "Document",
+      "DocumentOrShadowRoot"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,100 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
+
+namespace Meziantou.Framework.Markdown.Extensions.TaskLists;
+
+/// <summary>
+/// The inline parser for SmartyPants.
+/// </summary>
+public class TaskListInlineParser : InlineParser
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TaskListInlineParser"/> class.
+    /// </summary>
+    public TaskListInlineParser()
+    {
+        OpeningCharacters = ['['];
+        ListClass = "contains-task-list";
+        ListItemClass = "task-list-item";
+    }
+
+    /// <summary>
+    /// Gets or sets the list class used for a task list.
+    /// </summary>
+    public string ListClass { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list item class used for a task list.
+    /// </summary>
+    public string ListItemClass { get; set; }
+
+    /// <summary>
+    /// Attempts to match the parser at the current position.
+    /// </summary>
+    public override bool Match(InlineProcessor processor, ref StringSlice slice)
+    {
+        // A tasklist is either
+        // [ ]
+        // or [x] or [X]
+
+        // As in GFM, the marker must be the first thing in the first paragraph of the list item. Otherwise, text such
+        // as "m[x]" or links such as "[x](url)" would become checkboxes.
+        if (processor.Block!.Parent is not ListItemBlock listItemBlock
+            || listItemBlock.Count == 0
+            || listItemBlock[0] != processor.Block
+            || processor.Root?.FirstChild is not null)
+        {
+            return false;
+        }
+
+        var startingPosition = slice.Start;
+        var c = slice.NextChar();
+        if (!c.IsSpace() && c != 'x' && c != 'X')
+        {
+            return false;
+        }
+        if (slice.NextChar() != ']')
+        {
+            return false;
+        }
+        // Skip last ]
+        slice.SkipChar();
+
+        // The marker must be followed by whitespace
+        if (!slice.CurrentChar.IsWhiteSpaceOrZero())
+        {
+            return false;
+        }
+
+        // Create the TaskList
+        var taskItem = new TaskList()
+        {
+            Span = { Start = processor.GetSourcePosition(startingPosition, out int line, out int column) },
+            Line = line,
+            Column = column,
+            Checked = !c.IsSpace()
+        };
+        taskItem.Span.End = taskItem.Span.Start + 2;
+        processor.Inline = taskItem;
+
+        // Add proper class for task list
+        if (!string.IsNullOrEmpty(ListItemClass))
+        {
+            listItemBlock.GetAttributes().AddClass(ListItemClass);
+        }
+
+        var listBlock = (ListBlock) listItemBlock.Parent!;
+        if (!string.IsNullOrEmpty(ListClass))
+        {
+            listBlock.GetAttributes().AddClass(ListClass);
+        }
+
+        return true;
+    }
+}

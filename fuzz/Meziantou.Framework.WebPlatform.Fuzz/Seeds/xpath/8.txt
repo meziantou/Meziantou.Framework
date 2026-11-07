@@ -1,0 +1,1 @@
+substring-before(concat(normalize-space(' a  b '), translate('abc','b','B')), 'B')

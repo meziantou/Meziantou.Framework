@@ -1,0 +1,105 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_debug_shaders Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_debug_shaders/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_debug_shaders"
+        ],
+        "Worker": [
+          "WEBGL_debug_shaders"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_debug_shaders": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_debug_shaders {\n\n      DOMString getTranslatedShaderSource(WebGLShader shader);\n\n};",
+        "type": "interface",
+        "name": "WEBGL_debug_shaders",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getTranslatedShaderSource",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "shader",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebGLShader"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_debug_shaders"
+      ],
+      "Worker": [
+        "WEBGL_debug_shaders"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_debug_shaders": [
+        "WebGLShader"
+      ]
+    },
+    "externalDependencies": [
+      "WebGLShader"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

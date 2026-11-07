@@ -1,0 +1,50 @@
+namespace Meziantou.Framework.Toml.Syntax;
+
+/// <summary>
+/// An item of an <see cref="ArraySyntax"/>
+/// </summary>
+public sealed class ArrayItemSyntax : SyntaxNode
+{
+    private ValueSyntax? _value;
+    private SyntaxToken? _comma;
+
+    /// <summary>
+    /// Creates an instance of <see cref="ArrayItemSyntax"/>
+    /// </summary>
+    public ArrayItemSyntax() : base(SyntaxKind.ArrayItem)
+    {
+    }
+
+    /// <summary>
+    /// Gets or sets the value of this item.
+    /// </summary>
+    public ValueSyntax? Value
+    {
+        get => _value;
+        set => ParentToThis(ref _value, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the comma of this item (mandatory to separate elements in an array)
+    /// </summary>
+    public SyntaxToken? Comma
+    {
+        get => _comma;
+        set => ParentToThis(ref _comma, value, TokenKind.Comma);
+    }
+
+    /// <inheritdoc />
+    public override void Accept(SyntaxVisitor visitor)
+    {
+        visitor.Visit(this);
+    }
+
+    /// <inheritdoc />
+    public override int ChildrenCount => 2;
+
+    /// <inheritdoc />
+    protected override SyntaxNode? GetChildImpl(int index)
+    {
+        return index == 0 ? (SyntaxNode?)Value : Comma;
+    }
+}

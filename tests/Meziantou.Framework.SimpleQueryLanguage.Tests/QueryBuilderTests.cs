@@ -1,10 +1,223 @@
 using System.Numerics;
+using Meziantou.Framework.SimpleQueryLanguage.Ranges;
+using Meziantou.Framework.SimpleQueryLanguage.Syntax;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 
 public sealed class QueryBuilderTests
 {
+    [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region QueryBuilder_Usage
+        var queryBuilder = new QueryBuilder<Person>();
+        queryBuilder.AddHandler<string>("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddRangeHandler<int>("age", (obj, value) => value.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
+
+        var query = queryBuilder.Build("name:john AND age>=18");
+        Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
+        Assert.False(query.Evaluate(new Person("Jane Doe", new DateTime(2000, 1, 1))));
+        Assert.False(query.Evaluate(new Person("Johnny Doe", DateTime.UtcNow.AddYears(-10))));
+        #endregion
+    }
+
+    [Fact]
+    public void Query_DocumentationExample()
+    {
+        #region Query_Evaluate
+        var queryBuilder = new QueryBuilder<Person>();
+        queryBuilder.AddHandler<string>("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+        var query = queryBuilder.Build("name:john");
+        Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
+        #endregion
+    }
+
+    [Fact]
+    public void QueryBuilder_DocumentationExample()
+    {
+        #region QueryBuilder_Build
+        var queryBuilder = new QueryBuilder<Person>();
+        queryBuilder.AddHandler<string>("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddRangeHandler<int>("age", (obj, range) => range.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
+        var query = queryBuilder.Build("name:john AND age>=21");
+        Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
+        Assert.False(query.Evaluate(new Person("Jane Doe", new DateTime(2000, 1, 1))));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GettingStarted()
+    {
+        #region QueryBuilder_GettingStarted
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddHandler("author", (issue, value) => issue.Author.Equals(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddHandler("is", "open", issue => issue.IsOpen);
+        queryBuilder.AddHandler("is", "closed", issue => !issue.IsOpen);
+        queryBuilder.AddRangeHandler<int>("comments", (issue, range) => range.IsInRange(issue.Comments));
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var issues = new[]
+        {
+            new Issue("Crash on startup", "alice", IsOpen: true, Comments: 5, new DateTime(2026, 1, 10)),
+            new Issue("Crash when saving", "bob", IsOpen: true, Comments: 0, new DateTime(2026, 2, 3)),
+            new Issue("Typo in the readme", "alice", IsOpen: false, Comments: 1, new DateTime(2026, 3, 15)),
+        };
+
+        var query = queryBuilder.Build("is:open author:alice crash");
+        Assert.Equal(["Crash on startup"], issues.Where(query.Evaluate).Select(issue => issue.Title));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Syntax()
+    {
+        #region QueryBuilder_Syntax
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddHandler("author", (issue, value) => issue.Author.Equals(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddHandler("is", "open", issue => issue.IsOpen);
+        queryBuilder.AddHandler("is", "closed", issue => !issue.IsOpen);
+        queryBuilder.AddRangeHandler<int>("comments", (issue, range) => range.IsInRange(issue.Comments));
+        queryBuilder.AddRangeHandler<DateTime>("created", (issue, range) => range.IsInRange(issue.CreatedAt));
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var issues = new[]
+        {
+            new Issue("Crash on startup", "alice", IsOpen: true, Comments: 5, new DateTime(2026, 1, 10)),
+            new Issue("Crash when saving", "bob", IsOpen: true, Comments: 0, new DateTime(2026, 2, 3)),
+            new Issue("Typo in the readme", "alice", IsOpen: false, Comments: 1, new DateTime(2026, 3, 15)),
+        };
+
+        string[] Search(string query) => [.. issues.Where(queryBuilder.Build(query).Evaluate).Select(issue => issue.Title)];
+
+        // Key-value terms
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("author:alice"));
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("Author=ALICE"));
+        Assert.Equal(["Crash when saving"], Search("author<>alice"));
+
+        // Free text, and quotes for text with spaces
+        Assert.Equal(["Crash on startup", "Crash when saving"], Search("crash"));
+        Assert.Equal(["Crash when saving"], Search("\"when saving\""));
+
+        // Terms separated by spaces must all match
+        Assert.Equal(["Crash when saving"], Search("crash author:bob"));
+
+        // NOT, -, OR and parentheses
+        Assert.Equal(["Crash when saving"], Search("NOT author:alice"));
+        Assert.Equal(["Crash when saving"], Search("-author:alice"));
+        Assert.Equal(["Crash when saving", "Typo in the readme"], Search("author:bob OR is:closed"));
+        Assert.Equal(["Crash on startup"], Search("is:open AND (author:alice OR comments>3)"));
+
+        // AND binds tighter than OR: this is author:bob OR (is:closed AND comments:0)
+        Assert.Equal(["Crash when saving"], Search("author:bob OR is:closed AND comments:0"));
+
+        // Comparisons and ranges, bounds included
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("comments>=1"));
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("comments:1..5"));
+        Assert.Equal(["Crash when saving", "Typo in the readme"], Search("comments:*..1"));
+        Assert.Equal(["Crash when saving", "Typo in the readme"], Search("created:2026-02-01..2026-03-31"));
+        Assert.Equal(["Crash on startup"], Search("created<2026-02-01"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RelativeDates()
+    {
+        #region QueryBuilder_RelativeDates
+        // Wednesday, March 18, 2026
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 10, 0, 0, TimeSpan.Zero));
+        var queryBuilder = new QueryBuilder<Issue>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("created", (issue, range) => range.IsInRange(issue.CreatedAt));
+
+        var issues = new[]
+        {
+            new Issue("Monday", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 3, 16, 9, 0, 0, DateTimeKind.Utc)),
+            new Issue("March 1", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 3, 1, 9, 0, 0, DateTimeKind.Utc)),
+            new Issue("February 20", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 2, 20, 9, 0, 0, DateTimeKind.Utc)),
+            new Issue("New Year's Eve", "alice", IsOpen: true, Comments: 0, new DateTime(2025, 12, 31, 9, 0, 0, DateTimeKind.Utc)),
+        };
+
+        string[] Search(string query) => [.. issues.Where(queryBuilder.Build(query).Evaluate).Select(issue => issue.Title)];
+
+        // Weeks start on Monday
+        Assert.Equal(["Monday"], Search("created:this_week"));
+        Assert.Equal(["Monday", "March 1"], Search("created:\"this month\""));
+        Assert.Equal(["February 20"], Search("created:last_month"));
+        Assert.Equal(["New Year's Eve"], Search("created:last_year"));
+
+        // @today is the start of the current day in UTC
+        Assert.Equal(["Monday"], Search("created>=@today-1w"));
+        Assert.Equal(["March 1", "February 20"], Search("created:@today-4w..@today-2w"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CustomParser()
+    {
+        #region QueryBuilder_CustomParser
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddRangeHandler<int>(
+            "comments",
+            (issue, range) => range.IsInRange(issue.Comments),
+            (string value, out int result) =>
+            {
+                if (value.Equals("none", StringComparison.OrdinalIgnoreCase))
+                {
+                    result = 0;
+                    return true;
+                }
+
+                return int.TryParse(value, CultureInfo.InvariantCulture, out result);
+            });
+
+        var issue = new Issue("Crash when saving", "bob", IsOpen: true, Comments: 0, new DateTime(2026, 2, 3));
+        Assert.True(queryBuilder.Build("comments:none").Evaluate(issue));
+        Assert.True(queryBuilder.Build("comments:none..2").Evaluate(issue));
+        Assert.False(queryBuilder.Build("comments>none").Evaluate(issue));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UnhandledProperty()
+    {
+        #region QueryBuilder_UnhandledProperty
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var item = new Issue("Support label:bug in the search", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 1, 10));
+
+        // A key without a handler is searched as free text
+        Assert.True(queryBuilder.Build("label:bug").Evaluate(item));
+
+        // Unless an unhandled property handler decides
+        queryBuilder.SetUnhandledPropertyHandler((issue, propertyName, op, value) => false);
+        Assert.False(queryBuilder.Build("label:bug").Evaluate(item));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UntrustedInput()
+    {
+        #region QueryBuilder_UntrustedInput
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var userInput = new string('(', 100_000) + "crash";
+
+        Query<Issue>? query;
+        try
+        {
+            query = queryBuilder.Build(userInput);
+        }
+        catch (QueryTooComplexException)
+        {
+            query = null; // Tell the user to simplify the query
+        }
+
+        Assert.Null(query);
+        #endregion
+    }
+
     [Fact]
     public void FieldEquals_Byte()
     {
@@ -657,6 +870,257 @@ public sealed class QueryBuilderTests
         Assert.Throws<NotSupportedException>(() => query.Evaluate(new() { StringValue = "dummy:10" }));
     }
 
+    [Theory]
+    [InlineData("dummy:10", true)]
+    [InlineData("-dummy:10", false)]
+    [InlineData("NOT dummy:10", false)]
+    public void UnhandledField_HandlerRespectsNegation(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => true);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
+    [Theory]
+    [InlineData("size:medium", true)]
+    [InlineData("size>small", true)]
+    [InlineData("size>large", false)]
+    [InlineData("size>=medium", true)]
+    [InlineData("size<large", true)]
+    [InlineData("size<=small", false)]
+    public void RangeHandler_UsesCustomParserForComparisonOperators(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("size", (obj, range) => range.IsInRange(obj.Int32Value), TryParseSize);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 2 }));
+
+        static bool TryParseSize(string value, out int result)
+        {
+            result = value switch
+            {
+                "small" => 1,
+                "medium" => 2,
+                "large" => 3,
+                _ => 0,
+            };
+
+            return result is not 0;
+        }
+    }
+
+    [Fact]
+    public void Build_NullQuery_ThrowsArgumentNullException()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => queryBuilder.Build(query: null!));
+        Assert.Equal("query", exception.ParamName);
+    }
+
+    [Theory]
+    [InlineData("today")]
+    [InlineData("yesterday")]
+    [InlineData("this week")]
+    [InlineData("this month")]
+    [InlineData("last month")]
+    [InlineData("this year")]
+    [InlineData("last year")]
+    [InlineData("this_week")]
+    [InlineData("@today")]
+    [InlineData("@today-1d")]
+    public void DateKeyword_OnNonDateHandler_DoesNotMatch(string keyword)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("age", (obj, range) => range.IsInRange(obj.Int32Value));
+        var query = queryBuilder.Build($"age:\"{keyword}\"");
+
+        Assert.False(query.Evaluate(new Sample { Int32Value = 42 }));
+    }
+
+    // 2026-03-15 is a Sunday, so "this week" is 2026-03-09..2026-03-16
+    [Theory]
+    [InlineData("today", true)]
+    [InlineData("yesterday", false)]
+    [InlineData("this week", true)]
+    [InlineData("this month", true)]
+    [InlineData("last month", false)]
+    [InlineData("this year", true)]
+    [InlineData("last year", false)]
+    public void DateKeyword_OnDateTimeHandler_IsSupported(string keyword, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var query = queryBuilder.Build($"date:\"{keyword}\"");
+
+        Assert.Equal(expectedResult, query.Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    // 2026-03-15 is a Sunday, so "this week" is 2026-03-09..2026-03-16
+    [Theory]
+    [InlineData("this_week", true)]
+    [InlineData("this_month", true)]
+    [InlineData("last_month", false)]
+    [InlineData("this_year", true)]
+    [InlineData("last_year", false)]
+    [InlineData("THIS_Week", true)]
+    [InlineData("\"this_month\"", true)]
+    [InlineData("this__week", false)]
+    [InlineData("this-week", false)]
+    public void DateKeyword_UnderscoreForm_IsSupportedWithoutQuotes(string keyword, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var query = queryBuilder.Build($"date:{keyword}");
+
+        Assert.Equal(expectedResult, query.Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    // Now is 2026-03-15 12:00 UTC, so @today is 2026-03-15 00:00 and @today-1w is 2026-03-08 00:00
+    [Theory]
+    [InlineData("date>@today-1w", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date>@today-1w", "2026-03-07T23:00:00Z", false)]
+    [InlineData("date>=@today-7d", "2026-03-08T00:00:00Z", true)]
+    [InlineData("date>@today-7d", "2026-03-08T00:00:00Z", false)]
+    [InlineData("date<@today", "2026-03-14T23:00:00Z", true)]
+    [InlineData("date<@today", "2026-03-15T01:00:00Z", false)]
+    [InlineData("date>=@today+1d", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date>=@today+2w", "2026-03-16T08:00:00Z", false)]
+    [InlineData("date:@today", "2026-03-15T00:00:00Z", true)]
+    [InlineData("date<>@today", "2026-03-15T00:00:00Z", false)]
+    [InlineData("date:@today-1w..@today", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date:@today-1w..@today", "2026-03-15T08:00:00Z", false)]
+    [InlineData("date:@today-1w..*", "2026-03-15T08:00:00Z", true)]
+    [InlineData("date>@TODAY-1W", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date>@today-10d", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date>@today-1m", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today-w", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today1d", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today--1d", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@yesterday", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today-2147483647w", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date<@today+2147483647d", "2026-03-10T00:00:00Z", false)]
+    public void RelativeDate_OnDateTimeHandler(string query, string date, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    [Fact]
+    public void RelativeDate_SupportsEveryDateType()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateOnly>("dateonly", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+        queryBuilder.AddRangeHandler<DateTimeOffset>("offset", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        queryBuilder.AddRangeHandler<DateTime?>("nullable", (obj, range) => range.IsInRange(obj.NullableDateTimeValue));
+        queryBuilder.AddHandler<DateTime>("equals", (obj, value) => obj.DateTimeValue == value);
+
+        var sample = new Sample
+        {
+            DateOnlyValue = new DateOnly(2026, 3, 14),
+            DateTimeOffsetValue = new DateTimeOffset(2026, 3, 14, 23, 0, 0, TimeSpan.Zero),
+            NullableDateTimeValue = new DateTime(2026, 3, 14, 23, 0, 0, DateTimeKind.Utc),
+            DateTimeValue = new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        Assert.True(queryBuilder.Build("dateonly:@today-1d").Evaluate(sample));
+        Assert.False(queryBuilder.Build("dateonly>@today-1d").Evaluate(sample));
+        Assert.True(queryBuilder.Build("offset:@today-1d..@today").Evaluate(sample));
+        Assert.True(queryBuilder.Build("nullable>=@today-1d").Evaluate(sample));
+        Assert.True(queryBuilder.Build("equals:@today-1d").Evaluate(sample));
+    }
+
+    [Theory]
+    [InlineData("stars:10..*", true)]
+    [InlineData("stars:11..*", false)]
+    [InlineData("stars:*..10", true)]
+    [InlineData("stars:*..9", false)]
+    [InlineData("stars:\"* .. 10\"", true)]
+    [InlineData("stars<>10..*", false)]
+    [InlineData("stars<>11..*", true)]
+    [InlineData("-stars:11..*", true)]
+    [InlineData("stars:*..*", false)]
+    [InlineData("stars:abc..*", false)]
+    [InlineData("stars:*..abc", false)]
+    public void Range_Unbounded(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("stars", (obj, range) => range.IsInRange(obj.Int32Value));
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 10 }));
+    }
+
+    [Theory]
+    [InlineData("stars:10..*", KeyValueOperator.GreaterThanOrEqual)]
+    [InlineData("stars:*..10", KeyValueOperator.LessThanOrEqual)]
+    public void Range_Unbounded_IsEquivalentToComparison(string query, KeyValueOperator expectedOperator)
+    {
+        UnaryRangeSyntax<int>? capturedRange = null;
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("stars", (obj, range) =>
+        {
+            capturedRange = Assert.IsType<UnaryRangeSyntax<int>>(range);
+            return true;
+        });
+
+        queryBuilder.Build(query).Evaluate(new Sample());
+
+        Assert.NotNull(capturedRange);
+        Assert.Equal(expectedOperator, capturedRange.Operator);
+        Assert.Equal(10, capturedRange.Operand);
+    }
+
+    [Theory]
+    [InlineData("date:2026-03-01..*", true)]
+    [InlineData("date:2026-03-16..*", false)]
+    [InlineData("date:*..2026-03-16", true)]
+    public void Range_Unbounded_Date(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    [Fact]
+    public void DateKeyword_OnDateTimeHandler_ProducesUtcBounds()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        BinaryRangeSyntax<DateTime>? capturedRange = null;
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) =>
+        {
+            capturedRange = Assert.IsType<BinaryRangeSyntax<DateTime>>(range);
+            return true;
+        });
+
+        queryBuilder.Build("date:today").Evaluate(new Sample());
+
+        Assert.NotNull(capturedRange);
+        Assert.Equal(new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc), capturedRange.LowerBound);
+        Assert.Equal(DateTimeKind.Utc, capturedRange.LowerBound.Kind);
+        Assert.Equal(new DateTime(2026, 3, 16, 0, 0, 0, DateTimeKind.Utc), capturedRange.UpperBound);
+        Assert.Equal(DateTimeKind.Utc, capturedRange.UpperBound.Kind);
+    }
+
     [Fact]
     public void EmptyQuery()
     {
@@ -825,6 +1289,377 @@ public sealed class QueryBuilderTests
         Assert.False(query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }));
     }
 
+    [Fact]
+    public void DeeplyNestedParentheses_ThrowsQueryTooComplex()
+    {
+        var query = new string('(', 100_000) + "a" + new string(')', 100_000);
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+
+        Assert.Throws<QueryTooComplexException>(() => queryBuilder.Build(query));
+    }
+
+    [Fact]
+    public void VeryLongConjunction_IsSupported()
+    {
+        // A chain of terms is bound and evaluated with loops, so its length does not depend on the stack size
+        var query = string.Join(' ', Enumerable.Range(0, 100_000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => value.StartsWith("term", StringComparison.Ordinal));
+
+        var result = false;
+        var thread = new Thread(() => result = queryBuilder.Build(query).Evaluate(new Sample()), maxStackSize: 1024 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void VeryLongDisjunction_IsSupported()
+    {
+        var query = string.Join(" OR ", Enumerable.Range(0, 8000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => value == "term7999");
+
+        Assert.True(queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
+    [Fact]
+    public void ConjunctionOverTermLimit_ThrowsQueryTooComplex()
+    {
+        var query = string.Join(' ', Enumerable.Range(0, 300_000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+
+        Assert.Throws<QueryTooComplexException>(() => queryBuilder.Build(query));
+    }
+
+    [Fact]
+    public void ManyOrGroupsCombinedWithAnd_ThrowsQueryTooComplex()
+    {
+        // Converting to disjunctive normal form would produce 2^30 terms
+        var query = string.Join(" AND ", Enumerable.Range(0, 30).Select(i => $"(a{i}:1 OR b{i}:2)"));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+
+        Assert.Throws<QueryTooComplexException>(() => queryBuilder.Build(query));
+    }
+
+    [Fact]
+    public void ModeratelyComplexQuery_IsStillSupported()
+    {
+        // 2^10 disjunctions is well within the limit and must keep working
+        var query = string.Join(" AND ", Enumerable.Range(0, 10).Select(i => $"(int32:{i} OR int32:{i + 100})"));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+
+        Assert.False(queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 0 }));
+    }
+
+    [Fact]
+    public void LongFreeTextQuery_IsStillSupported()
+    {
+        // A user pasting a long sentence into a search box must not be rejected
+        var query = string.Join(' ', Enumerable.Repeat("word", 500));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        Assert.True(queryBuilder.Build(query).Evaluate(new Sample { StringValue = "word" }));
+    }
+
+    [Theory]
+    [InlineData("name:john", true)]
+    [InlineData("name=john", true)]
+    [InlineData("name<>john", false)]
+    [InlineData("name<>jane", true)]
+    [InlineData("-name<>john", true)]
+    [InlineData("name>john", false)]
+    [InlineData("name<=john", false)]
+    public void GenericHandler_String_SupportsEqualityOperatorsOnly(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<string>("name", (obj, value) => obj.StringValue == value);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { StringValue = "john" }));
+    }
+
+    [Theory]
+    [InlineData("id:100", true)]
+    [InlineData("id<>100", false)]
+    [InlineData("id<>1", true)]
+    [InlineData("id>100", false)]
+    [InlineData("id>=100", false)]
+    [InlineData("id<>invalid", false)]
+    public void GenericHandler_Int32_SupportsEqualityOperatorsOnly(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("id", (obj, value) => obj.Int32Value == value);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 100 }));
+    }
+
+    [Theory]
+    [InlineData("state:or", "or")]
+    [InlineData("state:OR", "OR")]
+    [InlineData("state=or", "or")]
+    [InlineData("state:and", "and")]
+    [InlineData("state:not", "not")]
+    public void KeywordDirectlyAfterOperator_IsTheValue(string query, string expectedValue)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler("state", (obj, value) => obj.StringValue == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => throw new InvalidOperationException($"Unexpected text query '{value}'"));
+
+        var compiledQuery = queryBuilder.Build(query);
+
+        Assert.True(compiledQuery.Evaluate(new Sample { StringValue = expectedValue }));
+        Assert.False(compiledQuery.Evaluate(new Sample { StringValue = "ca" }));
+    }
+
+    [Theory]
+    [InlineData("int32:1 OR")]
+    [InlineData("(int32:1 OR)")]
+    public void OrKeywordAsText(string query)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        var compiledQuery = queryBuilder.Build(query);
+
+        Assert.True(compiledQuery.Evaluate(new Sample { Int32Value = 1, StringValue = "OR" }));
+        Assert.False(compiledQuery.Evaluate(new Sample { Int32Value = 1, StringValue = "dummy" }));
+        Assert.False(compiledQuery.Evaluate(new Sample { Int32Value = 99, StringValue = "OR" }));
+    }
+
+    [Fact]
+    public void OpenParenthesisAtEndAsText()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        var query = queryBuilder.Build("int32:1 (");
+
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "(" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "dummy" }));
+    }
+
+    [Fact]
+    public void UnmatchedClosingParenthesisAsText()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue?.Contains(value, StringComparison.Ordinal) == true);
+
+        var query = queryBuilder.Build("a ) b");
+
+        Assert.True(query.Evaluate(new Sample { StringValue = "a ) b" }));
+        Assert.False(query.Evaluate(new Sample { StringValue = "a b" }));
+    }
+
+    [Fact]
+    public void Parse_ManyUnmatchedClosingParentheses()
+    {
+        // Each unmatched ')' used to restart parsing from the first token, which took seconds for this query
+        var query = "sample" + string.Concat(Enumerable.Repeat(" )", 50_000));
+
+        var syntax = QuerySyntax.Parse(query);
+
+        Assert.Equal(query.Length, syntax.Span.End);
+    }
+
+    [Fact]
+    public void SyntaxTree_LongConjunction_DoesNotOverflowTheStack()
+    {
+        var query = string.Join(' ', Enumerable.Range(0, 5000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+        var syntax = QuerySyntax.Parse(query);
+
+        TextSpan? span = null;
+        string? text = null;
+        var thread = new Thread(() =>
+        {
+            span = syntax.Span;
+            text = syntax.ToString();
+        }, maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.Equal(query.Length, span?.End);
+        Assert.StartsWith("AND", text);
+    }
+
+    [Theory]
+    [InlineData(" ")]
+    [InlineData(" \t\r\n")]
+    public void WhitespaceQuery_MatchesEverything(string query)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => false);
+        queryBuilder.SetTextFilterHandler((obj, value) => false);
+
+        Assert.True(queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
+    [Fact]
+    public void NonBreakingSpace_SeparatesTerms()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        var query = queryBuilder.Build("int32:1\u00A0sample");
+
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }));
+    }
+
+    // 2026-03-15 is a Sunday, so "this week" is 2026-03-09..2026-03-16
+    [Theory]
+    [InlineData("today", true)]
+    [InlineData("yesterday", false)]
+    [InlineData("this week", true)]
+    [InlineData("last year", false)]
+    public void DateKeyword_OnNullableDateTimeHandler_IsSupported(string keyword, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime?>("date", (obj, range) => range.IsInRange(obj.NullableDateTimeValue));
+        var query = queryBuilder.Build($"date:\"{keyword}\"");
+
+        Assert.Equal(expectedResult, query.Evaluate(new Sample { NullableDateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    [Fact]
+    public void DateKeyword_IsResolvedWhenTheQueryIsBuilt()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var query = queryBuilder.Build("date:today");
+
+        timeProvider.Advance(TimeSpan.FromDays(1));
+
+        Assert.True(query.Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    [Fact]
+    public void Build_ParsesValuesOnce()
+    {
+        var parseCount = 0;
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value, CountingParser);
+        queryBuilder.AddRangeHandler<int>("int64", (obj, range) => range.IsInRange((int)obj.Int64Value), CountingParser);
+
+        var query = queryBuilder.Build("int32:1 AND int64:1..10");
+        var parseCountAfterBuild = parseCount;
+        for (var i = 0; i < 10; i++)
+        {
+            Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 5 }));
+        }
+
+        Assert.NotEqual(0, parseCountAfterBuild);
+        Assert.Equal(parseCountAfterBuild, parseCount);
+
+        bool CountingParser(string value, out int result)
+        {
+            parseCount++;
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+    }
+
+    [Fact]
+    public void Build_IsNotAffectedByLaterHandlerChanges()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => true);
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+        var query = queryBuilder.Build("dummy:10 sample");
+
+        queryBuilder.SetUnhandledPropertyHandler(predicate: null);
+        queryBuilder.SetTextFilterHandler((obj, value) => false);
+
+        Assert.True(query.Evaluate(new Sample()));
+    }
+
+    [Theory]
+    [InlineData("dummy:10", "dummy:10")]
+    [InlineData("dummy=10", "dummy:10")]
+    [InlineData("dummy<>10", "dummy<>10")]
+    [InlineData("dummy<10", "dummy<10")]
+    [InlineData("dummy<=10", "dummy<=10")]
+    [InlineData("dummy>10", "dummy>10")]
+    [InlineData("dummy>=10", "dummy>=10")]
+    public void UnhandledField_FallbackToTextSearch_KeepsOperator(string query, string expectedText)
+    {
+        string? text = null;
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) =>
+        {
+            text = value;
+            return true;
+        });
+
+        queryBuilder.Build(query).Evaluate(new Sample());
+
+        Assert.Equal(expectedText, text);
+    }
+
+    [Theory]
+    [InlineData("sample", false)]
+    [InlineData("NOT sample", true)]
+    [InlineData("-sample", true)]
+    [InlineData("NOT (int32:1 AND sample)", true)]
+    public void TextWithoutTextHandler_OnlyItsNegationMatches(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 1 }));
+    }
+
+    [Fact]
+    public void ManyDisjunctions_EvaluateOnSmallStack()
+    {
+        // 2^13 disjunctions, only the last of which matches. Chaining them as nested delegates overflowed a small stack.
+        var query = string.Join(" AND ", Enumerable.Range(0, 13).Select(i => $"(a{i.ToString(CultureInfo.InvariantCulture)} OR sample)"));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+        var compiledQuery = queryBuilder.Build(query);
+
+        var result = false;
+        var thread = new Thread(() => result = compiledQuery.Evaluate(new Sample { StringValue = "sample" }), maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void ManyOrGroupsCombinedWithManyTerms_ThrowsQueryTooComplex()
+    {
+        // 2^13 disjunctions is within the limit, but each one repeats the 500 other terms
+        var query = string.Join(" ", Enumerable.Range(0, 13).Select(i => $"(a{i.ToString(CultureInfo.InvariantCulture)} OR b{i.ToString(CultureInfo.InvariantCulture)})"))
+            + " " + string.Join(' ', Enumerable.Range(0, 500).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+
+        Assert.Throws<QueryTooComplexException>(() => queryBuilder.Build(query));
+    }
+
     private static QueryBuilder<Sample> CreateDateTimeOffsetRangeQueryBuilder(DateTimeOffset utcNow)
     {
         var timeProvider = new FakeTimeProvider();
@@ -864,8 +1699,19 @@ public sealed class QueryBuilderTests
         public decimal DecimalValue { get; set; }
         public DateOnly DateOnlyValue { get; set; }
         public DateTime DateTimeValue { get; set; }
+        public DateTime? NullableDateTimeValue { get; set; }
         public DateTimeOffset DateTimeOffsetValue { get; set; }
         public DayOfWeek DayOfWeekValue { get; set; }
         public string? StringValue { get; set; }
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name
+#region QueryBuilder_Person
+internal sealed record Person(string FullName, DateTime DateOfBirth);
+#endregion
+
+#region QueryBuilder_Issue
+internal sealed record Issue(string Title, string Author, bool IsOpen, int Comments, DateTime CreatedAt);
+#endregion
+#pragma warning restore MA0048

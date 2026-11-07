@@ -1,0 +1,429 @@
+using System.Buffers.Binary;
+using System.Security.Cryptography;
+using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
+using Meziantou.Framework.Imaging.Tests.Codecs;
+
+namespace Meziantou.Framework.Imaging.Tests;
+
+/// <summary>PNG/APNG structure identification on synthetic inputs: modes, validation, error categories, metadata and limits.</summary>
+public sealed class PngIdentifyTests
+{
+    private static readonly ImageIdentifyOptions FullScan = new() { Mode = ImageIdentifyMode.FullScan };
+
+    [Theory]
+    [InlineData((byte)0, (byte)1, PixelFormat.Gray8, ImageColorModel.Grayscale)]
+    [InlineData((byte)0, (byte)16, PixelFormat.Gray16, ImageColorModel.Grayscale)]
+    [InlineData((byte)2, (byte)8, PixelFormat.Rgb24, ImageColorModel.Rgb)]
+    [InlineData((byte)2, (byte)16, PixelFormat.Rgb48, ImageColorModel.Rgb)]
+    [InlineData((byte)4, (byte)8, PixelFormat.La16, ImageColorModel.GrayscaleAlpha)]
+    [InlineData((byte)6, (byte)16, PixelFormat.Rgba64, ImageColorModel.Rgba)]
+    public void StaticImagesAreIdentifiedInBothModes(byte colorType, byte bitDepth, PixelFormat pixelFormat, ImageColorModel colorModel)
+    {
+        var data = SyntheticImages.Png(3, 2, colorType, bitDepth);
+        foreach (var options in new[] { ImageIdentifyOptions.Default, FullScan })
+        {
+            var info = Image.Identify(data, options);
+            Assert.Equal(ImageFormat.Png, info.Format);
+            Assert.Equal(new Size(3, 2), info.Size);
+            Assert.Equal(pixelFormat, info.PixelFormat);
+            Assert.Equal(colorModel, info.ColorModel);
+            Assert.Equal(bitDepth, info.BitsPerComponent);
+            Assert.Equal(1, info.FrameCount);
+            Assert.False(info.IsAnimated);
+            Assert.False(info.HasPosterFrame);
+            Assert.Equal(colorType is 4 or 6, info.MayHaveTransparency);
+            Assert.Null(info.Animation);
+            Assert.Equal(options.Mode, info.IdentifyMode);
+        }
+    }
+
+    [Fact]
+    public void HeaderModeExaminesOnlyTheBytesBeforeTheImageData()
+    {
+        // Signature (8) + IHDR (25): the walk peeks the 8-byte IDAT chunk header and stops there
+        var data = SyntheticImages.Png(4, 4);
+        var info = Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxEncodedBytes = 41 }, ImageIdentifyMode.Header));
+        Assert.Equal(4, info.Width);
+        Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxEncodedBytes = 40 }, ImageIdentifyMode.Header))).Kind);
+        Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxEncodedBytes = 41 }, ImageIdentifyMode.FullScan))).Kind);
+
+        // A truncated or corrupt payload is not examined by a header identification
+        var truncated = data[..45];
+        Assert.Equal(4, Image.Identify(truncated).Width);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(truncated, FullScan));
+    }
+
+    [Fact]
+    public void FullScanAllocatesNoPixels()
+    {
+        // A 10000x10000 RGBA canvas would need 400 MB of pixels; a full scan only walks the chunks
+        var data = BuildLargeApng();
+        _ = Image.Identify(data, FullScan);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var info = Image.Identify(data, FullScan);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(3, info.FrameCount);
+        Assert.True(allocated < 256 * 1024, string.Create(CultureInfo.InvariantCulture, $"A full scan allocated {allocated} bytes."));
+
+        static byte[] BuildLargeApng()
+        {
+            var compressed = SyntheticImages.Zlib(new byte[1024]);
+            return new SyntheticImages.PngBuilder()
+                .Header(10_000, 10_000)
+                .AnimationControl(3, 0)
+                .FrameControl(10_000, 10_000)
+                .Chunk("IDAT", compressed)
+                .FrameControl(5_000, 5_000)
+                .Chunk("fdAT", [0, 0, 0, 2, .. compressed])
+                .FrameControl(10_000, 10_000, sequence: 3)
+                .Chunk("fdAT", [0, 0, 0, 4, .. compressed])
+                .End()
+                .ToArray();
+        }
+    }
+
+    [Theory]
+    [InlineData((byte)2, (byte)4)]
+    [InlineData((byte)3, (byte)16)]
+    [InlineData((byte)7, (byte)8)]
+    [InlineData((byte)0, (byte)3)]
+    public void IllegalColorTypeAndBitDepthCombinationsAreInvalid(byte colorType, byte bitDepth)
+    {
+        var data = new SyntheticImages.PngBuilder().Header(2, 2, bitDepth, colorType).ImageData(2, 2).End().ToArray();
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
+        Assert.Equal(ImageFormat.Png, exception.Format);
+    }
+
+    public static TheoryData<string, byte[]> InvalidStructures => new()
+    {
+        { "first chunk not IHDR", new SyntheticImages.PngBuilder().Text("Title", "x").Header(2, 2).ImageData(2, 2).End().ToArray() },
+        { "zero width", new SyntheticImages.PngBuilder().Header(0, 2).ImageData(2, 2).End().ToArray() },
+        { "IHDR length", new SyntheticImages.PngBuilder().Chunk("IHDR", new byte[12]).ImageData(2, 2).End().ToArray() },
+        { "corrupt IHDR CRC", new SyntheticImages.PngBuilder().Chunk("IHDR", Ihdr(2, 2, 8, 6), corruptCrc: true).ImageData(2, 2).End().ToArray() },
+        { "corrupt ancillary CRC", new SyntheticImages.PngBuilder().Header(2, 2).Chunk("tEXt", "Title\0x"u8, corruptCrc: true).ImageData(2, 2).End().ToArray() },
+        { "non-letter chunk type", new SyntheticImages.PngBuilder().Header(2, 2).Chunk("te1t", []).ImageData(2, 2).End().ToArray() },
+        { "palette image without PLTE", new SyntheticImages.PngBuilder().Header(2, 2, 8, 3).ImageData(2, 2, 3).End().ToArray() },
+        { "PLTE in a grayscale image", new SyntheticImages.PngBuilder().Header(2, 2, 8, 0).Chunk("PLTE", new byte[6]).ImageData(2, 2, 0).End().ToArray() },
+        { "PLTE larger than the bit depth allows", new SyntheticImages.PngBuilder().Header(2, 2, 1, 3).Chunk("PLTE", new byte[9]).ImageData(2, 2, 3, 1).End().ToArray() },
+        { "tRNS before PLTE", new SyntheticImages.PngBuilder().Header(2, 2, 8, 3).Chunk("tRNS", [0]).Chunk("PLTE", new byte[6]).ImageData(2, 2, 3).End().ToArray() },
+        { "tRNS length", new SyntheticImages.PngBuilder().Header(2, 2, 8, 2).Chunk("tRNS", [0, 0]).ImageData(2, 2, 2).End().ToArray() },
+        { "no IDAT", new SyntheticImages.PngBuilder().Header(2, 2).End().ToArray() },
+    };
+
+    [Theory]
+    [MemberData(nameof(InvalidStructures))]
+    public void MalformedStructuresAreInvalidInBothModes(string name, byte[] data)
+    {
+        Assert.NotNull(name);
+        foreach (var options in new[] { ImageIdentifyOptions.Default, FullScan })
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, options));
+            Assert.Equal(ImageFormat.Png, exception.Format);
+        }
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+    }
+
+    public static TheoryData<string, byte[]> InvalidAfterImageData => new()
+    {
+        { "IEND with data", new SyntheticImages.PngBuilder().Header(2, 2).ImageData(2, 2).Chunk("IEND", [0]).ToArray() },
+        { "non-consecutive IDAT", new SyntheticImages.PngBuilder().Header(2, 2).ImageData(2, 2).Text("a", "b").ImageData(2, 2).End().ToArray() },
+        { "missing IEND", new SyntheticImages.PngBuilder().Header(2, 2).ImageData(2, 2).ToArray() },
+        { "truncated IDAT", new SyntheticImages.PngBuilder().Header(2, 2).ImageData(2, 2).ToArray()[..^3] },
+        { "corrupt IDAT CRC", new SyntheticImages.PngBuilder().Header(2, 2).Chunk("IDAT", SyntheticImages.Zlib(new byte[18]), corruptCrc: true).End().ToArray() },
+        { "APNG sequence", new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(2, 0).FrameControl(2, 2).ImageData(2, 2).FrameControl(2, 2, sequence: 5).FrameData(2, 2).End().ToArray() },
+        { "APNG frame outside the canvas", new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(2, 0).FrameControl(2, 2).ImageData(2, 2).FrameControl(2, 2, x: 1).FrameData(2, 2).End().ToArray() },
+        { "APNG dispose op", new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(2, 0).FrameControl(2, 2).ImageData(2, 2).FrameControl(2, 2, dispose: 3).FrameData(2, 2).End().ToArray() },
+        { "APNG fewer frames than declared", new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(3, 0).FrameControl(2, 2).ImageData(2, 2).FrameControl(2, 2).FrameData(2, 2).End().ToArray() },
+        { "APNG more frames than declared", new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(1, 0).FrameControl(2, 2).ImageData(2, 2).FrameControl(2, 2).FrameData(2, 2).End().ToArray() },
+        { "APNG frame without data", new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(3, 0).FrameControl(2, 2).ImageData(2, 2).FrameControl(2, 2).FrameControl(2, 2).FrameData(2, 2).End().ToArray() },
+        { "APNG fdAT without fcTL", new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(1, 0).ImageData(2, 2).FrameData(2, 2).End().ToArray() },
+    };
+
+    [Theory]
+    [MemberData(nameof(InvalidAfterImageData))]
+    public void MalformedDataAfterTheHeaderIsFoundByAFullScan(string name, byte[] data)
+    {
+        Assert.NotNull(name);
+        _ = Image.Identify(data);
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, FullScan));
+        Assert.Equal(ImageFormat.Png, exception.Format);
+    }
+
+    [Fact]
+    public void UnknownCriticalChunksAreUnsupportedAndAncillaryChunksAreSkipped()
+    {
+        var critical = new SyntheticImages.PngBuilder().Header(2, 2).Chunk("XyZw", [1, 2, 3]).ImageData(2, 2).End().ToArray();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(critical));
+        Assert.Equal(ImageFormat.Png, exception.Format);
+        Assert.Equal("PNG critical chunk XyZw", exception.Feature);
+
+        var ancillary = new SyntheticImages.PngBuilder().Header(2, 2).Chunk("xyZw", new byte[100_000]).ImageData(2, 2).Chunk("abCd", [1]).End().ToArray();
+        Assert.Equal(1, Image.Identify(ancillary, FullScan).FrameCount);
+    }
+
+    [Fact]
+    public void AnimationControlAfterTheImageDataIsIgnored()
+    {
+        var data = new SyntheticImages.PngBuilder().Header(2, 2).ImageData(2, 2).AnimationControl(2, 0).FrameControl(2, 2).FrameData(2, 2).End().ToArray();
+        var info = Image.Identify(data, FullScan);
+        Assert.False(info.IsAnimated);
+        Assert.Equal(1, info.FrameCount);
+        Assert.Equal(PixelFormat.Rgba32, info.PixelFormat);
+    }
+
+    [Fact]
+    public void ApngHeaderDeclaresFramesPlaysAndPoster()
+    {
+        var poster = new SyntheticImages.PngBuilder().Header(4, 4, 8, 2).AnimationControl(2, 3).ImageData(4, 4, 2).FrameControl(2, 2, x: 1, y: 1).FrameData(2, 2).FrameControl(4, 4).FrameData(4, 4).End().ToArray();
+        var header = Image.Identify(poster);
+        Assert.True(header.IsAnimated);
+        Assert.True(header.HasPosterFrame);
+        Assert.Equal(2, header.FrameCount);
+        Assert.Equal(3, header.Animation?.TotalPlays);
+        Assert.Equal(PixelFormat.Rgba32, header.PixelFormat);
+        Assert.Null(header.MayHaveTransparency);
+
+        // The first displayed frame does not cover the canvas: transparent black shows through
+        var full = Image.Identify(poster, FullScan);
+        Assert.Equal(2, full.FrameCount);
+        Assert.True(full.MayHaveTransparency);
+
+        var opaque = new SyntheticImages.PngBuilder().Header(4, 4, 16, 2).AnimationControl(2, 0).FrameControl(4, 4).ImageData(4, 4, 2, 16).FrameControl(2, 2, dispose: 1).FrameData(2, 2).End().ToArray();
+        var opaqueInfo = Image.Identify(opaque, FullScan);
+        Assert.Equal(PixelFormat.Rgba64, opaqueInfo.PixelFormat);
+        Assert.Null(opaqueInfo.Animation!.TotalPlays);
+        Assert.False(opaqueInfo.MayHaveTransparency, "Disposing the last frame never shows the background.");
+
+        var disposed = new SyntheticImages.PngBuilder().Header(4, 4, 8, 2).AnimationControl(2, 0).FrameControl(4, 4, dispose: 1).ImageData(4, 4, 2).FrameControl(2, 2).FrameData(2, 2).End().ToArray();
+        Assert.True(Image.Identify(disposed, FullScan).MayHaveTransparency);
+    }
+
+    [Fact]
+    public void DefaultImageFrameControlMustCoverTheCanvas()
+    {
+        var data = new SyntheticImages.PngBuilder().Header(4, 4).AnimationControl(1, 0).FrameControl(2, 2).ImageData(4, 4).End().ToArray();
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
+        var zeroFrames = new SyntheticImages.PngBuilder().Header(4, 4).AnimationControl(0, 0).ImageData(4, 4).End().ToArray();
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(zeroFrames));
+    }
+
+    [Fact]
+    public void FullScanChargesEveryFrameIncludingThePoster()
+    {
+        var data = new SyntheticImages.PngBuilder().Header(2, 2).AnimationControl(2, 0).ImageData(2, 2).FrameControl(2, 2).FrameData(2, 2).FrameControl(2, 2).FrameData(2, 2).End().ToArray();
+        Assert.Equal(2, Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxFrames = 3 }, ImageIdentifyMode.FullScan)).FrameCount);
+        var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxFrames = 2 }, ImageIdentifyMode.FullScan)));
+        Assert.Equal(ImageResourceLimitKind.Frames, exception.Kind);
+        Assert.Equal(3, exception.Requested);
+
+        // A header identification traverses no frame
+        Assert.Equal(2, Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxFrames = 1 }, ImageIdentifyMode.Header)).FrameCount);
+    }
+
+    [Fact]
+    public void CanvasLimitsApplyToIdentification()
+    {
+        var data = SyntheticImages.Png(40, 30);
+        Assert.Equal(ImageResourceLimitKind.Height, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxHeight = 29 }, ImageIdentifyMode.Header))).Kind);
+        Assert.Equal(ImageResourceLimitKind.FramePixels, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxFramePixels = 1199 }, ImageIdentifyMode.Header))).Kind);
+        Assert.Equal(40, Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxFramePixels = 1200, MaxWidth = 40, MaxHeight = 30 }, ImageIdentifyMode.Header)).Width);
+    }
+
+    [Fact]
+    public void TextChunksAreDecodedInFileOrderAndBounded()
+    {
+        var value = new string('a', 1000);
+        var data = new SyntheticImages.PngBuilder()
+            .Header(2, 2)
+            .Text("Title", "Before é")
+            .CompressedText("Comment", Encoding.Latin1.GetBytes(value))
+            .Chunk("iTXt", [.. "Author"u8, 0, 0, 0, .. "fr"u8, 0, .. "Auteur"u8, 0, .. "Jérôme"u8.ToArray()])
+            .Chunk("iTXt", [.. "XML:com.adobe.xmp"u8, 0, 1, 0, 0, 0, .. SyntheticImages.Zlib("<x:xmpmeta/>"u8)])
+            .ImageData(2, 2)
+            .Text("After", "image data")
+            .End()
+            .ToArray();
+
+        var header = Image.Identify(data).Metadata;
+        Assert.Equal(["Title", "Comment", "Author"], header.TextEntries.Select(entry => entry.Keyword));
+        Assert.Equal("Before é", header.TextEntries[0].Value);
+        Assert.Equal(value, header.TextEntries[1].Value);
+        Assert.Equal(new ImageTextEntry("Author", "Jérôme", "fr", "Auteur"), header.TextEntries[2]);
+        Assert.Equal("<x:xmpmeta/>"u8.ToArray(), header.XmpProfile?.Data.ToArray());
+
+        var full = Image.Identify(data, FullScan).Metadata;
+        Assert.Equal(["Title", "Comment", "Author", "After"], full.TextEntries.Select(entry => entry.Keyword));
+    }
+
+    [Theory]
+    [InlineData("zTXt", 100_007)]
+    [InlineData("iTXt", 100_007)]
+    [InlineData("iTXt XMP", 100_000)]
+    [InlineData("iCCP", 100_000)]
+    public void DecompressedMetadataIsChargedBeforeItIsRetained(string kind, int chargedBytes)
+    {
+        // 100,000 decompressed bytes from a few hundred compressed bytes, plus the 7-byte keyword of a text entry (the
+        // keyword of an XMP packet and the name of a profile are not retained)
+        var data = CreateCompressedMetadataImage(kind, new byte[100_000]);
+        var metadata = Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = chargedBytes }, ImageIdentifyMode.Header)).Metadata;
+        Assert.HasCount(kind is "zTXt" or "iTXt" ? 1 : 0, metadata.TextEntries);
+        var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = chargedBytes - 1 }, ImageIdentifyMode.Header)));
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
+
+        var bomb = CreateCompressedMetadataImage(kind, new byte[10_000_000]);
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(bomb, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 65_536 }, ImageIdentifyMode.Header))).Kind);
+    }
+
+    private static byte[] CreateCompressedMetadataImage(string kind, byte[] decompressed)
+    {
+        var builder = new SyntheticImages.PngBuilder().Header(2, 2);
+        builder = kind switch
+        {
+            "zTXt" => builder.CompressedText("Comment", decompressed),
+            "iTXt" => builder.Chunk("iTXt", [.. "Comment"u8, 0, 1, 0, 0, 0, .. SyntheticImages.Zlib(decompressed)]),
+            "iTXt XMP" => builder.Chunk("iTXt", [.. "XML:com.adobe.xmp"u8, 0, 1, 0, 0, 0, .. SyntheticImages.Zlib(decompressed)]),
+            "iCCP" => builder.Chunk("iCCP", [.. "icc"u8, 0, 0, .. SyntheticImages.Zlib(decompressed)]),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, message: null),
+        };
+
+        return builder.ImageData(2, 2).End().ToArray();
+    }
+
+    public static TheoryData<string> MetadataChunkTypes => ["tEXt", "zTXt", "iTXt", "iCCP", "eXIf"];
+
+    [Theory]
+    [MemberData(nameof(MetadataChunkTypes))]
+    public async Task MetadataChunksLargerThanTheMetadataBudgetFailBeforeTheyAreBuffered(string type)
+    {
+        // A 1 MB chunk with a 4 KiB budget fails from its header: the stream is not read past the first buffer
+        var payload = CreateMetadataPayload(type, 1_000_000);
+        var data = new SyntheticImages.PngBuilder().Header(2, 2).Chunk(type, payload).ImageData(2, 2).End().ToArray();
+        var options = CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 4096 }, ImageIdentifyMode.Header);
+
+        AssertMetadataLimit(4096, payload.Length, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, options)));
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidAsynchronousReads = true })
+        {
+            AssertMetadataLimit(4096, payload.Length, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(stream, options)));
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidSynchronousReads = true })
+        {
+            AssertMetadataLimit(4096, payload.Length, await Assert.ThrowsAsync<ImageResourceLimitException>(() => Image.IdentifyAsync(stream, options, XunitCancellationToken)));
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+
+        // The data of a chunk is checked before it is read: a declared length fails even when the input is truncated
+        var truncated = new SyntheticImages.PngBuilder().Header(2, 2).ToArray();
+        byte[] declared = [.. truncated, 0x40, 0, 0, 0, .. Encoding.ASCII.GetBytes(type)];
+        AssertMetadataLimit(ImageResourceLimits.DefaultMaxMetadataBytes, 1 << 30, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(declared)));
+    }
+
+    [Fact]
+    public void MetadataChunksAreBoundedByWhatIsLeftOfTheBudget()
+    {
+        // The second chunk is checked against what the first one left (4096 - 3008), before it is buffered
+        var data = new SyntheticImages.PngBuilder().Header(2, 2).Text("Comment", new string('a', 3000)).Chunk("tEXt", CreateMetadataPayload("tEXt", 1_000_000)).ImageData(2, 2).End().ToArray();
+        var options = CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 4096 }, ImageIdentifyMode.Header);
+        AssertMetadataLimit(4096, 3008 + 1_000_008, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, options)));
+
+        // A small compressed chunk is buffered, then bounded while it is inflated
+        var compressed = new SyntheticImages.PngBuilder().Header(2, 2).Text("Comment", new string('a', 3000)).CompressedText("Comment", new byte[2000]).ImageData(2, 2).End().ToArray();
+        AssertMetadataLimit(4096, 3008 + 2000, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(compressed, options)));
+        Assert.HasCount(2, Image.Identify(compressed, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 3008 + 2000 + 7 }, ImageIdentifyMode.Header)).Metadata.TextEntries);
+    }
+
+    [Fact]
+    public void SkippedMetadataChunksAreNotBoundedByTheBudget()
+    {
+        // A profile after a color description and a second eXIf chunk are not adopted: they are streamed, never buffered
+        var exif = new TiffBuilder(bigEndian: true).Ifd0(TiffBuilder.Short(ExifTiff.OrientationTag, 1)).Build();
+        var data = new SyntheticImages.PngBuilder()
+            .Header(2, 2)
+            .Chunk("cICP", [1, 13, 0, 1])
+            .Chunk("iCCP", CreateMetadataPayload("iCCP", 1_000_000))
+            .Chunk("eXIf", exif)
+            .Chunk("eXIf", CreateMetadataPayload("eXIf", 1_000_000))
+            .ImageData(2, 2)
+            .End()
+            .ToArray();
+
+        var metadata = Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = exif.Length }, ImageIdentifyMode.FullScan)).Metadata;
+        Assert.NotNull(metadata.Cicp);
+        Assert.Null(metadata.IccProfile);
+        Assert.Equal(exif, metadata.ExifProfile?.Data.ToArray());
+    }
+
+    [Fact]
+    public void InvalidOrMismatchedPayloadsAreNotAdopted()
+    {
+        var grayProfile = TestRawImage.CreateIccHeader("GRAY"u8);
+        var data = new SyntheticImages.PngBuilder()
+            .Header(2, 2, 8, 2)
+            .Chunk("iCCP", [.. "gray"u8, 0, 0, .. SyntheticImages.Zlib(grayProfile)]) // valid profile, wrong color space for RGB samples
+            .Chunk("eXIf", [1, 2, 3, 4])
+            .Chunk("zTXt", [.. "Comment"u8, 0, 0, 1, 2, 3, 4, 5, 6])
+            .Chunk("tEXt", [0, .. "no keyword"u8])
+            .ImageData(2, 2, 2)
+            .End()
+            .ToArray();
+
+        var metadata = Image.Identify(data, FullScan).Metadata;
+        Assert.Null(metadata.IccProfile);
+        Assert.Null(metadata.ExifProfile);
+        Assert.Empty(metadata.TextEntries);
+
+        var gray = new SyntheticImages.PngBuilder().Header(2, 2, 8, 0).Chunk("iCCP", [.. "gray"u8, 0, 0, .. SyntheticImages.Zlib(grayProfile)]).ImageData(2, 2, 0).End().ToArray();
+        Assert.Equal(IccProfileColorSpace.Gray, Image.Identify(gray).Metadata.IccProfile?.ColorSpace);
+    }
+
+    [Fact]
+    public void TruncatedInputsAreInvalidAtEveryLength()
+    {
+        var data = SyntheticImages.Apng(3, 3, frames: 2);
+        for (var length = 8; length < data.Length; length++)
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => Image.Identify(data.AsSpan(0, length), FullScan));
+            Assert.Equal(ImageFormat.Png, exception.Format);
+        }
+
+        for (var length = 0; length < 8; length++)
+        {
+            Assert.Throws<UnknownImageFormatException>(() => Image.Identify(data.AsSpan(0, length)));
+        }
+    }
+
+    /// <summary>Creates the data of a metadata chunk whose text, profile or EXIF payload is about <paramref name="size"/> bytes.</summary>
+    private static byte[] CreateMetadataPayload(string type, int size) => type switch
+    {
+        "tEXt" => [.. "Comment"u8, 0, .. new byte[size]],
+        "zTXt" => [.. "Comment"u8, 0, 0, .. SyntheticImages.Zlib(RandomNumberGenerator.GetBytes(size))],
+        "iTXt" => [.. "Comment"u8, 0, 0, 0, 0, 0, .. new byte[size]],
+        "iCCP" => [.. "icc"u8, 0, 0, .. SyntheticImages.Zlib(RandomNumberGenerator.GetBytes(size))],
+        "eXIf" => [.. "MM\0*"u8, .. new byte[size]],
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
+    };
+
+    private static void AssertMetadataLimit(long limit, long requested, ImageResourceLimitException exception)
+    {
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
+        Assert.Equal(limit, exception.Limit);
+        Assert.Equal(requested, exception.Requested);
+    }
+
+    private static ImageIdentifyOptions CreateOptions(ImageResourceLimits limits, ImageIdentifyMode mode) => new() { Mode = mode, Configuration = new ImageConfiguration { Limits = limits } };
+
+    private static byte[] Ihdr(int width, int height, byte bitDepth, byte colorType)
+    {
+        var data = new byte[13];
+        BinaryPrimitives.WriteInt32BigEndian(data, width);
+        BinaryPrimitives.WriteInt32BigEndian(data.AsSpan(4), height);
+        data[8] = bitDepth;
+        data[9] = colorType;
+        return data;
+    }
+}

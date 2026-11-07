@@ -1,0 +1,58 @@
+{
+  "spec": {
+    "title": "CSS Generated Content for Paged Media Module Level 4",
+    "url": "https://drafts.csswg.org/css-gcpm-4/"
+  },
+  "properties": [
+    {
+      "name": "copy-into",
+      "href": "https://drafts.csswg.org/css-gcpm-4/#propdef-copy-into",
+      "value": "none | [ [ <custom-ident> <content-level>] [, <custom-ident> <content-level>]* ]?",
+      "initial": "none",
+      "appliesTo": "all elements and pseudo-elements, but not ::first-line or ::first-letter.",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "copy-into",
+        "copyInto"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": ":nth-of-page()",
+      "value": ":nth-of-page(n)",
+      "href": "https://drafts.csswg.org/css-gcpm-4/#selectordef-nth-of-page-n"
+    },
+    {
+      "name": ":first-of-page",
+      "prose": "Same as :nth-of-page(n), but where n = 1 (it is the first matched element on the page).",
+      "href": "https://drafts.csswg.org/css-gcpm-4/#selectordef-first-of-page",
+      "value": ":first-of-page"
+    },
+    {
+      "name": ":last-of-page",
+      "prose": "The element is the last matched element on the page.",
+      "href": "https://drafts.csswg.org/css-gcpm-4/#selectordef-last-of-page",
+      "value": ":last-of-page"
+    },
+    {
+      "name": ":start-of-page",
+      "prose": "The element is the first matched element on the page, and neither it nor its ancestors have any previous siblings that appear on the page.",
+      "href": "https://drafts.csswg.org/css-gcpm-4/#selectordef-start-of-page",
+      "value": ":start-of-page"
+    }
+  ],
+  "values": [
+    {
+      "name": "<content-level>",
+      "href": "https://drafts.csswg.org/css-gcpm-4/#typedef-content-level",
+      "type": "type",
+      "value": "element | content | text | <attr()> | <counter>"
+    }
+  ]
+}

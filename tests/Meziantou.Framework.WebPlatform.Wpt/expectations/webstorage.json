@@ -1,0 +1,173 @@
+{
+  "webstorage/defineProperty.window.js": {
+    "total": 12
+  },
+  "webstorage/document-domain.html": {
+    "total": 1
+  },
+  "webstorage/event_basic.html": {
+    "total": 2
+  },
+  "webstorage/event_body_attribute.html": {
+    "total": 2
+  },
+  "webstorage/event_case_sensitive.html": {
+    "total": 2
+  },
+  "webstorage/event_constructor.window.js": {
+    "total": 6
+  },
+  "webstorage/event_initstorageevent.window.js": {
+    "total": 5
+  },
+  "webstorage/event_local_key.html": {
+    "total": 1
+  },
+  "webstorage/event_local_newvalue.html": {
+    "total": 1
+  },
+  "webstorage/event_local_oldvalue.html": {
+    "total": 1
+  },
+  "webstorage/event_local_removeitem.html": {
+    "total": 1
+  },
+  "webstorage/event_local_storagearea.html": {
+    "total": 1
+  },
+  "webstorage/event_local_url.html": {
+    "total": 1
+  },
+  "webstorage/event_local_window_open_oldvalue.html": {
+    "total": 1
+  },
+  "webstorage/event_no_duplicates.html": {
+    "total": 8
+  },
+  "webstorage/event_session_key.html": {
+    "total": 1
+  },
+  "webstorage/event_session_newvalue.html": {
+    "total": 1
+  },
+  "webstorage/event_session_oldvalue.html": {
+    "total": 1
+  },
+  "webstorage/event_session_removeitem.html": {
+    "total": 1
+  },
+  "webstorage/event_session_storagearea.html": {
+    "total": 1
+  },
+  "webstorage/event_session_url.html": {
+    "total": 1
+  },
+  "webstorage/event_session_window_open_scope.html": {
+    "total": 1
+  },
+  "webstorage/event_setattribute.html": {
+    "total": 2
+  },
+  "webstorage/localstorage-about-blank-3P-iframe-opens-3P-window.partitioned.html": {
+    "total": 1,
+    "failures": {
+      "StorageKey: test 3P about:blank window opened from a 3P iframe": "FAIL"
+    }
+  },
+  "webstorage/localstorage-basic-partitioned.sub.html": {
+    "total": 1,
+    "failures": {
+      "Simple test for partitioned localStorage": "FAIL"
+    }
+  },
+  "webstorage/localstorage-cross-origin-iframe.https.window.js": {
+    "total": 1
+  },
+  "webstorage/localstorage-share-data-unrelated-origins.html": {
+    "total": 1
+  },
+  "webstorage/missing_arguments.window.js": {
+    "total": 10
+  },
+  "webstorage/sessionStorage-basic-partitioned.sub.html": {
+    "total": 1,
+    "failures": {
+      "Simple test for partitioned sessionStorage": "FAIL"
+    }
+  },
+  "webstorage/set.window.js": {
+    "total": 20
+  },
+  "webstorage/storage_builtins.window.js": {
+    "total": 2
+  },
+  "webstorage/storage_clear.window.js": {
+    "total": 2
+  },
+  "webstorage/storage_enumerate.window.js": {
+    "total": 4
+  },
+  "webstorage/storage_functions_not_overwritten.window.js": {
+    "total": 2
+  },
+  "webstorage/storage_getitem.window.js": {
+    "total": 8
+  },
+  "webstorage/storage_in.window.js": {
+    "total": 4
+  },
+  "webstorage/storage_indexing.window.js": {
+    "total": 8
+  },
+  "webstorage/storage_key.window.js": {
+    "total": 22
+  },
+  "webstorage/storage_key_empty_string.window.js": {
+    "total": 2
+  },
+  "webstorage/storage_length.window.js": {
+    "total": 4
+  },
+  "webstorage/storage_local_quota_independent_from_session.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_local_setitem_quotaexceedederr.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_local_window_open.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_removeitem.window.js": {
+    "total": 8
+  },
+  "webstorage/storage_session_quota_independent_from_local.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_session_setitem_quotaexceedederr.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_session_window_noopener.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_session_window_open.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_session_window_reopen.window.js": {
+    "total": 1
+  },
+  "webstorage/storage_set_value_enumerate.window.js": {
+    "total": 2
+  },
+  "webstorage/storage_setitem.window.js": {
+    "total": 1106
+  },
+  "webstorage/storage_string_conversion.window.js": {
+    "total": 2
+  },
+  "webstorage/storage_supported_property_names.window.js": {
+    "total": 4
+  },
+  "webstorage/symbol-props.window.js": {
+    "total": 14
+  }
+}

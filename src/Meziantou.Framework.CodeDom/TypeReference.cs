@@ -2,10 +2,14 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a reference to a type, including support for generics, arrays, and nullable annotations.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeDom.Tests/TypeReferenceTests.cs" ref:region="TypeReference_Example" ref:dedent="true">
 /// var stringType = new TypeReference(typeof(string));
 /// var listOfInt = new TypeReference(typeof(List&lt;&gt;)).MakeGeneric(new TypeReference(typeof(int)));
 /// var intArray = new TypeReference(typeof(int)).MakeArray(1);
+///
+/// Assert.Equal("System.String", stringType.ClrFullTypeName);
+/// Assert.Equal("System.Collections.Generic.List&lt;System.Int32&gt;", listOfInt.ClrFullTypeName);
+/// Assert.Equal("System.Int32[]", intArray.ClrFullTypeName);
 /// </code>
 /// </example>
 public class TypeReference
@@ -115,7 +119,7 @@ public class TypeReference
                 if (_typeDeclarationParameters is null)
                 {
                     var collection = new List<TypeReference>();
-                    collection.AddRange(typeParameter.Parameters.Select(p => new TypeReference(p.Name ?? throw new InvalidOperationException("TypeReference has no name"))));
+                    collection.AddRange(typeParameter.Parameters.Select(p => new TypeReference(p)));
                     _typeDeclarationParameters = collection;
                 }
 
@@ -125,6 +129,8 @@ public class TypeReference
             return _parameters ??= [];
         }
     }
+
+    internal bool IsTypeParameter => _typeParameter is not null;
 
     /// <summary>Gets the fully qualified name of the referenced type.</summary>
     public string? TypeName

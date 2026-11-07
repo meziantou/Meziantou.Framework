@@ -1,0 +1,97 @@
+{
+  "spec": {
+    "title": "Image Resource",
+    "url": "https://w3c.github.io/image-resource/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "ImageResource": {
+        "fragment": "dictionary ImageResource {\n  required USVString src;\n  DOMString sizes;\n  DOMString type;\n  DOMString label;\n};",
+        "type": "dictionary",
+        "name": "ImageResource",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "src",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/image-resource/#dom-imageresource-src"
+          },
+          {
+            "type": "field",
+            "name": "sizes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/image-resource/#dom-imageresource-sizes"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/image-resource/#dom-imageresource-type"
+          },
+          {
+            "type": "field",
+            "name": "label",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/image-resource/#dom-imageresource-label"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/image-resource/#dom-imageresource"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "ImageResource": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

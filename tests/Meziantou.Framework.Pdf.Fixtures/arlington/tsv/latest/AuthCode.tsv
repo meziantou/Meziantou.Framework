@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+MACLocation	name	fn:Extension(ISO_TS_32004,2.0)		TRUE	fn:MustBeDirect()	FALSE		[Standalone,AttachedToSig]			ISO/TS 32004 Integrity protection, clause 5.2.3, Table 2
+ByteRange	array	fn:Extension(ISO_TS_32004,2.0)		fn:IsRequired(@MACLocation==Standalone)	fn:MustBeDirect()	FALSE			[fn:Eval((ByteRange::@0==0) && (ByteRange::@1>0) && (ByteRange::@2>ByteRange::@1) && (ByteRange::@3>=0))]	[ArrayOf_4Integers]	
+MAC	string-byte	fn:Extension(ISO_TS_32004,2.0)		fn:IsRequired(@MACLocation==Standalone)	fn:MustBeDirect()	FALSE			[fn:Eval(fn:AlwaysUnencrypted())]		
+SigObjRef	dictionary	fn:Extension(ISO_TS_32004,2.0)		fn:IsRequired(@MACLocation==AttachedToSig)	TRUE	FALSE				[Signature,DocTimeStamp]	

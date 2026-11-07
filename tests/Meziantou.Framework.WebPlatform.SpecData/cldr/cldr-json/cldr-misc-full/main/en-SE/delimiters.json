@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-SE": {
+      "identity": {
+        "language": "en",
+        "territory": "SE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

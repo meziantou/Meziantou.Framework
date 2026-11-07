@@ -1,0 +1,29 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.4		FALSE	FALSE	FALSE		[XObject]			Table 5, Table 93 and Table 399
+Subtype	name	1.4		TRUE	FALSE	FALSE		[Form]			
+FormType	integer	1.4		FALSE	FALSE	FALSE		[1]			
+BBox	rectangle	1.4		TRUE	FALSE	FALSE					
+Matrix	matrix	1.4		FALSE	FALSE	FALSE	[1 0 0 1 0 0]				
+Resources	dictionary	1.4		FALSE	FALSE	FALSE				[Resource]	
+Group	dictionary	1.4		FALSE	FALSE	FALSE				[GroupAttributes]	
+Ref	dictionary	1.4		FALSE	FALSE	FALSE				[Reference]	
+Metadata	stream	1.4		FALSE	TRUE	FALSE				[Metadata]	
+PieceInfo	dictionary	1.4		FALSE	FALSE	FALSE			[fn:Eval(fn:IsPresent(LastModified))]	[PagePiece]	
+LastModified	date	1.4		fn:IsRequired(fn:IsPresent(PieceInfo))	FALSE	FALSE					
+StructParent	integer	1.4		FALSE	FALSE	FALSE					Table 359
+StructParents	integer	1.4		FALSE	FALSE	FALSE					Table 359
+OPI	dictionary	1.4	2.0	FALSE	FALSE	FALSE				[OPIVersion13,OPIVersion20]	
+OC	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+Name	name	1.4	2.0	FALSE	FALSE	FALSE					
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+Measure	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[MeasureRL,MeasureGEO]	
+PtData	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[PointData]	
+Length	integer	1.4		TRUE	FALSE	FALSE					
+Filter	array;name	1.4		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfCompressionFilterNames];[]	
+DecodeParms	array;dictionary	1.4		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+F	dictionary;string	1.4		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.4		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfCompressionFilterNames];[]	
+FDecodeParms	array;dictionary	1.4		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+DL	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DL>=0)]		
+MarkStyle	string-text	1.4		FALSE	FALSE	FALSE					from Table 399 printer mark form dictionary
+Colorants	dictionary	1.4		FALSE	FALSE	FALSE				[ColorantsDict]	

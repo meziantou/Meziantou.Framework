@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary	1.7		FALSE	FALSE	FALSE				[RequirementsHandler]	Table 273, RH cell

@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE		[VRI]			Table 262 and ETSI EN 319 142-1 (PAdES) https://github.com/pdf-association/arlington-pdf-model/issues/121
+Cert	array	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE			[fn:Eval(fn:Extension(ETSI_PAdES,(fn:ArrayLength(Cert)>0)))]	[ArrayOfStreamsGeneral]	each stream is a DER-encoded X.509 certificate
+CRL	array	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		fn:IsRequired(fn:ArrayLength(parent::CRLs)>0)	FALSE	FALSE			[fn:Eval(fn:Extension(ETSI_PAdES,(fn:ArrayLength(CRL)>0)))]	[ArrayOfStreamsGeneral]	
+OCSP	array	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		fn:IsRequired(fn:ArrayLength(parent::OCSPs)>0)	FALSE	FALSE			[fn:Eval(fn:Extension(ETSI_PAdES,(fn:ArrayLength(OCSP)>0)))]	[ArrayOfStreamsGeneral]	
+TU	date	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE			[fn:Eval(fn:Extension(ETSI_PAdES,fn:Not(fn:IsPresent(TS))))]		
+TS	stream	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	TRUE	FALSE			[fn:Eval(fn:Extension(ETSI_PAdES,fn:Not(fn:IsPresent(TU))))]	[Stream]	DER-encoded timestamp

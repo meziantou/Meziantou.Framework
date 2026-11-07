@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+F	dictionary;string	1.2	2.0	TRUE	FALSE	FALSE				[FileSpecification];[]	Table 306
+Aspect	array	1.2	2.0	FALSE	FALSE	FALSE				[ArrayOf_2Numbers]	
+Rotate	integer	1.2	2.0	FALSE	FALSE	FALSE	0	[fn:Eval((@Rotate mod 90)==0)]			
+Poster	boolean;stream	1.2	2.0	FALSE	[FALSE];[TRUE]	FALSE	[false];[]			[];[XObjectImage]	

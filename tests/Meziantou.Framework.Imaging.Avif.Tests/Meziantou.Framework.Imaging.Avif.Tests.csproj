@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!-- AVIF container and decoding; the encoder has its own project (Meziantou.Framework.Imaging.AvifEncoder.Tests) -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+    <ImagingTestFixtureFormats>avif</ImagingTestFixtureFormats>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
+</Project>

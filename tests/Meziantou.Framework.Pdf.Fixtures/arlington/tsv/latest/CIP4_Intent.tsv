@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Intent]			ISO 21812-1:2019 Table 6
+CIP4_ProductType	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[BackCover,Body,Book,BookBlock,BookCase,Booklet,Box,Brochure,BusinessCard,Cover,CoverLetter,Envelope,FrontCover,Insert,Jacket,Label,Letter,Map,Newspaper,Notebook,Postcard,Poster,ResponseCard,Section,SelfMailer,Spine,WrapAroundCover,*]			
+CIP4_AssemblingIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_AssemblingIntent]	
+CIP4_BindingIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_BindingIntent]	
+CIP4_ColorIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_ColorIntent]	
+CIP4_FoldingIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_FoldingIntent]	
+CIP4_HoleMakingIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_HoleMakingIntent]	
+CIP4_LayoutIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_LayoutIntent]	
+CIP4_MediaIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_MediaIntent]	
+CIP4_ProductionIntent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_ProductionIntent]	https://github.com/pdf-association/pdf-issues/issues/459

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "da-GL": {
+      "identity": {
+        "language": "da",
+        "territory": "GL"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

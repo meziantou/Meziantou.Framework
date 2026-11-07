@@ -1,0 +1,440 @@
+{
+  "spec": {
+    "title": "Document Picture-in-Picture Specification",
+    "url": "https://wicg.github.io/document-picture-in-picture/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "DocumentPictureInPictureEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Window",
+          "DocumentPictureInPicture"
+        ]
+      }
+    },
+    "idlNames": {
+      "DocumentPictureInPicture": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface DocumentPictureInPicture : EventTarget {\n  [NewObject] Promise<Window> requestWindow(\n    optional DocumentPictureInPictureOptions options = {});\n  readonly attribute Window window;\n  attribute EventHandler onenter;\n};",
+        "type": "interface",
+        "name": "DocumentPictureInPicture",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "requestWindow",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Window"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DocumentPictureInPictureOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpicture-requestwindow"
+          },
+          {
+            "type": "attribute",
+            "name": "window",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Window"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpicture-window"
+          },
+          {
+            "type": "attribute",
+            "name": "onenter",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpicture-onenter"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/document-picture-in-picture/#documentpictureinpicture"
+      },
+      "DocumentPictureInPictureOptions": {
+        "fragment": "dictionary DocumentPictureInPictureOptions {\n  [EnforceRange] unsigned long long width = 0;\n  [EnforceRange] unsigned long long height = 0;\n  boolean disallowReturnToOpener = false;\n  boolean preferInitialWindowPlacement = false;\n};",
+        "type": "dictionary",
+        "name": "DocumentPictureInPictureOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpictureoptions-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpictureoptions-height"
+          },
+          {
+            "type": "field",
+            "name": "disallowReturnToOpener",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpictureoptions-disallowreturntoopener"
+          },
+          {
+            "type": "field",
+            "name": "preferInitialWindowPlacement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpictureoptions-preferinitialwindowplacement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/document-picture-in-picture/#dictdef-documentpictureinpictureoptions"
+      },
+      "DocumentPictureInPictureEvent": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface DocumentPictureInPictureEvent : Event {\n  constructor(DOMString type, DocumentPictureInPictureEventInit eventInitDict);\n  [SameObject] readonly attribute Window window;\n};",
+        "type": "interface",
+        "name": "DocumentPictureInPictureEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DocumentPictureInPictureEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpictureevent-documentpictureinpictureevent"
+          },
+          {
+            "type": "attribute",
+            "name": "window",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Window"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpictureevent-window"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/document-picture-in-picture/#documentpictureinpictureevent"
+      },
+      "DocumentPictureInPictureEventInit": {
+        "fragment": "dictionary DocumentPictureInPictureEventInit : EventInit {\n  required Window window;\n};",
+        "type": "dictionary",
+        "name": "DocumentPictureInPictureEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "window",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Window"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/document-picture-in-picture/#dom-documentpictureinpictureeventinit-window"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/document-picture-in-picture/#dictdef-documentpictureinpictureeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Window {\n  [SameObject, SecureContext] readonly attribute DocumentPictureInPicture\n    documentPictureInPicture;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "documentPictureInPicture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DocumentPictureInPicture"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/document-picture-in-picture/#dom-window-documentpictureinpicture"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Window",
+        "DocumentPictureInPicture",
+        "DocumentPictureInPictureEvent"
+      ]
+    },
+    "dependencies": {
+      "Window": [
+        "DocumentPictureInPicture"
+      ],
+      "DocumentPictureInPicture": [
+        "EventTarget",
+        "Window",
+        "DocumentPictureInPictureOptions",
+        "EventHandler"
+      ],
+      "DocumentPictureInPictureOptions": [],
+      "DocumentPictureInPictureEvent": [
+        "Event",
+        "DocumentPictureInPictureEventInit",
+        "Window"
+      ],
+      "DocumentPictureInPictureEventInit": [
+        "EventInit",
+        "Window"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "EventTarget",
+      "EventHandler",
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

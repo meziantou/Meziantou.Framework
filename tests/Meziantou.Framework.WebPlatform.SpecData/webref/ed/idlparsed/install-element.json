@@ -1,0 +1,507 @@
+{
+  "spec": {
+    "title": "Web Install",
+    "url": "https://wicg.github.io/install-element/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "HTMLInstallElement",
+          "InstallResultEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "InstallParams": {
+        "fragment": "dictionary InstallParams {\n  required USVString manifest;\n  USVString? manifestId;\n};",
+        "type": "dictionary",
+        "name": "InstallParams",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "manifest",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/install-element/#dom-installparams-manifest"
+          },
+          {
+            "type": "field",
+            "name": "manifestId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/install-element/#dom-installparams-manifestid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/install-element/#dom-installparams"
+      },
+      "WebInstallResult": {
+        "fragment": "dictionary WebInstallResult {};",
+        "type": "dictionary",
+        "name": "WebInstallResult",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/install-element/#dom-webinstallresult"
+      },
+      "HTMLInstallElement": {
+        "fragment": "[Exposed=Window]\ninterface HTMLInstallElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, ReflectURL] attribute USVString manifest;\n  [CEReactions, ReflectURL] attribute USVString manifestId;\n\n  readonly attribute boolean isValid;\n  readonly attribute DOMString invalidReason;\n  attribute EventHandler onvalidationstatuschange;\n};",
+        "type": "interface",
+        "name": "HTMLInstallElement",
+        "inheritance": "HTMLElement",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "HTMLConstructor",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "manifest",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "ReflectURL",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-manifest"
+          },
+          {
+            "type": "attribute",
+            "name": "manifestId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "ReflectURL",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-manifestid"
+          },
+          {
+            "type": "attribute",
+            "name": "isValid",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-isvalid"
+          },
+          {
+            "type": "attribute",
+            "name": "invalidReason",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-invalidreason"
+          },
+          {
+            "type": "attribute",
+            "name": "onvalidationstatuschange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-onvalidationstatuschange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement"
+      },
+      "InstallResult": {
+        "fragment": "enum InstallResult {\n  \"success\",\n  \"aborted\",\n  \"invalid-data\"\n};",
+        "type": "enum",
+        "name": "InstallResult",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "success",
+            "href": "https://wicg.github.io/install-element/#dom-installresult-success"
+          },
+          {
+            "type": "enum-value",
+            "value": "aborted",
+            "href": "https://wicg.github.io/install-element/#dom-installresult-aborted"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid-data",
+            "href": "https://wicg.github.io/install-element/#dom-installresult-invalid-data"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/install-element/#dom-installresult"
+      },
+      "InstallResultEvent": {
+        "fragment": "[Exposed=Window]\ninterface InstallResultEvent : Event {\n  constructor(DOMString type,\n              optional InstallResultEventInit eventInitDict = {});\n  readonly attribute InstallResult result;\n};",
+        "type": "interface",
+        "name": "InstallResultEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "InstallResultEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/install-element/#dom-installresultevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "result",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "InstallResult"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/install-element/#dom-installresultevent-result"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/install-element/#dom-installresultevent"
+      },
+      "InstallResultEventInit": {
+        "fragment": "dictionary InstallResultEventInit : EventInit {\n  InstallResult result = \"aborted\";\n};",
+        "type": "dictionary",
+        "name": "InstallResultEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "result",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "InstallResult"
+            },
+            "default": {
+              "type": "string",
+              "value": "aborted"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/install-element/#dom-installresulteventinit-result"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/install-element/#dom-installresulteventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext] Promise<WebInstallResult> install();\n  [SecureContext] Promise<WebInstallResult> install(InstallParams options);\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "install",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "WebInstallResult"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://wicg.github.io/install-element/#dom-navigator-install"
+            },
+            {
+              "type": "operation",
+              "name": "install",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "WebInstallResult"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "InstallParams"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://wicg.github.io/install-element/#dom-navigator-install!overload-1"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n  attribute EventHandler oninstallresult;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "oninstallresult",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/install-element/#dom-globaleventhandlers-oninstallresult"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "HTMLInstallElement",
+        "InstallResultEvent"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "WebInstallResult",
+        "InstallParams"
+      ],
+      "InstallParams": [],
+      "WebInstallResult": [],
+      "HTMLInstallElement": [
+        "HTMLElement",
+        "EventHandler"
+      ],
+      "GlobalEventHandlers": [
+        "EventHandler"
+      ],
+      "InstallResultEvent": [
+        "Event",
+        "InstallResultEventInit",
+        "InstallResult"
+      ],
+      "InstallResultEventInit": [
+        "EventInit",
+        "InstallResult"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "HTMLElement",
+      "EventHandler",
+      "GlobalEventHandlers",
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

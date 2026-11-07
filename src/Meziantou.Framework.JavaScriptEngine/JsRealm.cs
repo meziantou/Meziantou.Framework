@@ -1,0 +1,334 @@
+namespace Meziantou.Framework.JavaScriptEngine;
+
+/// <summary>A realm (https://tc39.es/ecma262/#sec-code-realms): a global object, its global environment and the intrinsics.</summary>
+public sealed partial class JsRealm
+{
+    internal JsRealm(JsEngine engine)
+    {
+        Engine = engine;
+        var previousRealm = engine.CurrentRealm;
+        engine.CurrentRealm = this;
+        try
+        {
+            Intrinsics = new Intrinsics(this);
+            GlobalObject = new JsObject(Intrinsics.ObjectPrototype);
+            GlobalThis = new JsValue(GlobalObject);
+            GlobalEnvironment = new Interpreter.GlobalEnvironment(this);
+            Intrinsics.Initialize(GlobalObject);
+        }
+        finally
+        {
+            engine.CurrentRealm = previousRealm ?? this;
+        }
+    }
+
+    /// <summary>Gets the engine (the agent) of the realm.</summary>
+    public JsEngine Engine { get; }
+
+    /// <summary>Gets the global object ([[GlobalObject]]).</summary>
+    public JsObject GlobalObject { get; }
+
+    /// <summary>Gets the <c>this</c> value of the global code ([[GlobalThisValue]] of the global environment): the global object, unless the host set another object with <see cref="SetGlobalThis"/>.</summary>
+    public JsValue GlobalThis { get; private set; }
+
+    /// <summary>
+    /// Sets the <c>this</c> value of the global code ([[GlobalThisValue]] of the global environment), the host-defined this
+    /// value of InitializeHostDefinedRealm (https://tc39.es/ecma262/#sec-initializehostdefinedrealm): e.g. the WindowProxy
+    /// of a window, whose global object is the Window. It is the <c>this</c> of the scripts, of the sloppy functions called
+    /// without a this value and of the indirect evals, and the value of the <c>globalThis</c> property. Call it before any
+    /// code runs in the realm.
+    /// </summary>
+    /// <param name="thisValue">The object.</param>
+    public void SetGlobalThis(JsObject thisValue)
+    {
+        ArgumentNullException.ThrowIfNull(thisValue);
+        GlobalThis = new JsValue(thisValue);
+
+        // https://tc39.es/ecma262/#sec-globalthis: the value of globalThis is [[GlobalThisValue]]
+        if (GlobalObject.GetOwnProperty("globalThis", out var descriptor) && descriptor.IsDataDescriptor)
+        {
+            GlobalObject.DefineOwnProperty("globalThis", PropertyDescriptor.Data(GlobalThis, descriptor.Flags));
+        }
+    }
+
+    internal Intrinsics Intrinsics { get; }
+
+    /// <summary>Gets the global environment of the realm.</summary>
+    internal Interpreter.GlobalEnvironment GlobalEnvironment { get; }
+
+    /// <summary>
+    /// Gets the template objects of the tagged templates ([[TemplateMap]]). It is created on first use: the container of a
+    /// ConditionalWeakTable is finalized twice, which keeps it alive for two more collections.
+    /// </summary>
+    internal System.Runtime.CompilerServices.ConditionalWeakTable<Compiler.TemplateSite, JsArray> TemplateRegistry => field ??= [];
+
+    /// <summary>Runs a script in this realm (ScriptEvaluation) and returns its completion value.</summary>
+    /// <param name="code">The source text of the script.</param>
+    /// <param name="url">The URL (or file name) of the script, used in the stack traces and the error locations.</param>
+    /// <exception cref="JsException">The script threw an exception (a SyntaxError for an invalid script).</exception>
+    public JsValue Execute(string code, string? url = null)
+    {
+        // The parsing and the compilation are part of the entry: the limits apply to them
+        using var entry = Engine.EnterHostEntry();
+        var source = new Text.SourceText(code, url) { IsInstrumented = Engine.Options.Debugger is not null };
+        return Run(source, Compile(source), hostDefined: null, mutedErrors: false);
+    }
+
+    /// <summary>Runs a prepared script in this realm (ScriptEvaluation) and returns its completion value.</summary>
+    /// <param name="script">The script.</param>
+    /// <param name="hostDefined">The data of the host associated with the script ([[HostDefined]]).</param>
+    /// <param name="mutedErrors">Whether the errors of the script are muted (a cross-origin script fetched without CORS).</param>
+    /// <exception cref="JsException">The script threw an exception.</exception>
+    public JsValue Execute(JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false)
+    {
+        ArgumentNullException.ThrowIfNull(script);
+        using var entry = Engine.EnterHostEntry();
+        if (Engine.Options.Debugger is not null && !script.Source.IsInstrumented)
+        {
+            // A prepared script is compiled without the instructions of the debugger
+            var source = new Text.SourceText(script.Source.Text, script.Source.Url, script.Source.LineOffset, script.Source.ColumnOffset)
+            {
+                UnboundNameFunctionStart = script.Source.UnboundNameFunctionStart,
+                IsInstrumented = true,
+            };
+
+            return Run(source, Compile(source), hostDefined, mutedErrors);
+        }
+
+        return Run(script.Source, script.Template, hostDefined, mutedErrors);
+    }
+
+    private JsValue Run(Text.SourceText source, Compiler.FunctionTemplate template, object? hostDefined, bool mutedErrors)
+    {
+        var script = new JsScript(this, source, hostDefined, mutedErrors);
+        var frame = new Interpreter.Frame(template, this, GlobalEnvironment, [])
+        {
+            Script = script,
+            This = GlobalThis,
+        };
+
+        return Interpreter.JsInterpreter.Run(frame);
+    }
+
+    private Compiler.FunctionTemplate Compile(Text.SourceText source)
+    {
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            try
+            {
+                var program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
+                return Compiler.CodeGenerator.CompileProgram(program, source, Compiler.ProgramKind.Script, isStrict: false);
+            }
+            catch (JsSyntaxErrorException ex)
+            {
+                throw ThrowHelper.CreateSyntaxErrorException(ex);
+            }
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>Parses a module (ParseModule). The module is then loaded, linked and evaluated with the methods of <see cref="JsModule"/>.</summary>
+    /// <param name="code">The source text of the module.</param>
+    /// <param name="url">The URL (or file name) of the module, used to resolve its imports and in the stack traces.</param>
+    /// <param name="hostDefined">The data of the host associated with the module.</param>
+    /// <exception cref="JsException">The module is not valid (a SyntaxError).</exception>
+    public JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => ParseModule(code, url, hostDefined, lineOffset: 0, columnOffset: 0);
+
+    /// <summary>Parses a module (ParseModule) whose source text is a part of a document (e.g. an inline module script of an HTML document).</summary>
+    /// <param name="code">The source text of the module.</param>
+    /// <param name="url">The URL (or file name) of the module, used to resolve its imports and in the stack traces.</param>
+    /// <param name="hostDefined">The data of the host associated with the module.</param>
+    /// <param name="lineOffset">The number of lines before the code in its document.</param>
+    /// <param name="columnOffset">The column of the code in the first line of its document (0-based).</param>
+    /// <exception cref="JsException">The module is not valid (a SyntaxError, located at the error).</exception>
+    public JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+        using var entry = Engine.EnterHostEntry();
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            return JsSourceTextModule.Parse(this, new Text.SourceText(code, url, lineOffset, columnOffset) { IsInstrumented = Engine.Options.Debugger is not null }, hostDefined);
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>Creates a JSON module (ParseJSONModule): a module whose default export is the parsed JSON value.</summary>
+    /// <exception cref="JsException">The text is not valid JSON (a SyntaxError).</exception>
+    public JsSyntheticModule CreateJsonModule(string json, string? url = null, object? hostDefined = null)
+    {
+        using var scope = Engine.Enter();
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            var value = JsonParser.Parse(this, json, trackSource: false, out _);
+            return new JsSyntheticModule(this, url, hostDefined, ["default"], module => module.SetExport("default", value));
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>
+    /// Creates a text module (CreateTextModule, the import text proposal): a module whose default export is the text,
+    /// imported with <c>with { type: "text" }</c>.
+    /// </summary>
+    public JsSyntheticModule CreateTextModule(string text, string? url = null, object? hostDefined = null)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var value = JsValue.FromString(text);
+        return new JsSyntheticModule(this, url, hostDefined, ["default"], module => module.SetExport("default", value));
+    }
+
+    /// <summary>
+    /// Creates a bytes module (CreateBytesModule, the import bytes proposal): a module whose default export is a
+    /// Uint8Array over an immutable ArrayBuffer that contains a copy of the bytes, imported with <c>with { type: "bytes" }</c>.
+    /// </summary>
+    /// <exception cref="JsException">The ArrayBuffer cannot be allocated (a RangeError).</exception>
+    public JsSyntheticModule CreateBytesModule(ReadOnlySpan<byte> bytes, string? url = null, object? hostDefined = null)
+    {
+        using var scope = Engine.Enter();
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            var buffer = JsArrayBuffer.CreateImmutable(this, bytes.Length, bytes);
+            var value = new JsValue(JsTypedArray.Create(this, TypedArrayElementType.Uint8, buffer, byteOffset: 0, bytes.Length));
+            return new JsSyntheticModule(this, url, hostDefined, ["default"], module => module.SetExport("default", value));
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>Creates a synthetic module whose exports are set by <paramref name="evaluate"/> with <see cref="JsSyntheticModule.SetExport"/> when the module is evaluated.</summary>
+    public JsSyntheticModule CreateSyntheticModule(IEnumerable<string> exportNames, Action<JsSyntheticModule> evaluate, string? url = null, object? hostDefined = null)
+    {
+        ArgumentNullException.ThrowIfNull(exportNames);
+        ArgumentNullException.ThrowIfNull(evaluate);
+        return new JsSyntheticModule(this, url, hostDefined, exportNames, evaluate);
+    }
+
+    /// <summary>Evaluates code in this realm as an indirect <c>eval</c> and returns its completion value.</summary>
+    /// <exception cref="JsException">The code threw an exception (a SyntaxError for invalid code).</exception>
+    public JsValue Evaluate(string code)
+    {
+        using var scope = Engine.Enter();
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            return Interpreter.JsInterpreter.IndirectEval(this, code);
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>Creates a native error object of this realm.</summary>
+    internal JsObject CreateError(ErrorType type, string message)
+    {
+        var error = new JsErrorObject(Intrinsics.GetErrorPrototype(type));
+        error.DefineBuiltIn("message", message);
+        error.CaptureStackTrace(Engine);
+        return error;
+    }
+
+    /// <summary>CreateBuiltinFunction: a function of this realm implemented by a .NET callback.</summary>
+    internal JsBuiltinFunction CreateBuiltinFunction(PropertyKey name, int length, BuiltinFunctionCallback callback, bool isConstructor = false, JsObject? prototype = null, string? prefix = null)
+    {
+        var function = new JsBuiltinFunction(this, callback, isConstructor, prototype ?? Intrinsics.FunctionPrototype);
+
+        // Most built-in functions only have their length and their name
+        function.ReserveSlots(2);
+        function.SetFunctionLength(length);
+        if (prefix is null && name.IsString && GetBuiltinName(name.AsString()) is { } sharedName)
+        {
+            // The names of the built-in functions are the same in each realm: their string values are shared
+            function.SetFunctionName(sharedName);
+        }
+        else
+        {
+            function.SetFunctionName(name, prefix);
+        }
+
+        return function;
+    }
+
+    // The string values of the names of the built-in functions (the names come from the code that defines them; the host
+    // can create functions with any name: the cache is bounded)
+    private const int MaxBuiltinNames = 8192;
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, JsString> BuiltinNames = new(StringComparer.Ordinal);
+    private static int s_builtinNameCount;
+
+    private static JsString? GetBuiltinName(string name)
+    {
+        if (BuiltinNames.TryGetValue(name, out var value))
+            return value;
+
+        if (Volatile.Read(ref s_builtinNameCount) >= MaxBuiltinNames)
+            return null;
+
+        Interlocked.Increment(ref s_builtinNameCount);
+        return BuiltinNames.GetOrAdd(name, JsString.Create(name));
+    }
+
+    /// <summary>
+    /// Defines a built-in method (writable, configurable, not enumerable by default). Its function object is created on
+    /// first access (<see cref="LazyBuiltinMethod"/>): a realm defines hundreds of methods, most scripts use a few of them.
+    /// </summary>
+    internal void DefineMethod(JsObject target, PropertyKey name, int length, BuiltinFunctionCallback callback, PropertyFlags flags = PropertyFlags.BuiltIn)
+    {
+        target.DefineLazy(name, new LazyBuiltinMethod(this, name, length, callback), flags);
+    }
+
+    /// <summary>
+    /// Defines the built-in methods of a static table, in order. Their function objects are created on first access (<see
+    /// cref="LazyBuiltinMethodTable"/>): the realm allocates one object for the table, not one per method.
+    /// </summary>
+    internal void DefineMethods(JsObject target, BuiltinMethodTable methodTable)
+    {
+        var methods = methodTable.Methods;
+        var table = new LazyBuiltinMethodTable(this, methods);
+        target.ReservePropertiesForBuiltIns(methodTable);
+        for (var i = 0; i < methods.Length; i++)
+        {
+            ref readonly var method = ref methods[i];
+            target.DefineLazy(method.Name, table, i, method.Flags);
+        }
+    }
+
+    /// <summary>
+    /// Defines a built-in method whose function object is created now: the caller needs it (an intrinsic, a function shared by
+    /// two properties, or a function with a state).
+    /// </summary>
+    internal JsBuiltinFunction DefineEagerMethod(JsObject target, PropertyKey name, int length, BuiltinFunctionCallback callback, PropertyFlags flags = PropertyFlags.BuiltIn)
+    {
+        var function = CreateBuiltinFunction(name, length, callback);
+        target.UsePropertyTableForBuiltIns();
+        target.DefineBuiltIn(name, function, flags);
+        return function;
+    }
+
+    /// <summary>
+    /// Defines a built-in accessor property; the getter is named "get name" and the setter "set name". The functions are
+    /// created on first access (<see cref="LazyBuiltinAccessorPair"/>).
+    /// </summary>
+    internal void DefineAccessor(JsObject target, PropertyKey name, BuiltinFunctionCallback? getter, BuiltinFunctionCallback? setter, PropertyFlags flags = PropertyFlags.Configurable)
+    {
+        target.DefineBuiltInAccessor(name, new LazyBuiltinAccessorPair(this, name, getter, setter), flags);
+    }
+}

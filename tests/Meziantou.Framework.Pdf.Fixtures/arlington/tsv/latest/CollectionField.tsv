@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	FALSE	FALSE		[CollectionField]			Table 155
+Subtype	name	1.7		TRUE	FALSE	FALSE		[S,D,N,F,Desc,ModDate,CreationDate,Size,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,CompressedSize)),fn:SinceVersion(2.0,CompressedSize)]			
+N	string-text	1.7		TRUE	FALSE	FALSE					
+O	integer	1.7		FALSE	FALSE	FALSE					
+V	boolean	1.7		FALSE	FALSE	FALSE	true				
+E	boolean	1.7		FALSE	FALSE	FALSE	false				

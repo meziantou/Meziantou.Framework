@@ -1,0 +1,216 @@
+{
+  "spec": {
+    "title": "CSS Masking Module Level 1",
+    "url": "https://drafts.csswg.org/css-masking-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "SVGClipPathElement",
+          "SVGMaskElement"
+        ]
+      }
+    },
+    "idlNames": {
+      "SVGClipPathElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGClipPathElement : SVGElement {\n  readonly attribute SVGAnimatedEnumeration clipPathUnits;\n  readonly attribute SVGAnimatedTransformList transform;\n};",
+        "type": "interface",
+        "name": "SVGClipPathElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "clipPathUnits",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgclippathelement-clippathunits"
+          },
+          {
+            "type": "attribute",
+            "name": "transform",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedTransformList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgclippathelement-transform"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-masking-1/#svgclippathelement"
+      },
+      "SVGMaskElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGMaskElement : SVGElement {\n  readonly attribute SVGAnimatedEnumeration maskUnits;\n  readonly attribute SVGAnimatedEnumeration maskContentUnits;\n  readonly attribute SVGAnimatedLength x;\n  readonly attribute SVGAnimatedLength y;\n  readonly attribute SVGAnimatedLength width;\n  readonly attribute SVGAnimatedLength height;\n};",
+        "type": "interface",
+        "name": "SVGMaskElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "maskUnits",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-maskunits"
+          },
+          {
+            "type": "attribute",
+            "name": "maskContentUnits",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-maskcontentunits"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-y"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-height"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-masking-1/#svgmaskelement"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SVGClipPathElement",
+        "SVGMaskElement"
+      ]
+    },
+    "dependencies": {
+      "SVGClipPathElement": [
+        "SVGElement",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedTransformList"
+      ],
+      "SVGMaskElement": [
+        "SVGElement",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedLength"
+      ]
+    },
+    "externalDependencies": [
+      "SVGElement",
+      "SVGAnimatedEnumeration",
+      "SVGAnimatedTransformList",
+      "SVGAnimatedLength"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

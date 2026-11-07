@@ -1,14 +1,16 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
-    <Version>3.0.1</Version>
+    <Version>4.0.3</Version>
     <Description>Generate optimized enum helper methods</Description>
+    <PackageTags>enum, source-generator, roslyn, performance, codegen</PackageTags>
 
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <NoWarn>$(NoWarn);RS1041</NoWarn>
+    <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework/Collections/ImmutableEquatableArray.cs" LinkBase="Collections" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

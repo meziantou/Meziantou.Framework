@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[CryptFilterDecodeParms]			Table 14
+Name	name	1.5		FALSE	FALSE	FALSE	Identity		[fn:Eval(fn:InKeyMap(trailer::Encrypt::CF) || (@Name==Identity))]		

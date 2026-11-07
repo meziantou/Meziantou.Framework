@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	FALSE	FALSE		[CollectionSchema]			Table 154
+*	dictionary	1.7		FALSE	FALSE	FALSE				[CollectionField]	

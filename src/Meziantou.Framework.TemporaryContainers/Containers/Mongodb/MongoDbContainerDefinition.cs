@@ -9,7 +9,9 @@ public sealed class MongoDbContainerDefinition : ContainerDefinition
         : base(image)
     {
         RootUsername = "root";
-        RootPassword = ContainerCredentialGenerator.GenerateStrongPassword(DefaultPasswordLength);
+
+        // Generated rather than set, so a container adopted through ReuseId is reached with the password it was created with.
+        SetGeneratedEnvironmentValue("MONGO_INITDB_ROOT_PASSWORD", ContainerCredentialGenerator.GenerateStrongPassword(DefaultPasswordLength));
     }
 
     /// <summary>Gets or sets the MongoDB root username. Setting this value updates <c>MONGO_INITDB_ROOT_USERNAME</c> in <see cref="ContainerDefinition.Environment"/>.</summary>
@@ -44,6 +46,6 @@ public sealed class MongoDbContainerDefinition : ContainerDefinition
     /// <returns>A new MongoDB container.</returns>
     public override MongoDbContainer CreateContainer()
     {
-        return new MongoDbContainer(new ContainerDefinition(this), RootUsername, RootPassword);
+        return new MongoDbContainer(new ContainerDefinition(this));
     }
 }

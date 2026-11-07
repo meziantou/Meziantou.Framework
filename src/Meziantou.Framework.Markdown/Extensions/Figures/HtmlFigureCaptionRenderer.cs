@@ -1,0 +1,35 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+
+namespace Meziantou.Framework.Markdown.Extensions.Figures;
+
+/// <summary>
+/// A HTML renderer for a <see cref="FigureCaption"/>.
+/// </summary>
+/// <seealso cref="HtmlObjectRenderer{FigureCaption}" />
+public class HtmlFigureCaptionRenderer : HtmlObjectRenderer<FigureCaption>
+{
+    /// <summary>
+    /// Writes the object to the specified renderer.
+    /// </summary>
+    protected override void Write(HtmlRenderer renderer, FigureCaption obj)
+    {
+        renderer.EnsureLine();
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.Write("<figcaption").WriteAttributes(obj).Write('>');
+        }
+
+        renderer.WriteLeafInline(obj);
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.WriteLine("</figcaption>");
+        }
+
+        renderer.EnsureLine();
+    }
+}

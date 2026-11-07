@@ -1,0 +1,15 @@
+{
+  "main": {
+    "guz": {
+      "identity": {
+        "language": "guz"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

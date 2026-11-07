@@ -1,0 +1,10 @@
+mfrac {
+  padding-inline: 1px;
+}
+mfrac > * {
+  math-depth: auto-add;
+  math-style: compact;
+}
+mfrac > :nth-child(2) {
+  math-shift: compact;
+}

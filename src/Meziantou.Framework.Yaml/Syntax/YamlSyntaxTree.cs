@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Yaml.Tokens;
 
 namespace Meziantou.Framework.Yaml.Syntax;
@@ -43,22 +44,17 @@ public sealed class YamlSyntaxTree
         ValidateYaml(yaml);
 
         var tokens = new List<YamlSyntaxToken>();
+        AddScannerTokens(yaml, tokens);
         if (options.IncludeTrivia)
         {
-            AddTriviaTokens(yaml, tokens);
+            // Trivia is read from the text the scanner did not claim: a '#' inside a quoted or block scalar is
+            // content, not the start of a comment.
+            AddTriviaTokens(yaml, tokens, GetUncoveredRanges(yaml, tokens));
         }
 
-        AddScannerTokens(yaml, tokens);
-        tokens.Sort(static (left, right) =>
-        {
-            var position = left.Span.Start.Index.CompareTo(right.Span.Start.Index);
-            if (position != 0)
-            {
-                return position;
-            }
-
-            return left.Span.End.Index.CompareTo(right.Span.End.Index);
-        });
+        // The sort must be stable: the scanner emits several empty tokens at the same position (KEY and
+        // BLOCK-MAPPING-START, BLOCK-END and STREAM-END), and their order must not depend on the trivia around them.
+        tokens = [.. tokens.OrderBy(token => token.Span.Start.Index).ThenBy(token => token.Span.End.Index)];
 
         var endMark = CreateMark(yaml, yaml.Length);
         var fullSpan = new YamlSourceSpan(new Mark(0, 0, 0), endMark);
@@ -143,13 +139,63 @@ public sealed class YamlSyntaxTree
         return value;
     }
 
-    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target)
+    /// <summary>Gets the ranges of <paramref name="yaml"/> that no scanner token covers, in source order.</summary>
+    private static List<(int Start, int End)> GetUncoveredRanges(string yaml, List<YamlSyntaxToken> tokens)
     {
-        var index = 0;
-        var line = 0;
-        var column = 0;
+        var covered = new List<(int Start, int End)>(tokens.Count);
+        foreach (var token in tokens)
+        {
+            var start = Clamp(token.Span.Start.Index, 0, yaml.Length);
+            var end = Clamp(token.Span.End.Index, start, yaml.Length);
+            if (end > start)
+            {
+                covered.Add((start, end));
+            }
+        }
 
-        while (index < yaml.Length)
+        covered.Sort(static (left, right) => left.Start.CompareTo(right.Start));
+
+        var result = new List<(int Start, int End)>();
+        var cursor = 0;
+        foreach (var (start, end) in covered)
+        {
+            if (start > cursor)
+            {
+                result.Add((cursor, start));
+            }
+
+            if (end > cursor)
+            {
+                cursor = end;
+            }
+        }
+
+        if (cursor < yaml.Length)
+        {
+            result.Add((cursor, yaml.Length));
+        }
+
+        return result;
+    }
+
+    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target, List<(int Start, int End)> ranges)
+    {
+        // The ranges are in source order, so the position of each one is computed from the previous one. Computing it
+        // from the start of the text for every range would make parsing quadratic in the size of the document.
+        var cursor = new MarkCursor();
+        foreach (var range in ranges)
+        {
+            AddTriviaTokens(yaml, target, range.Start, range.End, cursor.MoveTo(yaml, range.Start));
+        }
+    }
+
+    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target, int rangeStart, int rangeEnd, Mark startMark)
+    {
+        var index = rangeStart;
+        var line = startMark.Line;
+        var column = startMark.Column;
+
+        while (index < rangeEnd)
         {
             var start = new Mark(index, line, column);
             var current = yaml[index];
@@ -158,7 +204,7 @@ public sealed class YamlSyntaxTree
                 var cursor = index + 1;
                 var endLine = line;
                 var endColumn = column + 1;
-                while (cursor < yaml.Length && yaml[cursor] != '\r' && yaml[cursor] != '\n')
+                while (cursor < rangeEnd && yaml[cursor] != '\r' && yaml[cursor] != '\n')
                 {
                     cursor++;
                     endColumn++;
@@ -179,7 +225,7 @@ public sealed class YamlSyntaxTree
             if (current == '\r' || current == '\n')
             {
                 var cursor = index;
-                if (current == '\r' && cursor + 1 < yaml.Length && yaml[cursor + 1] == '\n')
+                if (current == '\r' && cursor + 1 < rangeEnd && yaml[cursor + 1] == '\n')
                 {
                     cursor += 2;
                 }
@@ -204,7 +250,7 @@ public sealed class YamlSyntaxTree
             {
                 var cursor = index + 1;
                 var endColumn = column + 1;
-                while (cursor < yaml.Length && (yaml[cursor] == ' ' || yaml[cursor] == '\t'))
+                while (cursor < rangeEnd && (yaml[cursor] == ' ' || yaml[cursor] == '\t'))
                 {
                     cursor++;
                     endColumn++;
@@ -228,34 +274,38 @@ public sealed class YamlSyntaxTree
 
     private static Mark CreateMark(string yaml, int index)
     {
-        var line = 0;
-        var column = 0;
-        for (var cursor = 0; cursor < index && cursor < yaml.Length; cursor++)
+        return new MarkCursor().MoveTo(yaml, index);
+    }
+
+    /// <summary>Tracks the line and column of a position that only moves forward.</summary>
+    /// <remarks>A <c>\r\n</c> pair is a single line break, and a lone <c>\r</c> or <c>\n</c> is one too.</remarks>
+    [StructLayout(LayoutKind.Auto)]
+    private struct MarkCursor
+    {
+        private int _index;
+        private int _line;
+        private int _column;
+
+        public Mark MoveTo(string yaml, int index)
         {
-            var ch = yaml[cursor];
-            if (ch == '\r')
+            while (_index < index && _index < yaml.Length)
             {
-                if (cursor + 1 < index && cursor + 1 < yaml.Length && yaml[cursor + 1] == '\n')
+                var ch = yaml[_index];
+                if (ch == '\r' || (ch == '\n' && (_index == 0 || yaml[_index - 1] != '\r')))
                 {
-                    cursor++;
+                    _line++;
+                    _column = 0;
+                }
+                else if (ch != '\n')
+                {
+                    _column++;
                 }
 
-                line++;
-                column = 0;
-                continue;
+                _index++;
             }
 
-            if (ch == '\n')
-            {
-                line++;
-                column = 0;
-                continue;
-            }
-
-            column++;
+            return new Mark(index, _line, _column);
         }
-
-        return new Mark(index, line, column);
     }
 
     private static YamlSyntaxKind MapTokenKind(Token token)

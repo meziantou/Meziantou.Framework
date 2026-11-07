@@ -1,0 +1,15 @@
+{
+  "main": {
+    "yrl": {
+      "identity": {
+        "language": "yrl"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

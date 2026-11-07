@@ -22,5 +22,5 @@ internal sealed class YamlCharConverter : YamlConverter<char>
     }
 
     public override void Write(YamlWriter writer, char value)
-        => writer.WriteScalar(value.ToString());
+        => writer.WriteScalar(value);
 }

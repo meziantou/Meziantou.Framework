@@ -1,0 +1,15 @@
+{
+  "main": {
+    "pa": {
+      "identity": {
+        "language": "pa"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

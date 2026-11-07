@@ -4,5 +4,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
   </Folder>
 </Solution>

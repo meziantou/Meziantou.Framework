@@ -11,8 +11,7 @@ internal sealed class FilterEngineProvider
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IOptions<DnsProxyOptions> _options;
     private readonly ILogger<FilterEngineProvider> _logger;
-    private DnsFilterEngine _engine;
-    private int _ruleCount;
+    private FilterSnapshot _snapshot;
 
     public FilterEngineProvider(IHttpClientFactory httpClientFactory, IOptions<DnsProxyOptions> options, ILogger<FilterEngineProvider> logger)
     {
@@ -22,13 +21,12 @@ internal sealed class FilterEngineProvider
 
         var initialRuleSet = new DnsFilterRuleSet();
         AddCachedFilterLists(initialRuleSet, options.Value);
-        _engine = new DnsFilterEngine(initialRuleSet);
-        _ruleCount = initialRuleSet.Rules.Count;
+        _snapshot = FilterSnapshot.Create(initialRuleSet);
     }
 
-    public DnsFilterEngine Engine => Volatile.Read(ref _engine);
+    public DnsFilterEngine Engine => Volatile.Read(ref _snapshot).Engine;
 
-    public int RuleCount => Volatile.Read(ref _ruleCount);
+    public int RuleCount => Volatile.Read(ref _snapshot).RuleCount;
 
     public async Task RefreshAsync(CancellationToken cancellationToken)
     {
@@ -61,7 +59,7 @@ internal sealed class FilterEngineProvider
         activity?.SetTag("dns_proxy.filter.count", filterCount);
         activity?.SetTag("dns_proxy.filter.loaded_count", loadedFilterCount);
         activity?.SetTag("dns_proxy.filter.failed_count", failedFilterCount);
-        activity?.SetTag("dns_proxy.rule.count", ruleSet.Rules.Count);
+        activity?.SetTag("dns_proxy.rule.count", ruleSet.Count);
 
         if (failedFilterCount == 0)
         {
@@ -72,8 +70,7 @@ internal sealed class FilterEngineProvider
             activity?.SetStatus(ActivityStatusCode.Error, $"{failedFilterCount} filter lists failed to load");
         }
 
-        Volatile.Write(ref _ruleCount, ruleSet.Rules.Count);
-        Volatile.Write(ref _engine, new DnsFilterEngine(ruleSet));
+        Volatile.Write(ref _snapshot, FilterSnapshot.Create(ruleSet));
     }
 
     private async Task<bool> TryLoadFilterAsync(HttpClient httpClient, DnsFilterRuleSet ruleSet, DnsProxyOptions options, FilterListOption filter, CancellationToken cancellationToken)
@@ -88,11 +85,13 @@ internal sealed class FilterEngineProvider
                 : DnsFilterListFormat.AutoDetect;
             activity?.SetTag("dns_proxy.filter.format", format.ToString());
 
-            var ruleCount = ruleSet.Rules.Count;
-            var listText = await httpClient.GetStringAsync(filter.Url, cancellationToken).ConfigureAwait(false);
-            ruleSet.AddFromList(listText, format);
+            var ruleCount = ruleSet.Count;
+            var listText = await DownloadFilterListAsync(httpClient, options, filter, cancellationToken).ConfigureAwait(false);
+            var diagnostics = ruleSet.AddFromList(listText, format);
             await WriteFilterListToCacheAsync(options, filter, listText, cancellationToken).ConfigureAwait(false);
-            activity?.SetTag("dns_proxy.filter.rule_count", ruleSet.Rules.Count - ruleCount);
+            activity?.SetTag("dns_proxy.filter.rule_count", ruleSet.Count - ruleCount);
+            activity?.SetTag("dns_proxy.filter.skipped_line_count", diagnostics.Count);
+            LogSkippedLines(filter, diagnostics);
             activity?.SetStatus(ActivityStatusCode.Ok);
 
             return true;
@@ -109,6 +108,33 @@ internal sealed class FilterEngineProvider
 
             return false;
         }
+    }
+
+    /// <summary>
+    /// Downloads a filter list with an explicit size limit and timeout. The lists are third-party URLs, so an
+    /// oversized or slow response must not be buffered into memory unbounded.
+    /// </summary>
+    private static async Task<string> DownloadFilterListAsync(HttpClient httpClient, DnsProxyOptions options, FilterListOption filter, CancellationToken cancellationToken)
+    {
+        var maxSize = options.MaxFilterListSizeInBytes > 0 ? options.MaxFilterListSizeInBytes : long.MaxValue;
+
+        using var timeout = options.FilterDownloadTimeout > TimeSpan.Zero ? new CancellationTokenSource(options.FilterDownloadTimeout) : null;
+        using var linked = timeout is null
+            ? null
+            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        var downloadCancellationToken = linked?.Token ?? cancellationToken;
+
+        using var response = await httpClient.GetAsync(filter.Url, HttpCompletionOption.ResponseHeadersRead, downloadCancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        if (response.Content.Headers.ContentLength is { } contentLength && contentLength > maxSize)
+            throw new InvalidOperationException($"The filter list '{filter.Url}' is {contentLength} bytes, which exceeds the {maxSize} bytes limit.");
+
+        using var stream = await response.Content.ReadAsStreamAsync(downloadCancellationToken).ConfigureAwait(false);
+        using var limitedStream = new LimitedStream(stream, maxSize, filter.Url);
+        using var reader = new StreamReader(limitedStream);
+
+        return await reader.ReadToEndAsync(downloadCancellationToken).ConfigureAwait(false);
     }
 
     private void AddCachedFilterLists(DnsFilterRuleSet ruleSet, DnsProxyOptions options)
@@ -135,7 +161,7 @@ internal sealed class FilterEngineProvider
             }
 
             var listText = File.ReadAllText(cacheFilePath);
-            AddFilterList(ruleSet, filter, listText);
+            LogSkippedLines(filter, AddFilterList(ruleSet, filter, listText));
         }
         catch (Exception ex)
         {
@@ -186,12 +212,30 @@ internal sealed class FilterEngineProvider
         }
     }
 
-    private static void AddFilterList(DnsFilterRuleSet ruleSet, FilterListOption filter, string listText)
+    private static IReadOnlyList<DnsFilterParseDiagnostic> AddFilterList(DnsFilterRuleSet ruleSet, FilterListOption filter, string listText)
     {
         var format = Enum.TryParse<DnsFilterListFormat>(filter.Format, ignoreCase: true, out var parsedFormat)
             ? parsedFormat
             : DnsFilterListFormat.AutoDetect;
-        ruleSet.AddFromList(listText, format);
+
+        return ruleSet.AddFromList(listText, format);
+    }
+
+    /// <summary>
+    /// A list whose lines were mostly discarded is indistinguishable from a healthy one if only the
+    /// rule count is reported, so say how many lines were skipped and give a few examples.
+    /// </summary>
+    private void LogSkippedLines(FilterListOption filter, IReadOnlyList<DnsFilterParseDiagnostic> diagnostics)
+    {
+        if (diagnostics.Count is 0)
+            return;
+
+        var examples = string.Join(" | ", diagnostics.Take(3).Select(d => d.ToString()));
+        _logger.LogWarning(
+            "Skipped {SkippedLineCount} unparsable line(s) in filter list {FilterUrl}. First: {Examples}",
+            diagnostics.Count,
+            filter.Url,
+            examples);
     }
 
     private static string GetCacheFilePath(DnsProxyOptions options, FilterListOption filter)
@@ -202,5 +246,68 @@ internal sealed class FilterEngineProvider
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(filter.Url))).ToLowerInvariant();
 
         return Path.Combine(cacheFolderPath, hash + ".txt");
+    }
+
+    /// <summary>
+    /// The engine and the rule count are published together, so a caller that uses <see cref="RuleCount"/> as a
+    /// readiness signal never gets an <see cref="Engine"/> still matching the previous rule set.
+    /// </summary>
+    private sealed record FilterSnapshot(DnsFilterEngine Engine, int RuleCount)
+    {
+        public static FilterSnapshot Create(DnsFilterRuleSet ruleSet) => new(new DnsFilterEngine(ruleSet), ruleSet.Count);
+    }
+
+    /// <summary>Fails the read as soon as more than <paramref name="maxSize"/> bytes have been consumed.</summary>
+    private sealed class LimitedStream(Stream innerStream, long maxSize, string filterUrl) : Stream
+    {
+        private long _totalRead;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => _totalRead;
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            var read = innerStream.Read(buffer);
+            Account(read);
+            return read;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            var read = await innerStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            Account(read);
+            return read;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override void Flush() => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        private void Account(int read)
+        {
+            _totalRead += read;
+            if (_totalRead > maxSize)
+                throw new InvalidOperationException($"The filter list '{filterUrl}' exceeds the {maxSize} bytes limit.");
+        }
     }
 }

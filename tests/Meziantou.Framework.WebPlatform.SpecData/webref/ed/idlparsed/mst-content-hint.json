@@ -1,0 +1,114 @@
+{
+  "spec": {
+    "title": "MediaStreamTrack Content Hints",
+    "url": "https://w3c.github.io/mst-content-hint/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "RTCDegradationPreference": {
+        "fragment": "enum RTCDegradationPreference {\n  \"maintain-framerate\",\n  \"maintain-resolution\",\n  \"balanced\",\n  \"maintain-framerate-and-resolution\"\n};",
+        "type": "enum",
+        "name": "RTCDegradationPreference",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "maintain-framerate",
+            "href": "https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference-maintain-framerate"
+          },
+          {
+            "type": "enum-value",
+            "value": "maintain-resolution",
+            "href": "https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference-maintain-resolution"
+          },
+          {
+            "type": "enum-value",
+            "value": "balanced",
+            "href": "https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference-balanced"
+          },
+          {
+            "type": "enum-value",
+            "value": "maintain-framerate-and-resolution",
+            "href": "https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference-maintain-framerate-and-resolution"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference"
+      }
+    },
+    "idlExtendedNames": {
+      "MediaStreamTrack": [
+        {
+          "fragment": "partial interface MediaStreamTrack {\n  attribute DOMString contentHint;\n};",
+          "type": "interface",
+          "name": "MediaStreamTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "contentHint",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/mst-content-hint/#dom-mediastreamtrack-contenthint"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCRtpSendParameters": [
+        {
+          "fragment": "partial dictionary RTCRtpSendParameters {\n RTCDegradationPreference degradationPreference;\n};",
+          "type": "dictionary",
+          "name": "RTCRtpSendParameters",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "degradationPreference",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RTCDegradationPreference"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mst-content-hint/#dom-rtcrtpsendparameters-degradationpreference"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "MediaStreamTrack": [],
+      "RTCRtpSendParameters": [
+        "RTCDegradationPreference"
+      ]
+    },
+    "externalDependencies": [
+      "MediaStreamTrack",
+      "RTCRtpSendParameters"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

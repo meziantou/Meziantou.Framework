@@ -1,0 +1,16 @@
+{
+  "main": {
+    "de-LI": {
+      "identity": {
+        "language": "de",
+        "territory": "LI"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

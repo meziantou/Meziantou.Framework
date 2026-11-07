@@ -7,10 +7,13 @@ internal sealed class EndsWithSegment : Segment
     public EndsWithSegment(string value, bool ignoreCase)
     {
         Value = value;
+        IgnoreCase = ignoreCase;
         _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
 
     public string Value { get; }
+
+    public bool IgnoreCase { get; }
 
     public override bool IsMatch(ref PathReader pathReader)
     {
@@ -24,8 +27,11 @@ internal sealed class EndsWithSegment : Segment
         return false;
     }
 
-    public override string ToString()
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        return '*' + Value;
+        sb.Append('*');
+        GlobPatternWriter.AppendLiteral(ref sb, Value, dialect);
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

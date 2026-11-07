@@ -28,9 +28,34 @@ public class GlobParserTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
+    [InlineData(".")]
+    [InlineData("./")]
+    [InlineData("./.")]
+    [InlineData("a/..")]
+    [InlineData("a/../")]
     public void InvalidPatterns(string? content)
     {
         Assert.Throws<ArgumentException>(() => Glob.Parse(content!, GlobDialect.Standard));
+    }
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("./")]
+    [InlineData("a/..")]
+    public void PatternsWithoutAnySegmentAreRejected(string pattern)
+    {
+        Assert.False(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("a/./b")]
+    [InlineData("a/b/../c")]
+    [InlineData("./a")]
+    public void PatternsThatStillHaveSegmentsAfterNormalizationAreAccepted(string pattern)
+    {
+        Assert.True(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
+        Assert.NotNull(result);
     }
 
     [Fact]
@@ -144,6 +169,142 @@ public class GlobParserTests
             item => Assert.IsType<CharacterRangeSegment>(item),
             item => Assert.IsType<LiteralSegment>(item),
             item => Assert.IsType<CharacterRangeSegment>(item));
+    }
+
+    [Theory]
+    [InlineData("a/**/b")]
+    [InlineData("a/**/*.txt")]
+    [InlineData("a/**/*")]
+    [InlineData("**/b/c")]
+    [InlineData("a*")]
+    [InlineData("*.txt")]
+    [InlineData("*file*")]
+    [InlineData("a/b")]
+    [InlineData("a/**/b/c")]
+    [InlineData("{a,b}.cs")]
+    [InlineData("[a-z].cs")]
+    [InlineData("p?th/a")]
+    [InlineData("*[abc]d")]
+    [InlineData("*{a,ab}c")]
+    [InlineData("*.{cs,*proj}")]
+    [InlineData("{a,[bc],?,{d,e{f,g}}}")]
+    [InlineData(@"{\*,\,,\},\{,\?,\[,\\}")]
+    [InlineData("{src/**,tests}/*.cs")]
+    public void ToStringRoundTripsToAnEquivalentPattern(string pattern)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        var text = glob.ToString();
+
+        Assert.DoesNotContain("Meziantou.Framework.Globbing", text);
+
+        // The text must parse back into a glob that matches exactly the same paths.
+        var roundTripped = Glob.Parse(text, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.Equal(text, roundTripped.ToString());
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.Standard, @"\*", "*", "a")]
+    [InlineData(GlobDialect.Standard, @"*\*", "a*", "ab")]
+    [InlineData(GlobDialect.Standard, @"**/a/\*", "x/a/*", "x/a/b")]
+    [InlineData(GlobDialect.Standard, "a[?]", "a?", "ab")]
+    [InlineData(GlobDialect.Standard, @"\[ab]", "[ab]", "a")]
+    [InlineData(GlobDialect.Standard, @"\{a,b\}", "{a,b}", "a")]
+    [InlineData(GlobDialect.Standard, @"{a\,,b}", "a,", "a", "b")]
+    [InlineData(GlobDialect.Standard, @"{a\*,b?}", "a*", "ab", "bc", "b")]
+    [InlineData(GlobDialect.Standard, "{a,[bc]}", "c", "a", "d", "[bc]")]
+    [InlineData(GlobDialect.Standard, "{a,{b,c}d}", "cd", "a", "c", "bd")]
+    [InlineData(GlobDialect.Standard, "{src/**,tests}/*.cs", "src/a/b.cs", "tests/a.cs", "tests/a/b.cs")]
+    [InlineData(GlobDialect.Standard, @"\!a", "!a", "a")]
+    [InlineData(GlobDialect.Standard, @"\.\.", "..")]
+    [InlineData(GlobDialect.Standard, @"**/\./a", "x/./a", "x/a")]
+    [InlineData(GlobDialect.Standard, "a/", "a/", "a")]
+    [InlineData(GlobDialect.Standard, "a/**/", "a/b/", "a/b")]
+    [InlineData(GlobDialect.Standard, "[a-bd]", "a", "d", "c")]
+    [InlineData(GlobDialect.Standard, "[!a-bd]", "c", "a", "d")]
+    [InlineData(GlobDialect.Git, "/a", "a", "b/a")]
+    [InlineData(GlobDialect.Git, "!/a/", "a/", "b/a/")]
+    [InlineData(GlobDialect.Git, @"\!a", "!a", "a")]
+    [InlineData(GlobDialect.Git, @"[\]a-]", "]", "-", "b")]
+    [InlineData(GlobDialect.Git, "[[:digit:]x]", "1", "x", "a")]
+    [InlineData(GlobDialect.MSBuild, "%2A.cs", "*.cs", "a.cs")]
+    [InlineData(GlobDialect.MSBuild, "%2541", "%41", "A")]
+    [InlineData(GlobDialect.MSBuild, "*%2E*", "a.b", "ab")]
+    [InlineData(GlobDialect.MSBuild, "a/%2E%2E/b", "a/../b", "b")]
+    [InlineData(GlobDialect.MSBuild, "/a/", "/a/", "a/")]
+    [InlineData(GlobDialect.Posix, @"a\*", "a*", "ab")]
+    [InlineData(GlobDialect.Posix, "[[:alpha:]-]", "a", "-", "1")]
+    [InlineData(GlobDialect.Posix, @"[[=]\=]", "[=]", "==]", "[==]")]
+    [InlineData(GlobDialect.Posix, "[[=a]x", "[x", "=x", "ax", "[=a]x")]
+    [InlineData(GlobDialect.PosixPath, @"[[=]\=]", "[=]", "==]", "[==]")]
+    [InlineData(GlobDialect.PosixPath, "//a/", "//a/", "/a/")]
+    public void ToStringParsesBackToAnEquivalentGlob(GlobDialect dialect, string pattern, params string[] paths)
+    {
+        var glob = Glob.Parse(pattern, dialect);
+        var text = glob.ToString();
+        Assert.True(glob.IsMatch(paths[0]));
+
+        Assert.True(Glob.TryParse(text, dialect, GlobOptions.None, out var roundTripped), $"'{text}' is not a valid pattern");
+        foreach (var path in paths)
+        {
+            Assert.Equal(glob.IsMatch(path), roundTripped.IsMatch(path));
+        }
+    }
+
+    [Fact]
+    public void ToStringEscapesABackslash()
+    {
+        // '\' is a path separator on Windows, so no path can check this one by matching
+        Assert.Equal(@"a\\b", Glob.Parse(@"a\\b", GlobDialect.Standard).ToString());
+    }
+
+    [Fact]
+    public void ToStringEscapesABracketThatDoesNotOpenAnEquivalenceClass()
+    {
+        // glibc reads "[=" that is not followed by "c=]" as two ordinary characters, so this pattern matches "[=]" and
+        // "==]". Written back as is, the bracket expression would be followed by "=]" and hold the equivalence class "[=]=]".
+        var glob = Glob.Parse(@"[[=]\=]", GlobDialect.Posix);
+
+        Assert.Equal(@"[\[=]=]", glob.ToString());
+        Assert.True(glob.IsMatch("[=]"));
+        Assert.True(glob.IsMatch("==]"));
+        Assert.False(glob.IsMatch("[==]"));
+    }
+
+    [Fact]
+    public void ToStringDoesNotTurnABracketExpressionIntoALeadingDot()
+    {
+        // '[.]' does not match a leading dot by default, whereas the '.' of '.a' does
+        var glob = Glob.Parse("[.]a", GlobDialect.Standard);
+        var roundTripped = Glob.Parse(glob.ToString(), GlobDialect.Standard);
+
+        Assert.False(glob.IsMatch(".a"));
+        Assert.False(roundTripped.IsMatch(".a"));
+    }
+
+    [Theory]
+    [InlineData("a/**/b")]
+    [InlineData("a/**/b/c")]
+    [InlineData("a/**/*")]
+    [InlineData("a/**/*.txt")]
+    public void RecursiveWildcardIsNotOptimizedWhenLeadingDotsMustBeExcluded(string pattern)
+    {
+        // The optimized segments jump to the end of the path and skip the per-segment leading-dot checks, so they
+        // are only sound when GlobOptions.MatchLeadingDot is set.
+        var optimized = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot)._segments;
+        var notOptimized = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None)._segments;
+
+        Assert.Contains(notOptimized, item => item is RecursiveMatchAllSegment);
+        Assert.DoesNotContain(optimized, item => item is RecursiveMatchAllSegment);
+    }
+
+    [Theory]
+    [InlineData("a/**/b", "a/.hidden/b")]
+    [InlineData("a/**/b/c", "a/.hidden/b/c")]
+    [InlineData("a/**/*.txt", "a/.hidden/b.txt")]
+    public void RecursiveWildcardDoesNotCrossADotSegmentWithoutMatchLeadingDot(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None).IsMatch(path));
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
     }
 
     [Fact]

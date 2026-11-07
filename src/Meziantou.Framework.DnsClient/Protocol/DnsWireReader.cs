@@ -17,13 +17,9 @@ internal ref struct DnsWireReader
 
     public readonly int Position => _position;
 
-    public readonly int Remaining => _message.Length - _position;
-
     public ushort ReadUInt16()
     {
-        if (_position + 2 > _message.Length)
-            throw new DnsProtocolException("Unexpected end of DNS message while reading UInt16.");
-
+        EnsureAvailable(2, "UInt16");
         var value = BinaryPrimitives.ReadUInt16BigEndian(_message[_position..]);
         _position += 2;
         return value;
@@ -31,9 +27,7 @@ internal ref struct DnsWireReader
 
     public uint ReadUInt32()
     {
-        if (_position + 4 > _message.Length)
-            throw new DnsProtocolException("Unexpected end of DNS message while reading UInt32.");
-
+        EnsureAvailable(4, "UInt32");
         var value = BinaryPrimitives.ReadUInt32BigEndian(_message[_position..]);
         _position += 4;
         return value;
@@ -41,9 +35,7 @@ internal ref struct DnsWireReader
 
     public int ReadInt32()
     {
-        if (_position + 4 > _message.Length)
-            throw new DnsProtocolException("Unexpected end of DNS message while reading Int32.");
-
+        EnsureAvailable(4, "Int32");
         var value = BinaryPrimitives.ReadInt32BigEndian(_message[_position..]);
         _position += 4;
         return value;
@@ -59,7 +51,10 @@ internal ref struct DnsWireReader
 
     public ReadOnlySpan<byte> ReadBytes(int count)
     {
-        if (_position + count > _message.Length)
+        if (count < 0)
+            throw new DnsProtocolException($"Invalid DNS record data length: {count}. The record declares fewer bytes than its fixed fields require.");
+
+        if (count > _message.Length - _position)
             throw new DnsProtocolException($"Unexpected end of DNS message while reading {count} bytes.");
 
         var span = _message.Slice(_position, count);
@@ -69,7 +64,10 @@ internal ref struct DnsWireReader
 
     public void Skip(int count)
     {
-        if (_position + count > _message.Length)
+        if (count < 0)
+            throw new DnsProtocolException($"Cannot skip {count} bytes: the count is negative.");
+
+        if (count > _message.Length - _position)
             throw new DnsProtocolException($"Cannot skip {count} bytes: exceeds message boundary.");
 
         _position += count;
@@ -77,24 +75,41 @@ internal ref struct DnsWireReader
 
     public readonly ReadOnlySpan<byte> GetBytes(int offset, int count)
     {
-        if (offset < 0 || count < 0 || offset + count > _message.Length)
+        if (offset < 0 || count < 0 || offset > _message.Length || count > _message.Length - offset)
             throw new DnsProtocolException($"Cannot read {count} bytes at offset {offset}: exceeds message boundary.");
 
         return _message.Slice(offset, count);
     }
 
+    /// <summary>
+    /// Creates a reader restricted to <paramref name="length"/> bytes starting at the current position, and advances
+    /// this reader past them. Domain names inside the window are still resolved against the whole message, because
+    /// compression pointers may target any earlier offset.
+    /// </summary>
+    public DnsWireReader ReadWindow(int length)
+    {
+        if (length < 0)
+            throw new DnsProtocolException($"Invalid DNS record data length: {length}.");
+
+        if (length > _message.Length - _position)
+            throw new DnsProtocolException($"DNS record data length {length} exceeds the message boundary.");
+
+        var window = new DnsWireReader(_message[..(_position + length)]) { _position = _position };
+        _position += length;
+        return window;
+    }
+
     public string ReadDomainName()
     {
         var sb = new StringBuilder(64);
-        ReadDomainNameCore(sb, _message, ref _position, maxPointers: 128);
+        ReadDomainNameCore(sb, _message, ref _position, maxPointers: DnsName.MaxLabels);
         return sb.ToString();
     }
 
-    public static string ReadDomainNameAtOffset(ReadOnlySpan<byte> message, int offset)
+    private void EnsureAvailable(int count, string what)
     {
-        var sb = new StringBuilder(64);
-        ReadDomainNameCore(sb, message, ref offset, maxPointers: 128);
-        return sb.ToString();
+        if (count > _message.Length - _position)
+            throw new DnsProtocolException($"Unexpected end of DNS message while reading {what}.");
     }
 
     private static void ReadDomainNameCore(StringBuilder sb, ReadOnlySpan<byte> message, ref int position, int maxPointers)
@@ -102,7 +117,7 @@ internal ref struct DnsWireReader
         var jumped = false;
         var originalPosition = -1;
         var pointerCount = 0;
-        Span<char> labelBuffer = stackalloc char[63];
+        var nameLength = 1; // the terminating root label
 
         while (position < message.Length)
         {
@@ -115,7 +130,7 @@ internal ref struct DnsWireReader
                 break;
             }
 
-            // Check for compression pointer (top 2 bits set)
+            // Compression pointer (top 2 bits set)
             if (labelType is 0xC0)
             {
                 if (++pointerCount > maxPointers)
@@ -125,6 +140,11 @@ internal ref struct DnsWireReader
                     throw new DnsProtocolException("Unexpected end of DNS message while reading compression pointer.");
 
                 var pointer = ((length & 0x3F) << 8) | message[position + 1];
+
+                // RFC 1035 4.1.4: a pointer refers to a *prior* occurrence of the name. Requiring a strictly
+                // backwards jump keeps the chain finite and makes compression loops impossible to express.
+                if (pointer >= position)
+                    throw new DnsProtocolException($"Invalid compression pointer to offset {pointer}: pointers must refer to an earlier position in the message.");
 
                 if (!jumped)
                 {
@@ -141,16 +161,19 @@ internal ref struct DnsWireReader
 
             position++;
 
-            if (position + length > message.Length)
+            if (length > message.Length - position)
                 throw new DnsProtocolException("Domain name label extends beyond message boundary.");
+
+            nameLength += length + 1;
+            if (nameLength > DnsName.MaxLength)
+                throw new DnsProtocolException($"Domain name exceeds the maximum length of {DnsName.MaxLength} bytes.");
 
             if (sb.Length > 0)
             {
                 sb.Append('.');
             }
 
-            var charCount = Encoding.ASCII.GetChars(message.Slice(position, length), labelBuffer);
-            sb.Append(labelBuffer[..charCount]);
+            DnsName.AppendLabel(sb, message.Slice(position, length));
             position += length;
         }
 

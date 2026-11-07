@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-SO": {
+      "identity": {
+        "language": "ar",
+        "territory": "SO"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

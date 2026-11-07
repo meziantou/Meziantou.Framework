@@ -1,0 +1,3 @@
+@charset "-ut8f";
+@importe, components;
+:root { --x: calc(1px + 2em * var(--y,@ch@chaarrsut "

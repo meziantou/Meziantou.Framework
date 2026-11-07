@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Meziantou.Framework.ChromiumTracing;
 
 /// <summary>Base class for all Chromium trace events.</summary>
-public abstract class ChromiumTracingEvent
+public closed class ChromiumTracingEvent
 {
     /// <summary>Gets the event type identifier (phase) used in the trace format.</summary>
     // Note: overriden members should also set the attribute (https://github.com/dotnet/runtime/issues/50078)

@@ -76,9 +76,10 @@ public sealed class FullPathDivisionWithFullPathRightCodeFixProvider : CodeFixPr
         out ExpressionSyntax replacementExpression)
     {
         if (semanticModel.GetOperation(expressionSyntax, cancellationToken) is IBinaryOperation binaryOperation &&
-            binaryOperation.OperatorKind == BinaryOperatorKind.Divide)
+            binaryOperation.OperatorKind == BinaryOperatorKind.Divide &&
+            SymbolEqualityComparer.Default.Equals(binaryOperation.OperatorMethod?.ContainingType, fullPathType))
         {
-            var rightOperand = UnwrapImplicitConversion(binaryOperation.RightOperand);
+            var rightOperand = FullPathAnalyzerCommon.UnwrapToFullPath(binaryOperation.RightOperand, fullPathType);
             if (SymbolEqualityComparer.Default.Equals(rightOperand.Type, fullPathType) && rightOperand.Syntax is ExpressionSyntax rightExpression)
             {
                 replacementExpression = rightExpression;
@@ -88,15 +89,5 @@ public sealed class FullPathDivisionWithFullPathRightCodeFixProvider : CodeFixPr
 
         replacementExpression = null!;
         return false;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

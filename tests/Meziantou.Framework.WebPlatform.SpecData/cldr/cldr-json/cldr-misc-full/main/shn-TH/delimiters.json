@@ -1,0 +1,16 @@
+{
+  "main": {
+    "shn-TH": {
+      "identity": {
+        "language": "shn",
+        "territory": "TH"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

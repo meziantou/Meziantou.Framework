@@ -16,7 +16,7 @@ internal static class ErrorFixtureStages
         "invalid/jxl/container-box-size",
         "invalid/jxl/container-parts-out-of-order",
         "invalid/jxl/container-without-codestream",
-        "invalid/jxl/float-samples",
+        "invalid/jxl/integer-25-bit",
         "invalid/jxl/pq-white-point-e",
         "invalid/jxl/premultiplied-alpha",
         "invalid/jxl/xyb-icc",

@@ -53,7 +53,7 @@ public sealed class ImageReaderOptions
     } = PixelConversionOptions.Default;
 
     /// <summary>
-    /// Gets the color conversion applied to images whose samples are CMYK inks (four-component JPEG), or
+    /// Gets the color conversion applied to images whose samples are CMYK inks (four-component JPEG, JPEG 2000, JPEG XL with a black channel), or
     /// <see langword="null"/> (the default) to reject them with an <see cref="UnsupportedImageFeatureException"/>.
     /// </summary>
     /// <remarks>

@@ -146,6 +146,19 @@ internal static class DefaultPixelFormats
     /// <returns>The pixel format: 8-bit or 16-bit gray, gray with alpha, RGB or RGBA.</returns>
     public static PixelFormat ForJpegXl(bool isGray, bool hasAlpha, bool isSixteenBit) => Select(isGray, hasAlpha, isSixteenBit);
 
+    /// <summary>
+    /// Selects the default pixel format of a JPEG XL image of floating-point samples, or of integer samples of more than
+    /// 16 bits (grayscale or RGB, with or without alpha).
+    /// </summary>
+    /// <param name="isHalfPrecision">Whether every sample is a half-precision number.</param>
+    /// <returns>
+    /// <see cref="PixelFormat.RgbaHalf"/> for half-precision samples and <see cref="PixelFormat.RgbaFloat"/> for the others,
+    /// which it stores exactly: floating-point samples have 23 bits of mantissa at most, and an integer of up to 24 bits
+    /// divided by its largest value goes back to itself (the library has no floating-point gray format, so gray samples are
+    /// repeated in the three colors, and samples without alpha are opaque).
+    /// </returns>
+    public static PixelFormat ForJpegXlFloatingPoint(bool isHalfPrecision) => isHalfPrecision ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+
     /// <summary>Selects the default pixel format of a JPEG 2000 image.</summary>
     /// <param name="isGray">Whether the image has a single color channel.</param>
     /// <param name="hasAlpha">Whether the image has an opacity channel.</param>

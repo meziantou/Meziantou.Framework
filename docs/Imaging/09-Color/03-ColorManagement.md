@@ -107,8 +107,8 @@ public static void ConvertHdrToSrgb(string avifPath, string pngPath)
 
 ## Load CMYK images
 
-No pixel format holds CMYK samples, so a CMYK image (a JPEG with four components, a TIFF page of separated data or a
-JPEG 2000 file) is only loaded by converting its colors. Without a conversion, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
+No pixel format holds CMYK samples, so a CMYK image (a JPEG with four components, a TIFF page of separated data, a
+JPEG 2000 file or a JPEG XL file with a black channel) is only loaded by converting its colors. Without a conversion, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
 [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) always works and reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk) or [Ycck](cref:Meziantou.Framework.Imaging.ImageColorModel.Ycck):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykJpeg;format=md-fenced-code-block;dedent=true -->

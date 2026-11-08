@@ -9,6 +9,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class JpegXlFeaturePolicy
 {
+    /// <summary>The largest number of bits of an integer sample that <see cref="PixelFormat.RgbaFloat"/> holds exactly: the precision of a single-precision number.</summary>
+    public const int MaxIntegerBitsPerSample = 24;
+
     /// <summary>Rejects the images whose samples or channels an image cannot hold.</summary>
     /// <exception cref="UnsupportedImageFeatureException">The image uses such a feature.</exception>
     public static void EnsureSupported(JpegXlImageHeader header)
@@ -22,12 +25,24 @@ internal static class JpegXlFeaturePolicy
             throw JpegXlFormat.Unsupported("The JPEG XL animation is played more than 2,147,483,647 times.", "play count");
 
         var alphaSeen = false;
+        var blackSeen = false;
         foreach (var channel in header.ExtraChannels)
         {
             switch (channel.Type)
             {
-                case JpegXlExtraChannelInfo.TypeBlack:
-                    throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK).", "CMYK");
+                case JpegXlExtraChannelInfo.TypeBlack when !blackSeen:
+                    // The first black channel makes the color channels cyan, magenta and yellow; the others are auxiliary data
+                    blackSeen = true;
+                    if (header.ColorEncoding.IsGray)
+                        throw JpegXlFormat.Invalid("a grayscale image has a black channel.");
+
+                    if (header.IsXybEncoded)
+                        throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK) and its color channels are stored in XYB.", "CMYK stored in XYB");
+
+                    if (header.BitDepth.IsFloat || header.BitDepth.BitsPerSample > 16 || channel.BitDepth.IsFloat || channel.BitDepth.BitsPerSample > 16)
+                        throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK) and floating-point samples or samples of more than 16 bits: inks are converted from integers of 16 bits at most.", "CMYK with floating-point samples or samples of more than 16 bits");
+
+                    break;
 
                 case JpegXlExtraChannelInfo.TypeSpotColor:
                     throw JpegXlFormat.Unsupported("The JPEG XL image has a spot color channel.", "spot color");
@@ -42,13 +57,40 @@ internal static class JpegXlFeaturePolicy
                     break;
             }
         }
+
+        if (blackSeen && alphaSeen && (header.ExtraChannels[header.AlphaChannelIndex].BitDepth is { IsFloat: true } or { BitsPerSample: > 16 }))
+            throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK) and floating-point alpha samples or alpha samples of more than 16 bits.", "CMYK with floating-point samples or samples of more than 16 bits");
     }
 
-    /// <summary>Gets a value indicating whether the samples of the image need 16 bits: the color channels or the alpha channel have more than 8 bits.</summary>
+    /// <summary>Gets a value indicating whether the samples of the image need 16 bits: the color channels, the black channel or the alpha channel have more than 8 bits.</summary>
     public static bool IsSixteenBit(JpegXlImageHeader header)
     {
         var alpha = header.AlphaChannelIndex;
-        return header.BitDepth.BitsPerSample > 8 || (alpha >= 0 && header.ExtraChannels[alpha].BitDepth.BitsPerSample > 8);
+        var black = header.BlackChannelIndex;
+        return header.BitDepth.BitsPerSample > 8
+            || (alpha >= 0 && header.ExtraChannels[alpha].BitDepth.BitsPerSample > 8)
+            || (black >= 0 && header.ExtraChannels[black].BitDepth.BitsPerSample > 8);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the samples of the image are loaded as floating-point numbers: the color channels or
+    /// the alpha channel have floating-point samples or integer samples of more than 16 bits.
+    /// </summary>
+    public static bool IsFloatingPoint(JpegXlImageHeader header)
+    {
+        static bool NeedsFloat(JpegXlBitDepth depth) => depth.IsFloat || depth.BitsPerSample > 16;
+
+        var alpha = header.AlphaChannelIndex;
+        return NeedsFloat(header.BitDepth) || (alpha >= 0 && NeedsFloat(header.ExtraChannels[alpha].BitDepth));
+    }
+
+    /// <summary>Gets a value indicating whether every sample of an image of floating-point samples (<see cref="IsFloatingPoint"/>) is a half-precision number: 16 bits, 5 of exponent.</summary>
+    public static bool IsHalfPrecision(JpegXlImageHeader header)
+    {
+        static bool IsHalf(JpegXlBitDepth depth) => depth is { BitsPerSample: 16, ExponentBits: 5 };
+
+        var alpha = header.AlphaChannelIndex;
+        return IsHalf(header.BitDepth) && (alpha < 0 || IsHalf(header.ExtraChannels[alpha].BitDepth));
     }
 
     /// <summary>
@@ -167,10 +209,8 @@ internal static class JpegXlFeaturePolicy
 
     private static void EnsureSupportedDepth(JpegXlBitDepth depth, string channel)
     {
-        if (depth.IsFloat)
-            throw JpegXlFormat.Unsupported($"The JPEG XL image has floating-point {channel} samples.", "floating-point samples");
-
-        if (depth.BitsPerSample > 16)
-            throw JpegXlFormat.Unsupported($"The JPEG XL image has {depth.BitsPerSample.ToString(CultureInfo.InvariantCulture)}-bit {channel} samples.", "samples of more than 16 bits");
+        // Floating-point samples have 23 bits of mantissa at most: a single-precision number holds them all
+        if (!depth.IsFloat && depth.BitsPerSample > MaxIntegerBitsPerSample)
+            throw JpegXlFormat.Unsupported($"The JPEG XL image has {depth.BitsPerSample.ToString(CultureInfo.InvariantCulture)}-bit {channel} samples: integer samples of more than 24 bits do not fit a single-precision number.", "samples of more than 24 bits");
     }
 }

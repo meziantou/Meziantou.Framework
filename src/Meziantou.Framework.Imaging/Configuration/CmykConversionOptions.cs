@@ -3,8 +3,8 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// Immutable options of the color conversion that loads images whose samples are CMYK inks (four-component JPEG files
-/// and separated TIFF pages):
+/// Immutable options of the color conversion that loads images whose samples are CMYK inks (four-component JPEG files,
+/// separated TIFF pages, CMYK JPEG 2000 files and JPEG XL files with a black channel):
 /// see <see cref="ImageDecodeOptions.CmykConversion"/> and <see cref="ImageReaderOptions.CmykConversion"/>.
 /// </summary>
 /// <remarks>

@@ -64556,46 +64556,6 @@
       "notes": "The container has an Exif box and no codestream."
     },
     {
-      "id": "invalid/jxl/float-samples",
-      "kind": "unsupported",
-      "format": "jxl",
-      "input": {
-        "path": "invalid/jxl/float-samples.jxl",
-        "sha256": "3ca746068a265fada66930864c2cab6064b88543ffa418fb0ced374446960c16",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/JxlCorpus.cs (BuildUnsupported)",
-        "tools": [
-          "libjxl 0.12.0 (cjxl, jxl_from_tree, djxl)",
-          "jxl-oxide 0.12.6 (cross-check)",
-          ".NET 10.0"
-        ],
-        "commands": [
-          "cjxl {source}.pfm {output}.jxl -d 0 --quiet --num_threads=0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "JpegXl",
-        "feature": "floating-point samples"
-      },
-      "features": [
-        "jxl.bits=32",
-        "jxl.blend=replace",
-        "jxl.box=jxlc",
-        "jxl.box=jxll",
-        "jxl.colorSpace=rgb",
-        "jxl.colorTransform=none",
-        "jxl.encoding=modular",
-        "jxl.file=container"
-      ],
-      "notes": "32-bit floating-point samples: an image of the library holds integers of 8 or 16 bits."
-    },
-    {
       "id": "invalid/jxl/frame-data-corrupt",
       "kind": "invalid",
       "format": "jxl",
@@ -64668,6 +64628,45 @@
         "jxl.file=codestream"
       ],
       "notes": "Two bytes at the start of the frame of jxl/lossless-rgb8 are inverted: its header and its table of contents are not valid."
+    },
+    {
+      "id": "invalid/jxl/integer-25-bit",
+      "kind": "unsupported",
+      "format": "jxl",
+      "input": {
+        "path": "invalid/jxl/integer-25-bit.jxl",
+        "sha256": "0f7feb981da36865dcedb73b997590d740aaae82b59c2e5167be65dfc0231b7e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/JxlCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "libjxl 0.12.0 (cjxl, jxl_from_tree, djxl)",
+          "jxl-oxide 0.12.6 (cross-check)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "jxl_from_tree {tree} {output}.jxl",
+          "{tree}: Width 3 / Height 2 / Bitdepth 25 / - Set 7"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "JpegXl",
+        "feature": "samples of more than 24 bits"
+      },
+      "features": [
+        "jxl.bits=25",
+        "jxl.blend=replace",
+        "jxl.colorSpace=rgb",
+        "jxl.colorTransform=none",
+        "jxl.encoding=modular",
+        "jxl.file=codestream"
+      ],
+      "notes": "25-bit integer samples: the image would hold them as single-precision numbers, whose 24 bits of precision cannot store them."
     },
     {
       "id": "invalid/jxl/pq-white-point-e",

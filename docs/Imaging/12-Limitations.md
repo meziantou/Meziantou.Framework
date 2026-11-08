@@ -10,10 +10,10 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 ## General
 
 - **No extension points.** There is no public allocator, custom pixel type, codec plug-in or custom image processor.
-- **No CMYK pixel format.** CMYK JPEG and TIFF files are converted to RGB when they are loaded, with an explicit
+- **No CMYK pixel format.** CMYK JPEG, TIFF and JPEG XL files are converted to RGB when they are loaded, with an explicit
   `CmykConversion` option; CMYK cannot be written. See [Color management](09-Color/03-ColorManagement.md).
 - **No floating-point grayscale.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) are the floating-point formats. OpenEXR and TIFF read and
-  write them; the other encoders need an explicit reduction to 16 bits.
+  write them, JPEG XL reads them; the other encoders need an explicit reduction to 16 bits.
 - **No scaled or region decoding.** An image is decoded at its full size; resize it afterward.
 - **Color profiles are never applied implicitly.** Colors change only when you convert them
   ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)). See [Color management](09-Color/03-ColorManagement.md).
@@ -38,7 +38,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | ANI | One representation per frame; always loops; needs a seekable destination. |
 | AVIF | Gain maps, depth maps and thumbnails are only read by `AuxiliaryImageCollection`; gain maps are not written. Sequences need a seekable destination; the encoder is single-threaded except for grid tiles. |
 | HEIC | Bit depths above 12, multilayer and 3D extensions are not read; bursts and live-photo videos are ignored, depth maps, thumbnails and gain maps are only read by `AuxiliaryImageCollection` (Apple's gain map parameters, in maker notes, are not read). Sequences need a seekable destination. |
-| JPEG XL | Floating-point samples, more than 16 bits, premultiplied alpha and CMYK are not read; lossy decoding is close to, not identical with, the reference decoder. Writing has no layers or blending. |
+| JPEG XL | Premultiplied alpha and integer samples of more than 24 bits are not read; lossy decoding is close to, not identical with, the reference decoder. Writing has no layers or blending. |
 | JPEG 2000 | Signed samples, more than 16 bits and Part 2 extensions are not read; no decoding of fewer quality layers; a region decode reads the whole compressed data of each tile it meets. Writing has no precincts and no tile-parts beyond one per tile; HTJ2K output has one quality layer and no HT refinement passes. |
 | OpenEXR | Multi-part files, deep data, DWA/HTJ2K/ZSTD compressions and chroma (RY, BY) channels are not read; other channels than R, G, B, A and Y, and an overscan, need a layer or a window mode ([OpenExrDecodingOptions](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions)). Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
 

@@ -1425,6 +1425,22 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>JPEG XL input: floating-point samples, integer samples of more than 16 bits, and CMYK files.</summary>
+    #region Imaging_LoadJpegxl
+    public static string DescribeJpegXl(string path)
+    {
+        var info = Image.Identify(path);
+
+        // A CMYK file (ImageColorModel.Cmyk: a black extra channel) is only loaded with a color conversion, here to sRGB
+        // from the CMYK profile of the file; the other files ignore the option
+        using var image = Image.Load(path, new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default });
+
+        // Floating-point samples, and integer samples of 17 to 24 bits, load as RgbaHalf or RgbaFloat: values above 1
+        // (highlights) and below 0 are kept, in the color encoding of the file (Metadata.TransferFunction, Cicp, IccProfile)
+        return $"{info.ColorModel}, {info.BitsPerComponent} bits: {image.PixelFormat}";
+    }
+    #endregion
+
     /// <summary>JPEG 2000 output: a lossless JP2 file, a lossy codestream, and what a JPEG 2000 file declares.</summary>
     #region Imaging_SaveJpeg2000
     public static string SaveJpeg2000(string inputPath, string jp2Path, string codestreamPath)

@@ -80,6 +80,24 @@ internal sealed class JpegXlImageHeader
         }
     }
 
+    /// <summary>Gets the index of the first black channel among the extra channels (the K of a CMYK image), or -1.</summary>
+    public int BlackChannelIndex
+    {
+        get
+        {
+            for (var i = 0; i < ExtraChannels.Length; i++)
+            {
+                if (ExtraChannels[i].Type == JpegXlExtraChannelInfo.TypeBlack)
+                    return i;
+            }
+
+            return -1;
+        }
+    }
+
+    /// <summary>Gets a value indicating whether the image is a CMYK image: its color channels are cyan, magenta and yellow, and an extra channel is black.</summary>
+    public bool IsCmyk => BlackChannelIndex >= 0;
+
     /// <summary>
     /// Reads the signature and the headers. The reader may overrun (<see cref="JpegXlBitReader.IsOverrun"/>): the result is
     /// then meaningless, and an exception that this method throws may be a consequence of the missing bits.

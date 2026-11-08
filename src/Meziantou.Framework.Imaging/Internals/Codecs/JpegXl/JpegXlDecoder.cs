@@ -32,6 +32,8 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
     private DecodedFrameSink? _sink;
     private PooledBuffer? _row;
     private JpegXlFrameRenderer? _renderer;
+    private IccPipeline? _inkConversion;
+    private PooledBuffer? _inks;
     private uint _visibleFrameIndex;
     private uint _invisibleFrameIndex;
     private bool _stillFramePending;
@@ -51,9 +53,20 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
+        var profile = structure.Metadata.IccProfile;
+        if (structure.Header.IsCmyk)
+        {
+            // Only a CMYK profile is adopted for a CMYK image. The rows are converted to the destination profile, which is
+            // the one that labels the image
+            var conversion = _request.CmykConversion ?? throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK): CMYK images are only loaded with a color conversion; set the CmykConversion property of the decode or reader options.", "CMYK");
+            var transform = conversion.CreateTransform(profile) ?? throw JpegXlFormat.Unsupported("The JPEG XL image has a black channel (CMYK) and no CMYK color profile, and CmykConversionOptions.AssumedSourceProfile is null.", "CMYK without color profile");
+            _inkConversion = transform.Pipeline;
+            profile = conversion.DestinationProfile;
+        }
+
         // The rows are written as RGBA for the gray formats with alpha and 16-bit RGB
         var format = structure.DefaultPixelFormat;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.JpegXl, structure.Size, format, PixelFormatWidening.GetWidenedFormat(format), structure.Metadata.IccProfile);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.JpegXl, structure.Size, format, PixelFormatWidening.GetWidenedFormat(format), profile);
     }
 
     public override bool OnFrame(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections)
@@ -97,7 +110,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         var duration = header.HasAnimation ? new FrameDuration((long)frame.Duration * header.TicksPerSecondDenominator, header.TicksPerSecondNumerator) : FrameDuration.Zero;
         using (var decoded = JpegXlFrameDecoder.Decode(header, frame, toc, sections.Data, _renderer?.GetLfFrame(frame.LfLevel), _context.Configuration.MaxDegreeOfParallelism, _context.Scope, _context.CancellationToken))
         {
-            if (isDisplayed && CanWriteSamplesAsStored(header, frame, decoded, canBeReferenced))
+            if (isDisplayed && _inkConversion is null && !PixelFormats.IsFloatingPoint(sink.SourcePixelFormat) && CanWriteSamplesAsStored(header, frame, decoded, canBeReferenced))
             {
                 sink.BeginFrame(duration);
                 WriteFrame(sink, header, decoded.Modular);
@@ -198,7 +211,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
 
         var duration = header.HasAnimation ? new FrameDuration((long)frame.Duration * header.TicksPerSecondDenominator, header.TicksPerSecondNumerator) : FrameDuration.Zero;
         var downsampling = passCount == 0 ? 8 : 1 << frame.GetModularShiftBracket(passCount - 1).MinShift;
-        if (CanWriteSamplesAsStored(header, frame, decoded, canBeReferenced: false))
+        if (_inkConversion is null && !PixelFormats.IsFloatingPoint(sink.SourcePixelFormat) && CanWriteSamplesAsStored(header, frame, decoded, canBeReferenced: false))
         {
             sink.BeginRefinement(duration);
             WriteFrame(sink, header, decoded.Modular);
@@ -249,6 +262,8 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         {
             _row?.Dispose();
             _row = null;
+            _inks?.Dispose();
+            _inks = null;
             _renderer?.Dispose();
             _renderer = null;
             _sink?.Dispose();
@@ -413,10 +428,25 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
     /// <summary>Clamps four samples to the range of a byte, as <see cref="Scale"/> does when the sample has 8 bits.</summary>
     private static Vector128<int> Clamp(Vector128<int> value) => Vector128.Min(Vector128.Max(value, Vector128<int>.Zero), Vector128.Create((int)byte.MaxValue));
 
-    /// <summary>Writes an image of floating-point samples: they are rounded to the depth of the pixel format.</summary>
+    /// <summary>
+    /// Writes an image of floating-point samples: they are rounded to the depth of the pixel format, kept as they are by a
+    /// floating-point pixel format, or converted from inks to colors.
+    /// </summary>
     private void WriteCanvas(DecodedFrameSink sink, JpegXlImageHeader header, JpegXlImageBuffer canvas, int colorChannelCount)
     {
+        if (_inkConversion is { } inkConversion)
+        {
+            WriteInkCanvas(sink, header, canvas, inkConversion);
+            return;
+        }
+
         var format = sink.SourcePixelFormat;
+        if (PixelFormats.IsFloatingPoint(format))
+        {
+            WriteFloatingPointCanvas(sink, header, canvas, colorChannelCount);
+            return;
+        }
+
         var width = canvas.Width;
         var height = canvas.Height;
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
@@ -473,6 +503,138 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             else
             {
                 WriteCanvasRow(first, second, third, alphaRow, hasAlphaFormat, alphaChannel >= 0, row);
+            }
+
+            sink.WriteRow(target, y, row);
+        }
+    }
+
+    /// <summary>
+    /// Writes an image to a floating-point pixel format: the samples are kept as they are, values outside [0, 1] included
+    /// (half-precision pixels round them to the nearest half-precision number); a gray level is repeated in the three colors,
+    /// and an image without alpha is opaque.
+    /// </summary>
+    private void WriteFloatingPointCanvas(DecodedFrameSink sink, JpegXlImageHeader header, JpegXlImageBuffer canvas, int colorChannelCount)
+    {
+        var format = sink.SourcePixelFormat;
+        var width = canvas.Width;
+        var height = canvas.Height;
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
+        _row ??= _context.Scope.Rent(checked(width * bytesPerPixel), AllocationKind.DecoderState, clear: false);
+        var row = _row.RawBuffer.AsSpan(0, width * bytesPerPixel);
+        var alphaIndex = header.AlphaChannelIndex;
+        var alphaChannel = alphaIndex >= 0 ? canvas.ColorChannelCount + alphaIndex : -1;
+
+        using var target = sink.LeaseCurrentFrame();
+        for (var y = 0; y < height; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                _context.CancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var first = canvas.GetRow(0, y);
+            var second = colorChannelCount == 3 ? canvas.GetRow(1, y) : first;
+            var third = colorChannelCount == 3 ? canvas.GetRow(2, y) : first;
+            var alphaRow = alphaChannel >= 0 ? canvas.GetRow(alphaChannel, y) : default;
+            if (format == PixelFormat.RgbaHalf)
+            {
+                var samples = unsafe(MemoryMarshal.Cast<byte, Half>(row));
+                for (var x = 0; x < width; x++)
+                {
+                    samples[x * 4] = (Half)first[x];
+                    samples[(x * 4) + 1] = (Half)second[x];
+                    samples[(x * 4) + 2] = (Half)third[x];
+                    samples[(x * 4) + 3] = alphaChannel < 0 ? Half.One : (Half)alphaRow[x];
+                }
+            }
+            else
+            {
+                var samples = unsafe(MemoryMarshal.Cast<byte, float>(row));
+                for (var x = 0; x < width; x++)
+                {
+                    samples[x * 4] = first[x];
+                    samples[(x * 4) + 1] = second[x];
+                    samples[(x * 4) + 2] = third[x];
+                    samples[(x * 4) + 3] = alphaChannel < 0 ? 1f : alphaRow[x];
+                }
+            }
+
+            sink.WriteRow(target, y, row);
+        }
+    }
+
+    /// <summary>
+    /// Writes an image of inks: cyan, magenta and yellow in the color channels and black in its extra channel, where 1 is no
+    /// ink (ISO/IEC 18181-1, the black extra channel). Each ink is rounded to the depth of the pixel format (8 or 16 bits),
+    /// complemented to the ICC convention (0 is no ink), and the four inks are converted to the colors of the destination
+    /// profile; the alpha channel is copied.
+    /// </summary>
+    private void WriteInkCanvas(DecodedFrameSink sink, JpegXlImageHeader header, JpegXlImageBuffer canvas, IccPipeline conversion)
+    {
+        var format = sink.SourcePixelFormat;
+        var width = canvas.Width;
+        var height = canvas.Height;
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
+        _row ??= _context.Scope.Rent(checked(width * bytesPerPixel), AllocationKind.DecoderState, clear: false);
+        var row = _row.RawBuffer.AsSpan(0, width * bytesPerPixel);
+        var is16Bit = PixelFormats.GetBitsPerComponent(format) == 16;
+        var max = is16Bit ? ushort.MaxValue : byte.MaxValue;
+        var alphaIndex = header.AlphaChannelIndex;
+        var alphaChannel = alphaIndex >= 0 ? canvas.ColorChannelCount + alphaIndex : -1;
+        var blackChannel = canvas.ColorChannelCount + header.BlackChannelIndex;
+
+        // Four inks then, for 16-bit samples and for images with alpha, the opacity that the conversion copies
+        var hasOpacity = is16Bit || PixelFormats.HasAlpha(format);
+        var stride = hasOpacity ? 5 : 4;
+        var length = checked(width * stride * (is16Bit ? sizeof(ushort) : 1));
+        _inks ??= _context.Scope.Rent(length, AllocationKind.DecoderState, clear: false);
+        var inkBytes = _inks.RawBuffer.AsSpan(0, length);
+
+        using var target = sink.LeaseCurrentFrame();
+        for (var y = 0; y < height; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                _context.CancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var cyan = canvas.GetRow(0, y);
+            var magenta = canvas.GetRow(1, y);
+            var yellow = canvas.GetRow(2, y);
+            var black = canvas.GetRow(blackChannel, y);
+            var alphaRow = alphaChannel >= 0 ? canvas.GetRow(alphaChannel, y) : default;
+            if (is16Bit)
+            {
+                var inks = unsafe(MemoryMarshal.Cast<byte, ushort>(inkBytes));
+                for (var x = 0; x < width; x++)
+                {
+                    var offset = x * 5;
+                    inks[offset] = (ushort)(max - ToInteger(cyan[x], max));
+                    inks[offset + 1] = (ushort)(max - ToInteger(magenta[x], max));
+                    inks[offset + 2] = (ushort)(max - ToInteger(yellow[x], max));
+                    inks[offset + 3] = (ushort)(max - ToInteger(black[x], max));
+                    inks[offset + 4] = alphaChannel < 0 ? ushort.MaxValue : (ushort)ToInteger(alphaRow[x], max);
+                }
+
+                ColorConversionKernels.Convert<ushort, IccUInt16Sample>(conversion, inks, unsafe(MemoryMarshal.Cast<byte, ushort>(row)), 5, 4);
+            }
+            else
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var offset = x * stride;
+                    inkBytes[offset] = (byte)(max - ToInteger(cyan[x], max));
+                    inkBytes[offset + 1] = (byte)(max - ToInteger(magenta[x], max));
+                    inkBytes[offset + 2] = (byte)(max - ToInteger(yellow[x], max));
+                    inkBytes[offset + 3] = (byte)(max - ToInteger(black[x], max));
+                    if (hasOpacity)
+                    {
+                        inkBytes[offset + 4] = alphaChannel < 0 ? byte.MaxValue : (byte)ToInteger(alphaRow[x], max);
+                    }
+                }
+
+                ColorConversionKernels.Convert<byte, IccByteSample>(conversion, inkBytes, row, stride, stride - 1);
             }
 
             sink.WriteRow(target, y, row);

@@ -105,6 +105,7 @@ supported throws a `NotSupportedException` before anything is read.
 | [CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion) | `null` (rejected) | Convert a CMYK image (a JPEG, a TIFF page or a JPEG 2000 file) to RGB, unless it is loaded as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64): see [Color management](../09-Color/03-ColorManagement.md) |
 | [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) | `null` (full size) | Decode a JPEG or JPEG 2000 file at a reduced size that is still at least this size: see [Decode a smaller image](#decode-a-smaller-image) |
 | [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) | 1 (full size) | Decode a JPEG file at exactly 1/2, 1/4 or 1/8 of its size, or a JPEG 2000 file at 1/2, 1/4, ... down to its lowest resolution level |
+| [Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) | `null` (whole image) | Decode an area of a JPEG 2000, TIFF, AVIF or HEIC image: see [Decode an area](#decode-an-area) |
 
 The options are immutable: create them once and share them.
 
@@ -156,6 +157,40 @@ after a resize: the EXIF orientation still applies, and saving the image writes 
 
 The whole file is still read: a progressive JPEG file keeps the coefficients of its full image until its end, so its memory
 drops less than the one of a baseline file.
+
+## Decode an area
+
+[Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) decodes a rectangle of the image, for a viewport or a crop of a large scan or photo,
+without decoding the rest:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/LoadingExamples.cs;region=Imaging_DecodeRegion;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Image LoadViewport(string path, Rectangle viewport)
+{
+    // The area is in pixels of the stored image, before its orientation. A tiled TIFF page reads only the tiles the
+    // area meets, an AVIF or HEIC grid decodes only the tiles it needs, and the pixels are those of a full decode.
+    // Other formats throw UnsupportedImageFeatureException
+    return Image.Load(path, new ImageDecodeOptions { Region = viewport });
+}
+```
+<!-- endref -->
+
+The rectangle is in pixels of the stored image at full resolution, before the EXIF orientation is applied. The image holds
+the part of the rectangle that is inside the image, with the pixels a full decode has there. What the decoder skips
+depends on how the file is stored:
+
+| Format | What a region decodes |
+| --- | --- |
+| JPEG 2000 | The tiles it meets and, in them, the code-blocks that reach it: see [JPEG 2000](../10-Formats/16-Jpeg2000.md#thumbnails-and-viewports) |
+| TIFF | The strips or the tiles it meets, each one whole: a tiled page makes the viewports of a large page cheap. The pages of an [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) take the option too |
+| AVIF, HEIC | The tiles of a grid it meets, such as the tiles of a phone photo. An image that is not a grid, and each frame of an image sequence, is decoded whole, and only the area is kept |
+
+Any other format, and a rectangle outside the image, throws an
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) before decoding. TIFF, AVIF and HEIC
+files are only decoded at full resolution, so a region combines with [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) but
+not with a [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) above 1. The strips and tiles that are
+not decoded are not checked either: an error in them is not reported. Readers ([ImageReaderOptions](cref:Meziantou.Framework.Imaging.ImageReaderOptions))
+have no region.
 
 ## What a load does not do
 

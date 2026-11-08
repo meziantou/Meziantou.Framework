@@ -45,16 +45,28 @@ internal sealed class TiffRowExpander : IDisposable
     /// <param name="page">The page.</param>
     /// <param name="inkConversion">The conversion of the inks of a CMYK page to RGB; <see langword="null"/> for the other pages.</param>
     /// <param name="scope">The scope charged for the lookup table of a palette and the scratch row of 16-bit inks.</param>
+    public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope)
+        : this(page, inkConversion, scope, page.Size.Width, nativeInks: false)
+    {
+    }
+
+    /// <summary>Creates the expander of rows of <paramref name="width"/> pixels of a page: a part of its rows (a region).</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="inkConversion">The conversion of the inks of a CMYK page to RGB; <see langword="null"/> for the other pages.</param>
+    /// <param name="scope">The scope charged for the lookup table of a palette and the scratch row of 16-bit inks.</param>
+    /// <param name="width">The number of pixels of a row to expand, at most the width of the page.</param>
     /// <param name="nativeInks">Whether the inks of a CMYK page without alpha are expanded as CMYK pixels instead of being converted.</param>
-    public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope, bool nativeInks = false)
+    public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope, int width, bool nativeInks = false)
     {
         ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(scope);
         if (nativeInks ? !page.IsCmyk || page.HasAlpha || inkConversion is not null : page.IsCmyk != (inkConversion is not null))
             throw new ArgumentException("A CMYK page, and only it, needs the conversion of its inks, unless they are expanded as CMYK pixels.", nameof(inkConversion));
 
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(width, page.Size.Width);
         _page = page;
-        _width = page.Size.Width;
+        _width = width;
         _inkConversion = inkConversion;
         _nativeInks = nativeInks;
         SourcePixelFormat = nativeInks ? GetCmykPixelFormat(page) : page.SourcePixelFormat;
@@ -81,8 +93,8 @@ internal sealed class TiffRowExpander : IDisposable
     public static PixelFormat GetCmykPixelFormat(TiffPage page) => page.DecodedBitsPerSample == 16 ? PixelFormat.Cmyk64 : PixelFormat.Cmyk32;
 
     /// <summary>Expands one decoded row.</summary>
-    /// <param name="stored">The decoded samples of the row; only the first <c>Width</c> pixels are read (a tile row is padded).</param>
-    /// <param name="destination">Exactly <c>Width</c> pixels of <see cref="SourcePixelFormat"/>.</param>
+    /// <param name="stored">The decoded samples of the row; only the first <c>width</c> pixels are read (a tile row is padded).</param>
+    /// <param name="destination">Exactly <c>width</c> pixels of <see cref="SourcePixelFormat"/>.</param>
     public void Expand(ReadOnlySpan<byte> stored, Span<byte> destination)
     {
         var page = _page;

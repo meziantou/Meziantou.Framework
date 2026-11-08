@@ -937,6 +937,174 @@ public sealed class AvifDecoderTests
         Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
     }
 
+    /// <summary>Areas of an image of <paramref name="width"/> by <paramref name="height"/> pixels: single pixels, areas across tiles of 64 pixels, areas that extend past the image, and the whole image.</summary>
+    private static Rectangle[] GetRegions(int width, int height) =>
+    [
+        new(0, 0, 1, 1),
+        new(width - 1, height - 1, 1, 1),
+        new(width / 3, height / 4, 1, 1),
+        new(3, 2, width / 2, height / 3),
+        new(Math.Min(width - 1, 63), 0, 2, height),
+        new(0, Math.Min(height - 1, 63), width, 2),
+        new(Math.Min(width - 1, 61), Math.Min(height - 1, 62), 5, 5),
+        new(width / 5, height / 2, 7, height),
+        new(width - 2, height - 2, int.MaxValue - width, int.MaxValue - height),
+        new(0, 0, width, height),
+    ];
+
+    private static byte[] GetFrameBytes(ImageFrame frame)
+    {
+        var bytes = new byte[frame.Width * frame.Height * PixelFormats.GetBytesPerPixel(frame.PixelFormat)];
+        frame.CopyPixelBytesTo(bytes);
+        return bytes;
+    }
+
+    /// <summary>Gets the bytes of the pixels of an area of rows of <paramref name="width"/> pixels.</summary>
+    private static byte[] Crop(byte[] pixels, int width, int bytesPerPixel, Rectangle area)
+    {
+        var result = new byte[area.Width * area.Height * bytesPerPixel];
+        for (var y = 0; y < area.Height; y++)
+        {
+            pixels.AsSpan((((area.Y + y) * width) + area.X) * bytesPerPixel, area.Width * bytesPerPixel).CopyTo(result.AsSpan(y * area.Width * bytesPerPixel));
+        }
+
+        return result;
+    }
+
+    /// <summary>Checks that every area of <see cref="GetRegions"/> decodes, in every frame, to the pixels of the full decode in that area, with one and several workers.</summary>
+    private static void AssertRegionsAreCropsOfTheFullDecode(byte[] data)
+    {
+        using var full = Image.Load(data);
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(full.PixelFormat);
+        var expected = full.Frames.Select(GetFrameBytes).ToArray();
+        foreach (var region in GetRegions(full.Width, full.Height))
+        {
+            var area = Rectangle.Intersect(region, new Rectangle(0, 0, full.Width, full.Height));
+            foreach (var workers in new[] { 1, 16 })
+            {
+                using var actual = Image.Load(data, new ImageDecodeOptions { Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+                Assert.Equal(area.Size, actual.Size);
+                Assert.Equal(full.PixelFormat, actual.PixelFormat);
+                Assert.Equal(full.Frames.Count, actual.Frames.Count);
+                for (var frame = 0; frame < expected.Length; frame++)
+                {
+                    if (!Crop(expected[frame], full.Width, bytesPerPixel, area).AsSpan().SequenceEqual(GetFrameBytes(actual.Frames[frame])))
+                        Assert.Fail(string.Create(CultureInfo.InvariantCulture, $"Frame {frame} of the region {region} decoded by {workers} workers differs from the full decode."));
+                }
+            }
+        }
+    }
+
+    /// <summary>The files of <see cref="ARegionHasThePixelsOfTheFullDecodeInThatArea"/>: grids with and without an alpha grid, a grid with a clean aperture, an image that is not a grid, an overlay, and a sequence.</summary>
+    public static TheoryData<string> RegionFiles => ["grid", "transparent-grid", "cropped-grid", "still", "overlay", "sequence"];
+
+    private static byte[] GetRegionFile(string name)
+    {
+        switch (name)
+        {
+            case "grid":
+                return CreateLargeGrid(transparent: false);
+            case "transparent-grid":
+                return CreateLargeGrid(transparent: true);
+            case "cropped-grid":
+                {
+                    // A clean aperture of 300x200 pixels, centered: the region is an area of the image it presents
+                    var builder = HeifFileBuilder.From(CreateLargeGrid(transparent: false));
+                    builder.GetItem(builder.PrimaryItemId!.Value).Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(300, 1, 200, 1, 0, 1, 0, 1)), true));
+                    return builder.Build();
+                }
+
+            case "still":
+                return EncodeRegionImage(frames: 1);
+
+            case "overlay":
+                {
+                    // Two uses of the image, the second one 4 pixels right and 2 down, on a canvas of 104x72 pixels
+                    var builder = HeifFileBuilder.From(EncodeRegionImage(frames: 1));
+                    var input = builder.PrimaryItemId!.Value;
+                    builder.GetItem(input).IsHidden = true;
+                    var overlay = builder.Items.Max(item => item.Id) + 1;
+                    builder.AddItem(overlay, "iovl", OverlayDescriptor(104, 72, (0, 0), (4, 2)), builder.AddProperty(HeifFileBuilder.ImageSize(104, 72)));
+                    builder.References.Add(("dimg", overlay, [input, input]));
+                    builder.PrimaryItemId = overlay;
+                    return builder.Build();
+                }
+
+            default:
+                return EncodeRegionImage(frames: 3);
+        }
+
+        static byte[] EncodeRegionImage(int frames)
+        {
+            using var image = HeifEncoderTestImages.CreateImage(100, 70, seed: 5, transparent: frames is 1);
+            for (var i = 1; i < frames; i++)
+            {
+                using var frame = HeifEncoderTestImages.CreateImage(100, 70, seed: 5 + i, transparent: false);
+                image.AppendFrame(frame.Frames[0]);
+            }
+
+            foreach (var frame in image.Frames)
+            {
+                frame.Metadata.Duration = new FrameDuration(1, 10);
+            }
+
+            using var stream = new MemoryStream();
+            image.Save(stream, new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0 });
+            return stream.ToArray();
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RegionFiles))]
+    public void ARegionHasThePixelsOfTheFullDecodeInThatArea(string name) => AssertRegionsAreCropsOfTheFullDecode(GetRegionFile(name));
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    public void OnlyTheTilesThatARegionNeedsAreDecoded(int workers)
+    {
+        // Every tile but the second one of the second row has no frame: the full image fails, an area inside that tile (and
+        // farther than the margin of the chroma from its edges) does not decode the others
+        var region = new Rectangle(64 + 10, 64 + 10, 40, 30);
+        using var full = Image.Load(CreateLargeGrid(transparent: false));
+        var expected = Crop(GetFrameBytes(full.Frames[0]), full.Width, PixelFormats.GetBytesPerPixel(full.PixelFormat), region);
+        var damaged = HeifFileBuilder.From(CreateLargeGrid(transparent: false));
+        var tiles = damaged.References.Single(reference => reference.Type == "dimg").ToItemIds;
+        for (var i = 0; i < tiles.Length; i++)
+        {
+            if (i != 6)
+            {
+                damaged.GetItem(tiles[i]).Data = TemporalDelimiter;
+            }
+        }
+
+        var data = damaged.Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data, WithWorkers(workers)));
+        using var actual = Image.Load(data, new ImageDecodeOptions { Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+        Assert.Equal(expected, GetFrameBytes(actual.Frames[0]));
+    }
+
+    [Fact]
+    public void ARegionOfAGridHoldsThePlanesOfItsTilesOnly()
+    {
+        var data = CreateLargeGrid(transparent: true);
+        using var full = Image.Load(data);
+        using var region = Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(74, 74, 40, 30) });
+        var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        var regionPeak = region.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+
+        // The region needs one tile of the 20: the planes of the color image and of the alpha plane hold it alone. The state
+        // of the AV1 decoder of a tile does not depend on the region
+        Assert.True(regionPeak * 2 < fullPeak, string.Create(CultureInfo.InvariantCulture, $"Peak {regionPeak} bytes for the region, {fullPeak} bytes for the image."));
+    }
+
+    [Fact]
+    public void ARegionOutsideTheImageIsRejected()
+    {
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(CreateLargeGrid(transparent: false), new ImageDecodeOptions { Region = new Rectangle(0, 256, 10, 10) }));
+        Assert.Equal(("Region decoding", ImageFormat.Avif), (exception.Feature, exception.Format));
+    }
+
     // A temporal unit with a temporal delimiter and no frame
     private static byte[] TemporalDelimiter => [0x12, 0x00];
 

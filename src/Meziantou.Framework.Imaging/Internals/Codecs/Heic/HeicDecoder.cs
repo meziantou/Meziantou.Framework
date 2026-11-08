@@ -53,7 +53,8 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Heic, structure.CanvasSize, structure.PixelFormat, structure.SourcePixelFormat, structure.Metadata.IccProfile);
+        var canvas = _request.GetRegion(structure.CanvasSize, ImageFormat.Heic).Size;
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Heic, canvas, structure.PixelFormat, structure.SourcePixelFormat, structure.Metadata.IccProfile);
     }
 
     public override void OnImageData(HeifStructureParser structure)
@@ -62,16 +63,19 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         var plan = structure.Plan;
         var sink = _sink!;
         sink.BeginFrame(FrameDuration.Zero);
-        if (plan.Alpha is null && plan.Color.IsGrid && plan.Color.TileSize.Height >= MinBandTileHeight)
+        if (_request.Region is null && plan.Alpha is null && plan.Color.IsGrid && plan.Color.TileSize.Height >= MinBandTileHeight)
         {
             DecodeGridByTileRows(structure, plan.Color, sink, plan.Crop);
         }
         else
         {
-            using var color = DecodeImage(structure, plan.Color);
+            // A region decodes the tiles of a grid that it needs, into planes that hold these tiles only
+            var area = GetOutputArea(_request, plan.Crop, ImageFormat.Heic);
+            var window = GetGridWindow(plan, area);
+            using var color = DecodeImage(structure, plan.Color, window);
             structure.SetBitstreamColorDescription(color.Format);
-            using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha);
-            HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, plan.Color.Size, plan.Crop);
+            using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha, window);
+            HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, window.GetCodedSize(plan.Color), window.ToPlanes(plan.Color, area));
         }
 
         sink.UpdateMetadata(structure.Metadata);
@@ -121,7 +125,7 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         using var colorImage = ToSequenceImage(_colorPictures.Dequeue(), movie.Color, ref _identifiedColorFormat);
         structure.SetBitstreamColorDescription(colorImage.Format);
         using var alphaImage = movie.Alpha is null ? null : ToSequenceImage(_alphaPictures.Dequeue(), movie.Alpha, ref _identifiedAlphaFormat);
-        HeifFrameWriter.WriteFrame(_context, sink, structure, colorImage, alphaImage, movie.Color.Size, movie.Color.Crop);
+        HeifFrameWriter.WriteFrame(_context, sink, structure, colorImage, alphaImage, movie.Color.Size, GetOutputArea(_request, movie.Color.Crop, ImageFormat.Heic));
 
         // The color description of the bitstream is known once the first image is decoded, and the metadata items once
         // their data went by
@@ -169,8 +173,8 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         }
     }
 
-    // Decodes the coded items of an image into planes of the size of the image
-    private HeicPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image)
+    // Decodes the coded items of an image into planes of the size of the image, or of the tiles of the window of a region
+    private HeicPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image, HeifGridWindow window)
     {
         if (!image.IsGrid)
         {
@@ -186,14 +190,14 @@ internal sealed class HeicDecoder : HeifDecodeObserver
                 try
                 {
                     // The planes hold whole tiles: the tiles of the last row and column may exceed the image
-                    result ??= HeicPlanarImage.Create(_context.Scope, format, image.Columns * image.TileSize.Width, image.Rows * image.TileSize.Height);
-                    result.CopyPicture(picture, i % image.Columns * image.TileSize.Width, i / image.Columns * image.TileSize.Height);
+                    result ??= HeicPlanarImage.Create(_context.Scope, format, window.Columns * image.TileSize.Width, window.Rows * image.TileSize.Height);
+                    result.CopyPicture(picture, ((i % image.Columns) - window.FirstColumn) * image.TileSize.Width, ((i / image.Columns) - window.FirstRow) * image.TileSize.Height);
                 }
                 finally
                 {
                     picture.Release();
                 }
-            });
+            }, window.IsAll(image) ? null : window.GetTiles(image));
 
             var planes = result!;
             result = null;
@@ -271,14 +275,15 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     // consume releases each picture. With several workers (ImageConfiguration.MaxDegreeOfParallelism), up to that many
     // consecutive tiles that share a configuration record are decoded at once: the decoders of a batch copy the parameter
     // sets of the same template. The pictures, the checks and the errors are those of a sequential decoding.
-    private void DecodeTiles(HeifStructureParser structure, HeifCodedImage image, Action<int, HevcPicture, HeifBitstreamFormat> consume)
+    private void DecodeTiles(HeifStructureParser structure, HeifCodedImage image, Action<int, HevcPicture, HeifBitstreamFormat> consume, int[]? selection = null)
     {
         HeifBitstreamFormat? first = null;
+        var itemWorkers = GetItemWorkerCount(image, selection?.Length ?? image.Tiles.Length);
         HeifGridTiles.Decode(
             _context,
             image,
             index => PrepareTile(structure, image, index),
-            (tile, tracker) => new DecodedTile(DecodePreparedTile(image, tile, tracker, out var format), format),
+            (tile, tracker) => new DecodedTile(DecodePreparedTile(image, tile, tracker, itemWorkers, out var format), format),
             static tile => tile.Picture.Release(),
             (index, tile) =>
             {
@@ -291,17 +296,18 @@ internal sealed class HeicDecoder : HeifDecodeObserver
                 first ??= tile.Format;
                 consume(index, tile.Picture, tile.Format);
             },
-            (start, index) => image.ConfigurationRecords[start] == image.ConfigurationRecords[index]);
+            (start, index) => image.ConfigurationRecords[start] == image.ConfigurationRecords[index],
+            selection);
     }
 
     // Decodes the coded item of an image that is not a grid, and checks the picture against the file
     private HevcPicture DecodeTile(HeifStructureParser structure, HeifCodedImage image, out HeifBitstreamFormat format)
-        => DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, out format);
+        => DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, GetItemWorkerCount(image, image.Tiles.Length), out format);
 
     // The workers of the HEVC decoder of a coded item: the configured number, unless the tiles of a grid are decoded by
     // several workers, which already share the threads
-    private int GetItemWorkerCount(HeifCodedImage image)
-        => HeifGridTiles.GetWorkerCount(_context, image) is 1 ? _context.Configuration.MaxDegreeOfParallelism : 1;
+    private int GetItemWorkerCount(HeifCodedImage image, int tileCount)
+        => HeifGridTiles.GetWorkerCount(_context, image, tileCount) is 1 ? _context.Configuration.MaxDegreeOfParallelism : 1;
 
     private static InvalidImageContentException CreateMixedTileFormatsException() => HeicBinding.Instance.Invalid("the tiles of a grid do not have the same sample format.");
 
@@ -334,9 +340,9 @@ internal sealed class HeicDecoder : HeifDecodeObserver
 
     // Decodes a prepared coded item and checks the picture against the file. It uses no state of the decoder but the
     // template, which it only reads: the tiles of a grid are decoded on several threads.
-    private HevcPicture DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, out HeifBitstreamFormat format)
+    private HevcPicture DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, int itemWorkers, out HeifBitstreamFormat format)
     {
-        var picture = DecodeCodedItem(tile, tracker, GetItemWorkerCount(image));
+        var picture = DecodeCodedItem(tile, tracker, itemWorkers);
         try
         {
             format = HeicBinding.ToBitstreamFormat(picture.Sps);

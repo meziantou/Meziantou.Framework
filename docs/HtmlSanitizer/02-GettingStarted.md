@@ -33,7 +33,9 @@ Assert.Equal("""<p>Nice <b>post</b>! <a href="">Click</a> <img src="cat.png"></p
 - The result is written in a normalized form: attribute values are between double quotes, and void elements such as
   `img` have no end tag.
 
-[SanitizeHtmlFragment](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SanitizeHtmlFragment) returns `null` when the input is `null`.
+[SanitizeHtmlFragment](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SanitizeHtmlFragment) returns `null` when the input is `null`. It throws an `ArgumentException` when the fragment is
+longer than [MaxInputLength](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.MaxInputLength) or creates more elements than [MaxElementCount](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.MaxElementCount): see
+[Size of the input](07-SecurityGuaranteesAndLimits.md#size-of-the-input).
 
 ## Insert the result in a page
 

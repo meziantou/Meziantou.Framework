@@ -36,6 +36,38 @@ Assert.Equal(once, sanitizer.SanitizeHtmlFragment(once));
 Text and attribute values are encoded when the output is written, so text can never become markup and a value can
 never close its quotes. Deeply nested fragments, such as thousands of nested elements, do not overflow the stack.
 
+## Size of the input
+
+The work and the memory that a fragment costs are bounded. [SanitizeHtmlFragment](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SanitizeHtmlFragment) throws an `ArgumentException`
+when:
+
+- the fragment is longer than [MaxInputLength](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.MaxInputLength), 1,000,000 characters by default. The fragment is rejected before it
+  is parsed.
+- the parser creates more elements than [MaxElementCount](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.MaxElementCount), 100,000 by default. The length of a fragment does not
+  bound its number of elements: a browser recreates the open formatting elements (`b`, `i`, `a`, ...) in each new
+  paragraph, so a few kilobytes can create millions of elements. The parser stops as soon as it reaches the limit.
+
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_Limits;format=md-fenced-code-block;dedent=true -->
+```csharp
+var sanitizer = new HtmlSanitizer
+{
+    MaxInputLength = 10_000,
+    MaxElementCount = 1_000,
+};
+
+// A fragment longer than MaxInputLength is rejected before it is parsed
+Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(new string('a', 10_001)));
+
+// A short fragment can still create many elements: each paragraph recreates the open formatting elements
+var amplified = "<p>" + string.Concat(Enumerable.Range(0, 100).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 100));
+Assert.HasCountLessThan(sanitizer.MaxInputLength, amplified);
+Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(amplified));
+```
+<!-- endref -->
+
+Lower the limits to the size of the content you expect, such as a comment, and return an error to the author when the
+exception is thrown. Set a limit to `int.MaxValue` to remove it, for instance for content that you trust.
+
 ## What the guarantees depend on
 
 - **Your configuration.** Each element or attribute that you allow is kept as it is. An attribute in [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes)
@@ -63,8 +95,6 @@ never close its quotes. Deeply nested fragments, such as thousands of nested ele
   allowed.
 - **Classes of your stylesheets.** The value of `class` is not checked. See
   [Styles](05-AllowedAttributesAndStyles.md#styles).
-- **Large inputs.** There is no limit on the size of the fragment. Reject inputs that are larger than you expect before
-  you sanitize them.
 
 For instance, a template expression in the text is kept as it is:
 

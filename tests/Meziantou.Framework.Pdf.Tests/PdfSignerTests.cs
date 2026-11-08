@@ -101,6 +101,26 @@ public sealed class PdfSignerTests
     }
 
     [Fact]
+    public void ASignatureFieldCreatedByTheFormIsSigned()
+    {
+        using var certificate = CreateCertificate("rsa");
+        var document = CreateDocument();
+        document.Form.AddTextField(document.Pages[0], "name", new PdfRectangle(60, 600, 260, 620), new PdfTextFieldOptions { Value = "Jane Doe" });
+        document.Form.AddSignatureField(document.Pages[0], "approval", new PdfRectangle(60, 500, 260, 560));
+        var data = document.ToByteArray();
+
+        var signed = PdfSigner.Sign(PdfDocument.Open(data), new PdfSignatureOptions(certificate) { FieldName = "approval" });
+
+        var signature = PdfSignatureVerifier.Verify(signed).Single();
+        Assert.True(signature.IsValid, signature.Error);
+        Assert.Equal("approval", signature.FieldName);
+        var read = PdfDocument.Open(signed);
+        Assert.Equal(["name", "approval"], read.Form.GetFields().Select(field => field.FullName));
+        Assert.True(((PdfSignatureField)read.Form.FindField("approval")!).IsSigned);
+        Assert.Single(read.Form.FindField("approval")!.Widgets);
+    }
+
+    [Fact]
     public void ASecondSignatureKeepsTheFirstValid()
     {
         using var certificate = CreateCertificate("rsa");

@@ -64,7 +64,10 @@ the XML documentation and `readme.md` consistent in the same change.
   imported. Removing a page removes the references of the document to it (destinations, named destinations, structure
   tree, form fields). The caches of the document model (annotations of a page, resource names of a builder) are
   invalidated by the `Version` of `PdfArray` and `PdfDictionary`, incremented by every change. The appearances the
-  library writes for form fields and markup annotations use the standard 14 fonts.
+  library writes for markup annotations use the standard 14 fonts; those of form fields use the font of their default
+  appearance when the form knows it (an embedded font of the document, or one given to `AddFont`), a standard 14 font
+  otherwise. The fields the form creates (`PdfInteractiveForm.Create.cs`) put their fonts in `/DR`, embedded whole
+  for the editable fields (`EmbeddedFontUsage.EmbedAllGlyphs`), and draw the symbols of the buttons as paths.
 - **Embedded fonts** (`Fonts/EmbeddedPdfFont.cs`, `Fonts/EmbeddedFontUsage.cs`): a `Type0` font with `Identity-H`
   codes that are the glyph identifiers (the subset keeps them: CID = GID), a `ToUnicode` CMap of the glyphs that show
   one cluster, and `/ActualText` around the texts whose glyphs cannot give them back. The content builder shapes the

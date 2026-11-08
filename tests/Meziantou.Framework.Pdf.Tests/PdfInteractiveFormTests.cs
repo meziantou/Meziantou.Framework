@@ -1,6 +1,7 @@
 using System.Text;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
 
@@ -8,6 +9,9 @@ public sealed class PdfInteractiveFormTests
 {
     private static readonly PdfName AP = PdfName.Create("AP");
     private static readonly PdfName AS = PdfName.Create("AS");
+    private static readonly PdfName DA = PdfName.Create("DA");
+    private static readonly PdfName DR = PdfName.Create("DR");
+    private static readonly PdfName MK = PdfName.Create("MK");
 
     /// <summary>
     /// A form of each field type, written by hand: a text field merged with its widget, a hierarchy (address.city), a
@@ -266,5 +270,330 @@ public sealed class PdfInteractiveFormTests
         Assert.IsType<PdfTextField>(field);
         Assert.Equal("inherited", field.Value);
         Assert.True(field.IsRequired);
+    }
+
+    /// <summary>A form created with the API: a field of each type on one page, the text fields in Helvetica.</summary>
+    internal static PdfDocument CreateFields()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(300, 400));
+        var form = document.Form;
+        form.AddTextField(page, "name", new PdfRectangle(10, 360, 190, 380), new PdfTextFieldOptions { Value = "Jane", AlternateName = "Your name", IsRequired = true });
+        form.AddTextField(page, "address.street", new PdfRectangle(10, 300, 190, 350), new PdfTextFieldOptions { IsMultiline = true, Value = "1 Main Street\nSpringfield", BackgroundColor = PdfColor.FromRgb(0.9, 0.9, 1) });
+        form.AddTextField(page, "address.zip", new PdfRectangle(200, 330, 290, 350), new PdfTextFieldOptions { MaxLength = 5, IsComb = true });
+        form.AddCheckBox(page, "agree", new PdfRectangle(10, 270, 25, 285), new PdfCheckBoxOptions { IsChecked = true });
+        form.AddRadioButtons("size", [new PdfRadioButton(page, new PdfRectangle(10, 240, 25, 255), "S"), new PdfRadioButton(page, new PdfRectangle(40, 240, 55, 255), "M"), new PdfRadioButton(page, new PdfRectangle(70, 240, 85, 255), "L")], new PdfRadioButtonOptions { Value = "M" });
+        form.AddComboBox(page, "country", new PdfRectangle(10, 200, 150, 220), [new PdfChoiceOption("fr", "France"), new PdfChoiceOption("de", "Germany")], new PdfChoiceFieldOptions { SelectedValues = ["fr"] });
+        form.AddListBox(page, "colors", new PdfRectangle(160, 150, 290, 220), [new PdfChoiceOption("red", "Red"), new PdfChoiceOption("green", "Green"), new PdfChoiceOption("blue", "Blue")], new PdfChoiceFieldOptions { IsMultiSelect = true, SelectedValues = ["red", "blue"] });
+        form.AddTextField(page, "id", new PdfRectangle(10, 120, 150, 140), new PdfTextFieldOptions { Value = "42", IsReadOnly = true, Alignment = PdfTextAlignment.Right });
+        form.AddSignatureField(page, "signature", new PdfRectangle(10, 10, 190, 60));
+        return document;
+    }
+
+    [Fact]
+    public void Example_CreateForm()
+    {
+        #region Pdf_CreateForm
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        var form = document.Form;
+        form.AddTextField(page, "name", new PdfRectangle(50, 780, 300, 800), new PdfTextFieldOptions { Value = "Jane Doe", IsRequired = true });
+        form.AddTextField(page, "address.city", new PdfRectangle(50, 750, 300, 770));
+        form.AddCheckBox(page, "agree", new PdfRectangle(50, 720, 65, 735), new PdfCheckBoxOptions { IsChecked = true });
+        form.AddRadioButtons("size",
+        [
+            new PdfRadioButton(page, new PdfRectangle(50, 690, 65, 705), "S"),
+            new PdfRadioButton(page, new PdfRectangle(80, 690, 95, 705), "L"),
+        ], new PdfRadioButtonOptions { Value = "S" });
+        form.AddComboBox(page, "country", new PdfRectangle(50, 650, 200, 670), [new PdfChoiceOption("fr", "France"), new PdfChoiceOption("de", "Germany")], new PdfChoiceFieldOptions { SelectedValues = ["fr"] });
+        form.AddSignatureField(page, "signature", new PdfRectangle(50, 550, 250, 620));
+
+        var data = document.ToByteArray();
+        #endregion
+
+        var read = PdfDocument.Open(data).Form;
+        Assert.Equal(["name", "address.city", "agree", "size", "country", "signature"], read.GetFields().Select(field => field.FullName));
+        Assert.Equal("Jane Doe", read.FindField("name")!.Value);
+        Assert.True(read.FindField("name")!.IsRequired);
+        Assert.Null(read.FindField("address.city")!.Value);
+        Assert.True(((PdfCheckBoxField)read.FindField("agree")!).IsChecked);
+        Assert.Equal("S", read.FindField("size")!.Value);
+        Assert.Equal("fr", read.FindField("country")!.Value);
+        Assert.False(((PdfSignatureField)read.FindField("signature")!).IsSigned);
+    }
+
+    [Fact]
+    public void CreatedFieldsAreRead()
+    {
+        var read = PdfDocument.Open(CreateFields().ToByteArray()).Form;
+
+        var fields = read.GetFields();
+        Assert.Equal(["name", "address.street", "address.zip", "agree", "size", "country", "colors", "id", "signature"], fields.Select(field => field.FullName));
+        Assert.Equal([typeof(PdfTextField), typeof(PdfTextField), typeof(PdfTextField), typeof(PdfCheckBoxField), typeof(PdfRadioButtonField), typeof(PdfChoiceField), typeof(PdfChoiceField), typeof(PdfTextField), typeof(PdfSignatureField)], fields.Select(field => field.GetType()));
+        Assert.HasCount(11, read.Document.Pages[0].Annotations);
+
+        var name = (PdfTextField)read.FindField("name")!;
+        Assert.Equal("Jane", name.Value);
+        Assert.Equal("Your name", name.AlternateName);
+        Assert.True(name.IsRequired);
+        Assert.False(name.IsReadOnly);
+        Assert.Equal("/Helv 12 Tf 0 g", name.Dictionary.Get<PdfString>(DA)!.ToText());
+        var content = Encoding.Latin1.GetString(name.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!.GetDecodedData());
+        Assert.Contains("/Tx BMC", content, StringComparison.Ordinal);
+        Assert.Contains("(Jane) Tj", content, StringComparison.Ordinal);
+
+        var street = (PdfTextField)read.FindField("address.street")!;
+        Assert.True(street.IsMultiline);
+        Assert.Equal("1 Main Street\nSpringfield", street.Value);
+        Assert.False(read.FindField("address")!.IsTerminal);
+        var zip = (PdfTextField)read.FindField("address.zip")!;
+        Assert.True(zip.IsComb);
+        Assert.Equal(5, zip.MaxLength);
+        Assert.Null(zip.Value);
+
+        var agree = (PdfCheckBoxField)read.FindField("agree")!;
+        Assert.True(agree.IsChecked);
+        Assert.Equal("Yes", agree.OnValue);
+        Assert.Equal(PdfName.Create("Yes"), agree.Dictionary.GetName(AS));
+        Assert.Equal("4", agree.Dictionary.Get<PdfDictionary>(MK)!.Get<PdfString>(PdfName.Create("CA"))!.ToText());
+        Assert.Equal("/ZaDb 0 Tf 0 g", agree.Dictionary.Get<PdfString>(DA)!.ToText());
+
+        var size = (PdfRadioButtonField)read.FindField("size")!;
+        Assert.Equal(["S", "M", "L"], size.Options);
+        Assert.Equal("M", size.Value);
+        Assert.Equal([PdfName.Create("Off"), PdfName.Create("M"), PdfName.Create("Off")], size.Widgets.Select(widget => widget.Dictionary.GetName(AS)));
+        Assert.Equal(1 << 14, size.Flags & (1 << 14)); // NoToggleToOff
+
+        var country = (PdfChoiceField)read.FindField("country")!;
+        Assert.True(country.IsComboBox);
+        Assert.False(country.IsEditable);
+        Assert.Equal([new PdfChoiceOption("fr", "France"), new PdfChoiceOption("de", "Germany")], country.Options);
+        Assert.Equal("fr", country.Value);
+        Assert.Contains("(France) Tj", Encoding.Latin1.GetString(country.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!.GetDecodedData()), StringComparison.Ordinal);
+        var colors = (PdfChoiceField)read.FindField("colors")!;
+        Assert.False(colors.IsComboBox);
+        Assert.True(colors.IsMultiSelect);
+        Assert.Equal(["red", "blue"], colors.SelectedValues);
+
+        var id = (PdfTextField)read.FindField("id")!;
+        Assert.True(id.IsReadOnly);
+        Assert.Equal(2, id.Dictionary.GetInteger(PdfName.Create("Q"), 0));
+
+        var signature = (PdfSignatureField)read.FindField("signature")!;
+        Assert.False(signature.IsSigned);
+        Assert.NotNull(signature.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N));
+
+        var fonts = read.Dictionary!.Get<PdfDictionary>(DR)!.Get<PdfDictionary>(PdfNames.Font)!;
+        Assert.Equal(["Helv", "ZaDb"], fonts.Select(entry => entry.Key.Value));
+        Assert.Equal(["Helvetica", "ZapfDingbats"], fonts.Select(entry => ((PdfDictionary)PdfReference.ResolveIfReference(entry.Value)).GetName(PdfNames.BaseFont)!.Value));
+    }
+
+    [Fact]
+    public void CreatedFieldsAreFilledAndFlattened()
+    {
+        var data = CreateFields().ToByteArray();
+        var document = PdfDocument.Open(data);
+        var form = document.Form;
+        form.FindField("name")!.Value = "John";
+        form.FindField("address.zip")!.Value = "75001";
+        ((PdfCheckBoxField)form.FindField("agree")!).IsChecked = false;
+        form.FindField("size")!.Value = "L";
+        form.FindField("country")!.Value = "de";
+        ((PdfChoiceField)form.FindField("colors")!).SetSelectedValues(["green"]);
+        Assert.Throws<InvalidOperationException>(() => form.FindField("id")!.Value = "43");
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        var read = PdfDocument.Open(output.ToArray());
+        Assert.Equal("John", read.Form.FindField("name")!.Value);
+        Assert.Equal("75001", read.Form.FindField("address.zip")!.Value);
+        Assert.False(((PdfCheckBoxField)read.Form.FindField("agree")!).IsChecked);
+        Assert.Equal(PdfName.Create("Off"), read.Form.FindField("agree")!.Dictionary.GetName(AS));
+        Assert.Equal("L", read.Form.FindField("size")!.Value);
+        Assert.Equal("de", read.Form.FindField("country")!.Value);
+        Assert.Equal(["green"], ((PdfChoiceField)read.Form.FindField("colors")!).SelectedValues);
+
+        read.Form.Flatten();
+        var flattened = PdfDocument.Open(read.ToByteArray());
+        var text = flattened.Pages[0].ExtractText();
+        Assert.Contains("John", text, StringComparison.Ordinal);
+        Assert.Contains("Springfield", text, StringComparison.Ordinal);
+        Assert.Contains("Germany", text, StringComparison.Ordinal);
+        Assert.Contains("Green", text, StringComparison.Ordinal);
+        Assert.Contains("42", text, StringComparison.Ordinal);
+        Assert.Contains("75001", text.Replace(" ", "", StringComparison.Ordinal), StringComparison.Ordinal);
+
+        // The signature field is not signed: it is flattened with the others
+        Assert.False(flattened.Form.Exists);
+        Assert.Empty(flattened.Pages[0].Annotations);
+
+        // The radio button L is on, M is off; the check box is off
+        using var image = flattened.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        Assert.True(image.Frames[0][77, 400 - 248].R < 128);
+        Assert.Equal(255, image.Frames[0][47, 400 - 248].R);
+        Assert.Equal(255, image.Frames[0][17, 400 - 278].R);
+    }
+
+    [Fact]
+    public void CheckedButtonsAreDrawn()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 40));
+        var styles = Enum.GetValues<PdfCheckBoxStyle>();
+        for (var i = 0; i < styles.Length; i++)
+        {
+            document.Form.AddCheckBox(page, "box" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), PdfRectangle.FromSize(5 + (i * 15), 5, 12, 12), new PdfCheckBoxOptions { IsChecked = true, Style = styles[i], BorderColor = null, TextColor = PdfColor.FromRgb(1, 0, 0) });
+        }
+
+        using var image = document.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+
+        // The symbol of each box is red, inside the box
+        var frame = image.Frames[0];
+        for (var i = 0; i < styles.Length; i++)
+        {
+            var red = 0;
+            for (var y = 40 - 17; y < 40 - 5; y++)
+            {
+                for (var x = 5 + (i * 15); x < 17 + (i * 15); x++)
+                {
+                    red += frame[x, y] is { R: > 200, G: < 100 } ? 1 : 0;
+                }
+            }
+
+            Assert.True(red > 4, $"{styles[i]}: {red.ToString(System.Globalization.CultureInfo.InvariantCulture)} red pixels");
+        }
+
+        Assert.Equal(255, frame[3, 20].G);
+    }
+
+    [Fact]
+    public void Example_CreateFieldWithEmbeddedFont()
+    {
+        var fontPath = (RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf").Value;
+
+        #region Pdf_CreateFieldWithEmbeddedFont
+        var font = PdfFont.Load(fontPath);
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+
+        // The font is added to the default resources of the form, embedded whole so that viewers can show what users type
+        document.Form.AddTextField(page, "comment", new PdfRectangle(50, 780, 300, 800), new PdfTextFieldOptions { Font = font, Value = "Été “fine” — 1€" });
+        var data = document.ToByteArray();
+
+        // The fonts of a saved document cannot show new text: give the font again to fill the fields that use it
+        var filled = PdfDocument.Open(data);
+        filled.Form.AddFont(font);
+        filled.Form.FindField("comment")!.Value = "AVATAR Office";
+        #endregion
+
+        var read = PdfDocument.Open(data);
+        var field = read.Form.FindField("comment")!;
+        Assert.Equal("/F1 12 Tf 0 g", field.Dictionary.Get<PdfString>(DA)!.ToText());
+        var resource = read.Form.Dictionary!.Get<PdfDictionary>(DR)!.Get<PdfDictionary>(PdfNames.Font)!.Get<PdfDictionary>(PdfName.Create("F1"))!;
+        Assert.Equal(PdfNames.Type0, resource.GetName(PdfNames.Subtype));
+
+        // Embedded whole: the name has no subset tag, and every glyph has a width
+        Assert.Equal(font.PostScriptName, resource.GetName(PdfNames.BaseFont)!.Value);
+        var descendant = (PdfDictionary)resource.Get<PdfArray>(PdfNames.DescendantFonts)!.GetResolved(0);
+        var widths = descendant.Get<PdfArray>(PdfNames.W)!;
+        Assert.Equal(0, ((PdfInteger)widths[0]).Value);
+        var glyphCount = ((Meziantou.Framework.Pdf.Fonts.EmbeddedPdfFont)font).Face.GlyphCount;
+        Assert.HasCount(glyphCount, (PdfArray)widths[1]);
+
+        // The appearance uses the same font object
+        var appearance = field.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!;
+        Assert.Same(resource, appearance.Dictionary.Get<PdfDictionary>(PdfNames.Resources)!.Get<PdfDictionary>(PdfNames.Font)!.Select(entry => PdfReference.ResolveIfReference(entry.Value)).Single());
+
+        // The value stays readable when the form is flattened
+        read.Form.Flatten();
+        Assert.Equal("Été “fine” — 1€", PdfDocument.Open(read.ToByteArray()).Pages[0].ExtractText());
+
+        // The filled document draws the new value with the font given again, and keeps the font of the file for viewers
+        var refilled = PdfDocument.Open(filled.ToByteArray());
+        var filledField = refilled.Form.FindField("comment")!;
+        Assert.Equal("/F1 12 Tf 0 g", filledField.Dictionary.Get<PdfString>(DA)!.ToText());
+        var filledFont = (PdfDictionary)PdfReference.ResolveIfReference(filledField.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!.Dictionary.Get<PdfDictionary>(PdfNames.Resources)!.Get<PdfDictionary>(PdfNames.Font)!.Single().Value);
+        Assert.Equal(PdfNames.Type0, filledFont.GetName(PdfNames.Subtype));
+        Assert.EndsWith("+" + font.PostScriptName, filledFont.GetName(PdfNames.BaseFont)!.Value, StringComparison.Ordinal);
+        Assert.Equal(font.PostScriptName, refilled.Form.Dictionary!.Get<PdfDictionary>(DR)!.Get<PdfDictionary>(PdfNames.Font)!.Get<PdfDictionary>(PdfName.Create("F1"))!.GetName(PdfNames.BaseFont)!.Value);
+        refilled.Form.Flatten();
+        Assert.Equal("AVATAR Office", PdfDocument.Open(refilled.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void AReadOnlyFieldEmbedsASubsetOfItsFont()
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A5);
+        Assert.Equal("F1", document.Form.AddTextField(page, "a", new PdfRectangle(10, 10, 200, 30), new PdfTextFieldOptions { Font = font, Value = "Office", IsReadOnly = true }).Dictionary.Get<PdfString>(DA)!.ToText()[1..3]);
+        document.Form.AddTextField(page, "b", new PdfRectangle(10, 40, 200, 60), new PdfTextFieldOptions { Font = font, Value = "AVATAR", SubsetFont = true });
+
+        // The second field uses the same font resource
+        Assert.Equal("/F1 12 Tf 0 g", document.Form.FindField("b")!.Dictionary.Get<PdfString>(DA)!.ToText());
+        Assert.Equal("Helv", document.Form.AddFont(PdfFont.GetStandardFont(PdfStandardFont.Helvetica)));
+        Assert.Equal("Helv", document.Form.AddFont(PdfFont.GetStandardFont(PdfStandardFont.Helvetica)));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var resource = read.Form.Dictionary!.Get<PdfDictionary>(DR)!.Get<PdfDictionary>(PdfNames.Font)!.Get<PdfDictionary>(PdfName.Create("F1"))!;
+        Assert.EndsWith("+" + font.PostScriptName, resource.GetName(PdfNames.BaseFont)!.Value, StringComparison.Ordinal);
+        read.Form.Flatten();
+        Assert.Equal("Office\nAVATAR", PdfDocument.Open(read.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void FieldsAreCreatedInAnExistingForm()
+    {
+        var document = PdfDocument.Open(CreateForm());
+        var page = document.Pages[0];
+
+        // A field in an existing group, and a text that its default font cannot show
+        var zip = document.Form.AddTextField(page, "address.zip", new PdfRectangle(160, 220, 290, 240), new PdfTextFieldOptions { Value = "75001" });
+        Assert.Equal("address.zip", zip.FullName);
+        Assert.Same(document.Form.FindField("address")!.Dictionary, zip.Parent!.Dictionary);
+        Assert.Equal(["city", "zip"], document.Form.FindField("address")!.Children.Select(field => field.Name));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal("75001", read.Form.FindField("address.zip")!.Value);
+        Assert.HasCount(10, read.Form.GetFields());
+        Assert.Equal(["Helv", "TiRo"], read.Form.Dictionary!.Get<PdfDictionary>(DR)!.Get<PdfDictionary>(PdfNames.Font)!.Select(entry => entry.Key.Value));
+    }
+
+    [Fact]
+    public void InvalidFieldsAreRefused()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A5);
+        var other = new PdfDocument().Pages.Add(PdfSize.A5);
+        var form = document.Form;
+        var rectangle = new PdfRectangle(10, 10, 100, 30);
+        form.AddTextField(page, "name", rectangle);
+        form.AddTextField(page, "group.child", rectangle);
+
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "name", rectangle));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "group.child", rectangle));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "name.child", rectangle));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "a..b", rectangle));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "", rectangle));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(other, "other", rectangle));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "comb", rectangle, new PdfTextFieldOptions { IsComb = true }));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "long", rectangle, new PdfTextFieldOptions { MaxLength = 2, Value = "abc" }));
+        Assert.Throws<ArgumentException>(() => form.AddTextField(page, "justified", rectangle, new PdfTextFieldOptions { Alignment = PdfTextAlignment.Justify }));
+        Assert.Throws<ArgumentException>(() => form.AddCheckBox(page, "off", rectangle, new PdfCheckBoxOptions { OnValue = "Off" }));
+        Assert.Throws<ArgumentException>(() => form.AddRadioButtons("none", []));
+        Assert.Throws<ArgumentException>(() => form.AddRadioButtons("missing", [new PdfRadioButton(page, rectangle, "A")], new PdfRadioButtonOptions { Value = "B" }));
+        Assert.Throws<ArgumentException>(() => form.AddComboBox(page, "combo", rectangle, [new PdfChoiceOption("a", "A")], new PdfChoiceFieldOptions { IsMultiSelect = true }));
+        Assert.Throws<ArgumentException>(() => form.AddComboBox(page, "combo", rectangle, [new PdfChoiceOption("a", "A")], new PdfChoiceFieldOptions { SelectedValues = ["b"] }));
+        Assert.Throws<ArgumentException>(() => form.AddListBox(page, "list", rectangle, [new PdfChoiceOption("a", "A")], new PdfChoiceFieldOptions { IsEditable = true }));
+        Assert.Throws<ArgumentException>(() => form.AddListBox(page, "list", rectangle, [new PdfChoiceOption("a", "A"), new PdfChoiceOption("b", "B")], new PdfChoiceFieldOptions { SelectedValues = ["a", "b"] }));
+
+        // An editable combo box accepts a text that is not an option
+        var combo = form.AddComboBox(page, "combo", rectangle, [new PdfChoiceOption("a", "A")], new PdfChoiceFieldOptions { IsEditable = true, SelectedValues = ["other"] });
+        Assert.True(combo.IsEditable);
+        Assert.Equal("other", combo.Value);
+
+        // The refused fields left nothing behind
+        Assert.Equal(["name", "group.child", "combo"], form.GetFields().Select(field => field.FullName));
+        Assert.HasCount(3, page.Annotations);
     }
 }

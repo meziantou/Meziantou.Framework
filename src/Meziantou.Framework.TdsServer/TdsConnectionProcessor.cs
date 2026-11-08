@@ -10,8 +10,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.Tds;
 
-internal sealed class TdsConnectionProcessor
+internal sealed partial class TdsConnectionProcessor
 {
+    /// <summary>The content type of a TLS handshake record, the first byte a TDS 8.0 client sends.</summary>
+    private const byte TlsHandshakeRecordType = 0x16;
+
+    /// <summary>The ALPN protocol identifier of TDS 8.0.</summary>
+    private static readonly SslApplicationProtocol Tds80ApplicationProtocol = new("tds/8.0");
+
     private readonly TdsServerOptions _options;
     private readonly TdsAuthenticationDelegate _authenticationHandler;
     private readonly TdsQueryDelegate _queryHandler;
@@ -40,15 +46,42 @@ internal sealed class TdsConnectionProcessor
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(remoteEndPoint);
 
-        var transportInput = input;
-        var transportOutput = output;
         var writer = new TdsPacketWriter(output, _options.PacketSize);
         SslStream? sslStream = null;
-        Task<TdsPacket?>? pendingRead = null;
         var usingTls = false;
+        TdsTransactionManager? transactions = null;
         TdsPreLoginNegotiationResult? negotiationResult;
         try
         {
+            // The first byte tells the two modes apart: a TDS 8.0 client (Encrypt=Strict) starts with a TLS
+            // handshake record, any other client starts with a PRELOGIN packet. The byte is put back in front of
+            // the stream so the TLS handshake or the packet reader sees the whole message.
+            var firstByte = new byte[1];
+            if (await input.ReadAsync(firstByte, cancellationToken).ConfigureAwait(false) == 0)
+            {
+                return;
+            }
+
+            using var transportInput = TdsTlsPacketStream.CreateRaw(input, output, firstByte);
+            var transportOutput = output;
+            input = transportInput;
+            var serverCertificate = _options.GetTlsCertificate();
+            var strictEncryption = firstByte[0] == TlsHandshakeRecordType;
+            if (strictEncryption)
+            {
+                if (serverCertificate is null)
+                {
+                    _logger.LogDebug("The client started a TLS handshake (TDS 8.0 strict encryption), but no TLS certificate is configured");
+                    return;
+                }
+
+                sslStream = await AuthenticateStrictAsync(transportInput, serverCertificate, cancellationToken).ConfigureAwait(false);
+                usingTls = true;
+                input = sslStream;
+                output = sslStream;
+                writer = new TdsPacketWriter(output, _options.PacketSize);
+            }
+
             var preLoginPacket = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
             if (preLoginPacket is null)
             {
@@ -63,9 +96,26 @@ internal sealed class TdsConnectionProcessor
             }
 
             TdsPreLoginEncryptionMode clientEncryptionMode;
+            byte[] preLoginResponse;
             try
             {
-                clientEncryptionMode = TdsPreLoginMessage.ParseEncryptionMode(preLoginPacket.Payload);
+                if (strictEncryption)
+                {
+                    // The session is already encrypted, so the ENCRYPTION option no longer negotiates anything and
+                    // clients ignore the value of the response. NOT_SUP states that no TLS upgrade follows.
+                    clientEncryptionMode = TdsPreLoginEncryptionMode.NotSupported;
+                    negotiationResult = new(TdsPreLoginEncryptionMode.NotSupported, UpgradeToTls: false, DowngradeAfterLogin: false, RejectConnection: false);
+                }
+                else
+                {
+                    clientEncryptionMode = TdsPreLoginMessage.ParseEncryptionMode(preLoginPacket.Payload);
+                    negotiationResult = TdsPreLoginEncryptionNegotiator.Negotiate(
+                        clientEncryptionMode,
+                        serverSupportsEncryption: serverCertificate is not null,
+                        serverRequiresEncryption: _options.RequireEncryption);
+                }
+
+                preLoginResponse = TdsPreLoginMessage.CreateResponse(preLoginPacket.Payload, negotiationResult.Value.ResponseEncryptionMode);
             }
             catch (Exception ex)
             {
@@ -74,13 +124,7 @@ internal sealed class TdsConnectionProcessor
                 return;
             }
 
-            var serverCertificate = _options.GetTlsCertificate();
-            negotiationResult = TdsPreLoginEncryptionNegotiator.Negotiate(
-                clientEncryptionMode,
-                serverSupportsEncryption: serverCertificate is not null,
-                serverRequiresEncryption: _options.RequireEncryption);
-
-            await writer.WriteAsync(TdsPacketType.PreLogin, TdsPreLoginMessage.CreateResponse(preLoginPacket.Payload, negotiationResult.Value.ResponseEncryptionMode), cancellationToken).ConfigureAwait(false);
+            await writer.WriteAsync(TdsPacketType.PreLogin, preLoginResponse, cancellationToken).ConfigureAwait(false);
             if (negotiationResult.Value.RejectConnection)
             {
                 _logger.LogDebug("PRELOGIN encryption negotiation failed. ClientMode={ClientMode}, ServerResponse={ServerResponse}", clientEncryptionMode, negotiationResult.Value.ResponseEncryptionMode);
@@ -123,9 +167,16 @@ internal sealed class TdsConnectionProcessor
                 AuthenticationToken = login.AuthenticationToken,
                 Database = login.Database,
                 ApplicationName = login.ApplicationName,
+                IsIntegratedSecurity = login.IsIntegratedSecurity,
+                SspiToken = login.Sspi,
             };
 
-            var authenticationResult = await _authenticationHandler(authenticationContext, cancellationToken).ConfigureAwait(false);
+            var authenticationResult = await AuthenticateAsync(input, writer, authenticationContext, cancellationToken).ConfigureAwait(false);
+            if (authenticationResult is null)
+            {
+                return;
+            }
+
             if (!authenticationResult.IsAuthenticated)
             {
                 await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateLoginError(authenticationResult), cancellationToken).ConfigureAwait(false);
@@ -142,8 +193,40 @@ internal sealed class TdsConnectionProcessor
                 writer = new TdsPacketWriter(output, _options.PacketSize);
             }
 
-            await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateLoginSuccess(authenticationResult), cancellationToken).ConfigureAwait(false);
+            await writer.WriteAsync(TdsPacketType.TabularResult, CreateLoginSuccessResponse(authenticationResult), cancellationToken).ConfigureAwait(false);
 
+            // A transaction belongs to the connection, so the MARS sessions of a connection share it.
+            transactions = new TdsTransactionManager(_options.TransactionHandler, remoteEndPoint, authenticationResult.UserContext);
+            if (TdsSmpConnection.IsMarsRequested(preLoginPacket.Payload))
+            {
+                await ProcessMarsSessionsAsync(input, output, remoteEndPoint, authenticationResult, transactions, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            await ProcessRequestsAsync(input, writer, remoteEndPoint, authenticationResult, transactions, cancellationToken).ConfigureAwait(false);
+        }
+        catch (AuthenticationException ex)
+        {
+            _logger.LogDebug(ex, "TLS authentication failed");
+        }
+        finally
+        {
+            await AbortTransactionAsync(transactions).ConfigureAwait(false);
+            transactions?.Dispose();
+            if (sslStream is not null)
+            {
+                await sslStream.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Serves the requests of one session: the connection, or one MARS session of the connection.</summary>
+    private async Task ProcessRequestsAsync(Stream input, TdsPacketWriter writer, EndPoint remoteEndPoint, TdsAuthenticationResult authenticationResult, TdsTransactionManager transactions, CancellationToken cancellationToken)
+    {
+        Task<TdsPacket?>? pendingRead = null;
+        var session = new TdsSessionState();
+        try
+        {
             TdsPacket? bufferedPacket = null;
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -175,7 +258,13 @@ internal sealed class TdsConnectionProcessor
                     continue;
                 }
 
-                if (packet.Type != TdsPacketType.SqlBatch && packet.Type != TdsPacketType.Rpc)
+                if (packet.Type == TdsPacketType.TransactionManager)
+                {
+                    await writer.WriteAsync(TdsPacketType.TabularResult, await ProcessTransactionRequestAsync(transactions, packet, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (packet.Type != TdsPacketType.SqlBatch && packet.Type != TdsPacketType.Rpc && packet.Type != TdsPacketType.BulkLoad)
                 {
                     await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateProtocolError(50001, $"Unsupported packet type: {packet.Type}"), cancellationToken).ConfigureAwait(false);
                     continue;
@@ -187,7 +276,7 @@ internal sealed class TdsConnectionProcessor
                 var requestCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 try
                 {
-                    var executionTask = ExecuteRequestAsync(packet, remoteEndPoint, authenticationResult.UserContext, writer.PayloadSizePerPacket, requestCancellationTokenSource.Token);
+                    var executionTask = ExecuteRequestAsync(packet, remoteEndPoint, authenticationResult.UserContext, session, transactions.TransactionId, writer.PayloadSizePerPacket, requestCancellationTokenSource.Token);
                     var attentionReceived = false;
                     while (!executionTask.IsCompleted && !attentionReceived && bufferedPacket is null)
                     {
@@ -253,29 +342,65 @@ internal sealed class TdsConnectionProcessor
                 }
             }
         }
-        catch (AuthenticationException ex)
-        {
-            _logger.LogDebug(ex, "TLS authentication failed");
-        }
         finally
         {
             ObserveExceptions(pendingRead);
-            if (sslStream is not null)
-            {
-                await sslStream.DisposeAsync().ConfigureAwait(false);
-            }
         }
     }
 
-    private async Task<byte[]> ExecuteRequestAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, int payloadSizePerPacket, CancellationToken cancellationToken)
+    private async Task<byte[]> ProcessTransactionRequestAsync(TdsTransactionManager transactions, TdsPacket packet, CancellationToken cancellationToken)
     {
         try
         {
-            var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, userContext);
+            return await transactions.ProcessAsync(packet.Payload, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogError(ex, "Unhandled exception in transaction handler");
+            return TdsResponseSerializer.CreateTransactionResponse(endedTransactionId: null, committed: false, begunTransactionId: null, new TdsQueryError
+            {
+                Number = 50002,
+                Message = "Unhandled transaction handler exception",
+            });
+        }
+    }
+
+    private async ValueTask AbortTransactionAsync(TdsTransactionManager? transactions)
+    {
+        if (transactions is null)
+            return;
+
+        try
+        {
+            await transactions.AbortAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception in transaction handler while rolling back the transaction of a closed connection");
+        }
+    }
+
+    private async Task<byte[]> ExecuteRequestAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, TdsSessionState session, long? transactionId, int payloadSizePerPacket, CancellationToken cancellationToken)
+    {
+        var isRpc = packet.Type == TdsPacketType.Rpc;
+        try
+        {
+            if (packet.Type == TdsPacketType.BulkLoad)
+            {
+                return await ExecuteBulkLoadAsync(packet, remoteEndPoint, userContext, session, payloadSizePerPacket, cancellationToken).ConfigureAwait(false);
+            }
+
+            var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, userContext, transactionId);
+            if (await TryExecuteBulkCopyCommandAsync(queryContext, session, payloadSizePerPacket, cancellationToken).ConfigureAwait(false) is { } bulkCopyResponse)
+            {
+                return bulkCopyResponse;
+            }
+
             TdsQueryResult queryResult;
             try
             {
-                queryResult = await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
+                queryResult = TryGetTransactionLevelQueryResult(queryContext)
+                    ?? await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -293,7 +418,7 @@ internal sealed class TdsConnectionProcessor
                 });
             }
 
-            return TdsResponseSerializer.CreateQueryResponse(queryResult, payloadSizePerPacket);
+            return TdsResponseSerializer.CreateQueryResponse(queryResult, payloadSizePerPacket, isRpc);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -310,6 +435,26 @@ internal sealed class TdsConnectionProcessor
                 }),
                 payloadSizePerPacket);
         }
+    }
+
+    /// <summary>
+    /// SqlClient reads <c>@@TRANCOUNT</c> with <c>set @out = @@trancount</c> before it creates a savepoint or rolls
+    /// back, and treats the transaction as gone when the value is not positive. The server answers it, since it is
+    /// the one tracking the transaction.
+    /// </summary>
+    private static TdsQueryResult? TryGetTransactionLevelQueryResult(TdsQueryContext context)
+    {
+        if (context.RequestType is not TdsQueryRequestType.Rpc
+            || !string.Equals(context.ProcedureName, "sp_executesql", StringComparison.OrdinalIgnoreCase)
+            || context.Parameters is not [var statement, _, { IsOutput: true } output]
+            || !string.Equals(statement.AsString()?.Trim(), $"set {output.Name} = @@trancount", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var result = new TdsQueryResult();
+        result.OutputParameters.Add(new TdsOutputParameter(output.Name, TdsColumnType.Int32, context.TransactionId is null ? 0 : 1));
+        return result;
     }
 
     /// <summary>
@@ -337,6 +482,30 @@ internal sealed class TdsConnectionProcessor
             return;
 
         _ = task.ContinueWith(static completedTask => _ = completedTask.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
+
+    /// <summary>Performs the TLS handshake that opens a TDS 8.0 connection, before any TDS packet.</summary>
+    /// <remarks>The protocol versions are left to the operating system, so TLS 1.3 is used when it supports it.</remarks>
+    private static async Task<SslStream> AuthenticateStrictAsync(Stream transport, X509Certificate2 certificate, CancellationToken cancellationToken)
+    {
+        var sslStream = new SslStream(transport, leaveInnerStreamOpen: true);
+        try
+        {
+            await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = certificate,
+                ClientCertificateRequired = false,
+                ApplicationProtocols = [Tds80ApplicationProtocol],
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+            }, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await sslStream.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        return sslStream;
     }
 
     [SuppressMessage("Security", "CA5398:Do not hardcode SslProtocols", Justification = "SqlClient interoperability with TDS-over-TLS requires TLS 1.2 during PRELOGIN encryption upgrade.")]
@@ -370,6 +539,16 @@ internal sealed class TdsConnectionProcessor
         private readonly int _maxMessageSize;
         private ReadOnlyMemory<byte> _pendingReadPayload;
         private bool _useTdsPacketMode = true;
+
+        /// <summary>Creates a stream that reads <paramref name="bufferedData"/> and then the transport as-is, without TDS packet framing.</summary>
+        public static TdsTlsPacketStream CreateRaw(Stream readStream, Stream writeStream, ReadOnlyMemory<byte> bufferedData)
+        {
+            return new TdsTlsPacketStream(readStream, writeStream, TdsServerOptions.MinimumPacketSize, TdsServerOptions.MaximumPacketSize)
+            {
+                _useTdsPacketMode = false,
+                _pendingReadPayload = bufferedData,
+            };
+        }
 
         public TdsTlsPacketStream(Stream readStream, Stream writeStream, int packetSize, int maxMessageSize)
         {

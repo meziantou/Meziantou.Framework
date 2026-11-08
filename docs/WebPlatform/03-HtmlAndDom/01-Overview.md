@@ -92,4 +92,4 @@ The members have the names of the web API, adapted to the .NET guidelines: `quer
   rules.
 - [Sanitizing HTML](06-SanitizingHtml.md): insert untrusted markup without scripts.
 - [Custom elements](07-CustomElements.md): define elements with .NET classes.
-- [Accessibility](08-Accessibility.md): the role and the accessible name of the elements.
+- [Accessibility](08-Accessibility.md): the role, the accessible name and the states of the elements, and snapshots of the accessibility tree.

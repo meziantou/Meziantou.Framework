@@ -9,8 +9,8 @@ name: `.shp` holds the geometries, `.dbf` the attributes, `.shx` an index, `.cpg
 
 ## Read a shapefile
 
-[Shapefile.Read](cref:Meziantou.Framework.Geo.Shapefile.Read) reads the `.shp` file and the `.dbf` and `.cpg` files
-next to it:
+[Shapefile.Read](cref:Meziantou.Framework.Geo.Shapefile.Read) reads the `.shp` file and the `.dbf`, `.cpg` and `.prj`
+files next to it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Geo.Tests/ShapefileTests.cs;region=Geo_ShapefileRead;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -42,8 +42,9 @@ Assert.True(polygon.Contains(new GeoPosition(5, 5)));
 <!-- endref -->
 
 - The [Name](cref:Meziantou.Framework.Geo.GeoFeatureCollection.Name) of the collection is the name of the file.
-- The geometries are points, multipoints, lines and polygons, with their Z values as altitudes; the M values
-  (measures) are dropped. The rings of the polygons are grouped into polygons and holes by their orientation, and by
+- The geometries are points, multipoints, lines and polygons, with their Z values as altitudes and their M values as
+  [measures](cref:Meziantou.Framework.Geo.GeoPosition.Measure). An M value below -10<sup>38</sup>, the "no data" value
+  of the format, is no measure. The rings of the polygons are grouped into polygons and holes by their orientation, and by
   their nesting when the file has the wrong orientation.
 - The attributes are a `string`, a `double`, a `bool` or a `DateOnly`, by the type of their field. An empty value is
   `null`. Deleted records are skipped. The features have no [Id](cref:Meziantou.Framework.Geo.GeoFeature.Id).
@@ -51,8 +52,12 @@ Assert.True(polygon.Contains(new GeoPosition(5, 5)));
   ISO-8859-1 and Windows-1252 are always supported; the other code pages need a provider, such as
   `CodePagesEncodingProvider`, registered by your application. Set
   [Encoding](cref:Meziantou.Framework.Geo.ShapefileReaderOptions.Encoding) when a file declares a wrong encoding.
-- The `.prj` file is not read: the coordinates must be longitudes and latitudes. A shapefile in a projected coordinate
-  system, such as UTM, gives positions in meters that the library cannot convert.
+- The `.prj` file gives the
+  [CoordinateReferenceSystem](cref:Meziantou.Framework.Geo.GeoFeatureCollection.CoordinateReferenceSystem) of the
+  features, or `null` when there is none or it is not supported. The positions are those of the file, in meters for a
+  shapefile in UTM or Lambert 93: set [TransformToWgs84](cref:Meziantou.Framework.Geo.ShapefileReaderOptions.TransformToWgs84)
+  to convert them to longitudes and latitudes. See
+  [coordinate reference systems](../05-Projections.md#read-the-coordinate-reference-system-of-a-file).
 
 ## Read a large shapefile
 
@@ -105,6 +110,9 @@ Shapefile.WriteZip(features, zip, "cities");
   [GeoGeometryCollection](cref:Meziantou.Framework.Geo.GeoGeometryCollection), throws an `ArgumentException`. Write
   each type to its own shapefile.
 - When a position has an altitude, every position is written with one, and 0 for those that have none.
+- When a position has a measure, the M values are written: in the Z shapes when there are altitudes, else in the M
+  shapes (PointM, MultiPointM, PolyLineM, PolygonM). The positions without measure get the "no data" value. The times
+  are not written.
 - The fields are the properties of the features. Their names are cut to 10 characters and made unique, as GDAL does.
   The text values are cut to 254 bytes, before a UTF-8 sequence that does not fit whole. A field whose values have different types is written as text.
 - The identifiers are not written: shapefiles have none.

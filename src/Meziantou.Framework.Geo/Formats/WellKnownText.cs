@@ -11,8 +11,8 @@ namespace Meziantou.Framework.Geo;
 /// <c>ZM</c> tags, also written after the type as in PostGIS (<c>POINTZ</c>), positions of 3 numbers without a tag
 /// (an altitude) or of 4 numbers (an altitude and a measure), the multipoints with and without parentheses around
 /// their points (<c>MULTIPOINT ((1 2), (3 4))</c> and <c>MULTIPOINT (1 2, 3 4)</c>) and the <c>SRID=4326;</c> prefix of
-/// the extended WKT of PostGIS (EWKT), which is ignored. It keeps the Z values as <see cref="GeoPosition.Altitude"/>
-/// and drops the M values (measures). A child of a <c>GEOMETRYCOLLECTION</c> without a tag uses the tag of the
+/// the extended WKT of PostGIS (EWKT), which <see cref="Parse(string, out int?)"/> returns. It keeps the Z values as <see cref="GeoPosition.Altitude"/>
+/// and the M values as <see cref="GeoPosition.Measure"/>. A child of a <c>GEOMETRYCOLLECTION</c> without a tag uses the tag of the
 /// collection.
 /// </para>
 /// <para>
@@ -21,9 +21,11 @@ namespace Meziantou.Framework.Geo;
 /// <c>TRIANGLE</c> or <c>TIN</c>.
 /// </para>
 /// <para>
-/// The writer writes the ISO form (<c>POINT Z (1 2 3)</c>, <c>MULTIPOINT ((1 2), (3 4))</c>) with the shortest
-/// numbers that read back to the same values. A geometry has a single number of dimensions: when a position of the
-/// geometry has an altitude, every position is written with one, and a missing altitude is written as 0.
+/// The writer writes the ISO form (<c>POINT Z (1 2 3)</c>, <c>POINT ZM (1 2 3 4)</c>, <c>MULTIPOINT ((1 2), (3 4))</c>)
+/// with the shortest numbers that read back to the same values. A geometry has a single number of dimensions: when a
+/// position of the geometry has an altitude, every position is written with one, and a missing altitude is written as 0;
+/// the same goes for the measures (<c>M</c> or <c>ZM</c>). The times of the positions are not written, as WKT has no
+/// place for them.
 /// </para>
 /// </remarks>
 public static class WellKnownText
@@ -35,10 +37,20 @@ public static class WellKnownText
     /// <param name="text">The text, such as <c>POINT (2.35 48.86)</c> or <c>SRID=4326;LINESTRING Z (0 0 10, 1 1 20)</c>.</param>
     /// <returns>The geometry.</returns>
     /// <exception cref="FormatException">The text is not the WKT of a supported geometry. The message gives the position of the error in the text.</exception>
-    public static GeoGeometry Parse(string text)
+    public static GeoGeometry Parse(string text) => Parse(text, out _);
+
+    /// <summary>Reads the WKT, or the extended WKT of PostGIS, of a geometry, and the SRID of the extended WKT.</summary>
+    /// <param name="text">The text, such as <c>SRID=2154;POINT (652310.72 6862414.64)</c>.</param>
+    /// <param name="srid">The SRID of the <c>SRID=</c> prefix, usually an EPSG code that <see cref="CoordinateReferenceSystem.FromEpsg"/> converts to a coordinate reference system, or <see langword="null"/> when the text has no prefix.</param>
+    /// <returns>The geometry, with the coordinates of the text: they are not converted.</returns>
+    /// <exception cref="FormatException">The text is not the WKT of a supported geometry. The message gives the position of the error in the text.</exception>
+    public static GeoGeometry Parse(string text, out int? srid)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return new Parser(text).ParseRoot();
+        var parser = new Parser(text);
+        var geometry = parser.ParseRoot();
+        srid = parser.Srid;
+        return geometry;
     }
 
     /// <summary>Writes the WKT of a geometry, such as <c>POINT (2.35 48.86)</c>.</summary>
@@ -50,12 +62,13 @@ public static class WellKnownText
         ArgumentNullException.ThrowIfNull(geometry);
         GeoValidation.EnsureFinite(geometry, nameof(geometry));
         var hasAltitude = geometry.GetPositions().Any(position => position.Altitude is not null);
+        var hasMeasure = geometry.GetPositions().Any(position => position.Measure is not null);
         var builder = new StringBuilder();
-        WriteGeometry(builder, geometry, hasAltitude);
+        WriteGeometry(builder, geometry, hasAltitude, hasMeasure);
         return builder.ToString();
     }
 
-    private static void WriteGeometry(StringBuilder builder, GeoGeometry geometry, bool hasAltitude)
+    private static void WriteGeometry(StringBuilder builder, GeoGeometry geometry, bool hasAltitude, bool hasMeasure)
     {
         builder.Append(geometry.Type switch
         {
@@ -68,59 +81,62 @@ public static class WellKnownText
             _ => "GEOMETRYCOLLECTION",
         });
 
-        if (hasAltitude)
+        builder.Append((hasAltitude, hasMeasure) switch
         {
-            builder.Append(" Z");
-        }
+            (true, true) => " ZM",
+            (true, false) => " Z",
+            (false, true) => " M",
+            _ => "",
+        });
 
         builder.Append(' ');
         switch (geometry)
         {
             case GeoPoint point:
                 builder.Append('(');
-                WritePosition(builder, point.Position, hasAltitude);
+                WritePosition(builder, point.Position, hasAltitude, hasMeasure);
                 builder.Append(')');
                 break;
 
             case GeoLineString lineString:
-                WritePositions(builder, lineString.Positions, hasAltitude);
+                WritePositions(builder, lineString.Positions, hasAltitude, hasMeasure);
                 break;
 
             case GeoPolygon polygon:
-                WritePolygon(builder, polygon, hasAltitude);
+                WritePolygon(builder, polygon, hasAltitude, hasMeasure);
                 break;
 
             case GeoMultiPoint multiPoint:
                 WriteList(builder, multiPoint.Positions, position =>
                 {
                     builder.Append('(');
-                    WritePosition(builder, position, hasAltitude);
+                    WritePosition(builder, position, hasAltitude, hasMeasure);
                     builder.Append(')');
                 });
                 break;
 
             case GeoMultiLineString multiLineString:
-                WriteList(builder, multiLineString.LineStrings, lineString => WritePositions(builder, lineString.Positions, hasAltitude));
+                WriteList(builder, multiLineString.LineStrings, lineString => WritePositions(builder, lineString.Positions, hasAltitude, hasMeasure));
                 break;
 
             case GeoMultiPolygon multiPolygon:
-                WriteList(builder, multiPolygon.Polygons, polygon => WritePolygon(builder, polygon, hasAltitude));
+                WriteList(builder, multiPolygon.Polygons, polygon => WritePolygon(builder, polygon, hasAltitude, hasMeasure));
                 break;
 
             case GeoGeometryCollection collection:
-                WriteList(builder, collection.Geometries, item => WriteGeometry(builder, item, hasAltitude));
+                WriteList(builder, collection.Geometries, item => WriteGeometry(builder, item, hasAltitude, hasMeasure));
                 break;
         }
     }
 
-    private static void WritePolygon(StringBuilder builder, GeoPolygon polygon, bool hasAltitude)
+    private static void WritePolygon(StringBuilder builder, GeoPolygon polygon, bool hasAltitude, bool hasMeasure)
     {
-        WriteList(builder, polygon.Rings, ring => WritePositions(builder, ring, hasAltitude));
+        WriteList(builder, polygon.Rings, ring => WritePositions(builder, ring, hasAltitude, hasMeasure));
     }
 
-    private static void WritePositions(StringBuilder builder, IReadOnlyList<GeoPosition> positions, bool hasAltitude)
+    private static void WritePositions(StringBuilder builder, IReadOnlyList<GeoPosition> positions, bool hasAltitude, bool hasMeasure)
     {
-        WriteList(builder, positions, position => WritePosition(builder, position, hasAltitude));
+        WriteList(builder, positions, position => WritePosition(builder, position, hasAltitude, hasMeasure));
     }
 
     private static void WriteList<T>(StringBuilder builder, IReadOnlyList<T> items, Action<T> writeItem)
@@ -145,7 +161,7 @@ public static class WellKnownText
         builder.Append(')');
     }
 
-    private static void WritePosition(StringBuilder builder, GeoPosition position, bool hasAltitude)
+    private static void WritePosition(StringBuilder builder, GeoPosition position, bool hasAltitude, bool hasMeasure)
     {
         builder.Append(position.Longitude.ToString(CultureInfo.InvariantCulture));
         builder.Append(' ');
@@ -154,6 +170,12 @@ public static class WellKnownText
         {
             builder.Append(' ');
             builder.Append((position.Altitude ?? 0).ToString(CultureInfo.InvariantCulture));
+        }
+
+        if (hasMeasure)
+        {
+            builder.Append(' ');
+            builder.Append((position.Measure ?? 0).ToString(CultureInfo.InvariantCulture));
         }
     }
 
@@ -169,6 +191,8 @@ public static class WellKnownText
     private sealed class Parser(string text)
     {
         private int _position;
+
+        public int? Srid { get; private set; }
 
         public GeoGeometry ParseRoot()
         {
@@ -188,8 +212,10 @@ public static class WellKnownText
                     _position++;
                 }
 
-                if (!int.TryParse(text.AsSpan(start, _position - start), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _))
+                if (!int.TryParse(text.AsSpan(start, _position - start), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var srid))
                     throw Error("Expected the SRID number", start);
+
+                Srid = srid;
 
                 Expect(';');
             }
@@ -391,7 +417,8 @@ public static class WellKnownText
                 throw Error($"A position of a geometry tagged {dimensions} must have {expected + 2} numbers", start);
 
             double? altitude = count > 0 && dimensions is not Dimensions.M ? others[0] : null;
-            return new GeoPosition(x, y, altitude);
+            double? measure = dimensions is Dimensions.M ? others[0] : count is 2 ? others[1] : null;
+            return new GeoPosition(x, y, altitude) { Measure = measure };
         }
 
         private double ReadNumber()

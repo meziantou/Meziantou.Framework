@@ -65,7 +65,7 @@ The features are kept whole: a feature that crosses the edge of the box is not c
 ## What the reader keeps
 
 - **Geometries**: the standard GeoPackage geometries, read as [WellKnownBinary](cref:Meziantou.Framework.Geo.WellKnownBinary)
-  reads them, with their altitudes; the M values are dropped. An empty or `NULL` geometry gives a feature without
+  reads them, with their altitudes and measures. An empty or `NULL` geometry gives a feature without
   geometry. The extended geometries of GeoPackage extensions throw a `FormatException`.
 - **Identifier**: the [Id](cref:Meziantou.Framework.Geo.GeoFeature.Id) of a feature is the text of the primary key of
   the table, such as `fid`.

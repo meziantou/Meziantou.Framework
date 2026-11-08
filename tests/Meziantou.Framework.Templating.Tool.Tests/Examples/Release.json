@@ -1,0 +1,5 @@
+{
+  "Product": "Contoso",
+  "Version": 2,
+  "Features": [ "Search", "Export" ]
+}

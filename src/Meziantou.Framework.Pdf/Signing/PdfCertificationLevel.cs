@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Pdf.Signing;
 
 /// <summary>
 /// The changes a certification signature allows after it (ISO 32000-2, 12.8.2.2.2, the <c>/P</c> of the DocMDP
-/// transform). Adding validation data (<see cref="PdfSigner.AddValidationData"/>) and document time stamps
+/// transform). Adding validation data (<see cref="PdfSigner.AddValidationData(PdfDocument, PdfValidationData)"/>) and document time stamps
 /// (<see cref="PdfSigner.TimestampAsync"/>) is allowed at every level (ETSI EN 319 142-1, 5.4).
 /// </summary>
 public enum PdfCertificationLevel

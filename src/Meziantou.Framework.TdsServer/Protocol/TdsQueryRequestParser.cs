@@ -19,7 +19,7 @@ internal static class TdsQueryRequestParser
     /// <summary>The largest UTC offset, in minutes, that <see cref="DateTimeOffset"/> accepts.</summary>
     private const int MaxOffsetMinutes = 14 * 60;
 
-    public static TdsQueryContext Parse(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext)
+    public static TdsQueryContext Parse(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, long? transactionId = null)
     {
         ArgumentNullException.ThrowIfNull(packet);
         ArgumentNullException.ThrowIfNull(remoteEndPoint);
@@ -32,13 +32,14 @@ internal static class TdsQueryRequestParser
                 RequestType = TdsQueryRequestType.SqlBatch,
                 CommandText = DecodeSqlBatchText(packet.Payload),
                 UserContext = userContext,
+                TransactionId = transactionId,
             },
-            TdsPacketType.Rpc => CreateRpcContext(packet.Payload, remoteEndPoint, userContext),
+            TdsPacketType.Rpc => CreateRpcContext(packet.Payload, remoteEndPoint, userContext, transactionId),
             _ => throw new InvalidOperationException($"Unsupported query packet type '{packet.Type}'."),
         };
     }
 
-    private static TdsQueryContext CreateRpcContext(byte[] payload, EndPoint remoteEndPoint, ClaimsPrincipal? userContext)
+    private static TdsQueryContext CreateRpcContext(byte[] payload, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, long? transactionId)
     {
         var request = TryParseRpc(payload) ?? new TdsRpcRequest
         {
@@ -54,6 +55,7 @@ internal static class TdsQueryRequestParser
             Parameters = request.Parameters,
             HasCompleteParameters = request.HasCompleteParameters,
             UserContext = userContext,
+            TransactionId = transactionId,
         };
     }
 
@@ -132,7 +134,7 @@ internal static class TdsQueryRequestParser
         };
     }
 
-    private static TdsQueryParameter? TryParseParameter(ReadOnlySpan<byte> payload, ref int position)
+    internal static TdsQueryParameter? TryParseParameter(ReadOnlySpan<byte> payload, ref int position)
     {
         if (position + 2 > payload.Length)
         {
@@ -149,10 +151,10 @@ internal static class TdsQueryRequestParser
         var name = Encoding.Unicode.GetString(payload.Slice(position, nameByteLength));
         position += nameByteLength;
 
-        position += 1; // status
+        var status = payload[position++];
         var typeToken = payload[position++];
 
-        return typeToken switch
+        var parameter = typeToken switch
         {
             0x24 => ParseGuidParameter(payload, ref position, name),
             0x26 => ParseIntNParameter(payload, ref position, name),
@@ -171,6 +173,20 @@ internal static class TdsQueryRequestParser
             0xF4 => ParseJsonParameter(payload, ref position, name),
             _ => null,
         };
+
+        // fByRefValue: the client declared an Output or InputOutput parameter.
+        if (parameter is not null && (status & 0x01) != 0)
+        {
+            parameter = new TdsQueryParameter
+            {
+                Name = parameter.Name,
+                Value = parameter.Value,
+                Type = parameter.Type,
+                IsOutput = true,
+            };
+        }
+
+        return parameter;
     }
 
     private static TdsQueryParameter? ParseIntNParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -887,7 +903,7 @@ internal static class TdsQueryRequestParser
     /// (including itself) followed by headers of the form { length, type, data }. Earlier clients
     /// send the data directly, so the block is validated rather than assumed.
     /// </remarks>
-    private static int GetPayloadOffsetAfterAllHeaders(ReadOnlySpan<byte> payload)
+    internal static int GetPayloadOffsetAfterAllHeaders(ReadOnlySpan<byte> payload)
     {
         if (payload.Length < 4)
         {

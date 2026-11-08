@@ -20,7 +20,7 @@ internal static class GeoValidation
     {
         foreach (var position in geometry.GetPositions())
         {
-            if (!double.IsFinite(position.Longitude) || !double.IsFinite(position.Latitude) || position.Altitude is { } altitude && !double.IsFinite(altitude))
+            if (!double.IsFinite(position.Longitude) || !double.IsFinite(position.Latitude) || position.Altitude is { } altitude && !double.IsFinite(altitude) || position.Measure is { } measure && !double.IsFinite(measure))
                 throw new ArgumentException($"The position {position} is not finite.", paramName);
         }
     }

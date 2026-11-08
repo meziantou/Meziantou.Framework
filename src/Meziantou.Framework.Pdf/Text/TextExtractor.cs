@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Pdf.Text;
 /// Extracts the text of a page: runs the text operators of its content (ISO 32000-2, 9.4) and of its form XObjects,
 /// places each glyph with the text and graphics matrices, then joins the glyphs into lines in the order of the content.
 /// </summary>
-internal sealed class TextExtractor
+internal sealed partial class TextExtractor
 {
     private const int MaxFormDepth = 16;
 
@@ -39,17 +39,22 @@ internal sealed class TextExtractor
     private int _actualTextStart;
     private readonly TextDecoderCache _decoders;
     private readonly bool _expandLigatures;
+    private readonly bool _layoutOrder;
     private readonly HashSet<PdfStream> _activeForms = new(ReferenceEqualityComparer.Instance);
 
     private TextExtractor(TextDecoderCache decoders, PdfTextExtractionOptions options, bool withBounds)
     {
         _decoders = decoders;
         _expandLigatures = options.ExpandLigatures;
-        _bounds = withBounds ? [] : null;
+        _layoutOrder = options.ReadingOrder is PdfTextReadingOrder.Layout;
+        _bounds = withBounds || _layoutOrder ? [] : null;
     }
 
     public static string Extract(PdfPage page, PdfTextExtractionOptions options)
     {
+        if (options.ReadingOrder is PdfTextReadingOrder.Layout)
+            return ExtractLayout(page, options).Text;
+
         var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: false);
         extractor.RunPage(page);
         return extractor.BuildText(layout: false).Text;
@@ -60,7 +65,10 @@ internal sealed class TextExtractor
         var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: true);
         extractor.RunPage(page);
         var (text, lines) = extractor.BuildText(layout: true);
-        return new PdfTextLayout(text, lines!);
+        if (extractor._layoutOrder)
+            return extractor.OrderByLayout(lines!, page.Rotation);
+
+        return new PdfTextLayout(text, lines!, lines!.Count > 0 ? [new PdfTextBlock(lines)] : []);
     }
 
     private void RunPage(PdfPage page)
@@ -548,7 +556,9 @@ internal sealed class TextExtractor
                 var along = (dx * cos) + (dy * sin);
                 var across = (-dx * sin) + (dy * cos);
                 var size = Math.Max(Math.Max(last.Size, glyph.Size), 0.001);
-                if (Math.Abs(across) > size * 0.5 || along < -size * 2 || Math.Abs(glyph.Angle - last.Angle) > 0.01)
+                // In the reading order of the layout, a wide gap also ends the line: it can be the gutter between two
+                // columns, and the lines are joined again when no blank space of the page separates them
+                if (Math.Abs(across) > size * 0.5 || along < -size * 2 || Math.Abs(glyph.Angle - last.Angle) > 0.01 || (_layoutOrder && along > size * ColumnGap))
                 {
                     if (layout)
                     {

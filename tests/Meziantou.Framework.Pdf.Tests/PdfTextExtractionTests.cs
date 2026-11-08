@@ -409,6 +409,108 @@ public sealed class PdfTextExtractionTests
     }
 
     [Fact]
+    public void ContentOrderHasOneBlock()
+    {
+        var layout = ExtractWithHelvetica("BT /F1 10 Tf 72 700 Td (One) Tj 0 -12 Td (Two) Tj ET");
+
+        Assert.Equal("One\nTwo", Assert.Single(layout.Blocks).Text);
+        Assert.Empty(ExtractWithHelvetica("").Blocks);
+    }
+
+    [Fact]
+    public void LayoutOrderReadsTheColumnsOneAfterTheOther()
+    {
+        // The content paints the lines of both columns from left to right, between a title and a footer that cross the gutter
+        const string Content = """
+            BT /F1 16 Tf 72 740 Td (A title that spans the two columns of the page) Tj ET
+            BT /F1 10 Tf 72 700 Td (Left one) Tj 248 0 Td (Right one) Tj -248 -12 Td (Left two) Tj 248 0 Td (Right two) Tj -248 -12 Td (Left three) Tj ET
+            BT /F1 10 Tf 72 600 Td (The footer of the page goes from the left margin to the right column.) Tj ET
+            """;
+
+        Assert.Equal("A title that spans the two columns of the page\nLeft one Right one\nLeft two Right two\nLeft three\nThe footer of the page goes from the left margin to the right column.", ExtractWithHelvetica(Content).Text);
+
+        var options = new PdfTextExtractionOptions { ReadingOrder = PdfTextReadingOrder.Layout };
+        var layout = ExtractWithHelvetica(Content, options);
+        Assert.Equal("A title that spans the two columns of the page\nLeft one\nLeft two\nLeft three\nRight one\nRight two\nThe footer of the page goes from the left margin to the right column.", layout.Text);
+        Assert.Equal(["A title that spans the two columns of the page", "Left one\nLeft two\nLeft three", "Right one\nRight two", "The footer of the page goes from the left margin to the right column."], layout.Blocks.Select(block => block.Text));
+        Assert.Equal(layout.Lines, layout.Blocks.SelectMany(block => block.Lines));
+        Assert.Equal(["Right", "one"], layout.Lines[4].Words.Select(word => word.Text));
+        Assert.Equal(320, layout.Blocks[2].Bounds.Left);
+        Assert.Equal(686, layout.Blocks[2].Bounds.Bottom, 6);
+        Assert.Equal(708, layout.Blocks[2].Bounds.Top, 6);
+        Assert.Equal(layout.Text, OpenWithHelvetica(Content).ExtractText(options));
+    }
+
+    [Fact]
+    public void LayoutOrderJoinsTheColumnsCutByAlignedParagraphGaps()
+    {
+        // The gap between the paragraphs is at the same height in both columns: it crosses the page from left to right
+        const string Content = """
+            BT /F1 16 Tf 72 740 Td (A title that spans the two columns of the page) Tj ET
+            BT /F1 10 Tf 72 700 Td (L1) Tj 248 0 Td (R1) Tj -248 -12 Td (L2) Tj 248 0 Td (R2) Tj -248 -28 Td (L3) Tj 248 0 Td (R3) Tj -248 -12 Td (L4) Tj 248 0 Td (R4) Tj ET
+            """;
+
+        var layout = ExtractWithHelvetica(Content, new PdfTextExtractionOptions { ReadingOrder = PdfTextReadingOrder.Layout });
+
+        Assert.Equal(["A title that spans the two columns of the page", "L1\nL2", "L3\nL4", "R1\nR2", "R3\nR4"], layout.Blocks.Select(block => block.Text));
+    }
+
+    [Fact]
+    public void LayoutOrderKeepsTheWideGapsOfALine()
+    {
+        // A justified line has a gap wider than a column gap, but the next line crosses it: it is not a gutter
+        const string Content = "BT /F1 10 Tf 72 700 Td [(Some words) -3000 (more words)] TJ 0 -12 Td (A second line of text that is long) Tj 0 -12 Td [(Last) -2500 (line)] TJ ET";
+
+        var layout = ExtractWithHelvetica(Content, new PdfTextExtractionOptions { ReadingOrder = PdfTextReadingOrder.Layout });
+
+        Assert.Equal("Some words more words\nA second line of text that is long\nLast line", layout.Text);
+        Assert.Single(layout.Blocks);
+        Assert.Equal(["Some", "words", "more", "words"], layout.Lines[0].Words.Select(word => word.Text));
+    }
+
+    [Fact]
+    public void LayoutOrderFollowsTheRotationOfThePage()
+    {
+        // The page turns by 90 degrees: the text painted upward is horizontal on the displayed page, and the user space
+        // y axis goes from left to right
+        const string Content = """
+            BT /F1 10 Tf
+            0 1 -1 0 100 72 Tm (Left one) Tj 0 1 -1 0 100 320 Tm (Right one) Tj
+            0 1 -1 0 112 72 Tm (Left two) Tj 0 1 -1 0 112 320 Tm (Right two) Tj
+            ET
+            """;
+
+        var layout = ExtractWithHelvetica(Content, new PdfTextExtractionOptions { ReadingOrder = PdfTextReadingOrder.Layout }, rotate: 90);
+
+        Assert.Equal("Left one\nLeft two\nRight one\nRight two", layout.Text);
+        Assert.Equal(2, layout.Blocks.Count);
+    }
+
+    [Fact]
+    public void LayoutOrderKeepsTheContentOrderOfVerticalText()
+    {
+        const string Content = "BT /F1 12 Tf 0 1 -1 0 300 300 Tm (Up) Tj ET BT /F1 12 Tf 0 1 -1 0 320 300 Tm (Next) Tj ET";
+
+        var layout = ExtractWithHelvetica(Content, new PdfTextExtractionOptions { ReadingOrder = PdfTextReadingOrder.Layout });
+
+        Assert.Equal("Up\nNext", layout.Text);
+    }
+
+    private static PdfTextLayout ExtractWithHelvetica(string content, PdfTextExtractionOptions? options = null, int rotate = 0) => OpenWithHelvetica(content, rotate).ExtractTextLayout(options);
+
+    private static PdfPage OpenWithHelvetica(string content, int rotate = 0)
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Rotate {rotate} /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream(content.ReplaceLineEndings("\n")));
+
+        return PdfDocument.Open(file.ToArray()).Pages[0];
+    }
+
+    [Fact]
     public void DecodersAreSharedByThePagesAndFollowTheChangesOfTheFont()
     {
         var file = new HandWrittenPdf()

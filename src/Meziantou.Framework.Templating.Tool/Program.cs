@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Text.Json;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -25,14 +26,42 @@ internal static partial class Program
 
     internal static Task<int> MainImpl(string[] args, Action<InvocationConfiguration>? configure)
     {
-        var inputOption = new Option<string>("--input")
+        var inputOption = new Option<string[]>("--input")
         {
-            Description = "Path to the input template file",
+            Description = "Path to an input template file, or a glob pattern (*, ?, **) that matches template files. Can be repeated",
             Required = true,
+            Arity = ArgumentArity.OneOrMore,
+            AllowMultipleArgumentsPerToken = true,
         };
-        var outputOption = new Option<string>("--output")
+        var outputOption = new Option<string?>("--output")
         {
-            Description = "Path to the output file. If omitted, writes to stdout",
+            Description = "Path to the output file of a single template. If omitted, writes next to the template when its name is known, or to stdout",
+            Required = false,
+        };
+        var outputDirectoryOption = new Option<string?>("--output-directory")
+        {
+            Description = "Directory of the generated files. A template matched by a glob pattern keeps its path relative to the start of the pattern",
+            Required = false,
+        };
+        var outputExtensionOption = new Option<string?>("--output-extension")
+        {
+            Description = "Extension of the generated file of a template that has no output directive",
+            Required = false,
+        };
+        var rootDirectoryOption = new Option<string?>("--root-directory")
+        {
+            Description = "Directory the input paths and glob patterns are relative to. Defaults to the current directory",
+            Required = false,
+        };
+        var argOption = new Option<string[]>("--arg")
+        {
+            Description = "Argument passed to the templates, as name=value. The value is a string. Can be repeated",
+            Required = false,
+            Arity = ArgumentArity.ZeroOrMore,
+        };
+        var argumentsFileOption = new Option<string?>("--arguments-file")
+        {
+            Description = "Path to a JSON file whose root object holds the arguments passed to the templates",
             Required = false,
         };
         var startCodeBlockDelimiterOption = new Option<string?>("--start-code-block-delimiter")
@@ -56,25 +85,36 @@ internal static partial class Program
             Required = false,
         };
 
-        var rootCommand = new RootCommand("Render a template file using Meziantou.Framework.Templating");
+        var rootCommand = new RootCommand("Render template files using Meziantou.Framework.Templating");
         rootCommand.Options.Add(inputOption);
         rootCommand.Options.Add(outputOption);
+        rootCommand.Options.Add(outputDirectoryOption);
+        rootCommand.Options.Add(outputExtensionOption);
+        rootCommand.Options.Add(rootDirectoryOption);
+        rootCommand.Options.Add(argOption);
+        rootCommand.Options.Add(argumentsFileOption);
         rootCommand.Options.Add(startCodeBlockDelimiterOption);
         rootCommand.Options.Add(endCodeBlockDelimiterOption);
         rootCommand.Options.Add(outputEncodingOption);
         rootCommand.Options.Add(lineEndingOption);
         rootCommand.SetAction((parseResult, cancellationToken) =>
         {
-            return RenderTemplateAsync(
-                parseResult.GetRequiredValue(inputOption),
-                parseResult.GetValue(outputOption),
-                parseResult.GetValue(startCodeBlockDelimiterOption),
-                parseResult.GetValue(endCodeBlockDelimiterOption),
-                parseResult.GetValue(outputEncodingOption),
-                parseResult.GetValue(lineEndingOption),
-                parseResult.InvocationConfiguration.Output,
-                parseResult.InvocationConfiguration.Error,
-                cancellationToken);
+            var options = new RenderOptions
+            {
+                Inputs = parseResult.GetRequiredValue(inputOption),
+                OutputFile = parseResult.GetValue(outputOption),
+                OutputDirectory = parseResult.GetValue(outputDirectoryOption),
+                OutputExtension = parseResult.GetValue(outputExtensionOption),
+                RootDirectory = parseResult.GetValue(rootDirectoryOption),
+                Arguments = parseResult.GetValue(argOption) ?? [],
+                ArgumentsFile = parseResult.GetValue(argumentsFileOption),
+                StartCodeBlockDelimiter = parseResult.GetValue(startCodeBlockDelimiterOption),
+                EndCodeBlockDelimiter = parseResult.GetValue(endCodeBlockDelimiterOption),
+                OutputEncoding = parseResult.GetValue(outputEncodingOption),
+                LineEnding = parseResult.GetValue(lineEndingOption),
+            };
+
+            return RenderTemplatesAsync(options, parseResult.InvocationConfiguration.Output, parseResult.InvocationConfiguration.Error, cancellationToken);
         });
 
         var invocationConfiguration = new InvocationConfiguration();
@@ -82,97 +122,241 @@ internal static partial class Program
         return rootCommand.Parse(args).InvokeAsync(invocationConfiguration);
     }
 
-    private static async Task<int> RenderTemplateAsync(
-        string inputFile,
-        string? outputFile,
-        string? startCodeBlockDelimiter,
-        string? endCodeBlockDelimiter,
-        string? outputEncoding,
-        string? lineEnding,
-        TextWriter output,
-        TextWriter error,
-        CancellationToken cancellationToken)
+    private static async Task<int> RenderTemplatesAsync(RenderOptions options, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
-        var inputPath = FullPath.FromPath(inputFile);
-        if (!File.Exists(inputPath))
+        var errors = new List<string>();
+        var settings = ResolveSettings(options, errors);
+        var arguments = errors.Count is 0 ? await ReadArgumentsAsync(options, errors, cancellationToken).ConfigureAwait(false) : null;
+        var inputs = errors.Count is 0 ? ResolveInputFiles(options, errors) : null;
+        if (errors.Count > 0 || settings is null || arguments is null || inputs is null)
+            return await WriteErrorsAsync(error, errors, cancellationToken).ConfigureAwait(false);
+
+        if (inputs.IsMultiple && settings.OutputFile is not null)
         {
-            await error.WriteLineAsync(string.Create(CultureInfo.InvariantCulture, $"The input template file '{inputPath}' does not exist").AsMemory(), cancellationToken);
-            return 1;
+            errors.Add("--output names the file of a single template. Use --output-directory to render several templates");
+            return await WriteErrorsAsync(error, errors, cancellationToken).ConfigureAwait(false);
         }
 
-        var templateContent = await File.ReadAllTextAsync(inputPath, cancellationToken).ConfigureAwait(false);
-        if (startCodeBlockDelimiter is { Length: 0 })
-        {
-            await error.WriteLineAsync("The start code block delimiter cannot be empty".AsMemory(), cancellationToken);
-            return 1;
-        }
-
-        if (endCodeBlockDelimiter is { Length: 0 })
-        {
-            await error.WriteLineAsync("The end code block delimiter cannot be empty".AsMemory(), cancellationToken);
-            return 1;
-        }
-
-        if (!TryResolveCodeBlockDelimiters(templateContent, startCodeBlockDelimiter, endCodeBlockDelimiter, out var resolvedStartCodeBlockDelimiter, out var resolvedEndCodeBlockDelimiter))
-        {
-            await error.WriteLineAsync("The start and end code block delimiters must be specified together, unless the one you specify belongs to a well-known pair (<% %> or <# #>)".AsMemory(), cancellationToken);
-            return 1;
-        }
-
-        if (!TryResolveLineEnding(lineEnding, out var resolvedLineEnding))
-        {
-            await error.WriteLineAsync("Invalid line ending. Allowed values are LF, CRLF, CR".AsMemory(), cancellationToken);
-            return 1;
-        }
-
-        if (!TryResolveOutputEncoding(outputEncoding, out var resolvedOutputEncoding))
-        {
-            await error.WriteLineAsync("Invalid output encoding. Use a valid encoding name, for example utf8, utf8-bom, unicode, utf-16, utf-32".AsMemory(), cancellationToken);
-            return 1;
-        }
-
-        using var template = new Template
-        {
-            StartCodeBlockDelimiter = resolvedStartCodeBlockDelimiter,
-            EndCodeBlockDelimiter = resolvedEndCodeBlockDelimiter,
-            SourceFileName = inputPath,
-        };
-        template.Load(templateContent);
-        var resolvedOutputPath = ResolveOutputPath(outputFile, inputPath, template);
-
-        string result;
+        // Load every template and name its output before rendering any of them, so that an invalid
+        // input does not leave a partial set of generated files.
+        var templates = new List<LoadedTemplate>(inputs.Files.Count);
         try
         {
-            result = template.Run();
+            var outputPaths = new Dictionary<FullPath, FullPath>();
+            foreach (var input in inputs.Files)
+            {
+                var loadedTemplate = await LoadTemplateAsync(input, settings, arguments, inputs.IsMultiple, errors, cancellationToken).ConfigureAwait(false);
+                if (loadedTemplate is null)
+                    continue;
+
+                templates.Add(loadedTemplate);
+                if (loadedTemplate.OutputPath is { } outputPath)
+                {
+                    if (outputPaths.TryGetValue(outputPath, out var otherInputPath))
+                    {
+                        errors.Add(string.Create(CultureInfo.InvariantCulture, $"The templates '{otherInputPath}' and '{input.Path}' both generate '{outputPath}'"));
+                    }
+                    else
+                    {
+                        outputPaths.Add(outputPath, input.Path);
+                    }
+                }
+            }
+
+            if (errors.Count > 0)
+                return await WriteErrorsAsync(error, errors, cancellationToken).ConfigureAwait(false);
+
+            var results = new string?[templates.Count];
+            var renderErrors = new string?[templates.Count];
+            await Parallel.ForEachAsync(Enumerable.Range(0, templates.Count), cancellationToken, async (index, itemCancellationToken) =>
+            {
+                var template = templates[index];
+                if (!TryRunTemplate(template, arguments, out var result, out var errorMessage))
+                {
+                    renderErrors[index] = errorMessage;
+                    return;
+                }
+
+                if (settings.LineEnding is not null)
+                {
+                    result = result.ReplaceLineEndings(settings.LineEnding);
+                }
+
+                if (template.OutputPath is { } outputPath)
+                {
+                    outputPath.CreateParentDirectory();
+                    await File.WriteAllTextAsync(outputPath, result, settings.OutputEncoding, itemCancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    results[index] = result;
+                }
+            }).ConfigureAwait(false);
+
+            // Only a single template can be written to stdout
+            foreach (var result in results)
+            {
+                if (result is not null)
+                {
+                    await output.WriteAsync(result.AsMemory(), cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            errors.AddRange(renderErrors.OfType<string>());
+            return await WriteErrorsAsync(error, errors, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            foreach (var template in templates)
+            {
+                template.Template.Dispose();
+            }
+        }
+    }
+
+    private static async Task<int> WriteErrorsAsync(TextWriter error, List<string> errors, CancellationToken cancellationToken)
+    {
+        foreach (var message in errors)
+        {
+            await error.WriteLineAsync(message.AsMemory(), cancellationToken).ConfigureAwait(false);
+        }
+
+        return errors.Count is 0 ? 0 : 1;
+    }
+
+    private static RenderSettings? ResolveSettings(RenderOptions options, List<string> errors)
+    {
+        if (options.StartCodeBlockDelimiter is { Length: 0 })
+        {
+            errors.Add("The start code block delimiter cannot be empty");
+        }
+
+        if (options.EndCodeBlockDelimiter is { Length: 0 })
+        {
+            errors.Add("The end code block delimiter cannot be empty");
+        }
+
+        if (!TryResolveLineEnding(options.LineEnding, out var lineEnding))
+        {
+            errors.Add("Invalid line ending. Allowed values are LF, CRLF, CR");
+        }
+
+        if (!TryResolveOutputEncoding(options.OutputEncoding, out var outputEncoding))
+        {
+            errors.Add("Invalid output encoding. Use a valid encoding name, for example utf8, utf8-bom, unicode, utf-16, utf-32");
+        }
+
+        string? outputExtension = null;
+        if (options.OutputExtension is not null)
+        {
+            outputExtension = NormalizeExtension(options.OutputExtension);
+            if (outputExtension is null)
+            {
+                errors.Add("The output extension cannot be empty");
+            }
+        }
+
+        var outputFile = string.IsNullOrWhiteSpace(options.OutputFile) ? (FullPath?)null : FullPath.FromPath(options.OutputFile);
+        var outputDirectory = string.IsNullOrWhiteSpace(options.OutputDirectory) ? (FullPath?)null : FullPath.FromPath(options.OutputDirectory);
+        if (outputFile is not null && outputDirectory is not null)
+        {
+            errors.Add("--output and --output-directory cannot be used together");
+        }
+
+        if (errors.Count > 0)
+            return null;
+
+        return new RenderSettings
+        {
+            StartCodeBlockDelimiter = options.StartCodeBlockDelimiter,
+            EndCodeBlockDelimiter = options.EndCodeBlockDelimiter,
+            LineEnding = lineEnding,
+            OutputEncoding = outputEncoding,
+            OutputExtension = outputExtension,
+            OutputFile = outputFile,
+            OutputDirectory = outputDirectory,
+        };
+    }
+
+    private static async Task<LoadedTemplate?> LoadTemplateAsync(InputFile input, RenderSettings settings, IReadOnlyList<TemplateArgumentValue> arguments, bool isMultiple, List<string> errors, CancellationToken cancellationToken)
+    {
+        var templateContent = await File.ReadAllTextAsync(input.Path, cancellationToken).ConfigureAwait(false);
+        if (!TryResolveCodeBlockDelimiters(templateContent, settings.StartCodeBlockDelimiter, settings.EndCodeBlockDelimiter, out var startCodeBlockDelimiter, out var endCodeBlockDelimiter))
+        {
+            errors.Add("The start and end code block delimiters must be specified together, unless the one you specify belongs to a well-known pair (<% %> or <# #>)");
+            return null;
+        }
+
+        Template? template = new Template
+        {
+            StartCodeBlockDelimiter = startCodeBlockDelimiter,
+            EndCodeBlockDelimiter = endCodeBlockDelimiter,
+            SourceFileName = input.Path,
+        };
+
+        try
+        {
+            foreach (var argument in arguments)
+            {
+                if (string.Equals(argument.Name, template.OutputParameterName, StringComparison.Ordinal))
+                {
+                    errors.Add(string.Create(CultureInfo.InvariantCulture, $"The argument name '{argument.Name}' is reserved"));
+                    return null;
+                }
+
+                template.Arguments.Add(new TemplateArgument(argument.Name, argument.Type));
+            }
+
+            if (arguments.Any(argument => argument.Type == typeof(JsonElement)))
+            {
+                template.AssemblyReferences.Add(typeof(JsonElement));
+            }
+
+            template.Load(templateContent);
+            if (!TryResolveOutputPath(input, template, settings, isMultiple, out var outputPath, out var errorMessage))
+            {
+                errors.Add(errorMessage);
+                return null;
+            }
+
+            var loadedTemplate = new LoadedTemplate(input.Path, template, outputPath);
+            template = null;
+            return loadedTemplate;
+        }
+        finally
+        {
+            template?.Dispose();
+        }
+    }
+
+    private static bool TryRunTemplate(LoadedTemplate template, IReadOnlyList<TemplateArgumentValue> arguments, [NotNullWhen(true)] out string? result, [NotNullWhen(false)] out string? errorMessage)
+    {
+        var values = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var argument in arguments)
+        {
+            values[argument.Name] = argument.Value;
+        }
+
+        try
+        {
+            result = template.Template.Run((IReadOnlyDictionary<string, object?>)values);
+            errorMessage = null;
+            return true;
         }
         catch (TemplateException ex)
         {
-            await error.WriteLineAsync(ex.Message.AsMemory(), cancellationToken);
-            return 1;
+            result = null;
+            errorMessage = ex.Message;
+            return false;
         }
         catch (TargetInvocationException ex) when (ex.InnerException is not null)
         {
             // The template threw while running. Report it against the template file instead of
             // letting a reflection stack trace escape as if the tool itself had crashed.
-            await error.WriteLineAsync(FormatTemplateRuntimeError(ex.InnerException, inputPath).AsMemory(), cancellationToken);
-            return 1;
+            result = null;
+            errorMessage = FormatTemplateRuntimeError(ex.InnerException, template.InputPath);
+            return false;
         }
-
-        if (resolvedLineEnding is not null)
-        {
-            result = result.ReplaceLineEndings(resolvedLineEnding);
-        }
-
-        if (resolvedOutputPath is null)
-        {
-            await output.WriteAsync(result.AsMemory(), cancellationToken);
-            return 0;
-        }
-
-        var outputPath = resolvedOutputPath.Value;
-        outputPath.CreateParentDirectory();
-        await File.WriteAllTextAsync(outputPath, result, resolvedOutputEncoding, cancellationToken).ConfigureAwait(false);
-        return 0;
     }
 
     /// <summary>
@@ -252,20 +436,42 @@ internal static partial class Program
         }
     }
 
-    private static FullPath? ResolveOutputPath(string? outputFile, FullPath inputPath, Template template)
+    /// <summary>
+    /// Names the generated file of a template: <c>--output</c>, or the name of the template with the extension of its
+    /// output directive (or <c>--output-extension</c>), in <c>--output-directory</c> or next to the template.
+    /// <see langword="null"/> means stdout, which only a single template can use.
+    /// </summary>
+    private static bool TryResolveOutputPath(InputFile input, Template template, RenderSettings settings, bool isMultiple, out FullPath? outputPath, [NotNullWhen(false)] out string? errorMessage)
     {
-        if (!string.IsNullOrWhiteSpace(outputFile))
+        errorMessage = null;
+        if (settings.OutputFile is { } outputFile)
         {
-            return FullPath.FromPath(outputFile);
+            outputPath = outputFile;
+            return true;
         }
 
-        var directiveOutputExtension = GetDirectiveOutputExtension(template);
-        if (directiveOutputExtension is null)
+        var extension = GetDirectiveOutputExtension(template) ?? settings.OutputExtension;
+        if (extension is null)
         {
-            return null;
+            outputPath = null;
+            if (!isMultiple && settings.OutputDirectory is null)
+                return true;
+
+            errorMessage = string.Create(CultureInfo.InvariantCulture, $"{input.Path}: error: The template has no output directive. Add one, or use --output-extension to name its output file");
+            return false;
         }
 
-        return inputPath.WithExtension(directiveOutputExtension);
+        var path = settings.OutputDirectory is { } outputDirectory
+            ? outputDirectory / input.RelativePath
+            : input.Path;
+        outputPath = path.WithExtension(extension);
+        if (outputPath == input.Path)
+        {
+            errorMessage = string.Create(CultureInfo.InvariantCulture, $"{input.Path}: error: The output file would overwrite the template");
+            return false;
+        }
+
+        return true;
     }
 
     private static bool TryResolveCodeBlockDelimiters(

@@ -12,18 +12,19 @@ namespace Meziantou.Framework.Geo;
 /// the order of the document. A waypoint is a <see cref="GeoPoint"/>, a route is a <see cref="GeoLineString"/> of its
 /// <c>rtept</c>, and a track is a <see cref="GeoMultiLineString"/> with one line per <c>trkseg</c>, even when it has a
 /// single segment, so the type of the geometry tells a track from a route. The <c>ele</c> of a point becomes its
-/// <see cref="GeoPosition.Altitude"/>. The <c>name</c> of the <c>metadata</c> (or of the <c>gpx</c> element in GPX 1.0)
+/// <see cref="GeoPosition.Altitude"/>, and its <c>time</c> its <see cref="GeoPosition.Time"/> (UTC when the text has no
+/// offset). The <c>name</c> of the <c>metadata</c> (or of the <c>gpx</c> element in GPX 1.0)
 /// becomes <see cref="GeoFeatureCollection.Name"/>.
 /// </para>
 /// <para>
 /// The properties of a feature are the <see cref="TypePropertyName"/> property, <c>wpt</c>, <c>rte</c> or <c>trk</c>,
 /// and the elements <c>name</c>, <c>cmt</c>, <c>desc</c>, <c>src</c> and <c>type</c> as a <see cref="string"/>, the
 /// <c>sym</c> of a waypoint as a <see cref="string"/>, the <c>number</c> of a route or a track as a <see cref="double"/>,
-/// and the <c>time</c> of a waypoint as a <see cref="DateTimeOffset"/> (UTC when the text has no offset). The other
+/// and the <c>time</c> of a waypoint as a <see cref="DateTimeOffset"/>, also kept as the time of its position. The other
 /// elements are ignored: <c>link</c> (<c>url</c> in GPX 1.0), <c>extensions</c> (such as the heart rate or the cadence of
 /// a Garmin device), the other data of a waypoint (<c>magvar</c>, <c>fix</c>, <c>hdop</c>…), the metadata other than its
-/// name, and every element of the points of the routes and tracks except <c>ele</c>, such as their <c>time</c>. The
-/// features have no <see cref="GeoFeature.Id"/>.
+/// name, and every element of the points of the routes and tracks except <c>ele</c> and <c>time</c>. The features have no
+/// <see cref="GeoFeature.Id"/>.
 /// </para>
 /// <para>
 /// The writer writes GPX 1.1. A <see cref="GeoPoint"/> is a <c>wpt</c>, a <see cref="GeoMultiPoint"/> is one <c>wpt</c>
@@ -31,9 +32,11 @@ namespace Meziantou.Framework.Geo;
 /// one <c>trkseg</c> per line, as the reader returns them and as GDAL writes them. When the <see cref="TypePropertyName"/>
 /// property is <c>trk</c>, a <see cref="GeoLineString"/> is a track of one segment; when it is <c>rte</c>, a
 /// <see cref="GeoMultiLineString"/> is one route per line. As GPX requires, the waypoints come first, then the routes, then
-/// the tracks. The writer writes the properties named after the elements the reader reads, as their text; the
-/// <c>time</c> is written in UTC when it is a <see cref="DateTimeOffset"/>, a <see cref="DateTime"/> or a text that is a
-/// date, and the <c>number</c> when it is a non-negative integer. The other properties and the identifiers are not
+/// the tracks. The altitude and the time of each position are its <c>ele</c> and <c>time</c>, the time in UTC. The writer
+/// writes the properties named after the elements the reader reads, as their text; the <c>time</c> property of a
+/// waypoint whose position has no time is written in UTC when it is a <see cref="DateTimeOffset"/>, a
+/// <see cref="DateTime"/> or a text that is a date, and the <c>number</c> when it is a non-negative integer. The
+/// measures are not written. The other properties and the identifiers are not
 /// written, as GPX has no element for them.
 /// </para>
 /// </remarks>
@@ -336,6 +339,7 @@ public static class Gpx
         var latitude = ParseCoordinate(reader.GetAttribute("lat"), name, "lat", 90);
         var longitude = ParseCoordinate(reader.GetAttribute("lon"), name, "lon", 180);
         double? altitude = null;
+        DateTimeOffset? time = null;
         for (var found = MoveToFirstChild(reader); found; found = MoveToNextChild(reader))
         {
             switch (reader.NamespaceURI == ns ? reader.LocalName : null)
@@ -344,8 +348,14 @@ public static class Gpx
                     var text = reader.ReadElementContentAsString();
                     altitude = string.IsNullOrWhiteSpace(text) ? null : ParseNumber(text, "ele");
                     break;
-                case "time" when properties is not null:
-                    properties["time"] = ParseTime(reader.ReadElementContentAsString());
+                case "time":
+                    var timeText = reader.ReadElementContentAsString();
+                    time = string.IsNullOrWhiteSpace(timeText) ? null : ParseTime(timeText);
+                    if (properties is not null && time is not null)
+                    {
+                        properties["time"] = time;
+                    }
+
                     break;
                 case "name" or "cmt" or "desc" or "src" or "sym" or "type" when properties is not null:
                     var property = reader.LocalName;
@@ -357,7 +367,7 @@ public static class Gpx
             }
         }
 
-        return new GeoPosition(longitude, latitude, altitude);
+        return new GeoPosition(longitude, latitude, altitude) { Time = time };
     }
 
     private static double ParseCoordinate(string? text, string element, string attribute, double limit)
@@ -425,7 +435,7 @@ public static class Gpx
     {
         writer.WriteStartElement("wpt", Gpx11Namespace);
         WriteCoordinates(writer, position);
-        if (properties.TryGetValue("time", out var value) && FormatTime(value) is { } time)
+        if (position.Time is null && properties.TryGetValue("time", out var value) && FormatTime(value) is { } time)
         {
             writer.WriteElementString("time", Gpx11Namespace, time);
         }
@@ -461,7 +471,7 @@ public static class Gpx
         writer.WriteEndElement();
     }
 
-    // The attributes and the ele element, which comes first in the schema
+    // The attributes and the ele and time elements, which come first in the schema
     private static void WriteCoordinates(XmlWriter writer, GeoPosition position)
     {
         writer.WriteAttributeString("lat", position.Latitude.ToString("R", CultureInfo.InvariantCulture));
@@ -469,6 +479,11 @@ public static class Gpx
         if (position.Altitude is { } altitude)
         {
             writer.WriteElementString("ele", Gpx11Namespace, altitude.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        if (position.Time is { } time)
+        {
+            writer.WriteElementString("time", Gpx11Namespace, FormatTime(time.UtcDateTime));
         }
     }
 
@@ -491,8 +506,10 @@ public static class Gpx
             _ => null,
         };
 
-        return utc?.ToString("yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'", CultureInfo.InvariantCulture);
+        return utc is { } value2 ? FormatTime(value2) : null;
     }
+
+    private static string FormatTime(DateTime utc) => utc.ToString("yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'", CultureInfo.InvariantCulture);
 
     // The number of a route or a track is a non-negative integer
     private static string? FormatNumber(object? value)

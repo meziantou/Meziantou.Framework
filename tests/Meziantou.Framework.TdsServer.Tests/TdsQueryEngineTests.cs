@@ -163,6 +163,124 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_InnerJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    INNER JOIN nullable_customers n2 ON n1.Name = n2.Name
+                    ORDER BY n1.Id
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Name != null)).Join(NullableCustomer[].Where(nullableCustomer2 => (nullableCustomer2.Name != null)), nullableCustomer3 => nullableCustomer3.Name, nullableCustomer4 => nullableCustomer4.Name, (nullableCustomer5, nullableCustomer6) => new TdsCarrier() {n1 = nullableCustomer5, n2 = nullableCustomer6}).OrderBy(carrier => carrier.n1.Id).Select(carrier2 => new TdsProjection() {LeftId = carrier2.n1.Id, RightId = carrier2.n2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_LeftJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    LEFT JOIN nullable_customers n2 ON n1.Score = n2.Score
+                    ORDER BY n1.Id
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            3 NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].LeftJoin(NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Score != null)), nullableCustomer2 => nullableCustomer2.Score, nullableCustomer3 => nullableCustomer3.Score, (nullableCustomer4, nullableCustomer5) => new TdsCarrier() {n1 = nullableCustomer4, n2 = nullableCustomer5}).OrderBy(carrier => carrier.n1.Id).Select(carrier2 => new TdsProjection() {LeftId = carrier2.n1.Id, RightId = IIF((carrier2.n2 == null), null, Convert(carrier2.n2.Id, Nullable`1))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RightJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    RIGHT JOIN nullable_customers n2 ON n1.Name = n2.Name
+                    ORDER BY n2.Id
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            NULL 3
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Name != null)).RightJoin(NullableCustomer[], nullableCustomer2 => nullableCustomer2.Name, nullableCustomer3 => nullableCustomer3.Name, (nullableCustomer4, nullableCustomer5) => new TdsCarrier() {n1 = nullableCustomer4, n2 = nullableCustomer5}).OrderBy(carrier => carrier.n2.Id).Select(carrier2 => new TdsProjection() {LeftId = IIF((carrier2.n1 == null), null, Convert(carrier2.n1.Id, Nullable`1)), RightId = carrier2.n2.Id})");
+    }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public async Task SqlClient_QueryEngine_FullJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    FULL JOIN nullable_customers n2 ON n1.Name = n2.Name
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            3 NULL
+            NULL 3
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].FullJoin(NullableCustomer[], nullableCustomer => nullableCustomer.Name, nullableCustomer2 => nullableCustomer2.Name, (nullableCustomer3, nullableCustomer4) => new TdsCarrier() {n1 = nullableCustomer3, n2 = nullableCustomer4}, null).Select(carrier => new TdsProjection() {LeftId = IIF((carrier.n1 == null), null, Convert(carrier.n1.Id, Nullable`1)), RightId = IIF((carrier.n2 == null), null, Convert(carrier.n2.Id, Nullable`1))})");
+    }
+#endif
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_InnerJoin_NonNullableKeyWithNullableKey_DoesNotMatchNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT o.Id, n.Id AS NullableId
+                    FROM orders o
+                    INNER JOIN nullable_customers n ON o.Amount = n.Score
+                    """;
+            },
+            """
+            Id NullableId
+            3 2
+            """,
+            expectedMaterializedQueries: "Order[].Join(NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Score != null)), order => Convert(order.Amount, Nullable`1), nullableCustomer2 => nullableCustomer2.Score, (order2, nullableCustomer3) => new TdsCarrier() {o = order2, n = nullableCustomer3}).Select(carrier => new TdsProjection() {Id = carrier.o.Id, NullableId = carrier.n.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_RightJoin_ReturnsRowsFromRightSource()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -4247,6 +4365,508 @@ public sealed class TdsQueryEngineTests
             expectedMaterializedQueries: null);
     }
 
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_PrefixPattern_UsesStartsWith()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name LIKE 'A%'
+                    """;
+            },
+            """
+            Id
+            1
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name != null) AndAlso customer.Name.StartsWith(\"A\", Ordinal))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_ContainsPattern_UsesContains()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name LIKE '%i%'
+                    """;
+            },
+            """
+            Id
+            1
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name != null) AndAlso customer.Name.Contains(\"i\"))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WildcardsAndCharacterSets_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name LIKE '[A-C]_%'
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (Like(customer.Name, \"[A-C]_%\", null) == True)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithParameterPattern_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Name LIKE @pattern";
+                _ = command.Parameters.Add(new SqlParameter("@pattern", SqlDbType.NVarChar, 50) { Value = "%b" });
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_NotLike_ExcludesNullValues()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name NOT LIKE 'A%'
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso Not(nullableCustomer.Name.StartsWith(\"A\", Ordinal)))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_NotOfLike_ExcludesNullValues()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name LIKE '_li%')
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (Like(nullableCustomer.Name, \"_li%\", null) == False)).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithColumnPattern_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name LIKE Name
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (Like(nullableCustomer.Name, nullableCustomer.Name, null) == True)).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithEscape_MatchesWildcardCharacters()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name + '_%' LIKE 'B%!_!%' ESCAPE '!'
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithInvalidEscape_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id FROM customers WHERE Name LIKE 'A%' ESCAPE '!!'",
+            expectedMessageContains: "ESCAPE");
+    }
+
+    [Theory]
+    [InlineData("Name LIKE 'A%'", new[] { 1 })]
+    [InlineData("Name LIKE '%e'", new[] { 1 })]
+    [InlineData("Name LIKE '%i%'", new[] { 1, 4 })]
+    [InlineData("Name LIKE 'Bob'", new[] { 2 })]
+    [InlineData("Name LIKE 'bob'", new int[0])]
+    [InlineData("Name LIKE '_ob'", new[] { 2 })]
+    [InlineData("Name LIKE 'B_'", new int[0])]
+    [InlineData("Name LIKE 'A%e'", new[] { 1 })]
+    [InlineData("Name LIKE 'D_v%'", new[] { 4 })]
+    [InlineData("Name LIKE '%'", new[] { 1, 2, 4 })]
+    [InlineData("Name LIKE ''", new int[0])]
+    [InlineData("Name LIKE '_____'", new[] { 1, 4 })]
+    [InlineData("Name LIKE '%_%_%_%_%_%'", new[] { 1, 4 })]
+    [InlineData("Name LIKE '[AB]%'", new[] { 1, 2 })]
+    [InlineData("Name LIKE '[^AB]%'", new[] { 4 })]
+    [InlineData("Name LIKE '[A-C]%'", new[] { 1, 2 })]
+    [InlineData("Name LIKE '[C-A]%'", new[] { 1, 2 })]
+    [InlineData("Name LIKE '%[dD]'", new[] { 4 })]
+    [InlineData("Name LIKE '[-B]%'", new[] { 2 })]
+    [InlineData("Name LIKE '[B-]%'", new[] { 2 })]
+    [InlineData("Name LIKE '[]%'", new int[0])]
+    [InlineData("Name LIKE '[^]%'", new[] { 1, 2, 4 })]
+    [InlineData("Name LIKE '[A'", new int[0])]
+    [InlineData("Name + '[A' LIKE '%[A'", new[] { 1, 2, 4 })]
+    [InlineData("Name + '.*' LIKE 'Bob.*'", new[] { 2 })]
+    [InlineData("Name + '.*' LIKE '_ob.*'", new[] { 2 })]
+    [InlineData("Name NOT LIKE '%i%'", new[] { 2 })]
+    [InlineData("Name NOT LIKE '_ob'", new[] { 1, 4 })]
+    [InlineData("Name LIKE 'Bo!b' ESCAPE '!'", new[] { 2 })]
+    [InlineData("Name LIKE 'Bob!' ESCAPE '!'", new int[0])]
+    [InlineData("Name + '%' LIKE '%!%' ESCAPE '!'", new[] { 1, 2, 4 })]
+    [InlineData("Name + '[x]' LIKE '%![x]' ESCAPE '!'", new[] { 1, 2, 4 })]
+    [InlineData("Name + 'x' LIKE '%[!x]' ESCAPE '!'", new[] { 1, 2, 4 })]
+    [InlineData("Name + '%' LIKE 'Bob%%' ESCAPE '%'", new[] { 2 })]
+    [InlineData("Name + '_' LIKE '%__' ESCAPE '_'", new[] { 1, 2, 4 })]
+    [InlineData("Id LIKE '4'", new[] { 4 })]
+    [InlineData("Name LIKE NULL", new int[0])]
+    [InlineData("Name NOT LIKE NULL", new int[0])]
+    [InlineData("NULL LIKE '%'", new int[0])]
+    [InlineData("Name LIKE '%' ESCAPE NULL", new int[0])]
+    public async Task QueryEngine_Like_MatchesPattern(string predicate, int[] expectedIds)
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        var result = await handler(
+            new TdsQueryContext
+            {
+                RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+                RequestType = TdsQueryRequestType.SqlBatch,
+                CommandText = "SELECT Id FROM customers WHERE " + predicate,
+                HasCompleteParameters = true,
+            },
+            CancellationToken.None);
+
+        Assert.Null(result.Error?.Message);
+        var resultSet = Assert.Single(result.ResultSets);
+        Assert.Equal(expectedIds, [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))]);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_CountInSelect_ReturnsCorrelatedValues()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, (SELECT COUNT(*) FROM orders o WHERE o.Id = c.Id) AS OrderCount
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id OrderCount
+            1 1
+            2 1
+            4 0
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, OrderCount = Order[].Where(order => (order.Id == customer2.Id)).Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_AggregatesOverNoRow_ReturnNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT
+                        c.Id,
+                        (SELECT MAX(o.Amount) FROM orders o WHERE o.Id = c.Id) AS MaxAmount,
+                        (SELECT MIN(o.Region) FROM orders o WHERE o.Id = c.Id) AS MinRegion,
+                        (SELECT SUM(o.Amount) FROM orders o WHERE o.Id = c.Id) AS TotalAmount,
+                        (SELECT AVG(o.Amount) FROM orders o WHERE o.Id = c.Id) AS AverageAmount
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id MaxAmount MinRegion TotalAmount AverageAmount
+            1 10 North 10 10
+            2 20 North 20 20
+            4 NULL NULL NULL NULL
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_ColumnInSelect_ReturnsNullWhenNoRow()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, (SELECT o.Region FROM orders o WHERE o.Id = c.Id) AS Region
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id Region
+            1 North
+            2 North
+            4 NULL
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, Region = ScalarSubqueryCore(Order[].Where(order => (order.Id == customer2.Id)).Select(order2 => order2.Region))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_TopWithOrderBy_ReturnsFirstValue()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, (SELECT TOP 1 o.Region FROM orders o ORDER BY o.Amount) AS SmallestOrderRegion
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Id SmallestOrderRegion
+            1 South
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_InWhere_FiltersRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM orders
+                    WHERE Amount > (SELECT AVG(Amount) FROM orders) OR Id = (SELECT MIN(Id) FROM customers)
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_ComparedWithNoRow_MatchesNothing()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id <> (SELECT o.Id FROM orders o WHERE o.Id = 42)
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_ReturningSeveralRows_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id, (SELECT Region FROM orders) AS Region FROM customers",
+            expectedErrorNumber: 512,
+            expectedMessageContains: "Subquery returned more than 1 value");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_WithSeveralColumns_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id, (SELECT Id, Region FROM orders) AS Region FROM customers",
+            expectedErrorNumber: 116);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_WithOrderByWithoutTop_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id, (SELECT Region FROM orders ORDER BY Amount) AS Region FROM customers",
+            expectedErrorNumber: 1033);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_ReturnOneResultSetPerStatement()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Name FROM customers WHERE Id = 1;
+                    SELECT Region FROM orders WHERE Id = 3
+                    SELECT Id FROM customers WHERE Id > 10;
+                    """;
+            },
+            """
+            Id Name
+            1 Alice
+
+            Region
+            South
+
+            Id
+            """,
+            expectedMaterializedQueries: """
+                Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id, Name = customer2.Name})
+                Order[].Where(order => (order.Id == 3)).Select(order2 => new TdsProjection() {Region = order2.Region})
+                Customer[].Where(customer => (customer.Id > 10)).Select(customer2 => new TdsProjection() {Id = customer2.Id})
+                """);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_ShareParametersAndUseTheirOwnCommonTableExpressions()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH c AS (SELECT Id, Name FROM customers WHERE Id = @id) SELECT Name FROM c;
+                    WITH c AS (SELECT Id, Amount FROM orders WHERE Id = @id) SELECT Amount FROM c;
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 2 });
+            },
+            """
+            Name
+            Bob
+
+            Amount
+            20
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_ReadWithDataSet_FillsOneTablePerStatement()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions()));
+        await server.StartAsync();
+
+        var tableCount = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(Assert.Single(server.Ports)));
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT Id FROM customers; SELECT Id FROM orders";
+            using var adapter = new SqlDataAdapter(command);
+            using var dataSet = new DataSet() { Locale = CultureInfo.InvariantCulture };
+            adapter.Fill(dataSet);
+            Assert.Equal(3, dataSet.Tables[0].Rows.Count);
+            Assert.Equal(3, dataSet.Tables[1].Rows.Count);
+            return dataSet.Tables.Count;
+        });
+
+        Assert.Equal(2, tableCount);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_WithAnInvalidStatement_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id FROM customers; SELECT Id FROM unknown_table",
+            expectedMessageContains: "unknown_table");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_WithANonSelectStatement_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id FROM customers; DELETE FROM customers",
+            expectedMessageContains: "Only SELECT statements are supported.");
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();
@@ -4463,18 +5083,28 @@ public sealed class TdsQueryEngineTests
 
     private static async Task<string> ReadResultAsync(SqlDataReader reader)
     {
+        // Result sets are separated by an empty line
         var lines = new List<string>();
-        if (reader.FieldCount > 0)
+        do
         {
-            lines.Add(string.Join(' ', Enumerable.Range(0, reader.FieldCount).Select(reader.GetName)));
-        }
+            if (lines.Count > 0)
+            {
+                lines.Add(string.Empty);
+            }
 
-        while (await reader.ReadAsync())
-        {
-            var values = Enumerable.Range(0, reader.FieldCount)
-                .Select(index => FormatValue(reader.GetValue(index)));
-            lines.Add(string.Join(' ', values));
+            if (reader.FieldCount > 0)
+            {
+                lines.Add(string.Join(' ', Enumerable.Range(0, reader.FieldCount).Select(reader.GetName)));
+            }
+
+            while (await reader.ReadAsync())
+            {
+                var values = Enumerable.Range(0, reader.FieldCount)
+                    .Select(index => FormatValue(reader.GetValue(index)));
+                lines.Add(string.Join(' ', values));
+            }
         }
+        while (await reader.NextResultAsync());
 
         return string.Join('\n', lines);
     }

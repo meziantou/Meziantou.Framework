@@ -1,6 +1,6 @@
 ---
 title: Text
-description: Show text with the standard fonts, measure it to center, align and wrap it, and change the spacing, the scaling and the rendering of the glyphs.
+description: Show text with the standard fonts, measure it to center, align, wrap and hyphenate it, and change the spacing, the scaling and the rendering of the glyphs.
 ---
 
 [DrawText](cref:Meziantou.Framework.Pdf.PdfContentBuilder.DrawText) shows a line of text at a position, with a font and a size. The text is painted with the fill color, and the
@@ -67,8 +67,11 @@ if (remaining.Length > 0)
 ```
 <!-- endref -->
 
-- The lines break at the spaces; a word wider than the rectangle is broken between its characters. A line feed of the
-  text starts a new paragraph.
+- The lines break where the Unicode line breaking algorithm (UAX #14) allows it: after the spaces and the hyphens, and
+  between the ideographs of Chinese and Japanese texts, which have no spaces. The rules keep together what must not be
+  separated: a closing punctuation does not start a line, a no-break space (U+00A0) joins two words. A
+  word wider than the rectangle is broken between its characters.
+- A line feed, a paragraph separator (U+2029) or a line separator (U+2028) starts a new paragraph.
 - [PdfTextBoxOptions](cref:Meziantou.Framework.Pdf.PdfTextBoxOptions) sets the alignment (left, centered, right or justified: the spaces of a justified line are
   stretched, except on the last line of a paragraph) and the line height, a multiple of the font size (1.2 by default).
 - The first baseline is below the top of the rectangle by the ascent of the font. The lines that do not fit in the
@@ -76,6 +79,34 @@ if (remaining.Length > 0)
   another rectangle or on the next page.
 - The text is laid out before anything is written: a character the font cannot show throws `ArgumentException` and
   leaves the content unchanged.
+
+## Hyphenate words
+
+A soft hyphen (U+00AD) in a text marks where a word can be broken: it is not drawn, unless the line ends there, where a
+hyphen is drawn. To hyphenate the words automatically, set a hyphenator:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfContentBuilderTests.cs;region=Pdf_TextBoxHyphenation;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The hyphenation patterns of a language, in the format of TeX: Hyphenator.Load reads them from files
+var hyphenator = Hyphenator.Parse("hy3ph he2n hena4 hen5at 1na n2at 1tio 2io");
+var options = new PdfTextBoxOptions
+{
+    Alignment = PdfTextAlignment.Justify,
+    Hyphenator = new PdfPatternHyphenator(hyphenator),
+};
+
+// A word that does not fit at the end of a line is broken at a hyphenation point, and a hyphen is drawn
+builder.DrawTextBox("A narrow column needs hyphenation", font, 12, new PdfRectangle(50, 400, 180, 550), options);
+```
+<!-- endref -->
+
+- [PdfPatternHyphenator](cref:Meziantou.Framework.Pdf.PdfPatternHyphenator) applies the hyphenation patterns of a language, read by [Hyphenator](cref:Meziantou.Framework.Hyphenator) of
+  `Meziantou.Framework.Unicode`. No pattern is included: the hyph-utf8 project of the TeX community publishes patterns
+  for many languages, each under its own license.
+- The word that does not fit at the end of a line is broken at the last hyphenation point where the line, ended by a
+  hyphen, fits. The lines are not hyphenated otherwise.
+- Implement [IPdfHyphenator](cref:Meziantou.Framework.Pdf.IPdfHyphenator) to use another source, such as a dictionary of words.
+- The hyphen is the hyphen-minus (`-`): a font without it is not hyphenated.
 
 For full control of the lines (other break rules, a line height per line), measure the words with
 [GetTextWidth](cref:Meziantou.Framework.Pdf.PdfFont.GetTextWidth) and start a new line before the word that does not fit:

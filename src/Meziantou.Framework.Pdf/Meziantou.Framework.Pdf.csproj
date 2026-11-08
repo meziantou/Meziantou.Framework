@@ -18,6 +18,8 @@
     <ProjectReference Include="..\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
     <!-- The fonts: their tables, the shaping of the text, the subsetter, the AFM metrics of the standard fonts, the outlines the renderer draws and the system fonts -->
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+    <!-- The Unicode algorithms: the line breaking and the hyphenation of the content builder, the normalization of the passwords -->
+    <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
   </ItemGroup>
 
   <ItemGroup>

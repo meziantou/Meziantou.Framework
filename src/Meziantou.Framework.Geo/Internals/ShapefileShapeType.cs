@@ -20,4 +20,10 @@ internal static class ShapefileShapeType
     public const int PolygonM = 25;
     public const int MultiPointM = 28;
     public const int MultiPatch = 31;
+
+    /// <summary>A measure smaller than this value means "no data".</summary>
+    public const double NoDataThreshold = -1e38;
+
+    /// <summary>The value written for a missing measure, as GDAL writes it.</summary>
+    public const double NoData = double.MinValue;
 }

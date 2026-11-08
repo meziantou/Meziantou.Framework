@@ -95,7 +95,7 @@ internal static class FlatGeobufReader
         return new Header(
             header.GetString(FlatGeobufFormat.HeaderName),
             header.GetByte(FlatGeobufFormat.HeaderGeometryType),
-            header.GetBool(FlatGeobufFormat.HeaderHasZ),
+            new FlatGeobufDimensions(header.GetBool(FlatGeobufFormat.HeaderHasZ), header.GetBool(FlatGeobufFormat.HeaderHasM)),
             ReadColumns(header),
             header.GetUInt64(FlatGeobufFormat.HeaderFeaturesCount),
             header.GetUInt16(FlatGeobufFormat.HeaderIndexNodeSize, defaultValue: 16));
@@ -109,7 +109,7 @@ internal static class FlatGeobufReader
         GeoGeometry? geometry = null;
         if (feature.TryGetTable(FlatGeobufFormat.FeatureGeometry, out var table))
         {
-            geometry = ReadGeometry(table, header.GeometryType, header.HasZ, depth: 0);
+            geometry = ReadGeometry(table, header.GeometryType, header.Dimensions, depth: 0);
         }
 
         var properties = ReadProperties(feature.GetVectorBytes(FlatGeobufFormat.FeatureProperties, elementSize: 1, out _), featureColumns);
@@ -225,7 +225,7 @@ internal static class FlatGeobufReader
         return text;
     }
 
-    private static GeoGeometry? ReadGeometry(FlatBufferTable table, byte type, bool hasZ, int depth)
+    private static GeoGeometry? ReadGeometry(FlatBufferTable table, byte type, FlatGeobufDimensions dimensions, int depth)
     {
         if (depth > 64)
             throw new FormatException("The geometries of the FlatGeobuf data are nested too deeply.");
@@ -238,41 +238,41 @@ internal static class FlatGeobufReader
         switch (type)
         {
             case FlatGeobufFormat.GeometryPoint:
-                var point = ReadPositions(table, hasZ);
+                var point = ReadPositions(table, dimensions);
                 return point.Length == 0 ? null : new GeoPoint(point[0]);
 
             case FlatGeobufFormat.GeometryMultiPoint:
-                return new GeoMultiPoint(ReadPositions(table, hasZ));
+                return new GeoMultiPoint(ReadPositions(table, dimensions));
 
             case FlatGeobufFormat.GeometryLineString:
-                return new GeoLineString(ReadPositions(table, hasZ));
+                return new GeoLineString(ReadPositions(table, dimensions));
 
             case FlatGeobufFormat.GeometryMultiLineString:
                 if (table.Has(FlatGeobufFormat.GeometryParts))
-                    return new GeoMultiLineString(ReadParts(table, FlatGeobufFormat.GeometryLineString, hasZ, depth).Cast<GeoLineString>());
+                    return new GeoMultiLineString(ReadParts(table, FlatGeobufFormat.GeometryLineString, dimensions, depth).Cast<GeoLineString>());
 
-                return new GeoMultiLineString(Split(table, hasZ).Select(part => new GeoLineString(part)));
+                return new GeoMultiLineString(Split(table, dimensions).Select(part => new GeoLineString(part)));
 
             case FlatGeobufFormat.GeometryPolygon:
-                return new GeoPolygon(Split(table, hasZ));
+                return new GeoPolygon(Split(table, dimensions));
 
             case FlatGeobufFormat.GeometryMultiPolygon:
-                return new GeoMultiPolygon(ReadParts(table, FlatGeobufFormat.GeometryPolygon, hasZ, depth).Cast<GeoPolygon>());
+                return new GeoMultiPolygon(ReadParts(table, FlatGeobufFormat.GeometryPolygon, dimensions, depth).Cast<GeoPolygon>());
 
             case FlatGeobufFormat.GeometryCollection:
-                return new GeoGeometryCollection(ReadParts(table, FlatGeobufFormat.GeometryUnknown, hasZ, depth));
+                return new GeoGeometryCollection(ReadParts(table, FlatGeobufFormat.GeometryUnknown, dimensions, depth));
 
             default:
                 throw new FormatException($"The geometry type {type} of the FlatGeobuf data is not supported: only points, lines, polygons, their multi-geometries and collections are.");
         }
     }
 
-    private static List<GeoGeometry> ReadParts(FlatBufferTable table, byte partType, bool hasZ, int depth)
+    private static List<GeoGeometry> ReadParts(FlatBufferTable table, byte partType, FlatGeobufDimensions dimensions, int depth)
     {
         var parts = new List<GeoGeometry>();
         foreach (var part in table.GetTableVector(FlatGeobufFormat.GeometryParts))
         {
-            var geometry = ReadGeometry(part, partType, hasZ, depth + 1);
+            var geometry = ReadGeometry(part, partType, dimensions, depth + 1);
             var isExpected = partType switch
             {
                 FlatGeobufFormat.GeometryLineString => geometry is GeoLineString,
@@ -292,30 +292,37 @@ internal static class FlatGeobufReader
         return parts;
     }
 
-    private static GeoPosition[] ReadPositions(FlatBufferTable table, bool hasZ)
+    private static GeoPosition[] ReadPositions(FlatBufferTable table, FlatGeobufDimensions dimensions)
     {
         var xy = table.GetDoubleVector(FlatGeobufFormat.GeometryXY);
         if ((xy.Length & 1) != 0)
             throw new FormatException("The coordinates of a geometry of the FlatGeobuf data are not pairs.");
 
         var count = xy.Length / 2;
-        var z = hasZ ? table.GetDoubleVector(FlatGeobufFormat.GeometryZ) : [];
+        var z = dimensions.HasZ ? table.GetDoubleVector(FlatGeobufFormat.GeometryZ) : [];
         if (z.Length != 0 && z.Length != count)
             throw new FormatException("A geometry of the FlatGeobuf data does not have an altitude for each position.");
+
+        var m = dimensions.HasM ? table.GetDoubleVector(FlatGeobufFormat.GeometryM) : [];
+        if (m.Length != 0 && m.Length != count)
+            throw new FormatException("A geometry of the FlatGeobuf data does not have a measure for each position.");
 
         var positions = new GeoPosition[count];
         for (var i = 0; i < count; i++)
         {
-            positions[i] = new GeoPosition(xy[2 * i], xy[(2 * i) + 1], z.Length == 0 ? null : z[i]);
+            positions[i] = new GeoPosition(xy[2 * i], xy[(2 * i) + 1], z.Length == 0 ? null : z[i])
+            {
+                Measure = m.Length == 0 || double.IsNaN(m[i]) ? null : m[i],
+            };
         }
 
         return positions;
     }
 
     /// <summary>Splits the positions of a geometry at the ends of its parts: the lines of a multi-line or the rings of a polygon.</summary>
-    private static List<GeoPosition[]> Split(FlatBufferTable table, bool hasZ)
+    private static List<GeoPosition[]> Split(FlatBufferTable table, FlatGeobufDimensions dimensions)
     {
-        var positions = ReadPositions(table, hasZ);
+        var positions = ReadPositions(table, dimensions);
         var ends = table.GetUInt32Vector(FlatGeobufFormat.GeometryEnds);
         if (ends.Length == 0)
             return positions.Length == 0 ? [] : [positions];
@@ -337,7 +344,7 @@ internal static class FlatGeobufReader
     internal readonly record struct Column(string Name, byte Type);
 
     /// <summary>The header of FlatGeobuf data: what the reader needs to read the features.</summary>
-    internal sealed record Header(string? Name, byte GeometryType, bool HasZ, Column[] Columns, ulong FeatureCount, ushort IndexNodeSize)
+    internal sealed record Header(string? Name, byte GeometryType, FlatGeobufDimensions Dimensions, Column[] Columns, ulong FeatureCount, ushort IndexNodeSize)
     {
         /// <summary>Gets a value that indicates whether the spatial index follows the header.</summary>
         public bool HasIndex => IndexNodeSize > 0 && FeatureCount > 0;

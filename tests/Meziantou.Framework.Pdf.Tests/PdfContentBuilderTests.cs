@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
@@ -429,6 +430,312 @@ public sealed class PdfContentBuilderTests
         var text = PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText();
         Assert.Contains("Office", text, StringComparison.Ordinal);
         Assert.Contains("AVATAR", text, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("extra\u00ADordinary word", new[] { "(extra-) Tj", "(ordinary) Tj", "(word) Tj" })]
+    [InlineData("a\u00ADb", new[] { "(ab) Tj" })]
+    [InlineData("one\u2029two", new[] { "(one) Tj", "(two) Tj" })]
+    [InlineData("well-knowing words", new[] { "(well-) Tj", "(knowing) Tj", "(words) Tj" })]
+    public void TextBoxBreaksAtUnicodeBreakOpportunities(string text, string[] expected)
+    {
+        // Courier: 6 points per character at 10 points; the box is 10 characters wide
+        var (page, builder) = Create();
+        builder.DrawTextBox(text, PdfFont.GetStandardFont(PdfStandardFont.Courier), 10, new PdfRectangle(0, 0, 60, 200));
+
+        var lines = Encoding.ASCII.GetString(page.GetContentData()).Split('\n').Where(line => line.EndsWith(" Tj", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(expected, lines);
+    }
+
+    [Fact]
+    public void TextBoxHyphenatesTheWordThatDoesNotFit()
+    {
+        var (page, builder) = Create();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Courier);
+        var options = new PdfTextBoxOptions { Hyphenator = new PdfPatternHyphenator(Hyphenator.Parse("hy3ph he2n hena4 hen5at 1na n2at 1tio 2io")) };
+
+        // hy-phen-ation: "the hyphen-" is 11 characters, "the hy-" fits in 10
+        builder.DrawTextBox("the hyphenation", font, 10, new PdfRectangle(0, 0, 60, 12), options, out var remaining);
+
+        Assert.Equal("phenation", remaining);
+        Assert.Equal("BT\n/F1 10 Tf\n1 0 0 1 0 5.71 Tm\n(the hy-) Tj\nET\n", Encoding.ASCII.GetString(page.GetContentData()));
+    }
+
+    [Fact]
+    public void TextBoxUsesACustomHyphenator()
+    {
+        var (page, builder) = Create();
+        builder.DrawTextBox("abcdefghijklmnop", PdfFont.GetStandardFont(PdfStandardFont.Courier), 10, new PdfRectangle(0, 0, 60, 200), new PdfTextBoxOptions { Hyphenator = new EveryFourLettersHyphenator() });
+
+        var lines = Encoding.ASCII.GetString(page.GetContentData()).Split('\n').Where(line => line.EndsWith(" Tj", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(["(abcdefgh-) Tj", "(ijklmnop) Tj"], lines);
+    }
+
+    [Fact]
+    public void TextBoxBreaksBetweenIdeographs()
+    {
+        var font = PdfFont.Load(File.ReadAllBytes(TestHarness.RepositoryPaths.Fonts / "noto-sans-cjk" / "NotoSansCJKjp-Regular.subset.otf"));
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(PdfSize.A5).CreateContentBuilder();
+
+        // The glyphs are 10 points wide: two per line, but the ideographic full stop cannot start a line
+        builder.DrawTextBox("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002", font, 10, new PdfRectangle(20, 100, 45, 500));
+
+        var lines = PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractTextLayout().Lines.Select(line => line.Text).ToArray();
+        Assert.Equal(["\u65E5\u672C", "\u8A9E\u306E", "\u30C6\u30AD", "\u30B9", "\u30C8\u3002"], lines);
+    }
+
+    [Fact]
+    public void TableColumnWidths()
+    {
+        var table = new PdfTable(
+            new PdfTableColumn(PdfTableColumnWidth.Fixed(100)),
+            new PdfTableColumn(PdfTableColumnWidth.Relative()),
+            new PdfTableColumn(PdfTableColumnWidth.Relative(3)),
+            new PdfTableColumn())
+        {
+            Font = PdfFont.GetStandardFont(PdfStandardFont.Courier),
+        };
+        table.AddRow("a", "b", "c", "abc");
+
+        // The automatic column is as wide as "abc" (18 points) and the padding (2 x 4); the relative columns share the 374 points left
+        Assert.Equal([100, 93.5, 280.5, 26], table.GetColumnWidths(500));
+    }
+
+    [Fact]
+    public void TableAutomaticColumnsShrinkDownToTheirWidestWord()
+    {
+        var table = new PdfTable(new PdfTableColumn(), new PdfTableColumn()) { Font = PdfFont.GetStandardFont(PdfStandardFont.Courier) };
+        table.AddRow("aaaa bbbb", "cccc dddd");
+
+        // Widest paragraph 54 + 8, widest word 24 + 8: the 36 points over the minimum are shared in proportion
+        Assert.Equal([50, 50], table.GetColumnWidths(100));
+        Assert.Equal([62, 62], table.GetColumnWidths(500));
+        Assert.Equal([10, 10], table.GetColumnWidths(20));
+    }
+
+    [Fact]
+    public void TableCellsArePlacedInTheirColumns()
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(PdfSize.A4).CreateContentBuilder();
+        var table = new PdfTable(
+            new PdfTableColumn(PdfTableColumnWidth.Fixed(100)),
+            new PdfTableColumn(PdfTableColumnWidth.Fixed(100), PdfTextAlignment.Center),
+            new PdfTableColumn(PdfTableColumnWidth.Fixed(100), PdfTextAlignment.Right))
+        {
+            Font = PdfFont.GetStandardFont(PdfStandardFont.Courier),
+        };
+        table.AddRow("one", "two", "abc");
+        table.AddRow("wide").Cells[0].ColumnSpan = 3;
+
+        var result = builder.DrawTable(table, new PdfRectangle(50, 100, 400, 700));
+
+        // A row is the height of a line (ascent 6.29 + descent 1.57) and the padding (2 x 4)
+        Assert.True(result.IsComplete);
+        Assert.Equal(2, result.RowCount);
+        Assert.Equal(700 - (2 * 15.86), result.Bottom, 6);
+        var words = PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractTextLayout().Lines.SelectMany(line => line.Words).ToDictionary(word => word.Text, word => word.Bounds.Left, StringComparer.Ordinal);
+        Assert.Equal(54, words["one"], 3);
+        Assert.Equal(150 + 50 - 9, words["two"], 3);
+        Assert.Equal(350 - 4 - 18, words["abc"], 3);
+        Assert.Equal(54, words["wide"], 3);
+    }
+
+    [Fact]
+    public void TableRowsContinueOnTheNextPagesWithTheirHeader()
+    {
+        var document = new PdfDocument();
+        var table = new PdfTable(new PdfTableColumn(PdfTableColumnWidth.Fixed(100)), new PdfTableColumn(PdfTableColumnWidth.Relative()))
+        {
+            Font = PdfFont.GetStandardFont(PdfStandardFont.Courier),
+            CellPadding = 2,
+        };
+        table.AddHeaderRow("Header", "Value");
+        for (var i = 0; i < 30; i++)
+        {
+            table.AddRow("Row" + i.ToString(CultureInfo.InvariantCulture), "x");
+        }
+
+        // A row is 7.86 + 4 points high: 8 rows fit in 100 points, the header and 7 rows
+        var area = new PdfRectangle(50, 600, 300, 700);
+        var result = document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawTable(table, area);
+        var rowCounts = new List<int> { result.RowCount };
+        while (!result.IsComplete)
+        {
+            result = document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawTable(table, area, result);
+            rowCounts.Add(result.RowCount);
+        }
+
+        Assert.Equal([8, 7, 7, 7, 2], rowCounts);
+        var reloaded = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(5, reloaded.Pages.Count);
+        var rows = new List<string>();
+        foreach (var page in reloaded.Pages)
+        {
+            var lines = page.ExtractTextLayout().Lines;
+            Assert.Equal("Header", lines[0].Words[0].Text);
+            Assert.Equal(700 - 2 - 6.29, lines[0].Words[0].Glyphs[0].Origin.Y, 3);
+            rows.AddRange(lines.Skip(1).Select(line => line.Words[0].Text));
+        }
+
+        Assert.Equal(Enumerable.Range(0, 30).Select(i => "Row" + i.ToString(CultureInfo.InvariantCulture)), rows);
+    }
+
+    [Fact]
+    public void TableRowTallerThanThePageIsSplit()
+    {
+        var document = new PdfDocument();
+        var table = new PdfTable(new PdfTableColumn(PdfTableColumnWidth.Fixed(60)), new PdfTableColumn(PdfTableColumnWidth.Fixed(60)))
+        {
+            Font = PdfFont.GetStandardFont(PdfStandardFont.Courier),
+            CellPadding = 0,
+        };
+        table.AddRow(string.Join(' ', Enumerable.Repeat("word", 20)), "short");
+
+        // 10 lines of "word word" 12 points apart; 4 fit in 50 points (7.86 + 3 x 12)
+        var area = new PdfRectangle(0, 650, 120, 700);
+        var result = document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawTable(table, area);
+        Assert.False(result.IsComplete);
+        Assert.Equal(650, result.Bottom);
+        while (!result.IsComplete)
+        {
+            result = document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawTable(table, area, result);
+        }
+
+        var reloaded = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(3, reloaded.Pages.Count);
+        Assert.Equal([8, 8, 4], reloaded.Pages.Select(page => page.ExtractText().Split((char[])[' ', '\n'], StringSplitOptions.RemoveEmptyEntries).Count(word => word == "word")));
+        Assert.Contains("short", reloaded.Pages[0].ExtractText(), StringComparison.Ordinal);
+        Assert.DoesNotContain("short", reloaded.Pages[1].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TableStartsOnTheNextPageWhenNoRowFits()
+    {
+        var document = new PdfDocument();
+        var table = new PdfTable(new PdfTableColumn(PdfTableColumnWidth.Fixed(100)));
+        table.AddHeaderRow("Header");
+        table.AddRow("Row");
+
+        // The header (9.25 + 8 points high) fits, not the row after it: nothing is drawn
+        var page = document.Pages.Add(PdfSize.A4);
+        var result = page.CreateContentBuilder().DrawTable(table, new PdfRectangle(0, 0, 100, 25));
+        Assert.False(result.IsComplete);
+        Assert.Equal(0, result.RowCount);
+        Assert.Equal(25, result.Bottom);
+        Assert.Empty(page.GetContentData());
+
+        Assert.Throws<InvalidOperationException>(() => page.CreateContentBuilder().DrawTable(table, new PdfRectangle(0, 0, 100, 25), result));
+        Assert.Throws<InvalidOperationException>(() => page.CreateContentBuilder().DrawTable(table, new PdfRectangle(0, 0, 100, 10)));
+
+        result = page.CreateContentBuilder().DrawTable(table, new PdfRectangle(0, 0, 100, 500), result);
+        Assert.True(result.IsComplete);
+        Assert.Equal(2, result.RowCount);
+        Assert.Throws<ArgumentException>(() => page.CreateContentBuilder().DrawTable(table, new PdfRectangle(0, 0, 100, 500), result));
+    }
+
+    [Fact]
+    public void TableErrorsLeaveTheContentUnchanged()
+    {
+        var (page, builder) = Create();
+        var table = new PdfTable(new PdfTableColumn(), new PdfTableColumn());
+        table.AddRow("a", "b").AddCell("c");
+        Assert.Throws<ArgumentException>(() => builder.DrawTable(table, new PdfRectangle(0, 0, 100, 100)));
+
+        table.Rows.Clear();
+        table.AddRow("\u4E2D");
+        Assert.Throws<ArgumentException>(() => builder.DrawTable(table, new PdfRectangle(0, 0, 100, 100)));
+        Assert.Throws<InvalidOperationException>(() => builder.DrawTable(new PdfTable(), new PdfRectangle(0, 0, 100, 100)));
+        Assert.Empty(page.GetContentData());
+    }
+
+    [Fact]
+    public void Example_Table()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var outputPath = directory / "invoice.pdf";
+
+        #region Pdf_Table
+        var document = new PdfDocument();
+        var bold = PdfFont.GetStandardFont(PdfStandardFont.HelveticaBold);
+        var table = new PdfTable(
+            new PdfTableColumn(PdfTableColumnWidth.Relative()), // the rest of the width
+            new PdfTableColumn(PdfTableColumnWidth.Auto, PdfTextAlignment.Right), // the width of the widest cell
+            new PdfTableColumn(PdfTableColumnWidth.Fixed(80), PdfTextAlignment.Right))
+        {
+            FontSize = 10,
+            CellPadding = 5,
+            BorderColor = PdfColor.FromGray(0.6),
+        };
+
+        // The header rows are drawn again at the top of each page
+        var header = table.AddHeaderRow("Description", "Quantity", "Amount");
+        header.Font = bold;
+        header.Background = PdfColor.FromGray(0.9);
+
+        for (var i = 1; i <= 80; i++)
+        {
+            table.AddRow($"Item {i}: the text of a cell is broken into lines that fit the width of its column", "1", "10.00 €");
+        }
+
+        var total = table.AddRow("Total", "", "800.00 €");
+        total.Font = bold;
+        total.Cells[0].ColumnSpan = 2;
+        total.Cells.RemoveAt(1);
+
+        // Draw the rows that fit in the area of the page, then continue on new pages
+        var area = new PdfRectangle(50, 50, PdfSize.A4.Width - 50, PdfSize.A4.Height - 50);
+        var result = document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawTable(table, area);
+        while (!result.IsComplete)
+        {
+            result = document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawTable(table, area, result);
+        }
+
+        document.Save(outputPath);
+        #endregion
+
+        var reloaded = PdfDocument.Open(outputPath);
+        Assert.True(reloaded.Pages.Count > 1);
+        Assert.All(reloaded.Pages, page => Assert.StartsWith("Description", page.ExtractText(), StringComparison.Ordinal));
+        Assert.Contains("800.00 €", reloaded.Pages[^1].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Example_TextBoxHyphenation()
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(PdfSize.A5).CreateContentBuilder();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.TimesRoman);
+
+        #region Pdf_TextBoxHyphenation
+        // The hyphenation patterns of a language, in the format of TeX: Hyphenator.Load reads them from files
+        var hyphenator = Hyphenator.Parse("hy3ph he2n hena4 hen5at 1na n2at 1tio 2io");
+        var options = new PdfTextBoxOptions
+        {
+            Alignment = PdfTextAlignment.Justify,
+            Hyphenator = new PdfPatternHyphenator(hyphenator),
+        };
+
+        // A word that does not fit at the end of a line is broken at a hyphenation point, and a hyphen is drawn
+        builder.DrawTextBox("A narrow column needs hyphenation", font, 12, new PdfRectangle(50, 400, 180, 550), options);
+        #endregion
+
+        Assert.Contains("hy", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    private sealed class EveryFourLettersHyphenator : IPdfHyphenator
+    {
+        public int Hyphenate(ReadOnlySpan<char> word, Span<int> breakPositions)
+        {
+            var count = 0;
+            for (var i = 4; i < word.Length; i += 4)
+            {
+                breakPositions[count++] = i;
+            }
+
+            return count;
+        }
     }
 
     [Fact]

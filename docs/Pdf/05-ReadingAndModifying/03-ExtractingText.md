@@ -67,6 +67,45 @@ foreach (var line in layout.Lines)
   rotated or written vertically gets the smallest rectangle that contains its box.
 - The box of a line or a word contains the boxes of its glyphs. The words are the glyphs between two spaces.
 
+## Read the columns in order
+
+By default, the lines are in the order of the content. A page with several columns whose lines are painted from left
+to right across the gutter gives the lines of the columns mixed together. With
+[PdfTextReadingOrder.Layout](cref:Meziantou.Framework.Pdf.PdfTextReadingOrder.Layout), the extraction finds the
+blocks of the page from its blank spaces and reads the columns one after the other. Each
+[block](cref:Meziantou.Framework.Pdf.PdfTextBlock) is a paragraph or a part of a column, a convenient unit to index
+or to give to a language model:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_ExtractTextInReadingOrder;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = PdfDocument.Open(file);
+var options = new PdfTextExtractionOptions { ReadingOrder = PdfTextReadingOrder.Layout };
+var layout = document.Pages[0].ExtractTextLayout(options);
+
+// The blocks of the page (columns, paragraphs) in reading order, for example to index them separately
+var chunks = new List<string>();
+foreach (var block in layout.Blocks)
+{
+    chunks.Add(block.Text);
+}
+```
+<!-- endref -->
+
+[ExtractText](cref:Meziantou.Framework.Pdf.PdfPage.ExtractText) takes the same options and returns the lines in the
+same order.
+
+- The page is cut recursively (an XY-cut): at the vertical blank spaces that cross it from top to bottom, at least as
+  wide as the font size of the body of the page (the gutters, read from left to right), or else at the horizontal blank
+  spaces that cross it from left to right, at least half the font size high (read from top to bottom). A title or a
+  footer that crosses the gutter is read before or after the columns.
+- A line of the content is split at its gaps wider than its font size, then joined again when no gutter separates the
+  pieces: the spaces of a justified line do not split it.
+- The positions are those of the page as it is displayed, after its rotation.
+- The lines of a block are sorted by their baselines, from top to bottom; a block that has text written vertically or
+  rotated keeps the order of the content.
+- The columns are read from left to right, also for the right-to-left scripts. The cells of a table are blocks, read
+  column by column when blank spaces separate the columns.
+
 ## Search text written with ligatures
 
 A font can show "fi" with one glyph whose character is the ligature `ﬁ` (U+FB01): the extracted word does not contain
@@ -99,8 +138,10 @@ By default, the text is exactly what the fonts give.
 
 ## Limits
 
-- The order is the order of the content: the extraction does not detect columns, and a document that draws the text in
-  another order than it is read gives it in that order.
+- By default, the order is the order of the content: a document that draws the text in another order than it is read
+  gives it in that order. The reading order of the layout ([Read the columns in order](#read-the-columns-in-order))
+  follows the blank spaces of the page: columns that no blank space separates, such as text that flows around an
+  image, are not detected, and the columns of vertical writing are not ordered.
 - A text drawn as paths or as an image (a scanned page) has no characters to extract.
 - A font without encoding information, such as some embedded fonts of old documents, can give wrong characters.
 - The predefined encodings of the CNS 11643 and GB/T 12345 character sets (`CNS-EUC-H`, `GBT-EUC-H`, ...) and the

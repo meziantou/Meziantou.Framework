@@ -258,6 +258,7 @@ public static class BarcodesFuzzTargets
         {
             case Barcode2DType.DataMatrix:
                 CheckDataMatrix(barcode, CreateDataMatrixOptions(flags, sizeByte));
+                CheckDataMatrixContent(barcode, (flags & 0x40) != 0 ? CreateGs1Elements(text) : null, binary ? bytes : null, text);
                 break;
             case Barcode2DType.Pdf417:
                 CheckPdf417(barcode, CreatePdf417Options(flags, sizeByte));
@@ -294,12 +295,33 @@ public static class BarcodesFuzzTargets
         return elements;
     }
 
+    // The heights and widths of the Data Matrix sizes, and invalid ones
+    private static readonly int[] DataMatrixDimensions = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 32, 36, 40, 44, 48, 52, 64, 72, 80, 88, 96, 104, 120, 132, 144, 26, 32, 36, 48, 9, 0, -1];
+
     private static DataMatrixOptions? CreateDataMatrixOptions(byte flags, byte sizeByte)
     {
         if ((flags & 0x0F) == 0)
             return null;
 
-        return new DataMatrixOptions();
+        var options = new DataMatrixOptions { Shape = (DataMatrixShape)((flags & 0x0F) % 3) };
+        try
+        {
+            if ((flags & 0x10) != 0)
+            {
+                options.Height = DataMatrixDimensions[sizeByte % DataMatrixDimensions.Length];
+            }
+
+            if ((flags & 0x20) != 0)
+            {
+                options.Width = DataMatrixDimensions[(sizeByte / DataMatrixDimensions.Length) % DataMatrixDimensions.Length];
+            }
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Not a height or width of a Data Matrix size: the options keep the other constraints
+        }
+
+        return options;
     }
 
     private static Pdf417Options? CreatePdf417Options(byte flags, byte sizeByte)
@@ -318,9 +340,78 @@ public static class BarcodesFuzzTargets
         return new AztecOptions();
     }
 
-    // The structure of a Data Matrix symbol: its size, finder and timing patterns
+    private static readonly (int Height, int Width, int RegionHeight, int RegionWidth)[] DataMatrixSizes =
+    [
+        (10, 10, 8, 8), (12, 12, 10, 10), (14, 14, 12, 12), (16, 16, 14, 14), (18, 18, 16, 16), (20, 20, 18, 18), (22, 22, 20, 20),
+        (24, 24, 22, 22), (26, 26, 24, 24), (32, 32, 14, 14), (36, 36, 16, 16), (40, 40, 18, 18), (44, 44, 20, 20), (48, 48, 22, 22),
+        (52, 52, 24, 24), (64, 64, 14, 14), (72, 72, 16, 16), (80, 80, 18, 18), (88, 88, 20, 20), (96, 96, 22, 22), (104, 104, 24, 24),
+        (120, 120, 18, 18), (132, 132, 20, 20), (144, 144, 22, 22), (8, 18, 6, 16), (8, 32, 6, 14), (12, 26, 10, 24), (12, 36, 10, 16),
+        (16, 36, 14, 16), (16, 48, 14, 22),
+    ];
+
+    // The structure of a Data Matrix symbol: its size, and the finder pattern of each data region (a solid left side and
+    // bottom side, alternating modules on the top side and the right side)
     private static void CheckDataMatrix(Barcode2D barcode, DataMatrixOptions? options)
     {
+        var index = Array.FindIndex(DataMatrixSizes, size => size.Height == barcode.Height && size.Width == barcode.Width);
+        FuzzAssert.True(index >= 0, $"{barcode.Height} x {barcode.Width} is not a Data Matrix size");
+        var (height, width, regionHeight, regionWidth) = DataMatrixSizes[index];
+        if (options?.Height is { } expectedHeight)
+        {
+            FuzzAssert.Equal(expectedHeight, height, "The height of the symbol");
+        }
+
+        if (options?.Width is { } expectedWidth)
+        {
+            FuzzAssert.Equal(expectedWidth, width, "The width of the symbol");
+        }
+
+        if (options is not null && options.Height is null && options.Width is null)
+        {
+            FuzzAssert.True(options.Shape switch { DataMatrixShape.Square => height == width, DataMatrixShape.Rectangle => height != width, _ => true }, $"A {height} x {width} symbol does not have the shape {options.Shape}");
+        }
+
+        for (var top = 0; top < height; top += regionHeight + 2)
+        {
+            for (var left = 0; left < width; left += regionWidth + 2)
+            {
+                var bottom = top + regionHeight + 1;
+                var right = left + regionWidth + 1;
+                for (var column = left; column <= right; column++)
+                {
+                    FuzzAssert.True(barcode[bottom, column], $"The module ({column}, {bottom}) of the bottom side of a region is light");
+                    FuzzAssert.Equal((column - left) % 2 == 0, barcode[top, column], $"The module ({column}, {top}) of the top side of a region");
+                }
+
+                for (var row = top; row <= bottom; row++)
+                {
+                    FuzzAssert.True(barcode[row, left], $"The module ({left}, {row}) of the left side of a region is light");
+                    FuzzAssert.Equal((row - top) % 2 == 1, barcode[row, right], $"The module ({right}, {row}) of the right side of a region");
+                }
+            }
+        }
+    }
+
+    // The symbol decodes to the data: the bytes, the ASCII text, or the UTF-8 text after the ECI designator of UTF-8; the
+    // element strings of GS1 data after a FNC1, with FNC1 separators between some of them
+    private static void CheckDataMatrixContent(Barcode2D barcode, List<Gs1Element>? gs1Elements, byte[]? bytes, string text)
+    {
+        var (message, eci) = DataMatrixDecoder.Decode(barcode);
+        if (gs1Elements is not null)
+        {
+            FuzzAssert.True(eci is null, "GS1 data has an ECI designator");
+            FuzzAssert.True(message.Count > 0 && message[0] == DataMatrixDecoder.Fnc1, "GS1 data does not start with FNC1");
+            FuzzAssert.True(message[^1] != DataMatrixDecoder.Fnc1, "GS1 data ends with FNC1");
+            FuzzAssert.True(message.Count(value => value == DataMatrixDecoder.Fnc1) <= gs1Elements.Count, "GS1 data has more FNC1 separators than elements");
+            var elementStrings = string.Concat(gs1Elements.Select(element => element.ApplicationIdentifier + element.Value));
+            FuzzAssert.Equal(elementStrings, string.Concat(message.Where(value => value != DataMatrixDecoder.Fnc1).Select(value => (char)value)), "The element strings");
+            return;
+        }
+
+        FuzzAssert.False(message.Contains(DataMatrixDecoder.Fnc1), "The data has a FNC1");
+        var (expected, expectedEci) = bytes is not null ? (bytes, (int?)null) : Ascii.IsValid(text) ? (Encoding.ASCII.GetBytes(text), null) : (Encoding.UTF8.GetBytes(text), 26);
+        FuzzAssert.Equal(expectedEci, eci, "The ECI assignment number");
+        FuzzAssert.True(message.SequenceEqual(expected.Select(value => (int)value)), $"The symbol decodes to {Convert.ToHexString([.. message.Select(value => (byte)value)])} instead of {Convert.ToHexString(expected)}");
     }
 
     // The structure of a PDF417 symbol: its size, start and stop patterns

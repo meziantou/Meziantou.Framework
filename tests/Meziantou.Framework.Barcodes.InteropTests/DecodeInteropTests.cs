@@ -486,6 +486,45 @@ public sealed class DecodeInteropTests
         }
     }
 
+    // A reader reports a GS1 Data Matrix symbol with the symbology identifier ]d2, and its FNC1 separators as GS (U+001D)
+    [Fact]
+    public async Task Gs1DataMatrix_IsReadAsGs1()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        (Barcode2D Barcode, string Data, string HumanReadableText)[] samples =
+        [
+            (Barcode2D.CreateGs1DataMatrix(new Gs1Element("01", "09521234543213"), new Gs1Element("17", "250101"), new Gs1Element("10", "ABC123")), "01095212345432131725010110ABC123", "(01)09521234543213(17)250101(10)ABC123"),
+            (Barcode2D.CreateGs1DataMatrix(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XY")), "010952123454321310ABC123\u001D21XY", "(01)09521234543213(10)ABC123(21)XY"),
+            (Barcode2D.CreateGs1DataMatrix([new Gs1Element("10", "1234"), new Gs1Element("21", "abc-def"), new Gs1Element("3103", "000123")], new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }), "101234\u001D21abc-def\u001D3103000123", "(10)1234(21)abc-def(3103)000123"),
+        ];
+
+        foreach (var (barcode, data, humanReadableText) in samples)
+        {
+            var path = directory.FullPath / "gs1-datamatrix.png";
+            await File.WriteAllBytesAsync(path, barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 4 }), XunitCancellationToken);
+
+            var result = Assert.Single(await tools.ReadWithZXingAsync([path]), result => result.Format == "Data Matrix");
+            Assert.Equal("]d2", result.SymbologyIdentifier);
+            Assert.Equal("GS1", result.ContentType);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(humanReadableText, result.HumanReadableText);
+        }
+    }
+
+    [Fact]
+    public async Task DataMatrix_IsNotReadAsGs1()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "datamatrix.png";
+        await File.WriteAllBytesAsync(path, Barcode2D.CreateDataMatrix("0109521234543213").ToPng(), XunitCancellationToken);
+
+        var result = Assert.Single(await tools.ReadWithZXingAsync([path]), result => result.Format == "Data Matrix");
+        Assert.Equal("]d1", result.SymbologyIdentifier);
+        Assert.Equal("0109521234543213", result.Text);
+    }
+
     private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleBarcode2D(Barcode2DType type) => type switch
     {
         Barcode2DType.DataMatrix => GetSampleDataMatrixCodes(),
@@ -495,7 +534,23 @@ public sealed class DecodeInteropTests
 
     private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleDataMatrixCodes()
     {
-        yield break;
+        // ASCII and digit pairs, C40, Text, X12, EDIFACT, Base 256, UTF-8 with ECI, rectangular and fixed sizes, several blocks
+        string[] values =
+        [
+            "https://www.meziantou.net/", "0123456789012345678901234567890123456789", "HELLO WORLD 2026 DATA MATRIX", "hello world from a data matrix",
+            "ABC>123*DEF\rXYZ>", ".A.C1.3.DATA.123DATA.123DATA", "\u00E9\u00E8\u00E0\u00FC\u00DF\u00FF\u0080\u00A9", "Ελληνικά, кириллица, 漢字 😀",
+            "Mixed: abc ABC 123 *>\r @^_ \u00E9 \u0001\u007F",
+        ];
+
+        foreach (var value in values)
+        {
+            yield return (Barcode2D.CreateDataMatrix(value), value);
+        }
+
+        yield return (Barcode2D.CreateDataMatrix("RECTANGLE 12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }), "RECTANGLE 12345");
+        yield return (Barcode2D.CreateDataMatrix("16x48", new DataMatrixOptions { Height = 16, Width = 48 }), "16x48");
+        yield return (Barcode2D.CreateDataMatrix("Padded", new DataMatrixOptions { Height = 52, Width = 52 }), "Padded");
+        yield return (Barcode2D.CreateDataMatrix(string.Concat(Enumerable.Repeat("Data Matrix, 144 x 144 modules. ", 30))), string.Concat(Enumerable.Repeat("Data Matrix, 144 x 144 modules. ", 30)));
     }
 
     private static IEnumerable<(Barcode2D Barcode, string Data)> GetSamplePdf417Codes()

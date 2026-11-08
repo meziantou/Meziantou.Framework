@@ -216,6 +216,47 @@ public sealed class ZintMatrixTests
         AssertSameModules(expected, qr.Width, qr.Height, (row, column) => qr[row, column]);
     }
 
+    // The Data Matrix sizes in the order of zint's --vers: the squares, then the rectangles
+    private static readonly (int Height, int Width)[] DataMatrixSizes =
+    [
+        (10, 10), (12, 12), (14, 14), (16, 16), (18, 18), (20, 20), (22, 22), (24, 24), (26, 26), (32, 32), (36, 36), (40, 40),
+        (44, 44), (48, 48), (52, 52), (64, 64), (72, 72), (80, 80), (88, 88), (96, 96), (104, 104), (120, 120), (132, 132), (144, 144),
+        (8, 18), (8, 32), (12, 26), (12, 36), (16, 36), (16, 48),
+    ];
+
+    // zint chooses the encodation schemes with its own algorithm, which can differ from the look-ahead of ISO/IEC 16022
+    // when two choices have the same length: the payloads are ones where the choices agree
+    [Theory]
+    [InlineData("123456", DataMatrixShape.Square)]
+    [InlineData("0123456789012345678901234567890123456789", DataMatrixShape.Square)]
+    [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", DataMatrixShape.Square)]
+    [InlineData("A", DataMatrixShape.Square)]
+    [InlineData("Hello", DataMatrixShape.Square)]
+    [InlineData("Hello, World!", DataMatrixShape.Square)]
+    [InlineData("@@@@ABCD^^^^", DataMatrixShape.Square)]
+    [InlineData("123456", DataMatrixShape.Rectangle)]
+    public async Task DataMatrix_MatchesZint(string data, DataMatrixShape shape)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var code = Barcode2D.CreateDataMatrix(data, new DataMatrixOptions { Shape = shape });
+        var version = Array.IndexOf(DataMatrixSizes, (code.Height, code.Width)) + 1;
+        var expected = await tools.GetZintMatrixAsync(["-b", "71", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, code.Width);
+        AssertSameModules(expected, code.Width, code.Height, (row, column) => code[row, column]);
+    }
+
+    [Theory]
+    [InlineData("[01]09521234543213[17]250101[10]ABC123")]
+    [InlineData("[01]09521234543213[10]12345678[21]1234")]
+    [InlineData("[00]123456789012345675")]
+    public async Task Gs1DataMatrix_MatchesZint(string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var code = Barcode2D.CreateGs1DataMatrix([.. ParseGs1(data)]);
+        var version = Array.IndexOf(DataMatrixSizes, (code.Height, code.Width)) + 1;
+        var expected = await tools.GetZintMatrixAsync(["-b", "71", "--gs1", "--gs1nocheck", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, code.Width);
+        AssertSameModules(expected, code.Width, code.Height, (row, column) => code[row, column]);
+    }
+
     [Theory]
     [MemberData(nameof(Barcodes))]
     public async Task Barcode_MatchesZint(BarcodeType type, string data, string option)

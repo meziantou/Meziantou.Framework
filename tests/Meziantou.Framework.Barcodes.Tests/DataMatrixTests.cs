@@ -1,0 +1,303 @@
+using Meziantou.Framework.Barcodes.Internal;
+using Meziantou.Framework.Barcodes.Internal.DataMatrix;
+using Meziantou.Framework.InlineSnapshotTesting;
+
+namespace Meziantou.Framework.Barcodes.Tests;
+
+public class DataMatrixTests
+{
+    private static readonly (int Rows, int Columns, int DataCodewords)[] Sizes =
+    [
+        (10, 10, 3), (12, 12, 5), (14, 14, 8), (16, 16, 12), (18, 18, 18), (20, 20, 22), (22, 22, 30), (24, 24, 36), (26, 26, 44),
+        (32, 32, 62), (36, 36, 86), (40, 40, 114), (44, 44, 144), (48, 48, 174), (52, 52, 204), (64, 64, 280), (72, 72, 368),
+        (80, 80, 456), (88, 88, 576), (96, 96, 696), (104, 104, 816), (120, 120, 1050), (132, 132, 1304), (144, 144, 1558),
+        (8, 18, 5), (8, 32, 10), (12, 26, 16), (12, 36, 22), (16, 36, 32), (16, 48, 49),
+    ];
+
+    public static TheoryData<int, int, int> AllSizes()
+    {
+        var data = new TheoryData<int, int, int>();
+        foreach (var (rows, columns, dataCodewords) in Sizes)
+        {
+            data.Add(rows, columns, dataCodewords);
+        }
+
+        return data;
+    }
+
+    [Fact]
+    public void Documentation_CreateDataMatrix()
+    {
+        #region Barcode2D_DataMatrix
+        // The smallest square symbol that holds the data
+        var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+        Assert.Equal((Barcode2DType.DataMatrix, 22, 22), (dataMatrix.Type, dataMatrix.Width, dataMatrix.Height));
+
+        // A rectangular symbol, for a narrow space
+        var rectangle = Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle });
+        Assert.Equal((32, 8), (rectangle.Width, rectangle.Height));
+
+        // A symbol of an exact size: the data is padded
+        var fixedSize = Barcode2D.CreateDataMatrix("42", new DataMatrixOptions { Height = 24, Width = 24 });
+        Assert.Equal((24, 24), (fixedSize.Width, fixedSize.Height));
+
+        // Binary data
+        var binary = Barcode2D.CreateDataMatrix([0x00, 0xFF, 0x10, 0x80]);
+        Assert.Equal((14, 14), (binary.Width, binary.Height));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CreateGs1DataMatrix()
+    {
+        #region Barcode2D_Gs1DataMatrix
+        // GTIN, expiration date, batch and serial number: a FNC1 separates the batch, of variable length, from the serial number
+        var gs1 = Barcode2D.CreateGs1DataMatrix(
+            new Gs1Element("01", "09521234543213"),
+            new Gs1Element("17", "250101"),
+            new Gs1Element("10", "ABC123"),
+            new Gs1Element("21", "XYZ"));
+        Assert.Equal((Barcode2DType.DataMatrix, 22, 22), (gs1.Type, gs1.Width, gs1.Height));
+        #endregion
+    }
+
+    [Fact]
+    public void CreateDataMatrix_Hello_MatchesZint()
+    {
+        var code = Barcode2D.CreateDataMatrix("Hello");
+
+        InlineSnapshot.Validate(RenderAsText(code), """
+            #.#.#.#.#.#.
+            #.##.##.#.##
+            ##...##.#...
+            ###.##.##..#
+            ####...#....
+            ####.#######
+            #..##.....#.
+            ##..####.###
+            ####.....##.
+            #.#.###..#.#
+            ##.#.##.#.#.
+            ############
+            """);
+    }
+
+    [Fact]
+    public void CreateDataMatrix_Digits_MatchesIsoExample()
+    {
+        // ISO/IEC 16022:2006, Annex O: "123456" is 142 164 186, followed by the error correction codewords 114 25 5 88 102
+        Assert.Equal([142, 164, 186], DataMatrixHighLevelEncoder.Encode([.. "123456".Select(c => (int)c)], gs1: false, eci: null, capacity: 3));
+
+        Span<int> errorCorrection = stackalloc int[5];
+        BinaryGaloisField.Field256.ComputeErrorCorrection([142, 164, 186], errorCorrection);
+        Assert.Equal([114, 25, 5, 88, 102], errorCorrection.ToArray());
+
+        var code = Barcode2D.CreateDataMatrix("123456");
+        InlineSnapshot.Validate(RenderAsText(code), """
+            #.#.#.#.#.
+            ##..#.##.#
+            ##.....#..
+            ##...###.#
+            ##....#...
+            #.....####
+            ###.##....
+            ####.##..#
+            #..###.#..
+            ##########
+            """);
+    }
+
+    [Theory]
+    [InlineData("A", new[] { 66 })]
+    [InlineData("12", new[] { 142 })]
+    [InlineData("1A", new[] { 50, 66 })]
+    [InlineData("é", new[] { 235, 106 })]
+    [InlineData("AIMAIMAIM", new[] { 230, 91, 11, 91, 11, 91, 11 })] // C40, ISO/IEC 16022 example
+    [InlineData("aimaimaim", new[] { 239, 91, 11, 91, 11, 91, 11 })] // Text
+    [InlineData(".A.C1.3.DATA.123DATA.123DATA", new[] { 240, 184, 27, 131, 198, 236, 238, 16, 21, 1, 187, 28, 179, 16, 21, 1, 187, 28, 179, 16, 21, 1 })] // EDIFACT
+    public void HighLevelEncoder_EncodesWithTheSchemes(string data, int[] expected)
+    {
+        var codewords = DataMatrixHighLevelEncoder.Encode([.. data.Select(c => (int)c)], gs1: false, eci: null, capacity: int.MaxValue);
+        Assert.Equal(expected, codewords);
+    }
+
+    [Fact]
+    public void HighLevelEncoder_X12_EndsInAsciiWithoutUnlatchWhenOneCodewordIsLeft()
+    {
+        // 4 triplets, then the last character in ASCII: the decoder reads the last codeword of the symbol in ASCII
+        var codewords = DataMatrixHighLevelEncoder.Encode([.. "ABC>ABC123>AB".Select(c => (int)c)], gs1: false, eci: null, capacity: 10);
+        Assert.Equal([238, 89, 233, 14, 192, 100, 207, 44, 31, 67], codewords);
+
+        // With more space, an unlatch precedes the ASCII characters
+        codewords = DataMatrixHighLevelEncoder.Encode([.. "ABC>ABC123>AB".Select(c => (int)c)], gs1: false, eci: null, capacity: 12);
+        Assert.Equal([238, 89, 233, 14, 192, 100, 207, 44, 31, 254, 67, 129], codewords);
+    }
+
+    [Fact]
+    public void HighLevelEncoder_Base256_RandomizesTheField()
+    {
+        // Latch, length 4, and the 4 bytes, randomized by the 255-state algorithm
+        var codewords = DataMatrixHighLevelEncoder.Encode([0xAB, 0xE4, 0xF6, 0xFC, 0xE9, 0xBB], gs1: false, eci: null, capacity: int.MaxValue);
+        Assert.NotNull(codewords);
+        Assert.Equal(231, codewords[0]);
+        Assert.Equal([6, 0xAB, 0xE4, 0xF6, 0xFC, 0xE9, 0xBB], codewords.Skip(1).Select((value, index) => Derandomize255(value, index + 2)).ToArray());
+    }
+
+    [Fact]
+    public void HighLevelEncoder_PadsWithThe253StateAlgorithm()
+    {
+        // The first pad codeword is 129, the next ones are randomized by their position
+        var codewords = DataMatrixHighLevelEncoder.Encode([(int)'A'], gs1: false, eci: null, capacity: 5);
+        Assert.Equal([66, 129, 70, 220, 115], codewords);
+    }
+
+    [Fact]
+    public void HighLevelEncoder_Gs1_StartsWithFnc1()
+    {
+        var codewords = DataMatrixHighLevelEncoder.Encode([.. "10AB".Select(c => (int)c), DataMatrixHighLevelEncoder.Fnc1, .. "2112".Select(c => (int)c)], gs1: true, eci: null, capacity: int.MaxValue);
+        Assert.Equal([232, 140, 66, 67, 232, 151, 142], codewords);
+    }
+
+    [Fact]
+    public void HighLevelEncoder_Eci_IsTheFirstCodeword()
+    {
+        Assert.Equal([241, 27, 66], DataMatrixHighLevelEncoder.Encode([(int)'A'], gs1: false, eci: 26, capacity: int.MaxValue));
+        Assert.Equal([241, 128, 1, 66], DataMatrixHighLevelEncoder.Encode([(int)'A'], gs1: false, eci: 127, capacity: int.MaxValue));
+        Assert.Equal([241, 192, 1, 1, 66], DataMatrixHighLevelEncoder.Encode([(int)'A'], gs1: false, eci: 16383, capacity: int.MaxValue));
+    }
+
+    [Fact]
+    public void HighLevelEncoder_DoesNotFit_ReturnsNull()
+    {
+        Assert.Null(DataMatrixHighLevelEncoder.Encode([.. "ABCD".Select(c => (int)c)], gs1: false, eci: null, capacity: 3));
+    }
+
+    [Fact]
+    public void CreateDataMatrix_NonAsciiText_IsUtf8WithEci()
+    {
+        var ascii = Barcode2D.CreateDataMatrix("cafe");
+        var utf8 = Barcode2D.CreateDataMatrix("café");
+        Assert.Equal(12, ascii.Width);
+        Assert.Equal(16, utf8.Width);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllSizes))]
+    public void CreateDataMatrix_ExactSize_HasTheFinderPatterns(int rows, int columns, int dataCodewords)
+    {
+        // Digits pairs fill the symbol exactly, and the symbol of the next size holds one more
+        var data = string.Concat(Enumerable.Repeat("12", dataCodewords));
+        var code = Barcode2D.CreateDataMatrix(data, new DataMatrixOptions { Height = rows, Width = columns });
+
+        Assert.Equal((rows, columns), (code.Height, code.Width));
+        for (var column = 0; column < columns; column++)
+        {
+            Assert.True(code[rows - 1, column]);
+            Assert.Equal(column % 2 == 0, code[0, column]);
+        }
+
+        for (var row = 0; row < rows; row++)
+        {
+            Assert.True(code[row, 0]);
+            Assert.Equal(row % 2 == 1, code[row, columns - 1]);
+        }
+
+        Assert.Throws<InvalidOperationException>(() => Barcode2D.CreateDataMatrix(data + "1", new DataMatrixOptions { Height = rows, Width = columns }));
+    }
+
+    [Fact]
+    public void CreateDataMatrix_Shapes()
+    {
+        var data = "ABCDEFGH";
+        Assert.Equal((14, 14), Size(Barcode2D.CreateDataMatrix(data)));
+        Assert.Equal((8, 32), Size(Barcode2D.CreateDataMatrix(data, new DataMatrixOptions { Shape = DataMatrixShape.Rectangle })));
+        Assert.Equal((14, 14), Size(Barcode2D.CreateDataMatrix(data, new DataMatrixOptions { Shape = DataMatrixShape.Any })));
+        Assert.Equal((8, 18), Size(Barcode2D.CreateDataMatrix("ABCDE", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle })));
+
+        // A height alone allows every width, rectangular included
+        Assert.Equal((12, 26), Size(Barcode2D.CreateDataMatrix("ABCDEFGHIJKLMNOPQR", new DataMatrixOptions { Height = 12 })));
+        Assert.Equal((16, 16), Size(Barcode2D.CreateDataMatrix("ABC", new DataMatrixOptions { Width = 16 })));
+
+        static (int Height, int Width) Size(Barcode2D code) => (code.Height, code.Width);
+    }
+
+    [Fact]
+    public void CreateDataMatrix_LargestSymbol()
+    {
+        var code = Barcode2D.CreateDataMatrix(new string('7', 3116));
+        Assert.Equal((144, 144), (code.Height, code.Width));
+        Assert.Throws<InvalidOperationException>(() => Barcode2D.CreateDataMatrix(new string('7', 3117)));
+
+        // Base 256: a latch and the bytes, the length field (0) meaning that they end with the symbol
+        var binary = Barcode2D.CreateDataMatrix(Enumerable.Repeat((byte)0xFF, 1556).ToArray());
+        Assert.Equal((144, 144), (binary.Height, binary.Width));
+        Assert.Throws<InvalidOperationException>(() => Barcode2D.CreateDataMatrix(Enumerable.Repeat((byte)0xFF, 1557).ToArray()));
+    }
+
+    [Fact]
+    public void CreateDataMatrix_InvalidArguments()
+    {
+        Assert.Throws<ArgumentNullException>(() => Barcode2D.CreateDataMatrix((string)null!));
+        Assert.Throws<ArgumentException>(() => Barcode2D.CreateDataMatrix(""));
+        Assert.Throws<ArgumentException>(() => Barcode2D.CreateDataMatrix(ReadOnlySpan<byte>.Empty));
+        Assert.Throws<ArgumentException>(() => Barcode2D.CreateDataMatrix("A", new DataMatrixOptions { Height = 8, Width = 10 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DataMatrixOptions { Height = 11 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DataMatrixOptions { Width = 17 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DataMatrixOptions { Shape = (DataMatrixShape)3 });
+        Assert.Throws<ArgumentException>(() => Barcode2D.CreateGs1DataMatrix());
+        Assert.Throws<ArgumentException>(() => Barcode2D.CreateGs1DataMatrix(new Gs1Element("10", "A"), null!));
+    }
+
+    [Fact]
+    public void CreateGs1DataMatrix_SeparatesTheVariableLengthElements()
+    {
+        var withSeparator = Barcode2D.CreateGs1DataMatrix(new Gs1Element("10", "ABC"), new Gs1Element("21", "XY"));
+        var withoutSeparator = Barcode2D.CreateGs1DataMatrix(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC"));
+        Assert.Equal(Barcode2DType.DataMatrix, withSeparator.Type);
+        Assert.Equal(Barcode2DType.DataMatrix, withoutSeparator.Type);
+    }
+
+    [Fact]
+    public void ToSvg_MergesTheRunsOfARow()
+    {
+        var code = Barcode2D.CreateDataMatrix("123456");
+        var svg = code.ToSvg(new Barcode2DSvgOptions { ModuleSize = 1, QuietZoneModules = 1 });
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\"><rect width=\"12\" height=\"12\" fill=\"#ffffff\"/><path fill=\"#000000\" d=\"M1 1h1v1h-1z", svg);
+        Assert.EndsWith("M1 10h10v1h-10z\"/></svg>", svg);
+    }
+
+    [Fact]
+    public void ToPng_HasTheSizeOfTheSymbolAndQuietZone()
+    {
+        var code = Barcode2D.CreateDataMatrix("123456");
+        var png = code.ToPng(new Barcode2DPngOptions { ModuleSize = 3, QuietZoneModules = 2 });
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47], png[..4]);
+        Assert.Equal(42, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(16)));
+        Assert.Equal(42, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(20)));
+    }
+
+    private static int Derandomize255(int value, int position)
+    {
+        var result = value - (((149 * position) % 255) + 1);
+        return result >= 0 ? result : result + 256;
+    }
+
+    internal static string RenderAsText(Barcode2D code)
+    {
+        var sb = new StringBuilder();
+        for (var row = 0; row < code.Height; row++)
+        {
+            if (row > 0)
+            {
+                sb.AppendLine();
+            }
+
+            for (var column = 0; column < code.Width; column++)
+            {
+                sb.Append(code[row, column] ? '#' : '.');
+            }
+        }
+
+        return sb.ToString();
+    }
+}

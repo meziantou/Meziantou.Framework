@@ -4601,6 +4601,172 @@ public sealed class TdsQueryEngineTests
         Assert.Equal(expectedIds, [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))]);
     }
 
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_CountInSelect_ReturnsCorrelatedValues()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, (SELECT COUNT(*) FROM orders o WHERE o.Id = c.Id) AS OrderCount
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id OrderCount
+            1 1
+            2 1
+            4 0
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, OrderCount = Order[].Where(order => (order.Id == customer2.Id)).Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_AggregatesOverNoRow_ReturnNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT
+                        c.Id,
+                        (SELECT MAX(o.Amount) FROM orders o WHERE o.Id = c.Id) AS MaxAmount,
+                        (SELECT MIN(o.Region) FROM orders o WHERE o.Id = c.Id) AS MinRegion,
+                        (SELECT SUM(o.Amount) FROM orders o WHERE o.Id = c.Id) AS TotalAmount,
+                        (SELECT AVG(o.Amount) FROM orders o WHERE o.Id = c.Id) AS AverageAmount
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id MaxAmount MinRegion TotalAmount AverageAmount
+            1 10 North 10 10
+            2 20 North 20 20
+            4 NULL NULL NULL NULL
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_ColumnInSelect_ReturnsNullWhenNoRow()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, (SELECT o.Region FROM orders o WHERE o.Id = c.Id) AS Region
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id Region
+            1 North
+            2 North
+            4 NULL
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, Region = ScalarSubqueryCore(Order[].Where(order => (order.Id == customer2.Id)).Select(order2 => order2.Region))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_TopWithOrderBy_ReturnsFirstValue()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, (SELECT TOP 1 o.Region FROM orders o ORDER BY o.Amount) AS SmallestOrderRegion
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Id SmallestOrderRegion
+            1 South
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_InWhere_FiltersRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM orders
+                    WHERE Amount > (SELECT AVG(Amount) FROM orders) OR Id = (SELECT MIN(Id) FROM customers)
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_ComparedWithNoRow_MatchesNothing()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id <> (SELECT o.Id FROM orders o WHERE o.Id = 42)
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_ReturningSeveralRows_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id, (SELECT Region FROM orders) AS Region FROM customers",
+            expectedErrorNumber: 512,
+            expectedMessageContains: "Subquery returned more than 1 value");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_WithSeveralColumns_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id, (SELECT Id, Region FROM orders) AS Region FROM customers",
+            expectedErrorNumber: 116);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_WithOrderByWithoutTop_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id, (SELECT Region FROM orders ORDER BY Amount) AS Region FROM customers",
+            expectedErrorNumber: 1033);
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();

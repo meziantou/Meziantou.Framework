@@ -19,6 +19,8 @@ the problem.
   subqueries, which can reference the outer query), `EXISTS` and `NOT EXISTS` (simple subqueries, which can reference
   the outer query), and `LIKE` and `NOT LIKE` (see [LIKE](#like)).
 - `GROUP BY` on one or more columns, `HAVING`, and the aggregates `COUNT(*)`, `SUM`, `MIN`, `MAX` and `AVG`.
+- Scalar subqueries, in the selected columns and in `WHERE`, which can reference the outer query. See
+  [Scalar subqueries](#scalar-subqueries).
 - `ORDER BY`, with `OFFSET … FETCH`.
 - `UNION` and `UNION ALL`.
 - Parameters (`@name`), sent by the client with the command.
@@ -66,6 +68,19 @@ a literal, as in `LIKE '100!%' ESCAPE '!'`. A value of another type is converted
   to `==`, `StartsWith`, `EndsWith` or `Contains`, so a LINQ provider can run it. Other patterns call a .NET method,
   which LINQ to objects runs but other providers may not.
 
+## Scalar subqueries
+
+A subquery in parentheses can be used as a value, for instance
+`SELECT c.Id, (SELECT COUNT(*) FROM orders o WHERE o.CustomerId = c.Id) AS OrderCount FROM customers c`.
+
+- It selects one expression, from one `FROM` table expression, with an optional `WHERE`, and `TOP` with an optional
+  `ORDER BY`. `GROUP BY`, `HAVING` and `DISTINCT` are not supported.
+- The aggregates `COUNT(*)`, `SUM`, `MIN`, `MAX` and `AVG` are supported, without `GROUP BY`. As in SQL Server, `SUM`,
+  `MIN`, `MAX` and `AVG` are `NULL` when no row matches, and `COUNT(*)` is 0.
+- A subquery that returns no row is `NULL`. One that returns several rows returns the error 512, as SQL Server does.
+- An aggregate is translated to the LINQ operator (`Count`, `Sum`, …). A subquery that returns a column calls a .NET
+  method to check that there is at most one row, which LINQ to objects runs but other providers may not.
+
 ## XML methods
 
 The XML methods take XPath 1.0 expressions, not XQuery. Common paths such as `/root/item[@id="2"]/text()` behave the
@@ -78,6 +93,6 @@ engine options.
 ## Not supported
 
 - Recursive common table expressions.
-- Many subquery forms, such as scalar subqueries in the selected columns.
+- Scalar subqueries with `GROUP BY`, `HAVING` or `DISTINCT`, and subqueries in `GROUP BY` queries.
 - `INSERT`, `UPDATE`, `DELETE`, `MERGE` and other statements that change data, and any statement other than `SELECT`.
 - Several statements in one request, and several result sets.

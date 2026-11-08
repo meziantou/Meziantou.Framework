@@ -34,9 +34,8 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 ## Query engine
 
-- One `SELECT` statement per request: no recursive common table expressions, no scalar subqueries in the selected
-  columns, no `INSERT`, `UPDATE` or `DELETE`, no multiple statements or result sets. See
-  [Supported SQL](08-SupportedSql.md).
+- One `SELECT` statement per request: no recursive common table expressions, no `INSERT`, `UPDATE` or `DELETE`, no
+  multiple statements or result sets. See [Supported SQL](08-SupportedSql.md).
 - `LIKE` compares characters ordinally, so it is case-sensitive.
 - The XML methods take XPath 1.0, not XQuery.
 - A stored procedure that returns an `IQueryable` is enumerated synchronously.

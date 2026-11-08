@@ -14,7 +14,7 @@ internal static class DataBarHelper
         for (bar = 0; bar < elements - 1; bar++)
         {
             int elementWidth;
-            var subValue = 0;
+            int subValue;
             for (elementWidth = 1, narrowMask |= 1 << bar; ; elementWidth++, narrowMask &= ~(1 << bar))
             {
                 // All the combinations

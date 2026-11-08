@@ -7,6 +7,7 @@
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.GeoPackage/Meziantou.Framework.Geo.GeoPackage.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
@@ -29,6 +30,7 @@
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
     <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />

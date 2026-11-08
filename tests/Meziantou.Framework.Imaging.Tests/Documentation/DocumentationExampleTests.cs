@@ -3156,6 +3156,39 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LoadViewportDecodesTheAreaOfATiledPage()
+    {
+        var path = GetPath("scan.tiff");
+        using (var scan = new Image<Rgb24>(256, 192))
+        {
+            scan.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24((byte)x, (byte)y, (byte)(x ^ y));
+                    }
+                }
+            });
+
+            scan.Save(path, new TiffEncoder { TileWidth = 64, TileHeight = 64 });
+        }
+
+        using var viewport = LoadingExamples.LoadViewport(path, new Rectangle(70, 50, 100, 60));
+        Assert.Equal(new Size(100, 60), viewport.Size);
+        using var pixels = viewport.CloneAs<Rgb24>();
+        Assert.Equal(new Rgb24(70, 50, 70 ^ 50), pixels.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(169, 109, 169 ^ 109), pixels.Frames[0][99, 59]);
+
+        // A format that cannot decode an area
+        var png = GetPath("scan.png");
+        viewport.Save(png);
+        Assert.Throws<UnsupportedImageFeatureException>(() => LoadingExamples.LoadViewport(png, new Rectangle(0, 0, 10, 10)));
+    }
+
+    [Fact]
     public async Task LoadUploadAsyncLeavesTheStreamOpen()
     {
         using var upload = new MemoryStream();
@@ -4476,5 +4509,89 @@ public sealed class DocumentationExampleTests : IDisposable
         // The 64x64 animation fits in 128x128 without being enlarged; its first frame is red
         Assert.Equal(new Size(64, 64), preview.Size);
         Assert.Equal(new Rgba32(255, 0, 0), preview.Frames[0][32, 32]);
+    }
+
+    [Fact]
+    public void CustomCodecExampleReadsAndWritesFarbfeld()
+    {
+        var farbfeld = GetPath("input.ff");
+        using (var source = new Image<Rgba64>(64, 48))
+        {
+            source.Frames[0][5, 7] = new Rgba64(1000, 2000, 3000, 40000);
+            source.Save(farbfeld, new ExtensibilityExamples.FarbfeldEncoder());
+        }
+
+        var bytes = File.ReadAllBytes(farbfeld);
+        Assert.HasCount(16 + (64 * 48 * 8), bytes);
+        Assert.Equal("farbfeld"u8.ToArray(), bytes[..8]);
+
+        var png = GetPath("output.png");
+        var copy = GetPath("copy.ff");
+        ExtensibilityExamples.ConvertFarbfeldToPng(farbfeld, png, copy);
+        using (var converted = Image.Load<Rgba64>(png))
+        {
+            Assert.Equal(ImageFormat.Png, converted.Metadata.SourceFormat);
+            Assert.Equal(new Rgba64(1000, 2000, 3000, 40000), converted.Frames[0][5, 7]);
+        }
+
+        Assert.Equal(bytes, File.ReadAllBytes(copy));
+
+        // A typed load converts what the codec decodes; a truncated file is malformed
+        var configuration = new ImageConfiguration { Codecs = [new ExtensibilityExamples.FarbfeldCodec()] };
+        using (var typed = Image.Load<Rgba32>(farbfeld, new ImageDecodeOptions { Configuration = configuration }))
+        {
+            Assert.Equal(new Size(64, 48), typed.Size);
+        }
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(bytes.AsSpan(0, 100), new ImageDecodeOptions { Configuration = configuration }));
+        using var animation = new Image<Rgba32>(2, 2);
+        animation.AppendFrame();
+        Assert.Throws<UnsupportedImageFeatureException>(() => animation.Save(GetPath("animation.ff"), new ExtensibilityExamples.FarbfeldEncoder()));
+    }
+
+    [Fact]
+    public void CustomOperationExamplesProcessEveryPixelFormat()
+    {
+        using var image = new Image<Rgba32>(4, 4, new Rgba32(200, 100, 0, 255));
+        ExtensibilityExamples.Solarize(image);
+        Assert.Equal(new Rgba32(55, 100, 0, 255), image.Frames[0][1, 1]);
+
+        // A uniform image has no relief: the emboss filter gives its middle gray and keeps the alpha
+        using var uniform = new Image<Rgba32>(4, 4, new Rgba32(10, 20, 30, 77));
+        ExtensibilityExamples.Emboss(uniform);
+        Assert.Equal(new Rgba32(128, 128, 128, 77), uniform.Frames[0][2, 2]);
+    }
+
+    [Fact]
+    public void WrapMemoryExamplesWorkInPlace()
+    {
+        // One white pixel in the middle of a black frame, with 4 bytes of padding per row: the blur spreads it in the array
+        const int Stride = (5 * 4) + 4;
+        var pixels = new byte[Stride * 5];
+        pixels.AsSpan((2 * Stride) + 8, 4).Fill(255);
+        ExtensibilityExamples.BlurCameraFrame(pixels, 5, 5, Stride);
+        Assert.NotEqual(0, pixels[(2 * Stride) + 7]);
+        Assert.InRange(pixels[(2 * Stride) + 11], 1, 254);
+        Assert.Equal(new byte[4], pixels.AsSpan((2 * Stride) + 20, 4).ToArray());
+
+        ExtensibilityExamples.GrayscaleNativeBuffer(8, 4);
+        ExtensibilityExamples.ProcessRentedBuffer(8, 4);
+    }
+
+    [Fact]
+    public void BufferPoolExampleBoundsTheRetainedBytes()
+    {
+        using var settings = SlabPoolTests.SharedPoolSettings.EnterScope();
+        var previous = ImageBufferPool.MaxRetainedBytes;
+        try
+        {
+            ExtensibilityExamples.ConfigureForSmallContainer();
+            Assert.Equal(4 * 1024 * 1024, ImageBufferPool.MaxRetainedBytes);
+            Assert.InRange(ImageBufferPool.RetainedBytes, 0, 4 * 1024 * 1024);
+        }
+        finally
+        {
+            ImageBufferPool.MaxRetainedBytes = previous;
+        }
     }
 }

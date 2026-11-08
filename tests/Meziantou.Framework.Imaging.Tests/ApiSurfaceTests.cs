@@ -67,10 +67,33 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(GradientBrush))]
     public void ExtensibilityIsClosed(Type type)
     {
-        // No codec plug-in, custom pixel or custom frame contract in v1: base types cannot be derived outside the library
+        // The base types of the model cannot be derived outside the library: the extension points are their own types
+        // (CustomImageCodec, CustomImageEncoder, the pixel operations), and there is no custom pixel or frame contract
         var accessibleConstructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Where(constructor => constructor.IsPublic || constructor.IsFamily || constructor.IsFamilyOrAssembly);
         Assert.Empty(accessibleConstructors);
+    }
+
+    [Fact]
+    public void ExtensionPointsHaveTheirPublicShape()
+    {
+        // The custom format is out of the range of the built-in ones, which are appended after OpenExr
+        Assert.Equal(1000, (int)ImageFormat.Custom);
+
+        foreach (var type in new[] { typeof(CustomImageCodec), typeof(CustomImageEncoder) })
+        {
+            Assert.True(type.IsPublic && type.IsAbstract);
+            var constructor = Assert.Single(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
+            Assert.True(constructor.IsFamily);
+            Assert.Equal([typeof(ImageFormatInfo)], constructor.GetParameters().Select(parameter => parameter.ParameterType));
+        }
+
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", typeof(CustomImageEncoder).Namespace);
+        Assert.True(typeof(CustomImageDecodeContext).IsSealed);
+        Assert.Empty(typeof(CustomImageDecodeContext).GetConstructors());
+        Assert.True(typeof(ImageBufferPool).IsAbstract && typeof(ImageBufferPool).IsSealed);
+        Assert.True(typeof(PixelRowSource<>).IsByRefLike);
+        Assert.True(typeof(IPixelRowOperation<>).IsInterface && typeof(IPixelNeighborhoodOperation<>).IsInterface);
     }
 
     [Theory]
@@ -303,7 +326,7 @@ public sealed class ApiSurfaceTests
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(17, (int)ImageFormat.OpenExr);
-        Assert.Equal(17, Enum.GetValues<ImageFormat>().Max(format => (int)format));
+        Assert.Equal(17, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(OpenExrEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
@@ -408,12 +431,13 @@ public sealed class ApiSurfaceTests
     [Fact]
     public void LibraryOnlyReferencesFrameworkAssemblies()
     {
-        // The package is fully managed: no native or third-party runtime dependency. Its dependencies are three packages of
-        // this repository: Unicode, for the text algorithms of text layout, Fonts, the font reader and the shaper, and
-        // Hashing, for the CRC-32 of PNG and the Adler-32 of zlib.
+        // The package is fully managed: no native or third-party runtime dependency. Its dependencies are four packages of
+        // this repository: Unicode, for the text algorithms of text layout, Unicode.Dictionaries, for the words of the
+        // scripts written without spaces, Fonts, the font reader and the shaper, and Hashing, for the CRC-32 of PNG and
+        // the Adler-32 of zlib.
         // 'netstandard' is a framework facade that code-coverage instrumentation (CI) may add to the instrumented assembly.
         Assert.All(LibraryAssembly.GetReferencedAssemblies(), name => Assert.True(
-            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name is "netstandard" or "Meziantou.Framework.Unicode" or "Meziantou.Framework.Fonts" or "Meziantou.Framework.Hashing",
+            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name is "netstandard" or "Meziantou.Framework.Unicode" or "Meziantou.Framework.Unicode.Dictionaries" or "Meziantou.Framework.Fonts" or "Meziantou.Framework.Hashing",
             $"Unexpected dependency: {name}"));
     }
 

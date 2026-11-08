@@ -3,7 +3,8 @@ namespace Meziantou.Framework.Imaging;
 /// <summary>Identifies an encoded image file format.</summary>
 /// <remarks>
 /// Formats are detected from content, never from file names. Animated PNG (APNG) is reported as <see cref="Png"/>:
-/// it is a PNG variant, not a competing signature. New formats are added as new members.
+/// it is a PNG variant, not a competing signature. New formats are added as new members; the formats of the codecs an
+/// application registers (<see cref="ImageConfiguration.Codecs"/>) are all <see cref="Custom"/>.
 /// </remarks>
 public enum ImageFormat
 {
@@ -88,4 +89,10 @@ public enum ImageFormat
     /// lines or tiles with lossless or lossy compression.
     /// </summary>
     OpenExr = 17,
+
+    /// <summary>
+    /// A format read or written by a <see cref="CustomImageCodec"/> of <see cref="ImageConfiguration.Codecs"/>, not by the
+    /// library itself. <see cref="ImageInfo.FormatInfo"/> and <see cref="Formats.CustomImageEncoder.FormatInfo"/> tell which one.
+    /// </summary>
+    Custom = 1000,
 }

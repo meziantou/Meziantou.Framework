@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Geo.GeoPackage/Meziantou.Framework.Geo.GeoPackage.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
   </ItemGroup>
 

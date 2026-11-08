@@ -237,6 +237,140 @@ public sealed class HeicDecodingTests
         }
     }
 
+    /// <summary>Areas of an image of <paramref name="width"/> by <paramref name="height"/> pixels: single pixels, areas across tiles of 64 pixels, areas that extend past the image, and the whole image.</summary>
+    private static Rectangle[] GetRegions(int width, int height) =>
+    [
+        new(0, 0, 1, 1),
+        new(width - 1, height - 1, 1, 1),
+        new(width / 3, height / 4, 1, 1),
+        new(3, 2, width / 2, height / 3),
+        new(Math.Min(width - 1, 63), 0, 2, height),
+        new(0, Math.Min(height - 1, 63), width, 2),
+        new(Math.Min(width - 1, 61), Math.Min(height - 1, 62), 5, 5),
+        new(width / 5, height / 2, 7, height),
+        new(width - 2, height - 2, int.MaxValue - width, int.MaxValue - height),
+        new(0, 0, width, height),
+    ];
+
+    private static byte[] GetFrameBytes(ImageFrame frame)
+    {
+        var bytes = new byte[frame.Width * frame.Height * PixelFormats.GetBytesPerPixel(frame.PixelFormat)];
+        frame.CopyPixelBytesTo(bytes);
+        return bytes;
+    }
+
+    /// <summary>Gets the bytes of the pixels of an area of rows of <paramref name="width"/> pixels.</summary>
+    private static byte[] Crop(byte[] pixels, int width, int bytesPerPixel, Rectangle area)
+    {
+        var result = new byte[area.Width * area.Height * bytesPerPixel];
+        for (var y = 0; y < area.Height; y++)
+        {
+            pixels.AsSpan((((area.Y + y) * width) + area.X) * bytesPerPixel, area.Width * bytesPerPixel).CopyTo(result.AsSpan(y * area.Width * bytesPerPixel));
+        }
+
+        return result;
+    }
+
+    /// <summary>Checks that every area of <see cref="GetRegions"/> decodes, in every frame, to the pixels of the full decode in that area, with one and several workers.</summary>
+    private static void AssertRegionsAreCropsOfTheFullDecode(byte[] data)
+    {
+        using var full = Image.Load(data);
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(full.PixelFormat);
+        var expected = full.Frames.Select(GetFrameBytes).ToArray();
+        foreach (var region in GetRegions(full.Width, full.Height))
+        {
+            var area = Rectangle.Intersect(region, new Rectangle(0, 0, full.Width, full.Height));
+            foreach (var workers in new[] { 1, 16 })
+            {
+                using var actual = Image.Load(data, new ImageDecodeOptions { Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+                Assert.Equal(area.Size, actual.Size);
+                Assert.Equal(full.PixelFormat, actual.PixelFormat);
+                Assert.Equal(full.Frames.Count, actual.Frames.Count);
+                for (var frame = 0; frame < expected.Length; frame++)
+                {
+                    if (!Crop(expected[frame], full.Width, bytesPerPixel, area).AsSpan().SequenceEqual(GetFrameBytes(actual.Frames[frame])))
+                        Assert.Fail(string.Create(CultureInfo.InvariantCulture, $"Frame {frame} of the region {region} decoded by {workers} workers differs from the full decode."));
+                }
+            }
+        }
+    }
+
+    /// <summary>The files of <see cref="ARegionHasThePixelsOfTheFullDecodeInThatArea"/>: grids of lossless and lossy 4:2:0 tiles, images that are not grids, with and without alpha, and a sequence.</summary>
+    public static TheoryData<string> RegionFiles => ["grid", "large-grid", "lossy-grid", "transparent-grid", "rgba", "gray", "sequence"];
+
+    private static byte[] GetRegionFile(string name)
+    {
+        switch (name)
+        {
+            case "grid":
+                return HeicTestFiles.Grid;
+            case "large-grid":
+                return CreateLargeGrid(rows: 4, columns: 5).Build();
+            case "rgba":
+                return HeicTestFiles.Rgba;
+            case "gray":
+                return HeicTestFiles.Gray;
+            case "sequence":
+                return HeicTestFiles.Sequence;
+            default:
+                // Tiles of 64x64 of 4:2:0 samples, whose chroma is upsampled across the edges of the tiles
+                using (var source = HeifEncoderTestImages.CreateImage(200, 150, seed: 3, transparent: name == "transparent-grid"))
+                using (var output = new MemoryStream())
+                {
+                    source.Save(output, new HeicEncoder { Compression = HeicCompression.Lossy, ChromaSubsampling = HeicChromaSubsampling.Ratio420, Quality = 60, Effort = 1, GridTileSize = new Size(64, 64) });
+                    return output.ToArray();
+                }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RegionFiles))]
+    public void ARegionHasThePixelsOfTheFullDecodeInThatArea(string name) => AssertRegionsAreCropsOfTheFullDecode(GetRegionFile(name));
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    public void OnlyTheTilesThatARegionNeedsAreDecoded(int workers)
+    {
+        // Every tile but the second one of the second row is truncated: the full image fails, an area inside that tile (and
+        // farther than the margin of the chroma from its edges) does not decode the others
+        var region = new Rectangle(64 + 10, 64 + 10, 40, 30);
+        using var full = Image.Load(CreateLargeGrid(rows: 4, columns: 5).Build());
+        var expected = Crop(GetFrameBytes(full.Frames[0]), full.Width, PixelFormats.GetBytesPerPixel(full.PixelFormat), region);
+        var damaged = CreateLargeGrid(rows: 4, columns: 5);
+        var tiles = damaged.References.Single(reference => reference.Type == "dimg").ToItemIds;
+        for (var i = 0; i < tiles.Length; i++)
+        {
+            if (i != 6)
+            {
+                damaged.GetItem(tiles[i]).Data = damaged.GetItem(tiles[i]).Data[..40];
+            }
+        }
+
+        var data = damaged.Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data, WithWorkers(workers)));
+        using var actual = Image.Load(data, new ImageDecodeOptions { Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+        Assert.Equal(expected, GetFrameBytes(actual.Frames[0]));
+    }
+
+    [Fact]
+    public void ARegionOfAGridHoldsThePlanesOfItsTilesOnly()
+    {
+        var data = CreateLargeGrid(rows: 4, columns: 5).Build();
+        using var full = Image.Load(data);
+        using var region = Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(74, 74, 40, 30) });
+        var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        var regionPeak = region.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        Assert.True(regionPeak * 4 < fullPeak, string.Create(CultureInfo.InvariantCulture, $"Peak {regionPeak} bytes for the region, {fullPeak} bytes for the image."));
+    }
+
+    [Fact]
+    public void ARegionOutsideTheImageIsRejected()
+    {
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(HeicTestFiles.Grid, new ImageDecodeOptions { Region = new Rectangle(130, 0, 10, 10) }));
+        Assert.Equal(("Region decoding", ImageFormat.Heic), (exception.Feature, exception.Format));
+    }
+
     // An access unit with one NAL unit of 4-byte length: end_of_seq_rbsp (type 36), with no slice
     private static byte[] EndOfSequence => [0, 0, 0, 2, 36 << 1, 1];
 

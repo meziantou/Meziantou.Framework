@@ -19,7 +19,7 @@ internal static class ImageIO
     {
         options ??= ImageIdentifyOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Identify", CancellationToken.None);
-        var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, data, context);
+        var codec = ImageInputPump.Detect(ImageCodecRegistry.For(context.Configuration), data, context);
         using var parser = codec.CreateIdentifyParser(options.Mode, context);
         return ImageInputPump.Run(data, parser, context);
     }
@@ -41,7 +41,7 @@ internal static class ImageIO
         cancellationToken.ThrowIfCancellationRequested();
         options ??= ImageDecodeOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);
-        var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, data, context);
+        var codec = ImageInputPump.Detect(ImageCodecRegistry.For(context.Configuration), data, context);
         using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
         return ImageInputPump.Run(data, parser, context);
     }
@@ -105,7 +105,7 @@ internal static class ImageIO
 
         // Read once the input owns the stream: reading the position can fail, and an owned stream must still be disposed
         var origin = stream.CanSeek ? stream.Position : 0;
-        var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, input, context);
+        var codec = ImageInputPump.Detect(ImageCodecRegistry.For(context.Configuration), input, context);
         if (TryCreateRandomAccessSource(codec, stream, origin, context) is { } source)
             return codec.IdentifyRandomAccess(source, options.Mode, context);
 
@@ -127,7 +127,7 @@ internal static class ImageIO
         await using (input.ConfigureAwait(false))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var codec = await ImageInputPump.DetectAsync(registry, input, context).ConfigureAwait(false);
+            var codec = await ImageInputPump.DetectAsync(ImageCodecRegistry.For(context.Configuration, registry), input, context).ConfigureAwait(false);
             using var parser = codec.CreateIdentifyParser(options.Mode, context);
             return await ImageInputPump.RunAsync(input, parser, context).ConfigureAwait(false);
         }
@@ -141,7 +141,7 @@ internal static class ImageIO
 
         // Read once the input owns the stream: reading the position can fail, and an owned stream must still be disposed
         var origin = stream.CanSeek ? stream.Position : 0;
-        var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, input, context);
+        var codec = ImageInputPump.Detect(ImageCodecRegistry.For(context.Configuration), input, context);
         if (TryCreateRandomAccessSource(codec, stream, origin, context) is { } source)
             return codec.DecodeRandomAccess(source, ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
 
@@ -163,7 +163,7 @@ internal static class ImageIO
         await using (input.ConfigureAwait(false))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var codec = await ImageInputPump.DetectAsync(registry, input, context).ConfigureAwait(false);
+            var codec = await ImageInputPump.DetectAsync(ImageCodecRegistry.For(context.Configuration, registry), input, context).ConfigureAwait(false);
             using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
             return await ImageInputPump.RunAsync(input, parser, context).ConfigureAwait(false);
         }

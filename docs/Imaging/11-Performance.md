@@ -31,6 +31,10 @@ public static void SavePreview(string animationPath, string previewPath)
 - **Decode a large photo at the size you need.** [ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) decodes a JPEG file at 1/2, 1/4 or 1/8
   of its size, and a JPEG 2000 file at a lower resolution level, when the result is still at least that large: the decoder computes fewer pixels and allocates the memory
   of the smaller image. See [Decode a smaller image](05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
+- **Decode only the area you show.** [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) decodes a rectangle of a JPEG 2000 file,
+  a tiled or stripped TIFF page, or an AVIF or HEIC grid, without decoding the strips or tiles around it. Store large
+  scans as tiled TIFF files ([TiffEncoder.TileWidth](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.TileWidth)) to make viewports cheap. See
+  [Decode an area](05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - **Load in the pixel format you work with.** [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) returns the smallest pixel format that keeps the source
   exactly ([Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Gray8](cref:Meziantou.Framework.Imaging.Gray8) for most JPEG files, [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) for GIF, 16-bit formats for 16-bit PNG files...).
   [Image.Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load) converts while loading: ask for the format your code processes, so that you do not convert the
@@ -46,6 +50,23 @@ public static void SavePreview(string animationPath, string previewPath)
 - **Set resource limits.** The limits of [ImageResourceLimits](cref:Meziantou.Framework.Imaging.ImageResourceLimits) bound the size of the canvas, the number of frames and
   the memory an image may allocate. They protect a service from files that would exhaust its memory. See
   [Resource limits](05-LoadingAndSaving/07-ResourceLimits.md).
+- **Bound the buffer pool.** The library keeps up to 32 MiB of returned buffers for the next operations, outside every
+  image's budget. In a memory-constrained container, lower [ImageBufferPool.MaxRetainedBytes](cref:Meziantou.Framework.Imaging.ImageBufferPool.MaxRetainedBytes),
+  or set it to 0 to disable retention; [ImageBufferPool.Trim](cref:Meziantou.Framework.Imaging.ImageBufferPool.Trim)
+  releases what the pool holds. The settings never change the output of an operation:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_BufferPool;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ConfigureForSmallContainer()
+{
+    // At startup: keep at most 4 MiB of returned buffers for reuse (0 disables retention)
+    ImageBufferPool.MaxRetainedBytes = 4 * 1024 * 1024;
+}
+```
+<!-- endref -->
+
+- **Process memory you already have.** [Image.WrapMemory](cref:Meziantou.Framework.Imaging.Image.WrapMemory) works on a
+  buffer of another component without copying it. See [Ownership and lifetimes](04-Concepts/04-OwnershipAndLifetimes.md).
 
 ## Use several threads where it pays
 

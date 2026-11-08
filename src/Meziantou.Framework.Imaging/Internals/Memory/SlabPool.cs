@@ -49,10 +49,12 @@ internal sealed class SlabPool
     private long _retainedReturns;
     private long _droppedReturns;
     private long _releasedStaleBuffers;
+    private long _maxRetainedBytes;
 
     public SlabPool(SlabPoolOptions? options = null)
     {
         Options = options ?? new SlabPoolOptions();
+        _maxRetainedBytes = Options.MaxRetainedBytes;
         var bucketCount = GetBucketIndex(Options.MaxPooledLength) + 1;
         _buckets = new byte[]?[bucketCount][];
         _bucketCounts = new int[bucketCount];
@@ -67,6 +69,42 @@ internal sealed class SlabPool
     public static SlabPool Shared { get; } = new();
 
     public SlabPoolOptions Options { get; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of bytes retained across all size classes, initially
+    /// <see cref="SlabPoolOptions.MaxRetainedBytes"/>. Zero disables retention. Lowering it releases retained buffers,
+    /// the largest size classes first, until the retained bytes fit.
+    /// </summary>
+    public long MaxRetainedBytes
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _maxRetainedBytes;
+            }
+        }
+
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            lock (_lock)
+            {
+                _maxRetainedBytes = value;
+                for (var i = _buckets.Length - 1; i >= 0 && _retainedBytes > value; i--)
+                {
+                    ref var count = ref _bucketCounts[i];
+                    while (count > 0 && _retainedBytes > value)
+                    {
+                        count--;
+                        _retainedBytes -= _buckets[i][count]!.Length;
+                        _buckets[i][count] = null;
+                        _retainedBuffers--;
+                    }
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets a test hook called before every rental with the requested length. Returning an exception makes the
@@ -188,14 +226,14 @@ internal sealed class SlabPool
         {
             _operations++;
             ref var count = ref _bucketCounts[index];
-            if (count < _buckets[index].Length && buffer.Length <= Options.MaxRetainedBytes)
+            if (count < _buckets[index].Length && buffer.Length <= _maxRetainedBytes)
             {
-                if (_retainedBytes + buffer.Length > Options.MaxRetainedBytes)
+                if (_retainedBytes + buffer.Length > _maxRetainedBytes)
                 {
                     ReleaseStaleBuffers(index, buffer.Length);
                 }
 
-                if (_retainedBytes + buffer.Length <= Options.MaxRetainedBytes)
+                if (_retainedBytes + buffer.Length <= _maxRetainedBytes)
                 {
                     _bucketLastUse[index] = _operations;
                     _buckets[index][count] = buffer;
@@ -219,7 +257,7 @@ internal sealed class SlabPool
     private void ReleaseStaleBuffers(int returningIndex, int length)
     {
         var staleBefore = _operations - Options.StaleAfterOperations;
-        while (_retainedBytes + length > Options.MaxRetainedBytes)
+        while (_retainedBytes + length > _maxRetainedBytes)
         {
             var oldest = -1;
             for (var i = 0; i < _bucketCounts.Length; i++)
@@ -234,7 +272,7 @@ internal sealed class SlabPool
                 return;
 
             ref var count = ref _bucketCounts[oldest];
-            while (count > 0 && _retainedBytes + length > Options.MaxRetainedBytes)
+            while (count > 0 && _retainedBytes + length > _maxRetainedBytes)
             {
                 count--;
                 _retainedBytes -= _buckets[oldest][count]!.Length;

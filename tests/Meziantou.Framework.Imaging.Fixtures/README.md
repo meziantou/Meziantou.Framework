@@ -2128,10 +2128,10 @@ key recorded in the section is not mapped by any row.
 | Range extensions profile, Main 4:4:4 12 | `hevc.profile=rext-444-12` | 20 |
 | Range extensions profile, Main Intra (what x265 signals for an all-intra 8-bit 4:2:0 stream) | `hevc.profile=rext-420-8-intra` | 53 |
 | Range extensions profile, Main 4:2:2 10 Intra | `hevc.profile=rext-422-10-intra` | 15 |
-| Range extensions profile, Main 4:4:4 16 Intra | `hevc.profile=rext-444-16-intra` | 3 |
+| Range extensions profile, Main 4:4:4 16 Intra | `hevc.profile=rext-444-16-intra` | 6 |
 | Range extensions profile, Main 4:4:4 Still Picture | `hevc.profile=rext-444-8-still` | 1 |
 | High throughput profile (rejected by the library) | `hevc.profile=highThroughput-444-16-intra` | 1 |
-| Level (every vector) | `hevc.level` | 402 |
+| Level (every vector) | `hevc.level` | 405 |
 | Level 8.5 (x265, lossless) | `hevc.level=8.5` | 11 |
 | High tier | `hevc.tier=high` | 1 |
 | Monochrome (4:0:0), 8-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=8` | 6 |
@@ -2141,39 +2141,42 @@ key recorded in the section is not mapped by any row.
 | 4:2:0, 8-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=8` | 215 |
 | 4:2:0, 10-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=10` | 21 |
 | 4:2:0, 12-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=12` | 6 |
+| 4:2:0, 13-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=13` | 1 |
 | 4:2:2, 8-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=8` | 13 |
 | 4:2:2, 10-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=10` | 30 |
 | 4:2:2, 12-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=12` | 10 |
+| 4:2:2, 14-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=14` | 1 |
 | 4:4:4, 8-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=8` | 27 |
 | 4:4:4, 10-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=10` | 30 |
 | 4:4:4, 12-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=12` | 26 |
+| 4:4:4, 15-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=15` | 1 |
 | 4:4:4, 16-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=16` | 2 |
 | Identity matrix (planar GBR) | `hevc.matrix=identity` | 13 |
 | Identity matrix, 10-bit | `hevc.matrix=identity` + `hevc.bitDepth=10` | 3 |
 | Identity matrix, 12-bit | `hevc.matrix=identity` + `hevc.bitDepth=12` | 4 |
 | 16x16 coding tree blocks | `hevc.ctb=16` | 44 |
 | 32x32 coding tree blocks | `hevc.ctb=32` | 152 |
-| 64x64 coding tree blocks | `hevc.ctb=64` | 206 |
-| Minimum coding block 8x8 | `hevc.minCb=8` | 393 |
+| 64x64 coding tree blocks | `hevc.ctb=64` | 209 |
+| Minimum coding block 8x8 | `hevc.minCb=8` | 396 |
 | Minimum coding block 16x16 | `hevc.minCb=16` | 5 |
 | Minimum coding block 32x32 | `hevc.minCb=32` | 3 |
 | Minimum coding block 64x64 (the coding tree block) | `hevc.minCb=64` | 1 |
-| Minimum transform block 4x4 | `hevc.minTb=4` | 399 |
+| Minimum transform block 4x4 | `hevc.minTb=4` | 402 |
 | Minimum transform block 8x8 | `hevc.minTb=8` | 1 |
 | Minimum transform block 16x16 | `hevc.minTb=16` | 1 |
 | Minimum transform block 32x32 | `hevc.minTb=32` | 1 |
 | Maximum transform block 4x4 (DST for intra luma) | `hevc.maxTb=4` | 5 |
 | Maximum transform block 8x8 | `hevc.maxTb=8` | 2 |
 | Maximum transform block 16x16 | `hevc.maxTb=16` | 38 |
-| Maximum transform block 32x32 | `hevc.maxTb=32` | 357 |
+| Maximum transform block 32x32 | `hevc.maxTb=32` | 360 |
 | Transform hierarchy depth of intra coding units: 0 | `hevc.tuDepthIntra=0` | 251 |
 | Transform hierarchy depth of intra coding units: 1 | `hevc.tuDepthIntra=1` | 4 |
-| Transform hierarchy depth of intra coding units: 2 | `hevc.tuDepthIntra=2` | 144 |
+| Transform hierarchy depth of intra coding units: 2 | `hevc.tuDepthIntra=2` | 147 |
 | Transform hierarchy depth of intra coding units: 3 | `hevc.tuDepthIntra=3` | 3 |
 | Transform hierarchy depth of inter coding units: 1 | `hevc.tuDepthInter=1` + `hevc.frameTypes=inter` | 1 |
 | Transform hierarchy depth of inter coding units: 2 | `hevc.tuDepthInter=2` + `hevc.frameTypes=inter` | 82 |
 | Transform hierarchy depth of inter coding units: 3 | `hevc.tuDepthInter=3` + `hevc.frameTypes=inter` | 2 |
-| Picture of one coding tree block | `hevc.ctbs=1x1` | 140 |
+| Picture of one coding tree block | `hevc.ctbs=1x1` | 143 |
 | Picture of 6x5 coding tree blocks (CIF, or QCIF with 32x32 blocks) | `hevc.ctbs=6x5` | 5 |
 | Picture of 6x4 coding tree blocks (384x216, the stills of the benchmarks) | `hevc.ctbs=6x4` | 2 |
 | Picture one coding tree block wide, with wavefronts | `hevc.ctbs=1x4` + `hevc.wpp` | 2 |
@@ -2186,12 +2189,12 @@ key recorded in the section is not mapped by any row.
 | Conformance window on every side, 4:2:2 | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:2:2` | 3 |
 | Conformance window on every side, 4:4:4 | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:4:4` | 3 |
 | Strong intra smoothing off | `hevc.strongIntraSmoothing=0` | 36 |
-| Strong intra smoothing on | `hevc.strongIntraSmoothing=1` | 366 |
+| Strong intra smoothing on | `hevc.strongIntraSmoothing=1` | 369 |
 | Constrained intra prediction | `hevc.constrainedIntraPred` | 3 |
-| Transform skip | `hevc.transformSkip` | 24 |
+| Transform skip | `hevc.transformSkip` | 25 |
 | Sign data hiding off | `hevc.signDataHiding=0` | 36 |
-| Sign data hiding on | `hevc.signDataHiding=1` | 366 |
-| Asymmetric motion partitions | `hevc.amp` | 155 |
+| Sign data hiding on | `hevc.signDataHiding=1` | 369 |
+| Asymmetric motion partitions | `hevc.amp` | 158 |
 | PCM coding units | `hevc.pcm` | 8 |
 | PCM, samples at the bit depth of an 8-bit stream | `hevc.pcm.bitDepth=8/8` + `hevc.bitDepth=8` | 4 |
 | PCM, 8-bit samples in a 10-bit stream | `hevc.pcm.bitDepth=8/8` + `hevc.bitDepth=10` | 1 |
@@ -2203,7 +2206,7 @@ key recorded in the section is not mapped by any row.
 | Lossless: the decoded pictures are the source pictures (measured) | `hevc.lossless` | 22 |
 | Lossless, inter pictures | `hevc.lossless` + `hevc.frameTypes=inter` | 10 |
 | Lossless, identity matrix | `hevc.lossless` + `hevc.matrix=identity` | 3 |
-| Slice QP (every vector) | `hevc.sliceQp` | 402 |
+| Slice QP (every vector) | `hevc.sliceQp` | 405 |
 | Lowest slice QP of a 12-bit stream (-24) | `hevc.sliceQp=-24` | 1 |
 | Slice QP 0 | `hevc.sliceQp=0` | 11 |
 | Slice QP 51 | `hevc.sliceQp=51` | 5 |
@@ -2220,13 +2223,13 @@ key recorded in the section is not mapped by any row.
 | Scaling list coded with its coefficients | `hevc.scalingList.coding=explicit` | 9 |
 | Scaling list copied from another list | `hevc.scalingList.coding=copy` | 7 |
 | Scaling list set to the default list by its prediction | `hevc.scalingList.coding=default` | 2 |
-| Deblocking filter on | `hevc.deblocking=1` | 395 |
+| Deblocking filter on | `hevc.deblocking=1` | 398 |
 | Deblocking filter off | `hevc.deblocking=0` | 7 |
 | Deblocking offsets (beta/tc, halved) | `hevc.deblocking.offsets` | 7 |
 | Deblocking parameters in the slice header | `hevc.deblocking.sliceOverride` | 1 |
 | Sample adaptive offset off | `hevc.sao=off` | 10 |
-| Sample adaptive offset, luma | `hevc.sao=luma` | 392 |
-| Sample adaptive offset, chroma | `hevc.sao=chroma` | 370 |
+| Sample adaptive offset, luma | `hevc.sao=luma` | 395 |
+| Sample adaptive offset, chroma | `hevc.sao=chroma` | 373 |
 | Sample adaptive offset disabled by a slice | `hevc.sao=sliceOff` | 11 |
 | Sample adaptive offset, 10-bit | `hevc.sao=luma` + `hevc.bitDepth=10` | 88 |
 | Sample adaptive offset, 12-bit | `hevc.sao=luma` + `hevc.bitDepth=12` | 50 |
@@ -2245,9 +2248,9 @@ key recorded in the section is not mapped by any row.
 | Wavefronts with dependent slice segments | `hevc.wpp` + `hevc.dependentSlices` | 3 |
 | Wavefronts with several slices | `hevc.wpp` + `hevc.slices` | 6 |
 | CABAC initialization type chosen by the slice | `hevc.cabacInit` | 3 |
-| I slices only | `hevc.frameTypes=intra` | 198 |
+| I slices only | `hevc.frameTypes=intra` | 201 |
 | P or B slices | `hevc.frameTypes=inter` | 204 |
-| Slice types (every vector) | `hevc.sliceTypes` | 402 |
+| Slice types (every vector) | `hevc.sliceTypes` | 405 |
 | P slices | `hevc.sliceTypes=P` | 163 |
 | B slices | `hevc.sliceTypes=B` | 121 |
 | B pictures used as references | `hevc.referenceB` | 92 |
@@ -2271,9 +2274,9 @@ key recorded in the section is not mapped by any row.
 | Reference picture set of the sequence parameter set | `hevc.rps=sps` | 84 |
 | Reference picture set coded in the slice header | `hevc.rps=slice` | 133 |
 | Reference picture set predicted from another one | `hevc.rps.interPrediction` | 13 |
-| NAL unit types (every vector) | `hevc.nal` | 402 |
+| NAL unit types (every vector) | `hevc.nal` | 405 |
 | IDR pictures without leading pictures | `hevc.nal=IDR_N_LP` | 217 |
-| IDR pictures that may have RADL pictures | `hevc.nal=IDR_W_RADL` | 183 |
+| IDR pictures that may have RADL pictures | `hevc.nal=IDR_W_RADL` | 186 |
 | CRA pictures | `hevc.nal=CRA` | 17 |
 | RASL pictures | `hevc.nal=RASL_N` | 15 |
 | RASL pictures used as references | `hevc.nal=RASL_R` | 11 |
@@ -2303,9 +2306,9 @@ key recorded in the section is not mapped by any row.
 | Pictures discarded before their output (NoOutputOfPriorPicsFlag) | `hevc.noOutputOfPriorPics` | 2 |
 | Picture order count that wraps | `hevc.pocWrap` | 5 |
 | Picture order count coded with 4 bits | `hevc.pocLsbBits=4` | 31 |
-| Picture order count coded with 8 bits | `hevc.pocLsbBits=8` | 366 |
-| SEI messages (every vector) | `hevc.sei` | 402 |
-| Decoded picture hash: MD5 | `hevc.pictureHash=md5` | 370 |
+| Picture order count coded with 8 bits | `hevc.pocLsbBits=8` | 369 |
+| SEI messages (every vector) | `hevc.sei` | 405 |
+| Decoded picture hash: MD5 | `hevc.pictureHash=md5` | 373 |
 | Decoded picture hash: CRC | `hevc.pictureHash=crc` | 14 |
 | Decoded picture hash: checksum | `hevc.pictureHash=checksum` | 18 |
 | Mastering display colour volume | `hevc.sei=masteringDisplayColourVolume` | 2 |
@@ -2318,16 +2321,16 @@ key recorded in the section is not mapped by any row.
 | Chroma sample location | `hevc.chromaLoc` | 8 |
 | Chroma sample location type 5 | `hevc.chromaLoc=5` | 2 |
 | Default display window (not applied) | `hevc.defaultDisplayWindow` | 3 |
-| Implicit residual DPCM | `hevc.implicitRdpcm` | 13 |
-| Explicit residual DPCM | `hevc.explicitRdpcm` | 10 |
-| Rotation of transform-skipped residuals | `hevc.transformSkipRotation` | 10 |
+| Implicit residual DPCM | `hevc.implicitRdpcm` | 14 |
+| Explicit residual DPCM | `hevc.explicitRdpcm` | 11 |
+| Rotation of transform-skipped residuals | `hevc.transformSkipRotation` | 11 |
 | Transform skip context | `hevc.transformSkipContext` | 9 |
-| Transform skip up to 8x8 | `hevc.transformSkip.maxSize=8` | 1 |
+| Transform skip up to 8x8 | `hevc.transformSkip.maxSize=8` | 2 |
 | Transform skip up to 16x16 | `hevc.transformSkip.maxSize=16` | 8 |
 | Transform skip up to 32x32 | `hevc.transformSkip.maxSize=32` | 1 |
 | Cross-component prediction | `hevc.crossComponentPrediction` | 7 |
 | Chroma QP offset lists | `hevc.chromaQpOffsetList` + `hevc.cuChromaQpOffset` | 6 |
-| Persistent Rice adaptation | `hevc.persistentRice` | 10 |
+| Persistent Rice adaptation | `hevc.persistentRice` | 11 |
 | Scaled sample adaptive offsets | `hevc.saoOffsetScale` | 2 |
 | High precision weighted prediction offsets | `hevc.highPrecisionOffsets` | 2 |
 | Intra smoothing disabled | `hevc.intraSmoothingDisabled` | 4 |
@@ -2339,7 +2342,7 @@ key recorded in the section is not mapped by any row.
 | Rejected: field sequence | `hevc.unsupported=fieldSeq` + `hevc.fieldSeq` | 1 |
 | Encoded by x265 | `hevc.encoder=x265` | 218 |
 | Encoded by kvazaar | `hevc.encoder=kvazaar` | 34 |
-| Encoded by HM | `hevc.encoder=hm` | 150 |
+| Encoded by HM | `hevc.encoder=hm` | 153 |
 | Derived from the stream of another vector | `hevc.derived` | 28 |
 | Derived: parameter set rewritten by hevc_metadata | `hevc.derived=metadata` | 10 |
 | Derived: NAL units removed by filter_units | `hevc.derived=filterUnits` | 1 |

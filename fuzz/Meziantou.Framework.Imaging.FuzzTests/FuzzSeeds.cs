@@ -38,7 +38,8 @@ internal static class FuzzSeeds
                 .Where(item => GetGroup(item.Fixture.Id, item.Fixture.Entry.Format, item.Data) == group)
                 .Select(item => new FuzzSeed(item.Fixture.Id, item.Data))
                 .ToList();
-        // The HEIC files of the unit tests, written by libheif: the groups also take the fixtures of the format of the corpus
+        // The HEIC files of the unit tests, written by libheif, and the JPEG XL files of the samples the corpus has no fixture of:
+        // the groups also take the fixtures of the format of the corpus
         if (group is "heic-still")
         {
             seeds.AddRange(
@@ -48,6 +49,17 @@ internal static class FuzzSeeds
                 new FuzzSeed("heic/embedded-gray", Tests.HeicTestFiles.Gray),
                 new FuzzSeed("heic/embedded-deep", Tests.HeicTestFiles.Deep),
                 new FuzzSeed("heic/embedded-grid", Tests.HeicTestFiles.Grid),
+            ]);
+        }
+        else if (group is "jxl-lossless")
+        {
+            seeds.AddRange(
+            [
+                new FuzzSeed("jxl/embedded-float32", Tests.JpegXlTestFiles.Float32),
+                new FuzzSeed("jxl/embedded-half-float", Tests.JpegXlTestFiles.HalfFloat),
+                new FuzzSeed("jxl/embedded-integer-24-bit", Tests.JpegXlTestFiles.Integer24Bit),
+                new FuzzSeed("jxl/embedded-integer-25-bit", Tests.JpegXlTestFiles.Integer25Bit),
+                new FuzzSeed("jxl/embedded-cmyk-alpha", Tests.JpegXlTestFiles.CmykWithAlpha),
             ]);
         }
         else if (group is "heic-sequence")

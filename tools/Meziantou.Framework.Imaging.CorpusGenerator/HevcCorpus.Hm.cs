@@ -16,6 +16,11 @@ internal static partial class HevcCorpus
 
     /// <summary>PCM coding units of 8x8 to 32x32 samples: at a very low QP the encoder prefers the raw samples of a
     /// noisy block to its coded residual.</summary>
+    /// <summary>The options of a still picture of 13 to 15 bits, read from 16-bit samples: the range extensions profile
+    /// with the constraints of the 16-bit intra profiles.</summary>
+    private static string[] HmHighBitDepth(int bitDepth) =>
+        ["--InputBitDepth=16", Inv($"--InternalBitDepth={bitDepth}"), "--Profile=main-RExt", "--MaxBitDepthConstraint=16", "--MaxChromaFormatConstraint=444", "--IntraConstraintFlag=1"];
+
     private static string[] HmPcm(bool inputBitDepth, bool loopFilterDisabled, int maxSize = 5) =>
         ["--PCMEnabledFlag=1", Inv($"--PCMLog2MaxSize={maxSize}"), "--PCMLog2MinSize=3", Inv($"--PCMInputBitDepthFlag={(inputBitDepth ? 1 : 0)}"), Inv($"--PCMFilterDisableFlag={(loopFilterDisabled ? 1 : 0)}"), "--QP=1"];
 
@@ -42,6 +47,17 @@ internal static partial class HevcCorpus
             .Without(DecoderFfmpeg, FfmpegHighBitDepth);
         yield return HmIntra("hm-intra-16bit-400-32x32", Noise(TestSrc2("32x32"), 8, 302), "gray16le", 1, ["--Profile=monochrome16"], "hevc.bitDepth=16", "hevc.chroma=4:0:0")
             .Without(DecoderFfmpeg, FfmpegHighBitDepth);
+        // 13 to 15 bits: no FFmpeg pixel format holds them, so HM reads 16-bit samples and scales them down
+        yield return HmIntra("hm-intra-13bit-420-40x32", Noise(TestSrc2("40x32"), 8, 308), "yuv420p13le", 1, [.. HmHighBitDepth(13)], "hevc.bitDepth=13")
+            with { InputPixelFormat = "yuv420p16le", Excluded = [(DecoderFfmpeg, FfmpegHighBitDepth)] };
+        yield return HmIntra("hm-intra-14bit-422-40x32", Noise(TestSrc2("40x32"), 8, 309), "yuv422p14le", 1,
+            [.. HmHighBitDepth(14), "--TransformSkip=1", "--TransformSkipFast=0", "--TransformSkipLog2MaxSize=3", "--ImplicitResidualDPCM=1", "--ExplicitResidualDPCM=1", "--ResidualRotation=1"],
+            "hevc.bitDepth=14", "hevc.chroma=4:2:2", "hevc.implicitRdpcm", "hevc.transformSkipRotation")
+            with { InputPixelFormat = "yuv422p16le", Excluded = [(DecoderFfmpeg, FfmpegHighBitDepth)] };
+        yield return HmIntra("hm-intra-15bit-444-40x32", Noise(TestSrc2("40x32"), 8, 310), "yuv444p15le", 1,
+            [.. HmHighBitDepth(15), "--GolombRiceParameterAdaptation=1"],
+            "hevc.bitDepth=15", "hevc.chroma=4:4:4", "hevc.persistentRice")
+            with { InputPixelFormat = "yuv444p16le", Excluded = [(DecoderFfmpeg, FfmpegHighBitDepth)] };
         yield return HmIntra("hm-intra-main-still-picture-66x50", Noise(Mandelbrot("66x50"), 8, 203), "yuv420p", 1, ["--Profile=main-still-picture"], "hevc.profile=mainStillPicture").Hash("checksum");
         yield return Hm("hm-low-delay-p-main-64x64", Moving("64x64"), "yuv420p", 4, HmLowDelayP, "hevc.profile=main", "hevc.sliceTypes=P", "hevc.rps=sps");
         yield return Hm("hm-low-delay-b-main10-64x64", Rotating("64x64"), "yuv420p10le", 5, HmLowDelayB, "hevc.profile=main10", "hevc.sliceTypes=B", "hevc.refs=2").Hash("crc");

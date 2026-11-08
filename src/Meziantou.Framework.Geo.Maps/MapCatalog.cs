@@ -7,9 +7,10 @@ namespace Meziantou.Framework.Geo.Maps;
 /// By default, a catalog reads the folder formats, <see cref="MapFormat.FlatGeobuf"/> and <see cref="MapFormat.GeoJson"/>:
 /// a region is a folder with a file per layer and a <c>metadata.json</c> file. Pass the formats to read other formats,
 /// such as the <c>GeoPackageMapFormat</c> of <c>Meziantou.Framework.Geo.Maps.GeoPackage</c>. The
-/// Meziantou.Framework.Geo.Maps.Tool .NET tool writes the maps; the packages it makes with <c>--package-content files</c> copy
-/// them to a <c>maps</c> folder next to the application. Its default packages embed the map in an assembly instead, opened
-/// with a static extension property of <see cref="Map"/>, such as <c>Map.Region_France</c>.
+/// tools/Meziantou.Framework.Geo.Maps.Tool tool of the repository writes the maps; the packages it makes with
+/// <c>--package-content files</c> copy them to a <c>maps</c> folder next to the application. The published packages,
+/// Meziantou.Framework.Geo.Maps.Data.&lt;Key&gt;, embed the map in an assembly instead, opened with a static extension
+/// property of <see cref="Map"/>, such as <c>Map.Region_France</c>.
 /// </remarks>
 public sealed class MapCatalog
 {

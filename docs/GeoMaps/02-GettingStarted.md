@@ -9,8 +9,14 @@ Add the `Meziantou.Framework.Geo.Maps` package to a project:
 
 <InstallNuGetPackage Id="Meziantou.Framework.Geo.Maps" />
 
-The package has no map of its own: the maps are the bundles of the regions you need, built by the
-[Meziantou.Framework.Geo.Maps.Tool .NET tool](03-GeneratingBundles.md). The examples of this documentation omit the `using` directives: they need
+The package has no map of its own: the maps are the bundles of the regions you need. Add the package of the bundle of
+each region, such as `Meziantou.Framework.Geo.Maps.Data.Switzerland`, which opens it with `Map.Region_Switzerland`
+(see [use the published bundles](03-GeneratingBundles.md#use-the-published-bundles)), or build the bundles with the
+[tool of the repository](03-GeneratingBundles.md#run-the-tool):
+
+<InstallNuGetPackage Id="Meziantou.Framework.Geo.Maps.Data.Switzerland" />
+
+The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework.Geo;` and `using Meziantou.Framework.Geo.Maps;`.
 
 ## Load the map of a region

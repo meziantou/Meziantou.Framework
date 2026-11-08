@@ -1,0 +1,104 @@
+name: NuGet push
+description: |
+  Log in to nuget.org with trusted publishing (OIDC), and push the NuGet packages of a folder, with retries. Used by
+  the deploy and deploy_map_bundles jobs of publish.yml: the nuget.org policy names this workflow file, and the job
+  needs the id-token: write permission.
+
+inputs:
+  directory:
+    description: Folder of the .nupkg files
+    required: true
+  user:
+    description: The nuget.org user of the trusted publishing policy
+    required: false
+    default: meziantou
+  source:
+    description: The NuGet feed
+    required: false
+    default: https://api.nuget.org/v3/index.json
+  throttle-limit:
+    description: How many packages are pushed at the same time
+    required: false
+    default: "8"
+
+runs:
+  using: composite
+  steps:
+    - name: NuGet login (OIDC → temp API key)
+      uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+      id: login
+      with:
+        user: ${{ inputs.user }}
+
+    - name: Publish NuGet packages
+      shell: pwsh
+      env:
+        NuGetDirectory: ${{ inputs.directory }}
+        NUGETAPIKEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        NuGetSource: ${{ inputs.source }}
+        THROTTLE_LIMIT: ${{ inputs.throttle-limit }}
+      run: |
+        Write-Host "Searching nupkg in folder: $env:NuGetDirectory"
+        $files = Get-ChildItem (Join-Path $env:NuGetDirectory "*") -Include *.nupkg
+        $apiKey = $env:NUGETAPIKEY
+        $source = $env:NuGetSource
+
+        if ($files.Count -eq 0) {
+          Write-Host "No NuGet package found to push."
+        }
+        else {
+          $maxAttempts = 3
+          $baseDelaySeconds = 2
+          $results = $files | ForEach-Object -Parallel {
+            $packagePath = $_.FullName
+            $apiKey = $using:apiKey
+            $source = $using:source
+            $maxAttempts = $using:maxAttempts
+            $baseDelaySeconds = $using:baseDelaySeconds
+
+            for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+              Write-Host "Pushing NuGet package: $packagePath (attempt $attempt/$maxAttempts)"
+              & dotnet nuget push "$packagePath" --api-key "$apiKey" --source "$source" --force-english-output --skip-duplicate
+              $exitCode = $LASTEXITCODE
+
+              if ($exitCode -eq 0) {
+                return [pscustomobject]@{
+                  PackagePath = $packagePath
+                  Succeeded = $true
+                  Attempts = $attempt
+                }
+              }
+
+              if ($attempt -lt $maxAttempts) {
+                $delaySeconds = [int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1))
+                Write-Host "Retrying NuGet push for $packagePath in $delaySeconds second(s)."
+                Start-Sleep -Seconds $delaySeconds
+              }
+            }
+
+            return [pscustomobject]@{
+              PackagePath = $packagePath
+              Succeeded = $false
+              Attempts = $maxAttempts
+            }
+          } -ThrottleLimit ([int]$env:THROTTLE_LIMIT)
+
+          $pushResults = @(
+            $results
+            | Where-Object { $_.PSObject.Properties.Name -contains "Succeeded" }
+          )
+          $failedPackages = @($pushResults | Where-Object { -not $_.Succeeded })
+          $succeededPackages = @($pushResults | Where-Object { $_.Succeeded })
+          foreach ($item in $succeededPackages) {
+            Write-Host "Successfully pushed NuGet package: $($item.PackagePath) (attempts: $($item.Attempts))"
+          }
+
+          if ($failedPackages.Count -gt 0) {
+            foreach ($item in $failedPackages) {
+              Write-Host "::error::Failed to push NuGet package after retries: $($item.PackagePath)"
+            }
+
+            Write-Host "::error::Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
+            throw "Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
+          }
+        }

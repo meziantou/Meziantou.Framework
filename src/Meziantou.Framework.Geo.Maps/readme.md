@@ -28,8 +28,9 @@ Assert.False(map.HasLayer(MapLayer.Coastline));
 ```
 <!-- endref -->
 
-The package has no map of its own: build the bundles of the regions you need with
-the `Meziantou.Framework.Geo.Maps.Tool` .NET tool.
+The package has no map of its own: add the package of the bundle of each region you need, such as
+`Meziantou.Framework.Geo.Maps.Data.Switzerland`, or build the bundles with the `tools/Meziantou.Framework.Geo.Maps.Tool`
+tool of the repository.
 
 ## Formats
 

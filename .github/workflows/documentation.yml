@@ -40,6 +40,9 @@ jobs:
     env:
       # Analyzers run in the run_analyzers job of ci.yml
       RunAnalyzers: false
+      # The map packages of src/Meziantou.Framework.Geo.Maps.Data are packed with empty layers instead of downloading the
+      # data of their maps: the documentation reads their API, not their maps
+      UseMapPlaceholderData: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET

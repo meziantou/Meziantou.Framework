@@ -1,0 +1,24 @@
+name: Build the data of the map packages
+description: |
+  Builds the layers of every region with Meziantou.Framework.Geo.Maps.Tool, into src/Meziantou.Framework.Geo.Maps.Data/data,
+  where the projects of the map packages embed them from. The layers are not committed: a map project compiles without
+  them, but packing it requires them, with the SHA-256 its project holds. Used by publish.yml and documentation.yml before
+  they pack.
+
+runs:
+  using: composite
+  steps:
+    # The files are named by their SHA-256, so an older cache only misses the files whose pins changed
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ${{ runner.temp }}/geo-maps-sources
+        key: geo-maps-sources-${{ hashFiles('tools/Meziantou.Framework.Geo.Maps.Tool/data-versions.json') }}
+        restore-keys: geo-maps-sources-
+
+    - name: Build the layers of the maps
+      shell: pwsh
+      env:
+        SOURCES_CACHE: ${{ runner.temp }}/geo-maps-sources
+      run: |
+        dotnet run --project tools/Meziantou.Framework.Geo.Maps.Tool --configuration Release -- build --all --output src/Meziantou.Framework.Geo.Maps.Data/data --cache $env:SOURCES_CACHE
+        if ($LASTEXITCODE -ne 0) { throw "The layers of the maps failed to build (exit code $LASTEXITCODE)" }

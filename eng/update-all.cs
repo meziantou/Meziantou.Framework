@@ -1025,7 +1025,7 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
 
     var docsRootPath = rootPath / "docs";
     var packageIds = Directory.EnumerateFiles(rootPath / "src", "*.csproj", SearchOption.AllDirectories)
-        .Where(IsPackableProject)
+        .Where(path => IsPackableProject(path) && IsIncludedInRepositoryReadme(path))
         .ToDictionary(path => Path.GetFileNameWithoutExtension(path), path => FullPath.FromPath(path), StringComparer.Ordinal);
 
     var declaredPackageIds = new Dictionary<FullPath, string[]>();
@@ -1171,7 +1171,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
 
         foreach (var csproj in csprojFiles)
         {
-            if (!IsPackableProject(csproj))
+            if (!IsPackableProject(csproj) || !IsIncludedInRepositoryReadme(csproj))
             {
                 continue;
             }
@@ -2398,6 +2398,16 @@ static bool IsPackableProject(string csprojPath)
     var doc = XDocument.Load(csprojPath);
     var isPackable = doc.Root?.Descendants("IsPackable").FirstOrDefault()?.Value;
     return !string.Equals(isPackable, "False", StringComparison.OrdinalIgnoreCase);
+}
+
+// A project whose file sets IncludeInRepositoryReadme to false, such as the 257 generated map packages of
+// src/Meziantou.Framework.Geo.Maps.Data, is neither listed in README.md nor in the packageIds of the documentation:
+// docs/GeoMaps documents them as a family
+static bool IsIncludedInRepositoryReadme(string csprojPath)
+{
+    var doc = XDocument.Load(csprojPath);
+    var value = doc.Root?.Descendants("IncludeInRepositoryReadme").FirstOrDefault()?.Value;
+    return !string.Equals(value, "False", StringComparison.OrdinalIgnoreCase);
 }
 
 static FullPath GetRepositoryRoot()

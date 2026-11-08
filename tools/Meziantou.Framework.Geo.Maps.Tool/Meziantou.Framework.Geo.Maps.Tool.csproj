@@ -1,0 +1,46 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
+    <IncludeSharedHttpClient>true</IncludeSharedHttpClient>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The versions of the sources, and the OpenStreetMap boundaries country-levels misses -->
+    <EmbeddedResource Include="data-versions.json" LogicalName="data-versions.json" />
+    <EmbeddedResource Include="Resources/Boundaries/*.geojson" LogicalName="Boundaries.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
+  </ItemGroup>
+
+  <!--
+    The assemblies the packages of the bundles are compiled against: the builds of their target framework, net10.0, which
+    the tool embeds, as the tool may run on a later framework. A NoBuild pack reads the paths of the built assemblies
+  -->
+  <Target Name="EmbedPackageReferenceAssemblies" BeforeTargets="AssignTargetPaths">
+    <PropertyGroup>
+      <_PackageReferenceAssemblyTargets>Build</_PackageReferenceAssemblyTargets>
+      <_PackageReferenceAssemblyTargets Condition="'$(NoBuild)' == 'true'">GetTargetPath</_PackageReferenceAssemblyTargets>
+    </PropertyGroup>
+    <MSBuild Projects="../../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj;../../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" Targets="$(_PackageReferenceAssemblyTargets)" Properties="TargetFramework=net10.0" BuildInParallel="$(BuildInParallel)">
+      <Output TaskParameter="TargetOutputs" ItemName="_PackageReferenceAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <EmbeddedResource Include="@(_PackageReferenceAssembly)" LogicalName="References.%(Filename)%(Extension)" WithCulture="false" Type="Non-Resx" />
+    </ItemGroup>
+  </Target>
+
+</Project>

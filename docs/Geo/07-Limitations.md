@@ -20,9 +20,9 @@ description: What the library does not do: coordinate systems, curved edges, buf
 
 ## Data that the model does not keep
 
-- **One position, no time.** A [GeoPosition](cref:Meziantou.Framework.Geo.GeoPosition) has a longitude, a latitude
-  and an altitude. The data of each point of a GPX track or of a `gx:Track`, such as its time or the heart rate, and
-  the M values (measures) of WKT, WKB and shapefiles, are dropped.
+- **No sensor data.** A [GeoPosition](cref:Meziantou.Framework.Geo.GeoPosition) keeps a time and a measure, but not
+  the other data of each point of a GPX track or of a `gx:Track`, such as the heart rate or the cadence of their
+  extensions.
 - **No styles.** The styles of KML and the icons of KMZ files are not read.
 - **No folders.** The folders of a KML document become a `folder` property, and are not written back.
 

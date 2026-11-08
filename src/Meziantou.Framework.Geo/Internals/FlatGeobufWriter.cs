@@ -16,7 +16,8 @@ internal static class FlatGeobufWriter
             .Distinct()
             .ToList();
         var headerType = geometryTypes.Count == 1 ? geometryTypes[0] : FlatGeobufFormat.GeometryUnknown;
-        var hasZ = features.Any(feature => feature.Geometry is not null && feature.Geometry.GetPositions().Any(position => position.Altitude is not null));
+        var positions = features.Where(feature => feature.Geometry is not null).SelectMany(feature => feature.Geometry!.GetPositions());
+        var dimensions = new FlatGeobufDimensions(positions.Any(position => position.Altitude is not null), positions.Any(position => position.Measure is not null));
 
         // The index requires the features in its order, along a Hilbert curve, and a box for each of them
         var boxes = features.Select(feature => feature.Geometry is { IsEmpty: false } geometry ? geometry.GetBounds() : null).ToArray();
@@ -31,7 +32,7 @@ internal static class FlatGeobufWriter
         var offset = 0L;
         for (var i = 0; i < order.Length; i++)
         {
-            buffers[i] = WriteFeature(features[order[i]], columns, headerType, hasZ);
+            buffers[i] = WriteFeature(features[order[i]], columns, headerType, dimensions);
             offsets[i] = offset;
             offset += buffers[i].Length;
         }
@@ -48,9 +49,14 @@ internal static class FlatGeobufWriter
         }
 
         header.AddByte(FlatGeobufFormat.HeaderGeometryType, headerType);
-        if (hasZ)
+        if (dimensions.HasZ)
         {
             header.AddBool(FlatGeobufFormat.HeaderHasZ, value: true);
+        }
+
+        if (dimensions.HasM)
+        {
+            header.AddBool(FlatGeobufFormat.HeaderHasM, value: true);
         }
 
         if (columns.Count > 0)
@@ -95,12 +101,12 @@ internal static class FlatGeobufWriter
         }
     }
 
-    private static byte[] WriteFeature(GeoFeature feature, List<Column> columns, byte headerType, bool hasZ)
+    private static byte[] WriteFeature(GeoFeature feature, List<Column> columns, byte headerType, FlatGeobufDimensions dimensions)
     {
         var table = new FlatBufferTableBuilder();
         if (feature.Geometry is { IsEmpty: false } geometry)
         {
-            table.AddTable(FlatGeobufFormat.FeatureGeometry, WriteGeometry(geometry, hasZ, writeType: headerType == FlatGeobufFormat.GeometryUnknown));
+            table.AddTable(FlatGeobufFormat.FeatureGeometry, WriteGeometry(geometry, dimensions, writeType: headerType == FlatGeobufFormat.GeometryUnknown));
         }
 
         var properties = WriteProperties(feature, columns);
@@ -112,38 +118,38 @@ internal static class FlatGeobufWriter
         return FlatBufferBuilder.BuildSizePrefixed(table);
     }
 
-    private static FlatBufferTableBuilder WriteGeometry(GeoGeometry geometry, bool hasZ, bool writeType)
+    private static FlatBufferTableBuilder WriteGeometry(GeoGeometry geometry, FlatGeobufDimensions dimensions, bool writeType)
     {
         var table = new FlatBufferTableBuilder();
         var type = GetGeometryType(geometry);
         switch (geometry)
         {
             case GeoPoint point:
-                AddPositions(table, [point.Position], hasZ);
+                AddPositions(table, [point.Position], dimensions);
                 break;
 
             case GeoMultiPoint multiPoint:
-                AddPositions(table, multiPoint.Positions, hasZ);
+                AddPositions(table, multiPoint.Positions, dimensions);
                 break;
 
             case GeoLineString lineString:
-                AddPositions(table, lineString.Positions, hasZ);
+                AddPositions(table, lineString.Positions, dimensions);
                 break;
 
             case GeoMultiLineString multiLineString:
-                AddParts(table, multiLineString.LineStrings.Select(lineString => lineString.Positions).ToList(), hasZ);
+                AddParts(table, multiLineString.LineStrings.Select(lineString => lineString.Positions).ToList(), dimensions);
                 break;
 
             case GeoPolygon polygon:
-                AddParts(table, polygon.Rings, hasZ);
+                AddParts(table, polygon.Rings, dimensions);
                 break;
 
             case GeoMultiPolygon multiPolygon:
-                table.AddTables(FlatGeobufFormat.GeometryParts, [.. multiPolygon.Polygons.Select(polygon => WriteGeometry(polygon, hasZ, writeType: true))]);
+                table.AddTables(FlatGeobufFormat.GeometryParts, [.. multiPolygon.Polygons.Select(polygon => WriteGeometry(polygon, dimensions, writeType: true))]);
                 break;
 
             case GeoGeometryCollection collection:
-                table.AddTables(FlatGeobufFormat.GeometryParts, [.. collection.Geometries.Select(part => WriteGeometry(part, hasZ, writeType: true))]);
+                table.AddTables(FlatGeobufFormat.GeometryParts, [.. collection.Geometries.Select(part => WriteGeometry(part, dimensions, writeType: true))]);
                 break;
         }
 
@@ -155,9 +161,9 @@ internal static class FlatGeobufWriter
         return table;
     }
 
-    private static void AddParts(FlatBufferTableBuilder table, IReadOnlyList<IReadOnlyList<GeoPosition>> parts, bool hasZ)
+    private static void AddParts(FlatBufferTableBuilder table, IReadOnlyList<IReadOnlyList<GeoPosition>> parts, FlatGeobufDimensions dimensions)
     {
-        AddPositions(table, [.. parts.SelectMany(part => part)], hasZ);
+        AddPositions(table, [.. parts.SelectMany(part => part)], dimensions);
 
         // One part needs no ends
         if (parts.Count > 1)
@@ -174,7 +180,7 @@ internal static class FlatGeobufWriter
         }
     }
 
-    private static void AddPositions(FlatBufferTableBuilder table, IReadOnlyList<GeoPosition> positions, bool hasZ)
+    private static void AddPositions(FlatBufferTableBuilder table, IReadOnlyList<GeoPosition> positions, FlatGeobufDimensions dimensions)
     {
         var xy = new double[positions.Count * 2];
         for (var i = 0; i < positions.Count; i++)
@@ -184,9 +190,14 @@ internal static class FlatGeobufWriter
         }
 
         table.AddDoubles(FlatGeobufFormat.GeometryXY, xy);
-        if (hasZ)
+        if (dimensions.HasZ)
         {
             table.AddDoubles(FlatGeobufFormat.GeometryZ, [.. positions.Select(position => position.Altitude ?? 0)]);
+        }
+
+        if (dimensions.HasM)
+        {
+            table.AddDoubles(FlatGeobufFormat.GeometryM, [.. positions.Select(position => position.Measure ?? double.NaN)]);
         }
     }
 

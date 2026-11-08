@@ -85,6 +85,75 @@ public sealed class GeometryTests
     }
 
     [Fact]
+    public void Position_MeasureAndTime()
+    {
+        #region Geo_PositionMeasureAndTime
+        // The measure and the time are optional, set with an object initializer
+        var position = new GeoPosition(Longitude: 2.35, Latitude: 48.86, Altitude: 35)
+        {
+            Measure = 1250,
+            Time = new DateTimeOffset(2024, 9, 1, 7, 0, 0, TimeSpan.Zero),
+        };
+
+        // A with expression keeps the values it does not set
+        var moved = position with { Longitude = 2.36 };
+        Assert.Equal(1250, moved.Measure);
+        Assert.Equal(position.Time, moved.Time);
+        Assert.Null(new GeoPosition(2.35, 48.86).Time);
+        #endregion
+
+        Assert.Equal(35, position.Altitude);
+        Assert.Equal(new GeoPosition(2.35, 48.86, 35), position with { Measure = null, Time = null });
+        Assert.Null((position with { Altitude = null }).Altitude);
+        Assert.Equal(1250, (position with { Altitude = null }).Measure);
+        Assert.NotEqual(position, position with { Measure = 0 });
+        Assert.NotEqual(new GeoPosition(1, 2), new GeoPosition(1, 2) { Measure = 0 });
+        Assert.NotEqual(new GeoPosition(1, 2), new GeoPosition(1, 2) { Time = DateTimeOffset.MinValue });
+        Assert.NotEqual(new GeoPosition(1, 2), new GeoPosition(1, 2, 0));
+
+        // The times are compared as instants, as DateTimeOffset does, and keep their offset
+        var local = position with { Time = new DateTimeOffset(2024, 9, 1, 9, 0, 0, TimeSpan.FromHours(2)) };
+        Assert.Equal(position, local);
+        Assert.Equal(position.GetHashCode(), local.GetHashCode());
+        Assert.Equal(TimeSpan.FromHours(2), local.Time!.Value.Offset);
+        Assert.Equal(new DateTimeOffset(2024, 9, 1, 9, 0, 0, TimeSpan.FromHours(2)).Ticks, local.Time.Value.Ticks);
+
+        var (longitude, latitude, altitude) = position;
+        Assert.Equal((2.35, 48.86, 35.0), (longitude, latitude, altitude!.Value));
+        Assert.Equal("GeoPosition { Longitude = 1, Latitude = 2, Altitude = , Measure = 3, Time =  }", (new GeoPosition(1, 2) { Measure = 3 }).ToString());
+
+        // The optional values do not use Nullable<T> fields, so a position stays small
+        Assert.True(System.Runtime.CompilerServices.Unsafe.SizeOf<GeoPosition>() <= 48);
+    }
+
+    [Fact]
+    public void Operations_KeepMeasuresAndTimes()
+    {
+        var start = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var line = new GeoLineString(
+        [
+            new GeoPosition(0, 0, 0) { Measure = 0, Time = start },
+            new GeoPosition(10, 0, 100) { Measure = 10, Time = start.AddMinutes(10) },
+            new GeoPosition(10, 0.0001, 100) { Measure = 11, Time = start.AddMinutes(11) },
+            new GeoPosition(20, 0) { Measure = 20, Time = start.AddMinutes(20) },
+        ]);
+
+        // The position where the line leaves the box gets interpolated values; the altitude needs both ends to have one
+        var clipped = Assert.IsType<GeoLineString>(line.Clip(new GeoBounds(-1, -1, 5, 1)));
+        Assert.Equal([line.Positions[0], new GeoPosition(5, 0, 50) { Measure = 5, Time = start.AddMinutes(5) }], clipped.Positions);
+        var end = Assert.IsType<GeoLineString>(line.Clip(new GeoBounds(15, -1, 25, 1))).Positions[0];
+        Assert.Equal(new GeoPosition(15, 0.00005) { Measure = 15.5, Time = start.AddMinutes(15.5) }, end);
+
+        // The positions that are kept keep their values
+        Assert.Equal([line.Positions[0], line.Positions[3]], Assert.IsType<GeoLineString>(line.Simplify(0.01)).Positions);
+        Assert.Equal(line.Positions, line.Transform(position => position with { Longitude = position.Longitude }).GetPositions());
+
+        // A GPS that does not move records the same location at different times: the first one is kept
+        var stop = new GeoLineString([new GeoPosition(0, 0) { Time = start }, new GeoPosition(0, 0) { Time = start.AddMinutes(1) }, new GeoPosition(1, 1) { Time = start.AddMinutes(2) }]);
+        Assert.Equal([stop.Positions[0], stop.Positions[2]], Assert.IsType<GeoLineString>(stop.MakeValid()).Positions);
+    }
+
+    [Fact]
     public void Constructors_RejectNull()
     {
         Assert.Throws<ArgumentNullException>(() => new GeoLineString(null!));

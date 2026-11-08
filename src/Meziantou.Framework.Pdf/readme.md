@@ -34,7 +34,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
   (`PdfContentBuilder.DrawTextBox`), pages moved, duplicated, removed and imported from other documents (merging), a
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), positioned
-  text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), image extraction
+  text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
+  layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
   (`PdfPage.GetImages`), interactive forms read, filled and flattened (`PdfDocument.Form`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
@@ -551,8 +552,8 @@ specification says; a content stream that cannot be decoded throws when its data
   embedded. The save checks what the conformance levels require of the document as a whole; the
   content (the order of the structure, the colors of the annotations of PDF/A-1, the values of the numbers) follows
   the other rules of the level.
-- The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
-  not detect columns. The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
+- The text extraction follows the order of the content, or finds the columns from the blank spaces of the page
+  (`PdfTextReadingOrder.Layout`, read from left to right). The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
   text, but not their CIDs: their glyphs get the default width of the font.
 - The API reads, fills and flattens the fields of interactive forms, but does not create them. The text boxes break the
   lines at the spaces, without the Unicode line breaking rules nor hyphenation.

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Geo.Internals;
 
 namespace Meziantou.Framework.Geo;
@@ -79,6 +80,39 @@ public static class FlatGeobuf
     /// <exception cref="FormatException">The data is not valid FlatGeobuf, or has a geometry that is not supported.</exception>
     public static GeoFeatureCollection Read(ReadOnlySpan<byte> data, FlatGeobufReaderOptions? options = null) => FlatGeobufReader.Read(data, options?.Bounds);
 
+    /// <summary>
+    /// Reads the features of a FlatGeobuf file one at a time, with bounded memory: only the feature being read is kept in
+    /// memory. With <see cref="FlatGeobufReaderOptions.Bounds"/> and a spatial index, only the nodes of the index that the
+    /// search visits and the features it finds are read from the file.
+    /// </summary>
+    /// <param name="path">The path of the file.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <param name="cancellationToken">The token to cancel the reading.</param>
+    /// <returns>The features, in the order of the file. The file is opened when the enumeration starts, and closed when it ends.</returns>
+    /// <exception cref="FormatException">The file is not valid FlatGeobuf, or has a geometry that is not supported. The features read before the error are returned first.</exception>
+    public static IAsyncEnumerable<GeoFeature> ReadFeaturesAsync(string path, FlatGeobufReaderOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        return ReadFileFeaturesAsync(path, options?.Bounds, cancellationToken);
+    }
+
+    /// <summary>
+    /// Reads the features of FlatGeobuf data from a stream, one at a time, with bounded memory: only the feature being read
+    /// is kept in memory. With <see cref="FlatGeobufReaderOptions.Bounds"/>, a spatial index and a seekable stream, only
+    /// the nodes of the index that the search visits and the features it finds are read; a stream that cannot seek is read
+    /// to its end, and the features outside of the box are skipped.
+    /// </summary>
+    /// <param name="stream">The data. It is read from its current position as the features are enumerated, and left open.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <param name="cancellationToken">The token to cancel the reading.</param>
+    /// <returns>The features, in the order of the data.</returns>
+    /// <exception cref="FormatException">The data is not valid FlatGeobuf, or has a geometry that is not supported. The features read before the error are returned first.</exception>
+    public static IAsyncEnumerable<GeoFeature> ReadFeaturesAsync(Stream stream, FlatGeobufReaderOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        return FlatGeobufStreamReader.ReadAsync(stream, options?.Bounds, cancellationToken);
+    }
+
     /// <summary>Writes features as a FlatGeobuf file, replacing the existing one.</summary>
     /// <param name="features">The features.</param>
     /// <param name="path">The path of the file.</param>
@@ -104,6 +138,18 @@ public static class FlatGeobuf
         ArgumentNullException.ThrowIfNull(stream);
         GeoValidation.EnsureFinite(features, nameof(features));
         FlatGeobufWriter.Write(features, stream, options ?? new FlatGeobufWriterOptions());
+    }
+
+    private static async IAsyncEnumerable<GeoFeature> ReadFileFeaturesAsync(string path, GeoBounds? bounds, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, FileOptions.Asynchronous);
+        await using (stream.ConfigureAwait(false))
+        {
+            await foreach (var feature in FlatGeobufStreamReader.ReadAsync(stream, bounds, cancellationToken).ConfigureAwait(false))
+            {
+                yield return feature;
+            }
+        }
     }
 
     /// <summary>Writes features as FlatGeobuf data.</summary>

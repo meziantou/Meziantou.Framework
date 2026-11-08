@@ -149,6 +149,21 @@ internal static class FontTags
     /// <summary>The tag of the 'MATH' table.</summary>
     public const uint Math = ((uint)'M' << 24) | ((uint)'A' << 16) | ((uint)'T' << 8) | 'H';
 
+    /// <summary>The tag of the 'morx' table (Apple Advanced Typography).</summary>
+    public const uint Morx = ((uint)'m' << 24) | ((uint)'o' << 16) | ((uint)'r' << 8) | 'x';
+
+    /// <summary>The tag of the 'kerx' table (Apple Advanced Typography).</summary>
+    public const uint Kerx = ((uint)'k' << 24) | ((uint)'e' << 16) | ((uint)'r' << 8) | 'x';
+
+    /// <summary>The tag of the 'feat' table (Apple Advanced Typography).</summary>
+    public const uint Feat = ((uint)'f' << 24) | ((uint)'e' << 16) | ((uint)'a' << 8) | 't';
+
+    /// <summary>The tag of the 'trak' table (Apple Advanced Typography).</summary>
+    public const uint Trak = ((uint)'t' << 24) | ((uint)'r' << 16) | ((uint)'a' << 8) | 'k';
+
+    /// <summary>The tag of the 'ankr' table (Apple Advanced Typography).</summary>
+    public const uint Ankr = ((uint)'a' << 24) | ((uint)'n' << 16) | ((uint)'k' << 8) | 'r';
+
     // Axes of a variable font
     /// <summary>The tag 'wght' of the weight axis of a variable font.</summary>
     public const uint WeightAxis = ((uint)'w' << 24) | ((uint)'g' << 16) | ((uint)'h' << 8) | 't';

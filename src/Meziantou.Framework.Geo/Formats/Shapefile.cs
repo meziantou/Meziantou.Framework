@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Meziantou.Framework.Geo.Internals;
 
@@ -152,6 +153,59 @@ public static class Shapefile
         return ReadZipCore(zip, layerName, options);
     }
 
+    /// <summary>
+    /// Reads the features of a shapefile one at a time, with bounded memory: the <c>.shp</c> file and, when they exist,
+    /// the <c>.dbf</c>, <c>.cpg</c> and <c>.prj</c> files of the same name, whatever the case of their extension. The
+    /// records are read as the features are enumerated, and only the record being read is kept in memory.
+    /// </summary>
+    /// <param name="shpPath">The path of the <c>.shp</c> file.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <param name="cancellationToken">The token to cancel the reading.</param>
+    /// <returns>The features, as <see cref="Read(string, ShapefileReaderOptions?)"/> reads them. The files are opened when the enumeration starts, and closed when it ends.</returns>
+    /// <exception cref="FormatException">A file is not valid, or <see cref="ShapefileReaderOptions.TransformToWgs84"/> is set and the <c>.prj</c> file is not valid. The features read before the error are returned first.</exception>
+    /// <exception cref="NotSupportedException"><see cref="ShapefileReaderOptions.TransformToWgs84"/> is set and the projection of the <c>.prj</c> file is not supported.</exception>
+    public static IAsyncEnumerable<GeoFeature> ReadFeaturesAsync(string shpPath, ShapefileReaderOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(shpPath);
+        return ReadFeaturesFromFilesAsync(shpPath, options, cancellationToken);
+    }
+
+    /// <summary>Reads the features of a shapefile from streams, one at a time, with bounded memory.</summary>
+    /// <param name="shp">The content of the <c>.shp</c> file. It is read as the features are enumerated, and left open.</param>
+    /// <param name="dbf">The content of the <c>.dbf</c> file, or <see langword="null"/> to read the geometries only. It is read as the features are enumerated, and left open.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults. Without a <c>.cpg</c> file, the encoding comes from the options or from the <c>.dbf</c> header.</param>
+    /// <param name="cancellationToken">The token to cancel the reading.</param>
+    /// <returns>The features, as <see cref="Read(Stream, Stream?, ShapefileReaderOptions?)"/> reads them.</returns>
+    /// <exception cref="FormatException">A file is not valid. The features read before the error are returned first.</exception>
+    public static IAsyncEnumerable<GeoFeature> ReadFeaturesAsync(Stream shp, Stream? dbf, ShapefileReaderOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(shp);
+        return ReadFeaturesCoreAsync(shp, dbf, codePage: null, sourceSystem: null, options, cancellationToken);
+    }
+
+    /// <summary>
+    /// Reads the features of the shapefile of a <c>.zip</c> archive one at a time, with bounded memory: the files are
+    /// decompressed as the features are enumerated.
+    /// </summary>
+    /// <param name="zip">The archive. It must be seekable, to read the directory at its end. It is left open.</param>
+    /// <param name="layerName">The name of the <c>.shp</c> file, without its extension, ignoring the case, such as <c>roads</c> or <c>data/roads</c>, or <see langword="null"/> when the archive has one shapefile.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <param name="cancellationToken">The token to cancel the reading.</param>
+    /// <returns>The features, as <see cref="ReadZip(Stream, ShapefileReaderOptions?)"/> reads them.</returns>
+    /// <exception cref="ArgumentException">The archive has no <c>.shp</c> file named <paramref name="layerName"/>.</exception>
+    /// <exception cref="FormatException">The archive is not valid, has no <c>.shp</c> file, or several ones and no <paramref name="layerName"/>, or a file is not valid.</exception>
+    /// <exception cref="NotSupportedException"><see cref="ShapefileReaderOptions.TransformToWgs84"/> is set and the projection of the <c>.prj</c> file is not supported.</exception>
+    public static IAsyncEnumerable<GeoFeature> ReadZipFeaturesAsync(Stream zip, string? layerName = null, ShapefileReaderOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(zip);
+        if (layerName is not null)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(layerName);
+        }
+
+        return ReadZipFeaturesCoreAsync(zip, layerName, options, cancellationToken);
+    }
+
     /// <summary>Writes features as a shapefile: the <c>.shp</c>, <c>.shx</c>, <c>.dbf</c>, <c>.cpg</c> and <c>.prj</c> files, replacing the existing ones.</summary>
     /// <param name="features">The features.</param>
     /// <param name="shpPath">The path of the <c>.shp</c> file. The other files get the same name, with their extension.</param>
@@ -282,7 +336,7 @@ public static class Shapefile
             return features;
         }
 
-        var attributes = new DbaseReader(dbf, options?.Encoding, codePage);
+        var attributes = DbaseReader.Create(dbf, options?.Encoding, codePage);
         var hasShapes = true;
         for (var i = 0; i < attributes.RecordCount; i++)
         {
@@ -298,45 +352,188 @@ public static class Shapefile
         return features;
     }
 
+    private static async IAsyncEnumerable<GeoFeature> ReadFeaturesFromFilesAsync(string shpPath, ShapefileReaderOptions? options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var fullPath = Path.GetFullPath(shpPath);
+        var directory = Path.GetDirectoryName(fullPath)!;
+        var name = Path.GetFileNameWithoutExtension(fullPath);
+        string? codePage = null;
+        if (FindSibling(directory, name, ".cpg") is { } cpgPath)
+        {
+            var cpg = File.OpenRead(cpgPath);
+            await using (cpg.ConfigureAwait(false))
+            {
+                codePage = await ReadCodePageAsync(cpg, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        string? projection = null;
+        if (FindSibling(directory, name, ".prj") is { } prjPath)
+        {
+            var prj = File.OpenRead(prjPath);
+            await using (prj.ConfigureAwait(false))
+            {
+                projection = await ReadSmallTextAsync(prj, MaxProjectionFileLength, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        var sourceSystem = GetSourceSystem(projection, options);
+        var dbfPath = FindSibling(directory, name, ".dbf");
+        var shp = OpenAsyncRead(fullPath);
+        await using (shp.ConfigureAwait(false))
+        {
+            // Stream.Null stands for a missing .dbf file, so that both streams are disposed the same way
+            var dbf = dbfPath is null ? Stream.Null : OpenAsyncRead(dbfPath);
+            await using (dbf.ConfigureAwait(false))
+            {
+                await foreach (var feature in ReadFeaturesCoreAsync(shp, dbfPath is null ? null : dbf, codePage, sourceSystem, options, cancellationToken).ConfigureAwait(false))
+                {
+                    yield return feature;
+                }
+            }
+        }
+
+        static FileStream OpenAsyncRead(string path) => new(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+    }
+
+    private static async IAsyncEnumerable<GeoFeature> ReadFeaturesCoreAsync(Stream shp, Stream? dbf, string? codePage, CoordinateReferenceSystem? sourceSystem, ShapefileReaderOptions? options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var shapes = await ShapefileShapeReader.CreateAsync(shp, cancellationToken).ConfigureAwait(false);
+        if (dbf is null)
+        {
+            while (await shapes.TryReadAsync(cancellationToken).ConfigureAwait(false) is (true, var geometry))
+            {
+                yield return new GeoFeature(Transform(geometry, sourceSystem));
+            }
+
+            yield break;
+        }
+
+        var attributes = await DbaseReader.CreateAsync(dbf, options?.Encoding, codePage, cancellationToken).ConfigureAwait(false);
+        var hasShapes = true;
+        for (var i = 0; i < attributes.RecordCount; i++)
+        {
+            var (properties, deleted) = await attributes.ReadAsync(cancellationToken).ConfigureAwait(false);
+            GeoGeometry? geometry = null;
+            if (hasShapes)
+            {
+                (hasShapes, geometry) = await shapes.TryReadAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (!deleted)
+            {
+                yield return new GeoFeature(Transform(geometry, sourceSystem), properties);
+            }
+        }
+    }
+
+    private static async IAsyncEnumerable<GeoFeature> ReadZipFeaturesCoreAsync(Stream zip, string? layerName, ShapefileReaderOptions? options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        ZipArchive? archive = null;
+        Stream? shp = null;
+        Stream? dbf = null;
+        IAsyncEnumerator<GeoFeature>? features = null;
+        string? codePage = null;
+        string? projection = null;
+        try
+        {
+            try
+            {
+                archive = await ZipArchive.CreateAsync(zip, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null, cancellationToken).ConfigureAwait(false);
+                var (shpEntry, dbfEntry, cpgEntry, prjEntry) = FindEntries(archive, layerName);
+                if (cpgEntry is not null)
+                {
+                    var cpg = await cpgEntry.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    await using (cpg.ConfigureAwait(false))
+                    {
+                        codePage = await ReadCodePageAsync(cpg, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+
+                if (prjEntry is not null)
+                {
+                    var prj = await prjEntry.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    await using (prj.ConfigureAwait(false))
+                    {
+                        projection = await ReadSmallTextAsync(prj, MaxProjectionFileLength, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+
+                shp = await shpEntry.OpenAsync(cancellationToken).ConfigureAwait(false);
+                if (dbfEntry is not null)
+                {
+                    dbf = await dbfEntry.OpenAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+            }
+            catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
+            {
+                throw ToZipFormatException(ex);
+            }
+
+            // Outside of the try block: an unsupported projection is a NotSupportedException, not an invalid archive
+            var sourceSystem = GetSourceSystem(projection, options);
+            features = ReadFeaturesCoreAsync(shp, dbf, codePage, sourceSystem, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
+
+            while (true)
+            {
+                try
+                {
+                    if (!await features.MoveNextAsync().ConfigureAwait(false))
+                        break;
+                }
+                catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
+                {
+                    throw ToZipFormatException(ex);
+                }
+
+                yield return features.Current;
+            }
+        }
+        finally
+        {
+            if (features is not null)
+            {
+                await features.DisposeAsync().ConfigureAwait(false);
+            }
+
+            if (dbf is not null)
+            {
+                await dbf.DisposeAsync().ConfigureAwait(false);
+            }
+
+            if (shp is not null)
+            {
+                await shp.DisposeAsync().ConfigureAwait(false);
+            }
+
+            if (archive is not null)
+            {
+                await archive.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static FormatException ToZipFormatException(Exception exception) => exception is NotSupportedException
+        ? new FormatException("The zip archive has an entry that cannot be read, such as an encrypted entry: " + exception.Message, exception)
+        : new FormatException("The archive is not a valid zip file: " + exception.Message, exception);
+
     private static GeoFeatureCollection ReadZipCore(Stream zip, string? layerName, ShapefileReaderOptions? options)
     {
         try
         {
             using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: true);
 
-            // The metadata of the macOS archiver (__MACOSX/, ._name) are not shapefiles
-            var shpEntries = archive.Entries
-                .Where(entry => entry.FullName.EndsWith(".shp", StringComparison.OrdinalIgnoreCase) && !entry.FullName.StartsWith("__MACOSX/", StringComparison.Ordinal) && !entry.Name.StartsWith("._", StringComparison.Ordinal))
-                .ToList();
-            if (shpEntries.Count is 0)
-                throw new FormatException("The archive has no .shp file.");
-
-            ZipArchiveEntry shpEntry;
-            if (layerName is null)
-            {
-                if (shpEntries.Count > 1)
-                    throw new FormatException($"The archive has several shapefiles ({string.Join(", ", shpEntries.Select(entry => entry.FullName))}): give the name of the one to read.");
-
-                shpEntry = shpEntries[0];
-            }
-            else
-            {
-                shpEntry = shpEntries.Find(entry => string.Equals(entry.FullName[..^4], layerName, StringComparison.OrdinalIgnoreCase))
-                    ?? shpEntries.Find(entry => string.Equals(entry.Name[..^4], layerName, StringComparison.OrdinalIgnoreCase))
-                    ?? throw new ArgumentException($"The archive has no shapefile named '{layerName}'; it has: {string.Join(", ", shpEntries.Select(entry => entry.FullName))}.", nameof(layerName));
-            }
-
-            var basePath = shpEntry.FullName[..^4];
-            var dbfEntry = FindEntry(archive, basePath + ".dbf");
+            var (shpEntry, dbfEntry, cpgEntry, prjEntry) = FindEntries(archive, layerName);
             string? codePage = null;
-            if (FindEntry(archive, basePath + ".cpg") is { } cpgEntry)
+            if (cpgEntry is not null)
             {
                 using var cpg = cpgEntry.Open();
                 codePage = ReadCodePage(cpg);
             }
 
             string? projection = null;
-            if (FindEntry(archive, basePath + ".prj") is { } prjEntry)
+            if (prjEntry is not null)
             {
                 using var prj = prjEntry.Open();
                 projection = ReadSmallText(prj);
@@ -358,6 +555,34 @@ public static class Shapefile
         }
     }
 
+    private static (ZipArchiveEntry Shp, ZipArchiveEntry? Dbf, ZipArchiveEntry? Cpg, ZipArchiveEntry? Prj) FindEntries(ZipArchive archive, string? layerName)
+    {
+        // The metadata of the macOS archiver (__MACOSX/, ._name) are not shapefiles
+        var shpEntries = archive.Entries
+            .Where(entry => entry.FullName.EndsWith(".shp", StringComparison.OrdinalIgnoreCase) && !entry.FullName.StartsWith("__MACOSX/", StringComparison.Ordinal) && !entry.Name.StartsWith("._", StringComparison.Ordinal))
+            .ToList();
+        if (shpEntries.Count is 0)
+            throw new FormatException("The archive has no .shp file.");
+
+        ZipArchiveEntry shpEntry;
+        if (layerName is null)
+        {
+            if (shpEntries.Count > 1)
+                throw new FormatException($"The archive has several shapefiles ({string.Join(", ", shpEntries.Select(entry => entry.FullName))}): give the name of the one to read.");
+
+            shpEntry = shpEntries[0];
+        }
+        else
+        {
+            shpEntry = shpEntries.Find(entry => string.Equals(entry.FullName[..^4], layerName, StringComparison.OrdinalIgnoreCase))
+                ?? shpEntries.Find(entry => string.Equals(entry.Name[..^4], layerName, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ArgumentException($"The archive has no shapefile named '{layerName}'; it has: {string.Join(", ", shpEntries.Select(entry => entry.FullName))}.", nameof(layerName));
+        }
+
+        var basePath = shpEntry.FullName[..^4];
+        return (shpEntry, FindEntry(archive, basePath + ".dbf"), FindEntry(archive, basePath + ".cpg"), FindEntry(archive, basePath + ".prj"));
+    }
+
     private static ZipArchiveEntry? FindEntry(ZipArchive archive, string fullName) =>
         archive.GetEntry(fullName) ?? archive.Entries.FirstOrDefault(entry => string.Equals(entry.FullName, fullName, StringComparison.OrdinalIgnoreCase));
 
@@ -371,6 +596,28 @@ public static class Shapefile
         var options = new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = false };
         return Directory.EnumerateFiles(directory, name + ".*", options).FirstOrDefault(file => string.Equals(Path.GetFileName(file), name + extension, StringComparison.OrdinalIgnoreCase));
     }
+
+    private static ValueTask<string> ReadCodePageAsync(Stream stream, CancellationToken cancellationToken) => ReadSmallTextAsync(stream, MaxCodePageFileLength, cancellationToken);
+
+    private static async ValueTask<string> ReadSmallTextAsync(Stream stream, int maxLength, CancellationToken cancellationToken)
+    {
+        var buffer = new byte[maxLength];
+        var length = await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+        return Encoding.UTF8.GetString(buffer, 0, length).TrimStart('\uFEFF').Trim();
+    }
+
+    // The coordinate reference system to convert the geometries from, as ReadCore does: null to keep the coordinates of the file
+    private static CoordinateReferenceSystem? GetSourceSystem(string? projection, ShapefileReaderOptions? options)
+    {
+        if (projection is null || options?.TransformToWgs84 is not true)
+            return null;
+
+        var crs = CoordinateReferenceSystem.ParseWkt(projection);
+        return ReferenceEquals(crs, CoordinateReferenceSystem.Wgs84) ? null : crs;
+    }
+
+    private static GeoGeometry? Transform(GeoGeometry? geometry, CoordinateReferenceSystem? sourceSystem) =>
+        sourceSystem is null || geometry is null ? geometry : geometry.Transform(sourceSystem, CoordinateReferenceSystem.Wgs84);
 
     private static string ReadCodePage(Stream stream) => ReadSmallText(stream, MaxCodePageFileLength);
 

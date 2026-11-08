@@ -8,6 +8,7 @@ using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Png;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
+using Meziantou.Framework.Imaging.Tests.Codecs;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -656,6 +657,141 @@ public sealed class PngEncoderTests
         var reference = ReferencePng.Parse(png);
         Assert.Equal(["IHDR", "iCCP", "pHYs", "eXIf", "tEXt", "PLTE", "tRNS", "IDAT", "IEND"], reference.ChunkTypes);
         Assert.Equal(image.Metadata.IccProfile.Data.ToArray(), EncodedFieldInspector.Inspect("png", png).Icc!.Value.ToArray());
+    }
+
+    [Fact]
+    public void UnknownAncillaryChunksAreReadWithTheirPosition()
+    {
+        var palette = new byte[] { 255, 0, 0, 0, 0, 255 };
+        var data = new SyntheticImages.PngBuilder().Header(2, 2)
+            .Chunk("prVw", [1, 2])
+            .Chunk("gAMA", [0, 0, 0xB1, 0x8F])
+            .Chunk("PLTE", palette)
+            .Chunk("abCd", [3])
+            .Chunk("pHYs", [0, 0, 0, 1, 0, 0, 0, 1, 0])
+            .Chunk("pHYs", [0, 0, 0, 2, 0, 0, 0, 2, 0])
+            .Chunk("xxxx", [9])
+            .ImageData(2, 2)
+            .Chunk("tIME", [7, 234, 1, 2, 3, 4, 5])
+            .End().ToArray();
+        PngChunk[] expected =
+        [
+            new("prVw", new MetadataBlob([1, 2]), PngChunkPosition.BeforePalette),
+            new("gAMA", new MetadataBlob([0, 0, 0xB1, 0x8F]), PngChunkPosition.BeforePalette),
+            new("abCd", new MetadataBlob([3]), PngChunkPosition.BeforeImageData),
+            new("tIME", new MetadataBlob([7, 234, 1, 2, 3, 4, 5]), PngChunkPosition.AfterImageData),
+        ];
+
+        // Without palette, the chunks before the image data are read as such
+        var withoutPalette = new SyntheticImages.PngBuilder().Header(2, 2).Chunk("prVw", [1, 2]).ImageData(2, 2).End().ToArray();
+        Assert.Equal([new PngChunk("prVw", new MetadataBlob([1, 2]))], Image.Identify(withoutPalette).Metadata.PngChunks);
+
+        // A duplicate pHYs is skipped as before, and a chunk with the reserved bit set does not conform: neither is kept
+        using var image = Image.Load<Rgba32>(data);
+        Assert.Equal(expected, image.Metadata.PngChunks);
+        Assert.Equal(expected, Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }).Metadata.PngChunks);
+        Assert.Equal(expected[..3], Image.Identify(data).Metadata.PngChunks);
+        Assert.True(expected[0].IsSafeToCopy);
+        Assert.True(expected[0].IsPrivate);
+        Assert.False(expected[1].IsSafeToCopy);
+        Assert.False(expected[1].IsPrivate);
+
+        // The chunks are buffered metadata
+        var limits = new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = 6 } } };
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, limits)).Kind);
+    }
+
+    [Theory]
+    [InlineData(PngOptimization.None, PngPixelLayout.Auto)]
+    [InlineData(PngOptimization.None, PngPixelLayout.Indexed)]
+    [InlineData(PngOptimization.MinimumSize, PngPixelLayout.Indexed)]
+    [InlineData(PngOptimization.Layout, PngPixelLayout.Indexed)]
+    public void SafeToCopyChunksAreWrittenAtTheirPosition(PngOptimization optimization, PngPixelLayout layout)
+    {
+        using var image = CreateWithColors(PixelFormat.Rgba32, 6, 5, colors: 7, seed: 9);
+        image.Metadata.TextEntries.Add(new ImageTextEntry("Title", "Chunks"));
+        image.Metadata.PngChunks.Add(new PngChunk("prVw", new MetadataBlob([1, 2]), PngChunkPosition.BeforePalette));
+        image.Metadata.PngChunks.Add(new PngChunk("gAMA", new MetadataBlob([0, 0, 0xB1, 0x8F]), PngChunkPosition.BeforePalette));
+        image.Metadata.PngChunks.Add(new PngChunk("abCd", new MetadataBlob([3])));
+        image.Metadata.PngChunks.Add(new PngChunk("loGo", new MetadataBlob([4, 5]), PngChunkPosition.AfterImageData));
+        image.Metadata.PngChunks.Add(new PngChunk("tIME", new MetadataBlob([7, 234, 1, 2, 3, 4, 5]), PngChunkPosition.AfterImageData));
+
+        // The chunks that depend on the image data are not copied unless the caller says they still describe it
+        var png = Encode(image, new PngEncoder { Optimization = optimization, PixelLayout = layout });
+        string[] palette = layout == PngPixelLayout.Indexed ? ["PLTE", "tRNS"] : [];
+        Assert.Equal(["IHDR", "tEXt", "prVw", .. palette, "abCd", "IDAT", "loGo", "IEND"], ReferencePng.Parse(png).ChunkTypes.Distinct());
+        using (var decoded = Image.Load(png))
+        {
+            Assert.Equal([Read(image.Metadata.PngChunks[0]), image.Metadata.PngChunks[2], image.Metadata.PngChunks[3]], decoded.Metadata.PngChunks);
+        }
+
+        png = Encode(image, new PngEncoder { Optimization = optimization, PixelLayout = layout, WriteUnsafeToCopyChunks = true });
+        Assert.Equal(["IHDR", "tEXt", "prVw", "gAMA", .. palette, "abCd", "IDAT", "loGo", "tIME", "IEND"], ReferencePng.Parse(png).ChunkTypes.Distinct());
+        using (var decoded = Image.Load(png))
+        {
+            Assert.Equal(image.Metadata.PngChunks.Select(Read), decoded.Metadata.PngChunks);
+        }
+
+        // Strip writes none, and the other formats have no raw chunks
+        Assert.DoesNotContain("abCd", ReferencePng.Parse(Encode(image, new PngEncoder { MetadataHandling = MetadataHandling.Strip })).ChunkTypes);
+        image.Metadata.TextEntries.Clear();
+        using var stream = new MemoryStream();
+        image.Save(stream, new WebPEncoder());
+
+        // A file without palette has nothing to place a chunk before: its chunks are read before the image data
+        PngChunk Read(PngChunk chunk) => layout == PngPixelLayout.Indexed || chunk.Position != PngChunkPosition.BeforePalette ? chunk : new PngChunk(chunk.Type, chunk.Data, PngChunkPosition.BeforeImageData);
+    }
+
+    [Fact]
+    public void ChunksAfterTheImageDataFollowTheLastFrameOfAnAnimation()
+    {
+        using var image = CreateWithColors(PixelFormat.Rgba32, 4, 3, colors: 5, seed: 2);
+        image.AppendFrame();
+        image.Metadata.PngChunks.Add(new PngChunk("abCd", new MetadataBlob([1])));
+        image.Metadata.PngChunks.Add(new PngChunk("loGo", new MetadataBlob([2]), PngChunkPosition.AfterImageData));
+        var png = Encode(image, new PngEncoder());
+        var types = ReferencePng.Parse(png).ChunkTypes;
+        Assert.Equal(["IHDR", "acTL", "abCd", "fcTL", "IDAT", "fcTL", "fdAT", "loGo", "IEND"], types);
+        using var decoded = Image.Load(png);
+        Assert.Equal(image.Metadata.PngChunks, decoded.Metadata.PngChunks);
+    }
+
+    [Fact]
+    public void PrivateChunksAreReadBackWithTheirPosition()
+    {
+        using var image = new Image<Rgba32>(4, 4);
+
+        // A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
+        // PNG encoder writes it before the image data, and the decoder reads it back with its position
+        image.Metadata.PngChunks.Add(new PngChunk("myAp", new MetadataBlob("settings"u8)));
+        using var stream = new MemoryStream();
+        image.Save(stream, new PngEncoder());
+
+        using var loaded = Image.Load(stream.ToArray());
+        var chunk = Assert.Single(loaded.Metadata.PngChunks);
+        Assert.Equal("myAp", chunk.Type);
+        Assert.True(chunk.IsSafeToCopy);
+        Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
+    }
+
+    [Fact]
+    public void ChunkTypesAreValidated()
+    {
+        var data = new MetadataBlob([]);
+        Assert.Throws<ArgumentException>(() => new PngChunk("abc", data));
+        Assert.Throws<ArgumentException>(() => new PngChunk("ab1d", data));
+        Assert.Throws<ArgumentException>(() => new PngChunk("Abcd", data));
+        Assert.Throws<ArgumentException>(() => new PngChunk("abcd", data));
+        Assert.Throws<ArgumentException>(() => new PngChunk("iCCP", data));
+        Assert.Throws<ArgumentException>(() => new PngChunk("tEXt", data));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PngChunk("abCd", data, (PngChunkPosition)3));
+        Assert.Throws<ArgumentNullException>(() => new PngChunk(null!, data));
+        Assert.Throws<ArgumentNullException>(() => new PngChunk("abCd", null!));
+
+        var metadata = new ImageMetadata();
+        metadata.PngChunks.Add(new PngChunk("abCd", data));
+        Assert.Throws<ArgumentNullException>(() => metadata.PngChunks.Add(null!));
+        Assert.Equal(metadata.PngChunks, metadata.Clone().PngChunks);
     }
 
     [Fact]

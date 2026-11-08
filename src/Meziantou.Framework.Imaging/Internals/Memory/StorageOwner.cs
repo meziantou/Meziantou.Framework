@@ -102,6 +102,19 @@ internal sealed class StorageOwner
         throw new ObjectDisposedException(ObjectName);
     }
 
+    /// <summary>Attaches a storage over memory the caller owns (<see cref="PixelStorage.CreateExternal"/>). Nothing is charged.</summary>
+    /// <exception cref="ObjectDisposedException">The owner is disposed; the memory is not released.</exception>
+    internal PixelStorage AttachExternal(PixelStorageLayout layout, Memory<byte> memory, nint pointer, Action? release)
+    {
+        lock (_lock)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, ObjectName);
+            var storage = PixelStorage.CreateExternal(this, layout, memory, pointer, release);
+            _storages.Add(storage);
+            return storage;
+        }
+    }
+
     /// <exception cref="ObjectDisposedException">The owner is disposed.</exception>
     public void ThrowIfDisposed()
     {

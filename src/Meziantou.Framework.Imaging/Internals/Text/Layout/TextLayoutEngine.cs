@@ -824,8 +824,11 @@ internal sealed partial class TextLayoutEngine
         var style = item.Style;
         var isRightToLeft = (item.Level & 1) != 0;
         var features = GetFeatures(style, !_isVertical ? ShapingOrientation.Horizontal : item.IsUpright ? ShapingOrientation.Upright : ShapingOrientation.Sideways);
-        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, GetShapingCache(item.Font));
         var size = GetSize(style);
+
+        // The size of an em in pixels is the point size of the tracking of a font: CoreText, which the fonts that
+        // have one are made for, draws a point as a pixel.
+        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, GetShapingCache(item.Font), pointSize: size);
         var scale = size / item.Font.UnitsPerEm;
         var info = _buffer.Info;
         var positions = _buffer.Positions;
@@ -1053,13 +1056,13 @@ internal sealed partial class TextLayoutEngine
         var scale = size / item.Font.UnitsPerEm;
         var characterCount = _buffer.Length;
         var features = GetFeatures(style, ShapingOrientation.Combined);
-        TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, features, isVertical: false, scratch: null, GetShapingCache(item.Font));
+        TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, features, isVertical: false, scratch: null, GetShapingCache(item.Font), pointSize: size);
         var width = GetBufferWidth() * scale;
         if (width > size && characterCount is >= 2 and <= 4)
         {
             _features.Add(new ShapingFeature(WidthFeatures[characterCount - 2], 1));
             FillBuffer(item, suffix: null);
-            TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_features), isVertical: false, scratch: null, GetShapingCache(item.Font));
+            TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_features), isVertical: false, scratch: null, GetShapingCache(item.Font), pointSize: size);
             width = GetBufferWidth() * scale;
         }
 

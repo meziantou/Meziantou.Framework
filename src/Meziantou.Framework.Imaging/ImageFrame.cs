@@ -201,7 +201,7 @@ public abstract class ImageFrame
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         EnsureNotLeased();
-        encoder ??= ImageEncoder.FromPath(path);
+        encoder ??= ImageEncoder.FromPath(path, OwnerImage.Configuration);
         OwnerImage.SaveFrame(this, path, encoder);
     }
 
@@ -238,7 +238,7 @@ public abstract class ImageFrame
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         EnsureNotLeased();
-        encoder ??= ImageEncoder.FromPath(path);
+        encoder ??= ImageEncoder.FromPath(path, OwnerImage.Configuration);
         return OwnerImage.SaveFrameAsync(this, path, encoder, cancellationToken);
     }
 

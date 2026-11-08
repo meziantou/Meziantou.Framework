@@ -15,7 +15,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The GS1 Barcode Syntax Dictionary, as GS1 published it (see THIRD-PARTY-NOTICES.md) -->
+    <EmbeddedResource Include="Internal\Gs1\gs1-syntax-dictionary.txt" LogicalName="Meziantou.Framework.Barcodes.gs1-syntax-dictionary.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Barcodes.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Barcodes.Fuzz" />
   </ItemGroup>
 
 </Project>

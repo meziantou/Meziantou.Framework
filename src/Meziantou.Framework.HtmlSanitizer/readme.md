@@ -200,6 +200,30 @@ Add any attribute that a browser resolves as a URL to both sets — `action`, `f
 `UriAttributes` while leaving it in `ValidAttributes` stops its value from being checked. Removing it from
 `ValidAttributes` alone is safe, since the attribute is then dropped.
 
+### Limiting the Size of the Input
+
+`SanitizeHtmlFragment` throws an `ArgumentException` when the fragment is longer than `MaxInputLength` (1,000,000
+characters by default), or when the parser creates more elements than `MaxElementCount` (100,000 by default). A short
+fragment can create many elements: the parser recreates the open formatting elements in each new paragraph.
+
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_Limits;format=md-fenced-code-block;dedent=true -->
+```csharp
+var sanitizer = new HtmlSanitizer
+{
+    MaxInputLength = 10_000,
+    MaxElementCount = 1_000,
+};
+
+// A fragment longer than MaxInputLength is rejected before it is parsed
+Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(new string('a', 10_001)));
+
+// A short fragment can still create many elements: each paragraph recreates the open formatting elements
+var amplified = "<p>" + string.Concat(Enumerable.Range(0, 100).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 100));
+Assert.HasCountLessThan(sanitizer.MaxInputLength, amplified);
+Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(amplified));
+```
+<!-- endref -->
+
 ## Default Configuration
 
 ### Allowed Elements

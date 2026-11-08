@@ -1,0 +1,344 @@
+# GS1 Barcode Syntax Dictionary
+# -----------------------------
+#
+# Release: UNSET
+#
+# This is the GS1 Barcode Syntax Dictionary.
+#
+# Together with a set of GS1 Barcode Syntax Tests ("Linter" routines), it
+# provides a harmonised framework that can be used by encoders and decoders of
+# AI-formatted data to process such data.
+#
+# Each entry in this file provides a description for one or a range of AIs of
+# not only the data type, length and title of the AI and whether an FNC1
+# separator is required, but also a detailed breakdown of each component part
+# of the data field, and a set of key-value pairs that may facilitate
+# processing of the AIs in multiple contexts, e.g. GS1 Digital Link URIs.
+#
+# The specification is similar to that contained in the GS1 General
+# Specifications, however the data field definition is further decomposed into
+# components that can be individually validated.
+#
+# Together with a set of Linter procedures this resource can be used either
+# directly by application code or by a project's build system to generate code
+# to perform a deep validation of any message consisting of GS1 Application
+# Identifier element strings.
+#
+# It was originally conceived as a collaboration between the BWIPP and Zint
+# projects and is now maintained by GS1 AISBL.
+#
+#
+# Syntax: AIs  [Flags]  Specification  [Attributes...]  [# Title]
+#
+#   AIs: Solitary AI or a range of AIs
+#
+#   Flags:
+#
+#     Allocated from: *!?"$%&'()+,-./:;<=>@[\]^_`{|}~
+#
+#     Definitions:
+#
+#       "*" - Pre-defined length AI not requiring FNC1 separator
+#       "?" - AI that is permitted as a GS1 Digital Link data attribute
+#
+#   Specification: Consists of multiple whitespace-separated components
+#
+#     Each component: Type[,linter...]
+#
+#     Type ("N": Numeric, "X": CSET 82, "Y": CSET 39, "Z": base64url), e.g.
+#
+#       "N5"    - length == 5
+#       "N..20" - 1 <= length <= 20
+#               - Note: Only the final component may have variable length
+#       "[...]" - Optional components
+#               - Note: No mandatory components may follow optional components
+#
+#     Each Linter is the name of a reference procedure that performs content
+#     validation of the component.
+#
+#     Note: Each component of the format specification is applied to the given
+#     data, consuming prefixes of the prescribed length. Any optional
+#     components may be ignored after the given data is exhausted, otherwise
+#     they must be applied.
+#
+#   Attributes: Key-value pairs and solitary keys, for example:
+#
+#     "req=01+21,02,35nn"   - Mandatory association with one of the listed AI or pattern groups
+#                           - Note: Example means require either (01) with (21), or (02), or (35nn)
+#     "ex=8111,394n"        - Invalid to pair with any of the listed AIs or patterns
+#                           - Note: An AI is not exclusive of itself even if it matches a pattern
+#     "dlpkey"              - GS1 Digital Link primary key, no qualifiers accepted
+#     "dlpkey=22,10,21"     - As above, with ordered, optional qualifier AIs
+#                             i.e. "https://../01/../22/../10/../21/.." - valid
+#                                  "https://../01/../22/../21/.."       - valid (good order)
+#                                  "https://../01/../10/.."             - valid (good order)
+#                                  "https://../01/../10/../22/.."       - invalid (bad order)
+#     "dlpkey=22,10,21|235" - As above, but alternative sequences: "22,10,21" or "235",
+#                             i.e. "https://../01/../22/../10/../21/.."  - valid (1st alternative)
+#                                  "https://../01/../235/.."             - valid (2nd alternative)
+#                                  "https://../01/../22/../10/../235/.." - invalid (don't mix)
+#
+#     Note: Duplicated keys indicate repeated application of each instance of
+#     the key.
+#
+#     Note: Invalid and mandatory AI pairings should be evaluated over the
+#     combined data received from all GS1 carriers marking a physical item.
+#
+#   Title: Follows first "#" until end of line
+#
+# Entries are maintained in lexical order of their AI.
+#
+# Reference implementations of the Linter procedures are available here:
+#
+#   - https://ref.gs1.org/tools/gs1-barcode-syntax-resource/syntax-tests/implementation/
+#
+# A framework that demonstrates how to use the Syntax Dictionary and associated
+# Linters is provided here:
+#
+#   - https://ref.gs1.org/tools/gs1-barcode-syntax-resource/syntax-engine/
+#
+#
+# Copyright (c) 2020-2021 BWIPP project. https://bwipp.terryburton.co.uk/
+# Copyright (c) 2020-2021 Zint Project. https://zint.org.uk/
+# Copyright (c) 2021-2025 GS1 AISBL
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# AI    Flags  Specification                     Attributes                                           Title
+
+00         *?  N18,csum,gcppos2                  dlpkey                                             # SSCC
+01         *?  N14,csum,gcppos2                  ex=255,37 dlpkey=22,10,21|235                      # GTIN
+02         *?  N14,csum,gcppos2                  ex=01,03 req=37                                    # CONTENT
+03         *   N14,csum,gcppos2                  ex=01,02,37,235                                    # MTO GTIN
+10          ?  X..20                             req=01,02,03,8006,8026                             # BATCH/LOT
+11         *?  N6,yymmd0                         req=01,02,03,8006,8026                             # PROD DATE
+12         *?  N6,yymmd0                         req=8020                                           # DUE DATE
+13         *?  N6,yymmd0                         req=01,02,03,8006,8026                             # PACK DATE
+15         *?  N6,yymmd0                         req=01,02,03,8006,8026                             # BEST BEFORE or BEST BY
+16         *?  N6,yymmd0                         req=01,02,03,8006,8026                             # SELL BY
+17         *?  N6,yymmd0                         req=01,02,03,255,8006,8026                         # USE BY or EXPIRY
+20         *?  N2                                req=01,02,03,8006,8026                             # VARIANT
+21             X..20                             req=01,03,8006 ex=235                              # SERIAL
+22             X..20                             req=01                                             # CPV
+235            X..28                             req=01                                             # TPX
+240         ?  X..30                             req=01,02,03,8006,8026                             # ADDITIONAL ID
+241         ?  X..30                             req=01,02,03,8006,8026                             # CUST. PART No.
+242         ?  N..6                              req=01,02,8006,8026                                # MTO VARIANT
+243         ?  X..20                             req=01,03                                          # PCN
+250         ?  X..30                             req=01+21,03+21,8006+21                            # SECONDARY SERIAL
+251         ?  X..30                             req=01,03,8006                                     # REF. TO SOURCE
+253         ?  N13,csum,gcppos1 [X..17]          dlpkey                                             # GDTI
+254            X..20                             req=414                                            # GLN EXTENSION COMPONENT
+255         ?  N13,csum,gcppos1 [N..12]          dlpkey ex=01,02,415,8006,8020,8026                 # GCN
+30          ?  N..8                              req=01,02                                          # VAR. COUNT
+3100-3105  *?  N6                                req=01,02 ex=310n                                  # NET WEIGHT (kg)
+3110-3115  *?  N6                                req=01,02 ex=311n                                  # LENGTH (m)
+3120-3125  *?  N6                                req=01,02 ex=312n                                  # WIDTH (m)
+3130-3135  *?  N6                                req=01,02 ex=313n                                  # HEIGHT (m)
+3140-3145  *?  N6                                req=01,02 ex=314n                                  # AREA (m²)
+3150-3155  *?  N6                                req=01,02 ex=315n                                  # NET VOLUME (l)
+3160-3165  *?  N6                                req=01,02 ex=316n                                  # NET VOLUME (m³)
+3200-3205  *?  N6                                req=01,02 ex=320n                                  # NET WEIGHT (lb)
+3210-3215  *?  N6                                req=01,02 ex=321n                                  # LENGTH (in)
+3220-3225  *?  N6                                req=01,02 ex=322n                                  # LENGTH (ft)
+3230-3235  *?  N6                                req=01,02 ex=323n                                  # LENGTH (yd)
+3240-3245  *?  N6                                req=01,02 ex=324n                                  # WIDTH (in)
+3250-3255  *?  N6                                req=01,02 ex=325n                                  # WIDTH (ft)
+3260-3265  *?  N6                                req=01,02 ex=326n                                  # WIDTH (yd)
+3270-3275  *?  N6                                req=01,02 ex=327n                                  # HEIGHT (in)
+3280-3285  *?  N6                                req=01,02 ex=328n                                  # HEIGHT (ft)
+3290-3295  *?  N6                                req=01,02 ex=329n                                  # HEIGHT (yd)
+3300-3305  *?  N6                                req=00,01 ex=330n                                  # GROSS WEIGHT (kg)
+3310-3315  *?  N6                                req=00,01 ex=331n                                  # LENGTH (m), log
+3320-3325  *?  N6                                req=00,01 ex=332n                                  # WIDTH (m), log
+3330-3335  *?  N6                                req=00,01 ex=333n                                  # HEIGHT (m), log
+3340-3345  *?  N6                                req=00,01 ex=334n                                  # AREA (m²), log
+3350-3355  *?  N6                                req=00,01 ex=335n                                  # VOLUME (l), log
+3360-3365  *?  N6                                req=00,01 ex=336n                                  # VOLUME (m³), log
+3370-3375  *?  N6                                req=01    ex=337n                                  # KG PER m²
+3400-3405  *?  N6                                req=00,01 ex=340n                                  # GROSS WEIGHT (lb)
+3410-3415  *?  N6                                req=00,01 ex=341n                                  # LENGTH (in), log
+3420-3425  *?  N6                                req=00,01 ex=342n                                  # LENGTH (ft), log
+3430-3435  *?  N6                                req=00,01 ex=343n                                  # LENGTH (yd), log
+3440-3445  *?  N6                                req=00,01 ex=344n                                  # WIDTH (in), log
+3450-3455  *?  N6                                req=00,01 ex=345n                                  # WIDTH (ft), log
+3460-3465  *?  N6                                req=00,01 ex=346n                                  # WIDTH (yd), log
+3470-3475  *?  N6                                req=00,01 ex=347n                                  # HEIGHT (in), log
+3480-3485  *?  N6                                req=00,01 ex=348n                                  # HEIGHT (ft), log
+3490-3495  *?  N6                                req=00,01 ex=349n                                  # HEIGHT (yd), log
+3500-3505  *?  N6                                req=01,02 ex=350n                                  # AREA (in²)
+3510-3515  *?  N6                                req=01,02 ex=351n                                  # AREA (ft²)
+3520-3525  *?  N6                                req=01,02 ex=352n                                  # AREA (yd²)
+3530-3535  *?  N6                                req=00,01 ex=353n                                  # AREA (in²), log
+3540-3545  *?  N6                                req=00,01 ex=354n                                  # AREA (ft²), log
+3550-3555  *?  N6                                req=00,01 ex=355n                                  # AREA (yd²), log
+3560-3565  *?  N6                                req=01,02 ex=356n                                  # NET WEIGHT (tr oz)
+3570-3575  *?  N6                                req=01,02 ex=357n                                  # NET VOLUME (oz)
+3600-3605  *?  N6                                req=01,02 ex=360n                                  # NET VOLUME (qt (US))
+3610-3615  *?  N6                                req=01,02 ex=361n                                  # NET VOLUME (gal.)
+3620-3625  *?  N6                                req=00,01 ex=362n                                  # VOLUME (qt (US)), log
+3630-3635  *?  N6                                req=00,01 ex=363n                                  # VOLUME (gal (US)), log
+3640-3645  *?  N6                                req=01,02 ex=364n                                  # NET VOLUME (in³)
+3650-3655  *?  N6                                req=01,02 ex=365n                                  # NET VOLUME (ft³)
+3660-3665  *?  N6                                req=01,02 ex=366n                                  # NET VOLUME (yd³)
+3670-3675  *?  N6                                req=00,01 ex=367n                                  # VOLUME (in³), log
+3680-3685  *?  N6                                req=00,01 ex=368n                                  # VOLUME (ft³), log
+3690-3695  *?  N6                                req=00,01 ex=369n                                  # VOLUME (yd³), log
+37          ?  N..8                              req=00+02,00+8026                                  # COUNT
+3900-3909   ?  N..15                             req=255,8020 ex=390n,391n,394n,8111                # AMOUNT
+3910-3919   ?  N3,iso4217 N..15                  req=8020 ex=391n                                   # AMOUNT
+3920-3929   ?  N..15  req=01+30,01+31nn,01+32nn,01+35nn,01+36nn ex=392n,393n                        # PRICE
+3930-3939   ?  N3,iso4217 N..15                  req=30,31nn,32nn,35nn,36nn ex=393n                 # PRICE
+3940-3943   ?  N4                                req=255 ex=394n,8111                               # PRCNT OFF
+3950-3955   ?  N6  req=30,31nn,32nn,35nn,36nn ex=392n,393n,395n,8005                                # PRICE/UoM
+400         ?  X..30                                                                                # ORDER NUMBER
+401         ?  X..30,gcppos1                     dlpkey                                             # GINC
+402         ?  N17,csum,gcppos1                  dlpkey                                             # GSIN
+403         ?  X..30                             req=00                                             # ROUTE
+410        *?  N13,csum,gcppos1                                                                     # SHIP TO LOC
+411        *?  N13,csum,gcppos1                                                                     # BILL TO
+412        *?  N13,csum,gcppos1                                                                     # PURCHASE FROM
+413        *?  N13,csum,gcppos1                                                                     # SHIP FOR LOC
+414        *?  N13,csum,gcppos1                  dlpkey=254|7040                                    # LOC No.
+415        *?  N13,csum,gcppos1                  req=8020 dlpkey=8020                               # PAY TO
+416        *?  N13,csum,gcppos1                                                                     # PROD/SERV LOC
+417        *?  N13,csum,gcppos1                  dlpkey=7040                                        # PARTY
+420         ?  X..20                             ex=421                                             # SHIP TO POST
+421         ?  N3,iso3166 X..9                   ex=4307                                            # SHIP TO POST
+422         ?  N3,iso3166                        req=01,02,03,8006,8026 ex=426                      # ORIGIN
+423         ?  N3,iso3166 [N3],iso3166 [N3],iso3166 [N3],iso3166 [N3],iso3166  req=01,02,03 ex=426  # COUNTRY - INITIAL PROCESS
+424         ?  N3,iso3166                        req=01,02,03 ex=426                                # COUNTRY - PROCESS
+425         ?  N3,iso3166 [N3],iso3166 [N3],iso3166 [N3],iso3166 [N3],iso3166  req=01,02,03 ex=426  # COUNTRY - DISASSEMBLY
+426         ?  N3,iso3166                        req=01,02,03                                       # COUNTRY - FULL PROCESS
+427         ?  X..3                              req=01+422,02+422,03+422                           # ORIGIN SUBDIVISION
+4300        ?  X..35,pcenc                       req=00                                             # SHIP TO COMP
+4301        ?  X..35,pcenc                       req=00                                             # SHIP TO NAME
+4302        ?  X..70,pcenc                       req=00                                             # SHIP TO ADD1
+4303        ?  X..70,pcenc                       req=4302                                           # SHIP TO ADD2
+4304        ?  X..70,pcenc                       req=00                                             # SHIP TO SUB
+4305        ?  X..70,pcenc                       req=00                                             # SHIP TO LOC
+4306        ?  X..70,pcenc                       req=00                                             # SHIP TO REG
+4307        ?  X2,iso3166alpha2                  req=00                                             # SHIP TO COUNTRY
+4308        ?  X..30                             req=00                                             # SHIP TO PHONE
+4309        ?  N10,latitude N10,longitude        req=00                                             # SHIP TO GEO
+4310        ?  X..35,pcenc                       req=00                                             # RTN TO COMP
+4311        ?  X..35,pcenc                       req=00                                             # RTN TO NAME
+4312        ?  X..70,pcenc                       req=00                                             # RTN TO ADD1
+4313        ?  X..70,pcenc                       req=4312                                           # RTN TO ADD2
+4314        ?  X..70,pcenc                       req=00                                             # RTN TO SUB
+4315        ?  X..70,pcenc                       req=00                                             # RTN TO LOC
+4316        ?  X..70,pcenc                       req=00                                             # RTN TO REG
+4317        ?  X2,iso3166alpha2                  req=00                                             # RTN TO COUNTRY
+4318        ?  X..20                             req=00                                             # RTN TO POST
+4319        ?  X..30                             req=00                                             # RTN TO PHONE
+4320        ?  X..35,pcenc                       req=00                                             # SRV DESCRIPTION
+4321        ?  N1,yesno                          req=00                                             # DANGEROUS GOODS
+4322        ?  N1,yesno                          req=00                                             # AUTH TO LEAVE
+4323        ?  N1,yesno                          req=00                                             # SIG REQUIRED
+4324        ?  N6,yymmd0 N4,hhmi                 req=00                                             # NOT BEF DEL DT
+4325        ?  N6,yymmd0 N4,hhmi                 req=00                                             # NOT AFT DEL DT
+4326        ?  N6,yymmdd                         req=00                                             # REL DATE
+4330        ?  N6 [X1],hyphen                    req=00 ex=4331                                     # MAX TEMP F.
+4331        ?  N6 [X1],hyphen                    req=00 ex=4330                                     # MAX TEMP C.
+4332        ?  N6 [X1],hyphen                    req=00 ex=4333                                     # MIN TEMP F.
+4333        ?  N6 [X1],hyphen                    req=00 ex=4332                                     # MIN TEMP C.
+7001        ?  N13                               req=01,02,8006,8026                                # NSN
+7002        ?  X..30                             req=01,02                                          # MEAT CUT
+7003        ?  N6,yymmdd N4,hhmi                 req=01,02,03                                       # EXPIRY TIME
+7004        ?  N..4                              req=01+10,03+10                                    # ACTIVE POTENCY
+7005        ?  X..12                             req=01,02                                          # CATCH AREA
+7006        ?  N6,yymmdd                         req=01,02                                          # FIRST FREEZE DATE
+7007        ?  N6,yymmdd [N6],yymmdd             req=01,02                                          # HARVEST DATE
+7008        ?  X..3                              req=01,02                                          # AQUATIC SPECIES
+7009        ?  X..10                             req=01,02                                          # FISHING GEAR TYPE
+7010        ?  X..2                              req=01,02,03                                       # PROD METHOD
+7011        ?  N6,yymmdd [N4],hhmi               req=01,02,03                                       # TEST BY DATE
+7020        ?  X..20                             req=01+416,03+416,8006+416                         # REFURB LOT
+7021        ?  X..20                             req=01,03,8006                                     # FUNC STAT
+7022        ?  X..20                             req=01+7021,03+7021,8006+7021                      # REV STAT
+7023        ?  X..30,gcppos1                                                                        # GIAI - ASSEMBLY
+7030        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 0
+7031        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 1
+7032        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 2
+7033        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 3
+7034        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 4
+7035        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 5
+7036        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 6
+7037        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 7
+7038        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 8
+7039        ?  N3,iso3166999 X..27               req=01,02                                          # PROCESSOR # 9
+7040           N1 X1 X1 X1,importeridx                                                              # UIC+EXT
+7041           X..4,packagetype                  req=00                                             # UFRGT UNIT TYPE
+710         ?  X..20                             req=01                                             # NHRN PZN
+711         ?  X..20                             req=01                                             # NHRN CIP
+712         ?  X..20                             req=01                                             # NHRN CN
+713         ?  X..20                             req=01                                             # NHRN DRN
+714         ?  X..20                             req=01                                             # NHRN AIM
+715         ?  X..20                             req=01                                             # NHRN NDC
+716         ?  X..20                             req=01                                             # NHRN AIC
+717         ?  X..20                             req=01                                             # NHRN SRN
+7230        ?  X2 X..28                          req=01,8004                                        # CERT # 1
+7231        ?  X2 X..28                          req=01,8004                                        # CERT # 2
+7232        ?  X2 X..28                          req=01,8004                                        # CERT # 3
+7233        ?  X2 X..28                          req=01,8004                                        # CERT # 4
+7234        ?  X2 X..28                          req=01,8004                                        # CERT # 5
+7235        ?  X2 X..28                          req=01,8004                                        # CERT # 6
+7236        ?  X2 X..28                          req=01,8004                                        # CERT # 7
+7237        ?  X2 X..28                          req=01,8004                                        # CERT # 8
+7238        ?  X2 X..28                          req=01,8004                                        # CERT # 9
+7239        ?  X2 X..28                          req=01,8004                                        # CERT # 10
+7240        ?  X..20                             req=01,8006 ex=03                                  # PROTOCOL
+7241        ?  N2,mediatype                      req=8017,8018                                      # AIDC MEDIA TYPE
+7242        ?  X..25                             req=8017,8018                                      # VCN
+7250        ?  N8,yyyymmdd                       req=8018 ex=7251                                   # DOB
+7251        ?  N8,yyyymmdd N4,hhmi               req=8018 ex=7250                                   # DOB TIME
+7252        ?  N1,iso5218                        req=8018                                           # BIO SEX
+7253        ?  X..40,pcenc                       req=8017,8018 ex=7256,7259                         # FAMILY NAME
+7254        ?  X..40,pcenc                       req=8017,8018 ex=7256,7259                         # GIVEN NAME
+7255        ?  X..10                             req=8017,8018 ex=7256,7259                         # SUFFIX
+7256        ?  X..90,pcenc                       req=8017,8018                                      # FULL NAME
+7257        ?  X..70,pcenc                       req=8018                                           # PERSON ADDR
+7258        ?  X3,posinseqslash                  req=8018+7259                                      # BIRTH SEQUENCE
+7259        ?  X..40,pcenc                       req=8018 ex=7256                                   # BABY
+8001        ?  N4,nonzero N5,nonzero N3,nonzero N1,winding N1  req=01                               # DIMENSIONS
+8002        ?  X..20                                                                                # CMT No.
+8003        ?  N1,zero N13,csum,gcppos1 [X..16]  dlpkey                                             # GRAI
+8004        ?  X..30,gcppos1                     dlpkey=7040                                        # GIAI
+8005        ?  N6                                req=01,02                                          # PRICE PER UNIT
+8006        ?  N14,csum,gcppos2 N4,pieceoftotal  ex=01,03,37 dlpkey=22,10,21                        # ITIP
+8007        ?  X..34,iban                        req=415                                            # IBAN
+8008        ?  N6,yymmdd N2,hh [N2],mi [N2],ss   req=01,02,03                                       # PROD TIME
+8009        ?  X..50                             req=00,01,03                                       # OPTSEN
+8010        ?  Y..30,gcppos1                     dlpkey=8011                                        # CPID
+8011           N..12,nozeroprefix                req=8010                                           # CPID SERIAL
+8012        ?  X..20                             req=01,03,8006                                     # VERSION
+8013        ?  X..25,csumalpha,gcppos1           dlpkey                                             # GMN
+8014           X..25,csumalpha,gcppos1,hasnondigit  req=01                                          # MUDI
+8017        ?  N18,csum,gcppos1                  ex=8018 dlpkey=8019                                # GSRN - PROVIDER
+8018        ?  N18,csum,gcppos1                  ex=8017 dlpkey=8019                                # GSRN - RECIPIENT
+8019           N..10                             req=8017,8018                                      # SRIN
+8020           X..25                             req=415                                            # REF No.
+8026        ?  N14,csum,gcppos2 N4,pieceoftotal  req=37 ex=02,03,8006                               # ITIP CONTENT
+8030        ?  Z..90  req=00,01+21,03+21,253,255,8003,8004,8006+21,8010+8011,8017,8018              # DIGSIG
+8040           N15                               req=01+21                                          # IMEI
+8041           N15                               req=01+21+8040                                     # IMEI2
+8042           N32                               req=01+21+8040                                     # ESIM
+8043           N18 [N..2]                        req=01+21+8040                                     # PSIM
+8110        ?  X..70,couponcode
+8111        ?  N4                                req=255                                            # POINTS
+8112        ?  X..70,couponposoffer
+8200           X..70                             req=01                                             # PRODUCT URL
+90          ?  X..30                                                                                # INTERNAL
+91-99       ?  X..90                                                                                # INTERNAL

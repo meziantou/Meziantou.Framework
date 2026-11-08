@@ -62,6 +62,27 @@ public sealed class HtmlParserOptions
     /// get the global registry of their window instead.
     /// </summary>
     public CustomElementRegistry? CustomElementRegistry { get; init; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of elements the parser creates, or null for no limit (the default, as in the
+    /// browsers). When the parser would create more elements, it throws an <see cref="HtmlParserLimitExceededException"/>.
+    /// The number of elements is not bounded by the length of the markup: the parser recreates the open formatting
+    /// elements (<c>b</c>, <c>i</c>, <c>a</c>, …) in each new block, so a few kilobytes of markup can create millions
+    /// of elements. Set a limit when the markup comes from an untrusted source.
+    /// </summary>
+    public int? MaxElementCount
+    {
+        get;
+        init
+        {
+            if (value is not null)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value.Value, nameof(value));
+            }
+
+            field = value;
+        }
+    }
 }
 
 /// <summary>Parses HTML documents and fragments according to the HTML Standard.</summary>
@@ -588,7 +609,7 @@ public sealed class HtmlDocumentParser
     /// Runs the HTML fragment parsing algorithm (https://html.spec.whatwg.org/multipage/parsing.html#html-fragment-parsing-algorithm)
     /// with <paramref name="context"/> as the context element. The nodes are created in the context's node document.
     /// </summary>
-    public DocumentFragment ParseFragment(string html, Element context) => ParseFragment(context, html, allowDeclarativeShadowRoots: false, ParserScriptingMode.Inert, _options.ParseErrorHandler);
+    public DocumentFragment ParseFragment(string html, Element context) => ParseFragment(context, html, allowDeclarativeShadowRoots: false, ParserScriptingMode.Inert, _options.ParseErrorHandler, maxElementCount: _options.MaxElementCount);
 
     /// <param name="target">The context of the parsing: an element, or a shadow root.</param>
     /// <param name="input">The markup.</param>
@@ -596,10 +617,12 @@ public sealed class HtmlDocumentParser
     /// <param name="scriptingMode">The scripting mode of the parser.</param>
     /// <param name="errorHandler">The handler of the parse errors.</param>
     /// <param name="sanitizer">The sanitizer configuration applied while parsing (see <see cref="SanitizerConfiguration.GetEffectiveConfiguration"/>), or null.</param>
-    internal static DocumentFragment ParseFragment(Node target, string input, bool allowDeclarativeShadowRoots, ParserScriptingMode scriptingMode, Action<HtmlParseError>? errorHandler, SanitizerConfiguration? sanitizer = null)
+    /// <param name="maxElementCount">The maximum number of elements the parser creates (see <see cref="HtmlParserOptions.MaxElementCount"/>), or null.</param>
+    internal static DocumentFragment ParseFragment(Node target, string input, bool allowDeclarativeShadowRoots, ParserScriptingMode scriptingMode, Action<HtmlParseError>? errorHandler, SanitizerConfiguration? sanitizer = null, int? maxElementCount = null)
     {
         var fragment = new DocumentFragment(target.NodeDocument);
         var (builder, _) = CreateFragmentParser(target, fragment, referenceChild: null, input, allowDeclarativeShadowRoots, scriptingMode, errorHandler, sanitizer, streaming: false);
+        builder.MaxElementCount = maxElementCount;
         builder.Run();
         return fragment;
     }
@@ -695,6 +718,7 @@ public sealed class HtmlDocumentParser
         {
             AllowDeclarativeShadowRoots = _options.AllowDeclarativeShadowRoots,
             Sanitizer = sanitizer,
+            MaxElementCount = _options.MaxElementCount,
         };
 
         // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead: the meta element found by the prescan after

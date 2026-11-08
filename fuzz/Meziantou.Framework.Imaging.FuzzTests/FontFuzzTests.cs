@@ -704,18 +704,88 @@ public sealed class FontFuzzTests
                 if (hasScript && CheckShaping(font, text, script, isRightToLeft, []) is { } scriptFailure)
                     return scriptFailure;
             }
+
+            if (CheckAatShaping(font) is { } aatFailure)
+                return aatFailure;
         }
 
         return null;
     }
 
-    private static FuzzFailure? CheckShaping(Font font, string text, UnicodeScript script, bool isRightToLeft, ShapingFeature[] features)
+    /// <summary>
+    /// Shapes, with a font that has AAT tables, the characters it maps: the state machines of <c>morx</c> and
+    /// <c>kerx</c> only run on the glyphs their classes have, which the texts of the other checks rarely give. The
+    /// characters are shaped in both directions and in a vertical line, with features that select settings of
+    /// <c>feat</c>, at a size below and a size above those of <c>trak</c>.
+    /// </summary>
+    private static FuzzFailure? CheckAatShaping(Font font)
+    {
+        var face = font.Face;
+        if (face.Morx is null && face.Kerx is null && face.Trak is null)
+            return null;
+
+        string text;
+        try
+        {
+            text = GetMappedText(face);
+        }
+        catch (Exception exception) when (exception is FontException or ImageResourceLimitException)
+        {
+            return null;
+        }
+
+        if (text.Length == 0)
+            return null;
+
+        return CheckShaping(font, text, UnicodeScript.Common, isRightToLeft: false, [])
+            ?? CheckShaping(font, text, UnicodeScript.Arabic, isRightToLeft: true, [], pointSize: 9)
+            ?? CheckShaping(font, text, UnicodeScript.Han, isRightToLeft: false, [], isVertical: true, pointSize: 48)
+            ?? CheckShaping(font, text, UnicodeScript.Common, isRightToLeft: false, AatFeatures, pointSize: 1000);
+    }
+
+    // OpenType features that select settings of feat, and a feature that turns a setting the font has by default off.
+    private static readonly ShapingFeature[] AatFeatures = [new("liga", 0), new("dlig"), new("smcp"), new("onum"), new("frac"), new("swsh"), new("ss01"), new("zero"), new("test")];
+
+    /// <summary>
+    /// Gets a text of the first characters the font maps: each of them in order, then each of them twice, in reverse
+    /// order, so that the state machines see sequences of the same class and the transitions between classes.
+    /// </summary>
+    private static string GetMappedText(FontFace face)
+    {
+        const int MaxCharacters = 48;
+        var characters = new List<int>(MaxCharacters);
+        foreach (var (start, end) in (ReadOnlySpan<(int Start, int End)>)[(0x21, 0x3100), (0xE000, 0xF900), (0xFB00, 0x10000)])
+        {
+            for (var codePoint = start; codePoint < end && characters.Count < MaxCharacters; codePoint++)
+            {
+                if (face.MapCodePoint(codePoint) != 0)
+                {
+                    characters.Add(codePoint);
+                }
+            }
+        }
+
+        var text = new StringBuilder();
+        foreach (var codePoint in characters)
+        {
+            text.Append((char)codePoint);
+        }
+
+        for (var i = characters.Count - 1; i >= 0; i--)
+        {
+            text.Append((char)characters[i]).Append((char)characters[i]);
+        }
+
+        return text.ToString();
+    }
+
+    private static FuzzFailure? CheckShaping(Font font, string text, UnicodeScript script, bool isRightToLeft, ShapingFeature[] features, bool isVertical = false, double pointSize = 0)
     {
         var buffer = new GlyphBuffer(Options.Configuration.FontEnvironment.Limits);
         try
         {
             TextShaper.AddText(buffer, text);
-            TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft, features);
+            TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft, features, isVertical, pointSize: pointSize);
         }
         catch (Exception exception) when (exception is FontException or ImageResourceLimitException)
         {

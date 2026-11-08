@@ -14,8 +14,8 @@ namespace Meziantou.Framework
 
     public static class TextDiff
     {
-        public static Meziantou.Framework.TextDiffResult ComputeDiff(string oldText, string newText, Meziantou.Framework.TextDiffOptions? options = null) => throw null;
-        public static Meziantou.Framework.TextDiffHierarchyResult ComputeHierarchyDiff(string oldText, string newText, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextChunker> chunkers, Meziantou.Framework.TextDiffOptions? options = null) => throw null;
+        public static Meziantou.Framework.TextDiffResult ComputeDiff(string oldText, string newText, Meziantou.Framework.TextDiffOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.TextDiffHierarchyResult ComputeHierarchyDiff(string oldText, string newText, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextChunker> chunkers, Meziantou.Framework.TextDiffOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public enum TextDiffAlgorithm
@@ -79,6 +79,8 @@ namespace Meziantou.Framework
         public bool IgnoreCase { get => throw null; set { } }
         public bool IgnoreEndOfLine { get => throw null; set { } }
         public bool IgnoreWhitespace { get => throw null; set { } }
+        public int? MaxEditCost { get => throw null; set { } }
+        public System.TimeSpan? Timeout { get => throw null; set { } }
     }
 
     public sealed class TextDiffResult

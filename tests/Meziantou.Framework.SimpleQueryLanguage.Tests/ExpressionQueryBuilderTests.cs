@@ -83,6 +83,50 @@ public sealed class ExpressionQueryBuilderTests
     }
 
     [Fact]
+    public void Documentation_StringMatchMode()
+    {
+        #region ExpressionQueryBuilder_StringMatchMode
+        var queryBuilder = new ExpressionQueryBuilder<Ticket>();
+
+        // Generates ticket.Title != null && ticket.Title.StartsWith(value)
+        queryBuilder.AddHandler("title", ticket => ticket.Title, StringMatchMode.StartsWith);
+
+        var tickets = new[]
+        {
+            new Ticket("Crash on startup", TicketPriority.Critical),
+            new Ticket("Startup is slow", TicketPriority.Normal),
+        };
+
+        var query = queryBuilder.Build("title:Crash");
+        Assert.Equal(["Crash on startup"], query.Apply(tickets.AsQueryable()).Select(ticket => ticket.Title));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EnumComparison()
+    {
+        #region ExpressionQueryBuilder_EnumComparison
+        var queryBuilder = new ExpressionQueryBuilder<Ticket>();
+        queryBuilder.AddHandler<TicketPriority>("priority", ticket => ticket.Priority);
+
+        var tickets = new[]
+        {
+            new Ticket("Typo in the footer", TicketPriority.Low),
+            new Ticket("Startup is slow", TicketPriority.Normal),
+            new Ticket("Crash on startup", TicketPriority.Critical),
+        };
+
+        // Compares the numeric values: (int)ticket.Priority >= (int)value
+        var query = queryBuilder.Build("priority>=normal");
+        Assert.Equal(["Startup is slow", "Crash on startup"], query.Apply(tickets.AsQueryable()).Select(ticket => ticket.Title));
+
+        // Ranges work too
+        query = queryBuilder.Build("priority:low..normal");
+        Assert.Equal(["Typo in the footer", "Startup is slow"], query.Apply(tickets.AsQueryable()).Select(ticket => ticket.Title));
+        #endregion
+    }
+
+    [Fact]
     public void ExpressionQuery_DocumentationExample()
     {
         #region ExpressionQuery_Apply
@@ -499,10 +543,153 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Equal(new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc), result[0].DateTimeValue);
     }
 
-    [Fact]
-    public void Enum_RegistersEqualityOnly()
+    [Theory]
+    [InlineData(StringMatchMode.Contains, "oh", new[] { "John", "Johnny" })]
+    [InlineData(StringMatchMode.Exact, "John", new[] { "John" })]
+    [InlineData(StringMatchMode.Exact, "Jo", new string[0])]
+    [InlineData(StringMatchMode.StartsWith, "Jo", new[] { "John", "Johnny" })]
+    [InlineData(StringMatchMode.StartsWith, "ohn", new string[0])]
+    [InlineData(StringMatchMode.EndsWith, "ny", new[] { "Johnny" })]
+    [InlineData(StringMatchMode.EndsWith, "john", new string[0])]
+    public void StringHandler_MatchMode(StringMatchMode matchMode, string value, string[] expectedValues)
     {
-        // Expression.LessThan is not defined for enum types, so registering the handler must not throw
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue, matchMode);
+
+        var items = new[]
+        {
+            new Sample { StringValue = "John" },
+            new Sample { StringValue = "Johnny" },
+            new Sample { StringValue = "Jane" },
+            new Sample { StringValue = null },
+        }.AsQueryable();
+
+        Assert.Equal(expectedValues, queryBuilder.Build("name:" + value).Apply(items).Select(item => item.StringValue));
+    }
+
+    [Theory]
+    [InlineData(StringMatchMode.Contains, "OH", new[] { "John", "Johnny" })]
+    [InlineData(StringMatchMode.Exact, "JOHN", new[] { "John" })]
+    [InlineData(StringMatchMode.StartsWith, "jo", new[] { "John", "Johnny" })]
+    [InlineData(StringMatchMode.EndsWith, "NY", new[] { "Johnny" })]
+    public void StringHandler_MatchMode_ExplicitComparisonType_IgnoresCase(StringMatchMode matchMode, string value, string[] expectedValues)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue, matchMode, StringComparison.OrdinalIgnoreCase);
+
+        var items = new[]
+        {
+            new Sample { StringValue = "John" },
+            new Sample { StringValue = "Johnny" },
+            new Sample { StringValue = null },
+        }.AsQueryable();
+
+        Assert.Equal(expectedValues, queryBuilder.Build("name:" + value).Apply(items).Select(item => item.StringValue));
+    }
+
+    [Fact]
+    public void StringHandler_MatchMode_NotEqualTo_NegatesTheMatch()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue, StringMatchMode.StartsWith);
+
+        var items = new[]
+        {
+            new Sample { StringValue = "John" },
+            new Sample { StringValue = "Jane" },
+            new Sample { StringValue = null },
+        }.AsQueryable();
+
+        Assert.Equal(["Jane", null], queryBuilder.Build("name<>Jo").Apply(items).Select(item => item.StringValue));
+    }
+
+    [Theory]
+    [InlineData(StringMatchMode.Contains, "Contains(")]
+    [InlineData(StringMatchMode.Exact, " == ")]
+    [InlineData(StringMatchMode.StartsWith, "StartsWith(")]
+    [InlineData(StringMatchMode.EndsWith, "EndsWith(")]
+    public void StringHandler_MatchMode_DoesNotEmitStringComparison(StringMatchMode matchMode, string expectedText)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue, matchMode);
+        var predicate = queryBuilder.Build("name:John").Predicate!.ToString();
+
+        // The StringComparison overloads are not translatable by Entity Framework Core
+        Assert.Contains(expectedText, predicate, StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(StringComparison), predicate, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StringHandler_InvalidMatchMode_Throws()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => queryBuilder.AddHandler("name", item => item.StringValue, (StringMatchMode)42));
+        Assert.Equal("matchMode", exception.ParamName);
+    }
+
+    [Theory]
+    [InlineData("day<wednesday", new[] { DayOfWeek.Sunday, DayOfWeek.Monday })]
+    [InlineData("day<=wednesday", new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Wednesday })]
+    [InlineData("day>wednesday", new[] { DayOfWeek.Friday })]
+    [InlineData("day>=Wednesday", new[] { DayOfWeek.Wednesday, DayOfWeek.Friday })]
+    [InlineData("day:monday..wednesday", new[] { DayOfWeek.Monday, DayOfWeek.Wednesday })]
+    [InlineData("day:wednesday..*", new[] { DayOfWeek.Wednesday, DayOfWeek.Friday })]
+    [InlineData("day:*..monday", new[] { DayOfWeek.Sunday, DayOfWeek.Monday })]
+    [InlineData("day<>monday", new[] { DayOfWeek.Sunday, DayOfWeek.Wednesday, DayOfWeek.Friday })]
+    [InlineData("day<invalid", new DayOfWeek[0])]
+    public void Enum_SupportsComparisonOperators(string query, DayOfWeek[] expectedValues)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DayOfWeek>("day", item => item.DayOfWeekValue);
+
+        var items = new[]
+        {
+            new Sample { DayOfWeekValue = DayOfWeek.Sunday },
+            new Sample { DayOfWeekValue = DayOfWeek.Monday },
+            new Sample { DayOfWeekValue = DayOfWeek.Wednesday },
+            new Sample { DayOfWeekValue = DayOfWeek.Friday },
+        }.AsQueryable();
+
+        Assert.Equal(expectedValues, queryBuilder.Build(query).Apply(items).Select(item => item.DayOfWeekValue));
+    }
+
+    [Theory]
+    [InlineData("day<wednesday", 1)]
+    [InlineData("day>=monday", 2)]
+    [InlineData("day:monday..friday", 2)]
+    [InlineData("day:monday", 1)]
+    public void NullableEnum_SupportsComparisonOperators(string query, int expectedCount)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DayOfWeek?>("day", item => item.NullableDayOfWeekValue);
+
+        var items = new[]
+        {
+            new Sample { NullableDayOfWeekValue = DayOfWeek.Monday },
+            new Sample { NullableDayOfWeekValue = DayOfWeek.Wednesday },
+            new Sample { NullableDayOfWeekValue = null },
+        }.AsQueryable();
+
+        Assert.Equal(expectedCount, queryBuilder.Build(query).Apply(items).Count());
+    }
+
+    [Fact]
+    public void Enum_ComparisonUsesTheUnderlyingValue()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DayOfWeek>("day", item => item.DayOfWeekValue);
+
+        // LINQ providers such as Entity Framework Core translate a comparison of the converted values
+        Assert.Contains("Convert(item.DayOfWeekValue, Int32) < Convert(", queryBuilder.Build("day<friday").Predicate!.ToString(), StringComparison.Ordinal);
+
+        // Equality compares the enum values, which also works for a column stored as text
+        Assert.DoesNotContain("Convert(", queryBuilder.Build("day:friday").Predicate!.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Enum_Equality()
+    {
         var queryBuilder = new ExpressionQueryBuilder<Sample>();
         queryBuilder.AddHandler<DayOfWeek>("day", item => item.DayOfWeekValue);
 
@@ -703,6 +890,7 @@ public sealed class ExpressionQueryBuilderTests
         public DateTime DateTimeValue { get; set; }
         public DateTime? NullableDateTimeValue { get; set; }
         public DayOfWeek DayOfWeekValue { get; set; }
+        public DayOfWeek? NullableDayOfWeekValue { get; set; }
         public Guid GuidValue { get; set; }
     }
 }
@@ -710,5 +898,17 @@ public sealed class ExpressionQueryBuilderTests
 #pragma warning disable MA0048 // File name must match type name
 #region ExpressionQueryBuilder_Customer
 internal sealed record Customer(string FullName, string Email, int Age, DateTime CreatedAt);
+#endregion
+
+#region ExpressionQueryBuilder_Ticket
+internal enum TicketPriority
+{
+    Low,
+    Normal,
+    High,
+    Critical,
+}
+
+internal sealed record Ticket(string Title, TicketPriority Priority);
 #endregion
 #pragma warning restore MA0048

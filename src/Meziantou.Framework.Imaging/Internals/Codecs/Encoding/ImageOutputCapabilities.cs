@@ -182,6 +182,7 @@ internal sealed class ImageOutputCapabilities
 
         // The offsets of the chunks precede them: compressed chunks need a seekable destination to patch the table
         OpenExrEncoder exr => new ImageOutputCapabilities(ImageFormat.OpenExr, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: exr.Compression != OpenExrCompression.None),
+        CustomImageEncoder custom => throw new ArgumentException($"The {custom.FormatInfo.Name} encoder is a custom encoder: sequential writers and image collections do not use custom encoders. Use Image.Save or ImageFrame.Save.", nameof(encoder)),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };
 

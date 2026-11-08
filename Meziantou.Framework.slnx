@@ -119,6 +119,8 @@
     <Project Path="src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="src/Meziantou.Framework.Geo.GeoPackage/Meziantou.Framework.Geo.GeoPackage.csproj" />
+    <Project Path="src/Meziantou.Framework.Geo.GeoParquet/Meziantou.Framework.Geo.GeoParquet.csproj" />
     <Project Path="src/Meziantou.Framework.Geo.Maps.Data/Meziantou.Framework.Geo.Maps.Data.Afghanistan/Meziantou.Framework.Geo.Maps.Data.Afghanistan.csproj" />
     <Project Path="src/Meziantou.Framework.Geo.Maps.Data/Meziantou.Framework.Geo.Maps.Data.Africa/Meziantou.Framework.Geo.Maps.Data.Africa.csproj" />
     <Project Path="src/Meziantou.Framework.Geo.Maps.Data/Meziantou.Framework.Geo.Maps.Data.AlandIslands/Meziantou.Framework.Geo.Maps.Data.AlandIslands.csproj" />
@@ -543,6 +545,8 @@
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Analyzer.Tests/Meziantou.Framework.FullPath.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Geo.GeoPackage.Tests/Meziantou.Framework.Geo.GeoPackage.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Geo.GeoParquet.Tests/Meziantou.Framework.Geo.GeoParquet.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Geo.Maps.GeoPackage.Tests/Meziantou.Framework.Geo.Maps.GeoPackage.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Geo.Maps.Tests/Meziantou.Framework.Geo.Maps.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Geo.Maps.Tool.Tests/Meziantou.Framework.Geo.Maps.Tool.Tests.csproj" />
@@ -733,6 +737,8 @@
     <Project Path="fuzz/Meziantou.Framework.Fuzzing.Tests/Meziantou.Framework.Fuzzing.Tests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Geo.Fuzz/Meziantou.Framework.Geo.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Geo.GeoPackage.Fuzz/Meziantou.Framework.Geo.GeoPackage.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Geo.GeoParquet.Fuzz/Meziantou.Framework.Geo.GeoParquet.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Geo.Maps.Fuzz/Meziantou.Framework.Geo.Maps.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Hashing.Fuzz/Meziantou.Framework.Hashing.Fuzz.csproj" />
@@ -752,6 +758,7 @@
     <Project Path="fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.TextDiff.Fuzz/Meziantou.Framework.TextDiff.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Unicode.Fuzz/Meziantou.Framework.Unicode.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Uri.Fuzz/Meziantou.Framework.Uri.Fuzz.csproj" />

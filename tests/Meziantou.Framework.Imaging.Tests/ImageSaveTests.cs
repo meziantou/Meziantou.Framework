@@ -234,6 +234,95 @@ public sealed class ImageSaveTests
     }
 
     [Fact]
+    public async Task CustomEncodersWriteThroughTheSaveEntryPoints()
+    {
+        var codec = new TestCustomCodec();
+        var configuration = new ImageConfiguration { Codecs = [codec] };
+        var frames = TestCustomCodec.CreateFrames(Width, Height, 2);
+        var expected = TestCustomCodec.Encode(Width, Height, frames);
+        var still = TestCustomCodec.Encode(Width, Height, [frames[1]]);
+        using var image = Image.Load(expected, new ImageDecodeOptions { Configuration = configuration });
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            // The extension of the codec selects its encoder when the image has its configuration
+            image.Save(directory / "image.MZC");
+            Assert.Equal(expected, await File.ReadAllBytesAsync(directory / "image.MZC", XunitCancellationToken));
+            await image.SaveAsync(directory / "async.mzc", cancellationToken: XunitCancellationToken);
+            Assert.Equal(expected, await File.ReadAllBytesAsync(directory / "async.mzc", XunitCancellationToken));
+            image.Frames[1].Save(directory / "frame.mzc");
+            Assert.Equal(still, await File.ReadAllBytesAsync(directory / "frame.mzc", XunitCancellationToken));
+            await image.Frames[1].SaveAsync(directory / "frame-async.mzc", cancellationToken: XunitCancellationToken);
+            Assert.Equal(still, await File.ReadAllBytesAsync(directory / "frame-async.mzc", XunitCancellationToken));
+
+            // Another configuration does not know the extension
+            using var other = new Image<Rgba32>(Width, Height);
+            Assert.Throws<ArgumentException>(() => other.Save(directory / "other.mzc"));
+
+            // A codec that only reads its format rejects the extension instead of falling back to another encoder
+            using var readOnly = new Image<Rgba32>(Width, Height, new ImageConfiguration { Codecs = [new TestCustomCodec(extension: ".png", writes: false)] });
+            Assert.Contains("does not write", Assert.Throws<ArgumentException>(() => readOnly.Save(directory / "image.png")).Message, StringComparison.Ordinal);
+            Assert.HasCount(4, Directory.GetFiles(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        var encoder = new TestCustomCodec.Encoder(codec.FormatInfo);
+        using (var stream = new MemoryStream())
+        {
+            image.Save(stream, encoder);
+            Assert.Equal(expected, stream.ToArray());
+        }
+
+        using (var stream = new MemoryStream())
+        {
+            await image.SaveAsync(stream, encoder, XunitCancellationToken);
+            Assert.Equal(expected, stream.ToArray());
+            Assert.Equal(1, encoder.AsynchronousCalls);
+        }
+
+        using (var stream = new MemoryStream())
+        {
+            image.Frames[1].Save(stream, encoder);
+            Assert.Equal(still, stream.ToArray());
+        }
+
+        Assert.Equal(ImageFormat.Custom, encoder.Format);
+        Assert.Same(codec.FormatInfo, encoder.FormatInfo);
+    }
+
+    [Fact]
+    public void FailedCustomEncodersPublishNoFile()
+    {
+        var format = new ImageFormatInfo("test custom", ["image/x-test-custom"], [".mzc"]);
+        using var image = new Image<Rgba32>(Width, Height);
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "image.mzc";
+            File.WriteAllBytes(path, [1, 2, 3]);
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(path, new TestCustomCodec.Encoder(format, fail: true)));
+            Assert.Equal([path], Directory.GetFiles(directory));
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(path));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SequentialWritersRejectCustomEncoders()
+    {
+        var encoder = new TestCustomCodec.Encoder(new ImageFormatInfo("test custom", ["image/x-test-custom"], [".mzc"]));
+        var options = new ImageWriterOptions(new Size(Width, Height)) { Encoder = encoder, ExpectedFrameCount = 1 };
+        Assert.Contains("custom encoder", Assert.Throws<ArgumentException>(() => Image.CreateWriter<Rgba32>(new MemoryStream(), options)).Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Custom));
+    }
+
+    [Fact]
     public async Task UnknownExtensionsRequireAnExplicitEncoder()
     {
         using var codecs = TestCodecs.UseAll(out _, out _, out _, out _);

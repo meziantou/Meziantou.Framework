@@ -9,6 +9,7 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 /// <remarks>
 /// The versions are not updatable, as the integrity of each package would no longer match. A package installed under another name is
 /// reported as the installed package, with the install folder name in <see cref="Dependency.Metadata"/> under the <c>alias</c> key.
+/// Lockfile version 1 (npm 6 and earlier) is read from its <c>dependencies</c> tree, without the packages installed from a local folder (<c>file:</c>).
 /// </remarks>
 public sealed class NpmLockFileDependencyScanner : DependencyScanner
 {
@@ -27,10 +28,21 @@ public sealed class NpmLockFileDependencyScanner : DependencyScanner
         try
         {
             var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            // The keys of packages are install paths, such as node_modules/a/node_modules/@scope/b. The lockfile v1 dependencies
-            // tree is not scanned: npm 7 and later write packages.
-            if (doc.GetRootObject() is not JsonObject root || !JsonNodeDocument.TryGetObject(root, "packages", out var packages))
+            if (doc.GetRootObject() is not JsonObject root)
                 return;
+
+            // npm 7 and later write packages, and keep dependencies in lockfile version 2 for npm 6 only
+            if (!JsonNodeDocument.TryGetObject(root, "packages", out var packages))
+            {
+                if (JsonNodeDocument.TryGetObject(root, "dependencies", out var dependencies))
+                {
+                    ScanLockfileV1Dependencies(context, dependencies);
+                }
+
+                return;
+            }
+
+            // The keys of packages are install paths, such as node_modules/a/node_modules/@scope/b
 
             foreach (var (key, value) in packages)
             {
@@ -60,6 +72,35 @@ public sealed class NpmLockFileDependencyScanner : DependencyScanner
         }
         catch (JsonException)
         {
+        }
+    }
+
+    /// <summary>Reads the lockfile version 1 tree, where each package lists the packages installed in its own <c>node_modules</c> folder.</summary>
+    private void ScanLockfileV1Dependencies(ScanFileContext context, JsonObject dependencies)
+    {
+        foreach (var (folderName, value) in dependencies)
+        {
+            if (value is not JsonObject entry)
+                continue;
+
+            if (JsonNodeDocument.TryGetString(entry["version"], out var version))
+            {
+                // A package installed under another name has the version npm:name@version
+                if (version.StartsWith("npm:", StringComparison.Ordinal) && NpmPackageSpecifier.TrySplit(version[4..], out var name, out var aliasedVersion))
+                {
+                    NpmPackageSpecifier.ReportLockedPackage(this, context, name, aliasedVersion, folderName);
+                }
+                else if (!version.StartsWith("file:", StringComparison.Ordinal))
+                {
+                    // A local folder is not installed from a registry
+                    NpmPackageSpecifier.ReportLockedPackage(this, context, folderName, version, alias: null);
+                }
+            }
+
+            if (JsonNodeDocument.TryGetObject(entry, "dependencies", out var nested))
+            {
+                ScanLockfileV1Dependencies(context, nested);
+            }
         }
     }
 }

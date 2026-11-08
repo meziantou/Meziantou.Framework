@@ -34,6 +34,36 @@ internal sealed class KernTable
     /// <summary>Gets a value indicating whether the table has no pair that can be applied.</summary>
     public bool IsEmpty => _subtables.Length == 0;
 
+    /// <summary>
+    /// Determines whether a kerning table has a subtable of cross-stream kerning, whatever its format: the fonts made
+    /// for Apple systems place the marks of Arabic with such subtables.
+    /// </summary>
+    public static bool HasCrossStreamSubtable(ReadOnlySpan<byte> table)
+    {
+        var isApple = table.Length >= 8 && FontBinary.UInt32(table, 0) == 0x00010000;
+        if (!isApple && (table.Length < HeaderLength || FontBinary.UInt16(table, 0) != 0))
+            return false;
+
+        long count = isApple ? FontBinary.UInt32(table, 4) : FontBinary.UInt16(table, 2);
+        long offset = isApple ? 8 : HeaderLength;
+        for (var i = 0L; i < count && offset + 8 <= table.Length; i++)
+        {
+            // Apple: a 32-bit length, then the coverage (0x4000: cross-stream). OpenType: a version, a 16-bit length,
+            // then the coverage (bit 2: cross-stream).
+            long length = isApple ? FontBinary.UInt32(table, (int)offset) : FontBinary.UInt16(table, (int)offset + 2);
+            var coverage = FontBinary.UInt16(table, (int)offset + 4);
+            if (isApple ? (coverage & 0x4000) != 0 : (coverage & 0x04) != 0)
+                return true;
+
+            if (length < (isApple ? 8 : SubtableHeaderLength))
+                break;
+
+            offset += length;
+        }
+
+        return false;
+    }
+
     public static KernTable Read(ReadOnlySpan<byte> table)
     {
         if (table.Length >= 8 && FontBinary.UInt32(table, 0) == 0x00010000)

@@ -73,21 +73,57 @@ public sealed class ExpressionQueryBuilder<T>
     /// </param>
     public void AddHandler(string key, Expression<Func<T, string?>> selector, StringComparison? comparisonType = null)
     {
+        AddHandler(key, selector, StringMatchMode.Contains, comparisonType);
+    }
+
+    /// <summary>Registers a handler for a string property using the specified match mode.</summary>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="selector">Expression selecting the string property.</param>
+    /// <param name="matchMode">How the property matches the value of the query.</param>
+    /// <param name="comparisonType">
+    /// The string comparison to use, or <see langword="null"/> to emit the overload without a <see cref="StringComparison"/>
+    /// (or the <c>==</c> operator for <see cref="StringMatchMode.Exact"/>).
+    /// Most LINQ providers, including Entity Framework Core, cannot translate the <see cref="StringComparison"/> overloads,
+    /// so passing a value here makes the query usable in memory only.
+    /// When left <see langword="null"/>, case sensitivity is decided by the underlying provider — the database collation for EF Core,
+    /// and an ordinal comparison for LINQ to Objects.
+    /// </param>
+    public void AddHandler(string key, Expression<Func<T, string?>> selector, StringMatchMode matchMode, StringComparison? comparisonType = null)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        if (!Enum.IsDefined(matchMode))
+            throw new ArgumentOutOfRangeException(nameof(matchMode), matchMode, message: null);
+
         Expression<Func<T, bool>> CreatePredicate(string value)
         {
             var box = new QueryValueStore<string>(value);
             var valueExpression = Expression.PropertyOrField(Expression.Constant(box), nameof(QueryValueStore<string>.Value));
 
             Expression body;
-            if (comparisonType is null)
+            if (matchMode is StringMatchMode.Exact && comparisonType is null)
             {
-                var containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;
-                body = Expression.Call(selector.Body, containsMethod, valueExpression);
+                body = Expression.Equal(selector.Body, valueExpression);
             }
             else
             {
-                var containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string), typeof(StringComparison)])!;
-                body = Expression.Call(selector.Body, containsMethod, valueExpression, Expression.Constant(comparisonType.Value));
+                var methodName = matchMode switch
+                {
+                    StringMatchMode.Exact => nameof(string.Equals),
+                    StringMatchMode.StartsWith => nameof(string.StartsWith),
+                    StringMatchMode.EndsWith => nameof(string.EndsWith),
+                    _ => nameof(string.Contains),
+                };
+
+                if (comparisonType is null)
+                {
+                    var method = typeof(string).GetMethod(methodName, [typeof(string)])!;
+                    body = Expression.Call(selector.Body, method, valueExpression);
+                }
+                else
+                {
+                    var method = typeof(string).GetMethod(methodName, [typeof(string), typeof(StringComparison)])!;
+                    body = Expression.Call(selector.Body, method, valueExpression, Expression.Constant(comparisonType.Value));
+                }
             }
 
             // The selected property is nullable, so guard the call. EF Core folds this into the generated SQL,
@@ -114,15 +150,15 @@ public sealed class ExpressionQueryBuilder<T>
             AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateRangeExpression(value, selector, parser, _timeProvider));
 
             // Register comparison operators
-            AddHandlerCore(key, KeyValueOperator.LessThan, value => CreateComparisonExpression(value, selector, Expression.LessThan, parser));
-            AddHandlerCore(key, KeyValueOperator.LessThanOrEqual, value => CreateComparisonExpression(value, selector, Expression.LessThanOrEqual, parser));
-            AddHandlerCore(key, KeyValueOperator.GreaterThan, value => CreateComparisonExpression(value, selector, Expression.GreaterThan, parser));
-            AddHandlerCore(key, KeyValueOperator.GreaterThanOrEqual, value => CreateComparisonExpression(value, selector, Expression.GreaterThanOrEqual, parser));
+            AddHandlerCore(key, KeyValueOperator.LessThan, value => CreateComparisonExpression(value, selector, ExpressionType.LessThan, parser));
+            AddHandlerCore(key, KeyValueOperator.LessThanOrEqual, value => CreateComparisonExpression(value, selector, ExpressionType.LessThanOrEqual, parser));
+            AddHandlerCore(key, KeyValueOperator.GreaterThan, value => CreateComparisonExpression(value, selector, ExpressionType.GreaterThan, parser));
+            AddHandlerCore(key, KeyValueOperator.GreaterThanOrEqual, value => CreateComparisonExpression(value, selector, ExpressionType.GreaterThanOrEqual, parser));
         }
         else
         {
             // Just register equality
-            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateComparisonExpression(value, selector, Expression.Equal, parser));
+            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateComparisonExpression(value, selector, ExpressionType.Equal, parser));
         }
     }
 
@@ -291,11 +327,16 @@ public sealed class ExpressionQueryBuilder<T>
         // Unwrap Nullable<T>: the comparison operators are lifted, so an int? property is still orderable
         var type = Nullable.GetUnderlyingType(typeof(TValue)) ?? typeof(TValue);
 
-        // Enums are deliberately excluded: Expression.LessThan is not defined for an enum type, it needs both
-        // operands converted to the underlying type first. They keep equality only, as before.
+        // Expression.LessThan is not defined for an enum type: the comparison converts both operands to the
+        // underlying type first, which LINQ providers such as Entity Framework Core translate
         if (type.IsEnum)
-            return false;
+            return IsComparisonTypeCore(Enum.GetUnderlyingType(type));
 
+        return IsComparisonTypeCore(type);
+    }
+
+    private static bool IsComparisonTypeCore(Type type)
+    {
         // The built-in numeric types implement < with an IL instruction, so there is no operator method to find
         if (type == typeof(sbyte) || type == typeof(short) || type == typeof(int) || type == typeof(long) ||
             type == typeof(byte) || type == typeof(ushort) || type == typeof(uint) || type == typeof(ulong) ||
@@ -315,25 +356,64 @@ public sealed class ExpressionQueryBuilder<T>
     private static Expression<Func<T, bool>> CreateComparisonExpression<TValue>(
         string value,
         Expression<Func<T, TValue>> selector,
-        Func<Expression, Expression, Expression> comparisonFactory,
+        ExpressionType comparison,
         ScalarParser<TValue> parser)
     {
         if (!parser(value, out var parsedValue))
             return CreateFalseExpression();
 
-        return CreateComparisonExpressionCore(parsedValue, selector, comparisonFactory);
+        return CreateComparisonExpressionCore(parsedValue, selector, comparison);
     }
 
     private static Expression<Func<T, bool>> CreateComparisonExpressionCore<TValue>(
         TValue value,
         Expression<Func<T, TValue>> selector,
-        Func<Expression, Expression, Expression> comparisonFactory)
+        ExpressionType comparison)
     {
         var box = new QueryValueStore<TValue>(value);
         var valueExpression = Expression.PropertyOrField(Expression.Constant(box), nameof(QueryValueStore<TValue>.Value));
 
-        var body = comparisonFactory(selector.Body, valueExpression);
+        Expression left = selector.Body;
+        Expression right = valueExpression;
+
+        // Equality is defined for enums and keeps working with a column stored as text. The ordered comparisons are not,
+        // so compare the underlying numeric values: (int)item.Status < (int)value.
+        if (comparison is not ExpressionType.Equal && GetEnumUnderlyingComparisonType(typeof(TValue)) is { } underlyingType)
+        {
+            left = Expression.Convert(left, underlyingType);
+            right = Expression.Convert(right, underlyingType);
+        }
+
+        var body = Expression.MakeBinary(comparison, left, right);
         return Expression.Lambda<Func<T, bool>>(body, selector.Parameters);
+    }
+
+    /// <summary>Returns the underlying type of an enum, or of a nullable enum as a nullable type, or <see langword="null"/> for other types.</summary>
+    private static Type? GetEnumUnderlyingComparisonType(Type type)
+    {
+        var nullableType = Nullable.GetUnderlyingType(type);
+        var enumType = nullableType ?? type;
+        if (!enumType.IsEnum)
+            return null;
+
+        var underlyingType = Enum.GetUnderlyingType(enumType);
+        if (nullableType is null)
+            return underlyingType;
+
+        // Listed explicitly rather than with MakeGenericType, which is not trim and AOT friendly
+        return Type.GetTypeCode(underlyingType) switch
+        {
+            TypeCode.SByte => typeof(sbyte?),
+            TypeCode.Byte => typeof(byte?),
+            TypeCode.Int16 => typeof(short?),
+            TypeCode.UInt16 => typeof(ushort?),
+            TypeCode.Int32 => typeof(int?),
+            TypeCode.UInt32 => typeof(uint?),
+            TypeCode.Int64 => typeof(long?),
+            TypeCode.UInt64 => typeof(ulong?),
+            TypeCode.Char => typeof(char?),
+            _ => throw new NotSupportedException($"The underlying type of '{enumType}' is not supported"),
+        };
     }
 
     private static Expression<Func<T, bool>> CreateRangeExpression<TValue>(
@@ -350,28 +430,28 @@ public sealed class ExpressionQueryBuilder<T>
             var lowerExpression = CreateComparisonExpressionCore(
                 binary.LowerBound,
                 selector,
-                binary.LowerBoundIncluded ? Expression.GreaterThanOrEqual : Expression.GreaterThan);
+                binary.LowerBoundIncluded ? ExpressionType.GreaterThanOrEqual : ExpressionType.GreaterThan);
 
             var upperExpression = CreateComparisonExpressionCore(
                 binary.UpperBound,
                 selector,
-                binary.UpperBoundIncluded ? Expression.LessThanOrEqual : Expression.LessThan);
+                binary.UpperBoundIncluded ? ExpressionType.LessThanOrEqual : ExpressionType.LessThan);
 
             return lowerExpression.AndAlso(upperExpression);
         }
 
         if (range is UnaryRangeSyntax<TValue> unary)
         {
-            Func<Expression, Expression, Expression> factory = unary.Operator switch
+            var comparison = unary.Operator switch
             {
-                KeyValueOperator.LessThan => Expression.LessThan,
-                KeyValueOperator.LessThanOrEqual => Expression.LessThanOrEqual,
-                KeyValueOperator.GreaterThan => Expression.GreaterThan,
-                KeyValueOperator.GreaterThanOrEqual => Expression.GreaterThanOrEqual,
-                _ => Expression.Equal,
+                KeyValueOperator.LessThan => ExpressionType.LessThan,
+                KeyValueOperator.LessThanOrEqual => ExpressionType.LessThanOrEqual,
+                KeyValueOperator.GreaterThan => ExpressionType.GreaterThan,
+                KeyValueOperator.GreaterThanOrEqual => ExpressionType.GreaterThanOrEqual,
+                _ => ExpressionType.Equal,
             };
 
-            return CreateComparisonExpressionCore(unary.Operand, selector, factory);
+            return CreateComparisonExpressionCore(unary.Operand, selector, comparison);
         }
 
         // RangeSyntax.TryParse already tried the value as a single operand

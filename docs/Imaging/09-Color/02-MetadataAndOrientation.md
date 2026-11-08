@@ -75,7 +75,8 @@ public static void EditMetadata(string path)
 
 - Set a member to `null` to remove it: `image.Metadata.ExifProfile = null` removes the EXIF block.
 - A malformed EXIF, ICC or XMP payload you set is rejected when the image is saved.
-- Unknown chunks, segments and boxes of a file are skipped when it is read: they are not written back.
+- Unknown segments and boxes of a file are skipped when it is read: they are not written back. The unknown ancillary
+  chunks of a PNG file are kept in [PngChunks](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.PngChunks), and written back to PNG files (see [PNG and APNG](../10-Formats/02-Png.md)).
 
 See [Strip or edit metadata](../03-Guides/08-StripOrEditMetadata.md) for a complete solution.
 
@@ -102,7 +103,8 @@ Animation timing is never affected by this setting. What each format stores:
 | AVIF, HEIC | Yes | Yes | Yes | No |
 | JPEG XL | Yes | Yes | Yes | No |
 | JPEG 2000 (JP2) | Gray and matrix RGB profiles | Yes | Yes | No |
-| QOI, BMP, TGA, Netpbm | No | No | No | No |
+| BMP | RGB profiles | No | No | No |
+| QOI, TGA, Netpbm | No | No | No | No |
 
 ICO files store no metadata, and HEIC does not store the orientation of an image sequence yet. The pages of
 [the formats](../10-Formats/01-Overview.md) give the details, such as the resolution, the color descriptions and the

@@ -13,7 +13,8 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Fuzz;
 /// the non-whitespace characters of the query in order. The diagnostics point at the tokens they report, and reporting
 /// them does not change the tree. The disjunctive normal form of the bound query is equivalent to the syntax tree. <see cref="QueryBuilder{T}"/> and <see cref="ExpressionQueryBuilder{T}"/> evaluate a query as the
 /// AND/OR/NOT combination of its terms, each term evaluated as a query of its own; compiling the expression, interpreting
-/// it, and applying it to an <see cref="IQueryable{T}"/> agree.
+/// it, and applying it to an <see cref="IQueryable{T}"/> agree. The string match modes and the enum comparisons of
+/// <see cref="ExpressionQueryBuilder{T}"/> agree with the same handlers written for <see cref="QueryBuilder{T}"/>.
 /// </summary>
 public static partial class SimpleQueryLanguageFuzzTargets
 {
@@ -25,16 +26,19 @@ public static partial class SimpleQueryLanguageFuzzTargets
     private const byte FreeTextOption = 1;
     private const byte UnhandledPropertyOption = 2;
     private const byte IgnoreCaseOption = 4;
+    private const int MatchModeShift = 3;
+    private const byte MatchModeOptions = 3 << MatchModeShift;
 
     private static readonly DateTimeOffset Now = new(2026, 3, 15, 13, 45, 30, TimeSpan.Zero);
 
     private static readonly QueryItem[] Items =
     [
-        new(0, "John Doe", 42, Rank: 1, new DateTime(2026, 3, 15, 10, 0, 0, DateTimeKind.Utc), new DateOnly(2026, 3, 15), 4.5, IsOpen: true, QueryItemStatus.Active, ["bug", "ui"]),
+        new(0, "John Doe", 42, Rank: 1, new DateTime(2026, 3, 15, 10, 0, 0, DateTimeKind.Utc), new DateOnly(2026, 3, 15), 4.5, IsOpen: true, QueryItemStatus.Active, ["bug", "ui"]) { Previous = QueryItemStatus.Closed },
         new(1, Name: null, 0, Rank: null, new DateTime(2022, 1, 1, 0, 0, 0, DateTimeKind.Utc), new DateOnly(2022, 1, 1), -1, IsOpen: false, QueryItemStatus.Closed, []),
         new(2, "jane", -10, Rank: -5, new DateTime(2026, 3, 9, 0, 0, 0, DateTimeKind.Utc), new DateOnly(2026, 2, 28), double.NaN, IsOpen: true, QueryItemStatus.Pending, ["feature"]),
         new(3, "", int.MaxValue, Rank: int.MinValue, DateTime.MaxValue, DateOnly.MaxValue, double.PositiveInfinity, IsOpen: false, (QueryItemStatus)42, ["BUG"]),
-        new(4, "\"quoted\" name:value", int.MinValue, Rank: 0, DateTime.MinValue, DateOnly.MinValue, 0, IsOpen: true, QueryItemStatus.Active, ["a", "b", "c"]),
+        new(4, "\"quoted\" name:value", int.MinValue, Rank: 0, DateTime.MinValue, DateOnly.MinValue, 0, IsOpen: true, QueryItemStatus.Active, ["a", "b", "c"]) { Previous = QueryItemStatus.Pending },
+        new(5, "JOHN", 1, Rank: 2, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc), new DateOnly(2026, 3, 1), 2, IsOpen: false, (QueryItemStatus)(-1), ["bug"]) { Previous = (QueryItemStatus)42 },
     ];
 
     private static readonly string[] QueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "open", "status", "is", "tag"];
@@ -43,16 +47,17 @@ public static partial class SimpleQueryLanguageFuzzTargets
     private static readonly string[] Tokens =
     [
         "AND", "OR", "NOT", "and", "or", "not", "-", "(", ")", ":", "=", "<", "<=", ">", ">=", "<>", "\"", "\"\"", "..", "*", " ", "\t", "\u00A0", "\u3000",
-        "name", "age", "rank", "created", "day", "score", "open", "status", "is", "tag", "other", "today", "yesterday", "this week", "this_week", "this month",
+        "name", "previous", "age", "rank", "created", "day", "score", "open", "status", "is", "tag", "other", "today", "yesterday", "this week", "this_week", "this month",
         "last_month", "this year", "last year", "@today", "@today-1w", "@today+3d", "2026-03-15", "2022-01-01T00:00:00Z", "10:00", "true", "false", "Active",
-        "Closed", "Pending", "closed", "1", "-1", "0", "1.5", "1e308", "NaN", "Infinity", "2147483647", "2147483648",
+        "Closed", "Pending", "closed", "John", "Doe", "john", "1", "-1", "0", "1.5", "1e308", "NaN", "Infinity", "2147483647", "2147483648",
     ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("query-parse", Parse) { Seeds = () => GetSeeds(optionsMask: 0xFF), Dictionary = Tokens },
         new("query-builder", Builder) { Seeds = () => GetSeeds(optionsMask: FreeTextOption | UnhandledPropertyOption), Dictionary = Tokens },
-        new("query-expression", ExpressionBuilder) { Seeds = () => GetSeeds(optionsMask: FreeTextOption | UnhandledPropertyOption | IgnoreCaseOption), Dictionary = Tokens },
+        new("query-expression", ExpressionBuilder) { Seeds = () => GetSeeds(optionsMask: FreeTextOption | UnhandledPropertyOption | IgnoreCaseOption | MatchModeOptions), Dictionary = Tokens },
+        new("query-expression-operators", ExpressionOperators) { Seeds = () => GetSeeds(optionsMask: IgnoreCaseOption | MatchModeOptions), Dictionary = Tokens },
     ];
 
     /// <summary>
@@ -157,7 +162,7 @@ public static partial class SimpleQueryLanguageFuzzTargets
 
     /// <summary>
     /// Builds the query with an <see cref="ExpressionQueryBuilder{T}"/> (the first byte toggles the free text and unhandled
-    /// property handlers, and the case sensitivity of a string handler). The compiled expression, the interpreted expression
+    /// property handlers, and selects the case sensitivity and the match mode of a string handler). The compiled expression, the interpreted expression
     /// and <see cref="ExpressionQuery{T}.Apply"/> agree, and match the AND/OR/NOT combination of the terms built alone.
     /// </summary>
     private static void ExpressionBuilder(ReadOnlySpan<byte> data)
@@ -404,6 +409,82 @@ public static partial class SimpleQueryLanguageFuzzTargets
 
     private static string FormatDiagnostics(IEnumerable<QueryDiagnostic> diagnostics) => string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic}"));
 
+    /// <summary>
+    /// Builds the query with an <see cref="ExpressionQueryBuilder{T}"/> holding a string handler (the first byte selects its
+    /// case sensitivity and match mode) and enum handlers, and with a <see cref="QueryBuilder{T}"/> whose handlers do the same
+    /// in memory: an enum range compares with <see cref="Comparer{T}.Default"/>, which orders the numeric values. The compiled
+    /// expression, the interpreted expression and <see cref="ExpressionQuery{T}.Apply"/> agree with the AND/OR/NOT combination
+    /// of the terms evaluated by <see cref="QueryBuilder{T}"/>.
+    /// </summary>
+    private static void ExpressionOperators(ReadOnlySpan<byte> data)
+    {
+        var options = FuzzInput.ReadByte(ref data);
+        var text = FuzzText.Decode(data);
+        var matchMode = GetMatchMode(options);
+        StringComparison? comparisonType = (options & IgnoreCaseOption) != 0 ? StringComparison.OrdinalIgnoreCase : null;
+
+        var builder = new ExpressionQueryBuilder<QueryItem>(new FixedTimeProvider(Now));
+        builder.AddHandler("name", item => item.Name, matchMode, comparisonType);
+        builder.AddHandler<QueryItemStatus>("status", item => item.Status);
+        builder.AddHandler<QueryItemStatus?>("previous", item => item.Previous);
+
+        var reference = new QueryBuilder<QueryItem>(new FixedTimeProvider(Now));
+        reference.AddHandler("name", (QueryItem item, KeyValueOperator op, string value) => op is KeyValueOperator.EqualTo && MatchesString(item.Name, value, matchMode, comparisonType ?? StringComparison.Ordinal));
+        reference.AddRangeHandler<QueryItemStatus>("status", (item, range) => range.IsInRange(item.Status));
+        reference.AddRangeHandler<QueryItemStatus>("previous", (item, range) => item.Previous is { } previous && range.IsInRange(previous));
+
+        ExpressionQuery<QueryItem> query;
+        try
+        {
+            query = builder.Build(text);
+        }
+        catch (QueryTooComplexException)
+        {
+            return;
+        }
+
+        if (query.Predicate is null || BoundQuery.Create(QuerySyntax.Parse(text)).Sum(conjunction => conjunction.Count) > MaxExpressionTerms)
+            return;
+
+        // For a registered key, <> negates the term built with ':', as ExpressionQueryBuilder does when no handler is
+        // registered for <>. Unknown keys fall back to free text in both builders.
+        var oracle = CreateOracle(text, term =>
+        {
+            if (term.Operator is not KeyValueOperator.NotEqualTo || term.Key?.ToLowerInvariant() is not ("name" or "status" or "previous"))
+                return reference.Build(GetTermText(term)).Evaluate;
+
+            var equalTo = reference.Build(GetTermText(term with { Operator = KeyValueOperator.EqualTo }));
+            return item => !equalTo.Evaluate(item);
+        });
+
+        var compiled = query.Predicate.Compile();
+        var interpreted = query.Predicate.Compile(preferInterpretation: true);
+        var applied = query.Apply(Items.AsQueryable()).ToHashSet();
+        foreach (var item in Items)
+        {
+            var actual = compiled(item);
+            FuzzAssert.Equal(actual, interpreted(item), $"The compiled and interpreted expressions of {FuzzAssert.Format(text)} disagree on item {item.Id}");
+            FuzzAssert.Equal(actual, applied.Contains(item), $"The compiled expression and Apply of {FuzzAssert.Format(text)} disagree on item {item.Id}");
+            if (oracle is not null)
+            {
+                FuzzAssert.Equal(oracle(item), actual, $"ExpressionQueryBuilder ({matchMode}, {comparisonType}) and QueryBuilder disagree on {FuzzAssert.Format(text)} for item {item.Id}");
+            }
+        }
+    }
+
+    private static StringMatchMode GetMatchMode(byte options) => (StringMatchMode)((options & MatchModeOptions) >> MatchModeShift);
+
+    private static bool MatchesString(string? text, string value, StringMatchMode matchMode, StringComparison comparisonType)
+    {
+        return text is not null && matchMode switch
+        {
+            StringMatchMode.Exact => string.Equals(text, value, comparisonType),
+            StringMatchMode.StartsWith => text.StartsWith(value, comparisonType),
+            StringMatchMode.EndsWith => text.EndsWith(value, comparisonType),
+            _ => text.Contains(value, comparisonType),
+        };
+    }
+
     private static QueryBuilder<QueryItem> CreateQueryBuilder(byte options)
     {
         var builder = new QueryBuilder<QueryItem>(new FixedTimeProvider(Now));
@@ -439,7 +520,7 @@ public static partial class SimpleQueryLanguageFuzzTargets
     private static ExpressionQueryBuilder<QueryItem> CreateExpressionQueryBuilder(byte options)
     {
         var builder = new ExpressionQueryBuilder<QueryItem>(new FixedTimeProvider(Now));
-        builder.AddHandler("name", item => item.Name, (options & IgnoreCaseOption) != 0 ? StringComparison.OrdinalIgnoreCase : null);
+        builder.AddHandler("name", item => item.Name, GetMatchMode(options), (options & IgnoreCaseOption) != 0 ? StringComparison.OrdinalIgnoreCase : null);
         builder.AddHandler<int>("age", item => item.Age);
         builder.AddHandler<int?>("rank", item => item.Rank);
         builder.AddHandler<DateTime>("created", item => item.Created);
@@ -843,6 +924,8 @@ public static partial class SimpleQueryLanguageFuzzTargets
             "name:john AND age>=21", "(name:\"john doe\" OR name:jane) AND age>21", "name<>john", "-name:john", "NOT name:john", "created:\"this week\"", "created:this_week",
             "age:13..19", "stars:10..*", "created:*..2024-12-31", "created>@today-1w", "created:@today-2w..@today", "is_open:true free form text",
             "is_open:true AND NOT \"free form text\"", "status:Active OR (rank<=0 -tag:bug) day>=2026-01-01 score:1.5..*", "is:open tag<abc other:value \"a \"\" b\"",
+            "status<Closed", "status>=pending", "status:Active..Closed", "status<>Closed..*", "-status>1", "previous<=Closed OR previous:*..Active", "previous<>pending",
+            "status:42 OR status<-1", "name:John", "name:john -name:doe", "name<>JOHN", "name:\"\"", "name<John",
         ];
 
         var result = new HashSet<string>(StringComparer.Ordinal);
@@ -921,5 +1004,8 @@ public static partial class SimpleQueryLanguageFuzzTargets
         Pending,
     }
 
-    private sealed record QueryItem(int Id, string? Name, int Age, int? Rank, DateTime Created, DateOnly Day, double Score, bool IsOpen, QueryItemStatus Status, IReadOnlyList<string> Tags);
+    private sealed record QueryItem(int Id, string? Name, int Age, int? Rank, DateTime Created, DateOnly Day, double Score, bool IsOpen, QueryItemStatus Status, IReadOnlyList<string> Tags)
+    {
+        public QueryItemStatus? Previous { get; init; }
+    }
 }

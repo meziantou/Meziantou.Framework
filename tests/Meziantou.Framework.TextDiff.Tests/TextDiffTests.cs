@@ -803,6 +803,212 @@ public sealed class TextDiffTests
     }
 
     [Fact]
+    public void DocumentationExample_WorkLimit()
+    {
+        #region TextDiff_WorkLimit
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var options = new TextDiffOptions
+        {
+            Timeout = TimeSpan.FromSeconds(1),  // Past this time, the remaining regions are reported as replaced
+            MaxEditCost = 1000,                 // Past this many edits in a region, Myers settles for a non-minimal diff
+        };
+
+        var result = TextDiff.ComputeDiff("one\ntwo\n", "one\n2\n", options, cancellationTokenSource.Token);
+        Assert.True(result.HasDifferences);
+        #endregion
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_AllAlgorithms_TimeoutReached_ReplacesTheRemainingRegion(TextDiffAlgorithm algorithm)
+    {
+        var options = new TextDiffOptions { Algorithm = algorithm, Timeout = TimeSpan.Zero };
+
+        var result = Diff.ComputeDiff(JoinLines("1", "2", "3", "4", "5"), JoinLines("1", "X", "3", "Y", "5"), options);
+
+        // The common start and end are still matched, but the "3" in the middle is not
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "1\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "2\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "3\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "4\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "X\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "3\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "Y\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "5"),
+            ],
+            result.Entries);
+    }
+
+    [Fact]
+    public void ComputeDiff_Myers_MaxEditCostZero_ReplacesTheChangedRegion()
+    {
+        var options = new TextDiffOptions { MaxEditCost = 0 };
+
+        var result = Diff.ComputeDiff(JoinLines("1", "2", "3", "4", "5"), JoinLines("1", "X", "3", "Y", "5"), options);
+
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "1\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "2\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "3\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "4\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "X\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "3\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "Y\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "5"),
+            ],
+            result.Entries);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_AllAlgorithms_MaxEditCost_ReconstructsOldAndNewText(TextDiffAlgorithm algorithm)
+    {
+        var random = new Random(20261108);
+        for (var iteration = 0; iteration < 300; iteration++)
+        {
+            var alphabet = random.Next(1, 8);
+            var oldText = JoinLines(CreateRandomLines(random, alphabet));
+            var newText = JoinLines(CreateRandomLines(random, alphabet));
+            var minimal = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = algorithm });
+            var limited = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = algorithm, MaxEditCost = random.Next(0, 10) });
+
+            Assert.Equal(oldText, ReconstructOldText(limited));
+            Assert.Equal(newText, ReconstructNewText(limited));
+            Assert.Equal(minimal.HasDifferences, limited.HasDifferences);
+            Assert.True(CountEdits(limited) >= CountEdits(minimal) || algorithm is not TextDiffAlgorithm.Myers);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_Myers_MaxEditCostAboveTheEditDistance_IsMinimal()
+    {
+        var random = new Random(20261109);
+        for (var iteration = 0; iteration < 300; iteration++)
+        {
+            var alphabet = random.Next(1, 8);
+            var oldText = JoinLines(CreateRandomLines(random, alphabet));
+            var newText = JoinLines(CreateRandomLines(random, alphabet));
+            var minimal = Diff.ComputeDiff(oldText, newText);
+            var limited = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { MaxEditCost = CountEdits(minimal) });
+
+            Assert.Equal(minimal.Entries, limited.Entries);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_AllAlgorithms_LargeUnrelatedTexts_StopsAtTheTimeout(TextDiffAlgorithm algorithm)
+    {
+        // Without a limit, a character diff of these texts takes far longer than the timeout with every algorithm
+        var oldText = CreateLargeUnrelatedText(seed: 1);
+        var newText = CreateLargeUnrelatedText(seed: 2);
+        var options = new TextDiffOptions { Algorithm = algorithm, Chunker = TextChunker.Characters, Timeout = TimeSpan.FromMilliseconds(100) };
+
+        TextDiffResult? result = null;
+        var thread = new Thread(() => result = Diff.ComputeDiff(oldText, newText, options));
+        thread.Start();
+
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The diff did not stop at its timeout.");
+        Assert.NotNull(result);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_AllAlgorithms_LargeUnrelatedTexts_StopsWhenCanceled(TextDiffAlgorithm algorithm)
+    {
+        var oldText = CreateLargeUnrelatedText(seed: 1);
+        var newText = CreateLargeUnrelatedText(seed: 2);
+        var options = new TextDiffOptions { Algorithm = algorithm, Chunker = TextChunker.Characters };
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        Exception? exception = null;
+        var thread = new Thread(() => exception = Record.Exception(() => Diff.ComputeDiff(oldText, newText, options, cancellationTokenSource.Token)));
+        thread.Start();
+
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The diff did not stop when canceled.");
+        Assert.IsType<OperationCanceledException>(exception);
+    }
+
+    [Fact]
+    public void ComputeDiff_Myers_LargeUnrelatedTexts_MaxEditCostBoundsTheWork()
+    {
+        // The edit distance is in the tens of thousands, which makes the search slow without the limit. A small
+        // limit splits the regions close to their corners, so this also checks the recursion depth stays bounded.
+        var oldText = CreateLargeUnrelatedText(seed: 1);
+        var newText = CreateLargeUnrelatedText(seed: 2);
+        foreach (var maxEditCost in (int[])[1, 64])
+        {
+            var options = new TextDiffOptions { Chunker = TextChunker.Characters, MaxEditCost = maxEditCost };
+
+            TextDiffResult? result = null;
+            var thread = new Thread(() => result = Diff.ComputeDiff(oldText, newText, options), maxStackSize: 512 * 1024);
+            thread.Start();
+
+            Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The diff did not stop at its edit cost limit.");
+            Assert.NotNull(result);
+            Assert.Equal(oldText, ReconstructOldText(result));
+            Assert.Equal(newText, ReconstructNewText(result));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_AllAlgorithms_CanceledToken_Throws(TextDiffAlgorithm algorithm)
+    {
+        var options = new TextDiffOptions { Algorithm = algorithm };
+
+        Assert.Throws<OperationCanceledException>(() => Diff.ComputeDiff("a", "a", options, new CancellationToken(canceled: true)));
+        Assert.Throws<OperationCanceledException>(() => Diff.ComputeDiff("a", "b", options, new CancellationToken(canceled: true)));
+        Assert.Throws<OperationCanceledException>(() => Diff.ComputeHierarchyDiff("a b", "a c", [TextChunker.Words, TextChunker.Characters], options, new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_TimeoutReached_ReplacesTheRemainingRegions()
+    {
+        var options = new TextDiffOptions { Timeout = TimeSpan.Zero };
+
+        var result = Diff.ComputeHierarchyDiff("same\nab\n", "same\naX\n", [TextChunker.Lines, TextChunker.Characters], options);
+
+        Assert.Equal("same\nab\n", ReconstructHierarchyOldText(result));
+        Assert.Equal("same\naX\n", ReconstructHierarchyNewText(result));
+    }
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData(-1000)]
+    public void ComputeDiff_NegativeTimeout_Throws(int milliseconds)
+    {
+        var options = new TextDiffOptions { Timeout = TimeSpan.FromMilliseconds(milliseconds) };
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => Diff.ComputeDiff("a", "b", options));
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
+    public void ComputeDiff_InfiniteTimeout_DoesNotThrow()
+    {
+        var options = new TextDiffOptions { Timeout = Timeout.InfiniteTimeSpan };
+
+        Assert.True(Diff.ComputeDiff("a", "b", options).HasDifferences);
+    }
+
+    [Fact]
+    public void ComputeDiff_NegativeMaxEditCost_Throws()
+    {
+        var options = new TextDiffOptions { MaxEditCost = -1 };
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => Diff.ComputeDiff("a", "b", options));
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
     public void ComputeDiff_InsertLine()
     {
         var result = Diff.ComputeDiff("line1\nline3", "line1\nline2\nline3");
@@ -1364,6 +1570,23 @@ public sealed class TextDiffTests
     }
 
     private static string JoinLines(params string[] lines) => string.Join('\n', lines);
+
+    private static int CountEdits(TextDiffResult result) => result.Entries.Count(entry => entry.Operation is not TextDiffOperation.Equal);
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    private static string CreateLargeUnrelatedText(int seed)
+    {
+        // Few distinct characters: no chunk is unique and every chunk is frequent, so Patience and Histogram fall back
+        // to Myers, and Hunt-Szymanski has billions of matching pairs.
+        var random = new Random(seed);
+        var chars = new char[100_000];
+        for (var i = 0; i < chars.Length; i++)
+        {
+            chars[i] = (char)('a' + random.Next(4));
+        }
+
+        return new string(chars);
+    }
 
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
     private static string[] CreateRandomLines(Random random, int alphabet)

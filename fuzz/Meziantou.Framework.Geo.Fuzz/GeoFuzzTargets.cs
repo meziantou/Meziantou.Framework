@@ -69,6 +69,9 @@ public static partial class GeoFuzzTargets
         new("geo-gpx", GpxTarget) { Seeds = GetGpxSeeds, Dictionary = XmlTokens },
         new("geo-shapefile", ShapefileTarget) { Seeds = GetShapefileSeeds, Dictionary = ShapefileTokens },
         new("geo-flatgeobuf", FlatGeobufTarget) { Seeds = GetFlatGeobufSeeds, Dictionary = FlatGeobufTokens },
+        new("geo-geojson-stream", GeoJsonStreamTarget) { Seeds = GetGeoJsonStreamSeeds, Dictionary = JsonTokens },
+        new("geo-shapefile-stream", ShapefileStreamTarget) { Seeds = GetShapefileStreamSeeds, Dictionary = ShapefileTokens },
+        new("geo-flatgeobuf-stream", FlatGeobufStreamTarget) { Seeds = GetFlatGeobufStreamSeeds, Dictionary = FlatGeobufTokens },
         new("geo-operations", OperationsTarget) { Seeds = GetOperationsSeeds },
         new("geo-projection", ProjectionTarget) { Seeds = GetProjectionSeeds },
     ];

@@ -21,6 +21,12 @@ namespace Meziantou.Framework.Imaging;
 /// Loading never uses this table: formats are detected from content (<see cref="Image.DetectFormat(ReadOnlySpan{byte})"/>).
 /// It is meant to name output files, to set a <c>Content-Type</c>, or to choose an encoder from a request.
 /// </para>
+/// <para>
+/// The formats of the codecs an application registers (<see cref="CustomImageCodec"/>) are described by instances created
+/// with the public constructor: their <see cref="Format"/> is <see cref="ImageFormat.Custom"/>, and they are not part of
+/// the table (<see cref="All"/>, <see cref="Get(ImageFormat)"/>, <see cref="TryGetByFileExtension(ReadOnlySpan{char}, out ImageFormatInfo?)"/>
+/// and <see cref="TryGetByMimeType(ReadOnlySpan{char}, out ImageFormatInfo?)"/> only know the built-in formats).
+/// </para>
 /// <para>Instances are immutable and shared; this type is thread-safe.</para>
 /// </remarks>
 public sealed class ImageFormatInfo
@@ -48,6 +54,51 @@ public sealed class ImageFormatInfo
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);
 
+    /// <summary>Initializes the description of a format that a <see cref="CustomImageCodec"/> reads or writes.</summary>
+    /// <param name="name">The display name of the format, such as <c>Farbfeld</c>.</param>
+    /// <param name="mimeTypes">The media types of the format, the preferred one first: at least one, in ASCII, such as <c>image/x-farbfeld</c>. They are stored in lower case.</param>
+    /// <param name="fileExtensions">
+    /// The file extensions of the format, the preferred one first: at least one, in ASCII, with or without the leading period
+    /// (<c>.ff</c> or <c>ff</c>). They are stored in lower case with their leading period.
+    /// </param>
+    /// <remarks>The <see cref="Format"/> of the description is <see cref="ImageFormat.Custom"/>.</remarks>
+    /// <exception cref="ArgumentNullException">An argument or one of its items is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="name"/> is empty or white space, a list is empty, a media type is not a <c>type/subtype</c> pair of
+    /// ASCII characters without white space or parameters, or an extension is empty or contains another character than an
+    /// ASCII letter, digit, <c>-</c>, <c>_</c> or <c>+</c>.
+    /// </exception>
+    public ImageFormatInfo(string name, IEnumerable<string> mimeTypes, IEnumerable<string> fileExtensions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(mimeTypes);
+        ArgumentNullException.ThrowIfNull(fileExtensions);
+        var types = new List<string>();
+        foreach (var mimeType in mimeTypes)
+        {
+            ArgumentNullException.ThrowIfNull(mimeType, nameof(mimeTypes));
+            types.Add(NormalizeMimeType(mimeType, nameof(mimeTypes)));
+        }
+
+        var extensions = new List<string>();
+        foreach (var extension in fileExtensions)
+        {
+            ArgumentNullException.ThrowIfNull(extension, nameof(fileExtensions));
+            extensions.Add(NormalizeFileExtension(extension, nameof(fileExtensions)));
+        }
+
+        if (types.Count == 0)
+            throw new ArgumentException("A format has at least one media type.", nameof(mimeTypes));
+
+        if (extensions.Count == 0)
+            throw new ArgumentException("A format has at least one file extension.", nameof(fileExtensions));
+
+        Format = ImageFormat.Custom;
+        Name = name;
+        MimeTypes = types.AsReadOnly();
+        FileExtensions = extensions.AsReadOnly();
+    }
+
     private ImageFormatInfo(ImageFormat format, string[] mimeTypes, string[] fileExtensions)
     {
         Format = format;
@@ -56,10 +107,13 @@ public sealed class ImageFormatInfo
         FileExtensions = Array.AsReadOnly(fileExtensions);
     }
 
-    /// <summary>Gets the descriptions of every supported format, in the order of <see cref="ImageFormat"/> (<see cref="ImageFormat.Unknown"/> excluded).</summary>
+    /// <summary>
+    /// Gets the descriptions of every built-in format, in the order of <see cref="ImageFormat"/> (<see cref="ImageFormat.Unknown"/>
+    /// and <see cref="ImageFormat.Custom"/> excluded).
+    /// </summary>
     public static IReadOnlyList<ImageFormatInfo> All => AllFormats;
 
-    /// <summary>Gets the described format.</summary>
+    /// <summary>Gets the described format: <see cref="ImageFormat.Custom"/> for the format of a <see cref="CustomImageCodec"/>.</summary>
     public ImageFormat Format { get; }
 
     /// <summary>Gets the display name of the format, such as <c>PNG</c> or <c>JPEG XL</c>.</summary>
@@ -98,7 +152,10 @@ public sealed class ImageFormatInfo
     /// <summary>Gets the description of a format.</summary>
     /// <param name="format">The format.</param>
     /// <returns>The description.</returns>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is <see cref="ImageFormat.Unknown"/> or not a defined value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
+    /// <see cref="CustomImageCodec.FormatInfo"/>) or not a defined value.
+    /// </exception>
     public static ImageFormatInfo Get(ImageFormat format)
     {
         foreach (var info in Formats)
@@ -176,6 +233,63 @@ public sealed class ImageFormatInfo
 
         info = null;
         return false;
+    }
+
+    /// <summary>Determines whether a file extension is one of <see cref="FileExtensions"/>.</summary>
+    /// <param name="extension">The extension, with its leading period.</param>
+    /// <returns><see langword="true"/> if the extension belongs to this format, compared without regard to ASCII case.</returns>
+    internal bool HasFileExtension(ReadOnlySpan<char> extension)
+    {
+        foreach (var known in FileExtensions)
+        {
+            if (extension.Equals(known, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string NormalizeMimeType(string mimeType, string parameterName)
+    {
+        var separator = mimeType.IndexOf('/', StringComparison.Ordinal);
+        var valid = separator > 0 && separator < mimeType.Length - 1 && mimeType.IndexOf('/', separator + 1, StringComparison.Ordinal) < 0;
+        foreach (var c in mimeType)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('/' or '-' or '+' or '.' or '_'))
+            {
+                valid = false;
+            }
+        }
+
+        if (!valid)
+            throw new ArgumentException($"The media type '{mimeType}' is not a type/subtype pair of ASCII letters, digits, '-', '+', '.' or '_'.", parameterName);
+
+        return ToAsciiLower(mimeType);
+    }
+
+    private static string NormalizeFileExtension(string extension, string parameterName)
+    {
+        var name = extension.StartsWith('.', StringComparison.Ordinal) ? extension.AsSpan(1) : extension.AsSpan();
+        var valid = !name.IsEmpty;
+        foreach (var c in name)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('-' or '_' or '+'))
+            {
+                valid = false;
+            }
+        }
+
+        if (!valid)
+            throw new ArgumentException($"The file extension '{extension}' is empty or contains another character than an ASCII letter, digit, '-', '_' or '+'.", parameterName);
+
+        return "." + ToAsciiLower(name);
+    }
+
+    private static string ToAsciiLower(ReadOnlySpan<char> value)
+    {
+        Span<char> buffer = value.Length <= 128 ? stackalloc char[value.Length] : new char[value.Length];
+        _ = System.Text.Ascii.ToLower(value, buffer, out var written);
+        return new string(buffer[..written]);
     }
 
     /// <summary>Returns the display name of the format.</summary>

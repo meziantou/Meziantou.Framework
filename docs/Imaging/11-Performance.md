@@ -104,27 +104,21 @@ Posters, maps and screenshots cover millions of pixels. With
 [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism)
 above 1, the draw calls on the image share the work of their large shapes between threads:
 
-<!-- ref:../../tests/Meziantou.Framework.Imaging.Processing.Tests/DrawingSessionTests.cs;region=Imaging_ParallelDrawing;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/PerformanceExamples.cs;region=Imaging_ParallelDrawing;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// The configuration of the image lets its draw calls composite large shapes on several threads
-var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Environment.ProcessorCount };
-using var poster = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255), configuration);
-using var reference = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255));
-foreach (var image in new[] { poster, reference })
+public static void DrawPoster(string outputPath)
 {
-    image.Draw(static canvas =>
+    // The configuration of the image lets its draw calls composite large shapes on several threads.
+    // The pixels are the same as with one thread.
+    var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Environment.ProcessorCount };
+    using var poster = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255), configuration);
+    poster.Draw(canvas =>
     {
         canvas.Fill(new RadialGradientBrush(new PointD(1200, 800), 1400, [new GradientStop(0, new Rgba32(255, 200, 0)), new GradientStop(1, new Rgba32(0, 60, 160))]));
         canvas.FillEllipse(new SolidBrush(new Rgba32(255, 255, 255, 128)), new PointD(1200, 800), 900, 600);
     });
+    poster.Save(outputPath);
 }
-
-// The pixels are those of one thread
-var pixels = new Rgba32[poster.Width * poster.Height];
-var referencePixels = new Rgba32[pixels.Length];
-poster.Frames[0].CopyPixelDataTo(pixels);
-reference.Frames[0].CopyPixelDataTo(referencePixels);
-Assert.Equal(referencePixels, pixels);
 ```
 <!-- endref -->
 
@@ -137,7 +131,7 @@ Assert.Equal(referencePixels, pixels);
   layers. An opaque solid color on its own gains little: computing the coverage costs about as much as writing the
   pixels.
 - Texts, clip masks, shadows, blurs and filters, and gradients mixed in a
-  [paint profile](../07-Drawing/06-RenderingQuality.md#draw-colors-of-a-color-profile), are drawn on the calling thread.
+  [paint profile](07-Drawing/06-RenderingQuality.md#draw-colors-of-a-color-profile), are drawn on the calling thread.
 - Each thread needs about 128 KB and 40 bytes per pixel of the width of the canvas, counted by
   [ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes).
   Set the value to 1, the default, to draw on the calling thread only.

@@ -623,7 +623,6 @@ public sealed class DrawingSessionTests
     [Fact]
     public void DrawingWithSeveralThreadsGivesThePixelsOfOne()
     {
-        #region Imaging_ParallelDrawing
         // The configuration of the image lets its draw calls composite large shapes on several threads
         var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Environment.ProcessorCount };
         using var poster = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255), configuration);
@@ -643,7 +642,6 @@ public sealed class DrawingSessionTests
         poster.Frames[0].CopyPixelDataTo(pixels);
         reference.Frames[0].CopyPixelDataTo(referencePixels);
         Assert.Equal(referencePixels, pixels);
-        #endregion
     }
 
     [Fact]

@@ -225,6 +225,32 @@ AVIF file with a tone map item. A [GainMap](cref:Meziantou.Framework.Imaging.For
 ones of a photo that was read, after the same edit:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_WriteGainMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeHdrPhoto(string photoPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    var images = AuxiliaryImageCollection.Load(photoPath);
+    if (images.GainMapImage is { GainMapMetadata: { } metadata } gainMapImage)
+    {
+        // The samples of the gain map are its coded values, often at a fraction of the size of the photo: it gets the
+        // same geometry (the same resize, crop or rotation), scaled to its own size
+        using var gainMap = gainMapImage.Decode();
+        var scaleX = (double)gainMap.Width / photo.Width;
+        var scaleY = (double)gainMap.Height / photo.Height;
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        gainMap.Resize(new ResizeOptions(Math.Max(1, (int)Math.Round(photo.Width * scaleX, MidpointRounding.AwayFromZero)), Math.Max(1, (int)Math.Round(photo.Height * scaleY, MidpointRounding.AwayFromZero))) { Mode = ResizeMode.Stretch });
+
+        // An Ultra HDR file: the gain map image follows the photo, with its parameters (ISO 21496-1 and XMP). An
+        // AvifEncoder with a GainMap writes the same photo as an AVIF file
+        photo.Save(outputPath, new JpegEncoder { Quality = 90, GainMap = new GainMap(gainMap, metadata) });
+    }
+    else
+    {
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        photo.Save(outputPath, new JpegEncoder { Quality = 90 });
+    }
+}
+```
 <!-- endref -->
 
 - The samples of the gain map image are its coded values, as [AuxiliaryImage.Decode](cref:Meziantou.Framework.Imaging.AuxiliaryImage.Decode) returns them: a grayscale image gives

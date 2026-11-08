@@ -158,6 +158,21 @@ The ancillary chunks that the library does not interpret (private chunks of an a
 palette, before the image data, or after it. The encoder writes them back at their position:
 
 <!-- ref:../../../tests/Meziantou.Framework.Imaging.Png.Tests/PngEncoderTests.cs;region=Imaging_PngPrivateChunks;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var image = new Image<Rgba32>(4, 4);
+
+// A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
+// PNG encoder writes it before the image data, and the decoder reads it back with its position
+image.Metadata.PngChunks.Add(new PngChunk("myAp", new MetadataBlob("settings"u8)));
+using var stream = new MemoryStream();
+image.Save(stream, new PngEncoder());
+
+using var loaded = Image.Load(stream.ToArray());
+var chunk = Assert.Single(loaded.Metadata.PngChunks);
+Assert.Equal("myAp", chunk.Type);
+Assert.True(chunk.IsSafeToCopy);
+Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
+```
 <!-- endref -->
 
 - The case of the letters of the type says what the chunk is: a lowercase first letter for an ancillary chunk (critical

@@ -190,7 +190,7 @@ public sealed class ApiSurfaceTests
             settings);
 
         // The shared settings exclude codec-specific options and container features that only AVIF writes so far
-        string[] avifOnly = [nameof(AvifEncoder.AutoTiling), nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.PremultiplyAlpha)];
+        string[] avifOnly = [nameof(AvifEncoder.AutoTiling), nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.GainMap), nameof(AvifEncoder.PremultiplyAlpha)];
         string[] heicOnly = [nameof(HeicEncoder.OptimizeQuantization)];
         Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Except(avifOnly).Order(StringComparer.Ordinal), settings.Except(heicOnly));
         Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(HeicEncoder.OptimizeQuantization)).PropertyType);

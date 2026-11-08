@@ -66,6 +66,13 @@ internal sealed class BmpDecoder : IImageDecodeObserver
             throw new InvalidOperationException("The BMP image has no row.");
 
         var sink = _sink!;
+
+        // The profile is read after the sink was created: it may follow the pixel data
+        if (structure.Metadata.IccProfile is { } profile)
+        {
+            sink.AdoptColorProfile(profile);
+        }
+
         sink.UpdateMetadata(structure.Metadata);
         sink.EndImage();
     }

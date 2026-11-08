@@ -128,8 +128,8 @@ internal sealed class MetadataWritePlan
                 if (!MetadataValidation.TryValidateIccProfile(iccProfile.Data.Span, out var error))
                     throw new InvalidImageContentException("The ICC profile is malformed: " + error, format);
 
-                // WebP stores RGB samples whatever the pixel format: a gray source is written as RGB
-                var labeled = format == ImageFormat.WebP && pixelFormat is { } source && PixelFormats.IsGrayscale(source) ? PixelFormat.Rgb24 : pixelFormat;
+                // WebP and BMP store RGB samples whatever the pixel format: a gray source is written as RGB
+                var labeled = format is ImageFormat.WebP or ImageFormat.Bmp && pixelFormat is { } source && PixelFormats.IsGrayscale(source) ? PixelFormat.Rgb24 : pixelFormat;
                 if (labeled is { } pixels && !ColorProfileCompatibility.IsCompatible(iccProfile.ColorSpace, pixels))
                 {
                     context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"ICC color profile declaring the {iccProfile.ColorSpace} color space for {pixels} pixels"));
@@ -407,7 +407,7 @@ internal sealed class MetadataWritePlan
         private static readonly FormatCapabilities Gif = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.CommentsOnly);
         private static readonly FormatCapabilities Jpeg = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.JpegComments);
         private static readonly FormatCapabilities WebP = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None);
-        private static readonly FormatCapabilities Bmp = new(icc: false, exif: false, xmp: false, resolution: true, TextSupport.None);
+        private static readonly FormatCapabilities Bmp = new(icc: true, exif: false, xmp: false, resolution: true, TextSupport.None);
 
         private static readonly FormatCapabilities Ani = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.AniInfo);
 

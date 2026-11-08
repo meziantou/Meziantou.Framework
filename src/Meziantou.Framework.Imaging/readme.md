@@ -87,6 +87,7 @@ copied from code that compiles, and most of them also run in the test suite.
   - [Saving files](#saving-files)
   - [Errors](#errors)
   - [Lenient decoding](#lenient-decoding)
+  - [Extension points](#extension-points)
 - [Format reference](#format-reference)
   - [PNG and APNG](#png-and-apng)
   - [GIF](#gif)
@@ -413,12 +414,13 @@ public static Point WriteAndReadIcon(string inputPath, string iconPath, string c
 
 | Object | Lifetime |
 | --- | --- |
-| `Image`, `Image<TPixel>` (constructors, `Load`, `Clone`, `CloneAs`, `CloneFrame`, `ClonePosterFrame`, `ImportPixel*`, reader results) | Owned by the caller: dispose it. `Dispose` is idempotent. |
+| `Image`, `Image<TPixel>` (constructors, `Load`, `Clone`, `CloneAs`, `CloneFrame`, `ClonePosterFrame`, `ImportPixel*`, `WrapMemory`, reader results) | Owned by the caller: dispose it. `Dispose` is idempotent. |
 | `ImageFrame`, `ImageFrame<TPixel>`, frame collections | Borrowed views, not disposable. Invalid (`ObjectDisposedException`) once the frame is removed or replaced, or the image is disposed. After a geometry change, a frame reference still designates the same logical frame. |
 | `ImageCollection` | Owned by the caller: dispose it. Its entries are borrowed, and the images they decode are owned. |
 | Clones, extracted frames, reader results | Independent: they stay valid after the source image or the reader is disposed. |
 | Input streams, spans and files of eager `Load`/`Identify` | Never retained: everything needed is copied while loading. |
 | Raw pixel imports (`ImportPixelData`, `ImportPixelBytes`) | Always copied; caller memory is never wrapped. |
+| Wrapped caller memory (`WrapMemory`: a `Memory<byte>` or a pointer, with a stride) | Not copied: in-place pixel edits write it. Released through the callback of the caller once the image no longer uses it: on dispose, or when a geometry change moves the frame to library memory. Not charged to `MaxLiveAllocationBytes`. |
 | `MetadataBlob`, profiles, options, encoders, brushes, pens, paths | Immutable (blobs copy their input); safe to share. |
 
 **Leases**. Pixels are accessed through exclusive scoped leases: `ProcessPixelRows` (typed rows),
@@ -4605,6 +4607,30 @@ public static Image LoadLeniently(string path)
 | TIFF | A page of one uncompressed strip or tile (not YCbCr) without byte counts, or one strip whose byte count is smaller than its rows | The block is read for the length of its rows (a full tile); a block that runs past the end of the file is still rejected |
 | OpenEXR | An offset table with entries before its own end (zeros, typically: a writer that stopped before patching the table) | The table is rebuilt from the chunks, which must follow it without a gap: scan lines in their line order (increasing for random order), tiles in any order; the valid entries must give the offsets of their chunks, and a missing, repeated or truncated chunk is still rejected |
 
+### Extension points
+
+- **Custom codecs.** A `CustomImageCodec` registered in `ImageConfiguration.Codecs` adds a format to `Image.Load`,
+  `Image.Identify` and `Image.DetectFormatInfo` (paths, streams and spans, sync and async). Its files are recognized from
+  their first `Image.FormatDetectionPrefixLength` bytes, before the built-in formats, and reported as
+  `ImageFormat.Custom` with the codec's `ImageInfo.FormatInfo`. The library reads the whole file within
+  `MaxEncodedBytes` and hands it to the codec; the codec creates its image with `CustomImageDecodeContext.CreateImage`,
+  which applies the canvas limits and charges the pixels to the load. Typed loads convert the result, the frame limit
+  removes the frames beyond it, and the images a failed codec created are disposed. Sequential readers, collections and
+  auxiliary images only read the built-in formats.
+- **Custom encoders.** A `CustomImageEncoder` (from `CustomImageCodec.CreateEncoder` for the extensions of the format, or
+  passed explicitly) writes the whole image in `Image.Save` and `ImageFrame.Save`; path outputs are published
+  atomically. Sequential writers reject custom encoders; `MetadataHandling` and `FloatingPointConversion` are read by
+  the encoder itself.
+- **Custom pixel operations.** `ApplyRowOperation` (`IPixelRowOperation<TPixel>`, in place) and
+  `ApplyNeighborhoodOperation` (`IPixelNeighborhoodOperation<TPixel>`, from a copy of the frame) run on every frame and
+  the poster, by bands of rows on up to `MaxDegreeOfParallelism` workers. The rows are the pixel type of the image,
+  `Rgba64` (integer formats) or `RgbaFloat` (any format), converted without loss; storing them back clips the
+  floating-point samples an integer format cannot hold.
+- **Wrapped memory.** `Image.WrapMemory` creates an image over a `Memory<byte>` or a pointer, with a stride and a pixel
+  format, without copying it (see the ownership table).
+- **Buffer pool.** `ImageBufferPool.MaxRetainedBytes` bounds the bytes the process-wide pool keeps for reuse (32 MiB by
+  default, 0 disables retention, lowering it releases buffers); `ImageBufferPool.Trim` releases them all.
+
 ## Format reference
 
 Every codec works eagerly (`Load`, `Save`) and sequentially (readers, writers) with the same results, and streams with
@@ -5743,4 +5769,4 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost) unless `OpenExrDecodingOptions.Layer` selects a layer, the chroma channels `RY` and `BY` also in a layer, sub-sampled color channels (a sub-sampled channel that a layer ignores is fine), a data window that leaves the display window (its pixels would be lost) unless `OpenExrDecodingOptions.WindowMode` crops it or decodes the data window, UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
 | Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), only for horizontal text, without the variations of the control values (`cvar`) and without the hints of CFF outlines; no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
-| API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |
+| API | No custom pixel type and no replaceable allocator (the buffer pool has settings, `ImageBufferPool`); the extension points are custom codecs and encoders and custom pixel operations ([Extension points](#extension-points)); implementation types are internal |

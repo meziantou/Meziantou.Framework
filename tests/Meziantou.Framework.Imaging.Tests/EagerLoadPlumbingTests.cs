@@ -504,6 +504,159 @@ public sealed class EagerLoadPlumbingTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public async Task CustomCodecsLoadAndIdentifyThroughEveryInputVariant(InputVariant variant)
+    {
+        var codec = new TestCustomCodec();
+        var configuration = new ImageConfiguration { Codecs = [codec] };
+        var frames = TestCustomCodec.CreateFrames(3, 2, 2);
+        var data = TestCustomCodec.Encode(3, 2, frames);
+
+        var info = await InputVariants.IdentifyAsync(variant, data, ImageFormat.Custom, new ImageIdentifyOptions { Configuration = configuration }, XunitCancellationToken);
+        Assert.Equal(ImageFormat.Custom, info.Format);
+        Assert.Same(codec.FormatInfo, info.FormatInfo);
+        Assert.Equal(new Size(3, 2), info.Size);
+        Assert.Equal(PixelFormat.Rgba32, info.PixelFormat);
+        Assert.Equal(2, info.FrameCount);
+        Assert.Equal(ImageIdentifyMode.Header, info.IdentifyMode);
+
+        using var image = await InputVariants.LoadAsync(variant, data, ImageFormat.Custom, new ImageDecodeOptions { Configuration = configuration }, XunitCancellationToken);
+        var typed = Assert.IsType<Image<Rgba32>>(image);
+        Assert.Same(configuration, image.Configuration);
+        Assert.Equal(ImageFormat.Custom, image.Metadata.SourceFormat);
+        Assert.HasCount(2, image.Frames);
+        for (var i = 0; i < frames.Length; i++)
+        {
+            var pixels = new Rgba32[6];
+            typed.Frames[i].CopyPixelDataTo(pixels);
+            Assert.Equal(frames[i], pixels);
+        }
+
+        // The same file is not recognized without the codec
+        await Assert.ThrowsAsync<UnknownImageFormatException>(() => InputVariants.LoadAsync(variant, data, ImageFormat.Custom, options: null, XunitCancellationToken));
+    }
+
+    [Fact]
+    public void CustomCodecsAreConsultedBeforeTheBuiltInCodecs()
+    {
+        var custom = new TestCustomCodec();
+        var data = TestCustomCodec.Encode(1, 1, TestCustomCodec.CreateFrames(1, 1, 1));
+        var configuration = new ImageConfiguration { Codecs = [custom] };
+        Assert.Same(custom.FormatInfo, Image.DetectFormatInfo(data, configuration));
+        Assert.Null(Image.DetectFormatInfo(data));
+        Assert.Equal(ImageFormat.Unknown, Image.DetectFormat(data));
+
+        using var png = new Image<Rgba32>(2, 2);
+        using var stream = new MemoryStream();
+        png.Save(stream, new PngEncoder());
+        var pngData = stream.ToArray();
+        Assert.Same(ImageFormatInfo.Get(ImageFormat.Png), Image.DetectFormatInfo(pngData, configuration));
+        Assert.Null(Image.DetectFormatInfo(pngData.AsSpan(0, 7), configuration));
+
+        // A registered codec that recognizes PNG files reads them instead of the built-in codec
+        var pngReader = new TestCustomCodec(signature: pngData.AsSpan(0, 8).ToArray(), decode: static (data, context) => context.CreateImage<Gray8>(1, 1));
+        var replaced = new ImageConfiguration { Codecs = [pngReader] };
+        Assert.Same(pngReader.FormatInfo, Image.DetectFormatInfo(pngData, replaced));
+        using var image = Image.Load(pngData, new ImageDecodeOptions { Configuration = replaced });
+        Assert.Equal(PixelFormat.Gray8, image.PixelFormat);
+        Assert.Equal(ImageFormat.Custom, image.Metadata.SourceFormat);
+    }
+
+    [Fact]
+    public void CustomCodecsReceiveTheRequestAndTheLoadAppliesIt()
+    {
+        PixelFormat? requested = null;
+        int? frameLimit = null;
+        ImageIdentifyMode? mode = ImageIdentifyMode.FullScan;
+        var codec = new TestCustomCodec(observe: context => (requested, frameLimit, mode) = (context.RequestedPixelFormat, context.FrameLimit, context.IdentifyMode));
+        var frames = TestCustomCodec.CreateFrames(2, 2, 3);
+        var data = TestCustomCodec.Encode(2, 2, frames);
+        var configuration = new ImageConfiguration { Codecs = [codec] };
+
+        using (var image = Image.Load<Rgba64>(data, new ImageDecodeOptions { Configuration = configuration, FrameLimit = 2 }))
+        {
+            Assert.Equal(PixelFormat.Rgba64, requested);
+            Assert.Equal(2, frameLimit);
+            Assert.Null(mode);
+            Assert.HasCount(2, image.Frames);
+            Assert.Equal(ImageFormat.Custom, image.Metadata.SourceFormat);
+            var expected = frames[1][3];
+            Assert.Equal(new Rgba64((ushort)(expected.R * 257), (ushort)(expected.G * 257), (ushort)(expected.B * 257), (ushort)(expected.A * 257)), image.Frames[1][1, 1]);
+        }
+
+        // The default identification decodes the file and describes the image
+        var describing = new TestCustomCodec(identifyHeader: false, observe: context => mode = context.IdentifyMode);
+        var info = Image.Identify(data, new ImageIdentifyOptions { Configuration = new ImageConfiguration { Codecs = [describing] }, Mode = ImageIdentifyMode.FullScan });
+        Assert.Equal(ImageIdentifyMode.FullScan, mode);
+        Assert.Equal(3, info.FrameCount);
+        Assert.Equal(true, info.IsAnimated);
+        Assert.Same(describing.FormatInfo, info.FormatInfo);
+    }
+
+    [Fact]
+    public void CustomDecodersReturnAnImageOfTheirContext()
+    {
+        var data = TestCustomCodec.Encode(1, 1, TestCustomCodec.CreateFrames(1, 1, 1));
+        static ImageDecodeOptions Options(CustomImageCodec codec) => new() { Configuration = new ImageConfiguration { Codecs = [codec] } };
+
+        Image? leaked = null;
+        var foreign = new TestCustomCodec(decode: (_, context) =>
+        {
+            leaked = context.CreateImage<Rgba32>(1, 1);
+            return new Image<Rgba32>(1, 1);
+        });
+        Assert.Throws<InvalidOperationException>(() => Image.Load(data, Options(foreign)));
+        Assert.Throws<ObjectDisposedException>(() => leaked!.Width);
+
+        var none = new TestCustomCodec(decode: static (_, _) => null!);
+        Assert.Throws<InvalidOperationException>(() => Image.Load(data, Options(none)));
+
+        // The exceptions of a codec are propagated unchanged, and the images it created are released
+        CustomImageDecodeContext? captured = null;
+        var failing = new TestCustomCodec(decode: (_, context) =>
+        {
+            captured = context;
+            leaked = context.CreateImage<Rgba32>(1, 1);
+            throw new InvalidImageContentException("broken", ImageFormat.Custom);
+        });
+        Assert.Equal("broken", Assert.Throws<InvalidImageContentException>(() => Image.Load(data, Options(failing))).Message);
+        Assert.Throws<ObjectDisposedException>(() => leaked!.Width);
+        Assert.Throws<InvalidOperationException>(() => captured!.CreateImage<Rgba32>(1, 1));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CustomDecodersRespectTheResourceLimits(bool stream)
+    {
+        var codec = new TestCustomCodec();
+        var data = TestCustomCodec.Encode(3, 2, TestCustomCodec.CreateFrames(3, 2, 2));
+        Task<Image> Load(ImageResourceLimits limits)
+        {
+            var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { Codecs = [codec], Limits = limits } };
+            return stream ? Image.LoadAsync(new MemoryStream(data), options, XunitCancellationToken) : Task.FromResult(Image.Load(data, options));
+        }
+
+        using (await Load(new ImageResourceLimits { MaxEncodedBytes = data.Length, MaxWidth = 3, MaxFrames = 2 }))
+        {
+        }
+
+        Assert.Equal(ImageResourceLimitKind.EncodedBytes, (await Assert.ThrowsAsync<ImageResourceLimitException>(() => Load(new ImageResourceLimits { MaxEncodedBytes = data.Length - 1 }))).Kind);
+        Assert.Equal(ImageResourceLimitKind.Width, (await Assert.ThrowsAsync<ImageResourceLimitException>(() => Load(new ImageResourceLimits { MaxWidth = 2 }))).Kind);
+        Assert.Equal(ImageResourceLimitKind.Frames, (await Assert.ThrowsAsync<ImageResourceLimitException>(() => Load(new ImageResourceLimits { MaxFrames = 1 }))).Kind);
+        Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, (await Assert.ThrowsAsync<ImageResourceLimitException>(() => Load(new ImageResourceLimits { MaxLiveAllocationBytes = data.Length + 8 }))).Kind);
+    }
+
+    [Fact]
+    public void SequentialReadersRejectCustomFormats()
+    {
+        var data = TestCustomCodec.Encode(1, 1, TestCustomCodec.CreateFrames(1, 1, 1));
+        var options = new ImageReaderOptions { Configuration = new ImageConfiguration { Codecs = [new TestCustomCodec()] } };
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.OpenReader<Rgba32>(new MemoryStream(data), options));
+        Assert.Equal(ImageFormat.Custom, exception.Format);
+    }
+
     private static ImageDecodeOptions CreateOptions(ImageResourceLimits limits) => new() { Configuration = new ImageConfiguration { Limits = limits } };
 
     private static (FrameDuration Duration, byte[] Pixels)[] CreateFrames(PixelFormat format, int count, int width = Width, int height = Height)

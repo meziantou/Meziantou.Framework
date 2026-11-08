@@ -5,6 +5,9 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// <summary>Size classes, clearing and retention bounds of the internal slab pool.</summary>
 public sealed class SlabPoolTests
 {
+    /// <summary>Serializes the tests that change the settings of the shared pool, which every test of the process uses.</summary>
+    internal static readonly Lock SharedPoolSettings = new();
+
     [Theory]
     [InlineData(1, 64)]
     [InlineData(64, 64)]
@@ -203,5 +206,58 @@ public sealed class SlabPoolTests
 
         var diagnostics = pool.GetDiagnostics();
         Assert.InRange(diagnostics.RetainedBytes, 0, 4096);
+    }
+
+    [Fact]
+    public void LoweringTheRetainedBytesReleasesBuffers()
+    {
+        var pool = new SlabPool(new SlabPoolOptions { MaxRetainedBytes = 4096 });
+        Assert.Equal(4096, pool.MaxRetainedBytes);
+        var small = pool.Rent(64, clear: false);
+        var large = pool.Rent(1024, clear: false);
+        Assert.True(pool.Return(small));
+        Assert.True(pool.Return(large));
+        Assert.Equal(64 + 1024, pool.GetDiagnostics().RetainedBytes);
+
+        // The largest size classes go first, until the retained bytes fit
+        pool.MaxRetainedBytes = 1000;
+        Assert.Equal(64, pool.GetDiagnostics().RetainedBytes);
+        Assert.Same(small, pool.Rent(64, clear: false));
+
+        // Zero disables retention
+        pool.MaxRetainedBytes = 0;
+        Assert.False(pool.Return(small));
+        Assert.Equal(0, pool.GetDiagnostics().RetainedBytes);
+
+        pool.MaxRetainedBytes = 4096;
+        Assert.True(pool.Return(pool.Rent(64, clear: false)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => pool.MaxRetainedBytes = -1);
+    }
+
+    [Fact]
+    public void TheSharedPoolSettingsArePublic()
+    {
+        Assert.Equal(SlabPoolOptions.DefaultMaxRetainedBytes, ImageBufferPool.DefaultMaxRetainedBytes);
+        using var settings = SharedPoolSettings.EnterScope();
+        var previous = ImageBufferPool.MaxRetainedBytes;
+        try
+        {
+            ImageBufferPool.MaxRetainedBytes = 0;
+            Assert.Equal(0, SlabPool.Shared.MaxRetainedBytes);
+            Assert.Equal(0, ImageBufferPool.RetainedBytes);
+            using (new Image<Rgba32>(16, 16))
+            {
+            }
+
+            Assert.Equal(0, ImageBufferPool.RetainedBytes);
+            Assert.Throws<ArgumentOutOfRangeException>(() => ImageBufferPool.MaxRetainedBytes = -1);
+        }
+        finally
+        {
+            ImageBufferPool.MaxRetainedBytes = previous;
+        }
+
+        ImageBufferPool.Trim();
+        Assert.Equal(previous, ImageBufferPool.MaxRetainedBytes);
     }
 }

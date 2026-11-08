@@ -30,3 +30,5 @@ A few rules hold for all of them:
 - [Resource limits](07-ResourceLimits.md): bound the size, the frame count and the memory of what you load, especially
   from untrusted sources.
 - [Handling errors](08-ErrorHandling.md): the exceptions the library throws and which ones to catch.
+- [Custom formats](09-CustomFormats.md): read and write a format the library does not support with a codec of your
+  own.

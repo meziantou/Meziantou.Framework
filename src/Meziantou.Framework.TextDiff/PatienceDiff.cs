@@ -4,14 +4,14 @@ namespace Meziantou.Framework;
 
 internal static class PatienceDiff
 {
-    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer)
+    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
     {
         var leftModified = new bool[left.Length];
         var rightModified = new bool[right.Length];
         Array.Fill(leftModified, true);
         Array.Fill(rightModified, true);
 
-        ComputeRange(left, 0, left.Length, right, 0, right.Length, comparer, leftModified, rightModified);
+        ComputeRange(left, 0, left.Length, right, 0, right.Length, comparer, budget, leftModified, rightModified);
         return new DiffComputationResult(leftModified, rightModified);
     }
 
@@ -23,6 +23,7 @@ internal static class PatienceDiff
         int rightStart,
         int rightEnd,
         IEqualityComparer<string> comparer,
+        DiffBudget budget,
         bool[] leftModified,
         bool[] rightModified)
     {
@@ -42,13 +43,14 @@ internal static class PatienceDiff
             rightModified[rightEnd] = false;
         }
 
-        if (leftStart >= leftEnd || rightStart >= rightEnd)
+        // Every chunk starts as modified, so a region left once the time limit is reached is reported as replaced
+        if (leftStart >= leftEnd || rightStart >= rightEnd || budget.IsExpired())
             return;
 
         var anchors = FindAnchors(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer);
         if (anchors.Count == 0)
         {
-            ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, leftModified, rightModified);
+            ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, budget, leftModified, rightModified);
             return;
         }
 
@@ -56,7 +58,7 @@ internal static class PatienceDiff
         var previousRight = rightStart;
         foreach (var anchor in anchors)
         {
-            ComputeRange(left, previousLeft, anchor.LeftIndex, right, previousRight, anchor.RightIndex, comparer, leftModified, rightModified);
+            ComputeRange(left, previousLeft, anchor.LeftIndex, right, previousRight, anchor.RightIndex, comparer, budget, leftModified, rightModified);
 
             leftModified[anchor.LeftIndex] = false;
             rightModified[anchor.RightIndex] = false;
@@ -65,7 +67,7 @@ internal static class PatienceDiff
             previousRight = anchor.RightIndex + 1;
         }
 
-        ComputeRange(left, previousLeft, leftEnd, right, previousRight, rightEnd, comparer, leftModified, rightModified);
+        ComputeRange(left, previousLeft, leftEnd, right, previousRight, rightEnd, comparer, budget, leftModified, rightModified);
     }
 
     private static void ApplyMyers(
@@ -76,13 +78,15 @@ internal static class PatienceDiff
         int rightStart,
         int rightEnd,
         IEqualityComparer<string> comparer,
+        DiffBudget budget,
         bool[] leftModified,
         bool[] rightModified)
     {
         var subDiff = MyersDiff.Compute(
             left.AsSpan(leftStart, leftEnd - leftStart),
             right.AsSpan(rightStart, rightEnd - rightStart),
-            comparer);
+            comparer,
+            budget);
 
         DiffAlgorithmHelpers.ApplySubDiff(subDiff, leftModified, leftStart, rightModified, rightStart);
     }

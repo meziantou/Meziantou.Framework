@@ -131,7 +131,7 @@ internal static class GeoOperations
     private static bool IsSupported(double value) => Math.Abs(value) <= PolygonCombiner.MaxCoordinate;
 
     /// <summary>Checks that the polygons of a geometry fit on the grid of the combiner; the other geometries are not moved to it.</summary>
-    private static void ValidateCoordinates(GeoGeometry geometry, string? paramName)
+    internal static void ValidateCoordinates(GeoGeometry geometry, string? paramName)
     {
         foreach (var simple in geometry.GetSimpleGeometries())
         {
@@ -422,7 +422,7 @@ internal static class GeoOperations
     }
 
     /// <summary>Gets the rings of the polygons of a geometry, the exterior rings counter-clockwise and the holes clockwise.</summary>
-    private static IEnumerable<IReadOnlyList<GeoPosition>> GetOrientedRings(GeoGeometry geometry)
+    internal static IEnumerable<IReadOnlyList<GeoPosition>> GetOrientedRings(GeoGeometry geometry)
     {
         foreach (var simple in geometry.GetSimpleGeometries())
         {
@@ -441,7 +441,7 @@ internal static class GeoOperations
     private static bool IsPolygonal(GeoGeometry geometry) => geometry.GetSimpleGeometries().All(simple => simple is GeoPolygon);
 
     /// <summary>Builds polygons from contours: each counter-clockwise contour is an exterior ring, and each clockwise one a hole of the smallest exterior ring around it.</summary>
-    private static GeoGeometry ToGeometry(List<(long X, long Y)[]> contours, bool asMultiPolygon)
+    internal static GeoGeometry ToGeometry(List<(long X, long Y)[]> contours, bool asMultiPolygon)
     {
         var shells = new List<(long X, long Y)[]>();
         var holes = new List<(long X, long Y)[]>();

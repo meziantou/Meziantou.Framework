@@ -19,7 +19,8 @@ dependency outside .NET, and it supports trimming.
 - **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth, Albers and
   azimuthal equidistant projections. See [projections](05-Projections.md).
 - **Transform geometries**: repair invalid polygons, clip to a box, simplify, split along the 180th meridian, combine
-  polygons (union, intersection, difference), and convert positions from another coordinate system. See
+  polygons (union, intersection, difference), measure the distance between geometries, compute buffers and convex
+  hulls, and convert positions from another coordinate system. See
   [geometry operations](06-GeometryOperations.md).
 - **Draw maps**: `Meziantou.Framework.Charts` draws the features as choropleths and points on maps. See
   [maps](../Charts/04-Gallery/09-Maps.md).

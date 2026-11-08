@@ -1,6 +1,6 @@
 ---
 title: Geometry operations
-description: Repair, clip and simplify geometries, split them along the 180th meridian, combine polygons, and convert positions from another coordinate system.
+description: Repair, clip and simplify geometries, split them along the 180th meridian, combine polygons, measure distances, compute buffers and convex hulls, and convert positions from another coordinate system.
 ---
 
 The operations are methods of [GeoGeometry](cref:Meziantou.Framework.Geo.GeoGeometry). They return new geometries:
@@ -140,6 +140,98 @@ var difference = a.Difference(b);     // a with a corner cut away
 They return `null` when the result is empty. The exterior ring of each polygon adds its area and its holes remove
 theirs, whatever the direction of the rings: repair polygons whose rings cross with
 [MakeValid](cref:Meziantou.Framework.Geo.GeoGeometry.MakeValid) first.
+
+## Measure distances
+
+[Distance](cref:Meziantou.Framework.Geo.GeoGeometry.Distance) returns the shortest distance between two geometries of
+any type, in meters, for instance to find the nearest road to a position or how far a GPS track passes from a zone:
+
+<!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=GeoGeometry_Distance;format=md-fenced-code-block;dedent=true -->
+```csharp
+var paris = new GeoPoint(new GeoPosition(2.35, 48.86));
+var route = new GeoLineString([new(-1, 47), new(5, 47.5)]);
+var park = new GeoPolygon([[new(2.2, 48.8), new(2.5, 48.8), new(2.5, 48.95), new(2.2, 48.95), new(2.2, 48.8)]]);
+
+// The distance on the WGS 84 ellipsoid, in meters, to the nearest position of the line
+Assert.Equal(174_431.755, paris.Distance(route)!.Value, 0.01);
+
+// 0 for a point inside a polygon
+Assert.Equal(0, paris.Distance(park));
+```
+<!-- endref -->
+
+- The distance is 0 when the geometries meet: a position inside a polygon (and outside its holes), lines that cross or
+  touch, a line inside a polygon. A position in a hole is at the distance to the edge of the hole.
+- It is `null` when one of the geometries is empty. The altitudes are ignored.
+- The distance is measured on the WGS 84 ellipsoid, as GPS devices do, with the formulas of Vincenty: it is accurate to
+  a millimeter, except between nearly antipodal positions, where it is the great-circle distance (within 0.5%). Use
+  [GeoPosition.GetDistance](cref:Meziantou.Framework.Geo.GeoPosition.GetDistance) for a faster distance on a sphere
+  between two positions.
+- The edges are straight lines in degrees, as for the other operations: the nearest position of an edge is a position
+  of that straight line, and the inside of a polygon is the inside as tested by
+  [GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains).
+
+## Buffers
+
+[Buffer](cref:Meziantou.Framework.Geo.GeoGeometry.Buffer) returns the area within a distance of a geometry, in meters:
+a circle around a point (a geofence), a corridor along a line, a polygon grown by a margin:
+
+<!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=GeoGeometry_Buffer;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A geofence: the area within 500 meters of a position
+var store = new GeoPoint(new GeoPosition(2.35, 48.86));
+var geofence = Assert.IsType<GeoPolygon>(store.Buffer(500));
+Assert.True(geofence.Contains(new GeoPosition(2.354, 48.86)));  // about 290 meters east
+Assert.False(geofence.Contains(new GeoPosition(2.36, 48.86)));  // about 730 meters east
+
+// A corridor of 1 kilometer on each side of a route, with flat ends
+var route = new GeoLineString([new(2.35, 48.86), new(2.45, 48.90), new(2.55, 48.88)]);
+var corridor = route.Buffer(1_000, new GeoBufferOptions { EndCapStyle = GeoBufferEndCapStyle.Flat });
+```
+<!-- endref -->
+
+The result is a [GeoPolygon](cref:Meziantou.Framework.Geo.GeoPolygon), or a
+[GeoMultiPolygon](cref:Meziantou.Framework.Geo.GeoMultiPolygon) when the parts do not touch: the circles around two
+distant points stay apart. The buffers of the parts of a multi-geometry or a collection are united.
+
+- A negative distance shrinks the polygons: their area without a band along their edges. A polygon narrower than twice
+  the distance disappears. A point or a line has no buffer for a distance of 0 or less, and the method returns `null`.
+- [GeoBufferOptions](cref:Meziantou.Framework.Geo.GeoBufferOptions) sets the shape of the buffer:
+  - [SegmentsPerQuarterCircle](cref:Meziantou.Framework.Geo.GeoBufferOptions.SegmentsPerQuarterCircle), 8 by default:
+    the circles are polygons of 32 sides. The edges of a circle are chords, a little inside the circle: 0.5% of the
+    distance with 8 segments.
+  - [JoinStyle](cref:Meziantou.Framework.Geo.GeoBufferOptions.JoinStyle), the shape on the outer side of a turn:
+    [Round](cref:Meziantou.Framework.Geo.GeoBufferJoinStyle.Round) (an arc, the default),
+    [Miter](cref:Meziantou.Framework.Geo.GeoBufferJoinStyle.Miter) (a sharp corner, cut beyond
+    [MiterLimit](cref:Meziantou.Framework.Geo.GeoBufferOptions.MiterLimit) times the distance) or
+    [Bevel](cref:Meziantou.Framework.Geo.GeoBufferJoinStyle.Bevel) (a straight cut).
+  - [EndCapStyle](cref:Meziantou.Framework.Geo.GeoBufferOptions.EndCapStyle), the shape at the ends of a line:
+    [Round](cref:Meziantou.Framework.Geo.GeoBufferEndCapStyle.Round) (the default),
+    [Flat](cref:Meziantou.Framework.Geo.GeoBufferEndCapStyle.Flat) (the corridor stops at the end) or
+    [Square](cref:Meziantou.Framework.Geo.GeoBufferEndCapStyle.Square) (it goes beyond the end by the distance).
+- The positions at the distance are computed on the WGS 84 ellipsoid, and joined by edges straight in degrees. The
+  pieces are combined as by [Union](cref:Meziantou.Framework.Geo.GeoGeometry.Union): the positions of the result are on
+  the grid of ten-millionths of a degree.
+- A buffer that contains a pole is not handled. A buffer that crosses the 180th meridian is not cut: its longitudes go
+  beyond 180 or -180. Cut it with [SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian).
+
+## Convex hull
+
+[ConvexHull](cref:Meziantou.Framework.Geo.GeoGeometry.ConvexHull) returns the smallest convex polygon that contains
+every position of a geometry, for instance the area covered by a set of stores or of GPS positions:
+
+<!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=GeoGeometry_ConvexHull;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The positions of a few stores: the hull is the polygon of the outer ones
+var stores = new GeoMultiPoint([new(2.35, 48.86), new(2.30, 48.84), new(2.40, 48.88), new(2.33, 48.90), new(2.36, 48.87)]);
+var hull = Assert.IsType<GeoPolygon>(stores.ConvexHull());
+Assert.HasCount(5, hull.Rings[0]); // four corners, and the first one again
+```
+<!-- endref -->
+
+The hull is a polygon whose exterior ring turns counter-clockwise, made of positions of the geometry. It is a line
+between the two ends when the positions are on a line, a point when they are all the same, and `null` for an empty
+geometry. It is computed on the longitudes and latitudes, as on an equirectangular map.
 
 ## Convert positions
 

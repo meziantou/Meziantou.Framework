@@ -94,6 +94,28 @@ namespace Meziantou.Framework.Geo
         public static bool operator !=(Meziantou.Framework.Geo.GeoBounds left, Meziantou.Framework.Geo.GeoBounds right) => throw null;
     }
 
+    public enum GeoBufferEndCapStyle
+    {
+        Round = 0,
+        Flat = 1,
+        Square = 2,
+    }
+
+    public enum GeoBufferJoinStyle
+    {
+        Round = 0,
+        Miter = 1,
+        Bevel = 2,
+    }
+
+    public sealed class GeoBufferOptions
+    {
+        public Meziantou.Framework.Geo.GeoBufferEndCapStyle EndCapStyle { get => throw null; set { } }
+        public Meziantou.Framework.Geo.GeoBufferJoinStyle JoinStyle { get => throw null; set { } }
+        public double MiterLimit { get => throw null; set { } }
+        public int SegmentsPerQuarterCircle { get => throw null; set { } }
+    }
+
     public enum GeoEdgeType
     {
         Planar = 0,
@@ -124,8 +146,11 @@ namespace Meziantou.Framework.Geo
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Geo.GeoPosition? LabelPosition { get => throw null; }
         public abstract Meziantou.Framework.Geo.GeoGeometryType Type { get; }
+        public Meziantou.Framework.Geo.GeoGeometry? Buffer(double distance, Meziantou.Framework.Geo.GeoBufferOptions? options = null) => throw null;
         public Meziantou.Framework.Geo.GeoGeometry? Clip(Meziantou.Framework.Geo.GeoBounds bounds) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? ConvexHull() => throw null;
         public Meziantou.Framework.Geo.GeoGeometry? Difference(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
+        public double? Distance(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoLineString> GetBoundaryLines() => throw null;
         public Meziantou.Framework.Geo.GeoBounds? GetBounds() => throw null;
         public Meziantou.Framework.Geo.GeoBounds? GetBounds(Meziantou.Framework.Geo.GeoEdgeType edgeType) => throw null;

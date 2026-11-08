@@ -1,6 +1,6 @@
 ---
 title: Limitations
-description: What the library does not do: coordinate systems, curved edges, buffers, per-point data and other formats.
+description: What the library does not do: coordinate systems, curved edges, per-point data and other formats.
 ---
 
 ## Coordinates
@@ -17,8 +17,6 @@ description: What the library does not do: coordinate systems, curved edges, buf
   [great-circle edges](03-FeaturesAndGeometries.md#great-circles), computed on a sphere, not on the ellipsoid. Split
   the shapes that cross the 180th meridian with
   [SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian) before the operations.
-- **No buffers.** The [geometry operations](06-GeometryOperations.md) repair, clip, simplify and combine polygons,
-  but do not compute buffers, distances between geometries or convex hulls.
 
 ## Data that the model does not keep
 

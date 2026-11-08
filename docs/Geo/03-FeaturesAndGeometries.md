@@ -123,6 +123,8 @@ Assert.Equal(343.5, new GeoLineString([paris, london]).GetLength() / 1000, 1);
 
 The distance is computed on a sphere with the mean radius of the Earth: it can differ by up to 0.5% from the distance
 on the ellipsoid that GPS devices use. The altitudes are ignored.
+[Distance](cref:Meziantou.Framework.Geo.GeoGeometry.Distance) measures the distance between two geometries on the
+ellipsoid: see [geometry operations](06-GeometryOperations.md).
 
 ## Point in polygon
 

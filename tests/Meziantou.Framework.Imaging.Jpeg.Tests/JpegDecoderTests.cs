@@ -1917,6 +1917,22 @@ public sealed class JpegDecoderTests
     }
 
     [Fact]
+    public void AThumbnailOfALargePhotoNeedsAFractionOfTheMemoryOfAFullDecode()
+    {
+        // A 4:2:0 frame of 3072x2048 pixels decoded for a thumbnail of at least 320x240 pixels: TargetSize picks 1/8, and the
+        // peak of the decoding (the pixels, the planes, the rows and the entropy-coded data) is a small part of the peak of a
+        // full decode, which holds the pixels of the whole frame
+        var data = JpegTestImage.CreateRandom(3072, 2048, Layouts["4:2:0"], seed: 7, dcOnlyProbability: 1).Encode();
+        using var full = Image.Load<Rgb24>(data);
+        using var thumbnail = Image.Load<Rgb24>(data, new ImageDecodeOptions { TargetSize = new Size(320, 240) });
+        Assert.Equal((384, 256), (thumbnail.Width, thumbnail.Height));
+        var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        var thumbnailPeak = thumbnail.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        Assert.True(fullPeak >= 3072 * 2048 * 3, $"Peak {fullPeak} bytes for the full decode.");
+        Assert.True(thumbnailPeak * 20 < fullPeak, $"Peak {thumbnailPeak} bytes for the thumbnail, {fullPeak} bytes for the full decode.");
+    }
+
+    [Fact]
     public void TargetSizeSelectsTheLargestScaleThatKeepsTheSize()
     {
         var image = JpegTestImage.CreateRandom(100, 60, Layouts["4:2:0"], seed: 5, scaled: true);

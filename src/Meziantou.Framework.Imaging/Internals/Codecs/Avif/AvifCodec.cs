@@ -16,6 +16,9 @@ internal sealed class AvifCodec : ImageCodec
 
     public override ImageFormat Format => ImageFormat.Avif;
 
+    /// <summary>Gets a value indicating that the decoder writes an area of the image only, and decodes only the tiles of a grid that it needs (<see cref="ImageDecodeRequest.Region"/>).</summary>
+    public override bool SupportsRegionDecoding => true;
+
     /// <summary>
     /// Determines whether the data start with a file type box whose major brand is an AVIF or a generic HEIF brand (12 bytes).
     /// A file with a generic major brand is an AVIF file only if its compatible brands, which the parser reads, include an

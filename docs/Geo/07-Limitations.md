@@ -31,9 +31,10 @@ description: What the library does not do: some projections and datum grids, cur
 
 ## Formats
 
-The library does not read GeoParquet, MapInfo, GML or CSV files, and does not write GeoPackage files. A CSV file whose
-column holds WKT can be read with `Meziantou.Framework.Csv` and [WellKnownText](cref:Meziantou.Framework.Geo.WellKnownText).
+The library does not read MapInfo, GML or CSV files, and does not write GeoPackage and GeoParquet files. GeoParquet
+geometries in the native (GeoArrow) encodings are not read: only WKB is. A CSV file whose column holds WKT can be read
+with `Meziantou.Framework.Csv` and [WellKnownText](cref:Meziantou.Framework.Geo.WellKnownText).
 
 The readers of TopoJSON, KML, KMZ, GPX, WKT and WKB load the whole document in memory. GeoJSON, shapefiles,
-FlatGeobuf and GeoPackage files can be read with bounded memory with their `ReadFeaturesAsync` method, as explained in
-[formats](04-Formats/01-Overview.md).
+FlatGeobuf, GeoPackage and GeoParquet files can be read with bounded memory with their `ReadFeaturesAsync` method, as
+explained in [formats](04-Formats/01-Overview.md).

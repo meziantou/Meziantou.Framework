@@ -48,6 +48,21 @@ Assert.DoesNotContain("Japan", features.Select(feature => (string?)feature.Prope
 ```
 <!-- endref -->
 
+The features do not refer to the data once `Read` returns, so a `ReadOnlySpan<byte>` over memory the caller owns, such
+as native memory or the resource of an assembly, can be read without copying it first, then freed or reused:
+
+<!-- ref:../../../tests/Meziantou.Framework.Geo.Tests/FlatGeobufTests.cs;region=Geo_FlatGeobufReadSpan;format=md-fenced-code-block;dedent=true -->
+```csharp
+var buffer = File.ReadAllBytes("TestData/flatgeobuf/countries.fgb");
+var europe = new GeoBounds(West: -10, South: 35, East: 30, North: 60);
+var features = FlatGeobuf.Read(buffer.AsSpan(), new FlatGeobufReaderOptions { Bounds = europe });
+
+// The features are copies: the memory of the data can be reused or freed
+buffer.AsSpan().Clear();
+Assert.Contains("France", features.Select(feature => (string?)feature.Properties["name"]));
+```
+<!-- endref -->
+
 The features are kept whole: a country that crosses the edge of the box is not cut. Cut them with
 [Clip](cref:Meziantou.Framework.Geo.GeoGeometry.Clip), see [geometry operations](../06-GeometryOperations.md).
 

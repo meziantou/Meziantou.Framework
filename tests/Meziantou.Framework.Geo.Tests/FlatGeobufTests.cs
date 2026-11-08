@@ -143,6 +143,24 @@ public sealed class FlatGeobufTests
         Assert.Equal(2_100_000, cities.Single(city => city.Properties["name"] is "Paris").Properties["population"]);
     }
 
+    [Fact]
+    public void Read_Span_DoesNotKeepTheData()
+    {
+        #region Geo_FlatGeobufReadSpan
+        var buffer = File.ReadAllBytes("TestData/flatgeobuf/countries.fgb");
+        var europe = new GeoBounds(West: -10, South: 35, East: 30, North: 60);
+        var features = FlatGeobuf.Read(buffer.AsSpan(), new FlatGeobufReaderOptions { Bounds = europe });
+
+        // The features are copies: the memory of the data can be reused or freed
+        buffer.AsSpan().Clear();
+        Assert.Contains("France", features.Select(feature => (string?)feature.Properties["name"]));
+        #endregion
+
+        var expected = FlatGeobuf.Read(GetPath("countries.fgb"), new FlatGeobufReaderOptions { Bounds = europe });
+        Assert.HasCount(expected.Count, features);
+        Assert.Equal(GeoJson.Format(expected), GeoJson.Format(features));
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

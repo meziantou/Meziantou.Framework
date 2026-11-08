@@ -8,9 +8,9 @@ namespace Meziantou.Framework.Geo.Internals;
 /// <summary>Reads FlatGeobuf data: the signature, the header, the optional index, then the size-prefixed features.</summary>
 internal static class FlatGeobufReader
 {
-    public static GeoFeatureCollection Read(ReadOnlyMemory<byte> data, GeoBounds? bounds)
+    public static GeoFeatureCollection Read(ReadOnlySpan<byte> data, GeoBounds? bounds)
     {
-        var span = data.Span;
+        var span = data;
         if (span.Length < 12 || span[0] != 'f' || span[1] != 'g' || span[2] != 'b' || span[4] != 'f' || span[5] != 'g' || span[6] != 'b')
             throw new FormatException("The data is not FlatGeobuf: it does not start with the signature of the format.");
 
@@ -76,9 +76,9 @@ internal static class FlatGeobufReader
 
     private static bool Intersects(GeoBounds a, GeoBounds b) => b.West <= a.East && b.East >= a.West && b.South <= a.North && b.North >= a.South;
 
-    private static GeoFeature ReadFeature(ReadOnlyMemory<byte> data, int position, byte geometryType, bool hasZ, Column[] columns, out int next)
+    private static GeoFeature ReadFeature(ReadOnlySpan<byte> data, int position, byte geometryType, bool hasZ, Column[] columns, out int next)
     {
-        var span = data.Span;
+        var span = data;
         if (position > span.Length - 4)
             throw new FormatException("A feature of the FlatGeobuf data is truncated.");
 
@@ -90,21 +90,29 @@ internal static class FlatGeobufReader
         var feature = FlatBufferTable.GetRoot(data.Slice(position + 4, (int)size));
         var featureColumns = feature.Has(FlatGeobufFormat.FeatureColumns) ? ReadColumns(feature, FlatGeobufFormat.FeatureColumns) : columns;
         GeoGeometry? geometry = null;
-        if (feature.GetTable(FlatGeobufFormat.FeatureGeometry) is { } table)
+        if (feature.TryGetTable(FlatGeobufFormat.FeatureGeometry, out var table))
         {
             geometry = ReadGeometry(table, geometryType, hasZ, depth: 0);
         }
 
-        var properties = ReadProperties(feature.GetVectorMemory(FlatGeobufFormat.FeatureProperties).Span, featureColumns);
+        var properties = ReadProperties(feature.GetVectorBytes(FlatGeobufFormat.FeatureProperties, elementSize: 1, out _), featureColumns);
         return new GeoFeature(geometry, properties);
     }
 
-    private static Column[] ReadColumns(FlatBufferTable table, int field = FlatGeobufFormat.HeaderColumns) =>
-    [
-        .. table.GetTableVector(field).Select(column => new Column(
-            column.GetString(FlatGeobufFormat.ColumnName) ?? throw new FormatException("A column of the FlatGeobuf data has no name."),
-            column.GetByte(FlatGeobufFormat.ColumnType))),
-    ];
+    private static Column[] ReadColumns(FlatBufferTable table, int field = FlatGeobufFormat.HeaderColumns)
+    {
+        var vector = table.GetTableVector(field);
+        var columns = new Column[vector.Count];
+        for (var i = 0; i < columns.Length; i++)
+        {
+            var column = vector[i];
+            columns[i] = new Column(
+                column.GetString(FlatGeobufFormat.ColumnName) ?? throw new FormatException("A column of the FlatGeobuf data has no name."),
+                column.GetByte(FlatGeobufFormat.ColumnType));
+        }
+
+        return columns;
+    }
 
     private static Dictionary<string, object?> ReadProperties(ReadOnlySpan<byte> bytes, Column[] columns)
     {

@@ -12,7 +12,6 @@
   <!-- The code that reads the embedded layers, shared by the generated code of the maps -->
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)EmbeddedMapLayer.cs" Link="EmbeddedMapLayer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)../../common/UnmanagedMemoryManager.cs" Link="UnmanagedMemoryManager.cs" />
   </ItemGroup>
 
   <!--

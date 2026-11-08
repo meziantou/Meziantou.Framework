@@ -263,53 +263,17 @@ internal static class MapProjectWriter
                 ).Assembly.GetManifestResourceStream(name) ?? throw new global::System.InvalidOperationException("The resource '" + name + "' is missing.");
                         if (stream is global::System.IO.UnmanagedMemoryStream unmanagedStream)
                         {
-                            nint address;
+                            // The memory of the resource lives as long as the assembly
+                            global::System.ReadOnlySpan<byte> data;
                             unsafe
                             {
-                                address = (nint)unmanagedStream.PositionPointer;
+                                data = new global::System.ReadOnlySpan<byte>(unmanagedStream.PositionPointer, checked((int)unmanagedStream.Length));
                             }
 
-                            using var memory = new UnmanagedMemoryManager(address, checked((int)unmanagedStream.Length));
-                            return global::Meziantou.Framework.Geo.FlatGeobuf.Read(memory.Memory, options);
+                            return global::Meziantou.Framework.Geo.FlatGeobuf.Read(data, options);
                         }
 
                         return global::Meziantou.Framework.Geo.FlatGeobuf.Read(stream, options);
-                    }
-
-                    private sealed class UnmanagedMemoryManager : global::System.Buffers.MemoryManager<byte>
-                    {
-                        private readonly nint _address;
-                        private readonly int _length;
-
-                        public UnmanagedMemoryManager(nint address, int length)
-                        {
-                            _address = address;
-                            _length = length;
-                        }
-
-                        public override global::System.Span<byte> GetSpan()
-                        {
-                            unsafe
-                            {
-                                return new global::System.Span<byte>((void*)_address, _length);
-                            }
-                        }
-
-                        public override global::System.Buffers.MemoryHandle Pin(int elementIndex = 0)
-                        {
-                            unsafe
-                            {
-                                return new global::System.Buffers.MemoryHandle((void*)(_address + elementIndex));
-                            }
-                        }
-
-                        public override void Unpin()
-                        {
-                        }
-
-                        protected override void Dispose(bool disposing)
-                        {
-                        }
                     }
 
                 """);

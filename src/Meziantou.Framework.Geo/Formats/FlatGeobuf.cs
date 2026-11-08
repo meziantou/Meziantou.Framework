@@ -60,7 +60,7 @@ public static class FlatGeobuf
         ArgumentNullException.ThrowIfNull(stream);
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
-        return FlatGeobufReader.Read(buffer.GetBuffer().AsMemory(0, (int)buffer.Length), options?.Bounds);
+        return FlatGeobufReader.Read(buffer.GetBuffer().AsSpan(0, (int)buffer.Length), options?.Bounds);
     }
 
     /// <summary>Reads FlatGeobuf data.</summary>
@@ -68,7 +68,14 @@ public static class FlatGeobuf
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The features.</returns>
     /// <exception cref="FormatException">The data is not valid FlatGeobuf, or has a geometry that is not supported.</exception>
-    public static GeoFeatureCollection Read(ReadOnlyMemory<byte> data, FlatGeobufReaderOptions? options = null) => FlatGeobufReader.Read(data, options?.Bounds);
+    public static GeoFeatureCollection Read(ReadOnlyMemory<byte> data, FlatGeobufReaderOptions? options = null) => FlatGeobufReader.Read(data.Span, options?.Bounds);
+
+    /// <summary>Reads FlatGeobuf data.</summary>
+    /// <param name="data">The data. The features do not refer to it once the method returns: the data can be memory that the caller frees, or the memory of a resource of an assembly.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <returns>The features.</returns>
+    /// <exception cref="FormatException">The data is not valid FlatGeobuf, or has a geometry that is not supported.</exception>
+    public static GeoFeatureCollection Read(ReadOnlySpan<byte> data, FlatGeobufReaderOptions? options = null) => FlatGeobufReader.Read(data, options?.Bounds);
 
     /// <summary>Writes features as a FlatGeobuf file, replacing the existing one.</summary>
     /// <param name="features">The features.</param>

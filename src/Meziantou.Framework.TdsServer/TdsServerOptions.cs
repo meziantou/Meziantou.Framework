@@ -92,6 +92,34 @@ public sealed class TdsServerOptions
     /// </remarks>
     public Handler.TdsTransactionDelegate? TransactionHandler { get; set; }
 
+    /// <summary>Gets or sets the SQL Server Browser responder options, or <see langword="null"/> to disable the responder.</summary>
+    /// <remarks>
+    /// The responder answers the SQL Server Resolution Protocol on UDP, so clients can connect with an instance name
+    /// (<c>host\INSTANCE</c>) instead of <c>host,port</c>. It advertises the port of the first TCP listener.
+    /// </remarks>
+    public TdsSqlServerBrowserOptions? SqlServerBrowser { get; set; }
+
+    /// <summary>Enables the SQL Server Browser responder, so clients can connect with an instance name (<c>host\INSTANCE</c>).</summary>
+    /// <param name="instanceName">The instance name to advertise.</param>
+    /// <param name="port">UDP port to listen on. Clients only query <see cref="TdsSqlServerBrowserOptions.DefaultPort"/>.</param>
+    /// <param name="bindAddress">Address to bind to. Defaults to loopback.</param>
+    /// <returns>The current options instance.</returns>
+    public TdsServerOptions EnableSqlServerBrowser(string instanceName, int port = TdsSqlServerBrowserOptions.DefaultPort, IPAddress? bindAddress = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(instanceName);
+        ArgumentOutOfRangeException.ThrowIfLessThan(port, IPEndPoint.MinPort);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, IPEndPoint.MaxPort);
+
+        SqlServerBrowser = new TdsSqlServerBrowserOptions
+        {
+            InstanceName = instanceName,
+            Port = port,
+            BindAddress = bindAddress ?? IPAddress.Loopback,
+        };
+
+        return this;
+    }
+
     /// <summary>Adds a TCP listener.</summary>
     /// <param name="port">TCP port to listen on.</param>
     /// <param name="bindAddress">Address to bind to. Defaults to loopback.</param>

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.Tds.Hosting;
 
@@ -9,6 +10,7 @@ namespace Meziantou.Framework.Tds.Hosting;
 public static class TdsServerBuilderExtensions
 {
     /// <summary>Adds TDS server services and listeners to an application builder.</summary>
+    /// <remarks>When <see cref="TdsServerOptions.SqlServerBrowser"/> is set, a hosted service also runs the SQL Server Browser responder.</remarks>
     public static IHostApplicationBuilder AddTdsServer(this IHostApplicationBuilder builder, Action<TdsServerOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -29,6 +31,7 @@ public static class TdsServerBuilderExtensions
         builder.Services.AddSingleton<TdsQueryDelegateHolder>();
         builder.Services.AddSingleton<TdsTcpConnectionHandler>();
 
+        var tdsListenOptions = new List<ListenOptions>();
         builder.Services.Configure<KestrelServerOptions>(kestrelOptions =>
         {
             foreach (var listener in options.TcpListeners)
@@ -36,9 +39,19 @@ public static class TdsServerBuilderExtensions
                 kestrelOptions.Listen(listener.BindAddress, listener.Port, listenOptions =>
                 {
                     listenOptions.UseConnectionHandler<TdsTcpConnectionHandler>();
+                    tdsListenOptions.Add(listenOptions);
                 });
             }
         });
+
+        if (options.SqlServerBrowser is { } browserOptions)
+        {
+            TdsSqlServerBrowserResponder.Validate(browserOptions);
+            builder.Services.AddHostedService(services => new TdsSqlServerBrowserHostedService(
+                browserOptions,
+                tdsListenOptions,
+                services.GetRequiredService<ILogger<TdsSqlServerBrowserHostedService>>()));
+        }
 
         return builder;
     }

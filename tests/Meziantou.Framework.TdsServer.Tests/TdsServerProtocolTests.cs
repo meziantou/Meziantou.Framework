@@ -10,6 +10,8 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using Meziantou.Framework.Tds.Handler;
+using Meziantou.Framework.Tds.Hosting;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
@@ -576,6 +578,177 @@ public sealed class TdsServerProtocolTests
         var exception = await Assert.ThrowsAsync<SqlException>(() => ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString()));
 
         Assert.Equal(50005, exception.Number);
+    }
+
+    [Fact]
+    public async Task SqlServerBrowser_UnicastInstance_ReturnsTcpPort()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.SqlServerBrowser = new TdsSqlServerBrowserOptions { InstanceName = "TEST", ServerName = "MYSERVER", Port = 0 };
+
+        using var server = CreateBrowserTestServer(options);
+        await server.StartAsync();
+        var tcpPort = Assert.Single(server.Ports);
+        var browserPort = server.SqlServerBrowserPort ?? throw new InvalidOperationException("The SQL Server Browser responder is not running");
+
+        var response = await SendSqlServerBrowserRequestAsync(browserPort, [0x04, .. "test"u8, 0x00]);
+
+        Assert.Equal($"ServerName;MYSERVER;InstanceName;TEST;IsClustered;No;Version;1.0.0.0;tcp;{tcpPort};;", response);
+    }
+
+    [Theory]
+    [InlineData((byte)0x02)]
+    [InlineData((byte)0x03)]
+    public async Task SqlServerBrowser_ListInstances_ReturnsTcpPort(byte requestType)
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.EnableSqlServerBrowser("TEST", port: 0);
+
+        using var server = CreateBrowserTestServer(options);
+        await server.StartAsync();
+        var tcpPort = Assert.Single(server.Ports);
+
+        var response = await SendSqlServerBrowserRequestAsync(server.SqlServerBrowserPort!.Value, [requestType]);
+
+        Assert.Contains(";InstanceName;TEST;", response);
+        Assert.EndsWith($";tcp;{tcpPort};;", response);
+    }
+
+    [Fact]
+    public async Task SqlServerBrowser_UnknownInstance_DoesNotAnswer()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.EnableSqlServerBrowser("TEST", port: 0);
+
+        using var server = CreateBrowserTestServer(options);
+        await server.StartAsync();
+
+        await Assert.ThrowsAsync<TimeoutException>(() => SendSqlServerBrowserRequestAsync(server.SqlServerBrowserPort!.Value, [0x04, .. "OTHER"u8, 0x00], TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
+    public async Task SqlServerBrowser_Hosted_AdvertisesKestrelPort()
+    {
+        int browserPort;
+        using (var probe = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+        {
+            browserPort = ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
+        }
+
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.AddTdsServer(options =>
+        {
+            options.AddTcpListener(0, IPAddress.Loopback);
+            options.EnableSqlServerBrowser("HOSTED", browserPort);
+        });
+
+        await using var app = builder.Build();
+        app.MapTdsHandlers(
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await app.StartAsync();
+        try
+        {
+            var response = await SendSqlServerBrowserRequestAsync(browserPort, [0x04, .. "HOSTED"u8, 0x00]);
+            var tcpPort = int.Parse(response.Split(';')[9], CultureInfo.InvariantCulture);
+            Assert.NotEqual(0, tcpPort);
+
+            await using var connection = new SqlConnection(CreateConnectionString(tcpPort));
+            await connection.OpenAsync();
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SqlClient_InstanceName_ConnectsThroughSqlServerBrowser()
+    {
+        // SqlClient always sends its SQL Server Browser request to UDP port 1434. The test process of each target
+        // framework runs this test, so a lock file serializes them. Skip when another program owns the port.
+        await using var portLock = await AcquireFileLockAsync(Path.Combine(Path.GetTempPath(), "Meziantou.Framework.TdsServer.Tests.SqlServerBrowser.lock"));
+        if (!IsUdpPortAvailable(TdsSqlServerBrowserOptions.DefaultPort))
+        {
+            global::Xunit.Assert.Skip($"UDP port {TdsSqlServerBrowserOptions.DefaultPort} is not available");
+        }
+
+        #region TdsServer_SqlServerBrowser
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        options.EnableSqlServerBrowser("SALES"); // UDP port 1434, on 127.0.0.1
+
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            queryHandler: (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = @"127.0.0.1\SALES", // host\instance: the client asks the SQL Server Browser for the port
+            UserID = "app",
+            Password = "Password123!",
+            Encrypt = SqlConnectionEncryptOption.Optional,
+        }.ConnectionString;
+
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        #endregion
+
+        Assert.Equal(ConnectionState.Open, connection.State);
+    }
+
+    private static bool IsUdpPortAvailable(int port)
+    {
+        try
+        {
+            using var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
+            return true;
+        }
+        catch (SocketException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<FileStream> AcquireFileLockAsync(string path)
+    {
+        var deadline = DateTime.UtcNow.AddMinutes(1);
+        while (true)
+        {
+            try
+            {
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+            }
+        }
+    }
+
+    private static TdsServer CreateBrowserTestServer(TdsServerOptions options)
+    {
+        return new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+    }
+
+    private static async Task<string> SendSqlServerBrowserRequestAsync(int port, byte[] request, TimeSpan? timeout = null)
+    {
+        using var client = new UdpClient(AddressFamily.InterNetwork);
+        await client.SendAsync(request, new IPEndPoint(IPAddress.Loopback, port));
+        var result = await client.ReceiveAsync().WaitAsync(timeout ?? TimeSpan.FromSeconds(30));
+
+        var buffer = result.Buffer;
+        Assert.Equal(0x05, buffer[0]);
+        Assert.Equal(buffer.Length - 3, BinaryPrimitives.ReadUInt16LittleEndian(buffer.AsSpan(1)));
+        return System.Text.Encoding.ASCII.GetString(buffer, 3, buffer.Length - 3);
     }
 
     private static async Task<object[]> ReadRowAsync(TdsResultSet resultSet)

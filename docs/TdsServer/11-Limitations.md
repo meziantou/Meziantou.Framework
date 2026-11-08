@@ -8,7 +8,8 @@ The library implements the protocol of SQL Server, not a database. This page lis
 ## General
 
 - **Needs the ASP.NET Core shared framework.**
-- **Not trimmable**: the package is not marked as compatible with trimming or Native AOT.
+- **The query engine needs reflection**: the package is trimmable and compatible with Native AOT, but the query
+  engine is not. See [Trimming and Native AOT](03-HostingTheServer.md#trimming-and-native-aot).
 - **No database**: the server stores nothing and runs no SQL by itself. Your query handler, or the
   [query engine](07-QueryEngine.md), answers every request.
 
@@ -21,7 +22,6 @@ The library implements the protocol of SQL Server, not a database. This page lis
 - **No Multiple Active Result Sets (MARS)**: a connection with `MultipleActiveResultSets=True` fails.
 - **One request at a time per connection.**
 - **Text columns use one collation.** [Variant](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Variant), [UserDefined](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.UserDefined) and `Table` columns are sent as `nvarchar` text.
-- **No SQL Server Browser**: clients connect with `host,port`, not with an instance name.
 
 ## Authentication and encryption
 

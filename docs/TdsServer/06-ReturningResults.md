@@ -91,7 +91,7 @@ The type of a column sets the SQL Server type the client receives, and how the v
 | [DateTime2](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.DateTime2) | `datetime2(7)` | A `DateTime`, a `DateOnly` or a `DateTimeOffset` |
 | `DateTimeOffset` | `datetimeoffset(7)` | A `DateTimeOffset`; a `DateTime` gets the offset 0 |
 | [Xml](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Xml) | `xml` | The text of the value (`ToString()`), for instance a `string` or an `XDocument` |
-| [Json](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Json) | `json` | A JSON `string`, a `JsonNode`, or any object, serialized with `System.Text.Json` |
+| [Json](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Json) | `json` | A JSON `string`, a `JsonNode`, a `JsonElement`, a `JsonDocument`, or any object, serialized with `System.Text.Json` (not in [trimmed applications](03-HostingTheServer.md#trimming-and-native-aot)) |
 | [Variant](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Variant), [UserDefined](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.UserDefined), `Table` | `nvarchar` | The text of the value (`ToString()`) |
 
 - The scale of a [Decimal](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Decimal) column is the largest scale of its values, so `49.90m` and `19.5m` are sent with two

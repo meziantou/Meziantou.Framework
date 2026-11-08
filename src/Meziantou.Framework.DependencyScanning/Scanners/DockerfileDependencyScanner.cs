@@ -30,16 +30,6 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
         var instructions = ReadInstructions(text, directives.EscapeCharacter, context.CancellationToken);
         var globalArguments = GetGlobalArguments(text, instructions);
 
-        // An argument used by several FROM instructions cannot be updated for one image without changing the others
-        var argumentUsages = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var tokens in instructions)
-        {
-            if (GetFromImageToken(text, tokens) is { } imageToken && GetArgumentReference(imageToken.GetText(text).ToString(), globalArguments) is { } reference)
-            {
-                argumentUsages[reference.Argument.Name] = argumentUsages.GetValueOrDefault(reference.Argument.Name) + 1;
-            }
-        }
-
         foreach (var tokens in instructions)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
@@ -51,7 +41,7 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
                 {
                     if (GetArgumentReference(imageToken.GetText(text).ToString(), globalArguments) is { } reference)
                     {
-                        ReportArgumentReference(context, text, imageToken, reference, isUpdatable: argumentUsages[reference.Argument.Name] is 1);
+                        ReportArgumentReference(context, text, imageToken, reference);
                     }
                     else
                     {
@@ -272,28 +262,38 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
         }
     }
 
-    private void ReportArgumentReference(ScanFileContext context, string text, Token imageToken, ArgumentReference reference, bool isUpdatable)
+    /// <remarks>
+    /// The images that use the same argument share the locations of its default value, so that one update changes all of
+    /// them, and the value an update writes is the value the next update expects.
+    /// </remarks>
+    private void ReportArgumentReference(ScanFileContext context, string text, Token imageToken, ArgumentReference reference)
     {
         var argument = reference.Argument;
+        var imageText = imageToken.GetText(text).ToString();
         if (reference.IsWholeImage)
         {
-            DockerImageReference.Report(this, context, argument.Value, GetArgumentLocation, requireTagOrDigest: true);
+            DockerImageReference.Report(this, context, argument.Value, GetArgumentLocation, requireTagOrDigest: true, variable: (imageText, argument.Name));
             return;
         }
 
-        if (!DockerImageReference.TryParse(imageToken.GetText(text).ToString(), out var imageReference))
+        if (!DockerImageReference.TryParse(imageText, out var imageReference) || imageReference.Tag is not { } tag)
             return;
 
         Location nameLocation = imageReference.Name.Contains('$', StringComparison.Ordinal)
             ? new NonUpdatableLocation(context)
             : new TextLocation(context.FileSystem, context.FullPath, imageToken.Line, imageToken.Column, imageReference.Name.Length);
-        context.ReportDependency(this, imageReference.Name, argument.Value, DependencyType.DockerImage, nameLocation, GetArgumentLocation(0, argument.Value.Length));
+        context.ReportDependency(this, imageReference.Name, rawVersion: tag, resolvedVersion: argument.Value, DependencyType.DockerImage, nameLocation, GetArgumentLocation(0, argument.Value.Length),
+            tags: [], metadata: [KeyValuePair.Create<string, object?>(VariableResolverExtensions.PropertyMetadataKey, argument.Name)]);
 
         Location GetArgumentLocation(int start, int length)
         {
-            return isUpdatable
-                ? new TextLocation(context.FileSystem, context.FullPath, argument.Token.Line, argument.Token.Column + argument.ValueOffset + start, length)
-                : new NonUpdatableLocation(context);
+            if (!argument.Locations.TryGetValue((start, length), out var location))
+            {
+                location = new TextLocation(context.FileSystem, context.FullPath, argument.Token.Line, argument.Token.Column + argument.ValueOffset + start, length);
+                argument.Locations.Add((start, length), location);
+            }
+
+            return location;
         }
     }
 
@@ -420,7 +420,11 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct Directives(char EscapeCharacter, Token? Syntax);
 
-    private sealed record ArgumentDefault(string Name, string Value, Token Token, int ValueOffset);
+    private sealed record ArgumentDefault(string Name, string Value, Token Token, int ValueOffset)
+    {
+        /// <summary>Gets the locations of the parts of the value, shared by the images that use the argument.</summary>
+        public Dictionary<(int Start, int Length), Location> Locations { get; } = [];
+    }
 
     private sealed record ArgumentReference(ArgumentDefault Argument, bool IsWholeImage);
 

@@ -14,7 +14,7 @@ Azure Pipelines):
   This version is not updatable, and the digest and the tag are in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `digest` and `tag`
   keys.
 - A name or a version that contains a variable reference, such as `image: node:${NODE_VERSION}`, is reported with a
-  location that is not updatable.
+  location that is not updatable. The variable is not resolved: [ResolvedVersion](cref:Meziantou.Framework.DependencyScanning.Dependency.ResolvedVersion) is `null`.
 
 <!-- ref:../../../tests/Meziantou.Framework.DependencyScanning.Tests/DependencyScannerTests.cs;region=DependencyScanning_ScanContent;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -52,9 +52,11 @@ Assert.False(sdk.VersionLocation?.IsUpdatable);
   for images.
 - The bodies of here-documents (`RUN <<EOF`, `COPY <<-"EOF" /file`) are skipped.
 - When the whole image or the whole tag of a `FROM` comes from an `ARG` declared with a literal default value before
-  the first `FROM` (`ARG NODE_VERSION=20` then `FROM node:${NODE_VERSION}`), the default value is reported. Its location
-  in the `ARG` instruction is updatable, unless several `FROM` instructions use the same argument. Other variable
-  references are reported with a location that is not updatable.
+  the first `FROM` (`ARG NODE_VERSION=20` then `FROM node:${NODE_VERSION}`), the default value is reported, with the
+  reference as [RawVersion](cref:Meziantou.Framework.DependencyScanning.Dependency.RawVersion) and the argument name in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `property` key. Its location
+  in the `ARG` instruction is updatable, and shared by all the `FROM` instructions that use the argument: one update
+  changes all of them. Other variable references are not resolved, and are reported with a location that is not
+  updatable. See [Properties and variables](01-Overview.md#properties-and-variables).
 
 ## Docker Compose
 

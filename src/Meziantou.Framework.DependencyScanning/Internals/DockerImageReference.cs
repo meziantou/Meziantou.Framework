@@ -111,9 +111,16 @@ internal readonly struct DockerImageReference
     /// <summary>
     /// Reports an image reference. <paramref name="getLocation"/> maps a (start, length) range of <paramref name="value"/> to a location.
     /// A reference pinned by digest is reported with the digest as a non-updatable version, since changing its tag would
-    /// leave the digest pointing at the old image. Names and versions that contain a variable reference are not updatable.
+    /// leave the digest pointing at the old image. Names and versions that contain a variable reference are not updatable,
+    /// and a version that contains a variable reference is not resolved.
     /// </summary>
-    public static void Report(DependencyScanner scanner, ScanFileContext context, string value, Func<int, int, Location?> getLocation, bool requireTagOrDigest = false)
+    /// <param name="scanner">The scanner that found the reference.</param>
+    /// <param name="context">The context of the scanned file.</param>
+    /// <param name="value">The image reference.</param>
+    /// <param name="getLocation">Maps a (start, length) range of <paramref name="value"/> to a location.</param>
+    /// <param name="requireTagOrDigest">Whether a reference without a tag or a digest is ignored.</param>
+    /// <param name="variable">When <paramref name="value"/> is the value of a variable, the reference to the variable as written, such as <c>${BASE_IMAGE}</c>, and the name of the variable.</param>
+    public static void Report(DependencyScanner scanner, ScanFileContext context, string value, Func<int, int, Location?> getLocation, bool requireTagOrDigest = false, (string RawValue, string Name)? variable = null)
     {
         if (!TryParse(value, out var reference))
             return;
@@ -122,12 +129,14 @@ internal readonly struct DockerImageReference
             return;
 
         var nameLocation = IsVariable(reference.Name) ? new NonUpdatableLocation(context) : getLocation(0, reference.Name.Length);
+        KeyValuePair<string, object?>[] variableMetadata = variable is { } v ? [KeyValuePair.Create<string, object?>(VariableResolverExtensions.PropertyMetadataKey, v.Name)] : [];
         if (reference.Digest is not null)
         {
             context.ReportDependency(
                 scanner,
                 reference.Name,
-                reference.Digest,
+                rawVersion: variable?.RawValue ?? reference.Digest,
+                resolvedVersion: reference.Digest,
                 DependencyType.DockerImage,
                 nameLocation,
                 new NonUpdatableLocation(context),
@@ -135,12 +144,20 @@ internal readonly struct DockerImageReference
                 metadata: [
                     KeyValuePair.Create<string, object?>("digest", reference.Digest),
                     KeyValuePair.Create<string, object?>("tag", reference.Tag),
+                    .. variableMetadata,
                 ]);
         }
         else if (reference.Tag is not null)
         {
-            var versionLocation = IsVariable(reference.Tag) ? new NonUpdatableLocation(context) : getLocation(reference.TagIndex, reference.Tag.Length);
-            context.ReportDependency(scanner, reference.Name, reference.Tag, DependencyType.DockerImage, nameLocation, versionLocation);
+            if (IsVariable(reference.Tag))
+            {
+                // A variable that is not defined in the file, such as ${NODE_VERSION:-18} in a compose file, has an unknown value
+                context.ReportDependency(scanner, reference.Name, rawVersion: reference.Tag, resolvedVersion: null, DependencyType.DockerImage, nameLocation, new NonUpdatableLocation(context), tags: [], metadata: []);
+            }
+            else
+            {
+                context.ReportDependency(scanner, reference.Name, rawVersion: variable?.RawValue ?? reference.Tag, resolvedVersion: reference.Tag, DependencyType.DockerImage, nameLocation, getLocation(reference.TagIndex, reference.Tag.Length), tags: [], variableMetadata);
+            }
         }
         else
         {

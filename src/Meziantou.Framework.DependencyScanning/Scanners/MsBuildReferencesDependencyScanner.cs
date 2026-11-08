@@ -39,6 +39,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
         // MSBuild keywords (Project, ItemGroup, PropertyGroup, Include, Sdk, ...) are case-sensitive, but item types, metadata names and property names are not
         var ns = doc.Root.GetDefaultNamespace();
+        var properties = MsBuildProperties.Read(context, doc.Root);
         var items = doc.Descendants(ns + "ItemGroup").Elements().Where(element => element.Name.Namespace == ns).ToArray();
         foreach (var package in items.Where(item => HasName(item, "PackageReference") || HasName(item, "PackageDownload") || HasName(item, "GlobalPackageReference")))
         {
@@ -49,19 +50,22 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             var reported = false;
             if (TryGetMetadata(context, ns, package, "Version", names.Count, out var version, out var versionLocation))
             {
-                ReportPackages(context, names, version, versionLocation);
+                ReportPackages(context, properties, names, version, versionLocation);
                 reported = true;
             }
 
             if (TryGetMetadata(context, ns, package, "VersionOverride", names.Count, out var versionOverride, out var versionOverrideLocation))
             {
-                ReportPackages(context, names, versionOverride, versionOverrideLocation);
+                ReportPackages(context, properties, names, versionOverride, versionOverrideLocation);
                 reported = true;
             }
 
             if (!reported)
             {
-                ReportPackages(context, names, version: null, versionLocation: null);
+                foreach (var (name, nameLocation) in names)
+                {
+                    context.ReportDependency(this, name, version: null, DependencyType.NuGet, nameLocation, versionLocation: null);
+                }
             }
         }
 
@@ -73,7 +77,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
             if (TryGetMetadata(context, ns, package, "Version", names.Count, out var version, out var versionLocation))
             {
-                ReportPackages(context, names, version, versionLocation);
+                ReportPackages(context, properties, names, version, versionLocation);
             }
         }
 
@@ -86,7 +90,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             if (!TryGetTrimmedValue(context, sdk, sdk.Attribute(VersionXName), out var version, out var versionLocation))
                 continue;
 
-            context.ReportDependency(this, name, version, DependencyType.NuGet, nameLocation, versionLocation);
+            ReportValue(context, properties, name, version, DependencyType.NuGet, nameLocation, versionLocation);
         }
 
         foreach (var element in doc.Descendants().Where(element => element.Name == ns + "Import" || element.Name == ns + "Project"))
@@ -95,18 +99,18 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             if (sdkAttribute is null)
                 continue;
 
-            ReportSdkAttribute(context, ns, element, sdkAttribute);
+            ReportSdkAttribute(context, properties, ns, element, sdkAttribute);
         }
 
         foreach (var element in doc.Descendants(ns + "PropertyGroup").Elements().Where(element => element.Name.Namespace == ns))
         {
             if (HasName(element, "TargetFrameworkVersion") || HasName(element, "TargetFramework"))
             {
-                ReportTargetFrameworks(context, element, isList: false);
+                ReportTargetFrameworks(context, properties, element, isList: false);
             }
             else if (HasName(element, "TargetFrameworks"))
             {
-                ReportTargetFrameworks(context, element, isList: true);
+                ReportTargetFrameworks(context, properties, element, isList: true);
             }
         }
 
@@ -123,15 +127,35 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         }
     }
 
-    private void ReportPackages(ScanFileContext context, List<(string Name, Location Location)> names, string? version, Location? versionLocation)
+    private void ReportPackages(ScanFileContext context, VariableDefinitions properties, List<(string Name, Location Location)> names, string version, Location versionLocation)
     {
         foreach (var (name, nameLocation) in names)
         {
-            context.ReportDependency(this, name, version, DependencyType.NuGet, nameLocation, versionLocation);
+            ReportValue(context, properties, name, version, DependencyType.NuGet, nameLocation, versionLocation);
         }
     }
 
-    private void ReportSdkAttribute(ScanFileContext context, XNamespace ns, XElement element, XAttribute sdkAttribute)
+    /// <summary>Reports a dependency whose version may reference the properties of the project, such as <c>$(XunitVersion)</c>.</summary>
+    private void ReportValue(ScanFileContext context, VariableDefinitions properties, string? name, string version, DependencyType type, Location? nameLocation, Location versionLocation)
+    {
+        if (!MsBuildProperties.IsExpression(version))
+        {
+            context.ReportDependency(this, name, version, type, nameLocation, versionLocation);
+            return;
+        }
+
+        var resolved = properties.Resolve(version, MsBuildProperties.GetReferences(version));
+
+        // A property that holds a list of target frameworks is not one target framework
+        if (type is DependencyType.DotNetTargetFramework && resolved.Value is not null && resolved.Value.Contains(';', StringComparison.Ordinal))
+        {
+            resolved = new ResolvedValue(null, null, resolved.VariableName);
+        }
+
+        context.ReportDependency(this, name, version, resolved, type, nameLocation);
+    }
+
+    private void ReportSdkAttribute(ScanFileContext context, VariableDefinitions properties, XNamespace ns, XElement element, XAttribute sdkAttribute)
     {
         // MSBuild splits the attribute on ';' and each entry is "Name", "Name/Version" or "Name/min=Version"
         var value = sdkAttribute.Value;
@@ -149,7 +173,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                     continue;
 
                 var name = value.Substring(entryStart, entryLength);
-                context.ReportDependency(this, name, version, DependencyType.NuGet,
+                ReportValue(context, properties, name, version, DependencyType.NuGet,
                     nameLocation: CreateLocation(context, name, element, sdkAttribute, entryStart, entryLength, value.Length),
                     versionLocation);
                 continue;
@@ -168,17 +192,17 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 continue;
 
             var nameValue = value.Substring(nameStart, nameLength);
-            context.ReportDependency(this, nameValue, versionValue, DependencyType.NuGet,
-                nameLocation: IsMsBuildExpression(nameValue)
+            ReportValue(context, properties, nameValue, versionValue, DependencyType.NuGet,
+                nameLocation: MsBuildProperties.IsExpression(nameValue)
                     ? new NonUpdatableLocation(context)
                     : new XmlLocation(context.FileSystem, context.FullPath, element, sdkAttribute, nameStart, nameLength),
-                versionLocation: IsMsBuildExpression(versionValue)
+                versionLocation: MsBuildProperties.IsExpression(versionValue)
                     ? new NonUpdatableLocation(context)
                     : new XmlLocation(context.FileSystem, context.FullPath, element, sdkAttribute, versionStart, versionLength));
         }
     }
 
-    private void ReportTargetFrameworks(ScanFileContext context, XElement element, bool isList)
+    private void ReportTargetFrameworks(ScanFileContext context, VariableDefinitions properties, XElement element, bool isList)
     {
         var value = element.Value;
         var entries = isList ? SplitList(value) : [Trim(value, 0, value.Length)];
@@ -188,9 +212,9 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 continue;
 
             var targetFramework = value.Substring(start, length);
-            context.ReportDependency(this, name: null, targetFramework, DependencyType.DotNetTargetFramework,
+            ReportValue(context, properties, name: null, targetFramework, DependencyType.DotNetTargetFramework,
                 nameLocation: null,
-                versionLocation: IsMsBuildExpression(targetFramework)
+                versionLocation: MsBuildProperties.IsExpression(targetFramework)
                     ? new NonUpdatableLocation(context)
                     : new XmlLocation(context.FileSystem, context.FullPath, element, start, length));
         }
@@ -275,7 +299,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
     private static Location CreateLocation(ScanFileContext context, string value, XElement element, XAttribute? attribute, int start, int length, int rawValueLength)
     {
         // Updating a property, item or metadata reference would replace the indirection with a literal value
-        if (IsMsBuildExpression(value))
+        if (MsBuildProperties.IsExpression(value))
             return new NonUpdatableLocation(context);
 
         if (start == 0 && length == rawValueLength)
@@ -284,12 +308,6 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         return new XmlLocation(context.FileSystem, context.FullPath, element, attribute, start, length);
     }
 
-    private static bool IsMsBuildExpression(string value)
-    {
-        return value.Contains("$(", StringComparison.Ordinal)
-            || value.Contains("@(", StringComparison.Ordinal)
-            || value.Contains("%(", StringComparison.Ordinal);
-    }
 
     /// <summary>
     /// Splits a ';'-separated MSBuild list and returns the trimmed, non-empty entries as offsets into <paramref name="value"/>.

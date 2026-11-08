@@ -75,10 +75,29 @@ public readonly struct ScanFileContext : IAsyncDisposable
     /// <param name="metadata">Additional metadata to associate with the dependency.</param>
     public void ReportDependency(DependencyScanner scanner, string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation, ReadOnlySpan<string> tags, ReadOnlySpan<KeyValuePair<string, object?>> metadata)
     {
+        ReportDependency(scanner, name, rawVersion: version, resolvedVersion: version, type, nameLocation, versionLocation, tags, metadata);
+    }
+
+    /// <summary>Reports a discovered dependency whose version may be written with variables or properties.</summary>
+    /// <param name="scanner">The scanner that discovered the dependency.</param>
+    /// <param name="name">The name of the dependency.</param>
+    /// <param name="rawVersion">The version as written where the dependency is declared, such as <c>$(XunitVersion)</c>.</param>
+    /// <param name="resolvedVersion">The version once its variables or properties are replaced with their values, or <see langword="null"/> when it cannot be resolved.</param>
+    /// <param name="type">The type of the dependency.</param>
+    /// <param name="nameLocation">The location of the dependency name in the source file.</param>
+    /// <param name="versionLocation">The location of the dependency version, which is the location of the definition of the property when the version comes from one.</param>
+    /// <param name="tags">Additional tags to associate with the dependency.</param>
+    /// <param name="metadata">Additional metadata to associate with the dependency.</param>
+    /// <remarks>
+    /// Pass the same location instance for every dependency that uses the same definition, so that the value an update
+    /// writes is the value the next update expects.
+    /// </remarks>
+    public void ReportDependency(DependencyScanner scanner, string? name, string? rawVersion, string? resolvedVersion, DependencyType type, Location? nameLocation, Location? versionLocation, ReadOnlySpan<string> tags, ReadOnlySpan<KeyValuePair<string, object?>> metadata)
+    {
         if (!ShouldReportDependency(scanner, type))
             return;
 
-        var dep = new Dependency(name, version, type, nameLocation, versionLocation);
+        var dep = new Dependency(name, rawVersion, resolvedVersion, type, nameLocation, versionLocation);
         if (scanner.GetType().FullName is { } fullTypeName)
         {
             dep.Tags.Add(fullTypeName);

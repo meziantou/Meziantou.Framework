@@ -116,7 +116,9 @@ An exception thrown by the callback stops the scan, and the scan method throws i
 | --- | --- |
 | [Type](cref:Meziantou.Framework.DependencyScanning.Dependency.Type) | The kind of dependency, such as [DependencyType.NuGet](cref:Meziantou.Framework.DependencyScanning.DependencyType.NuGet) or [DependencyType.DockerImage](cref:Meziantou.Framework.DependencyScanning.DependencyType.DockerImage) |
 | [Name](cref:Meziantou.Framework.DependencyScanning.Dependency.Name) | The name, as written in the file. `null` when the file declares no name, such as the SDK version of `global.json` |
-| [Version](cref:Meziantou.Framework.DependencyScanning.Dependency.Version) | The version, as written in the file. `null` when the file declares no version |
+| [Version](cref:Meziantou.Framework.DependencyScanning.Dependency.Version) | The version: [ResolvedVersion](cref:Meziantou.Framework.DependencyScanning.Dependency.ResolvedVersion) when there is one, [RawVersion](cref:Meziantou.Framework.DependencyScanning.Dependency.RawVersion) otherwise. `null` when the file declares no version |
+| [RawVersion](cref:Meziantou.Framework.DependencyScanning.Dependency.RawVersion) | The version as written where the dependency is declared, such as `$(XunitVersion)`. `null` when the declaration has no version text, such as a version catalog library with a `version.ref` |
+| [ResolvedVersion](cref:Meziantou.Framework.DependencyScanning.Dependency.ResolvedVersion) | The version once its properties or variables are replaced with their values, such as `2.9.3`. `null` when one of them cannot be resolved. See [Properties and variables](05-SupportedFiles/01-Overview.md#properties-and-variables) |
 | [NameLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.NameLocation), [VersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.VersionLocation) | Where the name and the version are written, or `null` |
 | [Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) | More values found by the scanner, such as the tag of an image pinned by digest. Each scanner documents its keys: see [Supported files](05-SupportedFiles/01-Overview.md) |
 | [Tags](cref:Meziantou.Framework.DependencyScanning.Dependency.Tags) | The full name of the type of the scanner that found the dependency, and the tags the scanner added |
@@ -125,7 +127,7 @@ A [Location](cref:Meziantou.Framework.DependencyScanning.Location) has the [File
 locations in text and XML files also implement [ILocationLineInfo](cref:Meziantou.Framework.DependencyScanning.ILocationLineInfo), which gives the [LineNumber](cref:Meziantou.Framework.DependencyScanning.ILocationLineInfo.LineNumber) and the [LinePosition](cref:Meziantou.Framework.DependencyScanning.ILocationLineInfo.LinePosition)
 of the value; the locations in JSON files do not.
 
-The version is the text of the file, not a normalized version: `^1.2.0` for an npm range, `from: "1.0.0"` for a Swift
+The version is the text of the file, not a normalized version, once its properties or variables are resolved: `^1.2.0` for an npm range, `from: "1.0.0"` for a Swift
 requirement, `20-alpine` for an image tag. Compare versions with the rules of each ecosystem.
 
 ## Sort the dependencies

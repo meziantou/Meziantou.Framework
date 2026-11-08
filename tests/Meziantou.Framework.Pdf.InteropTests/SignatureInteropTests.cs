@@ -17,6 +17,7 @@ public sealed partial class SignatureInteropTests
     [InlineData("rsa-pss")]
     [InlineData("visible")]
     [InlineData("certified")]
+    [InlineData("long-term")]
     public async Task SignaturesAreValidForPdfsig(string name)
     {
         global::Xunit.Assert.SkipUnless(PdfSigTool.IsSupported, "The release of meziantou/prebuilt has no pdfsig for this platform");
@@ -44,6 +45,12 @@ public sealed partial class SignatureInteropTests
             expectedSignatures = 2;
         }
 
+        if (name == "long-term")
+        {
+            // PAdES B-LT: the validation data is appended after the signature, which no longer covers the whole file
+            signed = PdfSigner.AddValidationData(PdfDocument.Open(signed), new PdfValidationDataOptions { IncludeVri = true });
+        }
+
         var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "signed-" + name + ".pdf");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, signed, XunitCancellationToken);
@@ -51,7 +58,7 @@ public sealed partial class SignatureInteropTests
         var report = await pdfsig.VerifyAsync(path, XunitCancellationToken);
 
         Assert.HasCount(expectedSignatures, ValidSignatureRegex().Matches(report));
-        Assert.Contains("Total document signed", report, StringComparison.Ordinal);
+        Assert.Contains(name == "long-term" ? "Not total document signed" : "Total document signed", report, StringComparison.Ordinal);
         Assert.Contains("ETSI.CAdES.detached", report, StringComparison.Ordinal);
     }
 

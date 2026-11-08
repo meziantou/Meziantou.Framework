@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Pdf.Signing;
 /// <summary>
 /// The data that validates the signatures of a document long after they were made (PAdES B-LT, ETSI EN 319 142-1, 5.4):
 /// the certificates of their chains and the revocation evidence, written to the document security store (ISO 32000-2,
-/// 12.8.4.3) by <see cref="PdfSigner.AddValidationData"/>, and read by <see cref="PdfSignatureVerifier.GetValidationData"/>.
+/// 12.8.4.3) by <see cref="PdfSigner.AddValidationData(PdfDocument, PdfValidationData)"/>, and read by <see cref="PdfSignatureVerifier.GetValidationData"/>.
 /// </summary>
 public sealed class PdfValidationData
 {

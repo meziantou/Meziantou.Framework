@@ -35,8 +35,7 @@ description: What the library does not do, so that you can plan around it.
 - The save checks what the conformance levels require of the document as a whole. The content (the order of the
   structure, the alternate descriptions, the colors of the annotations of PDF/A-1, the values of the numbers) must follow
   the other rules of the level: validate the documents with veraPDF.
-- Signatures are invisible: the library does not draw an appearance for the signature field. It writes PAdES B-B and B-T
-  signatures; the levels with validation data (B-LT, B-LTA) are not written.
+- Signatures are invisible: the library does not draw an appearance for the signature field.
 - The verification of a signature does not decide whether the signer is trusted: the application builds the certificate
   chain.
 - The writer encrypts the embedded files with the method of the other streams.

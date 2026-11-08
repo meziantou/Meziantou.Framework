@@ -1,6 +1,6 @@
 # Meziantou.Framework.Imaging.Barcodes
 
-Renders the QR codes and barcodes of [`Meziantou.Framework.Barcodes`](https://www.nuget.org/packages/Meziantou.Framework.Barcodes) as [`Meziantou.Framework.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.Imaging) images. The resulting `Image<Rgba32>` can be saved in any format the library supports (PNG, WebP, JPEG, GIF, AVIF, ...), resized, or drawn onto another image.
+Renders the QR codes, Data Matrix, PDF417 and Aztec symbols, and barcodes of [`Meziantou.Framework.Barcodes`](https://www.nuget.org/packages/Meziantou.Framework.Barcodes) as [`Meziantou.Framework.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.Imaging) images. The resulting `Image<Rgba32>` can be saved in any format the library supports (PNG, WebP, JPEG, GIF, AVIF, ...), resized, or drawn onto another image.
 
 `Meziantou.Framework.Barcodes` already writes PNG files on its own (`ToPng`), with no dependency. Use this package when you need another format or want to process the image further.
 

@@ -216,6 +216,47 @@ public sealed class ZintMatrixTests
         AssertSameModules(expected, qr.Width, qr.Height, (row, column) => qr[row, column]);
     }
 
+    // The Data Matrix sizes in the order of zint's --vers: the squares, then the rectangles
+    private static readonly (int Height, int Width)[] DataMatrixSizes =
+    [
+        (10, 10), (12, 12), (14, 14), (16, 16), (18, 18), (20, 20), (22, 22), (24, 24), (26, 26), (32, 32), (36, 36), (40, 40),
+        (44, 44), (48, 48), (52, 52), (64, 64), (72, 72), (80, 80), (88, 88), (96, 96), (104, 104), (120, 120), (132, 132), (144, 144),
+        (8, 18), (8, 32), (12, 26), (12, 36), (16, 36), (16, 48),
+    ];
+
+    // zint chooses the encodation schemes with its own algorithm, which can differ from the look-ahead of ISO/IEC 16022
+    // when two choices have the same length: the payloads are ones where the choices agree
+    [Theory]
+    [InlineData("123456", DataMatrixShape.Square)]
+    [InlineData("0123456789012345678901234567890123456789", DataMatrixShape.Square)]
+    [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", DataMatrixShape.Square)]
+    [InlineData("A", DataMatrixShape.Square)]
+    [InlineData("Hello", DataMatrixShape.Square)]
+    [InlineData("Hello, World!", DataMatrixShape.Square)]
+    [InlineData("@@@@ABCD^^^^", DataMatrixShape.Square)]
+    [InlineData("123456", DataMatrixShape.Rectangle)]
+    public async Task DataMatrix_MatchesZint(string data, DataMatrixShape shape)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var code = Barcode2D.CreateDataMatrix(data, new DataMatrixOptions { Shape = shape });
+        var version = Array.IndexOf(DataMatrixSizes, (code.Height, code.Width)) + 1;
+        var expected = await tools.GetZintMatrixAsync(["-b", "71", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, code.Width);
+        AssertSameModules(expected, code.Width, code.Height, (row, column) => code[row, column]);
+    }
+
+    [Theory]
+    [InlineData("[01]09521234543213[17]250101[10]ABC123")]
+    [InlineData("[01]09521234543213[10]12345678[21]1234")]
+    [InlineData("[00]123456789012345675")]
+    public async Task Gs1DataMatrix_MatchesZint(string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var code = Barcode2D.CreateGs1DataMatrix([.. ParseGs1(data)]);
+        var version = Array.IndexOf(DataMatrixSizes, (code.Height, code.Width)) + 1;
+        var expected = await tools.GetZintMatrixAsync(["-b", "71", "--gs1", "--gs1nocheck", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, code.Width);
+        AssertSameModules(expected, code.Width, code.Height, (row, column) => code[row, column]);
+    }
+
     [Theory]
     [MemberData(nameof(Barcodes))]
     public async Task Barcode_MatchesZint(BarcodeType type, string data, string option)
@@ -316,6 +357,65 @@ public sealed class ZintMatrixTests
         }
     }
 
+    // The data, the number of columns, the error correction level, and whether the data is bytes (one per character)
+    public static TheoryData<string, int, int, bool> Pdf417Codes()
+    {
+        return new TheoryData<string, int, int, bool>
+        {
+            { "0123456789012", 1, 0, false },
+            { "1234567890123456789012345678901234567890123456789", 2, 2, false },
+            { string.Concat(Enumerable.Repeat("9876543210", 30)), 10, 4, false },
+            { "HELLO WORLD", 2, 2, false },
+            { "PDF417 SYMBOL", 3, 1, false },
+            { "hello world", 4, 3, false },
+            { string.Concat(Enumerable.Repeat("THE QUICK BROWN FOX ", 20)), 6, 5, false },
+            { "\u0080\u0081þÿ\u0000\u0010", 3, 2, true },
+            { "ÀÁÂÃÄÅÆ", 5, 3, true },
+            { string.Concat(Enumerable.Range(128, 128).Select(value => (char)value)), 8, 6, true },
+            { "ABC", 30, 8, false },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(Pdf417Codes))]
+    public async Task Pdf417_MatchesZint(string data, int columns, int level, bool binary)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var options = new Pdf417Options { Columns = columns, SecurityLevel = level, RowHeight = 2 };
+        var barcode = binary ? Barcode2D.CreatePdf417(Encoding.Latin1.GetBytes(data), options) : Barcode2D.CreatePdf417(data, options);
+
+        List<string> arguments = ["-b", "55", "--cols=" + columns.ToString(CultureInfo.InvariantCulture), "--secure=" + level.ToString(CultureInfo.InvariantCulture)];
+        if (binary)
+        {
+            arguments.AddRange(["--binary", "--esc"]);
+        }
+
+        var expected = await tools.GetZintMatrixAsync(arguments, binary ? EscapeBytesForZint(data) : data, barcode.Width);
+
+        // Each row of the symbol is RowHeight rows of the matrix, and one row of zint
+        Assert.Equal(barcode.Height, expected.GetLength(0) * options.RowHeight);
+        AssertSameModules(expected, barcode.Width, expected.GetLength(0), (row, column) => barcode[row * options.RowHeight, column]);
+    }
+
+    // Every byte that is not a printable ASCII character as an escape sequence (--esc)
+    private static string EscapeBytesForZint(string data)
+    {
+        var builder = new StringBuilder();
+        foreach (var character in data)
+        {
+            if (character is < ' ' or > '~' or '\\')
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"\\x{(int)character:X2}");
+            }
+            else
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString();
+    }
+
     // zint reads control characters as escape sequences (--esc), and a backslash as a double backslash
     private static string EscapeForZint(string data)
     {
@@ -337,6 +437,57 @@ public sealed class ZintMatrixTests
         }
 
         return builder.ToString();
+    }
+
+    public static TheoryData<string, bool, int> AztecCodes()
+    {
+        // The data, whether the symbol is compact, and the number of layers. The payloads use one mode (upper, lower or
+        // digit), where the encodation cannot legitimately differ. The size is given to zint: zint picks the size from
+        // tables of capacities that do not follow a formula, where we reserve the requested percentage of the symbol capacity
+        // plus 3 codewords. With the same size, the error correction codewords fill what the data leaves in both encoders.
+        return new TheoryData<string, bool, int>
+        {
+            { "HELLO", true, 1 },
+            { "HELLO WORLD", true, 2 },
+            { "12345678901234567890", true, 2 },
+            { "AZTEC", true, 3 },
+            { "AZTEC", true, 4 },
+            { "AZTEC", false, 1 },
+            { "AZTEC", false, 2 },
+            { "0123456789", false, 4 },
+            { "abcdefghijklmnopqrstuvwxyz", false, 5 },
+            { new string('7', 200), false, 9 },
+            { string.Concat(Enumerable.Repeat("ABCDEFGHIJ", 30)), false, 15 },
+            { new string('5', 1500), false, 23 },
+            { string.Concat(Enumerable.Repeat("XYZ", 200)), false, 32 },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(AztecCodes))]
+    public async Task Aztec_MatchesZint(string data, bool compact, int layers)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var barcode = Barcode2D.CreateAztec(data, new AztecOptions { Compact = compact, Layers = layers });
+
+        // zint numbers the compact sizes 1 to 4, and the full-range sizes 5 to 36
+        var version = compact ? layers : layers + 4;
+        var expected = await tools.GetZintMatrixAsync(["-b", "92", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, barcode.Width);
+        AssertSameModules(expected, barcode.Width, barcode.Height, (row, column) => barcode[row, column]);
+    }
+
+    [Theory]
+    [InlineData("ÉCI", true, 2)]
+    [InlineData("ÀÉÎÕÜ", false, 3)]
+    [InlineData("日本", true, 2)]
+    public async Task AztecWithEci_MatchesZint(string data, bool compact, int layers)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var barcode = Barcode2D.CreateAztec(data, new AztecOptions { Compact = compact, Layers = layers });
+
+        var version = compact ? layers : layers + 4;
+        var expected = await tools.GetZintMatrixAsync(["-b", "92", "--eci=26", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, barcode.Width);
+        AssertSameModules(expected, barcode.Width, barcode.Height, (row, column) => barcode[row, column]);
     }
 
     private static string GetZintLevel(ErrorCorrectionLevel level) => level switch

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Geo.Maps</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Loads offline map bundles: the borders, states and provinces, cities, rivers, lakes, coastlines, land, ocean, seas and physical regions of a region, stored as folders of FlatGeobuf or GeoJSON layers, or in other formats such as GeoPackage.</Description>
     <PackageTags>geo;gis;map;maps;offline;borders;countries;cities;flatgeobuf;geojson;openstreetmap;natural-earth</PackageTags>

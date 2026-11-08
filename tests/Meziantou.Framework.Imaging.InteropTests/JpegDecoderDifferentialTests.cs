@@ -217,6 +217,55 @@ public sealed class JpegDecoderDifferentialTests
         }
     }
 
+    /// <summary>
+    /// Hierarchical files of the reference encoder (<c>-y N</c>: <c>N</c> frames of halved sizes, or with 0 a DCT-based frame
+    /// and a lossless differential frame of the same size, <c>-y 1</c> with an expanded reference), with Huffman (optimized
+    /// tables, <c>-h</c>) and arithmetic coding, sequential and progressive, decoded by the library and by the reference
+    /// decoder. They differ by rounding only: the library reconstructs each frame in integers as T.81 J.1 describes (inverse
+    /// DCT rounded and clamped, then expanded), the reference decoder keeps four fractional bits and unclamped values from one
+    /// frame to the next. For the same reason, a lossless differential frame after a DCT-based frame gives back the source
+    /// samples with the inverse DCT of the reference software only (T.81 does not specify the inverse DCT exactly).
+    /// </summary>
+    [Theory]
+    [InlineData("gray", 8, "-y 2 -h", 2)]
+    [InlineData("gray", 8, "-y 3 -h", 3)]
+    [InlineData("gray", 12, "-y 2 -a", 3)]
+    [InlineData("rgb", 8, "-y 2 -h", 4)]
+    [InlineData("rgb", 8, "-y 2 -h -z 2", 4)]
+    [InlineData("rgb", 8, "-y 2 -a", 4)]
+    [InlineData("rgb", 8, "-y 2 -v -h", 4)]
+    [InlineData("rgb", 8, "-y 2 -a -v", 4)]
+    [InlineData("420", 8, "-y 2 -h", 10)]
+    [InlineData("rgb", 12, "-y 2 -h", 6)]
+    [InlineData("gray", 8, "-y 0 -c -h", 8)]
+    [InlineData("gray", 8, "-y 1 -c -h", 2)]
+    [InlineData("rgb", 8, "-y 0 -c -a", 10)]
+    [InlineData("rgb", 8, "-y 1 -c -h", 2)]
+    public async Task HierarchicalFilesDecodeLikeTheReferenceDecoder(string layout, int precision, string options, int tolerance)
+    {
+        var isoJpeg = await RequiredTools.IsoJpegAsync();
+        var maxValue = (1 << precision) - 1;
+        var channels = layout == "gray" ? 1 : 3;
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(HierarchicalFilesDecodeLikeTheReferenceDecoder));
+        var name = string.Create(CultureInfo.InvariantCulture, $"{layout}-{precision}{options.Replace(" ", "", StringComparison.Ordinal)}");
+        var inputPath = directory / (name + (channels == 1 ? ".pgm" : ".ppm"));
+        await File.WriteAllBytesAsync(inputPath, WritePnm(Width, Height, channels, maxValue, CreateSamples(Width, Height, channels, maxValue)), XunitCancellationToken);
+        var path = directory / (name + ".jpg");
+        string[] layoutOptions = layout == "420" ? ["-s", "1x1,2x2,2x2"] : [];
+        await isoJpeg.EncodeAsync(inputPath, path, ["-q", "85", .. layoutOptions, .. options.Split(' ')], XunitCancellationToken);
+        var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
+        Assert.NotEqual(-1, data.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xDE]));
+        var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Assert.Equal((Width, Height, precision), (info.Width, info.Height, info.BitsPerComponent));
+
+        using var image = Image.Load(data);
+        var reference = await isoJpeg.DecodeAsync(path, options.Contains("-c", StringComparison.Ordinal) ? ["-c"] : [], XunitCancellationToken);
+        var (max, mean, excluded) = Compare(GetSamples(image, maxValue), GetSamples(reference, maxValue), maxValue);
+        var description = string.Create(CultureInfo.InvariantCulture, $"{name}: max {max}, mean {mean:F4} (allowed {tolerance}), {excluded} pixels at an end of the range left out");
+        TestContext.Current.TestOutputHelper?.WriteLine(description);
+        Assert.True(max <= tolerance && excluded <= Width * Height / 10, description);
+    }
+
     [Theory]
     [InlineData("-n", "JPEG DNL height")]
     public async Task ProcessesTheLibraryDoesNotReadAreRejected(string options, string feature)

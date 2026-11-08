@@ -11,14 +11,14 @@ picture: an animation, transparency or 16-bit samples in a lossy file need an ex
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Processes | Baseline, extended sequential and progressive, Huffman or arithmetic coded; lossless (Huffman coded) | Baseline (default), extended sequential, progressive and lossless, Huffman or arithmetic coded |
-| Samples | 8 and 12 bits; 2 to 16 bits for lossless files | 8 and 12 bits; 2 to 16 bits for lossless files |
+| Processes | Baseline, extended sequential and progressive, Huffman or arithmetic coded; lossless, Huffman or arithmetic coded; hierarchical; JPEG-LS (ITU-T T.87) | Baseline (default), extended sequential, progressive and lossless, Huffman or arithmetic coded |
+| Samples | 8 and 12 bits; 2 to 16 bits for lossless and JPEG-LS files | 8 and 12 bits; 2 to 16 bits for lossless files |
 | Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats), YCbCr, or RGB for lossless files |
 | Chroma subsampling | Any integral sampling | 4:4:4, 4:2:2 or 4:2:0 |
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
-| Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless files | - |
+| Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless, JPEG-LS and hierarchical files | - |
 
-8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit and lossless files of more than 8 bits load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
+8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit files, and lossless and JPEG-LS files of more than 8 bits, load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
 
 [ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) and [ImageDecodeOptions.ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) decode a file at a reduced size, from the
 coefficients of its blocks: the pixels are the means of the pixels of the full image they replace, and a subsampled
@@ -169,8 +169,16 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 - CMYK and YCCK files (from print workflows) are recognized but load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion),
   which converts them to RGB with ICC profiles; otherwise loading throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). See
   [Color management](../09-Color/03-ColorManagement.md).
-- Hierarchical files, lossless files with arithmetic coding and JPEG-LS files are rejected with an
-  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException), also by [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify).
+- Hierarchical files are decoded frame by frame, each differential frame added to the previous one expanded, in
+  integers as ITU-T T.81 describes it. The ISO reference decoder keeps fractional bits between frames, so the pixels
+  can differ from its own by a few units; for the same reason, a lossless frame after a DCT-based frame restores the
+  original samples only with the inverse DCT of the encoder (T.81 does not define the inverse DCT exactly). A frame
+  that does not code every component is rejected with an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+- JPEG-LS files are read in every interleave mode, lossless or near-lossless, with preset coding parameters,
+  restart intervals and the HP color transforms that CharLS writes. Mapping tables (palettes), the point transform
+  and the extensions of ITU-T T.870 are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). The three components of a
+  JPEG-LS file are RGB samples unless an Adobe segment says otherwise.
 - The EXIF orientation is reported in `Metadata.Orientation`, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) to rotate the pixels. See
   [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 - An EXIF block is limited to 65,527 bytes and an XMP packet to 65,504 bytes; extended XMP is not supported.

@@ -211,7 +211,7 @@ internal sealed class JpegLosslessTestImage
             frame.AddRange([component.Id, (byte)((component.Declared.H << 4) | component.Declared.V), 0]);
         }
 
-        output.AddRange(JpegTestImage.Segment(options.FrameMarker ?? (options.Arithmetic ? (byte)0xCB : (byte)0xC3), [.. frame]));
+        output.AddRange(JpegTestImage.Segment(options.FrameMarker ?? (options.Differential ? (options.Arithmetic ? (byte)0xCF : (byte)0xC7) : options.Arithmetic ? (byte)0xCB : (byte)0xC3), [.. frame]));
         var tableCount = options.TablePerComponent ? Components.Length : Math.Min(2, Components.Length);
         var tables = new HuffmanCode[tableCount];
         for (var t = 0; t < tableCount; t++)
@@ -360,7 +360,12 @@ internal sealed class JpegLosslessTestImage
                         var x = (mx * h) + bx;
                         var y = (my * v) + by;
                         int prediction;
-                        if (y == firstLine[index])
+                        if (options.Differential)
+                        {
+                            // A differential frame of a hierarchical image codes the differences without prediction
+                            prediction = 0;
+                        }
+                        else if (y == firstLine[index])
                         {
                             prediction = x == 0 ? 1 << (Precision - pointTransform - 1) : values[(y * columns) + x - 1];
                         }

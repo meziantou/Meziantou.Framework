@@ -869,6 +869,103 @@ public sealed class JpegLosslessDecoderTests
         static InvalidImageContentException Load(byte[] data) => Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
     }
 
+    [Theory]
+    [InlineData(8, false, false)]
+    [InlineData(8, true, false)]
+    [InlineData(8, true, true)]
+    [InlineData(12, false, true)]
+    [InlineData(16, true, false)]
+    public void HierarchicalLosslessFramesReconstructTheImage(int precision, bool color, bool arithmetic)
+    {
+        // A hierarchical image (T.81 Annex J) of a lossless frame and a differential lossless frame: the differences, coded
+        // without prediction, are added to the first frame expanded by 2 in the directions of the EXP segment
+        var sampling = color ? Layouts["4:4:4"] : Layouts["gray"];
+        foreach (var (width, height, horizontal, vertical) in new[] { (13, 9, true, true), (12, 9, true, false), (7, 1, false, false), (1, 5, false, true), (2, 2, true, true) })
+        {
+            var seed = (precision * 3) + width + (color ? 1 : 0) + (arithmetic ? 2 : 0);
+            var low = JpegLosslessTestImage.CreateRandom(horizontal ? (width + 1) / 2 : width, vertical ? (height + 1) / 2 : height, sampling, precision, seed, rgb: color);
+            var image = JpegLosslessTestImage.CreateRandom(width, height, sampling, precision, seed + 1, rgb: color);
+            var differences = JpegLosslessTestImage.FromSamples(width, height, sampling, precision, color, (c, x, y) => image.Components[c].Samples[(y * width) + x] - Expand(low.Components[c], x, y, horizontal, vertical));
+            var data = Hierarchical(
+                image,
+                low.Encode(new JpegLosslessTestOptions { Predictor = 4, Arithmetic = arithmetic, RestartRows = 2 }),
+                ((horizontal ? 1 : 0) << 4) | (vertical ? 1 : 0),
+                differences.Encode(new JpegLosslessTestOptions { Predictor = 0, Differential = true, Arithmetic = arithmetic, Huffman = JpegTestHuffmanStyle.Skewed, RestartRows = 3 }));
+            var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Assert.Equal(new Size(width, height), info.Size);
+            Assert.Equal(precision, info.BitsPerComponent);
+            using var decoded = Image.Load(data);
+            AssertPixels(image.GetExpectedPixels(), decoded, $"{precision} bits, {(color ? "RGB" : "gray")}, {(arithmetic ? "arithmetic" : "Huffman")}, {width}x{height}, expanded {horizontal}/{vertical}");
+        }
+    }
+
+    [Fact]
+    public void HierarchicalStructureIsValidated()
+    {
+        var sampling = Layouts["4:4:4"];
+        var low = JpegLosslessTestImage.CreateRandom(5, 4, sampling, 8, seed: 1, rgb: true);
+        var image = JpegLosslessTestImage.CreateRandom(10, 8, sampling, 8, seed: 2, rgb: true);
+        var lowData = low.Encode();
+        var differences = JpegLosslessTestImage.FromSamples(10, 8, sampling, 8, rgb: true, (_, x, y) => (x + y) % 3).Encode(new JpegLosslessTestOptions { Predictor = 0, Differential = true });
+        using (var decoded = Image.Load(Hierarchical(image, lowData, 0x11, differences)))
+        {
+            Assert.Equal(new Size(10, 8), decoded.Size);
+        }
+
+        static InvalidImageContentException Invalid(byte[] data) => Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+
+        // A differential frame without DHP segment, and a hierarchical image whose first frame is differential
+        Assert.Contains("not in a hierarchical image", Invalid([0xFF, 0xD8, .. differences.AsSpan(2)]).Message, StringComparison.Ordinal);
+        Assert.Contains("first frame", Invalid(Hierarchical(image, differences, 0x00, differences)).Message, StringComparison.Ordinal);
+
+        // EXP values other than 0 and 1, a reference that does not have the size of the frame, a last frame smaller than the image
+        Assert.Contains("EXP", Invalid(Hierarchical(image, lowData, 0x21, differences)).Message, StringComparison.Ordinal);
+        Assert.Contains("does not have the size", Invalid(Hierarchical(image, lowData, 0x10, differences)).Message, StringComparison.Ordinal);
+        Assert.Contains("last frame", Invalid([0xFF, 0xD8, .. Dhp(image), .. lowData.AsSpan(2)]).Message, StringComparison.Ordinal);
+
+        // The differences are not predicted: a differential scan selects the predictor 0
+        var predicted = JpegLosslessTestImage.FromSamples(10, 8, sampling, 8, rgb: true, (_, _, _) => 0).Encode(new JpegLosslessTestOptions { Predictor = 1, FrameMarker = 0xC7 });
+        Assert.Contains("must be 0", Invalid(Hierarchical(image, lowData, 0x11, predicted)).Message, StringComparison.Ordinal);
+
+        // A frame that does not code every component of the image
+        var gray = JpegLosslessTestImage.CreateRandom(5, 4, Layouts["gray"], 8, seed: 3).Encode();
+        Assert.Equal("JPEG hierarchical partial frames", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Hierarchical(image, gray, 0x11, differences))).Feature);
+    }
+
+    /// <summary>Assembles a hierarchical file: the DHP segment of an image, the frames of two files (without their SOI and EOI markers) and an EXP segment between them.</summary>
+    private static byte[] Hierarchical(JpegLosslessTestImage image, byte[] first, int expansion, byte[] second)
+        => [0xFF, 0xD8, .. Dhp(image), .. first.AsSpan(2, first.Length - 4), .. JpegTestImage.Segment(0xDF, [(byte)expansion]), .. second.AsSpan(2, second.Length - 4), 0xFF, 0xD9];
+
+    private static byte[] Dhp(JpegLosslessTestImage image)
+    {
+        var header = new List<byte> { (byte)image.Precision, (byte)(image.Height >> 8), (byte)image.Height, (byte)(image.Width >> 8), (byte)image.Width, (byte)image.Components.Length };
+        foreach (var component in image.Components)
+        {
+            header.AddRange([component.Id, (byte)((component.Declared.H << 4) | component.Declared.V), 0]);
+        }
+
+        return JpegTestImage.Segment(0xDE, [.. header]);
+    }
+
+    /// <summary>
+    /// A sample of a reference expanded by 2 (T.81 J.1.1.2): horizontally, then vertically, the new samples being the floored
+    /// means of their two neighbors, the last sample repeated.
+    /// </summary>
+    private static int Expand(JpegLosslessTestImage.Component reference, int x, int y, bool horizontal, bool vertical)
+    {
+        int Horizontal(int row)
+        {
+            int At(int column) => reference.Samples[(row * reference.Width) + Math.Min(column, reference.Width - 1)];
+            return !horizontal ? At(x) : (x & 1) == 0 ? At(x >> 1) : (At(x >> 1) + At((x >> 1) + 1)) >> 1;
+        }
+
+        if (!vertical)
+            return Horizontal(y);
+
+        var top = Horizontal(Math.Min(y >> 1, reference.Height - 1));
+        return (y & 1) == 0 ? top : (top + Horizontal(Math.Min((y >> 1) + 1, reference.Height - 1))) >> 1;
+    }
+
     private static byte[] Patch(byte[] data, int offset, byte value)
     {
         var result = data.ToArray();

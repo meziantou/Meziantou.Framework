@@ -59,7 +59,7 @@ internal sealed class JpegLosslessScanDecoder : JpegScanDecoder
     /// <param name="mcusPerLine">For interleaved scans, the MCUs per MCU row of the frame.</param>
     /// <param name="mcuRows">For interleaved scans, the MCU rows of the frame.</param>
     /// <param name="restartInterval">The restart interval in MCUs, or 0.</param>
-    /// <param name="predictor">The predictor the scan selects, 1 to 7.</param>
+    /// <param name="predictor">The predictor the scan selects, 1 to 7, or 0 for a differential frame (no prediction).</param>
     /// <param name="pointTransform">The point transform of the scan, below the precision of the frame.</param>
     /// <param name="mcuRowDecoded">Called after each completed MCU row (line for a non-interleaved scan) with its index.</param>
     /// <param name="cancellationToken">Checked after each MCU row.</param>
@@ -138,7 +138,11 @@ internal sealed class JpegLosslessScanDecoder : JpegScanDecoder
             for (var line = 0; line < lines; line++)
             {
                 var samples = buffer.Slice((line + 1) * stride, width);
-                if (_isFirstLine && line == 0)
+                if (_predictor == 0)
+                {
+                    // A differential frame (T.81 J.1.3): the differences are not predicted
+                }
+                else if (_isFirstLine && line == 0)
                 {
                     ReconstructFirstLine(samples, 1 << (_sampleBits - 1));
                 }

@@ -138,6 +138,12 @@ internal abstract class JpegScanDecoder
     public bool AcceptsGarbledRestartNumbers { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the scan is a scan of a differential frame of a hierarchical image (T.81 J.1.5.1):
+    /// its DC coefficients are coded without prediction, and its blocks are decoded one at a time.
+    /// </summary>
+    public bool Differential { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the MCU being decoded is in the buffer with 16 more bytes, before the end of its
     /// segment: its blocks can be read with <see cref="JpegEntropyReader.UncheckedCursor"/>. Always <see langword="false"/>
     /// for arithmetic-coded and lossless scans.
@@ -420,7 +426,7 @@ internal abstract class JpegScanDecoder
     {
         // Before the end of the segment, an MCU is only decoded when _safeBytes are available: its bytes and 16 more are
         // then buffered (the accumulator holds at most 7 whole bytes)
-        UncheckedReads = !endOfSegment && _uncheckedBytes != int.MaxValue;
+        UncheckedReads = !endOfSegment && _uncheckedBytes != int.MaxValue && !Differential;
         while (_mcu < _totalMcus)
         {
             if (_restartInterval > 0 && _intervalRemaining == 0)
@@ -508,6 +514,11 @@ internal abstract class JpegScanDecoder
         if (!_interleaved)
         {
             DecodeBlock(_components[0], mcuY, mcuX);
+            if (Differential)
+            {
+                _components[0].Predictor = 0;
+            }
+
             return;
         }
 
@@ -521,6 +532,11 @@ internal abstract class JpegScanDecoder
                 for (var bx = 0; bx < h; bx++)
                 {
                     DecodeBlock(scanComponent, (mcuY * v) + by, (mcuX * h) + bx);
+                    if (Differential)
+                    {
+                        // The DC coefficient of the next block is not predicted from this one
+                        scanComponent.Predictor = 0;
+                    }
                 }
             }
         }

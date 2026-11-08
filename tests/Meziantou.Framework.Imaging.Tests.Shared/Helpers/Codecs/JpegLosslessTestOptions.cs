@@ -37,6 +37,12 @@ internal sealed class JpegLosslessTestOptions
     /// </summary>
     public byte? FrameMarker { get; init; }
 
+    /// <summary>
+    /// Gets a value indicating whether the frame is a differential frame of a hierarchical image (SOF7, or SOF15 with
+    /// arithmetic coding): the samples are differences, coded without prediction, with the predictor 0 of the scans.
+    /// </summary>
+    public bool Differential { get; init; }
+
     /// <summary>Gets a value indicating whether the differences are arithmetic coded (T.81 H.1.4.3, SOF11) instead of Huffman coded.</summary>
     public bool Arithmetic { get; init; }
 

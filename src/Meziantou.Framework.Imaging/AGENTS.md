@@ -715,8 +715,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   files its `ljpeg` encoder writes (with its BGR pixel formats it writes a frame of 9-bit samples that are not the
   pixels: such a file is read as what its frame header says, or rejected when a sample does not fit), and FFmpeg
   9.0.2 misreads the category 16.
-  Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) is not decoded: no
-  tool at hand writes or reads it.
+  Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) has no writer at
+  hand (the encoder of the ISO reference codec fails on lossless frames): the test-side encoder writes it, and the ISO
+  reference decoder reads it back (InteropTests); that decoder predicts the first sample with `2^(P - 1)` whatever the
+  point transform, so it is no oracle for a point transform.
+- **Hierarchical JPEG** (`JpegDecoder.EndHierarchicalFrame`): frames are decoded into full planes and reconstructed in
+  integers (T.81 J.1); the ISO reference software, the only writer at hand (`jpeg -y N`, Huffman needs `-h`), keeps four
+  fractional bits and unclamped values between frames, so its decoding differs by a few units, and its lossless
+  hierarchical files (`-y 0 -c`) are not restored exactly. The lossless-only structure is tested exactly with frames of
+  the test-side lossless encoder (`JpegLosslessTestOptions.Differential`).
+- **JPEG-LS** (`JpegLsScanDecoder`): the T.87 conformance streams (downloaded from CharLS at a pinned commit) are the
+  oracle. FFmpeg 9.0.2 misreads the sample-interleaved mode (ILV 2) and ignores the HP transforms of separate scans; the
+  ISO reference decoder misreads near-lossless and 16-bit streams that CharLS, FFmpeg and the library agree on.
 - **Scaled JPEG decoding** (`ImageDecodeRequest.ScaleDenominator`/`TargetSize`, `JpegFrameComponent.SetGeometry`,
   `JpegIdct.TransformReduced`). A codec opts in with `ImageCodec.SupportsScaledDecoding`; the drivers reject an exact scale
   for the others before decoding (`ImageDecodeRequest.For`), and a decoder picks its denominator with

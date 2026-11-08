@@ -201,7 +201,7 @@ public static partial class DependencyScanningFuzzTargets
     /// <summary>The dependencies that share an updatable version location, such as the definition of a property, have the same version, which the location holds.</summary>
     private static void CheckSharedVersionLocations(IReadOnlyCollection<Dependency> dependencies)
     {
-        foreach (var group in dependencies.Where(dependency => dependency.VersionLocation is { IsUpdatable: true }).GroupBy(dependency => dependency.VersionLocation!, ReferenceEqualityComparer.Instance))
+        foreach (var group in dependencies.Where(dependency => dependency.VersionLocation is { IsUpdatable: true }).GroupBy(dependency => dependency.VersionLocation, ReferenceEqualityComparer.Instance))
         {
             var versions = group.Select(dependency => dependency.Version).Distinct(StringComparer.Ordinal).ToArray();
             FuzzAssert.True(versions.Length is 1, $"The dependencies that share the location {group.Key} have different versions: {string.Join(", ", versions.Select(FuzzAssert.Format))}");

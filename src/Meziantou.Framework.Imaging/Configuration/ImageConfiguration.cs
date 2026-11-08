@@ -60,6 +60,45 @@ public sealed class ImageConfiguration
         }
     } = OpenExrDecodingOptions.Default;
 
+    /// <summary>
+    /// Gets the codecs of the formats the library does not read or write itself, consulted before the built-in ones. Defaults
+    /// to an empty list.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The codecs are used by the entry points that receive this configuration: <see cref="Image.Identify(Stream, ImageIdentifyOptions?)"/>,
+    /// <see cref="Image.Load(Stream, ImageDecodeOptions?)"/>, their overloads and asynchronous variants, and
+    /// <see cref="Image.DetectFormatInfo(ReadOnlySpan{byte}, ImageConfiguration?)"/>; <see cref="Image.Save(string, Formats.ImageEncoder?)"/> selects
+    /// their encoders from the file extension (<see cref="CustomImageCodec.CreateEncoder"/>) when the image has this
+    /// configuration. A file is read by the first codec, in this order, whose <see cref="CustomImageCodec.IsMatch"/> accepts
+    /// its first bytes; the built-in codecs are consulted after them, so that a registered codec also takes the files of a
+    /// built-in format it recognizes. Sequential readers (<see cref="ImageReader{TPixel}"/>) reject the files of a custom
+    /// codec with an <see cref="UnsupportedImageFeatureException"/>, and <see cref="ImageCollection"/> and
+    /// <see cref="AuxiliaryImageCollection"/> only read the built-in formats.
+    /// </para>
+    /// <para>The setter stores a copy of the list.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value or one of its items is <see langword="null"/>.</exception>
+    public IReadOnlyList<CustomImageCodec> Codecs
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            CustomImageCodec[] codecs = [.. value];
+            foreach (var codec in codecs)
+            {
+                ArgumentNullException.ThrowIfNull(codec, nameof(value));
+            }
+
+            field = Array.AsReadOnly(codecs);
+            CodecRegistry = codecs.Length == 0 ? null : new Internals.ImageCodecRegistry([.. codecs.Select(codec => new Internals.CustomImageCodecAdapter(codec)), .. Internals.ImageCodecRegistry.Default.Codecs]);
+        }
+    } = [];
+
+    /// <summary>Gets the registry of the custom codecs followed by the built-in ones, or <see langword="null"/> without custom codecs.</summary>
+    internal Internals.ImageCodecRegistry? CodecRegistry { get; private set; }
+
     /// <summary>Gets the environment of the fonts loaded with this configuration.</summary>
     internal Internals.ImageFontEnvironment FontEnvironment => field ??= new Internals.ImageFontEnvironment(this);
 

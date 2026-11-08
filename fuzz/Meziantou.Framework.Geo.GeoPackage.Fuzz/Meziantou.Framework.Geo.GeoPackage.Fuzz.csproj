@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Geo.GeoPackage. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- A Meziantou.Framework.Geo.GeoPackage namespace would hide the GeoPackage class -->
+    <RootNamespace>Meziantou.Framework.GeoPackageFuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The GeoPackage file of the unit tests, written by GDAL, is a seed -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Geo.GeoPackage.Tests\TestData\*.gpkg" LogicalName="TestData/%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.GeoPackage\Meziantou.Framework.Geo.GeoPackage.csproj" />
+  </ItemGroup>
+</Project>

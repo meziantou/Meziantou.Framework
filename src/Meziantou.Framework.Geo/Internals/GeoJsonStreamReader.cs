@@ -26,6 +26,7 @@ internal sealed class GeoJsonStreamReader : IDisposable
     private int _anchor;
     private Mode _mode;
     private string? _type;
+    private bool _isNameInvalid;
     private GeoFeature? _feature;
     private GeoFeatureCollection? _features;
 
@@ -108,7 +109,9 @@ internal sealed class GeoJsonStreamReader : IDisposable
             _buffer = buffer;
         }
 
-        var minimum = _isFirstBlock ? Math.Min(Utf8Bom.Length, _buffer.Length - _end) : 1;
+        // The buffer is filled: a stream that returns a few bytes at a time would make the reader parse an incomplete feature
+        // again after each read, which is quadratic in the size of the feature
+        var minimum = _buffer.Length - _end;
         var read = await stream.ReadAtLeastAsync(_buffer.AsMemory(_end), minimum, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
         _end += read;
         if (read < minimum)
@@ -206,6 +209,18 @@ internal sealed class GeoJsonStreamReader : IDisposable
                     reader = value;
                     break;
 
+                // The name of a collection is not returned, but GeoJson.Read decodes it: a name that is not a valid string makes
+                // a FeatureCollection invalid
+                case Mode.Root or Mode.End when reader.TokenType is JsonTokenType.PropertyName && reader.ValueTextEquals("name"u8):
+                    var name = reader;
+                    if (!name.TrySkip())
+                        return Rewind(ref checkpoint);
+
+                    _ = reader.Read();
+                    _isNameInvalid = reader.TokenType is JsonTokenType.String && !IsValidString(ref reader);
+                    reader = name;
+                    break;
+
                 case Mode.Root or Mode.End when reader.TokenType is JsonTokenType.PropertyName:
                     if (!reader.TrySkip())
                         return Rewind(ref checkpoint);
@@ -238,8 +253,25 @@ internal sealed class GeoJsonStreamReader : IDisposable
                     if (_type is not "FeatureCollection")
                         throw new FormatException(_type is null ? "A GeoJSON object must have a 'type' member." : "A GeoJSON object with a 'features' array must be a FeatureCollection.");
 
+                    if (_isNameInvalid)
+                        throw new FormatException("The name of the FeatureCollection is not a valid string.");
+
                     break;
             }
+        }
+    }
+
+    private static bool IsValidString(ref Utf8JsonReader reader)
+    {
+        try
+        {
+            _ = reader.GetString();
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            // Not valid UTF-8, or an escaped unpaired surrogate
+            return false;
         }
     }
 

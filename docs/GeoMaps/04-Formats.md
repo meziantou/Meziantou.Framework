@@ -60,6 +60,9 @@ the JSON of `metadata.json`, is in the metadata extension of the file. Its colum
 properties: `rank` is a `MEDIUMINT`, `population` an `INTEGER` and `capital` a `BOOLEAN`. SQLite does not store NaN: a
 `NaN` value is written as `NULL`, so the feature does not have the property once read.
 
+The layers are read by the GeoPackage reader of `Meziantou.Framework.Geo.GeoPackage`, which the package depends on: see
+[GeoPackage](../Geo/04-Formats/10-GeoPackage.md) to read the other GeoPackage files, such as the ones GDAL writes.
+
 ## Convert a bundle
 
 [Write](cref:Meziantou.Framework.Geo.Maps.MapFormat.Write) with a map writes all its layers and its metadata in a

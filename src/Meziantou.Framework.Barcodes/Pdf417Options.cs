@@ -13,6 +13,10 @@ public sealed class Pdf417Options
     /// Gets or sets the error correction level (also called the security level), from 0 (2 error correction codewords) to
     /// 8 (512 codewords), or <see langword="null"/> for the minimum level ISO/IEC 15438 recommends for the data length (2 to 5).
     /// </summary>
+    /// <remarks>
+    /// A symbol holds at most 928 codewords, error correction included. When the level is <see langword="null"/> and the data
+    /// does not fit with the recommended level, the highest level that fits is used, down to 2.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is less than 0 or greater than 8.</exception>
     public int? SecurityLevel
     {

@@ -555,7 +555,27 @@ public sealed class DecodeInteropTests
 
     private static IEnumerable<(Barcode2D Barcode, string Data)> GetSamplePdf417Codes()
     {
-        yield break;
+        (string Data, Pdf417Options? Options)[] samples =
+        [
+            ("HELLO WORLD", null),
+            ("01234567890123456789012345678901234567890123456789", null),
+            ("Invoice #2026-11-08: 3 items, total $42.50 (paid)", null),
+            ("lowercase text; with [punctuation] & symbols: ~!@{}|\"'\t\r\n", new Pdf417Options { Columns = 4 }),
+            ("Ab1cD2 ef3GH4 1234567890123 x", new Pdf417Options { SecurityLevel = 6, Columns = 8 }),
+            ("héllo wörld, Ελληνικά, 漢字", new Pdf417Options { SecurityLevel = 3 }),
+            ("a\u0001b\u007fc\u001fd", new Pdf417Options { SecurityLevel = 0, Columns = 2 }),
+            (string.Concat(Enumerable.Repeat("PDF417 is a stacked barcode. ", 12)), new Pdf417Options { Columns = 12, RowHeight = 4 }),
+            ("TALL", new Pdf417Options { Columns = 1, SecurityLevel = 4, RowHeight = 8 }),
+            ("Hello World! 123 #tag; a@b.c\t[x]\n", null),
+
+            // A single byte between texts is a shift from the Text compaction, after a padding value in each sub-mode
+            ("HELLO\u0001WORLD hello\u0002world AB1;;\u0003CDEFG", new Pdf417Options { Columns = 5 }),
+        ];
+
+        foreach (var (data, options) in samples)
+        {
+            yield return (Barcode2D.CreatePdf417(data, options), data);
+        }
     }
 
     private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleAztecCodes()

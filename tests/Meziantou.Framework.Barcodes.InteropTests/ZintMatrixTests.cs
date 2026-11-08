@@ -357,6 +357,65 @@ public sealed class ZintMatrixTests
         }
     }
 
+    // The data, the number of columns, the error correction level, and whether the data is bytes (one per character)
+    public static TheoryData<string, int, int, bool> Pdf417Codes()
+    {
+        return new TheoryData<string, int, int, bool>
+        {
+            { "0123456789012", 1, 0, false },
+            { "1234567890123456789012345678901234567890123456789", 2, 2, false },
+            { string.Concat(Enumerable.Repeat("9876543210", 30)), 10, 4, false },
+            { "HELLO WORLD", 2, 2, false },
+            { "PDF417 SYMBOL", 3, 1, false },
+            { "hello world", 4, 3, false },
+            { string.Concat(Enumerable.Repeat("THE QUICK BROWN FOX ", 20)), 6, 5, false },
+            { "\u0080\u0081þÿ\u0000\u0010", 3, 2, true },
+            { "ÀÁÂÃÄÅÆ", 5, 3, true },
+            { string.Concat(Enumerable.Range(128, 128).Select(value => (char)value)), 8, 6, true },
+            { "ABC", 30, 8, false },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(Pdf417Codes))]
+    public async Task Pdf417_MatchesZint(string data, int columns, int level, bool binary)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var options = new Pdf417Options { Columns = columns, SecurityLevel = level, RowHeight = 2 };
+        var barcode = binary ? Barcode2D.CreatePdf417(Encoding.Latin1.GetBytes(data), options) : Barcode2D.CreatePdf417(data, options);
+
+        List<string> arguments = ["-b", "55", "--cols=" + columns.ToString(CultureInfo.InvariantCulture), "--secure=" + level.ToString(CultureInfo.InvariantCulture)];
+        if (binary)
+        {
+            arguments.AddRange(["--binary", "--esc"]);
+        }
+
+        var expected = await tools.GetZintMatrixAsync(arguments, binary ? EscapeBytesForZint(data) : data, barcode.Width);
+
+        // Each row of the symbol is RowHeight rows of the matrix, and one row of zint
+        Assert.Equal(barcode.Height, expected.GetLength(0) * options.RowHeight);
+        AssertSameModules(expected, barcode.Width, expected.GetLength(0), (row, column) => barcode[row * options.RowHeight, column]);
+    }
+
+    // Every byte that is not a printable ASCII character as an escape sequence (--esc)
+    private static string EscapeBytesForZint(string data)
+    {
+        var builder = new StringBuilder();
+        foreach (var character in data)
+        {
+            if (character is < ' ' or > '~' or '\\')
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"\\x{(int)character:X2}");
+            }
+            else
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString();
+    }
+
     // zint reads control characters as escape sequences (--esc), and a backslash as a double backslash
     private static string EscapeForZint(string data)
     {

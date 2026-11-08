@@ -92,6 +92,35 @@ public sealed class ZintMatrixTests
             { BarcodeType.Codabar, "1234-5678$:/.+", "" },
             { BarcodeType.Itf, "12345678", "" },
             { BarcodeType.Itf, "00", "" },
+            { BarcodeType.UpcE, "0123456", "" },
+            { BarcodeType.UpcE, "1234567", "" },
+            { BarcodeType.UpcE, "0425261", "12" },
+            { BarcodeType.UpcE, "0180432", "54321" },
+            { BarcodeType.Gs1DataBar, "0950110153001", "" },
+            { BarcodeType.Gs1DataBar, "2001234567890", "" },
+            { BarcodeType.Gs1DataBar, "9999999999999", "" },
+            { BarcodeType.Gs1DataBarStacked, "0950110153001", "" },
+            { BarcodeType.Gs1DataBarStacked, "3918528337671", "" },
+            { BarcodeType.Gs1DataBarStackedOmnidirectional, "0950110153001", "" },
+            { BarcodeType.Gs1DataBarStackedOmnidirectional, "2997220033224", "" }, // right finder value 3
+            { BarcodeType.Gs1DataBarLimited, "1501234567890", "" },
+            { BarcodeType.Gs1DataBarLimited, "0000000000000", "" },
+            { BarcodeType.Gs1DataBarLimited, "1999999999999", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[01]98898765432106[3202]012345[15]991231", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[01]90012345678908[3103]001750", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[01]90012345678908[3203]001750", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[01]90012345678908[3102]001750[11]100503", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[01]90012345678908[3922]795", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[01]90012345678908[3932]0401234[21]XY", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[01]09501101530003[17]250101[10]ABC123", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[10]12", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[21]abc-DEF/12345%xyz", "" },
+            { BarcodeType.Gs1DataBarExpanded, "[8200]http://example.com/abc", "" },
+            { BarcodeType.Gs1DataBarExpandedStacked, "[01]09501101530003[17]250101[10]ABC123", "4" },
+            { BarcodeType.Gs1DataBarExpandedStacked, "[01]09501101530003[17]250101[10]ABC123[21]XY", "4" },
+            { BarcodeType.Gs1DataBarExpandedStacked, "[90]0123456789ABCDEFGHIJ0123456789", "2" },
+            { BarcodeType.Gs1DataBarExpandedStacked, "[90]0123456789ABCDEFGHIJ0123456789", "6" },
+            { BarcodeType.Gs1DataBarExpandedStacked, "[90]0123456789ABCDEFGHIJ0123456789abc", "8" },
         };
     }
 
@@ -234,11 +263,23 @@ public sealed class ZintMatrixTests
             BarcodeType.Codabar => (Barcode.CreateCodabar(data), ["-b", "18"], "A" + data + "B"),
             BarcodeType.Itf => (Barcode.CreateItf(data), ["-b", "3"], data),
             BarcodeType.Gs1128 => (Barcode.CreateGs1128([.. ParseGs1(data)]), ["-b", "16", "--gs1nocheck"], data),
+            BarcodeType.UpcE => (Barcode.CreateUpcE(data, extension), ["-b", "37", "--addongap=9"], WithAddOn(data, extension)),
+            BarcodeType.Gs1DataBar => (Barcode.CreateGs1DataBar(data), ["-b", "29"], data),
+            BarcodeType.Gs1DataBarStacked => (Barcode.CreateGs1DataBarStacked(data), ["-b", "79"], data),
+            BarcodeType.Gs1DataBarStackedOmnidirectional => (Barcode.CreateGs1DataBarStackedOmnidirectional(data), ["-b", "80"], data),
+            BarcodeType.Gs1DataBarLimited => (Barcode.CreateGs1DataBarLimited(data), ["-b", "30"], data),
+            BarcodeType.Gs1DataBarExpanded => (Barcode.CreateGs1DataBarExpanded([.. ParseGs1(data)]), ["-b", "31", "--gs1nocheck"], data),
+            BarcodeType.Gs1DataBarExpandedStacked => (Barcode.CreateGs1DataBarExpandedStacked(int.Parse(option, CultureInfo.InvariantCulture), [.. ParseGs1(data)]), ["-b", "81", "--gs1nocheck", "--cols=" + (int.Parse(option, CultureInfo.InvariantCulture) / 2).ToString(CultureInfo.InvariantCulture)], data),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
 
-        var expected = await tools.GetZintMatrixAsync(arguments, zintData, barcode.Width);
-        AssertSameModules(expected, barcode.Width, barcode.Height, (row, column) => barcode[row, column]);
+        // zint ends GS1 DataBar Limited with 5 light modules
+        var zintWidth = type is BarcodeType.Gs1DataBarLimited ? barcode.Width + 5 : barcode.Width;
+        var expected = await tools.GetZintMatrixAsync(arguments, zintData, zintWidth);
+
+        // zint gives each row of a stacked symbol once, the barcode as many times as it is modules high
+        var rows = GetDistinctRows(barcode);
+        AssertSameModules(expected, zintWidth, rows.Count, (row, column) => column < barcode.Width && barcode[rows[row], column]);
 
         static string WithAddOn(string data, string? extension) => extension is null ? data : data + "+" + extension;
     }
@@ -349,6 +390,49 @@ public sealed class ZintMatrixTests
     };
 
     private static bool IsKanji(char c) => c is >= '぀' and <= 'ヿ' or >= '一' and <= '鿿';
+
+    private static string GetCheckDigit(string digits)
+    {
+        var sum = 0;
+        for (var i = 0; i < digits.Length; i++)
+        {
+            sum += (digits[digits.Length - 1 - i] - '0') * (i % 2 == 0 ? 3 : 1);
+        }
+
+        return ((10 - (sum % 10)) % 10).ToString(CultureInfo.InvariantCulture);
+    }
+
+    // The first row of each run of identical rows
+    private static List<int> GetDistinctRows(Barcode barcode)
+    {
+        var rows = new List<int>();
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            if (rows.Count == 0 || Enumerable.Range(0, barcode.Width).Any(column => barcode[row, column] != barcode[rows[^1], column]))
+            {
+                rows.Add(row);
+            }
+        }
+
+        return rows;
+    }
+
+    [Fact]
+    public async Task Gs1DataBarExpanded_RandomElements_MatchZint()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(4684);
+        for (var i = 0; i < 100; i++)
+        {
+            // zint does not check the GTINs (--gs1nocheck) and omits their check digit, while we keep a wrong one
+            var zintData = string.Concat(ParseGs1(CreateRandomGs1Data(random)).Select(element => "[" + element.ApplicationIdentifier + "]" + (element.ApplicationIdentifier is "01" ? element.Value[..13] + GetCheckDigit(element.Value[..13]) : element.Value)));
+            var segmentsPerRow = 2 * random.Next(1, 11);
+            var barcode = Barcode.CreateGs1DataBarExpandedStacked(segmentsPerRow, [.. ParseGs1(zintData)]);
+            var expected = await tools.GetZintMatrixAsync(["-b", "81", "--gs1nocheck", "--cols=" + (segmentsPerRow / 2).ToString(CultureInfo.InvariantCulture)], zintData, barcode.Width);
+            var rows = GetDistinctRows(barcode);
+            AssertSameModules(expected, barcode.Width, rows.Count, (row, column) => barcode[rows[row], column]);
+        }
+    }
 
     private static void AssertSameModules(bool[,] expected, int width, int height, Func<int, int, bool> isDark)
     {

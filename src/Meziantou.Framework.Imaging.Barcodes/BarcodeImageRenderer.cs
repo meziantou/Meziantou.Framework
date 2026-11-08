@@ -76,7 +76,9 @@ public static class BarcodeImageRenderer
         ArgumentNullException.ThrowIfNull(options.DarkBrush);
         ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
         var moduleWidth = ModuleCanvasRenderer.GetModuleSize(options.ModuleWidth, options.SnapToPixels, nameof(options.ModuleWidth));
-        var moduleHeight = ModuleCanvasRenderer.GetModuleSize(options.ModuleHeight, options.SnapToPixels, nameof(options.ModuleHeight));
+
+        // The rows of a stacked barcode are one module high: as high as a module is wide
+        var moduleHeight = barcode.IsStacked ? moduleWidth : ModuleCanvasRenderer.GetModuleSize(options.ModuleHeight, options.SnapToPixels, nameof(options.ModuleHeight));
 
         TextLayout? text = null;
         if (options.Font is not null)

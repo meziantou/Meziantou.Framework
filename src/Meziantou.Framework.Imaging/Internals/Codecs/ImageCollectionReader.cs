@@ -34,6 +34,9 @@ internal abstract class ImageCollectionReader : IDisposable
     /// <summary>Gets the number of entries.</summary>
     public abstract int Count { get; }
 
+    /// <summary>Gets a value indicating whether an entry is decoded by area (<see cref="ImageDecodeOptions.Region"/>): the pages of a TIFF document.</summary>
+    public virtual bool SupportsRegionDecoding => false;
+
     /// <summary>Gets the configuration the collection was loaded with.</summary>
     public ImageConfiguration Configuration { get; }
 
@@ -53,7 +56,7 @@ internal abstract class ImageCollectionReader : IDisposable
         ArgumentNullException.ThrowIfNull(options);
         ObjectDisposedException.ThrowIf(_disposed, this);
         var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);
-        return DecodeCore(index, new RandomAccessSource(_input, context, Format), ImageDecodeRequest.Create(options, pixelFormat).ForFullResolution(Format), context);
+        return DecodeCore(index, new RandomAccessSource(_input, context, Format), ImageDecodeRequest.Create(options, pixelFormat).ForFullResolution(Format, SupportsRegionDecoding), context);
     }
 
     public void Dispose()

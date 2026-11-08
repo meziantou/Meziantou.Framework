@@ -29,6 +29,7 @@ public sealed class ConformanceInteropTests
         { "pdfua-2", "ua2" },
         { "pdfa-4-pdfua-2", "4" },
         { "pdfa-4-pdfua-2", "ua2" },
+        { "pdfa-2b-form", "2b" },
     };
 
     [Theory]
@@ -66,6 +67,7 @@ public sealed class ConformanceInteropTests
             "pdfa-4f" => (PdfAConformance.PdfA4F, PdfUAConformance.None),
             "pdfua-2" => (PdfAConformance.None, PdfUAConformance.PdfUA2),
             "pdfa-4-pdfua-2" => (PdfAConformance.PdfA4, PdfUAConformance.PdfUA2),
+            "pdfa-2b-form" => (PdfAConformance.PdfA2B, PdfUAConformance.None),
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown document"),
         };
         var tagged = pdfA is PdfAConformance.PdfA1A or PdfAConformance.PdfA2A or PdfAConformance.PdfA3A || pdfUA != PdfUAConformance.None;
@@ -148,6 +150,18 @@ public sealed class ConformanceInteropTests
                 var annotation = root.AddElement("Annot");
                 annotation.AddAnnotation(attachment);
             }
+        }
+
+        // The fields of a form: their appearances use embedded fonts and paths only
+        if (name.EndsWith("-form", StringComparison.Ordinal))
+        {
+            var form = document.Form;
+            form.AddTextField(page, "name", new PdfRectangle(300, 760, 500, 780), new PdfTextFieldOptions { Font = trueType, Value = "Office AVATAR" });
+            form.AddTextField(page, "comment", new PdfRectangle(300, 680, 500, 740), new PdfTextFieldOptions { Font = cff, IsMultiline = true, Value = "\u00E9t\u00E9 \u201Cfine\u201D" });
+            form.AddCheckBox(page, "agree", new PdfRectangle(300, 640, 315, 655), new PdfCheckBoxOptions { IsChecked = true });
+            form.AddRadioButtons("size", [new PdfRadioButton(page, new PdfRectangle(300, 610, 315, 625), "S"), new PdfRadioButton(page, new PdfRectangle(330, 610, 345, 625), "L")], new PdfRadioButtonOptions { Value = "L" });
+            form.AddComboBox(page, "country", new PdfRectangle(300, 570, 450, 590), [new PdfChoiceOption("fr", "France"), new PdfChoiceOption("de", "Germany")], new PdfChoiceFieldOptions { Font = trueType, SelectedValues = ["fr"] });
+            form.AddSignatureField(page, "signature", new PdfRectangle(300, 480, 500, 540));
         }
 
         return document;

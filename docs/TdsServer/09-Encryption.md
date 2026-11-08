@@ -1,6 +1,6 @@
 ---
 title: Encryption
-description: Configure TLS with a PFX file or a PEM certificate, require encryption, and know what clients do without it.
+description: Configure TLS with a PFX file or a PEM certificate, require encryption, accept Encrypt=Strict (TDS 8.0), and know what clients do without it.
 ---
 
 Without a TLS certificate, the server does not encrypt connections. The client then sends its password with the
@@ -13,7 +13,7 @@ When no certificate is configured, the server logs a warning at startup.
 ## Configure a certificate
 
 TLS is negotiated on the same endpoint as unencrypted connections, as SQL Server does: there is no separate port.
-Configure either a PFX file:
+The same endpoint also accepts `Encrypt=Strict` clients. Configure either a PFX file:
 
 <!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_TlsPfx;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,7 +47,21 @@ builder.AddTdsServer(options =>
   `InvalidOperationException`, a `FileNotFoundException` or a `CryptographicException`.
 - Keep the PFX password out of the source code: read it from the configuration or a secret store.
 
-The server uses TLS 1.2, the version `Microsoft.Data.SqlClient` negotiates with this kind of server.
+## TLS versions and strict encryption
+
+The server tells the two kinds of encrypted clients apart by the first byte they send, so no option is needed:
+
+- With `Encrypt=Strict` (TDS 8.0), the client starts with a TLS handshake, before any TDS message, and offers the
+  `tds/8.0` application protocol (ALPN). The operating system chooses the TLS version: TLS 1.3 where it supports it
+  (Linux, Windows 11 and Windows Server 2022 and later), TLS 1.2 otherwise. `SslStream` does not support TLS 1.3 on
+  macOS.
+- With `Encrypt=True` or `Encrypt=Optional`, TLS is negotiated in the TDS PRELOGIN exchange and uses TLS 1.2, the
+  version `Microsoft.Data.SqlClient` uses in this mode.
+
+`Encrypt=Strict` is the setting `Microsoft.Data.SqlClient` recommends, and the only one with TLS 1.3. It always
+validates the certificate, even with `TrustServerCertificate=True`: trust a self-signed certificate with the
+`ServerCertificate` keyword, the path to a copy of the certificate (PEM or DER) that the client compares with the one
+the server presents.
 
 ## Require encryption
 
@@ -76,13 +90,13 @@ connection is encrypted:
 | --- | --- | --- | --- |
 | `Encrypt=True` (or `Mandatory`) | Fails | Encrypted | Encrypted |
 | `Encrypt=False` (or `Optional`) | Not encrypted | Only the login is encrypted | Encrypted |
-| `Encrypt=Strict` | Fails | Fails | Fails |
+| `Encrypt=Strict` | Fails | Encrypted (TDS 8.0) | Encrypted (TDS 8.0) |
 
 - `Encrypt=True` is the default of `Microsoft.Data.SqlClient`, so clients need `Encrypt=Optional` (or `False`) to
   connect to a server without a certificate.
 - When the client does not ask for encryption, the server still encrypts the login packet, which holds the password,
   then continues without TLS, as SQL Server does.
-- `Encrypt=Strict` (TDS 8.0), where TLS starts before any TDS message, is not supported.
+- With `Encrypt=Strict`, the whole session is encrypted, the PRELOGIN exchange included.
 
 The client also validates the certificate. A self-signed certificate is rejected unless the client trusts it, or sets
 `TrustServerCertificate=True`, which disables the validation and should be limited to tests. The name in the

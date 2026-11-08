@@ -150,9 +150,41 @@ var timestamped = await PdfSigner.TimestampAsync(PdfDocument.Open(withValidation
 ```
 <!-- endref -->
 
-- The library does not download revocation evidence: get the CRLs (RFC 5280) and the OCSP responses (RFC 6960) of the
-  chains, DER encoded, with the HTTP client and the policy of the application.
-- The data the store already has is not added again. The store has no VRI dictionaries.
+- The data the store already has is not added again. This method writes no VRI dictionaries.
+
+[PdfSigner.AddValidationDataAsync](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.AddValidationDataAsync) gathers the validation data itself: it builds the chains of the signers, of the
+time stamp authorities and of the document time stamps from the certificates the signatures embed, those of the store
+and those of [PdfValidationDataOptions](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions), and finds the revocation evidence of each certificate of the chains that is
+not self-signed among the revocation lists and the OCSP responses of the options and of the store. With
+[DownloadMissingData](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.DownloadMissingData), it downloads what is missing with the HTTP client of the options: the issuers from the
+addresses of the certificates (`caIssuers`), then an OCSP response from the responder of each certificate, or else the
+revocation list of one of its distribution points. [IncludeVri](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.IncludeVri) adds a VRI dictionary for each signature, which lists
+the certificates and the revocation evidence of its chains.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_DownloadValidationData;format=md-fenced-code-block;dedent=true -->
+```csharp
+// PAdES B-LT: the chains of the signatures are completed, and the missing revocation evidence is downloaded
+// from the addresses of the certificates (OCSP responders, revocation lists, issuers)
+var options = new PdfValidationDataOptions
+{
+    DownloadMissingData = true,
+    HttpClient = httpClient,
+    IncludeVri = true,
+};
+options.Certificates.Add(trustedRoot);
+var withValidationData = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken);
+```
+<!-- endref -->
+
+- Nothing is downloaded unless [DownloadMissingData](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.DownloadMissingData) is set; [AddValidationData](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.AddValidationData) with
+  [PdfValidationDataOptions](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions) does the same work offline. Pass an `HttpClient` configured with the proxy and the
+  timeouts of the application.
+- Give the root certificates in [Certificates](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.Certificates): the chains end where no issuer is found.
+- The library does not check the downloaded data: a revocation list or an OCSP response is stored when it comes from
+  the issuer of the certificate, whatever its status. Validate the signatures with the trust policy of the
+  application. When no address of a certificate answers, the method throws an `HttpRequestException`.
+- The revocation evidence of the certificates of the OCSP responders is not downloaded: they usually have the
+  `id-pkix-ocsp-nocheck` extension (RFC 6960, 4.2.2.2.1).
 - [PdfSignatureVerifier.GetValidationData](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureVerifier.GetValidationData) reads the store back, for instance to build the chains offline with
   `X509ChainPolicy.ExtraStore`.
 

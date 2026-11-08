@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Pdf;
 /// other fields keep their values, and an incremental save keeps the signatures of the document valid.
 /// <see cref="Flatten"/> draws the fields on their pages and removes them.
 /// </remarks>
-public sealed class PdfInteractiveForm
+public sealed partial class PdfInteractiveForm
 {
     private const int MaxDepth = 32;
     private const int MaxFields = 100_000;

@@ -13,11 +13,13 @@ description: What the library does not do: some projections and datum grids, cur
   shifted with Helmert transformations, not with grids, so a conversion between datums is accurate to a few meters, and
   the WKT 2 definitions are only read by their EPSG code. The writers do not write the SRID of EWKT and EWKB, and
   write a `.prj` file of WGS 84.
-- **Straight edges in degrees.** [GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains),
-  [GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds),
-  [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) and the
-  [geometry operations](06-GeometryOperations.md) treat the edges as straight lines on an equirectangular map, not as
-  great circles, and do not handle the shapes that cross the 180th meridian.
+- **Straight edges for the geometry operations.** The [geometry operations](06-GeometryOperations.md) and
+  [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) treat the edges as straight lines on an
+  equirectangular map. Only [GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains) and
+  [GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds) offer
+  [great-circle edges](03-FeaturesAndGeometries.md#great-circles), computed on a sphere, not on the ellipsoid. Split
+  the shapes that cross the 180th meridian with
+  [SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian) before the operations.
 
 ## Data that the model does not keep
 

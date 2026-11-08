@@ -14,8 +14,9 @@ description: What the library does not do, so that you can plan around it.
 - The standard 14 fonts show the characters of `WinAnsiEncoding` (Symbol and ZapfDingbats their own); other characters
   need an embedded font.
 - The fonts with CFF2 outlines, the bitmap fonts and the instances of variable fonts are not embedded.
-- The API reads, fills and flattens interactive form fields, but does not create them; the appearances it writes for
-  the values of the fields use the standard 14 fonts.
+- The appearances the API writes for the values of form fields use the font of their default appearance when the form
+  knows it, otherwise the standard 14 fonts: the fields of a saved document that use an embedded font need the font
+  again to be filled ([Use an embedded font](05-ReadingAndModifying/09-Forms.md#use-an-embedded-font)).
 - A page copied from another document is not tagged: the structure tree belongs to the document of the page.
 
 ## Reading and extracting
@@ -41,7 +42,6 @@ description: What the library does not do, so that you can plan around it.
 - The save checks what the conformance levels require of the document as a whole. The content (the order of the
   structure, the alternate descriptions, the colors of the annotations of PDF/A-1, the values of the numbers) must follow
   the other rules of the level: validate the documents with veraPDF.
-- The library writes PAdES B-B and B-T signatures; the levels with validation data (B-LT, B-LTA) are not written.
 - A visible signature is a new signature field: an existing signature field that is not signed yet keeps its widget,
   and the library does not draw an appearance for it.
 - The verification of a signature does not decide whether the signer is trusted: the application builds the certificate

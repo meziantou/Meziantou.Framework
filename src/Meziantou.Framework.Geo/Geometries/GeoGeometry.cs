@@ -26,7 +26,9 @@ public abstract class GeoGeometry
     /// <summary>
     /// Gets a position to label the geometry: the centroid of the exterior ring of its largest polygon (so the islands of a
     /// country do not pull it away), else the mean of the positions of its lines, else the mean of its points. The centroid
-    /// is computed on the longitudes and latitudes, as on an equirectangular map. It is <see langword="null"/> for an empty geometry.
+    /// is computed on the longitudes and latitudes, as on an equirectangular map. A ring with an edge that crosses the 180th
+    /// meridian (see <see cref="CrossesAntimeridian"/>) and the positions on both sides of it are taken as they are on the
+    /// globe, so the label does not move to the other side of the world. It is <see langword="null"/> for an empty geometry.
     /// </summary>
     public GeoPosition? LabelPosition => (_labelPosition ??= new StrongBox<GeoPosition?>(ComputeLabelPosition())).Value;
 
@@ -34,9 +36,62 @@ public abstract class GeoGeometry
     /// <returns>The positions.</returns>
     public abstract IEnumerable<GeoPosition> GetPositions();
 
+    /// <summary>
+    /// Gets a value that indicates whether a line or a ring of the geometry has an edge that is meant to cross the 180th
+    /// meridian: an edge whose ends are more than 180° of longitude apart, such as an edge from the longitude 179 to the
+    /// longitude -179. The edges whose ends are both on the 180th meridian, such as the edges of a box around the whole
+    /// world from -180 to 180, do not count.
+    /// </summary>
+    /// <remarks>
+    /// RFC 7946 wants such geometries split along the 180th meridian: the operations of this class draw the edge from
+    /// 179 to -179 the long way, through the Greenwich meridian. Split them with <see cref="SplitAtAntimeridian"/>, or
+    /// use <see cref="GeoEdgeType.Geodesic"/> edges.
+    /// </remarks>
+    public bool CrossesAntimeridian => AntimeridianOperations.CrossesAntimeridian(this);
+
     /// <summary>Gets the smallest box that contains the geometry.</summary>
     /// <returns>The box, or <see langword="null"/> for an empty geometry.</returns>
+    /// <remarks>The box contains the positions, as the edges are straight in degrees (<see cref="GeoEdgeType.Planar"/>): it does not cross the 180th meridian.</remarks>
     public GeoBounds? GetBounds() => GeoBounds.FromPositions(GetPositions());
+
+    /// <summary>Gets the smallest box that contains the geometry, whose edges are drawn as an edge type says.</summary>
+    /// <param name="edgeType">How the edges are drawn.</param>
+    /// <returns>
+    /// The box, or <see langword="null"/> for an empty geometry. With <see cref="GeoEdgeType.Planar"/>, the box of
+    /// <see cref="GetBounds()"/>. With <see cref="GeoEdgeType.Geodesic"/>, the smallest box that contains the shortest
+    /// great-circle arcs between the consecutive positions: it can cross the 180th meridian (its west side is east of its
+    /// east side, as RFC 7946 allows), such as the box of a flight from Tokyo to San Francisco or of the parts of Fiji
+    /// on both sides of the 180th meridian, and it goes past the latitudes of the positions where the arcs bend toward a
+    /// pole. A ring that goes around a pole, such as the coast of Antarctica, gives a box that contains the pole and every longitude.
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="edgeType"/> is not a value of <see cref="GeoEdgeType"/>.</exception>
+    public GeoBounds? GetBounds(GeoEdgeType edgeType) => edgeType switch
+    {
+        GeoEdgeType.Planar => GetBounds(),
+        GeoEdgeType.Geodesic => SphericalGeometry.GetBounds([this]),
+        _ => throw new ArgumentOutOfRangeException(nameof(edgeType), edgeType, message: null),
+    };
+
+    /// <summary>
+    /// Splits the lines and the polygons of the geometry along the 180th meridian, as RFC 7946 wants it, and moves every
+    /// longitude to [-180, 180]. The edges that cross the 180th meridian (see <see cref="CrossesAntimeridian"/>) take the
+    /// shortest way, and the longitudes greater than 180 or smaller than -180 go around the world.
+    /// </summary>
+    /// <returns>
+    /// <para>
+    /// The geometry itself when no edge crosses the 180th meridian and every longitude is in [-180, 180]. Otherwise, a line
+    /// that crosses it becomes a <see cref="GeoMultiLineString"/> whose parts end and start on it, at the longitudes 180
+    /// and -180, and a polygon a <see cref="GeoMultiPolygon"/> with a polygon on each side. The points are moved, not split.
+    /// </para>
+    /// <para>
+    /// The positions where a line crosses the meridian are interpolated as on an equirectangular map. A polygon is cut
+    /// with <see cref="Clip(GeoBounds)"/>: the positions of a polygon that is cut move to the nearest ten-millionth of a
+    /// degree and lose their altitude. A ring that goes around a pole, such as the coast of Antarctica, is closed through
+    /// the pole it is nearest to.
+    /// </para>
+    /// </returns>
+    /// <exception cref="InvalidOperationException">A coordinate of a polygon to split is not a number between -100,000 and 100,000.</exception>
+    public GeoGeometry SplitAtAntimeridian() => AntimeridianOperations.Split(this);
 
     /// <summary>Gets the simple geometries of the geometry: itself for a simple geometry, its parts for a multi-geometry or a collection, recursively.</summary>
     /// <returns>The points, line strings and polygons of the geometry.</returns>
@@ -73,8 +128,13 @@ public abstract class GeoGeometry
     /// polygons are cut as by <see cref="Intersection"/>. Where a line crosses the side of the box, the new position gets
     /// the altitude, the measure and the time interpolated between the positions around it, when both have one.
     /// </returns>
-    /// <exception cref="ArgumentException">The box is empty: its west side is east of its east side, or its south side north of its north side.</exception>
-    public GeoGeometry? Clip(GeoBounds bounds) => GeoOperations.Clip(this, bounds);
+    /// <exception cref="ArgumentException">The box is empty: its south side is north of its north side.</exception>
+    /// <remarks>
+    /// A box whose west side is east of its east side crosses the 180th meridian (see <see cref="GeoBounds.CrossesAntimeridian()"/>):
+    /// the result is the part of the geometry east of its west side and the part west of its east side, as a multi-geometry.
+    /// Split the geometries that cross the 180th meridian with <see cref="SplitAtAntimeridian"/> first.
+    /// </remarks>
+    public GeoGeometry? Clip(GeoBounds bounds) => bounds.CrossesAntimeridian() && bounds.South <= bounds.North ? AntimeridianOperations.ClipWrapped(this, bounds) : GeoOperations.Clip(this, bounds);
 
     /// <summary>
     /// Simplifies the lines and the rings of the geometry with the Douglas–Peucker algorithm: the positions that are closer
@@ -143,7 +203,7 @@ public abstract class GeoGeometry
     /// </returns>
     /// <remarks>
     /// The edges are straight in degrees, as for the other operations, and the inside of the polygons is the inside as
-    /// tested by <see cref="GeoPolygon.Contains"/>. The distance between the nearest positions is computed with the formulas
+    /// tested by <see cref="GeoPolygon.Contains(GeoPosition)"/>. The distance between the nearest positions is computed with the formulas
     /// of Vincenty, accurate to a millimeter, except for nearly antipodal positions, where it is the great-circle distance
     /// (within 0.5%). The nearest position of an edge is found to a fraction of a millimeter on edges of a few kilometers.
     /// </remarks>
@@ -209,11 +269,11 @@ public abstract class GeoGeometry
             switch (geometry)
             {
                 case GeoPolygon polygon when polygon.Rings.Count > 0 && polygon.Rings[0].Count > 0:
-                    var (area, centroid) = GeoPolygon.GetAreaAndCentroid(polygon.Rings[0]);
+                    var (area, centroid) = GeoPolygon.GetAreaAndCentroid(AntimeridianOperations.UnwrapForCentroid(polygon.Rings[0]));
                     if (Math.Abs(area) > bestArea)
                     {
                         bestArea = Math.Abs(area);
-                        best = centroid;
+                        best = centroid with { Longitude = AntimeridianOperations.NormalizeLongitude(centroid.Longitude) };
                     }
 
                     break;
@@ -232,15 +292,13 @@ public abstract class GeoGeometry
             return best;
 
         if (linePositions.Count > 0)
-            return Mean(linePositions);
+            return AntimeridianOperations.GetMean(linePositions);
 
         if (points.Count > 0)
-            return Mean(points);
+            return AntimeridianOperations.GetMean(points);
 
         return null;
     }
-
-    private static GeoPosition Mean(List<GeoPosition> positions) => new(positions.Average(position => position.Longitude), positions.Average(position => position.Latitude));
 
     private protected static GeoPosition[] ToArray(IEnumerable<GeoPosition> positions, string paramName)
     {

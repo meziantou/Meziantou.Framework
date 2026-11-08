@@ -147,7 +147,7 @@ public sealed class JpegLsInteropTests
         var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
         var scan = data.AsSpan().IndexOf([(byte)0xFF, (byte)0xDA]);
         Assert.Equal(near, data[scan + 5 + (2 * channels)]);
-        var reference = await DecodeWithFFmpegAsync(ffmpeg, path, pixelFormat, Width, Height, channels);
+        var reference = await DecodeWithFFmpegAsync(ffmpeg, path, pixelFormat, Width, Height);
         using var decoded = Image.Load(data);
         var samples = ToChannels(JpegDecoderDifferentialTests.GetSamples(decoded, maxValue), channels);
         Assert.Equal(reference, samples);
@@ -183,7 +183,7 @@ public sealed class JpegLsInteropTests
         var path = directory / string.Create(CultureInfo.InvariantCulture, $"p{precision}-c{channels}-n{near}-i{interleave}-r{restartInterval}-t{colorTransform}.jls");
         await File.WriteAllBytesAsync(path, data, XunitCancellationToken);
         var pixelFormat = channels == 3 ? "rgb24" : precision == 8 ? "gray" : "gray16le";
-        Assert.Equal(SamplesOf(image, maxValue), await DecodeWithFFmpegAsync(ffmpeg, path, pixelFormat, Width, Height, channels));
+        Assert.Equal(SamplesOf(image, maxValue), await DecodeWithFFmpegAsync(ffmpeg, path, pixelFormat, Width, Height));
     }
 
     /// <summary>Gets the samples of the last encoding of a test image, one or three per pixel, at the precision of <paramref name="maxValue"/>.</summary>
@@ -197,7 +197,7 @@ public sealed class JpegLsInteropTests
         return [.. Enumerable.Range(0, pixels.Length / 2).Select(i => (int)BitConverter.ToUInt16(pixels, 2 * i))];
     }
 
-    private static async Task<int[]> DecodeWithFFmpegAsync(FFmpegTool ffmpeg, FullPath path, string pixelFormat, int width, int height, int channels)
+    private static async Task<int[]> DecodeWithFFmpegAsync(FFmpegTool ffmpeg, FullPath path, string pixelFormat, int width, int height)
     {
         var frame = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, pixelFormat, width, height, XunitCancellationToken));
         return pixelFormat == "gray16le"

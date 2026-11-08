@@ -61,6 +61,13 @@ public abstract class ImageEncoder
     internal virtual bool StoresFloatingPointSamples => false;
 
     /// <summary>
+    /// Gets a value indicating whether the output stores CMYK pixels (<see cref="PixelFormat.Cmyk32"/>,
+    /// <see cref="PixelFormat.Cmyk64"/>) as they are. The other outputs reject them: converting inks to RGB converts colors,
+    /// which is explicit (<see cref="PixelConversionOptions.CmykConversion"/>).
+    /// </summary>
+    internal virtual bool StoresCmykPixels => false;
+
+    /// <summary>
     /// Gets a value indicating whether the output stores pixels of a format that widens (<see cref="PixelFormatWidening.IsWidened"/>:
     /// <see cref="PixelFormat.La16"/>, <see cref="PixelFormat.La32"/>, <see cref="PixelFormat.Rgb48"/>, <see cref="PixelFormat.A8"/>
     /// and the interoperability formats) as they are; otherwise the writer gives the encoder a copy of the frames widened

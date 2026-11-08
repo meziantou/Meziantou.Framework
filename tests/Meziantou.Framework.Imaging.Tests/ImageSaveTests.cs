@@ -516,6 +516,30 @@ public sealed class ImageSaveTests
         Assert.Equal(widenedStream.ToArray(), interopStream.ToArray());
     }
 
+    [Theory]
+    [MemberData(nameof(EncodersWithoutHotspot))]
+    public void OnlyJpegAndTiffOutputsStoreCmykPixels(ImageEncoder encoder)
+    {
+        foreach (var format in (PixelFormat[])[PixelFormat.Cmyk32, PixelFormat.Cmyk64])
+        {
+            using var image = DrawingTestSupport.Create(format, Width, Height);
+            using var stream = new MemoryStream();
+            if (encoder is TiffEncoder || (encoder is JpegEncoder && format == PixelFormat.Cmyk32))
+            {
+                image.Save(stream, encoder);
+                stream.Position = 0;
+                using var reloaded = format == PixelFormat.Cmyk32 ? (Image)Image.Load<Cmyk32>(stream) : Image.Load<Cmyk64>(stream);
+                Assert.Equal(format, reloaded.PixelFormat);
+                continue;
+            }
+
+            // Inks are never converted to colors of light implicitly; JPEG reduces 16-bit inks only with AllowBitDepthReduction
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder));
+            Assert.Equal(encoder is JpegEncoder ? "Bit depth reduction" : "CMYK samples", exception.Feature);
+            Assert.Equal(0, stream.Length);
+        }
+    }
+
     public static TheoryData<ImageEncoder> EncodersWithoutHotspot() => [.. CreateEncodersWithoutHotspot()];
 
     private static ImageEncoder[] CreateEncodersWithoutHotspot() =>

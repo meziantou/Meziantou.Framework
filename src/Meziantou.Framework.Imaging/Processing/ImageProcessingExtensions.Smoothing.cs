@@ -75,6 +75,7 @@ public static partial class ImageProcessingExtensions
     public static void BilateralFilter(this Image image, int radius, double spatialSigma, double rangeSigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(BilateralFilter));
         ValidateBilateral(radius, spatialSigma, rangeSigma, edgeMode);
         if (radius == 0)
         {
@@ -104,6 +105,7 @@ public static partial class ImageProcessingExtensions
     public static void BilateralFilter(this ImageFrame frame, int radius, double spatialSigma, double rangeSigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(BilateralFilter));
         ValidateBilateral(radius, spatialSigma, rangeSigma, edgeMode);
         _ = frame.GetStorage();
         if (radius == 0)
@@ -182,6 +184,7 @@ public static partial class ImageProcessingExtensions
     public static void GuidedFilter(this Image image, int radius, double epsilon, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(GuidedFilter));
         ValidateGuided(radius, epsilon, edgeMode);
         if (radius == 0)
         {
@@ -210,6 +213,7 @@ public static partial class ImageProcessingExtensions
     public static void GuidedFilter(this ImageFrame frame, int radius, double epsilon, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(GuidedFilter));
         ValidateGuided(radius, epsilon, edgeMode);
         _ = frame.GetStorage();
         if (radius == 0)
@@ -275,6 +279,7 @@ public static partial class ImageProcessingExtensions
     public static void RadialBlur(this Image image, RadialBlurOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(RadialBlur));
         ArgumentNullException.ThrowIfNull(options);
         image.RadialBlurFrames(frames: null, options, cancellationToken);
     }
@@ -295,6 +300,7 @@ public static partial class ImageProcessingExtensions
     public static void RadialBlur(this ImageFrame frame, RadialBlurOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(RadialBlur));
         ArgumentNullException.ThrowIfNull(options);
         _ = frame.GetStorage();
         frame.OwnerImage.RadialBlurFrames([frame], options, cancellationToken);

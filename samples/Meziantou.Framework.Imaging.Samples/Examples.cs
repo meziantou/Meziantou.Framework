@@ -1804,6 +1804,46 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A CMYK JPEG keeps its inks when it is loaded as CMYK pixels.</summary>
+    #region Imaging_LoadCmykPixels
+    public static void KeepCmykInks(string jpegPath, string tiffPath, string previewPath)
+    {
+        // The ink amounts as they are (0 is no ink), labeled with the CMYK profile of the file
+        using var inks = Image.Load<Cmyk32>(jpegPath);
+
+        // Crop, Flip, Rotate by quarter turns and AutoOrient keep CMYK pixels; JPEG and TIFF store them
+        inks.Crop(new Rectangle(0, 0, inks.Width / 2, inks.Height));
+        inks.Save(tiffPath, new TiffEncoder());
+
+        // Colors of light are an explicit conversion: from the CMYK profile of the image when it has one,
+        // otherwise with the device CMYK formulas
+        var conversion = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions() };
+        using var preview = inks.CloneAs<Rgb24>(conversion);
+        preview.Save(previewPath);
+    }
+    #endregion
+
+    /// <summary>Separation of an RGB image into the inks of a printing condition.</summary>
+    #region Imaging_ConvertToCmyk
+    public static void SaveForPrint(Image image, IccProfile pressProfile, string path)
+    {
+        // The press profile (a CMYK output profile) describes the inks and labels them; the colors of the image are
+        // those of its own profile, or sRGB when it has none. CMYK has no alpha: flatten transparent pixels on white
+        var conversion = new PixelConversionOptions
+        {
+            BackgroundColor = new Rgba64(65535, 65535, 65535),
+            CmykConversion = new CmykPixelConversionOptions
+            {
+                CmykProfile = pressProfile,
+                Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+            },
+        };
+
+        using var inks = image.CloneAs<Cmyk32>(conversion);
+        inks.Save(path, new JpegEncoder { Quality = 90 });
+    }
+    #endregion
+
     /// <summary>Color conversion of sample buffers between two ICC profiles.</summary>
     #region Imaging_ConvertSamples
     public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan<byte> samples)

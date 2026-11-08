@@ -11,7 +11,7 @@ color conversion, and bounded-memory streaming.
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline and progressive
   JPEG, WebP (lossless and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF, ICO/CUR and ANI encoding (unsupported
   modes, such as hierarchical JPEG, embedded JPEG or PNG in BMP, premultiplied-alpha TGA or planar YCbCr TIFF, are rejected
-  explicitly; a CMYK JPEG or TIFF is loaded with an explicit color conversion)
+  explicitly; a CMYK JPEG or TIFF keeps its inks as CMYK pixels, or is loaded with an explicit color conversion)
 - JPEG XL decoding and encoding, fully managed: lossy (VarDCT) and lossless (Modular) files, alpha, animations and
   layers; lossless output of every pixel format at its own depth, lossy output controlled by a quality, progressive
   output, and progressive reading (the renderings of a frame before it is complete)
@@ -35,8 +35,9 @@ color conversion, and bounded-memory streaming.
   hotspot that follows its pixel through geometry operations
 - Fourteen integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, the gray-with-alpha
   `La16` and `La32`, the 16-bit `Rgb48`, the `A8` alpha mask, and `Argb32`, `Abgr32`, `Bgr565` and `Rgba1010102` to
-  exchange buffers with GPU and display APIs) with 16-bit precision preserved, and two floating-point ones (`RgbaFloat`,
-  `RgbaHalf`) for scene-referred and high dynamic range data
+  exchange buffers with GPU and display APIs) with 16-bit precision preserved, two floating-point ones (`RgbaFloat`,
+  `RgbaHalf`) for scene-referred and high dynamic range data, and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
+  of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
   extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
@@ -144,9 +145,9 @@ image.Frames[0].Save("first.jpg",                         // JPEG stores one fra
   separate `ImageCollection`, whose entries may differ in size and pixel format and never carry timing or looping.
 - **Explicit ownership.** `Image`/`Image<TPixel>` are disposable owners; frames are borrowed views; clones, extracted
   frames and reader results are independent owned images. Eager loads never retain their input.
-- **Precision and alpha.** Sixteen working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`,
-  `La16`, `La32`, `Rgb48`, `A8`, `Argb32`, `Abgr32`, `Bgr565`, `Rgba1010102`, and the floating-point `RgbaFloat` and
-  `RgbaHalf`), 16-bit precision preserved, straight alpha, alpha-aware resampling, and no
+- **Precision and alpha.** Eighteen working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`,
+  `La16`, `La32`, `Rgb48`, `A8`, `Argb32`, `Abgr32`, `Bgr565`, `Rgba1010102`, the floating-point `RgbaFloat` and
+  `RgbaHalf`, and the CMYK `Cmyk32` and `Cmyk64`), 16-bit precision preserved, straight alpha, alpha-aware resampling, and no
   silent alpha/precision/range/metadata/animation loss.
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
 - **Atomic geometry.** Crop, auto-crop, resize, pad, extend canvas, rotate, skew, transform and auto-orient apply to every frame (and the
@@ -176,13 +177,13 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | --- | --- | --- | --- |
 | PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames, Apple CgBI (iOS-optimized) files | Gray, gray+alpha, RGB and RGBA at 8/16 bits, exact palettes at 1/2/4/8 bits, Adam7, APNG with full-canvas frames and posters, or the regions that change with `PngEncoder.OptimizeFrames`; sub-byte grayscale, and the smallest layout and regions with `PngOptimization.MinimumSize` | `.png` (APNG when animated), `.apng` |
 | GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame or to a shared palette, optional dithering, animations with unknown frame counts, full-canvas frames or the regions that change (`GifEncoder.OptimizeFrames`) | `.gif` |
-| JPEG | Baseline, extended sequential and progressive, Huffman or arithmetic coded, 8-bit or 12-bit samples; lossless (Huffman coded), 2-bit to 16-bit samples; gray, YCbCr, RGB, and CMYK/YCCK with a color conversion; any integral sampling | Baseline or progressive 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0 | `.jpg`, `.jpeg` |
+| JPEG | Baseline, extended sequential and progressive, Huffman or arithmetic coded, 8-bit or 12-bit samples; lossless (Huffman coded), 2-bit to 16-bit samples; gray, YCbCr, RGB, and CMYK/YCCK as CMYK pixels or with a color conversion; any integral sampling | Baseline or progressive 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0; baseline CMYK (Adobe, 4:4:4) | `.jpg`, `.jpeg` |
 | WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy, alpha, animations (seekable destination) of full-canvas frames or of the regions that change (`WebPEncoder.OptimizeFrames`) | `.webp` (lossless by default) |
 | QOI | Every chunk form, 3 or 4 channels, colorspace label | Lossless 8-bit RGB/RGBA | `.qoi` |
 | BMP | Windows headers up to V5 and OS/2 1.x/2.x headers, 1/4/8/16/24/32-bit, bit fields, RLE4/RLE8/RLE24 | 24-bit or 32-bit with an alpha mask by default; 1/4/8-bit indexed, RLE4/RLE8, 16-bit and top-down on request | `.bmp`, `.dib` |
 | TGA | True-color, grayscale and color-mapped, uncompressed or run-length | True-color and grayscale, uncompressed or run-length | `.tga`, `.icb`, `.vda`, `.vst` |
 | Netpbm | `P1` to `P7` (PBM, PGM, PPM, PAM), 8 and 16 bits | `P1` to `P7`, lossless (PBM on request, from black and white pixels) | `.pnm`, `.pam`, `.ppm`, `.pgm`, `.pbm` |
-| TIFF / BigTIFF | Both byte orders and offset sizes; bilevel, 2/4/8/16-bit gray, gray+alpha, RGB, RGBA, palette, YCbCr, and CMYK with a color conversion; signed 8/16-bit and floating-point 16/24/32-bit gray and RGB(A) samples; strips and tiles; Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG and JPEG 2000; horizontal and floating-point predictors; multi-page documents | Strips; uncompressed, Deflate, LZW, PackBits, CCITT (bilevel) or JPEG; gray, RGB, RGBA, bilevel or palette; 32-bit floating-point gray and RGB(A) with the floating-point predictor; classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
+| TIFF / BigTIFF | Both byte orders and offset sizes; bilevel, 2/4/8/16-bit gray, gray+alpha, RGB, RGBA, palette, YCbCr, and CMYK (8/16-bit, as CMYK pixels or with a color conversion); signed 8/16-bit and floating-point 16/24/32-bit gray and RGB(A) samples; strips and tiles; Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG and JPEG 2000; horizontal and floating-point predictors; multi-page documents | Strips; uncompressed, Deflate, LZW, PackBits, CCITT (bilevel) or JPEG; gray, RGB, RGBA, CMYK (lossless compressions), bilevel or palette; 32-bit floating-point gray and RGB(A) with the floating-point predictor; classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
 | AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha, straight or premultiplied; grids; film grain; clean aperture and orientation; ICC/EXIF/XMP, CICP color descriptions, light levels, mastering display and pixel aspect ratio | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha, straight or premultiplied; grids; clean aperture and orientation; ICC/EXIF/XMP, CICP color descriptions, light levels, mastering display and pixel aspect ratio | `.avif`, `.avifs` (lossless by default) |
 | HEIC | Still images and image sequences (animations); the HEVC version 1 and range extensions profiles: 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; intra and inter pictures (P and B, reordered); alpha; grids; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; grids; ICC/EXIF/XMP, CICP color descriptions and orientation | `.heic`, `.heif`, `.heics`, `.heifs` (lossless by default) |
@@ -540,10 +541,11 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 
 ### Pixel formats, precision and alpha
 
-**Working formats**. Sixteen pixel types: `Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`,
-`Gray16`, `La16`, `La32`, `Rgb48`, `A8`, `Argb32`, `Abgr32`, `Bgr565`, `Rgba1010102`, `RgbaFloat` and `RgbaHalf`
-(sequential `Pack = 1` layouts, straight alpha, 16-bit components and packed values in native endianness; `PixelFormats` describes them, `PixelFormats.IsFloatingPoint` tells the floating-point ones and
-`PixelFormats.HasColor` the alpha mask). Untyped `Load` picks the smallest format that preserves the source: for example 16-bit PNGs load as `Gray16`/`Rgb48`/`Rgba64`,
+**Working formats**. Eighteen pixel types: `Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`,
+`Gray16`, `La16`, `La32`, `Rgb48`, `A8`, `Argb32`, `Abgr32`, `Bgr565`, `Rgba1010102`, `RgbaFloat`, `RgbaHalf`, `Cmyk32`
+and `Cmyk64` (sequential `Pack = 1` layouts, straight alpha, 16-bit components and packed values in native endianness;
+`PixelFormats` describes them, `PixelFormats.IsFloatingPoint` tells the floating-point ones, `PixelFormats.IsCmyk` the
+CMYK ones and `PixelFormats.HasColor` the alpha mask). Untyped `Load` picks the smallest format that preserves the source: for example 16-bit PNGs load as `Gray16`/`Rgb48`/`Rgba64`,
 gray with alpha (or with a `tRNS` key) as `La16`/`La32`, palettes and color transparency as `Rgba32`, JPEG as `Gray8`/`Rgb24` (`Gray16`/`Rgb48` for samples that do not have 8 bits), GIF as `Rgba32` (`ImageInfo.PixelFormat` tells it before
 decoding). Typed `Load<TPixel>` and `CloneAs<TPixel>` convert explicitly between any two formats: 8 to 16 bits is exact
 (`v * 257`), 16 to 8 bits rounds to nearest, color to gray uses Rec. 709 luma on the encoded values. A 16-bit path never
@@ -619,6 +621,39 @@ public static Image<Rgba1010102> ConvertDisplayBuffer(ReadOnlySpan<Bgr565> frame
 
     // The components convert to the nearest samples of any other format, here 10-bit colors and a 2-bit alpha
     return image.CloneAs<Rgba1010102>();
+}
+```
+<!-- endref -->
+
+**CMYK formats**. `Cmyk32` (four bytes) and `Cmyk64` (four 16-bit samples) hold the amounts of cyan, magenta, yellow
+and black inks, 0 for no ink, described by the CMYK ICC profile of the image: the pixels of print workflows, kept as they
+are. JPEG files of four components (CMYK and YCCK, the Adobe complements undone) and TIFF pages of separated samples
+without alpha load as them with `Load<Cmyk32>`/`Load<Cmyk64>` (12-bit and lossless JPEG files and 16-bit pages keep their
+precision as `Cmyk64`), and only `JpegEncoder` (baseline, four components without subsampling, Adobe transform 0) and
+`TiffEncoder` (separated samples, lossless compressions) write them; the other encoders reject them. Untyped `Load` keeps
+its rules (a CMYK file needs `ImageDecodeOptions.CmykConversion`). Inks are not light: a conversion between them and the
+other formats converts colors and needs `PixelConversionOptions.CmykConversion` (`CmykPixelConversionOptions`: the ICC
+profile of the image or `CmykProfile`, else the device CMYK formulas of `Cmyk`; see
+[Color management](#color-management)). `Crop`, `Flip`, `Rotate(RotateMode)` and `AutoOrient` move CMYK pixels; the
+other processing operations and drawing reject them with an `UnsupportedImageFeatureException` (feature `CMYK pixels`).
+`Cmyk32` and `Cmyk64` convert to each other like any change of precision.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykPixels;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void KeepCmykInks(string jpegPath, string tiffPath, string previewPath)
+{
+    // The ink amounts as they are (0 is no ink), labeled with the CMYK profile of the file
+    using var inks = Image.Load<Cmyk32>(jpegPath);
+
+    // Crop, Flip, Rotate by quarter turns and AutoOrient keep CMYK pixels; JPEG and TIFF store them
+    inks.Crop(new Rectangle(0, 0, inks.Width / 2, inks.Height));
+    inks.Save(tiffPath, new TiffEncoder());
+
+    // Colors of light are an explicit conversion: from the CMYK profile of the image when it has one,
+    // otherwise with the device CMYK formulas
+    var conversion = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions() };
+    using var preview = inks.CloneAs<Rgb24>(conversion);
+    preview.Save(previewPath);
 }
 ```
 <!-- endref -->
@@ -3809,8 +3844,8 @@ content light level, the mastering display color volume and text entries.
   sRGB. Decoders keep it, encoders write it (for example PNG `iCCP`, JPEG APP2), conversions keep it only when it can
   still label the converted pixels (gray profile for gray formats, RGB profile for color formats). Colors are converted
   only on request (see [Color management](#color-management)). A CMYK image (a JPEG file, a TIFF page or a JPEG 2000
-  file) is the one image that cannot be loaded as it is, since no pixel format holds inks: it is rejected unless the load asks for its
-  conversion (`CmykConversionOptions`).
+  file) is rejected by an untyped load unless the load asks for its conversion (`CmykConversionOptions`); JPEG files
+  and TIFF pages load as they are as `Cmyk32`/`Cmyk64` pixels.
 - **Transfer functions are labels too.** `Metadata.TransferFunction` is `Srgb` (the default: sRGB samples, or as described
   by the ICC profile) or `Linear` (linear-light samples, declared by a QOI colorspace of 1 or by a JPEG XL color
   encoding with the sRGB primaries and a linear transfer function). Only `ConvertColorProfile` converts the pixels (and
@@ -3977,8 +4012,8 @@ public static void ConvertHdrToSrgb(string avifPath, string pngPath)
 interleaved 8-bit, 16-bit or floating-point samples without alpha (in place when both profiles have the same number of
 channels). Integer samples cover the whole range of their type, floating-point samples are in [0, 1], and colors outside
 the destination gamut are clipped per channel unless `IccColorTransformOptions.GamutMapping` maps them (see below). A
-conversion to a CMYK output profile gives CMYK samples (ink amounts, 0 is no ink): no pixel format holds them and no
-encoder writes them, so they are for the caller to use. `IccColorTransformOptions.ClipFloatingPointSamples = false`
+conversion to a CMYK output profile gives CMYK samples (ink amounts, 0 is no ink), the layout of `Cmyk32` and `Cmyk64`;
+for images, `CloneAs<Cmyk32>` with `PixelConversionOptions.CmykConversion` does it (see the CMYK images below). `IccColorTransformOptions.ClipFloatingPointSamples = false`
 keeps the floating-point samples outside [0, 1] instead, at the source and at the destination: the light above the white
 of high dynamic range colors, and the negative components of colors outside the destination gamut. The tone curves are
 then extended (a parametric curve continues its function above 1, a sampled curve the slope of its last interval, and
@@ -4015,9 +4050,10 @@ and CMYK data, with a CIEXYZ or CIELAB connection space:
   without the table of the intent uses its perceptual table, then its matrix and curves. CMYK samples are ink
   amounts: 0 is no ink.
 
-**CMYK images.** No pixel format holds CMYK samples, so a JPEG file with four components (CMYK or YCCK inks) and a
-TIFF page of separated data (`PhotometricInterpretation` 5) are only loaded by converting their colors, and like every
-color conversion this one is explicit: set `ImageDecodeOptions.CmykConversion` (or `ImageReaderOptions.CmykConversion`;
+**CMYK images.** A JPEG file with four components (CMYK or YCCK inks) and a TIFF page of separated data
+(`PhotometricInterpretation` 5) keep their inks when they are loaded as `Cmyk32` or `Cmyk64` pixels (see the CMYK
+formats above). Loaded as another format, their colors are converted, and like every color conversion this one is
+explicit: set `ImageDecodeOptions.CmykConversion` (or `ImageReaderOptions.CmykConversion`;
 the pages of a TIFF document take the options of `ImageCollectionEntry.Decode`). Without it the load throws an
 `UnsupportedImageFeatureException`; `Identify` always works and reports `ImageColorModel.Cmyk` or `Ycck` with the
 embedded CMYK profile, so a caller can decide first. Other images are not affected by the setting.
@@ -4061,6 +4097,46 @@ public static Image LoadCmykJpeg(string path)
   is not complemented.
 - Every pixel goes through the ICC conversion, which is evaluated exactly, one color at a time: decoding a CMYK image
   is much slower than decoding an RGB image of the same size.
+
+**Converting CMYK pixels.** `PixelConversionOptions.CmykConversion` (a `CmykPixelConversionOptions`) lets `CloneAs` and
+the typed loads convert between `Cmyk32`/`Cmyk64` pixels and the other formats; without it such a conversion throws an
+`UnsupportedImageFeatureException` (feature `CMYK color conversion`) before anything is allocated.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertToCmyk;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveForPrint(Image image, IccProfile pressProfile, string path)
+{
+    // The press profile (a CMYK output profile) describes the inks and labels them; the colors of the image are
+    // those of its own profile, or sRGB when it has none. CMYK has no alpha: flatten transparent pixels on white
+    var conversion = new PixelConversionOptions
+    {
+        BackgroundColor = new Rgba64(65535, 65535, 65535),
+        CmykConversion = new CmykPixelConversionOptions
+        {
+            CmykProfile = pressProfile,
+            Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+        },
+    };
+
+    using var inks = image.CloneAs<Cmyk32>(conversion);
+    inks.Save(path, new JpegEncoder { Quality = 90 });
+}
+```
+<!-- endref -->
+
+- From CMYK: the source is the CMYK profile of the image, else `CmykProfile` (default `null`); the destination is
+  `RgbProfile` (default `IccProfile.Srgb`), which labels the converted pixels. Without any CMYK profile, the device CMYK
+  formulas of `Cmyk` (CSS Color 5 `device-cmyk()`) convert the inks, and the pixels have no profile. Gray destinations
+  get the luma of the colors, and need `DiscardIncompatibleColorProfile` when the colors are labeled with an RGB profile.
+- To CMYK: the source is the RGB profile of the image, else `RgbProfile`; the destination is `CmykProfile`, which
+  labels the inks, and must have the tables from the connection space (`B2A0`...): `IccProfile.Cgats001CompatibleCmyk`
+  cannot be one. Without `CmykProfile`, the device formulas give the inks (the black is what the three colors share),
+  without profile. The layout conversion to RGB comes first: transparent pixels need `BackgroundColor`, floating-point
+  pixels follow their rules, gray pixels are their gray level in the three colors, and a gray profile is incompatible.
+- The ICC pipeline converts 8-bit samples when both formats have 8 bits, 16-bit samples otherwise (8-bit inks or colors
+  are widened exactly first, and 16-bit inks rounded to 8 bits after). The device formulas are evaluated in double
+  precision on the exact fractions of the samples and rounded once to the destination.
+- `Transform` is the rendering intent and the black point compensation.
 
 `IccColorTransformOptions` selects how colors that differ between the two media are rendered:
 
@@ -5729,7 +5805,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
 | PNG/APNG | Default output follows the pixel format, including RGB 16-bit and gray+alpha 8/16-bit; grayscale below 8 bits requires `PngOptimization.MinimumSize`, APNG delta rectangles `PngEncoder.OptimizeFrames` or `MinimumSize`. Palettes are selected by `PngPixelLayout.Indexed` or `MinimumSize`, exact unless `AllowColorReduction` (a sequential writer fixes its palette from the first image; later frames must fit it, or are mapped to it with `AllowColorReduction`). Unknown critical chunks are rejected, unknown ancillary chunks are not round-tripped; Apple CgBI files are decoded with the precision their premultiplied colors keep (lossy for low alpha values) and never written |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
-| Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based), device-link and abstract profiles in sequences of profiles: no version 5 (iccMAX) or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written (`IccColorTransform` gives CMYK samples); gamut mapping is per-channel clipping or a chroma reduction in Oklab, never a perceptual compression of in-gamut colors |
+| Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based), device-link and abstract profiles in sequences of profiles: no version 5 (iccMAX) or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK pixels (`Cmyk32`, `Cmyk64`) are only read and written by JPEG and TIFF, and only moved (crop, flip, quarter turns, orientation) by the processing operations; the untyped load of a CMYK file needs `CmykConversionOptions`; CMYK JPEG output is baseline only; gamut mapping is per-channel clipping or a chroma reduction in Oklab, never a perceptual compression of in-gamut colors |
 | Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient of patches (a `PathGradientBrush` is a fan of triangles from one center); a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], layers, patterns, filters, shadows, blurs, masks and groups are drawn on images of 16-bit samples (what is drawn in them is clipped to [0, 1]), and what reads the canvas back (a backdrop layer, a backdrop blur, a group that is not isolated) or draws a floating-point image combines it through 16-bit colors, so its samples must be in [0, 1] (others are rejected with an `UnsupportedImageFeatureException`, never clipped) and are quantized to 1/65535 |
 | Floating-point pixels | `RgbaFloat` and `RgbaHalf` only (no floating-point grayscale format); OpenEXR and TIFF are the formats that decode to them and store them (the other encoders reduce them to `Rgba64` with `ImageEncoder.FloatingPointConversion`); HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
 | Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions and no divisor (divide the weights); edge detection has no non-maximum suppression or thresholds (no Canny detector); histograms, equalization and auto-levels work on the encoded samples of integer pixel formats only (floating-point pixels are rejected), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |

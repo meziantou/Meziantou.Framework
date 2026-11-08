@@ -315,11 +315,49 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Cmyk left, Meziantou.Framework.Imaging.Cmyk right) => throw null;
     }
 
+    public struct Cmyk32 : System.IEquatable<Meziantou.Framework.Imaging.Cmyk32>
+    {
+        public byte C;
+        public byte K;
+        public byte M;
+        public byte Y;
+        public Cmyk32(byte c, byte m, byte y, byte k) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.Cmyk32 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Cmyk32 left, Meziantou.Framework.Imaging.Cmyk32 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Cmyk32 left, Meziantou.Framework.Imaging.Cmyk32 right) => throw null;
+    }
+
+    public struct Cmyk64 : System.IEquatable<Meziantou.Framework.Imaging.Cmyk64>
+    {
+        public ushort C;
+        public ushort K;
+        public ushort M;
+        public ushort Y;
+        public Cmyk64(ushort c, ushort m, ushort y, ushort k) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.Cmyk64 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Cmyk64 left, Meziantou.Framework.Imaging.Cmyk64 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Cmyk64 left, Meziantou.Framework.Imaging.Cmyk64 right) => throw null;
+    }
+
     public sealed class CmykConversionOptions
     {
         public Meziantou.Framework.Imaging.Metadata.IccProfile? AssumedSourceProfile { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.CmykConversionOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfile DestinationProfile { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
+    }
+
+    public sealed class CmykPixelConversionOptions
+    {
+        public Meziantou.Framework.Imaging.Metadata.IccProfile? CmykProfile { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.CmykPixelConversionOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccProfile RgbProfile { get => throw null; init { } }
         public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
     }
 
@@ -1558,6 +1596,7 @@ namespace Meziantou.Framework.Imaging
     public sealed class PixelConversionOptions
     {
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.CmykPixelConversionOptions? CmykConversion { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.PixelConversionOptions Default { get => throw null; }
         public bool DiscardIncompatibleColorProfile { get => throw null; init { } }
         public Meziantou.Framework.Imaging.OutOfRangeSampleHandling OutOfRangeSamples { get => throw null; init { } }
@@ -1583,6 +1622,8 @@ namespace Meziantou.Framework.Imaging
         Abgr32 = 14,
         Bgr565 = 15,
         Rgba1010102 = 16,
+        Cmyk32 = 17,
+        Cmyk64 = 18,
     }
 
     public static class PixelFormats
@@ -1595,6 +1636,7 @@ namespace Meziantou.Framework.Imaging
         public static System.Type GetPixelType(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool HasAlpha(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool HasColor(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
+        public static bool IsCmyk(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsFloatingPoint(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsGrayscale(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsSupported<TPixel>() where TPixel : unmanaged => throw null;

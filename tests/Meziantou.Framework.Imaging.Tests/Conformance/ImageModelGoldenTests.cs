@@ -39,8 +39,9 @@ public sealed class ImageModelGoldenTests
 
     // The integer formats: the references of the corpus are integer samples, and no decoder produces floating-point pixels.
     // No file decodes to an alpha mask, so no reference is black with alpha: A8 is covered by PixelAccessTests. The packed
-    // formats store few levels that the references do not keep to: they are covered by PixelAccessTests and PixelConversionTests
-    private static IEnumerable<PixelFormat> ReferenceFormats => PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && format is not (PixelFormat.A8 or PixelFormat.Bgr565 or PixelFormat.Rgba1010102));
+    // formats store few levels that the references do not keep to: they are covered by PixelAccessTests and PixelConversionTests.
+    // The references are colors of light, not inks: the CMYK formats are covered by the tests of the codecs that read them
+    private static IEnumerable<PixelFormat> ReferenceFormats => PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && !PixelFormats.IsCmyk(format) && format is not (PixelFormat.A8 or PixelFormat.Bgr565 or PixelFormat.Rgba1010102));
 
     private static IEnumerable<string> AnimatedFixtureIds => GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && (fixture.Expected.FrameCount > 1 || fixture.Expected.Poster is not null)).Select(fixture => fixture.Id);
 

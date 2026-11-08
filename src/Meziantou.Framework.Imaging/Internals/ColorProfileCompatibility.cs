@@ -5,8 +5,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The rules deciding whether an ICC profile can label pixels of a given format. Layout
 /// conversion is not color management: a profile is never applied implicitly, so it can only be kept when its declared
-/// color space matches the pixels: <see cref="IccProfileColorSpace.Gray"/> for gray formats, <see cref="IccProfileColorSpace.Rgb"/> for
-/// color formats. Profiles declaring any other (or no) color space are compatible with no built-in pixel format.
+/// color space matches the pixels: <see cref="IccProfileColorSpace.Gray"/> for gray formats, <see cref="IccProfileColorSpace.Cmyk"/>
+/// for the CMYK formats, <see cref="IccProfileColorSpace.Rgb"/> for the other color formats. Profiles declaring any other (or no) color space are compatible with no built-in pixel format.
 /// <see cref="PixelFormat.A8"/> has no color, so no profile labels it: a conversion to it drops the profile, which describes
 /// nothing of its pixels.
 /// </summary>
@@ -18,7 +18,18 @@ internal static class ColorProfileCompatibility
     /// <returns><see langword="true"/> if the combination is compatible.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
     public static bool IsCompatible(IccProfileColorSpace colorSpace, PixelFormat format)
-        => PixelFormats.HasColor(format) && (PixelFormats.IsGrayscale(format) ? colorSpace == IccProfileColorSpace.Gray : colorSpace == IccProfileColorSpace.Rgb);
+        => PixelFormats.HasColor(format) && colorSpace == GetColorSpace(format);
+
+    /// <summary>Gets the color space of the profiles that can label pixels of a format that has a color.</summary>
+    /// <param name="format">The pixel format.</param>
+    /// <returns>The color space.</returns>
+    public static IccProfileColorSpace GetColorSpace(PixelFormat format)
+    {
+        if (PixelFormats.IsGrayscale(format))
+            return IccProfileColorSpace.Gray;
+
+        return PixelFormats.IsCmyk(format) ? IccProfileColorSpace.Cmyk : IccProfileColorSpace.Rgb;
+    }
 
     /// <summary>Determines whether a profile can label pixels of a format (no profile is always compatible).</summary>
     /// <param name="profile">The profile, or <see langword="null"/>.</param>
@@ -48,7 +59,12 @@ internal static class ColorProfileCompatibility
         if (discardIncompatible || !PixelFormats.HasColor(destinationFormat))
             return null;
 
-        var kind = PixelFormats.IsGrayscale(destinationFormat) ? "grayscale" : "color";
+        var kind = GetColorSpace(destinationFormat) switch
+        {
+            IccProfileColorSpace.Gray => "grayscale",
+            IccProfileColorSpace.Cmyk => "CMYK",
+            _ => "color",
+        };
         throw new UnsupportedImageFeatureException(
             $"The ICC profile declares the {profile.ColorSpace} color space, which cannot label {kind} {destinationFormat} pixels. Layout conversion does not apply color profiles; convert the colors first with ConvertColorProfile, set PixelConversionOptions.DiscardIncompatibleColorProfile to remove the profile, or remove it from the metadata.",
             format,

@@ -1,6 +1,6 @@
 ---
 title: Pixel formats
-description: The sixteen pixel formats, which one a file loads as, how to convert, and how alpha and precision are kept.
+description: The eighteen pixel formats, which one a file loads as, how to convert, and how alpha and precision are kept.
 ---
 
 Every image stores its pixels in one pixel format, such as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) or [Gray16](cref:Meziantou.Framework.Imaging.Gray16). This page lists the formats, tells
@@ -26,10 +26,17 @@ which one a file loads as, and shows how to convert between them without losing 
 | [Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102) | 4 | 10-bit color and 2-bit alpha packed in 32 bits, for GPU and HDR display buffers |
 | [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) | 8 | Half-precision floating-point color and alpha, in linear light |
 | [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) | 16 | Single-precision floating-point color and alpha, in linear light |
+| [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) | 4 | 8-bit cyan, magenta, yellow and black ink amounts, for print |
+| [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) | 8 | 16-bit ink amounts |
 
 Alpha is always straight (not premultiplied), and 16-bit samples and packed values are in the native byte order of the
 machine.
-[PixelFormats](cref:Meziantou.Framework.Imaging.PixelFormats) describes each format ([HasAlpha](cref:Meziantou.Framework.Imaging.PixelFormats.HasAlpha), [HasColor](cref:Meziantou.Framework.Imaging.PixelFormats.HasColor), [IsGrayscale](cref:Meziantou.Framework.Imaging.PixelFormats.IsGrayscale), [IsFloatingPoint](cref:Meziantou.Framework.Imaging.PixelFormats.IsFloatingPoint), [GetBytesPerPixel](cref:Meziantou.Framework.Imaging.PixelFormats.GetBytesPerPixel), …).
+[PixelFormats](cref:Meziantou.Framework.Imaging.PixelFormats) describes each format ([HasAlpha](cref:Meziantou.Framework.Imaging.PixelFormats.HasAlpha), [HasColor](cref:Meziantou.Framework.Imaging.PixelFormats.HasColor), [IsGrayscale](cref:Meziantou.Framework.Imaging.PixelFormats.IsGrayscale), [IsFloatingPoint](cref:Meziantou.Framework.Imaging.PixelFormats.IsFloatingPoint), [IsCmyk](cref:Meziantou.Framework.Imaging.PixelFormats.IsCmyk), [GetBytesPerPixel](cref:Meziantou.Framework.Imaging.PixelFormats.GetBytesPerPixel), …).
+
+The CMYK formats hold inks, not light (0 is no ink): only JPEG and TIFF read and write them, the operations that move
+pixels (crop, flip, quarter turns, orientation) keep them, and the other operations reject them. A conversion between
+them and the other formats converts colors, so it needs [PixelConversionOptions.CmykConversion](cref:Meziantou.Framework.Imaging.PixelConversionOptions.CmykConversion): see
+[Color management](../09-Color/03-ColorManagement.md#keep-cmyk-images).
 
 ## `Image` and `Image<TPixel>`
 
@@ -48,7 +55,7 @@ machine.
 [Identifying images](../05-LoadingAndSaving/03-IdentifyingImages.md).
 
 When your code works on pixels of a known type, load in that type with [Image.Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load), or convert with
-[CloneAs\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CloneAs). A type that is not one of the sixteen formats throws a `NotSupportedException` before anything is
+[CloneAs\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CloneAs). A type that is not one of the eighteen formats throws a `NotSupportedException` before anything is
 read.
 
 ## Convert between formats

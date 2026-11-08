@@ -61,4 +61,10 @@ public enum PixelFormat
 
     /// <summary>10-bit red, green and blue components and a 2-bit straight alpha, packed in a native-endian 32-bit value with red in the low bits (<see cref="Imaging.Rgba1010102"/>).</summary>
     Rgba1010102 = 16,
+
+    /// <summary>8-bit cyan, magenta, yellow and black ink amounts, stored in that byte order (<see cref="Imaging.Cmyk32"/>): device CMYK described by the CMYK profile of the image.</summary>
+    Cmyk32 = 17,
+
+    /// <summary>16-bit cyan, magenta, yellow and black ink amounts in native endianness (<see cref="Imaging.Cmyk64"/>): device CMYK described by the CMYK profile of the image.</summary>
+    Cmyk64 = 18,
 }

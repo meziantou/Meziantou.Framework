@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -10,7 +11,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item>unsupported pixel types throw <see cref="NotSupportedException"/> (generic factory) before any side effect;</item>
 /// <item>the retained ICC profile is checked against the destination format (<see cref="ColorProfileCompatibility"/>);</item>
 /// <item>alpha removal uses <see cref="PixelConversionOptions.BackgroundColor"/> to flatten, or rejects non-opaque pixels;</item>
-/// <item>floating-point samples that the destination cannot store follow <see cref="Floats"/>.</item>
+/// <item>floating-point samples that the destination cannot store follow <see cref="Floats"/>;</item>
+/// <item>
+/// a conversion between CMYK and another kind of pixels converts colors (<see cref="CmykColorConversion"/>), only with
+/// <see cref="PixelConversionOptions.CmykConversion"/>: the source side (alpha, floating-point samples) is validated by the
+/// layout conversion to or from its RGB rows.
+/// </item>
 /// </list>
 /// Callers that must not partially apply a conversion check <see cref="RequiresValidation"/> and pre-scan the source
 /// with <see cref="ValidateRow"/> before allocating the destination, after giving the tone mapping its peak when
@@ -20,8 +26,12 @@ internal sealed class PixelConversionPlan
 {
     private readonly PixelConversionOptions _options;
 
-    private PixelConversionPlan(PixelFormat sourceFormat, PixelFormat destinationFormat, PixelConversionOptions options, IccProfile? profile, bool profileDiscarded, ImageFormat format)
+    // The color conversion between CMYK and another kind of pixels; null for the other conversions
+    private readonly CmykColorConversion? _cmyk;
+
+    private PixelConversionPlan(PixelFormat sourceFormat, PixelFormat destinationFormat, PixelConversionOptions options, IccProfile? profile, bool profileDiscarded, ImageFormat format, CmykColorConversion? cmyk = null)
     {
+        _cmyk = cmyk;
         var background = options.BackgroundColor;
         _options = options;
         SourceFormat = sourceFormat;
@@ -49,21 +59,28 @@ internal sealed class PixelConversionPlan
     /// <summary>Gets a value indicating whether every source pixel must be fully opaque (alpha removed without a background).</summary>
     public bool RequiresOpaqueSource => RemovesAlpha && Background is null;
 
+    // The layout conversion of the source to RGB rows validates the source of a conversion to CMYK
+    private PixelConversionPlan? SourceLayout => _cmyk is { FromCmyk: false } cmyk ? cmyk.Layout : null;
+
     /// <summary>Gets a value indicating whether floating-point samples are converted to a format that cannot store all of them (an integer format, or <see cref="PixelFormat.RgbaFloat"/> to <see cref="PixelFormat.RgbaHalf"/>).</summary>
-    public bool ChecksFloatSamples => PixelFormats.IsFloatingPoint(SourceFormat) && (!PixelFormats.IsFloatingPoint(DestinationFormat) || (SourceFormat == PixelFormat.RgbaFloat && DestinationFormat == PixelFormat.RgbaHalf));
+    public bool ChecksFloatSamples => SourceLayout is { } layout ? layout.ChecksFloatSamples : PixelFormats.IsFloatingPoint(SourceFormat) && (!PixelFormats.IsFloatingPoint(DestinationFormat) || (SourceFormat == PixelFormat.RgbaFloat && DestinationFormat == PixelFormat.RgbaHalf));
 
     /// <summary>Gets a value indicating whether a source row can be rejected: <see cref="RequiresOpaqueSource"/> or <see cref="ChecksFloatSamples"/>.</summary>
     public bool RequiresValidation => RequiresOpaqueSource || ChecksFloatSamples;
 
     /// <summary>Gets a value indicating whether the tone mapping needs the peak of the source pixels (<see cref="SetPeak"/>) before any row is converted or validated.</summary>
-    public bool RequiresPeak => ChecksFloatSamples && !PixelFormats.IsFloatingPoint(DestinationFormat) && FloatSampleConversion.NeedsPeak(_options);
+    public bool RequiresPeak => SourceLayout is { } layout ? layout.RequiresPeak : ChecksFloatSamples && !PixelFormats.IsFloatingPoint(DestinationFormat) && FloatSampleConversion.NeedsPeak(_options);
 
     /// <summary>Gets the policy of the floating-point samples that the destination cannot store.</summary>
     public FloatSampleConversion Floats { get; private set; }
 
     /// <summary>Gives the tone mapping the peak of the source pixels, when <see cref="RequiresPeak"/>.</summary>
     /// <param name="peak">The largest finite color component of the converted pixels (<see cref="PixelConverter.GetLargestFiniteColor"/>).</param>
-    public void SetPeak(double peak) => Floats = FloatSampleConversion.Create(_options, peak);
+    public void SetPeak(double peak)
+    {
+        SourceLayout?.SetPeak(peak);
+        Floats = FloatSampleConversion.Create(_options, peak);
+    }
 
     /// <summary>Gets a value indicating whether the conversion changes the component precision (8 to 16 bits or 16 to 8 bits).</summary>
     public bool ChangesPrecision => PixelFormats.GetBitsPerComponent(SourceFormat) != PixelFormats.GetBitsPerComponent(DestinationFormat);
@@ -73,6 +90,9 @@ internal sealed class PixelConversionPlan
 
     /// <summary>Gets a value indicating whether the conversion computes Rec. 709 luma (color to gray).</summary>
     public bool ConvertsToGrayscale => !PixelFormats.IsGrayscale(SourceFormat) && PixelFormats.IsGrayscale(DestinationFormat);
+
+    /// <summary>Gets a value indicating whether the conversion converts colors between CMYK and another kind of pixels.</summary>
+    public bool ConvertsCmykColors => _cmyk is not null;
 
     /// <summary>Gets a value indicating whether the source and destination formats are identical (rows are copied).</summary>
     public bool IsIdentity => SourceFormat == DestinationFormat;
@@ -114,6 +134,15 @@ internal sealed class PixelConversionPlan
         _ = PixelFormats.GetBytesPerPixel(sourceFormat);
         _ = PixelFormats.GetBytesPerPixel(destinationFormat);
         options ??= PixelConversionOptions.Default;
+        if (PixelFormats.IsCmyk(sourceFormat) != PixelFormats.IsCmyk(destinationFormat))
+        {
+            if (options.CmykConversion is null)
+                throw PixelConverter.CreateCmykConversionException(sourceFormat, destinationFormat, format);
+
+            var cmyk = CmykColorConversion.Create(sourceFormat, destinationFormat, options, sourceProfile, format);
+            return new PixelConversionPlan(sourceFormat, destinationFormat, options, cmyk.ColorProfile, profileDiscarded: sourceProfile is not null && cmyk.ColorProfile is null, format, cmyk);
+        }
+
         var profile = ColorProfileCompatibility.Resolve(sourceProfile, destinationFormat, options.DiscardIncompatibleColorProfile, format);
         return new PixelConversionPlan(sourceFormat, destinationFormat, options, profile, profileDiscarded: sourceProfile is not null && profile is null, format);
     }
@@ -126,6 +155,12 @@ internal sealed class PixelConversionPlan
         where TSource : unmanaged
     {
         EnsureFormat<TSource>(SourceFormat);
+        if (_cmyk is not null)
+        {
+            SourceLayout?.EnsureConvertible(row);
+            return;
+        }
+
         if (ChecksFloatSamples)
         {
             PixelConverter.ValidateFloatRow(row, SourceFormat, DestinationFormat, Background, Format, Floats);
@@ -140,7 +175,15 @@ internal sealed class PixelConversionPlan
     /// <param name="row">The source bytes (a whole number of <see cref="SourceFormat"/> pixels).</param>
     /// <exception cref="UnsupportedImageFeatureException">A pixel cannot be converted.</exception>
     public void ValidateRow(ReadOnlySpan<byte> row)
-        => PixelConverter.ValidateRow(SourceFormat, row, DestinationFormat, Background, Format, Floats);
+    {
+        if (_cmyk is not null)
+        {
+            SourceLayout?.ValidateRow(row);
+            return;
+        }
+
+        PixelConverter.ValidateRow(SourceFormat, row, DestinationFormat, Background, Format, Floats);
+    }
 
     /// <summary>Converts a row of typed pixels.</summary>
     /// <typeparam name="TSource">The source pixel type; must match <see cref="SourceFormat"/>.</typeparam>
@@ -154,6 +197,15 @@ internal sealed class PixelConversionPlan
     {
         EnsureFormat<TSource>(SourceFormat);
         EnsureFormat<TDestination>(DestinationFormat);
+        if (_cmyk is not null)
+        {
+            if (destination.Length < source.Length)
+                throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"The destination has {destination.Length} pixels but {source.Length} are required."), nameof(destination));
+
+            _cmyk.ConvertRow(unsafe(MemoryMarshal.AsBytes(source)), unsafe(MemoryMarshal.AsBytes(destination)), SourceFormat, DestinationFormat);
+            return;
+        }
+
         PixelConverter.ConvertRow(source, destination, Background, Format, Floats);
     }
 
@@ -163,7 +215,22 @@ internal sealed class PixelConversionPlan
     /// <returns>The number of pixels converted.</returns>
     /// <exception cref="UnsupportedImageFeatureException">A pixel is not fully opaque and alpha would be discarded (nothing is written).</exception>
     public int ConvertRow(ReadOnlySpan<byte> source, Span<byte> destination)
-        => PixelConverter.ConvertRow(SourceFormat, source, DestinationFormat, destination, Background, Format, Floats);
+    {
+        if (_cmyk is null)
+            return PixelConverter.ConvertRow(SourceFormat, source, DestinationFormat, destination, Background, Format, Floats);
+
+        var sourceBytesPerPixel = PixelFormats.GetBytesPerPixel(SourceFormat);
+        var destinationBytesPerPixel = PixelFormats.GetBytesPerPixel(DestinationFormat);
+        if (source.Length % sourceBytesPerPixel != 0)
+            throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"The source length ({source.Length} bytes) is not a multiple of the {SourceFormat} pixel size ({sourceBytesPerPixel} bytes)."), nameof(source));
+
+        var width = source.Length / sourceBytesPerPixel;
+        if (destination.Length / destinationBytesPerPixel < width)
+            throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"The destination has {destination.Length} bytes but {(long)width * destinationBytesPerPixel} are required."), nameof(destination));
+
+        _cmyk.ConvertRow(source, destination, SourceFormat, DestinationFormat);
+        return width;
+    }
 
     private static void EnsureFormat<TPixel>(PixelFormat expected)
         where TPixel : unmanaged

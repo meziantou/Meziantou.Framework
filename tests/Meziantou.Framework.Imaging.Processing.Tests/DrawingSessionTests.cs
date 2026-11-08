@@ -2524,7 +2524,7 @@ public sealed class DrawingSessionTests
         var random = new Random(4321);
         var path = new VectorPathBuilder().AddCircle(new PointD(5.25, 4.5), 3.3).Build();
         var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(10, 0), [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]);
-        foreach (var format in PixelFormats.All)
+        foreach (var format in PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format)))
         {
             using var expected = DrawingTestSupport.CreateRandom(format, 10, 8, random.Next);
             using var actual = expected.Clone();
@@ -2620,7 +2620,7 @@ public sealed class DrawingSessionTests
 
         // A drawing that covers the canvas continues beyond its edges: nothing of it fades along them
         var random = new Random(77);
-        foreach (var format in PixelFormats.All)
+        foreach (var format in PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format)))
         {
             using var full = DrawingTestSupport.CreateRandom(format, 9, 5, random.Next);
             using var expected = full.Clone();
@@ -3347,7 +3347,7 @@ public sealed class DrawingSessionTests
 
         // The identity changes nothing, in any format, bit for bit
         var random = new Random(11);
-        foreach (var format in PixelFormats.All)
+        foreach (var format in PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format)))
         {
             using var image = DrawingTestSupport.CreateRandom(format, 9, 5, random.Next);
             var before = DrawingTestSupport.ReadSamples(image.Frames[0]);

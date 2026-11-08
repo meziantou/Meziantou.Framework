@@ -41,8 +41,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// out, and an unspecified extra sample is not transparency.
 /// </para>
 /// <para>
-/// CMYK samples are inks: no pixel format holds them, so the page is described here like any other (an identification
-/// needs nothing else) and its pixels are only decoded with a color conversion (<see cref="TiffPageDecoder"/>).
+/// CMYK samples are inks, described here like any other samples (an identification needs nothing else): their pixels are
+/// decoded as CMYK pixels or with a color conversion (<see cref="TiffPageDecoder"/>).
 /// </para>
 /// </remarks>
 internal sealed class TiffPage

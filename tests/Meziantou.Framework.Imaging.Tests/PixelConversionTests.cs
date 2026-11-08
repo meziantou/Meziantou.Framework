@@ -18,15 +18,18 @@ public sealed class PixelConversionTests
 {
     private static readonly Rgba64 Background = new(0x1234, 0xABCD, 0x0F0F);
 
-    /// <summary>Every pair of integer pixel formats: the ones <see cref="ReferenceModel"/> describes.</summary>
+    /// <summary>
+    /// Every pair of integer pixel formats of light: the ones <see cref="ReferenceModel"/> describes. The CMYK formats hold
+    /// inks, whose conversions convert colors (see the CMYK tests).
+    /// </summary>
     public static TheoryData<PixelFormat, PixelFormat> AllPairs
     {
         get
         {
             var data = new TheoryData<PixelFormat, PixelFormat>();
-            foreach (var source in PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format)))
+            foreach (var source in PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && !PixelFormats.IsCmyk(format)))
             {
-                foreach (var destination in PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format)))
+                foreach (var destination in PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && !PixelFormats.IsCmyk(format)))
                 {
                     data.Add(source, destination);
                 }
@@ -42,9 +45,9 @@ public sealed class PixelConversionTests
         get
         {
             var data = new TheoryData<PixelFormat, PixelFormat>();
-            foreach (var source in PixelFormats.All)
+            foreach (var source in PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format)))
             {
-                foreach (var destination in PixelFormats.All)
+                foreach (var destination in PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format)))
                 {
                     if (PixelFormats.IsFloatingPoint(source) || PixelFormats.IsFloatingPoint(destination))
                     {
@@ -80,6 +83,8 @@ public sealed class PixelConversionTests
         AssertLayout<Abgr32>(4, ("A", 0), ("B", 1), ("G", 2), ("R", 3));
         AssertLayout<Bgr565>(2, ("PackedValue", 0));
         AssertLayout<Rgba1010102>(4, ("PackedValue", 0));
+        AssertLayout<Cmyk32>(4, ("C", 0), ("M", 1), ("Y", 2), ("K", 3));
+        AssertLayout<Cmyk64>(8, ("C", 0), ("M", 2), ("Y", 4), ("K", 6));
     }
 
     [Fact]
@@ -91,12 +96,14 @@ public sealed class PixelConversionTests
         Assert.Equal([7], Bytes(new Gray8(7)));
         Assert.Equal([7, 9], Bytes(new La16(7, 9)));
         Assert.Equal([9], Bytes(new A8(9)));
+        Assert.Equal([1, 2, 3, 4], Bytes(new Cmyk32(1, 2, 3, 4)));
 
         // 16-bit components are native-endian ushort values
         Assert.Equal(Native16(0x0102, 0x0304, 0x0506, 0x0708), Bytes(new Rgba64(0x0102, 0x0304, 0x0506, 0x0708)));
         Assert.Equal(Native16(0xA1B2), Bytes(new Gray16(0xA1B2)));
         Assert.Equal(Native16(0xA1B2, 0x0102), Bytes(new La32(0xA1B2, 0x0102)));
         Assert.Equal(Native16(0x0102, 0x0304, 0x0506), Bytes(new Rgb48(0x0102, 0x0304, 0x0506)));
+        Assert.Equal(Native16(0x0102, 0x0304, 0x0506, 0x0708), Bytes(new Cmyk64(0x0102, 0x0304, 0x0506, 0x0708)));
         Assert.Equal([4, 1, 2, 3], Bytes(new Argb32(r: 1, g: 2, b: 3, a: 4)));
         Assert.Equal([4, 3, 2, 1], Bytes(new Abgr32(r: 1, g: 2, b: 3, a: 4)));
 
@@ -1257,7 +1264,6 @@ public sealed class PixelConversionTests
     }
 
     [Theory]
-    [InlineData("CMYK")]
     [InlineData("Lab ")]
     [InlineData(null)]
     public void ProfilesWithOtherColorSpacesAreCompatibleWithNoPixelFormat(string? colorSpace)
@@ -1413,6 +1419,257 @@ public sealed class PixelConversionTests
         }
 
         return result;
+    }
+
+    [Fact]
+    public void CmykProfilesLabelOnlyCmykPixels()
+    {
+        var cmyk = CreateProfile("CMYK");
+        foreach (var format in PixelFormats.All)
+        {
+            Assert.Equal(PixelFormats.IsCmyk(format), ColorProfileCompatibility.IsCompatible(cmyk, format));
+        }
+
+        Assert.Same(cmyk, PixelConversionPlan.Create(PixelFormat.Cmyk32, PixelFormat.Cmyk64, options: null, cmyk).ColorProfile);
+        Assert.Equal("Incompatible color profile", Assert.Throws<UnsupportedImageFeatureException>(() => PixelConversionPlan.Create(PixelFormat.Cmyk32, PixelFormat.Cmyk32, options: null, IccProfile.Srgb)).Feature);
+        Assert.Null(PixelConversionPlan.Create(PixelFormat.Cmyk32, PixelFormat.Cmyk32, new PixelConversionOptions { DiscardIncompatibleColorProfile = true }, IccProfile.Srgb).ColorProfile);
+    }
+
+    [Fact]
+    public void CmykPrecisionConversionsAreExact()
+    {
+        var inks = new Cmyk32[256];
+        for (var i = 0; i < inks.Length; i++)
+        {
+            inks[i] = new Cmyk32((byte)i, (byte)(255 - i), (byte)(i * 7), (byte)(i * 13));
+        }
+
+        using var image = Image.ImportPixelData<Cmyk32>(inks, 16, 16);
+        image.Metadata.IccProfile = IccTestProfiles.CmykLabLut16();
+        using var deep = image.CloneAs<Cmyk64>();
+        Assert.Same(image.Metadata.IccProfile, deep.Metadata.IccProfile);
+        var widened = new Cmyk64[256];
+        deep.Frames[0].CopyPixelDataTo(widened);
+        for (var i = 0; i < inks.Length; i++)
+        {
+            Assert.Equal(new Cmyk64((ushort)(inks[i].C * 257), (ushort)(inks[i].M * 257), (ushort)(inks[i].Y * 257), (ushort)(inks[i].K * 257)), widened[i]);
+        }
+
+        using var back = deep.CloneAs<Cmyk32>();
+        var narrowed = new Cmyk32[256];
+        back.Frames[0].CopyPixelDataTo(narrowed);
+        Assert.Equal(inks, narrowed);
+
+        // 16-bit inks are rounded to the nearest 8-bit amount
+        var samples = new Cmyk64[4096];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = new Cmyk64((ushort)(i * 16), (ushort)((i * 16) + 7), (ushort)((i * 16) + 8), (ushort)(65535 - (i * 16)));
+        }
+
+        using var sixteen = Image.ImportPixelData<Cmyk64>(samples, 64, 64);
+        using var eight = sixteen.CloneAs<Cmyk32>();
+        var rounded = new Cmyk32[4096];
+        eight.Frames[0].CopyPixelDataTo(rounded);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            Assert.Equal(new Cmyk32(Nearest8(samples[i].C), Nearest8(samples[i].M), Nearest8(samples[i].Y), Nearest8(samples[i].K)), rounded[i]);
+        }
+
+        static byte Nearest8(ushort value) => (byte)Math.Round(value * 255.0 / 65535.0, MidpointRounding.AwayFromZero);
+    }
+
+    [Fact]
+    public void ConversionsBetweenCmykAndLightNeedTheCmykConversion()
+    {
+        using var cmyk = new Image<Cmyk32>(3, 2);
+        using var rgb = new Image<Rgb24>(3, 2);
+        Assert.Equal("CMYK color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.CloneAs<Rgb24>()).Feature);
+        Assert.Equal("CMYK color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.CloneAs<Gray16>()).Feature);
+        Assert.Equal("CMYK color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => rgb.CloneAs<Cmyk64>()).Feature);
+        Assert.Equal("CMYK color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow(PixelFormat.Cmyk32, new byte[4], PixelFormat.Rgba32, new byte[4])).Feature);
+
+        // A file of light is not loaded as inks without the conversion
+        using var png = new MemoryStream();
+        rgb.Save(png, new PngEncoder());
+        Assert.Equal("CMYK color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load<Cmyk32>(png.ToArray())).Feature);
+        using var loaded = Image.Load<Cmyk32>(png.ToArray(), new ImageDecodeOptions { Conversion = new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default } });
+        Assert.Equal(new Cmyk32(0, 0, 0, 255), loaded.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void DeviceConversionFromCmykIsTheOneOfTheCmykColor()
+    {
+        var inks = new Cmyk32[24 * 9];
+        for (var i = 0; i < inks.Length; i++)
+        {
+            inks[i] = new Cmyk32(Scramble(i, 17), Scramble(i, 18), Scramble(i, 19), Scramble(i, 20));
+        }
+
+        inks[0] = default;
+        inks[1] = new Cmyk32(255, 255, 255, 255);
+        using var image = Image.ImportPixelData<Cmyk32>(inks, 24, 9);
+        var options = new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default };
+        using var rgb = image.CloneAs<Rgb24>(options);
+        using var deep = image.CloneAs<Rgba64>(options);
+        Assert.Null(rgb.Metadata.IccProfile);
+        var colors = new Rgb24[inks.Length];
+        rgb.Frames[0].CopyPixelDataTo(colors);
+        var deepColors = new Rgba64[inks.Length];
+        deep.Frames[0].CopyPixelDataTo(deepColors);
+        for (var i = 0; i < inks.Length; i++)
+        {
+            var color = new Cmyk(inks[i].C / 255.0, inks[i].M / 255.0, inks[i].Y / 255.0, inks[i].K / 255.0);
+            var expected = color.ToRgba32();
+            Assert.Equal(new Rgb24(expected.R, expected.G, expected.B), colors[i]);
+            Assert.Equal(color.ToRgba64(), deepColors[i]);
+        }
+
+        Assert.Equal(new Rgb24(255, 255, 255), colors[0]);
+        Assert.Equal(new Rgb24(0, 0, 0), colors[1]);
+
+        // Gray is the luma of the colors
+        using var gray = image.CloneAs<Gray8>(options);
+        using var expectedGray = rgb.CloneAs<Gray8>();
+        var grays = new Gray8[inks.Length];
+        gray.Frames[0].CopyPixelDataTo(grays);
+        var expectedGrays = new Gray8[inks.Length];
+        expectedGray.Frames[0].CopyPixelDataTo(expectedGrays);
+        Assert.Equal(expectedGrays, grays);
+    }
+
+    [Fact]
+    public void DeviceConversionToCmykIsTheOneOfTheCmykColor()
+    {
+        var colors = new Rgba32[20 * 7];
+        for (var i = 0; i < colors.Length; i++)
+        {
+            colors[i] = new Rgba32(Scramble(i, 21), Scramble(i, 22), Scramble(i, 23));
+        }
+
+        colors[0] = new Rgba32(255, 255, 255);
+        colors[1] = new Rgba32(0, 0, 0);
+        using var image = Image.ImportPixelData<Rgba32>(colors, 20, 7);
+        image.Metadata.IccProfile = IccProfile.Srgb;
+        var options = new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default };
+        using var cmyk = image.CloneAs<Cmyk32>(options);
+        using var deep = image.CloneAs<Cmyk64>(options);
+
+        // Device CMYK has no profile
+        Assert.Null(cmyk.Metadata.IccProfile);
+        var inks = new Cmyk32[colors.Length];
+        cmyk.Frames[0].CopyPixelDataTo(inks);
+        var deepInks = new Cmyk64[colors.Length];
+        deep.Frames[0].CopyPixelDataTo(deepInks);
+        for (var i = 0; i < colors.Length; i++)
+        {
+            var expected = Cmyk.FromRgb(colors[i]);
+            Assert.Equal(new Cmyk32(To8(expected.C), To8(expected.M), To8(expected.Y), To8(expected.K)), inks[i]);
+            Assert.Equal(new Cmyk64(To16(expected.C), To16(expected.M), To16(expected.Y), To16(expected.K)), deepInks[i]);
+        }
+
+        Assert.Equal(new Cmyk32(0, 0, 0, 0), inks[0]);
+        Assert.Equal(new Cmyk32(0, 0, 0, 255), inks[1]);
+
+        // CMYK has no alpha: a transparent pixel is flattened onto the background, or rejected
+        image.Frames[0][2, 0] = new Rgba32(10, 20, 30, 128);
+        Assert.Equal("Alpha removal", Assert.Throws<UnsupportedImageFeatureException>(() => image.CloneAs<Cmyk32>(options)).Feature);
+        var background = new Rgba64(0, 0, 65535);
+        using var flattened = image.CloneAs<Cmyk32>(new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default, BackgroundColor = background });
+        using var expectedRgb = image.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = background });
+        var expectedColor = expectedRgb.Frames[0][2, 0];
+        var expectedInk = Cmyk.FromRgb(new Rgba32(expectedColor.R, expectedColor.G, expectedColor.B));
+        Assert.Equal(new Cmyk32(To8(expectedInk.C), To8(expectedInk.M), To8(expectedInk.Y), To8(expectedInk.K)), flattened.Frames[0][2, 0]);
+
+        static byte To8(double value) => (byte)Math.Round(value * 255, MidpointRounding.AwayFromZero);
+        static ushort To16(double value) => (ushort)Math.Round(value * 65535, MidpointRounding.AwayFromZero);
+    }
+
+    [Fact]
+    public void IccConversionFromCmykIsTheOneOfIccColorTransform()
+    {
+        var samples = new byte[13 * 11 * 4];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = Scramble(i, 24);
+        }
+
+        var profile = IccTestProfiles.CmykLabLut16();
+        var transform = IccColorTransform.Create(profile, IccProfile.DisplayP3);
+        var options = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions { RgbProfile = IccProfile.DisplayP3 } };
+
+        // The profile of the image is the source; the RGB profile labels the colors
+        using var image = Image.ImportPixelBytes<Cmyk32>(samples, 13, 11);
+        image.Metadata.IccProfile = profile;
+        using var rgb = image.CloneAs<Rgb24>(options);
+        Assert.Same(IccProfile.DisplayP3, rgb.Metadata.IccProfile);
+        var expected = new byte[13 * 11 * 3];
+        transform.Convert(samples, expected);
+        Assert.Equal(expected, GetPixelBytes(rgb));
+
+        // The CMYK profile of the options describes inks without profile; 8-bit inks are converted at 16 bits for 16-bit colors
+        image.Metadata.IccProfile = null;
+        using var deep = image.CloneAs<Rgb48>(new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions { CmykProfile = profile, RgbProfile = IccProfile.DisplayP3 } });
+        var widened = samples.Select(static sample => (ushort)(sample * 257)).ToArray();
+        var expectedDeep = new ushort[13 * 11 * 3];
+        transform.Convert(widened, expectedDeep);
+        Assert.Equal(expectedDeep, unsafe(MemoryMarshal.Cast<byte, ushort>(GetPixelBytes(deep).AsSpan())).ToArray());
+        Assert.Same(IccProfile.DisplayP3, deep.Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void IccConversionToCmykIsTheOneOfIccColorTransform()
+    {
+        var samples = new byte[9 * 14 * 3];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = Scramble(i, 25);
+        }
+
+        var profile = IccTestProfiles.CmykLabLut16();
+        var options = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions { CmykProfile = profile } };
+
+        // Untagged colors are those of the RGB profile of the options (sRGB); the CMYK profile labels the inks
+        using var image = Image.ImportPixelBytes<Rgb24>(samples, 9, 14);
+        using var cmyk = image.CloneAs<Cmyk32>(options);
+        Assert.Same(profile, cmyk.Metadata.IccProfile);
+        var expected = new byte[9 * 14 * 4];
+        IccColorTransform.Create(IccProfile.Srgb, profile).Convert(samples, expected);
+        Assert.Equal(expected, GetPixelBytes(cmyk));
+
+        // A tagged image is converted from its own profile, and 16-bit inks are converted from 16-bit colors
+        image.Metadata.IccProfile = IccProfile.DisplayP3;
+        using var deep = image.CloneAs<Cmyk64>(options);
+        var expectedDeep = new ushort[9 * 14 * 4];
+        IccColorTransform.Create(IccProfile.DisplayP3, profile).Convert(samples.Select(static sample => (ushort)(sample * 257)).ToArray(), expectedDeep);
+        Assert.Equal(expectedDeep, unsafe(MemoryMarshal.Cast<byte, ushort>(GetPixelBytes(deep).AsSpan())).ToArray());
+
+        // A gray profile does not describe RGB colors
+        using var gray = Image.ImportPixelBytes<Gray8>(samples.AsSpan(0, 9 * 14), 9, 14);
+        gray.Metadata.IccProfile = IccProfile.SrgbGray;
+        Assert.Equal("Incompatible color profile", Assert.Throws<UnsupportedImageFeatureException>(() => gray.CloneAs<Cmyk32>(options)).Feature);
+    }
+
+    [Fact]
+    public void CmykConversionOptionsValidateTheirProfiles()
+    {
+        Assert.Throws<ArgumentException>(() => new CmykPixelConversionOptions { CmykProfile = IccProfile.Srgb });
+        Assert.Throws<ArgumentException>(() => new CmykPixelConversionOptions { RgbProfile = IccProfile.Cgats001CompatibleCmyk });
+        Assert.Throws<ArgumentNullException>(() => new CmykPixelConversionOptions { RgbProfile = null! });
+        Assert.Throws<ArgumentNullException>(() => new CmykPixelConversionOptions { Transform = null! });
+        Assert.Null(CmykPixelConversionOptions.Default.CmykProfile);
+        Assert.Same(IccProfile.Srgb, CmykPixelConversionOptions.Default.RgbProfile);
+    }
+
+    // A deterministic sample that covers the range of a byte
+    private static byte Scramble(int index, int seed) => (byte)(((uint)((index * 31) + seed) * 2654435761u) >> 24);
+
+    private static byte[] GetPixelBytes(Image image)
+    {
+        var frame = image.Frames[0];
+        var bytes = new byte[frame.Width * frame.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
+        frame.CopyPixelBytesTo(bytes);
+        return bytes;
     }
 
     private static IccProfile CreateProfile(string colorSpace)

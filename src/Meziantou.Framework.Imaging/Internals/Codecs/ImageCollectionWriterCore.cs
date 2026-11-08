@@ -148,6 +148,12 @@ internal static class ImageCollectionWriterCore
         if (encoder is TiffEncoder && !seekable)
             throw new ArgumentException("TIFF output requires a seekable destination: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the pages are encoded.", nameof(encoder));
 
+        for (var i = 0; i < collection.Count; i++)
+        {
+            if (PixelFormats.IsCmyk(collection[i].PixelFormat) && !encoder.StoresCmykPixels)
+                throw ImageWriterCore.CreateCmykOutputException(ImageFormatNames.Get(encoder.Format), encoder.Format, collection[i].PixelFormat);
+        }
+
         // Floating-point entries are reduced to 16 bits only with the policy of the encoder, unless it stores them
         if (encoder.FloatingPointConversion is null && !encoder.StoresFloatingPointSamples)
         {

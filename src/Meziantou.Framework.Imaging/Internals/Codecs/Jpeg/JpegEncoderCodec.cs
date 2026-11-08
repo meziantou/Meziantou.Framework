@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The JPEG encoder registration: 8-bit Huffman JPEG, baseline sequential (SOF0) or progressive (SOF2), grayscale or
-/// YCbCr, written by one streaming session.
+/// YCbCr, written by one streaming session; CMYK pixels are written by <see cref="JpegCmykEncoderSession"/>.
 /// </summary>
 internal sealed class JpegEncoderCodec : ImageEncoderCodec
 {
@@ -32,7 +32,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new Session(options);
+        return PixelFormats.IsCmyk(options.PixelFormat) ? new JpegCmykEncoderSession(options) : new Session(options);
     }
 
     private static uint[] CreateValueBits()

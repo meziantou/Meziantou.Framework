@@ -13,12 +13,14 @@ need an explicit setting before they can be saved.
 | --- | --- | --- |
 | Processes | Baseline, extended sequential and progressive, Huffman or arithmetic coded; lossless (Huffman coded) | Baseline (default) or progressive, Huffman coded |
 | Samples | 8 and 12 bits; 2 to 16 bits for lossless files | 8 bits |
-| Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats) or YCbCr |
+| Colors | Gray, YCbCr and RGB; CMYK and YCCK as CMYK pixels or with a color conversion | Gray (for gray pixel formats), YCbCr, or CMYK (for the CMYK pixel formats, baseline only) |
 | Chroma subsampling | Any integral sampling | 4:4:4, 4:2:2 or 4:2:0 |
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
 | Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless files | - |
 
 8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit and lossless files of more than 8 bits load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
+CMYK and YCCK files load as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) when you ask for these pixel formats (see
+[Color management](../09-Color/03-ColorManagement.md#keep-cmyk-images)), and a CMYK image is saved as an Adobe CMYK file.
 
 [ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) and [ImageDecodeOptions.ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) decode a file at a reduced size, from the
 coefficients of its blocks: the pixels are the means of the pixels of the full image they replace, and a subsampled
@@ -130,15 +132,20 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 
 ## Pitfalls
 
-- CMYK and YCCK files (from print workflows) are recognized but load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion),
-  which converts them to RGB with ICC profiles; otherwise loading throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). See
+- CMYK and YCCK files (from print workflows) load as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) pixels with
+  `Image.Load<Cmyk32>`, or as RGB with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts them with ICC profiles; an untyped
+  load without the option throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). See
   [Color management](../09-Color/03-ColorManagement.md).
+- CMYK output has four components without subsampling ([ChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.ChromaSubsampling) plays no role), the luminance
+  quantization table for all of them, and is baseline only: [JpegEncodingProcess.Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Progressive) throws. Its coefficients
+  are kept in memory until the file is written (8 bytes per pixel). [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) images need
+  [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction).
 - Hierarchical files, lossless files with arithmetic coding and JPEG-LS files are rejected with an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException), also by [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify).
 - The EXIF orientation is reported in `Metadata.Orientation`, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) to rotate the pixels. See
   [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 - An EXIF block is limited to 65,527 bytes and an XMP packet to 65,504 bytes; extended XMP is not supported.
-- The encoder writes no arithmetic-coded, lossless, 12-bit, RGB or CMYK files.
+- The encoder writes no arithmetic-coded, lossless, 12-bit, RGB or YCCK files, and no progressive CMYK files.
 - To store a JPEG file in a smaller file without any loss, recompress it to JPEG XL with [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder): the original
   file can be rebuilt byte for byte. See [JPEG XL](15-JpegXl.md).
 - A progressive file can be shown while it is read, with [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto). See

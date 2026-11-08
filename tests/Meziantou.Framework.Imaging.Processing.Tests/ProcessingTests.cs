@@ -40,7 +40,8 @@ public sealed class ProcessingTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All];
+    // The CMYK formats hold inks, which these operations reject (CmykImagesOnlyMovePixelsAndRejectColorOperations)
+    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format))];
 
     public static TheoryData<int> AllOrientations => [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -102,6 +103,76 @@ public sealed class ProcessingTests
                 new((Half)0.25f, (Half)0.5f, (Half)0.75f, (Half)(-0.25f)),
                 new(-Half.Epsilon, (Half)1000f, (Half)100f, (Half)0.75f),
             ]);
+        }
+    }
+
+    [Fact]
+    public void CmykImagesOnlyMovePixelsAndRejectColorOperations()
+    {
+        // Inks are not light: an operation that computes new colors needs a conversion first
+        Action<Image>[] rejected =
+        [
+            static image => image.Resize(new ResizeOptions(new Size(3, 2))),
+            static image => image.Grayscale(),
+            static image => image.GaussianBlur(1),
+            static image => image.Frames[0].GaussianBlur(1),
+            static image => image.BoxBlur(1),
+            static image => image.MedianBlur(1),
+            static image => image.Sharpen(1),
+            static image => image.Pixelate(2),
+            static image => image.Flatten(new Rgba64(0, 0, 0)),
+            static image => image.ExtendCanvas(new Size(9, 9), backgroundColor: new Rgba64(0, 0, 0)),
+            static image => image.ComputeHistogram(HistogramChannel.Luminance),
+            static image => image.Equalize(),
+            static image => image.AutoLevels(),
+            static image => image.Threshold(),
+            static image => image.Dilate(StructuringElement.CreateRectangle(1, 1)),
+            static image => image.Quantize(),
+            static image => image.ReplaceColor(new Rgba64(0, 0, 0), new Rgba64(1, 1, 1)),
+            static image => image.AutoCrop(),
+            static image => image.DetectEdges(EdgeDetector.Sobel),
+            static image => image.ConvertColorProfile(IccProfile.Srgb),
+            static image => image.ApplyToneCurve(ToneCurve.Identity),
+            static image => image.Frames[0].ApplyToneCurve(ToneCurve.Identity),
+            static image => image.Rotate(30),
+            static image => image.Draw(static canvas => canvas.Clear(new Rgba64(0, 0, 0))),
+        ];
+
+        foreach (var operation in rejected)
+        {
+            using var image = CreateInks();
+            Assert.Equal("CMYK pixels", Assert.Throws<UnsupportedImageFeatureException>(() => operation(image)).Feature);
+            Assert.Equal(new Cmyk32(1, 2, 3, 4), image.Frames[0][0, 0]);
+        }
+
+        // Crop, flip, quarter turns and orientation move the inks as they are
+        using var cropped = CreateInks();
+        cropped.Crop(new Rectangle(1, 0, 4, 3));
+        Assert.Equal(new Cmyk32(2, 3, 4, 5), cropped.Frames[0][0, 0]);
+        using var flipped = CreateInks();
+        flipped.Flip(FlipMode.Horizontal);
+        Assert.Equal(new Cmyk32(5, 6, 7, 8), flipped.Frames[0][0, 0]);
+        using var rotated = CreateInks();
+        rotated.Rotate(RotateMode.Rotate180);
+        Assert.Equal(new Cmyk32(5, 8, 9, 10), rotated.Frames[0][0, 0]);
+        using var oriented = CreateInks();
+        oriented.Metadata.Orientation = ExifOrientation.TopRight;
+        oriented.AutoOrient();
+        Assert.Equal(new Cmyk32(5, 6, 7, 8), oriented.Frames[0][0, 0]);
+
+        // Five columns and three rows: the inks of a pixel follow its coordinates
+        static Image<Cmyk32> CreateInks()
+        {
+            var image = new Image<Cmyk32>(5, 3);
+            for (var y = 0; y < 3; y++)
+            {
+                for (var x = 0; x < 5; x++)
+                {
+                    image.Frames[0][x, y] = new Cmyk32((byte)(x + 1), (byte)(x + 2 + y), (byte)(x + 3 + y), (byte)(x + 4 + y));
+                }
+            }
+
+            return image;
         }
     }
 

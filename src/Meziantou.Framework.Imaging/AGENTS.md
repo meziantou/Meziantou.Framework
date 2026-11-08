@@ -873,13 +873,25 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 
 ## Color management
 
-`IccColorTransform` (sample buffers), `ConvertColorProfile` (images) and the decoding of CMYK samples
-(`CmykConversionOptions`) are the only code that applies an ICC profile; everything is under `Internals/Color`.
+`IccColorTransform` (sample buffers), `ConvertColorProfile` (images), the decoding of CMYK samples
+(`CmykConversionOptions`) and the conversions between CMYK and other pixels (`PixelConversionOptions.CmykConversion`,
+`CmykColorConversion`) are the only code that applies an ICC profile; everything is under `Internals/Color`, except
+`Internals/CmykColorConversion.cs`, which drives the pipelines.
 
-- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG, separated TIFF) converts its rows
-  with the pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
-  the destination profile; without the options it throws `UnsupportedImageFeatureException` before allocating. An
-  embedded profile that cannot be used is an error, never replaced by the assumed one.
+- A decoder that meets CMYK samples (four-component JPEG, separated TIFF) converts its rows with the pipeline of an
+  `IccColorTransform` when the request carries `CmykConversionOptions` and asks for another format than CMYK, and labels
+  the image with the destination profile. Otherwise its rows are `Cmyk32`/`Cmyk64` ink amounts (0 is no ink) labeled with
+  the CMYK profile, given to the sink, which converts them only with `PixelConversionOptions.CmykConversion`; an untyped
+  load without `CmykConversionOptions` and a request for another format without either option throw
+  `UnsupportedImageFeatureException` before allocating. An embedded profile that cannot be used is an error, never
+  replaced by the assumed one.
+- `Cmyk32` and `Cmyk64` are storage formats: `PixelConverter` only changes their precision and rejects every conversion
+  with another format, which only `PixelConversionPlan` does (`CmykColorConversion`: an ICC pipeline when a CMYK profile
+  is known, else the device formulas of `Cmyk`, through 8- or 16-bit RGB rows). The processing extensions reject them
+  (`ThrowIfCmyk`, except the operations that move pixels: crop, flip, quarter turns, auto-orientation), and so does
+  drawing (`DrawingSession.Begin`). Only the JPEG (`JpegCmykEncoderSession`, Adobe inverted samples) and TIFF
+  (separated samples) encoders store them (`ImageEncoder.StoresCmykPixels`); the writers reject them for the others. A
+  new operation or encoder must handle them or reject them before any allocation.
 - `IccProfile.Cgats001CompatibleCmyk` is third-party data (CC0-1.0): `Internals/Color/BuiltInCmykProfile.g.cs` is
   transcribed from the corpus by the `icc-builtin` command of the corpus generator. Never edit it by hand.
 

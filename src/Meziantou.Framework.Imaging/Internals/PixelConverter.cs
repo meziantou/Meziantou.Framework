@@ -109,6 +109,12 @@ internal static partial class PixelConverter
             return;
         }
 
+        if (IsCmyk<TSource>() || IsCmyk<TDestination>())
+        {
+            ConvertCmykPrecision(sourceFormat, unsafe(MemoryMarshal.AsBytes(source)), destinationFormat, unsafe(MemoryMarshal.AsBytes(destination)), format);
+            return;
+        }
+
         if (IsFloat<TSource>() || IsFloat<TDestination>())
         {
             ConvertFloatRow(source, destination, background, sourceFormat, destinationFormat, format, floats ?? FloatSampleConversion.Strict, useVectors);
@@ -152,6 +158,12 @@ internal static partial class PixelConverter
             throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"The destination has {destination.Length} bytes but {(long)width * destinationBytesPerPixel} are required."), nameof(destination));
 
         destination = destination[..(width * destinationBytesPerPixel)];
+        if (PixelFormats.IsCmyk(sourceFormat) || PixelFormats.IsCmyk(destinationFormat))
+        {
+            ConvertCmykPrecision(sourceFormat, source, destinationFormat, destination, format);
+            return width;
+        }
+
         switch (sourceFormat)
         {
             case PixelFormat.Rgba32:
@@ -308,6 +320,10 @@ internal static partial class PixelConverter
             return false;
 
         if (!PixelFormats.HasColor(format) && (color.R | color.G | color.B) != 0)
+            return false;
+
+        // A color is not CMYK ink amounts: it is never stored as it is in a CMYK format
+        if (PixelFormats.IsCmyk(format))
             return false;
 
         if (PixelFormats.IsFloatingPoint(format))

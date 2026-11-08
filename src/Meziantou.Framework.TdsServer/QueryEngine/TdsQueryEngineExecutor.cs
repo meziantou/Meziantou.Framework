@@ -16,6 +16,8 @@ using SqlParserParseOptions = Microsoft.SqlServer.Management.SqlParser.Parser.Pa
 namespace Meziantou.Framework.Tds.QueryEngine;
 
 [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Query translation helpers intentionally use abstract return types for flexibility.")]
+[RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
 internal sealed class TdsQueryEngineExecutor
 {
     private sealed class QueryExecutionContext
@@ -3079,6 +3081,8 @@ internal sealed class TdsQueryEngineExecutor
         return column is SqlColumnRefExpression columnRef ? columnRef.ColumnName.Value : column.MultipartIdentifier[column.MultipartIdentifier.Count - 1].Value;
     }
 
+    [RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
     private sealed class ParameterNameVisitor : ExpressionVisitor
     {
         private Dictionary<ParameterExpression, ParameterExpression> _scope = [];

@@ -117,12 +117,61 @@ the elements of variable length last to save separators.
 [CreateCode128](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode128) never adds FNC1: passing it `(01)09521234543213`
 creates an ordinary Code 128 symbol with the parentheses in its data, which a GS1 application does not read as a GTIN.
 
-[Gs1Element](cref:Meziantou.Framework.Barcodes.Gs1Element) checks the syntax every element follows: an application
-identifier of 2 to 4 digits; data from the GS1 character set 82 (letters, digits and `!"%&'()*+,-./:;<=>?_`, no
-space); and digits of the right length for the identifiers whose data has a predefined length (`00` to `04`, `11` to
-`20`, `31nn` to `36nn`, `41n`). It does not check the data against the GS1 dictionary of application identifiers, nor
-check digits: validate the data your application builds. A GS1-128 symbol holds at most 48 characters, application
-identifiers and separators included.
+By default, [Gs1Element](cref:Meziantou.Framework.Barcodes.Gs1Element) checks the syntax every element follows: an
+application identifier of 2 to 4 digits; data from the GS1 character set 82 (letters, digits and
+`!"%&'()*+,-./:;<=>?_`, no space, and `#` for the component/part identifier `8010`); and digits of the right length
+for the identifiers whose data has a predefined length (`00` to `04`, `11` to `20`, `31nn` to `36nn`, `41n`). A GS1-128
+symbol holds at most 48 characters, application identifiers and separators included.
+
+### Check the data against the GS1 dictionary
+
+Scanners in the supply chain reject labels whose data does not match the format of its application identifier. Pass
+[Gs1ValidationMode.Dictionary](cref:Meziantou.Framework.Barcodes.Gs1ValidationMode.Dictionary) to check the element
+against the GS1 dictionary of application identifiers:
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/Gs1DictionaryTests.cs;region=Gs1Element_Dictionary;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The syntax rules accept any data of 14 digits for a GTIN
+var element = new Gs1Element("01", "09521234543214");
+Assert.Equal("(01)09521234543214", element.ToString());
+
+// The GS1 dictionary also checks the check digit, the dates, the country codes, ...
+var exception = Assert.Throws<ArgumentException>("value", () => new Gs1Element("01", "09521234543214", Gs1ValidationMode.Dictionary));
+Assert.Contains("The numeric check digit is incorrect.", exception.Message);
+
+var gtin = new Gs1Element("01", "09521234543213", Gs1ValidationMode.Dictionary);
+var expiry = new Gs1Element("17", "250100", Gs1ValidationMode.Dictionary); // day 00: the end of the month
+var barcode = Barcode.CreateGs1128(gtin, expiry);
+Assert.Equal("(01)09521234543213(17)250100", barcode.Text);
+```
+<!-- endref -->
+
+The application identifier must be in the dictionary, and its data must match the format of the identifier: the
+length and the character set of each part, check digits (GTIN, SSCC, GLN, ...), the check character pairs of the
+alphanumeric keys, dates (`YYMMDD`, where the day `00` means the end of the month when the identifier allows it),
+times, ISO 3166 country codes, ISO 4217 currency codes, IBANs, coordinates, and the fields of the North American
+coupon codes. The message of the exception names the format of the identifier and the position of the error in the
+data. The dictionary is the
+[GS1 Barcode Syntax Dictionary](https://github.com/gs1/gs1-syntax-dictionary), embedded in the package.
+
+Some application identifiers only make sense together, and others must not be used together: a batch number (`10`)
+qualifies a trade item, so it requires a GTIN (`01`). [ValidateAssociations](cref:Meziantou.Framework.Barcodes.Gs1Element.ValidateAssociations)
+checks these rules, and that an application identifier does not appear twice with different data:
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/Gs1DictionaryTests.cs;region=Gs1Element_ValidateAssociations;format=md-fenced-code-block;dedent=true -->
+```csharp
+var gtin = new Gs1Element("01", "09521234543213", Gs1ValidationMode.Dictionary);
+var batch = new Gs1Element("10", "ABC123", Gs1ValidationMode.Dictionary);
+Gs1Element.ValidateAssociations(gtin, batch);
+
+// A batch number qualifies a trade item: it requires a GTIN
+Assert.Throws<ArgumentException>("elements", () => Gs1Element.ValidateAssociations(batch));
+```
+<!-- endref -->
+
+The rules apply to all the data marked on an item, so pass the elements of every barcode of the item:
+[CreateGs1128](cref:Meziantou.Framework.Barcodes.Barcode.CreateGs1128) does not check them, since another barcode may
+hold the required identifier.
 
 ## UPC-E
 

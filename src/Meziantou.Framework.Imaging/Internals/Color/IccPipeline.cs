@@ -375,6 +375,45 @@ internal sealed class IccPipeline
         return new IccPipeline(stages.ToArray(), source.ChannelCount, destinationModel.ChannelCount, isIdentity: false);
     }
 
+    /// <summary>Creates the conversion from encoded CIE L*a*b* samples to a profile.</summary>
+    /// <remarks>
+    /// The colors are the colorimetry of the connection space, as a CICP source is treated: their white is the white of
+    /// the connection space, so the ICC-absolute colorimetric intent rescales by the media white of the destination only,
+    /// and their black is no light, which is what black point compensation maps to the black of the destination.
+    /// </remarks>
+    /// <param name="decode">The stage that turns the normalized samples into L* (0 to 100), a* and b*.</param>
+    /// <param name="adaptation">The stage applied to CIEXYZ relative to the D50 illuminant of the connection space for colors relative to another white, or <see langword="null"/>.</param>
+    /// <param name="destination">The profile describing the converted samples.</param>
+    /// <param name="intent">The rendering intent, which selects the conversion of the destination.</param>
+    /// <param name="blackPointCompensation">Whether the black of the source is mapped to the black of the destination.</param>
+    /// <param name="gamutMapping">How the colors outside the gamut of the destination are brought into it.</param>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile is valid but cannot be a destination.</exception>
+    public static IccPipeline CreateFromCieLab(IccMatrixStage decode, IccMatrixStage? adaptation, IccProfile destination, IccRenderingIntent intent, bool blackPointCompensation, GamutMapping gamutMapping)
+    {
+        var destinationModel = IccProfileModel.Create(destination, "destination");
+        var stages = new IccStageList();
+        stages.Add(decode);
+        stages.Add(IccLabToXyzStage.Instance);
+        if (adaptation is not null)
+        {
+            stages.Add(adaptation);
+        }
+
+        if (intent == IccRenderingIntent.AbsoluteColorimetric)
+        {
+            var destinationWhite = destinationModel.GetMediaWhitePoint();
+            stages.Add(IccMatrixStage.CreateScale(IccColorimetry.D50X / destinationWhite.X, IccColorimetry.D50Y / destinationWhite.Y, IccColorimetry.D50Z / destinationWhite.Z));
+        }
+        else if (blackPointCompensation && IccBlackPoint.CreateCompensation(sourceLightness: 0, destinationModel, intent) is { } compensation)
+        {
+            stages.Add(compensation);
+        }
+
+        AppendDestination(stages, destinationModel, intent, gamutMapping);
+        return new IccPipeline(stages.ToArray(), sourceChannelCount: 3, destinationModel.ChannelCount, isIdentity: false);
+    }
+
     /// <summary>Creates the conversion from a profile to a CICP color space.</summary>
     /// <remarks>
     /// The destination is treated as a display, as a CICP source is: the white of the connection space is its white once

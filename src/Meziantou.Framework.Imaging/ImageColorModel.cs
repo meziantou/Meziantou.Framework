@@ -29,4 +29,7 @@ public enum ImageColorModel
 
     /// <summary>Cyan, magenta and yellow coded as luma/chroma samples, with black ink samples (four-component JPEG with the Adobe YCCK transform).</summary>
     Ycck = 8,
+
+    /// <summary>CIE 1976 L*a*b* samples (TIFF pages): they are loaded with a color conversion, see <see cref="ImageDecodeOptions.CieLabConversion"/>.</summary>
+    CieLab = 9,
 }

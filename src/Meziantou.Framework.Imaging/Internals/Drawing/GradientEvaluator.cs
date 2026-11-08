@@ -463,6 +463,49 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         return false;
     }
 
+    /// <remarks>
+    /// The stops are shared; the colors, the samples and the parameters are the worker's, which computes its own row of
+    /// colors when every row has the same ones. A gradient whose colors go through the conversion of a paint profile is
+    /// evaluated on the calling thread.
+    /// </remarks>
+    public override PaintEvaluator? CreateWorker()
+    {
+        if (_paintPipeline is not null)
+            return null;
+
+        var worker = (GradientEvaluator)MemberwiseClone();
+        worker._colors = null;
+        worker._samples = null;
+        worker._parameters = null;
+        worker._hasRowColors = false;
+        try
+        {
+            worker._colors = RentLike(_scope, _colors);
+            worker._samples = RentLike(_scope, _samples);
+            worker._parameters = RentLike(_scope, _parameters);
+        }
+        catch
+        {
+            worker.ReleaseWorker();
+            throw;
+        }
+
+        return worker;
+    }
+
+    public override void ReleaseWorker()
+    {
+        _colors?.Dispose();
+        _samples?.Dispose();
+        _parameters?.Dispose();
+        _colors = null;
+        _samples = null;
+        _parameters = null;
+        _stops = null;
+        _brush = null;
+        _frame = null;
+    }
+
     public void Dispose()
     {
         _stops?.Dispose();

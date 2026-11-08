@@ -122,7 +122,15 @@ namespace Meziantou.Framework.Barcodes
         public string ApplicationIdentifier { get => throw null; }
         public string Value { get => throw null; }
         public Gs1Element(string applicationIdentifier, string value) { }
+        public Gs1Element(string applicationIdentifier, string value, Meziantou.Framework.Barcodes.Gs1ValidationMode validationMode) { }
         public override string ToString() => throw null;
+        public static void ValidateAssociations(params System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements) { }
+    }
+
+    public enum Gs1ValidationMode
+    {
+        Syntax = 0,
+        Dictionary = 1,
     }
 
     public sealed class MicroQRCodeOptions

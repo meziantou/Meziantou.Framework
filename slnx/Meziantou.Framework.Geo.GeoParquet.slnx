@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Geo.GeoParquet.Fuzz/Meziantou.Framework.Geo.GeoParquet.Fuzz.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Geo.GeoParquet/Meziantou.Framework.Geo.GeoParquet.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Geo.GeoParquet.Tests/Meziantou.Framework.Geo.GeoParquet.Tests.csproj" />
+  </Folder>
+</Solution>

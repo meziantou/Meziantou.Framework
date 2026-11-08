@@ -77,6 +77,7 @@ public static class BarcodesFuzzTargets
         new("barcodes-gs1-databar", Gs1DataBarTarget) { Seeds = GetGs1DataBarSeeds, Dictionary = Gs1DataBarTokens },
         new("barcodes-payload", PayloadTarget) { Seeds = GetPayloadSeeds, Dictionary = Tokens },
         new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
+        .. Gs1FuzzTargets.All,
     ];
 
     private static void QRCodeTarget(ReadOnlySpan<byte> data)

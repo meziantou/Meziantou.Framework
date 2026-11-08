@@ -4,6 +4,7 @@
     <Project Path="../fuzz/Meziantou.Framework.Geo.Maps.Fuzz/Meziantou.Framework.Geo.Maps.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Geo.GeoPackage/Meziantou.Framework.Geo.GeoPackage.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />

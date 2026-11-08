@@ -30,6 +30,30 @@ internal sealed class ImageCodecRegistry
     /// <summary>Gets the registry used by the public API in the current asynchronous flow.</summary>
     public static ImageCodecRegistry Current => CurrentOverride.Value ?? Default;
 
+    /// <summary>
+    /// Gets the registry used by the public API for an operation of a configuration: the custom codecs of
+    /// <see cref="ImageConfiguration.Codecs"/> followed by <see cref="Current"/>, or <see cref="Current"/> alone.
+    /// </summary>
+    /// <param name="configuration">The configuration of the operation.</param>
+    /// <returns>The registry.</returns>
+    public static ImageCodecRegistry For(ImageConfiguration configuration) => For(configuration, Current);
+
+    /// <summary>Gets the registry of an operation of a configuration whose built-in codecs are those of <paramref name="current"/>.</summary>
+    /// <param name="configuration">The configuration of the operation.</param>
+    /// <param name="current">The value of <see cref="Current"/> captured when the operation started.</param>
+    /// <returns>The registry.</returns>
+    public static ImageCodecRegistry For(ImageConfiguration configuration, ImageCodecRegistry current)
+    {
+        if (configuration.CodecRegistry is not { } custom)
+            return current;
+
+        if (ReferenceEquals(current, Default))
+            return custom;
+
+        // A test replaced the built-in codecs: the custom codecs come first all the same
+        return new ImageCodecRegistry([.. custom.Codecs.Where(codec => codec is CustomImageCodecAdapter), .. current.Codecs]);
+    }
+
     /// <summary>Gets the codecs, in detection order.</summary>
     public IReadOnlyList<ImageCodec> Codecs { get; }
 

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <IsAotCompatible>true</IsAotCompatible>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <Description>The word lists of ICU (Chinese and Japanese, Thai, Lao, Khmer and Burmese) and ports of the dictionary break engines of ICU, which find the words of the scripts that are written without spaces between words.</Description>

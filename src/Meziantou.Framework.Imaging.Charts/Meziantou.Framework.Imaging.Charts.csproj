@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Charts</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>Renders the charts of Meziantou.Framework.Charts with Meziantou.Framework.Imaging: images in any format (PNG, WebP, JPEG...), or vector drawing on a canvas, with embedded Liberation Sans fonts.</Description>
     <PackageTags>chart;charts;plot;image;imaging;png;drawing;canvas;visualization</PackageTags>
 

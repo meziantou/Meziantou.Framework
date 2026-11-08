@@ -5,7 +5,7 @@
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>2.0.13</Version>
+    <Version>2.0.14</Version>
     <Description>Create a snapshot of the current execution context to ease investigation</Description>
     <PackageTags>diagnostics, snapshot, environment, troubleshooting</PackageTags>
   </PropertyGroup>

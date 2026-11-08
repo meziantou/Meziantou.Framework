@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <Version>3.0.2</Version>
+    <Version>3.0.3</Version>
     <Description>TagHelpers for Razor Pages</Description>
     <PackageTags>aspnetcore, mvc, razor-pages, taghelper, html</PackageTags>
   </PropertyGroup>

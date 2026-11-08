@@ -1608,7 +1608,7 @@ public sealed class JpegEncoderTests
         using var typed = image.CloneAs<Rgba64>();
         var pixels = new Rgba64[image.Width * image.Height];
         typed.Frames[0].CopyPixelDataTo(pixels);
-        return [.. System.Runtime.InteropServices.MemoryMarshal.AsBytes(pixels.AsSpan())];
+        return [.. pixels.SelectMany(pixel => new[] { pixel.R, pixel.G, pixel.B, pixel.A }).SelectMany(BitConverter.GetBytes)];
     }
 
     /// <summary>Gets the red, green and blue (or gray) samples of an image reduced to a precision, with nearest rounding.</summary>

@@ -470,7 +470,7 @@ public sealed class JpegEncoderInteropTests
             samples[i] = (ushort)Math.Min(65535, (bytes[i] * 257) + (int)((uint)(i * 2654435761u) >> 24));
         }
 
-        var data = System.Runtime.InteropServices.MemoryMarshal.AsBytes(samples.AsSpan());
+        var data = samples.SelectMany(BitConverter.GetBytes).ToArray();
         return gray ? Image.ImportPixelBytes<Gray16>(data, width, height) : Image.ImportPixelBytes<Rgb48>(data, width, height);
     }
 

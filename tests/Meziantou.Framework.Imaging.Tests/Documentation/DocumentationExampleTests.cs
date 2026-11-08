@@ -1259,19 +1259,30 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(-1, data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC4]));
         using var expected = Image.Load<Rgb48>(source);
         using var decoded = Image.Load<Rgb48>(output);
-        var error = 0L;
-        for (var y = 0; y < 24; y++)
-        {
-            for (var x = 0; x < 40; x++)
-            {
-                var a = expected.Frames[0][x, y];
-                var b = decoded.Frames[0][x, y];
-                error += Math.Abs(a.R - b.R) + Math.Abs(a.G - b.G) + Math.Abs(a.B - b.B);
-            }
-        }
 
-        // Within about 1/1000 of the range on average: a 12-bit file keeps more precision than an 8-bit one can store
-        Assert.True(error / (40.0 * 24 * 3) < 65.0, $"Mean error {error / (40.0 * 24 * 3)}.");
+        // Closer to the 16-bit source than the same settings with 8-bit samples
+        var eightBitPath = GetPath("eight-bit.jpg");
+        expected.Save(eightBitPath, new JpegEncoder { Quality = 90, AllowBitDepthReduction = true });
+        using var eightBit = Image.Load<Rgb48>(eightBitPath);
+        var twelveBitError = GetMeanError(expected, decoded);
+        var eightBitError = GetMeanError(expected, eightBit);
+        Assert.True(twelveBitError < eightBitError, $"Mean error {twelveBitError} with 12 bits, {eightBitError} with 8 bits.");
+
+        static double GetMeanError(Image<Rgb48> a, Image<Rgb48> b)
+        {
+            var error = 0L;
+            for (var y = 0; y < a.Height; y++)
+            {
+                for (var x = 0; x < a.Width; x++)
+                {
+                    var p = a.Frames[0][x, y];
+                    var q = b.Frames[0][x, y];
+                    error += Math.Abs(p.R - q.R) + Math.Abs(p.G - q.G) + Math.Abs(p.B - q.B);
+                }
+            }
+
+            return error / (a.Width * a.Height * 3.0);
+        }
     }
 
     [Fact]

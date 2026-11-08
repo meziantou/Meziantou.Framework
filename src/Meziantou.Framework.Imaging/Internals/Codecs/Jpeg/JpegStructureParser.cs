@@ -21,13 +21,21 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// with a color conversion, see <see cref="JpegDecoder"/>). A baseline frame only has 8-bit samples by definition; a
 /// 12-bit one is read as an extended sequential frame, as common decoders do. Recognized and rejected with
 /// <see cref="UnsupportedImageFeatureException"/>: hierarchical (SOF5-7, SOF13-15, DHP, EXP),
-/// JPEG-LS, other precisions than 8 and 12 bits of the frames that are not lossless, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
+/// other precisions than 8 and 12 bits of the frames that are not lossless, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
 /// Malformed or misplaced markers and segments, a missing frame header or scan, interleaved scans of more than 10 blocks
 /// per MCU, progressive scans with invalid spectral selection, successive approximation or coefficient progression (see
 /// <see cref="ValidateProgressiveScan"/>), a lossless frame whose precision is not between 2 and 16 bits, lossless scans
 /// with an invalid predictor or point transform (see <see cref="ValidateLosslessScan"/>), and truncation (including a
 /// missing EOI) are
 /// <see cref="InvalidImageContentException"/>. Table contents (DQT/DHT/DAC) are validated by the decoder only.
+/// <para>
+/// JPEG-LS (ITU-T T.87): a frame of the SOF55 marker (0xF7) of 2-bit to 16-bit samples, whose scans give the NEAR
+/// parameter and the interleave mode (see <see cref="ValidateJpegLsScan"/>), and whose entropy-coded data stuffs a zero
+/// bit after each byte 0xFF instead of a zero byte: a byte below 0x80 after 0xFF is data. LSE segments (0xF8) of preset
+/// coding parameters are read by the decoder; mapping tables (palettes), the dimensions of LSE segments of type 4, the
+/// extensions of T.870 are <see cref="UnsupportedImageFeatureException"/>, and so are the HP color transforms (APP8
+/// <c>mrfx</c>) other than 1, 2 and 3 of three 8-bit components of the same size.
+/// </para>
 /// <para>
 /// Lenient decoding (<see cref="ImageCodecContext.IsLenient"/>, JPEG files only): the input may end without EOI marker, or
 /// with its first byte only, once the frame is complete (<see cref="IsFrameComplete"/>). The walk then ends the last scan
@@ -58,6 +66,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     private const byte MarkerApp0 = 0xE0;
     private const byte MarkerApp1 = 0xE1;
     private const byte MarkerApp2 = 0xE2;
+    private const byte MarkerApp8 = 0xE8;
     private const byte MarkerApp14 = 0xEE;
     private const byte MarkerJpegLsFrame = 0xF7;
     private const byte MarkerJpegLsExtension = 0xF8;
@@ -76,6 +85,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     private State _state;
     private int _scanCount;
     private bool _firstScanReached;
+
 
     // The components coded by a scan (bit i for the component i of the frame header)
     private int _scannedComponents;
@@ -130,6 +140,15 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     /// </summary>
     public bool IsLossless => FrameMarker is MarkerSof3 or MarkerSof11;
 
+    /// <summary>Gets a value indicating whether the frame is a JPEG-LS frame (ITU-T T.87, SOF55).</summary>
+    public bool IsJpegLs => FrameMarker == MarkerJpegLsFrame;
+
+    /// <summary>
+    /// Gets the HP color transform of a JPEG-LS frame (APP8 <c>mrfx</c>, from the LOCO-I implementation of HP, which CharLS
+    /// writes): 0 for none, or 1, 2 or 3, which the decoder undoes.
+    /// </summary>
+    public byte JpegLsColorTransform { get; private set; }
+
     /// <summary>Gets the number of bits of a sample (8 or 12, or 2 to 16 for a lossless frame), or 0 before the frame header.</summary>
     public int Precision { get; private set; }
 
@@ -167,6 +186,11 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
 
             if (AdobeTransform is { } transform)
                 return transform == 0 ? ImageColorModel.Rgb : ImageColorModel.YCbCr;
+
+            // T.87 defines no color transform: the components of a JPEG-LS file are the samples, which is what its
+            // encoders write (CharLS, FFmpeg, the ISO reference software)
+            if (IsJpegLs)
+                return ImageColorModel.Rgb;
 
             if (!HasJfif && Components.Count == 3 && Components[0].Id == 'R' && Components[1].Id == 'G' && Components[2].Id == 'B')
                 return ImageColorModel.Rgb;
@@ -320,9 +344,10 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
                     }
 
                     var next = remaining[1];
-                    if (next == 0x00 || next is >= 0xD0 and <= 0xD7)
+                    if (next == 0x00 || next is >= 0xD0 and <= 0xD7 || (next < 0x80 && IsJpegLs))
                     {
-                        // Stuffed 0xFF or restart marker: part of the entropy-coded segment
+                        // Stuffed 0xFF or restart marker: part of the entropy-coded segment. In JPEG-LS data, a zero bit
+                        // is stuffed after 0xFF: any byte below 0x80 follows it
                         _observer?.OnEntropyData(remaining[..2]);
                         consumed += 2;
                         break;
@@ -359,6 +384,13 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     {
         if (FrameMarker == 0)
             throw Invalid("The JPEG scan is not preceded by a frame header (SOF).");
+
+        if (IsJpegLs && JpegLsColorTransform != 0)
+        {
+            // The transforms of three components of the same size, modulo 2^8
+            if (JpegLsColorTransform > 3 || Components.Count != 3 || Precision != 8 || Components.Any(component => component.HorizontalSampling != Components[0].HorizontalSampling || component.VerticalSampling != Components[0].VerticalSampling))
+                throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"The HP color transform {JpegLsColorTransform} of JPEG-LS (APP8 mrfx) is only supported for the transforms 1, 2 and 3 of three 8-bit components of the same size."), "JPEG-LS HP color transform");
+        }
 
         _firstScanReached = true;
 
@@ -450,8 +482,21 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             case MarkerJpg:
                 throw Unsupported("The JPEG extension marker JPG (0xFFC8) is not supported.", "JPEG extensions");
 
-            case MarkerJpegLsFrame or MarkerJpegLsExtension:
-                throw Unsupported("JPEG-LS is not supported.", "JPEG-LS");
+            case MarkerJpegLsFrame:
+                ProcessFrameHeader(marker, payload);
+                break;
+
+            case MarkerJpegLsExtension:
+                ProcessJpegLsExtension(payload);
+                break;
+
+            case MarkerApp8:
+                if (payload.Length >= 5 && payload.StartsWith("mrfx"u8))
+                {
+                    JpegLsColorTransform = payload[4];
+                }
+
+                break;
 
             case MarkerSos:
                 ProcessScanHeader(payload);
@@ -552,7 +597,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (width == 0)
             throw Invalid("The JPEG frame width is zero.");
 
-        if (marker is MarkerSof3 or MarkerSof11)
+        if (marker is MarkerSof3 or MarkerSof11 or MarkerJpegLsFrame)
         {
             if (precision is < 2 or > 16)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The precision of the lossless JPEG frame is {precision} bits; it must be between 2 and 16."));
@@ -621,7 +666,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             }
         }
 
-        if (count > 1)
+        if (count > 1 && !IsJpegLs)
         {
             // T.81 B.2.3: an interleaved MCU has at most 10 blocks
             var blocks = 0;
@@ -643,6 +688,81 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         else if (IsLossless)
         {
             ValidateLosslessScan(payload, count);
+        }
+        else if (IsJpegLs)
+        {
+            ValidateJpegLsScan(payload, count);
+        }
+    }
+
+    /// <summary>
+    /// Validates the parameters of a JPEG-LS scan (ITU-T T.87 C.2.3): the interleave mode <c>ILV</c> is 0 (one component),
+    /// 1 (lines) or 2 (samples, of components of the same size). <c>NEAR</c> is checked by the decoder, against MAXVAL. A
+    /// mapping table selector and a point transform are <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    private void ValidateJpegLsScan(ReadOnlySpan<byte> payload, int count)
+    {
+        var parameters = payload[(1 + (2 * count))..];
+        var interleave = parameters[1];
+        if (interleave > 2)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG-LS interleave mode {interleave} is not 0, 1 or 2."));
+
+        if (interleave == 0 && count != 1)
+            throw Invalid("A JPEG-LS scan of several components is not interleaved (ILV = 0).");
+
+        if ((parameters[2] & 0x0F) != 0)
+            throw Unsupported("The point transform of JPEG-LS scans is not supported.", "JPEG-LS point transform");
+
+        for (var i = 0; i < count; i++)
+        {
+            if (payload[2 + (2 * i)] != 0)
+                throw Unsupported("JPEG-LS mapping tables (palettes) are not supported.", "JPEG-LS mapping tables");
+        }
+
+        if (interleave == 2 && Components.Count > 1)
+        {
+            // The samples of the components are coded in turn: they have the same size
+            var firstId = payload[1];
+            var first = Components.First(component => component.Id == firstId);
+            for (var i = 1; i < count; i++)
+            {
+                var id = payload[1 + (2 * i)];
+                var component = Components.First(component => component.Id == id);
+                if (component.HorizontalSampling != first.HorizontalSampling || component.VerticalSampling != first.VerticalSampling)
+                    throw Invalid("A sample-interleaved JPEG-LS scan (ILV = 2) codes components of different sizes.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Validates a JPEG-LS preset parameters segment (LSE, ITU-T T.87 C.2.4.1): the coding parameters (type 1, read by the
+    /// decoder) are accepted; mapping tables (types 2 and 3), oversize dimensions (type 4) and the types of T.870 are
+    /// <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    private void ProcessJpegLsExtension(ReadOnlySpan<byte> payload)
+    {
+        if (FrameMarker != 0 && !IsJpegLs)
+            throw Invalid("A JPEG-LS LSE segment is in a frame that is not a JPEG-LS frame.");
+
+        if (payload.IsEmpty)
+            throw Invalid("The JPEG-LS LSE segment is empty.");
+
+        switch (payload[0])
+        {
+            case 1:
+                if (payload.Length != 11)
+                    throw Invalid("The JPEG-LS LSE segment of preset coding parameters must be 13 bytes long.");
+
+                break;
+
+            case 2 or 3:
+                throw Unsupported("JPEG-LS mapping tables (palettes) are not supported.", "JPEG-LS mapping tables");
+
+            case 4:
+                throw Unsupported("JPEG-LS images whose dimensions are given by an LSE segment are not supported.", "JPEG-LS oversize dimensions");
+
+            default:
+                throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"The JPEG-LS LSE segment of type {payload[0]} (ITU-T T.870 extensions) is not supported."), "JPEG-LS extensions");
         }
     }
 

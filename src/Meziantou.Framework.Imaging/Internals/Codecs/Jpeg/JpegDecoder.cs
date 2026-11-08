@@ -80,6 +80,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// no quantization table. Subsampled components are upsampled and three components are converted like the ones of the
 /// other frames.
 /// </description></item>
+/// <item><description>
+/// JPEG-LS frames (ITU-T T.87, SOF55) have the geometry of the lossless frames, and full planes: the entropy-coded data of
+/// each scan is buffered and decoded at its end (<see cref="JpegLsScanDecoder"/>), with the coding parameters of the last
+/// LSE segment of type 1 before it, and the rows are written once every component is decoded. The HP color transforms
+/// (APP8 <c>mrfx</c>, from HP's LOCO-I implementation, which CharLS writes) of 8-bit samples are undone before.
+/// </description></item>
 /// </list>
 /// </remarks>
 internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
@@ -89,6 +95,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private const byte MarkerSos = 0xDA;
     private const byte MarkerDqt = 0xDB;
     private const byte MarkerDri = 0xDD;
+    private const byte MarkerJpegLsExtension = 0xF8;
     private const int EntropyBufferCapacity = 64 * 1024;
     private const int FastAcMinimumPixels = 128 * 128;
 
@@ -118,6 +125,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private bool _progressive;
     private bool _arithmetic;
     private bool _lossless;
+    private bool _jpegLs;
+
+    // JPEG-LS: the preset coding parameters of the last LSE segment (zero for the defaults), the scan being decoded and its components
+    private (int MaxValue, int T1, int T2, int T3, int Reset) _jpegLsPreset;
+    private JpegLsScanDecoder? _jpegLsScan;
+    private JpegFrameComponent[] _jpegLsComponents = [];
 
     // The number of samples of a side of a data unit: 8, or 1 for a lossless frame
     private int _dataUnitSize = 8;
@@ -196,6 +209,11 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
                 _restartInterval = BinaryPrimitives.ReadUInt16BigEndian(payload);
                 break;
 
+            case MarkerJpegLsExtension:
+                // The walker accepts the preset coding parameters only (type 1, T.87 C.2.4.1.1)
+                _jpegLsPreset = (BinaryPrimitives.ReadUInt16BigEndian(payload[1..]), BinaryPrimitives.ReadUInt16BigEndian(payload[3..]), BinaryPrimitives.ReadUInt16BigEndian(payload[5..]), BinaryPrimitives.ReadUInt16BigEndian(payload[7..]), BinaryPrimitives.ReadUInt16BigEndian(payload[9..]));
+                break;
+
             case MarkerSos:
                 StartScan(payload);
                 break;
@@ -209,7 +227,10 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _progressive = structure.IsProgressive;
         _arithmetic = structure.IsArithmetic;
         _lossless = structure.IsLossless;
-        _dataUnitSize = _lossless ? 1 : 8;
+        _jpegLs = structure.IsJpegLs;
+
+        // The data unit of a lossless or a JPEG-LS frame is a sample
+        _dataUnitSize = _lossless || _jpegLs ? 1 : 8;
         _precision = structure.Precision;
         _colorModel = structure.ColorModel;
 
@@ -217,7 +238,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         // (fewer reductions for the subsampled components, which then need less upsampling)
         if (_request is { IsScaled: true } scaledRequest)
         {
-            _scaleDenominator = scaledRequest.GetScaleDenominator(structure.Size, _lossless ? 1 : 8, ImageFormat.Jpeg, _lossless ? "a lossless JPEG frame has no DCT blocks to scale" : "a JPEG frame is reduced to 1/8 of its size at most");
+            _scaleDenominator = scaledRequest.GetScaleDenominator(structure.Size, _dataUnitSize, ImageFormat.Jpeg, _dataUnitSize == 1 ? "a lossless JPEG frame has no DCT blocks to scale" : "a JPEG frame is reduced to 1/8 of its size at most");
         }
 
         _blockSize = _dataUnitSize / _scaleDenominator;
@@ -249,7 +270,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _mcusY = (structure.Height + (_dataUnitSize * maxVertical) - 1) / (_dataUnitSize * maxVertical);
 
         // The container of an embedded datastream receives the rows on the calling thread, one at a time
-        _workers = _receiver is null && !_lossless ? JpegReconstruction.GetWorkerCount(_outputSize, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
+        _workers = _receiver is null && _dataUnitSize == 8 ? JpegReconstruction.GetWorkerCount(_outputSize, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
         if (_receiver is not null)
         {
             _colorModel = _embeddedColorModel;
@@ -289,6 +310,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     public override void OnEntropyData(ReadOnlySpan<byte> data)
     {
+        if (_jpegLsScan is { } jpegLsScan)
+        {
+            jpegLsScan.Feed(data);
+            return;
+        }
+
         var scan = _scan ?? throw new InvalidOperationException("No JPEG scan was started.");
         scan.Feed(data);
     }
@@ -304,6 +331,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     private bool EndScan(bool endOfInput)
     {
+        if (_jpegLsScan is { } jpegLsScan)
+        {
+            EndJpegLsScan(jpegLsScan);
+            return true;
+        }
+
         var scan = _scan ?? throw new InvalidOperationException("No JPEG scan was started.");
         scan.Finish(endOfInput);
         _scan = null;
@@ -406,6 +439,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     {
         // Planes, coefficients, entropy buffer and rows
         _scan = null;
+        _jpegLsScan?.Dispose();
+        _jpegLsScan = null;
         _reconstruction = null;
         DisposeWriters();
         _reader?.Dispose();
@@ -564,6 +599,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     private void StartScan(ReadOnlySpan<byte> payload)
     {
+        if (_jpegLs)
+        {
+            StartJpegLsScan(payload);
+            return;
+        }
+
         if (_progressive)
         {
             StartProgressiveScan(payload);
@@ -699,6 +740,112 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
         _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, _arithmetic) { AcceptsGarbledRestartNumbers = IsLenient };
+    }
+
+    /// <summary>
+    /// Starts a scan of a JPEG-LS frame (T.87 C.2.3; the walker validated the interleave mode, the mapping table selectors
+    /// and the point transform). Its data is buffered until the scan ends; a scan of one component is never interleaved.
+    /// </summary>
+    private void StartJpegLsScan(ReadOnlySpan<byte> payload)
+    {
+        var count = payload[0];
+        var parameters = payload[(1 + (2 * count))..];
+        var components = new JpegFrameComponent[count];
+        for (var i = 0; i < count; i++)
+        {
+            var id = payload[1 + (2 * i)];
+            var component = _components.First(component => component.Id == id);
+            if (component.IsDecoded)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} is coded in several JPEG-LS scans."));
+
+            components[i] = component;
+        }
+
+        var coding = JpegLsParameters.Create(_precision, near: parameters[0], _jpegLsPreset);
+        if (_scanCount == 0)
+        {
+            AllocateDecoderState(streaming: false);
+        }
+
+        _scanCount++;
+        _jpegLsComponents = components;
+        _jpegLsScan = new JpegLsScanDecoder(components, coding, count == 1 ? 0 : parameters[1], _restartInterval, _context.Scope, _context.Limits, _context.CancellationToken);
+    }
+
+    /// <summary>Decodes a JPEG-LS scan at its end, and writes every row once each component is decoded.</summary>
+    private void EndJpegLsScan(JpegLsScanDecoder scan)
+    {
+        _jpegLsScan = null;
+        scan.Finish();
+        foreach (var component in _jpegLsComponents)
+        {
+            component.IsDecoded = true;
+        }
+
+        _jpegLsComponents = [];
+        if (!_components.All(component => component.IsDecoded))
+            return;
+
+        if (_structure!.JpegLsColorTransform != 0)
+        {
+            UndoJpegLsColorTransform(_structure.JpegLsColorTransform);
+        }
+
+        if (_writers.Length > 1)
+        {
+            JpegBandWriter.WriteBands(_writers, _mcusY, _context.CancellationToken);
+        }
+        else
+        {
+            var writer = _writer!;
+            while (writer.BandsWritten < _mcusY)
+            {
+                writer.WriteNextBand(_context.CancellationToken);
+            }
+        }
+
+        ReleaseDecoderState();
+    }
+
+    /// <summary>
+    /// Undoes the HP color transform of the three 8-bit components of a JPEG-LS frame, modulo 2^8 (as CharLS does): the
+    /// transform 1 codes <c>R - G</c>, <c>G</c> and <c>B - G</c> (offset by half the range), the transform 2 <c>R - G</c>,
+    /// <c>G</c> and <c>B - (R + G) / 2</c>, and the transform 3 the reversible transform <c>G + (R - G + B - G) / 4</c>,
+    /// <c>B - G</c> and <c>R - G</c>.
+    /// </summary>
+    private void UndoJpegLsColorTransform(int transform)
+    {
+        // The walker checked that the three planes have the same geometry
+        var first = _components[0].Samples;
+        var second = _components[1].Samples;
+        var third = _components[2].Samples;
+        var length = _components[0].Stride * _components[0].BandRows * _mcusY;
+        for (var i = 0; i < length; i++)
+        {
+            int v1 = first[i];
+            int v2 = second[i];
+            int v3 = third[i];
+            switch (transform)
+            {
+                case 1:
+                    first[i] = (byte)(v1 + v2 - 128);
+                    third[i] = (byte)(v3 + v2 - 128);
+                    break;
+
+                case 2:
+                    var red = (byte)(v1 + v2 - 128);
+                    first[i] = red;
+                    third[i] = (byte)(v3 + ((red + v2) >> 1) - 128);
+                    break;
+
+                default:
+                    var green = v1 - ((v3 + v2) >> 2) + 64;
+                    first[i] = (byte)(v3 + green - 128);
+                    second[i] = (byte)green;
+                    third[i] = (byte)(v2 + green - 128);
+                    break;
+            }
+        }
     }
 
     /// <summary>

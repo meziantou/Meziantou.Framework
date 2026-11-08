@@ -116,14 +116,14 @@ public sealed class JpegLsInteropTests
 
     /// <summary>
     /// Files of the JPEG-LS encoder of FFmpeg (its <c>-pred</c> option sets NEAR; gray samples are one scan, RGB ones line
-    /// interleaved; it refuses near-lossless 16-bit samples): the library decodes them like the FFmpeg decoder, within NEAR
+    /// interleaved; the option takes 0 to 2): the library decodes them like the FFmpeg decoder, within NEAR
     /// of the source samples.
     /// </summary>
     [Theory]
     [InlineData("gray", 8, 0)]
     [InlineData("gray", 8, 2)]
     [InlineData("gray16le", 16, 0)]
-    [InlineData("gray", 8, 5)]
+    [InlineData("gray16le", 16, 2)]
     [InlineData("rgb24", 8, 0)]
     [InlineData("rgb24", 8, 1)]
     public async Task FilesOfFFmpegDecodeLikeFFmpeg(string pixelFormat, int precision, int near)

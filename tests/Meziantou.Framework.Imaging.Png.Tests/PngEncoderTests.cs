@@ -757,6 +757,26 @@ public sealed class PngEncoderTests
     }
 
     [Fact]
+    public void ReadmeExample_PngPrivateChunks()
+    {
+        #region Imaging_PngPrivateChunks
+        using var image = new Image<Rgba32>(4, 4);
+
+        // A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
+        // PNG encoder writes it before the image data, and the decoder reads it back with its position
+        image.Metadata.PngChunks.Add(new PngChunk("myAp", new MetadataBlob("settings"u8)));
+        using var stream = new MemoryStream();
+        image.Save(stream, new PngEncoder());
+
+        using var loaded = Image.Load(stream.ToArray());
+        var chunk = Assert.Single(loaded.Metadata.PngChunks);
+        Assert.Equal("myAp", chunk.Type);
+        Assert.True(chunk.IsSafeToCopy);
+        Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
+        #endregion
+    }
+
+    [Fact]
     public void ChunkTypesAreValidated()
     {
         var data = new MetadataBlob([]);

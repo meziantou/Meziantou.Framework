@@ -61,6 +61,17 @@ public sealed class ImageDecodeOptions
     public CmykConversionOptions? CmykConversion { get; init; }
 
     /// <summary>
+    /// Gets the color conversion applied to images whose samples are CIE L*a*b* colors (TIFF pages), or
+    /// <see langword="null"/> (the default) to reject them with an <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    /// <remarks>
+    /// No pixel format holds L*a*b* samples, so such an image can only be loaded by converting its colors, which can lose
+    /// the ones outside the gamut of the destination. Like every color conversion it is explicit: set
+    /// <c>new CieLabConversionOptions()</c> to convert to sRGB. Other images are not affected.
+    /// </remarks>
+    public CieLabConversionOptions? CieLabConversion { get; init; }
+
+    /// <summary>
     /// Gets the factor by which the decoder divides the width and the height of the image, a power of two. Defaults to 1:
     /// the image is decoded at full resolution.
     /// </summary>

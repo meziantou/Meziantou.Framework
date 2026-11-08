@@ -22,6 +22,9 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// <summary>Gets the color conversion that makes CMYK samples loadable, or <see langword="null"/> to reject them.</summary>
     public CmykConversionOptions? CmykConversion { get; init; }
 
+    /// <summary>Gets the color conversion that makes CIE L*a*b* samples loadable, or <see langword="null"/> to reject them.</summary>
+    public CieLabConversionOptions? CieLabConversion { get; init; }
+
     /// <summary>Gets the factor by which the width and the height are divided (<see cref="ImageDecodeOptions.ScaleDenominator"/>), a power of two.</summary>
     public int ScaleDenominator { get; init; } = 1;
 
@@ -38,6 +41,7 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
         => new(pixelFormat, options.FrameLimit, options.Conversion)
         {
             CmykConversion = options.CmykConversion,
+            CieLabConversion = options.CieLabConversion,
             ScaleDenominator = options.ScaleDenominator,
             TargetSize = options.TargetSize,
             Region = options.Region,
@@ -47,6 +51,7 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
         => new(pixelFormat, options.FrameLimit, options.Conversion)
         {
             CmykConversion = options.CmykConversion,
+            CieLabConversion = options.CieLabConversion,
             ScaleDenominator = options.ScaleDenominator,
             TargetSize = options.TargetSize,
         };

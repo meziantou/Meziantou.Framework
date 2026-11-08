@@ -442,9 +442,176 @@ public sealed class TiffCodecTests
         Assert.Equal(string.Create(CultureInfo.InvariantCulture, $"Compression: {compression}"), exception.Feature);
     }
 
+    [Fact]
+    public void CieLabPagesOfPillowAreConvertedLikeLittleCms()
+    {
+        // Pillow 11.3 wrote this 23x7 CIELab page (8 bits, signed a* and b*, no WhitePoint, the Lab identity profile of
+        // LittleCMS embedded) from sRGB colors converted by LittleCMS 2 through ImageCms (D50, relative colorimetric). The
+        // reference is LittleCMS converting the page back to sRGB without its 8-bit optimizations (cmsFLAGS_NOOPTIMIZE)
+        var data = Convert.FromHexString("49492A00080000000B000001040001000000170000000101040001000000070000000201030003000000920000000301030001000000010000000601030001000000080000001101040001000000D40200001501030001000000030000001601040001000000070000001701040001000000E30100001C0103000100000001000000738707003C02000098000000000000000800080008000000023C6C636D7302100000616273744C6162204C61622007EA000B00080006000F003B616373704150504C0000000000000000000000000000000000000000000000000000F6D6000100000000D32D6C636D7300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000564657363000000C00000009C637072740000015C0000002177747074000001800000001463686164000001940000002C41324230000001C00000007C6465736300000000000000164C6162206964656E74697479206275696C742D696E000000000000000016004C006100620020006900640065006E00740069007400790020006200750069006C0074002D0069006E00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000074657874000000004E6F20636F707972696768742C2075736520667265656C790000000058595A20000000000000F6D6000100000000D32D7366333200000000000100050000000300000009000000060000FFF80000000300000003FFFFFFFB0001003F6D6674320000000003030200000100000000000000000000000000000001000000000000000000000000000000010000000200020000FFFF0000FFFF0000FFFF00000000000000000000FFFF0000FFFF00000000FFFFFFFFFFFF00000000FFFF0000FFFFFFFFFFFF0000FFFFFFFFFFFF0000FFFF0000FFFF0000FFFF000000201FD04A36AD45210D6432DF8545B98B3A17640AC263E01D78F7EE9212C597FD1FAE10F4BA0D46A8CF0DB9E3E1BEC933CFD90AD9D34EE9DF338A56C91410DC3D2BB642E51359FEE2761CB97801159116E99D113FB31E1C9EEDD6A1CD2BB2DE00BCD546CDE22AE0F502EBF04FE1BD1D18160B3B28DD603DB8643019803EEC903E4456EFF2700CC584D22395E4F59FD83EB0E521C4F9F7CFF347E20225D7D6E9DBBB384D3EB14B3113693FE48950BD8F491C5519BA52F3176B0BE98824C18E141DA725F2B5234795D805A9F0D8C0C130CFCF06D8C34CE7CF2E764EB87A47179554EA2FF70C4C13DC6D2DB57018138B2AE799284078E1FA8DFACD90DA25A4EFF9AFE843C1F627D608FEC2BC3CD0C615D9BB4F2D1CCF5535AC511D096F2FDD7D2C399537147207C271DE1C86F4EE90EB3BA3F91DBA0DF3C60946B5CD0CC6E1E0CBC732DBD709E5D04F7248EC9057C4240CDB4929B5470D1567FCE28319B985FD139D13E8A90D3EBE1B1AABEBD6AECA2ABFDCFFC9D248D9DF29ECF201F7ED4E3531AE25120A4726DB6A3BB56E2D158A3CE9983B4365ECF17E09C581ED20A3E2F5ACD540BCE220D1F7F6DBF047EEFE23DBB44F2D2AD1553FAE53300D713EE07F3D3D9747186216BA61F0167908E89521C09A101BB222F193CA2FA3D604B6EED8BBD52D");
+        var info = Image.Identify(data);
+        Assert.Equal(ImageColorModel.CieLab, info.ColorModel);
+        Assert.Equal(PixelFormat.Rgb24, info.PixelFormat);
+
+        // Like CMYK samples, the colors are only loaded with an explicit conversion
+        Assert.Equal("PhotometricInterpretation: 8 without color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
+
+        using var image = Image.Load(data, new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default });
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Equal(IccProfile.Srgb.Data.ToArray(), image.Metadata.IccProfile?.Data.ToArray());
+        var expected = Convert.FromHexString("000000240D66481BCB6F272E943394B940F9DF4E5F005BC32868284E758D7282F2978F57BC9DBDE0A9210BB6862EC2EA51D05075DDB59BEA1BBEF77FE501E30B11482E1EAD0C471E3055825661E77B6E4CA07BB1C38814E9967A05A2E035AF4558BCA97CC90FA2D675C7E3D8EBF03C0DFDA2360A095A176D8123D1A43137CA3E9CEF4C001657653765CB1A8E3A3A9B9F61A80285B56AA9C2CECECF33F5DC971CE9FC3BF6626401C788102BAD1E91D32AF7F7365B1C45C1405126665E898A6BEEB07854D585B9FA921E1E9F8244ACE925D55845E2BC6CEF1F91FC86B508EADA1750FF23B624301B4A3D7F6D49E493574AB864AFDE7114057E79268BDD4B984272A5A896B20EBBBF70DFCCD508D93C2FE6A04FF3042B1C745229D976363E9B43A2C15009E65D6D096AD330773754849C7891009D9E66C3ABCBE8B83014C59634D2FA59DF607AECC4A2F92BC7038EEA16F3102059372CBC5B3A223963905D70F6817D5BA78AC0CB9726F0A4891AB0EE38BE545ECBB984D81DA8E583CDF2E7F3FF4E180DB23E191862277C8533E1AC4146D24DABF659101867753F74DB65813F43AAAD69B7128AC478B2D1DED7DE41FBECA823F8084504716B10D68F1E3BB32DA0D83906FE466A2553CF4860346E6D99917AFEB78763DC93C708A12C26AF924DBBF770C85B");
+        var actual = GetBytes(image);
+        Assert.HasCount(expected.Length, actual);
+        Assert.InRange(expected.Zip(actual, (left, right) => Math.Abs(left - right)).Max(), 0, 1);
+    }
+
+    [Theory]
+    [InlineData(8, 8, false, false)]
+    [InlineData(8, 8, true, false)]
+    [InlineData(8, 8, false, true)]
+    [InlineData(9, 8, false, false)]
+    [InlineData(9, 8, true, true)]
+    [InlineData(8, 16, false, false)]
+    [InlineData(8, 16, true, true)]
+    public void CieLabSamplesAreConvertedFromTheirEncoding(int photometric, int bits, bool alpha, bool planar)
+    {
+        // Colors spread over the L*a*b* space, many of them outside the gamut of sRGB: CIELab stores a* and b* as two's
+        // complement integers (8 bits) or 1/256 units (16 bits), ICCLab as 8-bit integers offset by 128 (TIFF 6.0
+        // section 23 and Adobe's TIFF technical notes). The reference is the public CieLab conversion to sRGB
+        const int Width = 11;
+        const int Height = 5;
+        var samplesPerPixel = alpha ? 4 : 3;
+        var colors = new List<(CieLab Color, int Alpha)>();
+        var samples = new List<byte>();
+        for (var i = 0; i < Width * Height; i++)
+        {
+            var l = (i * 37) % 101;
+            var a = ((i * 53) % 255) - 128;
+            var b = ((i * 29) % 255) - 128;
+            var opacity = (i * 71) % 256;
+            if (bits == 8)
+            {
+                var lightness = (byte)(((l * 255) + 50) / 100);
+                colors.Add((new CieLab(lightness * 100 / 255.0, a, b), opacity));
+                samples.Add(lightness);
+                samples.Add((byte)(photometric == 8 ? (sbyte)a : a + 128));
+                samples.Add((byte)(photometric == 8 ? (sbyte)b : b + 128));
+                if (alpha)
+                {
+                    samples.Add((byte)opacity);
+                }
+            }
+            else
+            {
+                // A fraction of a* and b*, and a lightness that 8 bits cannot store
+                var lightness = (ushort)((l * 655) + (i % 7));
+                var fineA = (short)((a * 256) + (i * 13 % 256));
+                var fineB = (short)((b * 256) + (i * 7 % 256));
+                colors.Add((new CieLab(lightness * 100.0 / 65535, fineA / 256.0, fineB / 256.0), opacity * 257));
+                foreach (var value in alpha ? [lightness, (ushort)fineA, (ushort)fineB, (ushort)(opacity * 257)] : new[] { lightness, (ushort)fineA, (ushort)fineB })
+                {
+                    samples.Add((byte)value);
+                    samples.Add((byte)(value >> 8));
+                }
+            }
+        }
+
+        var page = new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = samplesPerPixel, BitsPerSample = bits, Photometric = photometric, Compression = 5, Predictor = 2, RowsPerStrip = 2, PlanarConfiguration = planar ? 2 : null, ExtraSamples = alpha ? [2] : null, Samples = [.. samples] };
+        var data = new TiffFileBuilder().AddPage(page).Build();
+        Assert.Equal(ImageColorModel.CieLab, Image.Identify(data).ColorModel);
+        using var image = Image.Load(data, new ImageDecodeOptions { CieLabConversion = new CieLabConversionOptions() });
+        Assert.Equal(bits == 8 ? alpha ? PixelFormat.Rgba32 : PixelFormat.Rgb24 : alpha ? PixelFormat.Rgba64 : PixelFormat.Rgb48, image.PixelFormat);
+        using var converted = image.CloneAs<Rgba64>();
+        var maxError = 0;
+        for (var i = 0; i < colors.Count; i++)
+        {
+            var (color, opacity) = colors[i];
+            var pixel = converted.Frames[0][i % Width, i / Width];
+            var reference = color.ToRgba64();
+            maxError = Math.Max(maxError, Math.Max(Math.Abs(pixel.R - reference.R), Math.Max(Math.Abs(pixel.G - reference.G), Math.Abs(pixel.B - reference.B))));
+            Assert.Equal(alpha ? bits == 8 ? opacity * 257 : opacity : ushort.MaxValue, pixel.A);
+        }
+
+        // CieLab rounds the white of D50 differently from the connection space of ICC profiles (0.9642, 1, 0.8249)
+        Assert.InRange(maxError, 0, bits == 8 ? 257 : 40);
+    }
+
+    [Fact]
+    public void CieLabColorsAreRelativeToTheWhitePointOfThePage()
+    {
+        // The colors relative to the D65 white of the page are adapted to D50 with the Bradford transform, so the white of
+        // the page (L* = 100, no chroma) stays white, and a color differs from the same L*a*b* values relative to D50
+        byte[] Page(bool d65)
+        {
+            var page = new TiffPageSpec { Width = 2, Height = 1, SamplesPerPixel = 3, Photometric = 8, Samples = [255, 0, 0, 153, 40, unchecked((byte)-30)] };
+            if (d65)
+            {
+                page.ExtraFields.Add(new TiffFieldSpec(318, 5, [3127, 10000, 3290, 10000]));
+            }
+
+            return new TiffFileBuilder().AddPage(page).Build();
+        }
+
+        var options = new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default };
+        using var relativeToD65 = Image.Load<Rgba64>(Page(d65: true), options);
+        using var relativeToD50 = Image.Load<Rgba64>(Page(d65: false), options);
+        Assert.Equal(new Rgba64(65535, 65535, 65535), relativeToD65.Frames[0][0, 0]);
+        Assert.Equal(new Rgba64(65535, 65535, 65535), relativeToD50.Frames[0][0, 0]);
+
+        var white = new CieXyz(0.3127 / 0.3290, 1, (1 - 0.3127 - 0.3290) / 0.3290);
+        var color = new CieLab(60, 40, -30);
+        AssertClose(color.ToXyz(white).Adapt(white, CieXyz.D50).ToRgba64(), relativeToD65.Frames[0][1, 0]);
+        AssertClose(color.ToRgba64(), relativeToD50.Frames[0][1, 0]);
+        Assert.True(Math.Abs(relativeToD65.Frames[0][1, 0].R - relativeToD50.Frames[0][1, 0].R) > 1000, "The white point changes the colors.");
+
+        static void AssertClose(Rgba64 expected, Rgba64 actual)
+        {
+            Assert.InRange(Math.Abs(expected.R - actual.R), 0, 160);
+            Assert.InRange(Math.Abs(expected.G - actual.G), 0, 160);
+            Assert.InRange(Math.Abs(expected.B - actual.B), 0, 160);
+        }
+
+        var invalid = new TiffPageSpec { Width = 1, Height = 1, SamplesPerPixel = 3, Photometric = 8, Samples = [255, 0, 0] };
+        invalid.ExtraFields.Add(new TiffFieldSpec(318, 5, [7, 10, 5, 10]));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(new TiffFileBuilder().AddPage(invalid).Build()));
+    }
+
+    [Fact]
+    public void CieLabConversionUsesItsDestinationAndItsOptions()
+    {
+        var data = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 2, Height = 1, SamplesPerPixel = 3, Photometric = 8, Samples = [128, 100, 156, 200, 20, 236] }).Build();
+        var destination = IccProfile.DisplayP3;
+        using var image = Image.Load(data, new ImageDecodeOptions { CieLabConversion = new CieLabConversionOptions { DestinationProfile = destination, Transform = new IccColorTransformOptions { BlackPointCompensation = false } } });
+        Assert.Equal(destination.Data.ToArray(), image.Metadata.IccProfile?.Data.ToArray());
+
+        // The same colors, converted to sRGB then to Display P3
+        using var srgb = Image.Load(data, new ImageDecodeOptions { CieLabConversion = new CieLabConversionOptions { Transform = new IccColorTransformOptions { BlackPointCompensation = false } } });
+        Assert.NotEqual(GetBytes(srgb), GetBytes(image));
+        Assert.Throws<ArgumentException>(() => new CieLabConversionOptions { DestinationProfile = IccProfile.Cgats001CompatibleCmyk });
+
+        // Through ImageCollection too
+        using var collection = ImageCollection.Load(data);
+        Assert.Equal(ImageColorModel.CieLab, collection[0].ColorModel);
+        using var page = collection[0].Decode(new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default });
+        Assert.Equal(GetBytes(Image.Load(data, new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default })), GetBytes(page));
+    }
+
+    [Fact]
+    public void UnsupportedCieLabLayoutsAreRejected()
+    {
+        byte[] Page(int photometric, int samplesPerPixel, int bits, int compression = 1)
+            => new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 1, Height = 1, SamplesPerPixel = samplesPerPixel, BitsPerSample = bits, Photometric = photometric, Compression = compression, EncodedBlocks = compression == 1 ? null : [[0]], Samples = new byte[((samplesPerPixel * bits) + 7) / 8] }).Build();
+
+        Assert.Equal("PhotometricInterpretation: L*a*b* lightness only", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(8, 1, 8))).Feature);
+        Assert.Equal("BitsPerSample: 16", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(9, 3, 16))).Feature);
+        Assert.Equal("BitsPerSample: 4", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(8, 3, 4))).Feature);
+        Assert.Equal("Compression: JPEG with this sample layout", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(8, 3, 8, compression: 7))).Feature);
+        Assert.Equal("PhotometricInterpretation: 10", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(10, 3, 8))).Feature);
+    }
+
     [Theory]
     [InlineData(4)]
-    [InlineData(8)]
+    [InlineData(10)]
     [InlineData(32803)]
     public void UnsupportedPhotometricInterpretationsAreRejected(int photometric)
     {

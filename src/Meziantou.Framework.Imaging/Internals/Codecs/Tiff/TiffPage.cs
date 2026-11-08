@@ -98,7 +98,7 @@ internal sealed class TiffPage
     /// <summary>Gets the number of bits of one pixel of a decoded block.</summary>
     public int BitsPerPixel => SamplesPerPixel * DecodedBitsPerSample;
 
-    /// <summary>Gets the photometric interpretation (0, 1, 2, 3, 5 or 6).</summary>
+    /// <summary>Gets the photometric interpretation (0, 1, 2, 3, 5, 6, 8 or 9).</summary>
     public int Photometric { get; private set; }
 
     /// <summary>Gets a value indicating whether 0 is white (<c>WhiteIsZero</c>): the decoder inverts the samples.</summary>
@@ -115,6 +115,18 @@ internal sealed class TiffPage
 
     /// <summary>Gets a value indicating whether the samples are luma and chroma.</summary>
     public bool IsYCbCr => Photometric == TiffFormat.PhotometricYCbCr;
+
+    /// <summary>
+    /// Gets a value indicating whether the samples are CIE L*a*b* colors: <c>CIELab</c> (signed a* and b*) or
+    /// <c>ICCLab</c> (a* and b* offset by half of their range, as ICC profiles encode them).
+    /// </summary>
+    public bool IsCieLab => Photometric is TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab;
+
+    /// <summary>
+    /// Gets the chromaticity of the white the L*a*b* colors of the page are relative to (<c>WhitePoint</c>), or
+    /// <see langword="null"/> for D50, which Adobe's TIFF technical note gives as the default (TIFF 6.0 gives none).
+    /// </summary>
+    public (double X, double Y)? WhitePoint { get; private set; }
 
     /// <summary>Gets a value indicating whether the last sample is a straight alpha channel.</summary>
     public bool HasAlpha { get; private set; }
@@ -234,6 +246,7 @@ internal sealed class TiffPage
         TiffFormat.PhotometricPalette => ImageColorModel.Indexed,
         TiffFormat.PhotometricCmyk => ImageColorModel.Cmyk,
         TiffFormat.PhotometricYCbCr => ImageColorModel.YCbCr,
+        TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab => ImageColorModel.CieLab,
         TiffFormat.PhotometricRgb => HasAlpha ? ImageColorModel.Rgba : ImageColorModel.Rgb,
         _ => HasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale,
     };
@@ -336,8 +349,8 @@ internal sealed class TiffPage
         if (!Directory.TryGetUnsigned(TiffFormat.PhotometricInterpretationTag, out var photometric))
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} has no PhotometricInterpretation tag, which is required."));
 
-        if (photometric is not (TiffFormat.PhotometricWhiteIsZero or TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb or TiffFormat.PhotometricPalette or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricYCbCr))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; WhiteIsZero, BlackIsZero, RGB, palette color, CMYK and YCbCr are supported."), string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric}"));
+        if (photometric is not (TiffFormat.PhotometricWhiteIsZero or TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb or TiffFormat.PhotometricPalette or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricYCbCr or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; WhiteIsZero, BlackIsZero, RGB, palette color, CMYK, YCbCr, CIE L*a*b* and ICC L*a*b* are supported."),string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric}"));
 
         Photometric = (int)photometric;
         var isSampleFormatSupported = SampleFormat switch
@@ -353,8 +366,12 @@ internal sealed class TiffPage
 
         switch (Photometric)
         {
-            case TiffFormat.PhotometricRgb or TiffFormat.PhotometricCmyk when BitsPerSample < 8:
+            case TiffFormat.PhotometricRgb or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab when BitsPerSample < 8:
                 throw UnsupportedBitsPerSample(bits[0], string.Create(CultureInfo.InvariantCulture, $"{TiffFormat.GetPhotometricName(Photometric)} data is supported with 8 and 16 bits"));
+
+            // The 16-bit encodings of ICC L*a*b* differ between the versions of the ICC specification, and nothing tells them apart
+            case TiffFormat.PhotometricIccLab when BitsPerSample != 8:
+                throw UnsupportedBitsPerSample(bits[0], "ICC L*a*b* data is supported with 8 bits");
 
             case TiffFormat.PhotometricPalette when BitsPerSample > 8:
                 throw UnsupportedBitsPerSample(bits[0], "palette color data is supported with 1, 2, 4 and 8 bits");
@@ -363,9 +380,13 @@ internal sealed class TiffPage
                 throw UnsupportedBitsPerSample(bits[0], "YCbCr data is supported with 8 bits, and with 9 to 16 bits with JPEG compression");
         }
 
+        // An L*a*b* page may store the lightness only (TIFF 6.0 section 23): it is not read
+        if (IsCieLab && SamplesPerPixel < 3)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores {SamplesPerPixel} {TiffFormat.GetPhotometricName(Photometric)} sample(s) per pixel; the three samples of L*, a* and b* are supported, with or without an alpha sample."), "PhotometricInterpretation: L*a*b* lightness only");
+
         var colorSamples = Photometric switch
         {
-            TiffFormat.PhotometricRgb or TiffFormat.PhotometricYCbCr => 3,
+            TiffFormat.PhotometricRgb or TiffFormat.PhotometricYCbCr or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab => 3,
             TiffFormat.PhotometricCmyk => 4,
             _ => 1,
         };
@@ -392,7 +413,7 @@ internal sealed class TiffPage
             };
 
             if (BitsPerSample < 8 || IsPalette || IsYCbCr)
-                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores an alpha channel with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data; alpha is supported with 8- and 16-bit grayscale, RGB and CMYK data."), "ExtraSamples: alpha with this sample layout");
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores an alpha channel with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data; alpha is supported with 8- and 16-bit grayscale, RGB, CMYK and L*a*b* data."), "ExtraSamples: alpha with this sample layout");
         }
 
         switch (Photometric)
@@ -407,6 +428,10 @@ internal sealed class TiffPage
 
             case TiffFormat.PhotometricYCbCr:
                 ResolveYCbCr();
+                break;
+
+            case TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab:
+                ResolveWhitePoint();
                 break;
         }
     }
@@ -500,6 +525,18 @@ internal sealed class TiffPage
             if (dotRange[i] != (i % 2 == 0 ? 0 : max))
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares a DotRange other than 0 to {max}."), "DotRange");
         }
+    }
+
+    private void ResolveWhitePoint()
+    {
+        if (Directory.TryReadRationalArray(TiffFormat.WhitePointTag, 2) is not { } chromaticity)
+            return;
+
+        // A chromaticity has positive x, y and 1 - x - y
+        if (!(chromaticity[0] > 0 && chromaticity[1] > 0 && chromaticity[0] + chromaticity[1] < 1))
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares the white point ({chromaticity[0]}, {chromaticity[1]}), which is not a chromaticity."));
+
+        WhitePoint = (chromaticity[0], chromaticity[1]);
     }
 
     private void ResolveYCbCr()
@@ -601,8 +638,8 @@ internal sealed class TiffPage
         if (BitsPerSample is not (8 or 16))
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {BitsPerSample}-bit samples; 8- and 16-bit samples are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG 2000 with {BitsPerSample}-bit samples"));
 
-        if (IsPalette || IsYCbCr)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {(IsPalette ? "palette indexes" : "YCbCr data")}; grayscale, RGB and CMYK data are supported."), "Compression: JPEG 2000 with this sample layout");
+        if (IsPalette || IsYCbCr || IsCieLab)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {(IsPalette ? "palette indexes" : TiffFormat.GetPhotometricName(Photometric) + " data")}; grayscale, RGB and CMYK data are supported."), "Compression: JPEG 2000 with this sample layout");
     }
 
     private void ResolveJpeg()
@@ -611,8 +648,8 @@ internal sealed class TiffPage
         if (BitsPerSample < 8)
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {BitsPerSample}-bit samples; samples of 8 to 16 bits are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG with {BitsPerSample}-bit samples"));
 
-        if (IsPalette || HasAlpha)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {(IsPalette ? "palette indexes" : "an alpha channel")}; grayscale, RGB, YCbCr and CMYK data without extra sample are supported."), "Compression: JPEG with this sample layout");
+        if (IsPalette || HasAlpha || IsCieLab)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {(IsPalette ? "palette indexes" : HasAlpha ? "an alpha channel" : TiffFormat.GetPhotometricName(Photometric) + " data")}; grayscale, RGB, YCbCr and CMYK data without extra sample are supported."), "Compression: JPEG with this sample layout");
 
         if (YCbCr is { IsJfifCompatible: false })
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with YCbCrCoefficients or ReferenceBlackWhite values other than the full-range ITU-R BT.601 ones of JFIF (black at 0, white at {(1 << BitsPerSample) - 1} and chroma centered on {1 << (BitsPerSample - 1)} for {BitsPerSample}-bit samples)."), "Compression: JPEG with other YCbCr coefficients");
@@ -724,7 +761,8 @@ internal sealed class TiffPage
             builder.Metadata.Orientation = (ExifOrientation)orientation;
         }
 
-        if (Directory.TryReadBytes(TiffFormat.IccProfileTag, context.Limits.MaxMetadataBytes) is { } icc)
+        // The pixels of an L*a*b* page are converted from the colorimetry it declares: a profile it embeds does not describe them once loaded
+        if (!IsCieLab && Directory.TryReadBytes(TiffFormat.IccProfileTag, context.Limits.MaxMetadataBytes) is { } icc)
         {
             // A profile describes the stored samples: a CMYK one for inks, which the conversion of the page then reads
             builder.Charge(icc.Length);

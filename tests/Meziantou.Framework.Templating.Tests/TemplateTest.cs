@@ -169,6 +169,103 @@ public class TemplateTest
     }
 
     [Fact]
+    public void DocumentationExample_EscapeDelimiter()
+    {
+        #region Template_EscapeDelimiter
+        using var template = new Template();
+        template.Load("<%<%= Name %> writes <%= 1 + 1 %>");
+
+        var result = template.Run();
+        Assert.Equal("<%= Name %> writes 2", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EscapeCustomDelimiter()
+    {
+        #region Template_EscapeCustomDelimiter
+        using var template = new Template
+        {
+            StartCodeBlockDelimiter = "{{",
+            EndCodeBlockDelimiter = "}}",
+        };
+        template.Load("{{{{Name}} is {{=Name}}");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+
+        var result = template.Run("John");
+        Assert.Equal("{{Name}} is John", result);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("<%<%", "<%")]
+    [InlineData("<%<%a", "<%a")]
+    [InlineData("a<%<%", "a<%")]
+    [InlineData("a<%<%b", "a<%b")]
+    [InlineData("<%<%<%<%", "<%<%")]
+    [InlineData("a<%<%b<%<%c", "a<%b<%c")]
+    [InlineData("<%<%<%=1%>", "<%1")]
+    [InlineData("<%=1%><%<%", "1<%")]
+    [InlineData("<%<%<%<%<%=1%><%<%", "<%<%1<%")]
+    [InlineData("a%>b", "a%>b")]
+    [InlineData("%><%<%%>", "%><%%>")]
+    [InlineData("<%<%%>", "<%%>")]
+    [InlineData("<%<%<% unterminated", "<%<% unterminated")]
+    [InlineData("<%<%<%", "<%<%")]
+    [InlineData("<%=\"<%<%\"%>", "<%<%")]
+    [InlineData("<<%<%>", "<<%>")]
+    public void Template_EscapedStartDelimiter(string text, string expected)
+    {
+        using var template = new Template();
+        template.Load(text);
+
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Theory]
+    [InlineData("{{", "}}", "{{{{a}}", "{{a}}")]
+    [InlineData("{{", "}}", "{{{{{{{{", "{{{{")]
+    [InlineData("{{", "}}", "{{{{{{=1}}}", "{{1}")]
+    [InlineData("<#", "#>", "<#<#= x #>", "<#= x #>")]
+    [InlineData("%", "%", "100%% <%=1%", "100% <1")]
+    [InlineData("$$", "$$", "$$$$$$=1$$", "$$1")]
+    public void Template_EscapedStartDelimiter_CustomDelimiters(string startDelimiter, string endDelimiter, string text, string expected)
+    {
+        using var template = new Template
+        {
+            StartCodeBlockDelimiter = startDelimiter,
+            EndCodeBlockDelimiter = endDelimiter,
+        };
+        template.Load(text);
+
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Fact]
+    public void Template_EscapedStartDelimiter_IsMergedIntoOneTextBlock()
+    {
+        using var template = new Template();
+        template.Load("a\n<%<%b<%<%c<%=1%>");
+
+        var textBlock = Assert.Single(template.Blocks.OfType<TextBlock>());
+        Assert.Equal("a\n<%b<%c", textBlock.Text);
+        Assert.Equal(new TextPosition(1, 1, 0), textBlock.Start);
+        Assert.Equal(new TextPosition(2, 11, 12), textBlock.End);
+
+        var codeBlock = Assert.Single(template.Blocks.OfType<CodeBlock>());
+        Assert.Equal(new TextPosition(2, 14, 15), codeBlock.Start);
+    }
+
+    [Fact]
+    public void Template_EscapedStartDelimiter_LineOnlyStatementBlockStillSwallowsItsLine()
+    {
+        using var template = new Template();
+        template.Load("<%<%\n<% var x = 1; %>\nb");
+
+        Assert.Equal("<%\nb", template.Run());
+    }
+
+    [Fact]
     public void ReadmeExample_DefaultUsings()
     {
         #region Template_DefaultUsings

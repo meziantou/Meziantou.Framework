@@ -289,6 +289,20 @@ Assert.Equal("Hello World!", result);
 ```
 <!-- endref -->
 
+### Escaping the Delimiters
+
+Write the start delimiter twice to write it once as text. This works with any delimiters (`{{{{` writes `{{`):
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_EscapeDelimiter;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var template = new Template();
+template.Load("<%<%= Name %> writes <%= 1 + 1 %>");
+
+var result = template.Run();
+Assert.Equal("<%= Name %> writes 2", result);
+```
+<!-- endref -->
+
 ### Adding Using Directives
 
 Templates import `System`, `System.Collections.Generic`, `System.Linq`, `System.Text` and `System.Threading.Tasks` by default:
@@ -418,6 +432,7 @@ The default template syntax uses `<%` and `%>` delimiters:
 | `<%= expression %>` | Evaluates an expression and writes it to output | `<%= 2 + 2 %>` |
 | `<% statement %>` | Executes a C# statement | `<% var x = 10; %>` |
 | `<%+ member %>` | Declares a class member in the generated template class | `<%+private static int Get() => 42; %>` |
+| `<%<%` | Writes the start delimiter as text | `<%<%= Name %>` writes `<%= Name %>` |
 | Text | Any text outside code blocks is written as-is | `Hello World` |
 
 ## Memory Usage

@@ -64,6 +64,7 @@ public class Template : IDisposable
     public string? BaseClassFullTypeName { get; set; }
 
     /// <summary>Gets or sets the delimiter that marks the start of a code block.</summary>
+    /// <remarks>The delimiter written twice in the text of the template is written once to the output, and does not start a code block.</remarks>
     public string StartCodeBlockDelimiter { get; set; } = "<%";
 
     /// <summary>Gets or sets the delimiter that marks the end of a code block.</summary>
@@ -149,6 +150,10 @@ public class Template : IDisposable
         var position = new TextPositionTracker();
         var blockIndex = 0;
 
+        // Text read before escaped start delimiters, merged into the next text block
+        StringBuilder? pendingText = null;
+        var pendingTextStart = position.Current;
+
         while (true)
         {
             // Text up to the next start delimiter
@@ -157,7 +162,22 @@ public class Template : IDisposable
             if (delimiterOffset < 0)
                 break;
 
-            AddBlock(blocks, codeBlock: false, span, ref position, delimiterOffset, ref blockIndex);
+            // A start delimiter written twice is an escape sequence: it writes one start delimiter
+            var escapedTextLength = delimiterOffset + startCodeBlockDelimiter.Length;
+            if (startCodeBlockDelimiter.Length > 0 && remaining[escapedTextLength..].StartsWith(startCodeBlockDelimiter, StringComparison.Ordinal))
+            {
+                if (pendingText is null)
+                {
+                    pendingText = new StringBuilder();
+                    pendingTextStart = position.Current;
+                }
+
+                pendingText.Append(remaining[..escapedTextLength]);
+                position.Advance(remaining[..(escapedTextLength + startCodeBlockDelimiter.Length)]);
+                continue;
+            }
+
+            AddTextBlock(blocks, span, ref position, delimiterOffset, ref blockIndex, ref pendingText, pendingTextStart);
 
             // Code up to the next end delimiter. An unterminated block falls back to a text block. The end delimiter is
             // searched for before consuming the start delimiter, so that fallback keeps the start delimiter in the text.
@@ -185,9 +205,9 @@ public class Template : IDisposable
         }
 
         // Create final parsed block if needed
-        if (position.Index < span.Length)
+        if (position.Index < span.Length || pendingText is not null)
         {
-            AddBlock(blocks, codeBlock: false, span, ref position, span.Length - position.Index, ref blockIndex);
+            AddTextBlock(blocks, span, ref position, span.Length - position.Index, ref blockIndex, ref pendingText, pendingTextStart);
         }
 
         blocks.Sort(TemplateBlockComparer.IndexComparer);
@@ -205,6 +225,26 @@ public class Template : IDisposable
             }
 
             return block;
+        }
+
+        void AddTextBlock(List<TemplateBlock> blocks, ReadOnlySpan<char> span, ref TextPositionTracker position, int length, ref int blockIndex, ref StringBuilder? pendingText, TextPosition pendingTextStart)
+        {
+            if (pendingText is null)
+            {
+                AddBlock(blocks, codeBlock: false, span, ref position, length, ref blockIndex);
+                return;
+            }
+
+            // The span covers the escape sequences of the source, while the text contains the delimiters they write
+            var content = span.Slice(position.Index, length);
+            position.Advance(content);
+            var text = pendingText.Append(content).ToString();
+            pendingText = null;
+            var block = CreateBlock(codeBlock: false, text, blockIndex++, pendingTextStart, position.Current);
+            if (block is not null)
+            {
+                blocks.Add(block);
+            }
         }
     }
 

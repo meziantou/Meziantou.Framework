@@ -9,8 +9,6 @@ description: What the template engine, the HTML email templates and the command-
   compiler and the JIT compiler.
 - **No sandbox.** The code of a template runs with the permissions of your application. Never compile a template written
   by a user of your application.
-- **No escape sequence for the delimiters.** Write a delimiter from an expression, or choose other delimiters. See
-  [Change the delimiters](03-TemplateSyntax.md#change-the-delimiters).
 - **Restricted types.** The types of arguments, [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) and the base class must be public, not nested and not
   generic. See [Passing arguments](04-PassingArguments.md#pass-values-of-your-own-types).
 - **`dynamic` code is never unloaded.** See [Avoid dynamic code](08-CompilationAndMemory.md#avoid-dynamic-code).
@@ -29,7 +27,8 @@ description: What the template engine, the HTML email templates and the command-
 
 ## Command-line tool
 
-- No arguments can be passed to the template.
-- One template per run.
+- Arguments passed with `--arg` are strings, and the arguments of a JSON file have the types of their JSON values:
+  values of your own types cannot be passed. See [Pass arguments](07-CommandLineTool.md#pass-arguments).
+- Every template of a run receives the same arguments.
 - T4 templates are read with the syntax of the library: only the delimiters and the `extension` of the `output`
   directive come from T4.

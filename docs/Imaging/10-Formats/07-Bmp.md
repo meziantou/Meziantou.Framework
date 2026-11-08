@@ -15,7 +15,7 @@ precision needs an explicit setting.
 | Layouts | 1, 4 and 8-bit indexed, 16, 24 and 32 bits, bit fields | 24-bit, 32-bit with alpha, 1, 4 and 8-bit indexed, 16-bit 5-6-5 and 5-5-5 |
 | Compression | RLE4, RLE8 and the OS/2 RLE24 | RLE4 and RLE8 |
 | Rows | Bottom-up and top-down | Bottom-up (default) or top-down |
-| Metadata | Resolution | Resolution |
+| Metadata | Resolution, embedded ICC profile (V5 header) | The same |
 
 A 32-bit file is transparent only when it declares an alpha mask: the fourth byte of a plain 32-bit file is padding, so
 such a file loads as opaque [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24).
@@ -98,8 +98,12 @@ lossless, but can be larger than uncompressed output.
 - BMP stores one frame: save one frame of an animation with `image.Frames[i].Save`.
 - `Compression = RunLength` with another layout than [Indexed4](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed4) or [Indexed8](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed8), or with top-down rows, throws an
   `ArgumentException`.
-- BMP stores no ICC profile, EXIF, XMP, orientation or text: they follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by
-  default. Embedded ICC profiles of V4 and V5 headers are not read.
+- BMP stores no EXIF, XMP, orientation or text: they follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
+- An RGB ICC profile is written after the pixel data, with a `BITMAPV5HEADER` instead of the header of the layout: old
+  readers that only know `BITMAPINFOHEADER` cannot read such a file. A gray profile cannot label the RGB samples of a BMP
+  file and follows [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling). Linked profiles (a file name) are not read.
+- [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reads the header only, which is before the embedded profile: a full scan
+  ([ImageIdentifyMode.FullScan](cref:Meziantou.Framework.Imaging.ImageIdentifyMode.FullScan)) or a load reports it.
 - The decoder rejects embedded JPEG or PNG payloads, OS/2 Huffman compression, 2-bit files and channels wider than 8 bits
   with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Run-length data is read strictly: a run past its row or a missing
   end-of-bitmap marker is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException).

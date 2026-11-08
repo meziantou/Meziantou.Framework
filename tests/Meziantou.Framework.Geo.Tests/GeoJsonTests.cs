@@ -212,6 +212,7 @@ public sealed class GeoJsonTests
     [InlineData("""  {"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]}}  """)]
     [InlineData("""{"geometry":{"type":"Point","coordinates":[1,2]},"type":"Feature","features":[1]}""")]
     [InlineData("""{"coordinates":[1,2],"type":"Point"}""")]
+    [InlineData("""{"type":"Feature","name":"\ud800","geometry":{"type":"Point","coordinates":[1,2]}}""")]
     public async Task ReadFeaturesAsync_OneFeature(string json)
     {
         byte[][] documents = [Encoding.UTF8.GetBytes(json), [.. Encoding.UTF8.Preamble, .. Encoding.UTF8.GetBytes(json)]];
@@ -241,6 +242,8 @@ public sealed class GeoJsonTests
     [InlineData("""{"features":[{"type":"Feature","geometry":null}]}""")]
     [InlineData("""{"features":[{"type":"Feature","geometry":null}],"type":"Feature"}""")]
     [InlineData("""{"type":"Point","coordinates":[1]}""")]
+    [InlineData("""{"type":"FeatureCollection","name":"\ud800","features":[]}""")]
+    [InlineData("""{"features":[],"name":"\ud800","type":"FeatureCollection"}""")]
     public async Task ReadFeaturesAsync_Invalid(string json)
     {
         using var stream = new CountingStream(Encoding.UTF8.GetBytes(json), canSeek: false);

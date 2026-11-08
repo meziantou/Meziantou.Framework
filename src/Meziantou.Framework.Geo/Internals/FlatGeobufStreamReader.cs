@@ -31,12 +31,17 @@ internal static class FlatGeobufStreamReader
             dataStart += indexSize;
             if (stream.CanSeek)
             {
+                // The offsets come from the data: they are checked against its length before the stream seeks to them
+                var length = stream.Length;
+                if (indexSize > length - treeStart)
+                    throw new FormatException("The index of the FlatGeobuf data is truncated.");
+
                 if (bounds is { } box)
                 {
                     var offsets = await PackedRTree.SearchAsync(stream, treeStart, count, header.IndexNodeSize, box, cancellationToken).ConfigureAwait(false);
                     foreach (var offset in offsets)
                     {
-                        if (offset < 0)
+                        if (offset < 0 || offset > length - dataStart)
                             throw new FormatException("The index of the FlatGeobuf data refers to a feature outside of the data.");
 
                         stream.Seek(dataStart + offset, SeekOrigin.Begin);

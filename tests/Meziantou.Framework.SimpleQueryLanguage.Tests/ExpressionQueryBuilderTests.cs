@@ -371,6 +371,28 @@ public sealed class ExpressionQueryBuilderTests
     }
 
     [Fact]
+    public void DateKeyword_Today_UsesTimeZone()
+    {
+        // March 17, 2026 at 19:00 in UTC-8
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+        var queryBuilder = new ExpressionQueryBuilder<Sample>(timeProvider, timeZone);
+        queryBuilder.AddHandler<DateTime>("date", item => item.DateTimeValue);
+        queryBuilder.AddHandler<DateOnly>("dateonly", item => item.DateOnlyValue);
+
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 17, 7, 59, 0, DateTimeKind.Utc), DateOnlyValue = new DateOnly(2026, 3, 16) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 17, 8, 0, 0, DateTimeKind.Utc), DateOnlyValue = new DateOnly(2026, 3, 17) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 18, 8, 0, 0, DateTimeKind.Utc), DateOnlyValue = new DateOnly(2026, 3, 18) },
+        }.AsQueryable();
+
+        Assert.Equal(new DateTime(2026, 3, 17, 8, 0, 0, DateTimeKind.Utc), Assert.Single(queryBuilder.Build("date:today").Apply(items)).DateTimeValue);
+        Assert.Equal(new DateOnly(2026, 3, 17), Assert.Single(queryBuilder.Build("dateonly:today").Apply(items)).DateOnlyValue);
+        Assert.Equal(new DateOnly(2026, 3, 16), Assert.Single(queryBuilder.Build("dateonly<@today").Apply(items)).DateOnlyValue);
+    }
+
+    [Fact]
     public void DateKeyword_ThisMonth_UsesTimeProvider()
     {
         var query = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build("date:\"this month\"");
@@ -665,6 +687,7 @@ public sealed class ExpressionQueryBuilderTests
         public int? NullableInt32Value { get; set; }
         public TimeSpan TimeSpanValue { get; set; }
         public DateTime DateTimeValue { get; set; }
+        public DateOnly DateOnlyValue { get; set; }
         public DateTime? NullableDateTimeValue { get; set; }
         public DayOfWeek DayOfWeekValue { get; set; }
         public Guid GuidValue { get; set; }

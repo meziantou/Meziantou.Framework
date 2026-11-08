@@ -12,7 +12,7 @@ public sealed class MetadataWritePlanTests
     private static readonly Size Canvas = new(4, 3);
 
     // Only AVIF stores a content light level, a mastering display color volume and the shape of the pixels
-    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Avif or ImageFormat.Heic or ImageFormat.Png))];
+    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Avif or ImageFormat.Heic or ImageFormat.Png))];
 
     [Fact]
     public void ValidIccProfilePassesValidation()

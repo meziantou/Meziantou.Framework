@@ -4510,4 +4510,88 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(new Size(64, 64), preview.Size);
         Assert.Equal(new Rgba32(255, 0, 0), preview.Frames[0][32, 32]);
     }
+
+    [Fact]
+    public void CustomCodecExampleReadsAndWritesFarbfeld()
+    {
+        var farbfeld = GetPath("input.ff");
+        using (var source = new Image<Rgba64>(64, 48))
+        {
+            source.Frames[0][5, 7] = new Rgba64(1000, 2000, 3000, 40000);
+            source.Save(farbfeld, new ExtensibilityExamples.FarbfeldEncoder());
+        }
+
+        var bytes = File.ReadAllBytes(farbfeld);
+        Assert.HasCount(16 + (64 * 48 * 8), bytes);
+        Assert.Equal("farbfeld"u8.ToArray(), bytes[..8]);
+
+        var png = GetPath("output.png");
+        var copy = GetPath("copy.ff");
+        ExtensibilityExamples.ConvertFarbfeldToPng(farbfeld, png, copy);
+        using (var converted = Image.Load<Rgba64>(png))
+        {
+            Assert.Equal(ImageFormat.Png, converted.Metadata.SourceFormat);
+            Assert.Equal(new Rgba64(1000, 2000, 3000, 40000), converted.Frames[0][5, 7]);
+        }
+
+        Assert.Equal(bytes, File.ReadAllBytes(copy));
+
+        // A typed load converts what the codec decodes; a truncated file is malformed
+        var configuration = new ImageConfiguration { Codecs = [new ExtensibilityExamples.FarbfeldCodec()] };
+        using (var typed = Image.Load<Rgba32>(farbfeld, new ImageDecodeOptions { Configuration = configuration }))
+        {
+            Assert.Equal(new Size(64, 48), typed.Size);
+        }
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(bytes.AsSpan(0, 100), new ImageDecodeOptions { Configuration = configuration }));
+        using var animation = new Image<Rgba32>(2, 2);
+        animation.AppendFrame();
+        Assert.Throws<UnsupportedImageFeatureException>(() => animation.Save(GetPath("animation.ff"), new ExtensibilityExamples.FarbfeldEncoder()));
+    }
+
+    [Fact]
+    public void CustomOperationExamplesProcessEveryPixelFormat()
+    {
+        using var image = new Image<Rgba32>(4, 4, new Rgba32(200, 100, 0, 255));
+        ExtensibilityExamples.Solarize(image);
+        Assert.Equal(new Rgba32(55, 100, 0, 255), image.Frames[0][1, 1]);
+
+        // A uniform image has no relief: the emboss filter gives its middle gray and keeps the alpha
+        using var uniform = new Image<Rgba32>(4, 4, new Rgba32(10, 20, 30, 77));
+        ExtensibilityExamples.Emboss(uniform);
+        Assert.Equal(new Rgba32(128, 128, 128, 77), uniform.Frames[0][2, 2]);
+    }
+
+    [Fact]
+    public void WrapMemoryExamplesWorkInPlace()
+    {
+        // One white pixel in the middle of a black frame, with 4 bytes of padding per row: the blur spreads it in the array
+        const int Stride = (5 * 4) + 4;
+        var pixels = new byte[Stride * 5];
+        pixels.AsSpan((2 * Stride) + 8, 4).Fill(255);
+        ExtensibilityExamples.BlurCameraFrame(pixels, 5, 5, Stride);
+        Assert.NotEqual(0, pixels[(2 * Stride) + 7]);
+        Assert.InRange(pixels[(2 * Stride) + 11], 1, 254);
+        Assert.Equal(new byte[4], pixels.AsSpan((2 * Stride) + 20, 4).ToArray());
+
+        ExtensibilityExamples.GrayscaleNativeBuffer(8, 4);
+        ExtensibilityExamples.ProcessRentedBuffer(8, 4);
+    }
+
+    [Fact]
+    public void BufferPoolExampleBoundsTheRetainedBytes()
+    {
+        using var settings = SlabPoolTests.SharedPoolSettings.EnterScope();
+        var previous = ImageBufferPool.MaxRetainedBytes;
+        try
+        {
+            ExtensibilityExamples.ConfigureForSmallContainer();
+            Assert.Equal(4 * 1024 * 1024, ImageBufferPool.MaxRetainedBytes);
+            Assert.InRange(ImageBufferPool.RetainedBytes, 0, 4 * 1024 * 1024);
+        }
+        finally
+        {
+            ImageBufferPool.MaxRetainedBytes = previous;
+        }
+    }
 }

@@ -11,6 +11,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage
         public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison? comparisonType = null) { }
+        public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, Meziantou.Framework.SimpleQueryLanguage.StringMatchMode matchMode, System.StringComparison? comparisonType = null) { }
         public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T, TValue>> selector, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue = null) { }
         public Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
         public void SetFreeTextHandler(Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T>? handler) { }
@@ -68,6 +69,14 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     }
 
     public delegate bool ScalarParser<T>(string value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result);
+
+    public enum StringMatchMode
+    {
+        Contains = 0,
+        Exact = 1,
+        StartsWith = 2,
+        EndsWith = 3,
+    }
 
     public delegate bool UnhandledPropertyDelegate<T>(T obj, string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator @operator, string value);
 

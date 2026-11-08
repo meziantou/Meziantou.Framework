@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Geo</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Reads GeoParquet files (.parquet), the columnar format of geospatial data lakes, as the features of Meziantou.Framework.Geo, one row group at a time, skipping the row groups outside of a region.</Description>
+    <PackageTags>geo;gis;geoparquet;parquet;features;wkb</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The fuzz targets call the decoders of the Parquet format directly -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Geo.GeoParquet.Fuzz" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -69,6 +69,13 @@ internal readonly record struct PixelStorageLayout
         return new PixelStorageLayout(width, height, bytesPerPixel, rowLength, stride, rowsPerSlab, slabCount);
     }
 
+    /// <summary>
+    /// Computes the layout of memory the caller owns: one slab of every row, at the caller stride. The caller validated the
+    /// dimensions, the stride (at least the row length) and the length of the memory.
+    /// </summary>
+    public static PixelStorageLayout CreateExternal(int width, int height, int bytesPerPixel, long stride)
+        => new(width, height, bytesPerPixel, CheckedSizes.GetRowLength(width, bytesPerPixel), stride, height, slabCount: 1);
+
     /// <summary>Computes the bytes charged for all the slabs of this layout when rented from <paramref name="pool"/>.</summary>
     /// <returns><see langword="false"/> if the total overflows <see cref="long"/>.</returns>
     public bool TryGetCapacity(SlabPool pool, out long capacity)

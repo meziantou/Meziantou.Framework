@@ -62,6 +62,37 @@ public class DataMatrixTests
     }
 
     [Fact]
+    public void Documentation_RenderBarcode2D()
+    {
+        #region Barcode2D_Render
+        var barcode = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+        // SVG: a viewBox of (22 + 2 × 2) × 4 units, a rectangle of the light color and a path of the dark modules
+        var svg = barcode.ToSvg(new Barcode2DSvgOptions { ModuleSize = 4, QuietZoneModules = 2 });
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 104 104\">", svg);
+
+        // PNG: the bytes of a file, to save with File.WriteAllBytes("datamatrix.png", png)
+        var png = barcode.ToPng(new Barcode2DPngOptions
+        {
+            ModuleSize = 6,
+            QuietZoneModules = 2,
+            DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
+            LightColor = Color.White,
+        });
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationImages_Barcode2D()
+    {
+        var options = new Barcode2DPngOptions { ModuleSize = 6, QuietZoneModules = 2 };
+        DocumentationImages.AssertPng("DataMatrix", Barcode2D.CreateDataMatrix("https://www.meziantou.net").ToPng(options));
+        DocumentationImages.AssertPng("DataMatrixRectangle", Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }).ToPng(options));
+        DocumentationImages.AssertPng("Aztec", Barcode2D.CreateAztec("https://www.meziantou.net").ToPng(options));
+    }
+
+    [Fact]
     public void CreateDataMatrix_Hello_MatchesZint()
     {
         var code = Barcode2D.CreateDataMatrix("Hello");

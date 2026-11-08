@@ -119,6 +119,9 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
 - CMYK pages load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts them to RGB (see
   [Color management](../09-Color/03-ColorManagement.md)). CMYK is never written.
 - The orientation of a page is reported, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient).
+- [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) reads only the strips or the tiles that an area meets, each one
+  whole: a page of one strip is still decompressed whole, so write large pages with tiles for viewports. See
+  [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - Old-style JPEG compression, L\*a\*b\* data, YCbCr data in separate planes and 64-bit floating-point samples are
   rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Compressed data is never repaired: a damaged strip is an
   [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException), never a page completed with white.

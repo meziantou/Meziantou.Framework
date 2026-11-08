@@ -17,6 +17,9 @@ internal sealed class TiffCodec : ImageCodec
 
     public override bool RequiresRandomAccess => true;
 
+    /// <summary>Gets a value indicating that the decoder only reads the strips or the tiles that an area meets (<see cref="ImageDecodeRequest.Region"/>).</summary>
+    public override bool SupportsRegionDecoding => true;
+
     /// <summary>Determines whether the data starts with a classic TIFF or a BigTIFF header.</summary>
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix) => TiffHeader.MatchesSignature(prefix);
 

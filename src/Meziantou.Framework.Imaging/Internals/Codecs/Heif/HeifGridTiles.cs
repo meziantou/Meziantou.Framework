@@ -27,7 +27,11 @@ internal static class HeifGridTiles
 
     /// <summary>Gets the number of workers that decode the tiles of a coded image: one for an image that is one item.</summary>
     public static int GetWorkerCount(ImageCodecContext context, HeifCodedImage image)
-        => image.IsGrid ? GetWorkerCount(context.Configuration.MaxDegreeOfParallelism, image.TileSize, image.Tiles.Length) : 1;
+        => GetWorkerCount(context, image, image.Tiles.Length);
+
+    /// <summary>Gets the number of workers that decode <paramref name="tileCount"/> tiles of a coded image (a region): one for an image that is one item.</summary>
+    public static int GetWorkerCount(ImageCodecContext context, HeifCodedImage image, int tileCount)
+        => image.IsGrid ? GetWorkerCount(context.Configuration.MaxDegreeOfParallelism, image.TileSize, tileCount) : 1;
 
     /// <summary>
     /// Decodes the tiles of a grid and hands them to <paramref name="consume"/>, on the calling thread and in the order of the
@@ -44,6 +48,7 @@ internal static class HeifGridTiles
     /// <param name="release">Releases a decoded tile.</param>
     /// <param name="consume">Uses a decoded tile, and releases it.</param>
     /// <param name="sharesBatch">Whether a tile may be decoded in the batch that starts at another one; every tile when omitted.</param>
+    /// <param name="selection">The indexes of the tiles to decode, in the order of the tiles (a region, <see cref="HeifGridWindow"/>); every tile when omitted.</param>
     public static void Decode<TPrepared, TDecoded>(
         ImageCodecContext context,
         HeifCodedImage image,
@@ -51,15 +56,17 @@ internal static class HeifGridTiles
         Func<TPrepared, InputResourceTracker, TDecoded> decode,
         Action<TDecoded> release,
         Action<int, TDecoded> consume,
-        Func<int, int, bool>? sharesBatch = null)
+        Func<int, int, bool>? sharesBatch = null,
+        int[]? selection = null)
     {
-        var tileCount = image.Tiles.Length;
-        var workers = GetWorkerCount(context, image);
+        var tileCount = selection?.Length ?? image.Tiles.Length;
+        var workers = GetWorkerCount(context, image, tileCount);
         if (workers is 1)
         {
             for (var i = 0; i < tileCount; i++)
             {
-                consume(i, decode(prepare(i), context.Tracker));
+                var index = selection?[i] ?? i;
+                consume(index, decode(prepare(index), context.Tracker));
             }
 
             return;
@@ -75,11 +82,11 @@ internal static class HeifGridTiles
         {
             // The batch ends at the first tile that cannot be prepared
             var count = 0;
-            while (count < workers && start + count < tileCount && (sharesBatch is null || sharesBatch(start, start + count)))
+            while (count < workers && start + count < tileCount && (sharesBatch is null || sharesBatch(selection?[start] ?? start, selection?[start + count] ?? (start + count))))
             {
                 try
                 {
-                    tiles[count] = prepare(start + count);
+                    tiles[count] = prepare(selection?[start + count] ?? (start + count));
                     count++;
                 }
                 catch (Exception ex)
@@ -125,7 +132,7 @@ internal static class HeifGridTiles
 
                     errors[k]?.Throw();
                     owned[k] = false;
-                    consume(start + k, decoded[k]);
+                    consume(selection?[start + k] ?? (start + k), decoded[k]);
                 }
             }
             finally

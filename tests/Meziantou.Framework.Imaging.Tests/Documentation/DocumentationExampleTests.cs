@@ -3254,6 +3254,39 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LoadViewportDecodesTheAreaOfATiledPage()
+    {
+        var path = GetPath("scan.tiff");
+        using (var scan = new Image<Rgb24>(256, 192))
+        {
+            scan.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24((byte)x, (byte)y, (byte)(x ^ y));
+                    }
+                }
+            });
+
+            scan.Save(path, new TiffEncoder { TileWidth = 64, TileHeight = 64 });
+        }
+
+        using var viewport = LoadingExamples.LoadViewport(path, new Rectangle(70, 50, 100, 60));
+        Assert.Equal(new Size(100, 60), viewport.Size);
+        using var pixels = viewport.CloneAs<Rgb24>();
+        Assert.Equal(new Rgb24(70, 50, 70 ^ 50), pixels.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(169, 109, 169 ^ 109), pixels.Frames[0][99, 59]);
+
+        // A format that cannot decode an area
+        var png = GetPath("scan.png");
+        viewport.Save(png);
+        Assert.Throws<UnsupportedImageFeatureException>(() => LoadingExamples.LoadViewport(png, new Rectangle(0, 0, 10, 10)));
+    }
+
+    [Fact]
     public async Task LoadUploadAsyncLeavesTheStreamOpen()
     {
         using var upload = new MemoryStream();

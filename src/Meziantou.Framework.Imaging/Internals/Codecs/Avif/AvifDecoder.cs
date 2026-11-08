@@ -41,7 +41,8 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         // An opaque 8-bit image loaded as Rgba32 is converted to Rgba32 rows, which the sink stores as they are, instead of Rgb24
         // rows that it would widen
         var source = structure.SourcePixelFormat is PixelFormat.Rgb24 && _request.PixelFormat is PixelFormat.Rgba32 ? PixelFormat.Rgba32 : structure.SourcePixelFormat;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Avif, structure.CanvasSize, structure.PixelFormat, source, structure.Metadata.IccProfile);
+        var canvas = _request.GetRegion(structure.CanvasSize, ImageFormat.Avif).Size;
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Avif, canvas, structure.PixelFormat, source, structure.Metadata.IccProfile);
     }
 
     public override void OnImageData(HeifStructureParser structure)
@@ -58,10 +59,13 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
             return;
         }
 
-        using var color = DecodeImage(structure, plan.Color);
+        // A region decodes the tiles of a grid that it needs, into planes that hold these tiles only
+        var area = GetOutputArea(_request, plan.Crop, ImageFormat.Avif);
+        var window = GetGridWindow(plan, area);
+        using var color = DecodeImage(structure, plan.Color, window);
         structure.SetBitstreamColorDescription(color.Format);
-        using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha);
-        HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, plan.Color.Size, plan.Crop);
+        using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha, window);
+        HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, window.GetCodedSize(plan.Color), window.ToPlanes(plan.Color, area));
         sink.UpdateMetadata(structure.Metadata);
         sink.EndImage();
     }
@@ -99,7 +103,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
                 alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
             }
 
-            HeifFrameWriter.WriteFrame(_context, sink, structure, colorImage, alphaImage, movie.Color.Size, movie.Color.Crop);
+            HeifFrameWriter.WriteFrame(_context, sink, structure, colorImage, alphaImage, movie.Color.Size, GetOutputArea(_request, movie.Color.Crop, ImageFormat.Avif));
         }
         finally
         {
@@ -168,11 +172,11 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         base.Dispose(disposing);
     }
 
-    // Decodes the coded items of an image into planes of the size of the image. With several workers
-    // (ImageConfiguration.MaxDegreeOfParallelism), up to that many tiles of a grid are decoded at once, each by a decoder of
-    // its own; the tiles are checked against each other and copied on the calling thread, in the order of the tiles, so the
-    // planes and the errors are those of a sequential decoding.
-    private AvifPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image)
+    // Decodes the coded items of an image into planes of the size of the image, or of the tiles of the window of a region.
+    // With several workers (ImageConfiguration.MaxDegreeOfParallelism), up to that many tiles of a grid are decoded at once,
+    // each by a decoder of its own; the tiles are checked against each other and copied on the calling thread, in the order
+    // of the tiles, so the planes and the errors are those of a sequential decoding.
+    private AvifPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image, HeifGridWindow window)
     {
         AvifPlanarImage? result = null;
         try
@@ -197,14 +201,16 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
             else
             {
                 // The tiles decoded at once filter their frames on their own worker: the threads would multiply otherwise
-                var filterWorkers = HeifGridTiles.GetWorkerCount(_context, image) is 1 ? _context.Configuration.MaxDegreeOfParallelism : 1;
+                var selection = window.IsAll(image) ? null : window.GetTiles(image);
+                var filterWorkers = HeifGridTiles.GetWorkerCount(_context, image, selection?.Length ?? image.Tiles.Length) is 1 ? _context.Configuration.MaxDegreeOfParallelism : 1;
                 HeifGridTiles.Decode(
                     _context,
                     image,
                     index => PrepareTile(structure, image, index),
                     (tile, tracker) => DecodePreparedTile(image, tile, tracker, filterWorkers),
                     static frame => frame.Release(),
-                    ConsumeTile);
+                    ConsumeTile,
+                    selection: selection);
             }
 
             var planes = result!;
@@ -225,8 +231,8 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
                     throw AvifBinding.Instance.Invalid("the tiles of a grid do not have the same sequence header.");
 
                 // The planes hold whole tiles: the tiles of the last row and column may exceed the image
-                result ??= AvifPlanarImage.Create(_context.Scope, frame.Sequence, image.Columns * image.TileSize.Width, image.Rows * image.TileSize.Height);
-                CopyTile(frame, frame.Header.FilmGrain, result, index % image.Columns * image.TileSize.Width, index / image.Columns * image.TileSize.Height);
+                result ??= AvifPlanarImage.Create(_context.Scope, frame.Sequence, window.Columns * image.TileSize.Width, window.Rows * image.TileSize.Height);
+                CopyTile(frame, frame.Header.FilmGrain, result, ((index % image.Columns) - window.FirstColumn) * image.TileSize.Width, ((index / image.Columns) - window.FirstRow) * image.TileSize.Height);
             }
             finally
             {

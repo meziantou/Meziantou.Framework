@@ -34,7 +34,7 @@ internal sealed partial class AvifDecoder
     {
         var max = plan.RootBitDepth > 8 ? ushort.MaxValue : byte.MaxValue;
         using var surface = RenderNode(structure, root, max, applyOperations: false);
-        var crop = plan.Crop;
+        var crop = GetOutputArea(_request, plan.Crop, ImageFormat.Avif);
         var sink = _sink!;
         var bytesPerPixel = max > byte.MaxValue ? 8 : 4;
         using var pixels = _context.Scope.Rent(checked(crop.Width * bytesPerPixel), AllocationKind.DecoderState, clear: false);
@@ -100,8 +100,8 @@ internal sealed partial class AvifDecoder
     // A coded image and its alpha plane, converted with the color description of its item
     private Surface RenderCodedImage(HeifStructureParser structure, HeifImageNode node, int max)
     {
-        using var color = DecodeImage(structure, node.Image);
-        using var alpha = node.Alpha is null ? null : DecodeImage(structure, node.Alpha);
+        using var color = DecodeImage(structure, node.Image, HeifGridWindow.All(node.Image));
+        using var alpha = node.Alpha is null ? null : DecodeImage(structure, node.Alpha, HeifGridWindow.All(node.Alpha));
         var size = node.Image.Size;
         _context.Tracker?.ChargeHiddenPixels((long)size.Width * size.Height * (alpha is null ? 1 : 2));
         var nclx = node.Nclx;

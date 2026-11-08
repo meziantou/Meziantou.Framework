@@ -303,4 +303,130 @@ public sealed class FlatGeobufTests
         Assert.Equal([410, 411, 412, 450, 451, 452], read.Select(feature => (int)feature.Properties["i"]!).Order());
         Assert.HasCount(1000, FlatGeobuf.Read(data));
     }
+
+    [Theory]
+    [InlineData("countries.fgb")]
+    [InlineData("alldatatypes.fgb")]
+    [InlineData("heterogeneous.fgb")]
+    [InlineData("unknown_feature_count.fgb")]
+    [InlineData("empty.fgb")]
+    [InlineData("no_properties.fgb")]
+    [InlineData("poly00.fgb")]
+    [InlineData("mp_overlapping.fgb")]
+    [InlineData("fuzz-4642513358553088.fgb")]
+    public async Task ReadFeaturesAsync_MatchesRead(string name)
+    {
+        var data = File.ReadAllBytes(GetPath(name));
+        GeoBounds?[] boxes = [null, new GeoBounds(West: -10, South: 35, East: 30, North: 60)];
+        foreach (var bounds in boxes)
+        {
+            var options = new FlatGeobufReaderOptions { Bounds = bounds };
+            string? expected;
+            try
+            {
+                var features = FlatGeobuf.Read(data, options);
+                features.Name = null;
+                expected = GeoJson.Format(features);
+            }
+            catch (FormatException)
+            {
+                expected = null;
+            }
+
+            foreach (var canSeek in new[] { true, false })
+            {
+                using var stream = new CountingStream(data, canSeek, maxReadLength: 5);
+                if (expected is null)
+                {
+                    await Assert.ThrowsAsync<FormatException>(async () => await FlatGeobuf.ReadFeaturesAsync(stream, options, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+                }
+                else
+                {
+                    var features = await FlatGeobuf.ReadFeaturesAsync(stream, options, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+                    Assert.Equal(expected, GeoJson.Format(new GeoFeatureCollection(features)));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_File()
+    {
+        var features = await FlatGeobuf.ReadFeaturesAsync(GetPath("countries.fgb"), cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.HasCount(179, features);
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_Invalid()
+    {
+        var data = File.ReadAllBytes(GetPath("countries.fgb"));
+        foreach (var length in new[] { 0, 5, 12, 100, data.Length - 10 })
+        {
+            using var stream = new MemoryStream(data, 0, length);
+            await Assert.ThrowsAsync<FormatException>(async () => await FlatGeobuf.ReadFeaturesAsync(stream, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+        }
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_SpatialIndex_ReadsOnlyTheNodesAndFeaturesOfTheBox()
+    {
+        var data = FlatGeobuf.Write(CreateGrid(250_000), new FlatGeobufWriterOptions());
+        var bounds = new GeoBounds(West: 10, South: 10, East: 12, North: 11);
+        using var stream = new CountingStream(data);
+        var features = await FlatGeobuf.ReadFeaturesAsync(stream, new FlatGeobufReaderOptions { Bounds = bounds }, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal([5010, 5011, 5012, 5510, 5511, 5512], features.Select(feature => (int)feature.Properties["i"]!).Order());
+
+        // The file is about 20 MB: the search reads a few nodes of each level of the index, and the 6 features
+        Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes read out of {data.Length}");
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_LargeFile_ReadsAsTheFeaturesAreEnumerated()
+    {
+        var data = FlatGeobuf.Write(CreateGrid(250_000), new FlatGeobufWriterOptions { IncludeSpatialIndex = false });
+        using var stream = new CountingStream(data, canSeek: false);
+        var index = 0;
+        long previous = 0;
+        await foreach (var feature in FlatGeobuf.ReadFeaturesAsync(stream, cancellationToken: TestContext.Current.CancellationToken))
+        {
+            // Only the feature being returned is read, after the header
+            Assert.True(index is 0 || stream.BytesRead - previous < 1024, $"Feature {index} was returned after reading {stream.BytesRead - previous} bytes");
+            Assert.Equal(index, (int)feature.Properties["i"]!);
+            previous = stream.BytesRead;
+            index++;
+        }
+
+        Assert.Equal(250_000, index);
+        Assert.Equal(data.Length, stream.BytesRead);
+    }
+
+    [Fact]
+    public async Task Documentation_ReadFeaturesAsync()
+    {
+        #region Geo_FlatGeobufReadFeaturesAsync
+        // The features are read one at a time; with a box and a spatial index, only the nodes of the index that the
+        // search visits and the features it finds are read from the file
+        var europe = new GeoBounds(West: -10, South: 35, East: 30, North: 60);
+        var names = new List<string?>();
+        await foreach (var feature in FlatGeobuf.ReadFeaturesAsync("TestData/flatgeobuf/countries.fgb", new FlatGeobufReaderOptions { Bounds = europe }))
+        {
+            names.Add((string?)feature.Properties["name"]);
+        }
+
+        Assert.Contains("France", names);
+        Assert.DoesNotContain("Japan", names);
+        #endregion
+    }
+
+    // Points on a grid of 500 columns: the feature i is at (i % 500, i / 500)
+    private static GeoFeatureCollection CreateGrid(int count)
+    {
+        var features = new GeoFeatureCollection();
+        for (var i = 0; i < count; i++)
+        {
+            features.Add(new GeoFeature(new GeoPoint(new(i % 500, i / 500)), new Dictionary<string, object?> { ["i"] = i }));
+        }
+
+        return features;
+    }
 }

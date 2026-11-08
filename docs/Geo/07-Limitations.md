@@ -34,5 +34,6 @@ description: What the library does not do: some projections and datum grids, cur
 The library does not read GeoParquet, GeoPackage, MapInfo, GML or CSV files. A CSV file whose column holds
 WKT can be read with `Meziantou.Framework.Csv` and [WellKnownText](cref:Meziantou.Framework.Geo.WellKnownText).
 
-The readers load the whole document in memory: they do not stream the features of large files. The FlatGeobuf reader
-only decodes the features of a region when the file has a spatial index, but reads the whole file.
+The readers of TopoJSON, KML, KMZ, GPX, WKT and WKB load the whole document in memory. GeoJSON, shapefiles and
+FlatGeobuf files can be read with bounded memory with their `ReadFeaturesAsync` method, as explained in
+[formats](04-Formats/01-Overview.md).

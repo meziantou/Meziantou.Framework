@@ -68,6 +68,28 @@ public static class GeoJson
         }
     }
 
+    /// <summary>
+    /// Reads the features of a GeoJSON document one at a time, with bounded memory: the features of a
+    /// <c>FeatureCollection</c> are returned as soon as they are read, and only the feature being read is kept in memory.
+    /// </summary>
+    /// <param name="utf8Json">The GeoJSON document, encoded in UTF-8. It is read as the features are enumerated, and left open.</param>
+    /// <param name="cancellationToken">The token to cancel the reading.</param>
+    /// <returns>
+    /// The features of a <c>FeatureCollection</c>, the feature of a <c>Feature</c>, or a feature without properties for a
+    /// geometry. A document that is not a <c>FeatureCollection</c> is read whole before its feature is returned.
+    /// </returns>
+    /// <exception cref="FormatException">The document is not valid JSON or not GeoJSON. The features read before the error are returned first.</exception>
+    /// <remarks>
+    /// The <c>name</c> of the collection is not returned: use <see cref="Read"/> to get it. The members of the collection
+    /// can be in any order: when the <c>type</c> follows the <c>features</c> array and is not <c>FeatureCollection</c>,
+    /// the enumeration throws a <see cref="FormatException"/> once the features are returned.
+    /// </remarks>
+    public static IAsyncEnumerable<GeoFeature> ReadFeaturesAsync(Stream utf8Json, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Json);
+        return GeoJsonStreamReader.ReadAsync(utf8Json, cancellationToken);
+    }
+
     /// <summary>Reads a GeoJSON geometry, such as <c>{"type":"Point","coordinates":[2.35,48.86]}</c>.</summary>
     /// <param name="json">The GeoJSON text of a geometry.</param>
     /// <returns>The geometry.</returns>
@@ -153,7 +175,8 @@ public static class GeoJson
     // The text of a file: only the characters JSON requires are escaped, so the names in other scripts stay readable
     private static JsonWriterOptions CreateWriterOptions(GeoJsonWriterOptions options) => new() { Indented = options.Indented, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
-    private static GeoFeatureCollection ReadFeatures(JsonElement root)
+    /// <summary>Reads the features of a GeoJSON document.</summary>
+    internal static GeoFeatureCollection ReadFeatures(JsonElement root)
     {
         switch (GetType(root))
         {
@@ -177,7 +200,8 @@ public static class GeoJson
         }
     }
 
-    private static GeoFeature ReadFeature(JsonElement element)
+    /// <summary>Reads a GeoJSON feature.</summary>
+    internal static GeoFeature ReadFeature(JsonElement element)
     {
         if (GetType(element) is not "Feature")
             throw new FormatException("The items of a FeatureCollection must be features.");

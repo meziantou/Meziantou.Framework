@@ -14,7 +14,12 @@ internal static class PublicSuffixListGenerator
     public static void Generate(GeneratorContext context)
     {
         var idn = new IdnMapping { AllowUnassigned = true, UseStd3AsciiRules = false };
-        var rules = new SortedSet<string>(StringComparer.Ordinal);
+
+        // The rules are grouped by kind, without their prefix ("*." for a wildcard rule, "!" for an exception rule), so the
+        // runtime only splits each group
+        var normal = new SortedSet<string>(StringComparer.Ordinal);
+        var wildcards = new SortedSet<string>(StringComparer.Ordinal);
+        var exceptions = new SortedSet<string>(StringComparer.Ordinal);
         string? version = null;
         foreach (var rawLine in File.ReadLines(context.SpecData("publicsuffix", "public_suffix_list.dat")))
         {
@@ -36,7 +41,19 @@ internal static class PublicSuffixListGenerator
 
             var exception = line.StartsWith('!', StringComparison.Ordinal);
             var labels = (exception ? line[1..] : line).Split('.').Select(label => label == "*" ? label : idn.GetAscii(label).ToLowerInvariant());
-            rules.Add((exception ? "!" : "") + string.Join('.', labels));
+            var rule = string.Join('.', labels);
+            if (exception)
+            {
+                exceptions.Add(rule);
+            }
+            else if (rule.StartsWith("*.", StringComparison.Ordinal))
+            {
+                wildcards.Add(rule[2..]);
+            }
+            else
+            {
+                normal.Add(rule);
+            }
         }
 
         // The rules are data of the list, licensed under the MPL 2.0 (its Exhibit A notice is kept, see THIRD-PARTY-NOTICES.md)
@@ -48,32 +65,42 @@ internal static class PublicSuffixListGenerator
         writer.Line("namespace Meziantou.Framework.WebPlatform.Urls;").Line();
         using (writer.Block("internal static partial class PublicSuffixList"))
         {
-            // A raw string literal: a concatenation of thousands of literals is a deeply nested expression, which overflows the
-            // stack of the analyzers that walk the operation trees recursively (InsufficientExecutionStackException on Windows)
-            writer.Line("/// <summary>The rules of the list, separated by a space or a line break: <c>*.</c> starts a wildcard rule, <c>!</c> an exception rule.</summary>");
-            writer.Line("private const string RulesData = \"\"\"");
-            var line = new StringBuilder();
-            var lines = new List<string>();
-            foreach (var rule in rules)
-            {
-                if (line.Length > 0 && line.Length + rule.Length > 110)
-                {
-                    lines.Add(line.ToString());
-                    line.Clear();
-                }
-
-                line.Append(rule).Append(' ');
-            }
-
-            lines.Add(line.ToString().TrimEnd());
-            foreach (var rulesLine in lines)
-            {
-                writer.Line("    " + rulesLine.TrimEnd());
-            }
-
-            writer.Line("    \"\"\";");
+            WriteRules(writer, "NormalRules", "The normal rules.", normal);
+            writer.Line();
+            WriteRules(writer, "WildcardRules", "The suffixes of the wildcard rules (without the leading <c>*.</c>).", wildcards);
+            writer.Line();
+            WriteRules(writer, "ExceptionRules", "The exception rules (without the leading <c>!</c>).", exceptions);
         }
 
         context.WriteFile(context.Source("Urls", "PublicSuffixList.g.cs"), writer.ToString());
+    }
+
+    private static void WriteRules(CodeWriter writer, string name, string summary, IEnumerable<string> rules)
+    {
+        // A raw string literal: a concatenation of thousands of literals is a deeply nested expression, which overflows the
+        // stack of the analyzers that walk the operation trees recursively (InsufficientExecutionStackException on Windows).
+        // An array initializer would compile to a method with an instruction per rule, larger than the string itself.
+        writer.Line("/// <summary>" + summary + " The rules are separated by a space or a line break.</summary>");
+        writer.Line("private const string " + name + " = \"\"\"");
+        var line = new StringBuilder();
+        var lines = new List<string>();
+        foreach (var rule in rules)
+        {
+            if (line.Length > 0 && line.Length + rule.Length > 110)
+            {
+                lines.Add(line.ToString());
+                line.Clear();
+            }
+
+            line.Append(rule).Append(' ');
+        }
+
+        lines.Add(line.ToString().TrimEnd());
+        foreach (var rulesLine in lines)
+        {
+            writer.Line("    " + rulesLine.TrimEnd());
+        }
+
+        writer.Line("    \"\"\";");
     }
 }

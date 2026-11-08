@@ -13,102 +13,25 @@ namespace Meziantou.Framework.WebPlatform.Urls;
 
 internal static partial class PublicSuffixList
 {
-    /// <summary>The rules of the list, separated by a space or a line break: <c>*.</c> starts a wildcard rule, <c>!</c> an exception rule.</summary>
-    private const string RulesData = """
-        !city.kawasaki.jp !city.kitakyushu.jp !city.kobe.jp !city.nagoya.jp !city.sapporo.jp !city.sendai.jp
-        !city.yokohama.jp !www.ck *.001.test.code-builder-stg.platform.salesforce.com *.0e.vc *.0emm.com *.aa.crm.dev
-        *.ab.crm.dev *.ac.crm.dev *.ad.crm.dev *.advisor.ws *.ae.crm.dev *.af-south-1.airflow.amazonaws.com
-        *.af-south-1.rds.amazonaws.com *.af.crm.dev *.airflow.af-south-1.on.aws *.airflow.ap-east-1.on.aws
-        *.airflow.ap-northeast-1.on.aws *.airflow.ap-northeast-2.on.aws *.airflow.ap-northeast-3.on.aws
-        *.airflow.ap-south-1.on.aws *.airflow.ap-south-2.on.aws *.airflow.ap-southeast-1.on.aws
-        *.airflow.ap-southeast-2.on.aws *.airflow.ap-southeast-3.on.aws *.airflow.ap-southeast-4.on.aws
-        *.airflow.ap-southeast-5.on.aws *.airflow.ap-southeast-7.on.aws *.airflow.ca-central-1.on.aws
-        *.airflow.ca-west-1.on.aws *.airflow.cn-north-1.on.amazonwebservices.com.cn
-        *.airflow.cn-northwest-1.on.amazonwebservices.com.cn *.airflow.eu-central-1.on.aws
-        *.airflow.eu-central-2.on.aws *.airflow.eu-north-1.on.aws *.airflow.eu-south-1.on.aws
-        *.airflow.eu-south-2.on.aws *.airflow.eu-west-1.on.aws *.airflow.eu-west-2.on.aws *.airflow.eu-west-3.on.aws
-        *.airflow.il-central-1.on.aws *.airflow.me-central-1.on.aws *.airflow.me-south-1.on.aws
-        *.airflow.sa-east-1.on.aws *.airflow.us-east-1.on.aws *.airflow.us-east-2.on.aws *.airflow.us-west-1.on.aws
-        *.airflow.us-west-2.on.aws *.aivencloud.com *.alces.network *.ap-east-1.airflow.amazonaws.com
-        *.ap-east-1.cs.amazonlightsail.com *.ap-east-1.rds.amazonaws.com *.ap-east-2.rds.amazonaws.com
-        *.ap-north-1.r.cloud.int.apple *.ap-northeast-1.airflow.amazonaws.com *.ap-northeast-1.cs.amazonlightsail.com
-        *.ap-northeast-1.rds.amazonaws.com *.ap-northeast-2.airflow.amazonaws.com
-        *.ap-northeast-2.cs.amazonlightsail.com *.ap-northeast-2.rds.amazonaws.com
-        *.ap-northeast-3.airflow.amazonaws.com *.ap-northeast-3.rds.amazonaws.com *.ap-south-1.airflow.amazonaws.com
-        *.ap-south-1.cs.amazonlightsail.com *.ap-south-1.r.cloud.int.apple *.ap-south-1.rds.amazonaws.com
-        *.ap-south-2.airflow.amazonaws.com *.ap-south-2.r.cloud.int.apple *.ap-south-2.rds.amazonaws.com
-        *.ap-southeast-1.airflow.amazonaws.com *.ap-southeast-1.cs.amazonlightsail.com
-        *.ap-southeast-1.rds.amazonaws.com *.ap-southeast-2.airflow.amazonaws.com
-        *.ap-southeast-2.cs.amazonlightsail.com *.ap-southeast-2.rds.amazonaws.com
-        *.ap-southeast-3.airflow.amazonaws.com *.ap-southeast-3.cs.amazonlightsail.com
-        *.ap-southeast-3.rds.amazonaws.com *.ap-southeast-4.airflow.amazonaws.com *.ap-southeast-4.rds.amazonaws.com
-        *.ap-southeast-5.airflow.amazonaws.com *.ap-southeast-5.cs.amazonlightsail.com
-        *.ap-southeast-5.rds.amazonaws.com *.ap-southeast-6.rds.amazonaws.com *.ap-southeast-7.airflow.amazonaws.com
-        *.ap-southeast-7.rds.amazonaws.com *.apps.grok.bot *.appwrite.run *.at.playit.plus *.at.ply.gg
-        *.atlassian-3p-us-gov-mod.com *.atlassian-3p.com *.atlassian-isolated-3p.com *.auiusercontent.com *.awdev.ca
-        *.awsapprunner.com *.azure.databricksapps.com *.azurecontainer.io *.beget.app *.begetcdn.cloud *.build.run
-        *.builder.code.com *.builtwithrocket.new *.bwcloud-os-instance.de *.c.ts.net
-        *.ca-central-1.airflow.amazonaws.com *.ca-central-1.cs.amazonlightsail.com *.ca-central-1.rds.amazonaws.com
-        *.ca-west-1.airflow.amazonaws.com *.ca-west-1.rds.amazonaws.com *.ci.crm.dev *.ck *.cloud.int.apple
-        *.cloud.metacentrum.cz *.cloudera.site *.clusters.rdpa.co *.cn-north-1.airflow.amazonaws.com.cn
-        *.cn-northwest-1.airflow.amazonaws.com.cn *.cn.st *.code.run *.compute-1.amazonaws.com *.compute.amazonaws.com
-        *.compute.amazonaws.com.cn *.compute.estate *.compute.herokuapp.com *.cursorusercontent.com *.customer-oci.com
-        *.d.crm.dev *.database.run *.dev-builder.code.com *.dev.adobeaemcloud.com *.developer.app *.devinapps.com
-        *.digitaloceanspaces.com *.dweb.link *.elb.amazonaws.com *.elb.amazonaws.com.cn *.er *.eth.limo *.eth.link
-        *.eu-central-1.airflow.amazonaws.com *.eu-central-1.cs.amazonlightsail.com *.eu-central-1.r.cloud.int.apple
-        *.eu-central-1.rds.amazonaws.com *.eu-central-2.airflow.amazonaws.com *.eu-central-2.rds.amazonaws.com
-        *.eu-north-1.airflow.amazonaws.com *.eu-north-1.cs.amazonlightsail.com *.eu-north-1.r.cloud.int.apple
-        *.eu-south-1.airflow.amazonaws.com *.eu-south-2.airflow.amazonaws.com *.eu-south-2.cs.amazonlightsail.com
-        *.eu-west-1.airflow.amazonaws.com *.eu-west-1.cs.amazonlightsail.com *.eu-west-1.rds.amazonaws.com
-        *.eu-west-2.airflow.amazonaws.com *.eu-west-2.cs.amazonlightsail.com *.eu-west-2.rds.amazonaws.com
-        *.eu-west-3.airflow.amazonaws.com *.eu-west-3.cs.amazonlightsail.com *.eu-west-3.rds.amazonaws.com *.ewp.live
-        *.ex.futurecms.at *.ex.ortsinfo.at *.experiments.sagemaker.aws *.firenet.ch *.fk *.frusky.de *.futurecms.at
-        *.gateway.dev *.hosted.app *.hosting.myjino.ru *.hosting.ovh.net *.icp.net *.id.pub
-        *.il-central-1.airflow.amazonaws.com *.il-central-1.rds.amazonaws.com *.in.futurecms.at *.inbrowser.dev
-        *.inbrowser.link *.jm *.kawasaki.jp *.kin.one *.kin.pub *.kitakyushu.jp *.kobe.jp *.kunden.ortsinfo.at
-        *.landing.myjino.ru *.lcl.dev *.lclstage.dev *.linodeobjects.com *.localto.net *.lutrausercontent.com
-        *.magentosite.cloud *.me-central-1.airflow.amazonaws.com *.me-central-1.rds.amazonaws.com
-        *.me-south-1.airflow.amazonaws.com *.me-south-1.rds.amazonaws.com *.metaaiusercontent.com *.migration.run *.mm
-        *.moonscale.io *.mtls.run.app *.mx-central-1.rds.amazonaws.com *.nagoya.jp *.nodebalancer.linode.com *.nom.br
-        *.northflank.app *.np *.nxa.eu *.oaiusercontent.com *.oci.customer-oci.com *.ocp.customer-oci.com
-        *.ocs.customer-oci.com *.on-k3s.io *.on-rancher.cloud *.on-rio.io *.oraclecloudapps.com
-        *.oraclegovcloudapps.com *.oraclegovcloudapps.uk *.otap.co *.owo.codes *.p.azurewebsites.net *.pa.crm.dev
-        *.pages.grok.bot *.paywhirl.com *.pb.crm.dev *.pc.crm.dev *.pd.crm.dev *.pe.crm.dev *.pf.crm.dev *.pg
-        *.platformsh.site *.private.repost.aws *.privatelink.snowflake.app *.qualyhqpartner.com *.qualyhqportal.com
-        *.quipelements.com *.r.appspot.com *.r.cloud.int.apple *.raw.icp0.io *.raw.icp1.io
-        *.rds.cn-north-1.amazonaws.com.cn *.rds.cn-northwest-1.amazonaws.com.cn *.replit.dev *.run.app *.s.brave.app
-        *.s.brave.dev *.s.brave.io *.sa-east-1.airflow.amazonaws.com *.sa-east-1.cs.amazonlightsail.com
-        *.sa-east-1.rds.amazonaws.com *.sapporo.jp *.sch.uk *.sendai.jp *.services.clever-cloud.com *.snowflake.app
-        *.spectrum.myjino.ru *.srvrless.rdpa.co *.statics.cloud *.stg-builder.code.com *.stg.dev *.stgstage.dev
-        *.stolos.io *.svc.firenet.ch *.sys.qcx.io *.teams.replit.dev *.telebit.xyz *.transurl.be *.transurl.eu
-        *.transurl.nl *.triton.zone *.tst.site *.upsun.app *.us-central-1.r.cloud.int.apple
-        *.us-central-2.r.cloud.int.apple *.us-east-1.airflow.amazonaws.com *.us-east-1.cs.amazonlightsail.com
-        *.us-east-1.r.cloud.int.apple *.us-east-1.rds.amazonaws.com *.us-east-2.airflow.amazonaws.com
-        *.us-east-2.cs.amazonlightsail.com *.us-east-2.r.cloud.int.apple *.us-east-2.rds.amazonaws.com
-        *.us-gov-east-1.rds.amazonaws.com *.us-gov-west-1.rds.amazonaws.com *.us-northeast-1.rds.amazonaws.com
-        *.us-west-1.airflow.amazonaws.com *.us-west-1.r.cloud.int.apple *.us-west-1.rds.amazonaws.com
-        *.us-west-2.airflow.amazonaws.com *.us-west-2.cs.amazonlightsail.com *.us-west-2.r.cloud.int.apple
-        *.us-west-2.rds.amazonaws.com *.us-west-3.r.cloud.int.apple *.user.fm *.user.localcert.dev *.usercontent.goog
-        *.vps.myjino.ru *.vultrobjects.com *.w.crm.dev *.wa.crm.dev *.wadl.top *.wb.crm.dev *.wc.crm.dev *.wd.crm.dev
-        *.we.crm.dev *.webhare.dev *.webpaas.ovh.net *.wf.crm.dev *.xenonconnect.de *.xmit.co *.yokohama.jp
-        *.zerops.app *.zerops.zone *.ztna-dingtalk.com 0.bg 0am.jp 0g0.jp 0j0.jp 0t0.jp 1.azurestaticapps.net 1.bg
-        123hjemmeside.dk 123hjemmeside.no 123homepage.it 123kotisivu.fi 123minsida.se 123miweb.es 123paginaweb.pt
-        123siteweb.fr 123webseite.at 123webseite.de 123website.be 123website.ch 123website.lu 123website.nl 12hp.at
-        12hp.ch 12hp.de 1337.pictures 16-b.it 180r.com 1cooldns.com 1kapp.com 2-d.jp 2.azurestaticapps.net 2.bg
-        2000.hu 2038.io 2ix.at 2ix.ch 2ix.de 3.azurestaticapps.net 3.bg 32-b.it 3utilities.com 4.at
-        4.azurestaticapps.net 4.bg 4lima.at 4lima.ch 4lima.de 4u.com 5.azurestaticapps.net 5.bg 5g.in
-        6.azurestaticapps.net 6.bg 611.to 64-b.it 6g.in 7.azurestaticapps.net 7.bg 8.bg 9.bg 9guacu.br a.bg
-        a.prod.fastly.net a.se a.ssl.fastly.net a2hosted.com aa.no aaa aaa.pro aarborte.no aarp ab.ca
-        abashiri.hokkaido.jp abb abbott abbvie abc abc.br abeno.osaka.jp aberdeen.wa.us abg.ec abiko.chiba.jp
-        abira.hokkaido.jp abkhazia.su able abo.pa abogado abr.it abrdns.com abruzzo.it abu.yamaguchi.jp abudhabi ac
-        ac.ae ac.at ac.bd ac.be ac.bw ac.ci ac.cn ac.cr ac.cy ac.eg ac.fj ac.gn ac.gov.br ac.id ac.il ac.im ac.in
-        ac.ir ac.jp ac.ke ac.kr ac.leg.br ac.lk ac.ls ac.ma ac.me ac.ml ac.mu ac.mw ac.mz ac.ni ac.nz ac.pa ac.pk
-        ac.pr ac.rs ac.ru ac.rw ac.se ac.sz ac.th ac.tz ac.ug ac.uk ac.vn ac.za ac.zm ac.zw aca.pro academia.bo
-        academy accenture accesscam.org accident-investigation.aero accident-prevention.aero accountant accountants
-        acct.pro achi.nagano.jp aco act.au act.edu.au activetrail.biz actor ad ad.jp adachi.tokyo.jp adimo.co.uk
-        adm.br adm.ec adobeaemcloud.com adobeaemcloud.net adobeio-static.net adobeioruntime.net ads adult adult.ht
-        adv.br adv.mz adygeya.ru adygeya.su ae ae.kg ae.org aeg aejrie.no aem.live aem.network aem.page aem.reviews
-        aero aero.in aero.mv aerobatic.aero aeroclub.aero aerodrome.aero aeroport.fr aetna af
+    /// <summary>The normal rules. The rules are separated by a space or a line break.</summary>
+    private const string NormalRules = """
+        0.bg 0am.jp 0g0.jp 0j0.jp 0t0.jp 1.azurestaticapps.net 1.bg 123hjemmeside.dk 123hjemmeside.no 123homepage.it
+        123kotisivu.fi 123minsida.se 123miweb.es 123paginaweb.pt 123siteweb.fr 123webseite.at 123webseite.de
+        123website.be 123website.ch 123website.lu 123website.nl 12hp.at 12hp.ch 12hp.de 1337.pictures 16-b.it 180r.com
+        1cooldns.com 1kapp.com 2-d.jp 2.azurestaticapps.net 2.bg 2000.hu 2038.io 2ix.at 2ix.ch 2ix.de
+        3.azurestaticapps.net 3.bg 32-b.it 3utilities.com 4.at 4.azurestaticapps.net 4.bg 4lima.at 4lima.ch 4lima.de
+        4u.com 5.azurestaticapps.net 5.bg 5g.in 6.azurestaticapps.net 6.bg 611.to 64-b.it 6g.in 7.azurestaticapps.net
+        7.bg 8.bg 9.bg 9guacu.br a.bg a.prod.fastly.net a.se a.ssl.fastly.net a2hosted.com aa.no aaa aaa.pro
+        aarborte.no aarp ab.ca abashiri.hokkaido.jp abb abbott abbvie abc abc.br abeno.osaka.jp aberdeen.wa.us abg.ec
+        abiko.chiba.jp abira.hokkaido.jp abkhazia.su able abo.pa abogado abr.it abrdns.com abruzzo.it abu.yamaguchi.jp
+        abudhabi ac ac.ae ac.at ac.bd ac.be ac.bw ac.ci ac.cn ac.cr ac.cy ac.eg ac.fj ac.gn ac.gov.br ac.id ac.il
+        ac.im ac.in ac.ir ac.jp ac.ke ac.kr ac.leg.br ac.lk ac.ls ac.ma ac.me ac.ml ac.mu ac.mw ac.mz ac.ni ac.nz
+        ac.pa ac.pk ac.pr ac.rs ac.ru ac.rw ac.se ac.sz ac.th ac.tz ac.ug ac.uk ac.vn ac.za ac.zm ac.zw aca.pro
+        academia.bo academy accenture accesscam.org accident-investigation.aero accident-prevention.aero accountant
+        accountants acct.pro achi.nagano.jp aco act.au act.edu.au activetrail.biz actor ad ad.jp adachi.tokyo.jp
+        adimo.co.uk adm.br adm.ec adobeaemcloud.com adobeaemcloud.net adobeio-static.net adobeioruntime.net ads adult
+        adult.ht adv.br adv.mz adygeya.ru adygeya.su ae ae.kg ae.org aeg aejrie.no aem.live aem.network aem.page
+        aem.reviews aero aero.in aero.mv aerobatic.aero aeroclub.aero aerodrome.aero aeroport.fr aetna af
         af-south-1.elasticbeanstalk.com affinitylottery.org.uk afjord.no afl africa africa.bj africa.com ag ag.it
         aga.niigata.jp agakhan agano.niigata.jp agdenes.no agematsu.nagano.jp agency agents.aero agr.br agrar.hu
         agri.jo agric.za agrigento.it agro.bj agro.bo agro.pl agron.ec aguni.okinawa.jp ah.cn ah.no ai ai.bd ai.id
@@ -1514,5 +1437,83 @@ internal static partial class PublicSuffixList
         zaporizhzhia.ua zappos zapto.org zara zarow.pl zeabur.app zentsuji.kagawa.jp zero zgierz.pl zgora.pl
         zgorzelec.pl zhitomir.ua zhytomyr.ua zicp.fun zip zj.cn zlg.br zm zombie.jp zone zone.id zp.gov.pl zp.ua
         zpisdn.gov.pl zt.ua zuerich zushi.kanagawa.jp zw
+        """;
+
+    /// <summary>The suffixes of the wildcard rules (without the leading <c>*.</c>). The rules are separated by a space or a line break.</summary>
+    private const string WildcardRules = """
+        001.test.code-builder-stg.platform.salesforce.com 0e.vc 0emm.com aa.crm.dev ab.crm.dev ac.crm.dev ad.crm.dev
+        advisor.ws ae.crm.dev af-south-1.airflow.amazonaws.com af-south-1.rds.amazonaws.com af.crm.dev
+        airflow.af-south-1.on.aws airflow.ap-east-1.on.aws airflow.ap-northeast-1.on.aws airflow.ap-northeast-2.on.aws
+        airflow.ap-northeast-3.on.aws airflow.ap-south-1.on.aws airflow.ap-south-2.on.aws
+        airflow.ap-southeast-1.on.aws airflow.ap-southeast-2.on.aws airflow.ap-southeast-3.on.aws
+        airflow.ap-southeast-4.on.aws airflow.ap-southeast-5.on.aws airflow.ap-southeast-7.on.aws
+        airflow.ca-central-1.on.aws airflow.ca-west-1.on.aws airflow.cn-north-1.on.amazonwebservices.com.cn
+        airflow.cn-northwest-1.on.amazonwebservices.com.cn airflow.eu-central-1.on.aws airflow.eu-central-2.on.aws
+        airflow.eu-north-1.on.aws airflow.eu-south-1.on.aws airflow.eu-south-2.on.aws airflow.eu-west-1.on.aws
+        airflow.eu-west-2.on.aws airflow.eu-west-3.on.aws airflow.il-central-1.on.aws airflow.me-central-1.on.aws
+        airflow.me-south-1.on.aws airflow.sa-east-1.on.aws airflow.us-east-1.on.aws airflow.us-east-2.on.aws
+        airflow.us-west-1.on.aws airflow.us-west-2.on.aws aivencloud.com alces.network ap-east-1.airflow.amazonaws.com
+        ap-east-1.cs.amazonlightsail.com ap-east-1.rds.amazonaws.com ap-east-2.rds.amazonaws.com
+        ap-north-1.r.cloud.int.apple ap-northeast-1.airflow.amazonaws.com ap-northeast-1.cs.amazonlightsail.com
+        ap-northeast-1.rds.amazonaws.com ap-northeast-2.airflow.amazonaws.com ap-northeast-2.cs.amazonlightsail.com
+        ap-northeast-2.rds.amazonaws.com ap-northeast-3.airflow.amazonaws.com ap-northeast-3.rds.amazonaws.com
+        ap-south-1.airflow.amazonaws.com ap-south-1.cs.amazonlightsail.com ap-south-1.r.cloud.int.apple
+        ap-south-1.rds.amazonaws.com ap-south-2.airflow.amazonaws.com ap-south-2.r.cloud.int.apple
+        ap-south-2.rds.amazonaws.com ap-southeast-1.airflow.amazonaws.com ap-southeast-1.cs.amazonlightsail.com
+        ap-southeast-1.rds.amazonaws.com ap-southeast-2.airflow.amazonaws.com ap-southeast-2.cs.amazonlightsail.com
+        ap-southeast-2.rds.amazonaws.com ap-southeast-3.airflow.amazonaws.com ap-southeast-3.cs.amazonlightsail.com
+        ap-southeast-3.rds.amazonaws.com ap-southeast-4.airflow.amazonaws.com ap-southeast-4.rds.amazonaws.com
+        ap-southeast-5.airflow.amazonaws.com ap-southeast-5.cs.amazonlightsail.com ap-southeast-5.rds.amazonaws.com
+        ap-southeast-6.rds.amazonaws.com ap-southeast-7.airflow.amazonaws.com ap-southeast-7.rds.amazonaws.com
+        apps.grok.bot appwrite.run at.playit.plus at.ply.gg atlassian-3p-us-gov-mod.com atlassian-3p.com
+        atlassian-isolated-3p.com auiusercontent.com awdev.ca awsapprunner.com azure.databricksapps.com
+        azurecontainer.io beget.app begetcdn.cloud build.run builder.code.com builtwithrocket.new
+        bwcloud-os-instance.de c.ts.net ca-central-1.airflow.amazonaws.com ca-central-1.cs.amazonlightsail.com
+        ca-central-1.rds.amazonaws.com ca-west-1.airflow.amazonaws.com ca-west-1.rds.amazonaws.com ci.crm.dev ck
+        cloud.int.apple cloud.metacentrum.cz cloudera.site clusters.rdpa.co cn-north-1.airflow.amazonaws.com.cn
+        cn-northwest-1.airflow.amazonaws.com.cn cn.st code.run compute-1.amazonaws.com compute.amazonaws.com
+        compute.amazonaws.com.cn compute.estate compute.herokuapp.com cursorusercontent.com customer-oci.com d.crm.dev
+        database.run dev-builder.code.com dev.adobeaemcloud.com developer.app devinapps.com digitaloceanspaces.com
+        dweb.link elb.amazonaws.com elb.amazonaws.com.cn er eth.limo eth.link eu-central-1.airflow.amazonaws.com
+        eu-central-1.cs.amazonlightsail.com eu-central-1.r.cloud.int.apple eu-central-1.rds.amazonaws.com
+        eu-central-2.airflow.amazonaws.com eu-central-2.rds.amazonaws.com eu-north-1.airflow.amazonaws.com
+        eu-north-1.cs.amazonlightsail.com eu-north-1.r.cloud.int.apple eu-south-1.airflow.amazonaws.com
+        eu-south-2.airflow.amazonaws.com eu-south-2.cs.amazonlightsail.com eu-west-1.airflow.amazonaws.com
+        eu-west-1.cs.amazonlightsail.com eu-west-1.rds.amazonaws.com eu-west-2.airflow.amazonaws.com
+        eu-west-2.cs.amazonlightsail.com eu-west-2.rds.amazonaws.com eu-west-3.airflow.amazonaws.com
+        eu-west-3.cs.amazonlightsail.com eu-west-3.rds.amazonaws.com ewp.live ex.futurecms.at ex.ortsinfo.at
+        experiments.sagemaker.aws firenet.ch fk frusky.de futurecms.at gateway.dev hosted.app hosting.myjino.ru
+        hosting.ovh.net icp.net id.pub il-central-1.airflow.amazonaws.com il-central-1.rds.amazonaws.com
+        in.futurecms.at inbrowser.dev inbrowser.link jm kawasaki.jp kin.one kin.pub kitakyushu.jp kobe.jp
+        kunden.ortsinfo.at landing.myjino.ru lcl.dev lclstage.dev linodeobjects.com localto.net lutrausercontent.com
+        magentosite.cloud me-central-1.airflow.amazonaws.com me-central-1.rds.amazonaws.com
+        me-south-1.airflow.amazonaws.com me-south-1.rds.amazonaws.com metaaiusercontent.com migration.run mm
+        moonscale.io mtls.run.app mx-central-1.rds.amazonaws.com nagoya.jp nodebalancer.linode.com nom.br
+        northflank.app np nxa.eu oaiusercontent.com oci.customer-oci.com ocp.customer-oci.com ocs.customer-oci.com
+        on-k3s.io on-rancher.cloud on-rio.io oraclecloudapps.com oraclegovcloudapps.com oraclegovcloudapps.uk otap.co
+        owo.codes p.azurewebsites.net pa.crm.dev pages.grok.bot paywhirl.com pb.crm.dev pc.crm.dev pd.crm.dev
+        pe.crm.dev pf.crm.dev pg platformsh.site private.repost.aws privatelink.snowflake.app qualyhqpartner.com
+        qualyhqportal.com quipelements.com r.appspot.com r.cloud.int.apple raw.icp0.io raw.icp1.io
+        rds.cn-north-1.amazonaws.com.cn rds.cn-northwest-1.amazonaws.com.cn replit.dev run.app s.brave.app s.brave.dev
+        s.brave.io sa-east-1.airflow.amazonaws.com sa-east-1.cs.amazonlightsail.com sa-east-1.rds.amazonaws.com
+        sapporo.jp sch.uk sendai.jp services.clever-cloud.com snowflake.app spectrum.myjino.ru srvrless.rdpa.co
+        statics.cloud stg-builder.code.com stg.dev stgstage.dev stolos.io svc.firenet.ch sys.qcx.io teams.replit.dev
+        telebit.xyz transurl.be transurl.eu transurl.nl triton.zone tst.site upsun.app us-central-1.r.cloud.int.apple
+        us-central-2.r.cloud.int.apple us-east-1.airflow.amazonaws.com us-east-1.cs.amazonlightsail.com
+        us-east-1.r.cloud.int.apple us-east-1.rds.amazonaws.com us-east-2.airflow.amazonaws.com
+        us-east-2.cs.amazonlightsail.com us-east-2.r.cloud.int.apple us-east-2.rds.amazonaws.com
+        us-gov-east-1.rds.amazonaws.com us-gov-west-1.rds.amazonaws.com us-northeast-1.rds.amazonaws.com
+        us-west-1.airflow.amazonaws.com us-west-1.r.cloud.int.apple us-west-1.rds.amazonaws.com
+        us-west-2.airflow.amazonaws.com us-west-2.cs.amazonlightsail.com us-west-2.r.cloud.int.apple
+        us-west-2.rds.amazonaws.com us-west-3.r.cloud.int.apple user.fm user.localcert.dev usercontent.goog
+        vps.myjino.ru vultrobjects.com w.crm.dev wa.crm.dev wadl.top wb.crm.dev wc.crm.dev wd.crm.dev we.crm.dev
+        webhare.dev webpaas.ovh.net wf.crm.dev xenonconnect.de xmit.co yokohama.jp zerops.app zerops.zone
+        ztna-dingtalk.com
+        """;
+
+    /// <summary>The exception rules (without the leading <c>!</c>). The rules are separated by a space or a line break.</summary>
+    private const string ExceptionRules = """
+        city.kawasaki.jp city.kitakyushu.jp city.kobe.jp city.nagoya.jp city.sapporo.jp city.sendai.jp
+        city.yokohama.jp www.ck
         """;
 }

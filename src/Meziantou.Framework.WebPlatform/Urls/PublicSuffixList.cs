@@ -9,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Urls;
 /// </summary>
 internal static partial class PublicSuffixList
 {
-    private static readonly Lazy<Rules> AllRules = new(() => Rules.Parse(RulesData));
+    private static readonly Lazy<Rules> AllRules = new(Rules.Create);
 
     /// <summary>https://url.spec.whatwg.org/#host-public-suffix: null when the host is not a domain.</summary>
     public static string? GetPublicSuffix(UrlHost host)
@@ -17,8 +17,9 @@ internal static partial class PublicSuffixList
         if (host.Kind != UrlHostKind.Domain)
             return null;
 
-        var (domain, trailingDot) = SplitTrailingDot(host.Serialized);
-        return GetPublicSuffix(domain) + trailingDot;
+        // The public suffix keeps the trailing dot of the host
+        var serialized = host.Serialized;
+        return serialized[GetPublicSuffixStart(GetDomain(serialized))..];
     }
 
     /// <summary>https://url.spec.whatwg.org/#host-registrable-domain: null when the host is not a domain or is a public suffix.</summary>
@@ -27,96 +28,86 @@ internal static partial class PublicSuffixList
         if (host.Kind != UrlHostKind.Domain)
             return null;
 
-        var (domain, trailingDot) = SplitTrailingDot(host.Serialized);
-        var publicSuffix = GetPublicSuffix(domain);
-        if (publicSuffix.Length == domain.Length)
+        var serialized = host.Serialized;
+        var publicSuffixStart = GetPublicSuffixStart(GetDomain(serialized));
+        if (publicSuffixStart == 0)
             return null;
 
         // The registrable domain is the public suffix and the label that precedes it
-        var labelEnd = domain.Length - publicSuffix.Length - 1;
-        var labelStart = domain.LastIndexOf('.', labelEnd - 1, StringComparison.Ordinal) + 1;
-        return domain[labelStart..] + trailingDot;
+        var labelStart = serialized.AsSpan(0, publicSuffixStart - 1).LastIndexOf('.') + 1;
+        return serialized[labelStart..];
     }
 
-    private static (string Domain, string TrailingDot) SplitTrailingDot(string host)
-        => host.Length > 1 && host[^1] == '.' ? (host[..^1], ".") : (host, "");
+    /// <summary>The host without its trailing dot.</summary>
+    private static ReadOnlySpan<char> GetDomain(string host)
+        => host.Length > 1 && host[^1] == '.' ? host.AsSpan(0, host.Length - 1) : host;
+
+    /// <summary>The index of the label that follows the one starting at <paramref name="start"/>, or -1 for the last label.</summary>
+    private static int GetNextLabelStart(ReadOnlySpan<char> domain, int start)
+    {
+        var dot = domain[start..].IndexOf('.');
+        return dot < 0 ? -1 : start + dot + 1;
+    }
 
     /// <summary>
-    /// The public suffix of a domain (without a trailing dot): the labels matched by the prevailing rule, which is an
-    /// exception rule (without its leftmost label), else the matching rule with the most labels, else <c>*</c>.
+    /// The start of the public suffix of a domain (without a trailing dot): the labels matched by the prevailing rule, which is
+    /// an exception rule (without its leftmost label), else the matching rule with the most labels, else <c>*</c>.
     /// </summary>
-    private static string GetPublicSuffix(string domain)
+    private static int GetPublicSuffixStart(ReadOnlySpan<char> domain)
     {
         var rules = AllRules.Value;
-        var suffixStarts = new List<int> { 0 };
-        for (var i = 0; i < domain.Length; i++)
-        {
-            if (domain[i] == '.')
-            {
-                suffixStarts.Add(i + 1);
-            }
-        }
 
         // An exception rule prevails: the public suffix is the rule without its leftmost label
-        foreach (var start in suffixStarts)
+        for (var start = 0; start >= 0; start = GetNextLabelStart(domain, start))
         {
             if (rules.Exceptions.Contains(domain[start..]))
-                return domain[(domain.IndexOf('.', start, StringComparison.Ordinal) + 1)..];
+                return GetNextLabelStart(domain, start);
         }
 
         // The suffixes are tested from the longest one: the first matching rule has the most labels. A wildcard rule
         // "*.suffix" matches the suffix preceded by any label.
-        for (var i = 0; i < suffixStarts.Count; i++)
+        var suffixStart = 0;
+        while (true)
         {
-            var suffix = domain[suffixStarts[i]..];
-            if (rules.Normal.Contains(suffix))
-                return suffix;
+            if (rules.Normal.Contains(domain[suffixStart..]))
+                return suffixStart;
 
-            if (i + 1 < suffixStarts.Count && rules.Wildcards.Contains(domain[suffixStarts[i + 1]..]))
-                return suffix;
+            var nextStart = GetNextLabelStart(domain, suffixStart);
+            if (nextStart < 0)
+                return suffixStart; // The default rule "*": the last label
+
+            if (rules.Wildcards.Contains(domain[nextStart..]))
+                return suffixStart;
+
+            suffixStart = nextStart;
         }
-
-        // The default rule "*": the last label
-        return domain[suffixStarts[^1]..];
     }
 
     private sealed class Rules
     {
-        public required FrozenSet<string> Normal { get; init; }
+        public required FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> Normal { get; init; }
 
         /// <summary>The suffixes of the wildcard rules (without the leading "*.").</summary>
-        public required FrozenSet<string> Wildcards { get; init; }
+        public required FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> Wildcards { get; init; }
 
         /// <summary>The exception rules (without the leading "!").</summary>
-        public required FrozenSet<string> Exceptions { get; init; }
+        public required FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> Exceptions { get; init; }
 
-        public static Rules Parse(string data)
+        public static Rules Create()
         {
-            var normal = new List<string>();
-            var wildcards = new List<string>();
-            var exceptions = new List<string>();
-            foreach (var rule in data.Split([' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
-            {
-                if (rule.StartsWith('!', StringComparison.Ordinal))
-                {
-                    exceptions.Add(rule[1..]);
-                }
-                else if (rule.StartsWith("*.", StringComparison.Ordinal))
-                {
-                    wildcards.Add(rule[2..]);
-                }
-                else
-                {
-                    normal.Add(rule);
-                }
-            }
-
             return new Rules
             {
-                Normal = normal.ToFrozenSet(StringComparer.Ordinal),
-                Wildcards = wildcards.ToFrozenSet(StringComparer.Ordinal),
-                Exceptions = exceptions.ToFrozenSet(StringComparer.Ordinal),
+                Normal = Parse(NormalRules),
+                Wildcards = Parse(WildcardRules),
+                Exceptions = Parse(ExceptionRules),
             };
+        }
+
+        private static FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> Parse(string data)
+        {
+            return data.Split([' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                .ToFrozenSet(StringComparer.Ordinal)
+                .GetAlternateLookup<ReadOnlySpan<char>>();
         }
     }
 }

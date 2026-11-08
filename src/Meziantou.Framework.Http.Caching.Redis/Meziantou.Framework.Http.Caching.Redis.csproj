@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.18</Version>
-    <IsTrimmable>true</IsTrimmable>
     <Description>Provide Redis persistence provider for Meziantou.Framework.Http.Caching</Description>
     <PackageTags>http, caching, redis, httpclient</PackageTags>
   </PropertyGroup>

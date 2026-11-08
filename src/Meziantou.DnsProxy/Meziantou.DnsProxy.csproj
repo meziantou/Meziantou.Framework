@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <Version>2.0.10</Version>
     <Description>DNS proxy service with filtering and diagnostics UI</Description>
     <PackageTags>dns, dns-proxy, dns-server, dns-filter, adblock, networking</PackageTags>

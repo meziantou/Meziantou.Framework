@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <Description>Enables verification of objects using inline snapshots</Description>
     <PackageTags>snapshot-testing, inline-snapshot, approval-tests, testing, assertions</PackageTags>
     <DefineConstants>$(DefineConstants);MEZIANTOU_INLINE_SNAPSHOT_TESTING</DefineConstants>

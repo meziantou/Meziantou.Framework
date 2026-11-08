@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.HumanReadable</RootNamespace>
     <Description>Formats the HTML values (text/html) serialized by Meziantou.Framework.HumanReadableSerializer, using the spec-compliant HTML parser of Meziantou.Framework.WebPlatform</Description>
     <PackageTags>serializer, human-readable, snapshot-testing, html</PackageTags>

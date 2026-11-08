@@ -6,7 +6,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Http</RootNamespace>
     <Version>2.1.11</Version>
-    <IsTrimmable>true</IsTrimmable>
     <Description>Provide an HTTP message handler that upgrades requests from http to https when an HSTS policy is set for the domain</Description>
     <PackageTags>http, https, hsts, security, httpclient</PackageTags>
   </PropertyGroup>

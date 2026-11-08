@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <Description>Enables verification of Roslyn objects (source generator results, syntax trees, and diagnostics) using file-based snapshots</Description>
     <PackageTags>snapshot-testing, roslyn, source-generator, testing</PackageTags>
     <Version>1.0.19</Version>

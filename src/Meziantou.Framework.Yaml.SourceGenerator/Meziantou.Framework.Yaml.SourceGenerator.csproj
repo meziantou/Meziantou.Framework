@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <IsPackable>false</IsPackable>
     <NoWarn>$(NoWarn);RS1041</NoWarn>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>

@@ -573,6 +573,464 @@ public sealed class DrawingSessionTests
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Parallel compositing
+    // -----------------------------------------------------------------------------------------------------------------
+
+    private static readonly string[] ParallelSceneNames =
+    [
+        "solid", "translucent", "aliased", "evenodd-star", "curves", "wide-stroke", "dashed-stroke", "clipped", "rectangle-clip",
+        "opacity-layer", "bounded-layer", "source-mode", "xor-mode", "multiply-blend", "horizontal-gradient", "vertical-gradient",
+        "rotated-gradient", "radial-gradient", "sweep-gradient", "path-gradient", "dithered-gradient", "brush-opacity",
+        "image", "scaled-image", "reduced-image", "bicubic-image", "image-brush", "pattern", "projected-image", "linear-light", "clear",
+    ];
+
+    public static TheoryData<string, PixelFormat> ParallelScenes()
+    {
+        var data = new TheoryData<string, PixelFormat>();
+        foreach (var scene in ParallelSceneNames)
+        {
+            data.Add(scene, PixelFormat.Rgba32);
+        }
+
+        foreach (var format in new[] { PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Rgba64, PixelFormat.La16, PixelFormat.Bgr565, PixelFormat.RgbaFloat })
+        {
+            foreach (var scene in new[] { "translucent", "clipped", "rotated-gradient", "reduced-image", "opacity-layer", "brush-opacity" })
+            {
+                data.Add(scene, format);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ParallelScenes))]
+    public void ParallelCompositingGivesThePixelsOfOneWorker(string scene, PixelFormat format)
+    {
+        foreach (var (width, height) in new[] { (613, 509), (1100, 257), (257, 1031) })
+        {
+            var expected = RenderParallelScene(scene, format, width, height, workers: 1, out var sequentialBatches);
+            Assert.Equal(0, sequentialBatches);
+            foreach (var workers in new[] { 2, 3, 8 })
+            {
+                var pixels = RenderParallelScene(scene, format, width, height, workers, out var batches);
+                Assert.True(batches > 0, $"{scene} {width}x{height} with {workers} workers was composited on the calling thread only.");
+                Assert.True(expected.AsSpan().SequenceEqual(pixels), $"{scene} {width}x{height} with {workers} workers differs.");
+            }
+        }
+    }
+
+    [Fact]
+    public void DrawingWithSeveralThreadsGivesThePixelsOfOne()
+    {
+        #region Imaging_ParallelDrawing
+        // The configuration of the image lets its draw calls composite large shapes on several threads
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Environment.ProcessorCount };
+        using var poster = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255), configuration);
+        using var reference = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255));
+        foreach (var image in new[] { poster, reference })
+        {
+            image.Draw(static canvas =>
+            {
+                canvas.Fill(new RadialGradientBrush(new PointD(1200, 800), 1400, [new GradientStop(0, new Rgba32(255, 200, 0)), new GradientStop(1, new Rgba32(0, 60, 160))]));
+                canvas.FillEllipse(new SolidBrush(new Rgba32(255, 255, 255, 128)), new PointD(1200, 800), 900, 600);
+            });
+        }
+
+        // The pixels are those of one thread
+        var pixels = new Rgba32[poster.Width * poster.Height];
+        var referencePixels = new Rgba32[pixels.Length];
+        poster.Frames[0].CopyPixelDataTo(pixels);
+        reference.Frames[0].CopyPixelDataTo(referencePixels);
+        Assert.Equal(referencePixels, pixels);
+        #endregion
+    }
+
+    [Fact]
+    public void ParallelCompositingPaintsEveryFrameAndThePoster()
+    {
+        byte[][] Render(int workers)
+        {
+            using var image = new Image<Rgba32>(700, 400, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.AppendFrame();
+            image.SetPosterFrame(image.Frames[1]);
+            image.Frames[1].Draw(static canvas => canvas.Fill(new SolidBrush(new Rgba32(10, 200, 30))), Ct);
+            image.Draw(static canvas => canvas.FillEllipse(new LinearGradientBrush(new PointD(0, 0), new PointD(500, 300), [new GradientStop(0, new Rgba32(255, 0, 0, 90)), new GradientStop(1, new Rgba32(0, 0, 255, 200))]), new PointD(350, 200), 330, 190), Ct);
+            return [Bytes(image.Frames[0]), Bytes(image.Frames[1]), Bytes(image.PosterFrame!)];
+        }
+
+        var expected = Render(1);
+        Assert.Equal(expected, Render(4));
+    }
+
+    [Fact]
+    public void SmallShapesAreCompositedOnTheCallingThread()
+    {
+        var batches = 0;
+        DrawingSession.TestBatchObserver = (_, started) =>
+        {
+            if (started)
+            {
+                Interlocked.Increment(ref batches);
+            }
+        };
+
+        try
+        {
+            using var image = new Image<Rgba32>(2000, 2000, new ImageConfiguration { MaxDegreeOfParallelism = 8 });
+            image.Draw(
+                static canvas =>
+                {
+                    // At most 2 x 128 rows of 128 pixels from the left side of the frame to the right one: below the threshold
+                    canvas.FillRectangle(White, new RectangleD(1872, 10, 128, 64));
+                    canvas.FillEllipse(White, new PointD(1950, 500), 40, 40);
+                    canvas.StrokeLine(WhitePen, new PointD(1990, 900), new PointD(1999, 950));
+                },
+                Ct);
+            Assert.Equal(0, batches);
+
+            image.Draw(static canvas => canvas.FillRectangle(White, new RectangleD(0, 0, 2000, 300)), Ct);
+            Assert.True(batches > 1);
+        }
+        finally
+        {
+            DrawingSession.TestBatchObserver = null;
+        }
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(4, 1)]
+    [InlineData(4, (int)DrawingSession.MinPixelsForParallelPaint - 1)]
+    [InlineData(1, 1 << 24)]
+    public void TheNumberOfWorkersOfAShapeIsOneBelowTheThreshold(int maxDegreeOfParallelism, int pixels)
+        => Assert.Equal(1, DrawingSession.GetPaintWorkerCount(maxDegreeOfParallelism, pixels));
+
+    [Theory]
+    [InlineData(2, DrawingSession.MinPixelsForParallelPaint, 2)]
+    [InlineData(16, DrawingSession.MinPixelsForParallelPaint, 4)]
+    [InlineData(16, 10L * DrawingSession.PixelsPerBatch, 10)]
+    [InlineData(6, 1L << 30, 6)]
+    public void TheNumberOfWorkersOfALargeShapeIsBoundedByTheConfiguration(int maxDegreeOfParallelism, long pixels, int expected)
+        => Assert.Equal(expected, DrawingSession.GetPaintWorkerCount(maxDegreeOfParallelism, pixels));
+
+    [Fact]
+    public void ParallelCompositingNeverExceedsTheConfiguredBound()
+    {
+        foreach (var workers in new[] { 2, 3, 5 })
+        {
+            var active = 0;
+            var maxActive = 0;
+            var threads = new System.Collections.Concurrent.ConcurrentDictionary<int, bool>();
+            DrawingSession.TestBatchObserver = (count, started) =>
+            {
+                Assert.Equal(workers, count);
+                if (started)
+                {
+                    threads[Environment.CurrentManagedThreadId] = true;
+                    var now = Interlocked.Increment(ref active);
+                    int seen;
+                    do
+                    {
+                        seen = Volatile.Read(ref maxActive);
+                    }
+                    while (now > seen && Interlocked.CompareExchange(ref maxActive, now, seen) != seen);
+
+                    Thread.Sleep(2); // keep the batches overlapping when they can
+                }
+                else
+                {
+                    Interlocked.Decrement(ref active);
+                }
+            };
+
+            try
+            {
+                using var image = new Image<Rgba32>(1500, 1200, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+                image.Draw(static canvas => canvas.Fill(new RadialGradientBrush(new PointD(700, 600), 800, [new GradientStop(0, new Rgba32(255, 255, 0)), new GradientStop(1, new Rgba32(0, 0, 255, 100))])), Ct);
+            }
+            finally
+            {
+                DrawingSession.TestBatchObserver = null;
+            }
+
+            Assert.InRange(maxActive, 1, workers);
+            Assert.HasCountGreaterThan(1, threads);
+        }
+    }
+
+    [Fact]
+    public void ParallelCompositingReleasesItsScratchWithTheSession()
+    {
+        using var image = new Image<Rgba32>(1200, 900, new ImageConfiguration { MaxDegreeOfParallelism = 4 });
+        using var source = new Image<Rgba32>(300, 200, new Rgba32(1, 2, 3, 200));
+        var live = image.Owner.Scope.LiveBytes;
+        image.Draw(
+            canvas =>
+            {
+                canvas.Clip(new RectangleD(5, 5, 1100, 800), canvas => canvas.Layer(0.5, canvas =>
+                {
+                    canvas.Fill(new ImageBrush(source.Frames[0]) { Transform = AffineTransform.CreateRotation(10), WrapMode = ImageWrapMode.Repeat, Opacity = 0.7 });
+                    canvas.FillEllipse(new SweepGradientBrush(new PointD(600, 450), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255, 0))]) { Opacity = 0.5 }, new PointD(600, 450), 500, 400);
+                }));
+                Assert.True(image.Owner.Scope.LiveBytes > live);
+            },
+            Ct);
+        Assert.Equal(live, image.Owner.Scope.LiveBytes);
+    }
+
+    [Fact]
+    public void ParallelCompositingIsCanceledLikeTheCallingThread()
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var image = new Image<Rgba32>(1000, 3000, new ImageConfiguration { MaxDegreeOfParallelism = 4 });
+        var batches = 0;
+        DrawingSession.TestBatchObserver = (_, started) =>
+        {
+            if (started && Interlocked.Increment(ref batches) == 3)
+            {
+                cancellation.Cancel();
+            }
+        };
+
+        try
+        {
+            Assert.Throws<OperationCanceledException>(() => image.Draw(static canvas => canvas.Fill(new SolidBrush(new Rgba32(9, 8, 7, 128))), cancellation.Token));
+        }
+        finally
+        {
+            DrawingSession.TestBatchObserver = null;
+        }
+
+        // The rows that were composited are those of whole batches, from the top
+        var pixels = new Rgba32[image.Width * image.Height];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        Assert.NotEqual(default, pixels[0]);
+        Assert.Equal(default, pixels[^1]);
+        image.Draw(static canvas => canvas.Fill(White), Ct);
+    }
+
+    [Fact]
+    public void AFailureOfAWorkerIsTheFailureOfTheEarliestRow()
+    {
+        // A floating-point image with samples that a 16-bit color cannot hold fails where a row first reads one, as on the
+        // calling thread: the sample of the lower row has another failure
+        using var source = new Image<RgbaFloat>(64, 64, new RgbaFloat(0.5f, 0.25f, 1, 1));
+        source.Frames[0][10, 30] = new RgbaFloat(float.NaN, 0, 0, 1);
+        source.Frames[0][20, 50] = new RgbaFloat(4, 0, 0, 1);
+        Exception? expected = null;
+        foreach (var workers in new[] { 1, 2, 4, 8 })
+        {
+            using var image = new Image<Rgba32>(1000, 1000, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            var exception = Record.Exception(() => image.Draw(canvas => canvas.DrawImage(source.Frames[0], new RectangleD(0, 0, 1000, 1000)), Ct));
+            Assert.NotNull(exception);
+            expected ??= exception;
+            Assert.Equal(expected.GetType(), exception.GetType());
+            Assert.Equal(expected.Message, exception.Message);
+            image.Draw(static canvas => canvas.Fill(White), Ct);
+        }
+    }
+
+    /// <summary>Renders a scene on an image of a pixel format, and gives its bytes and the number of batches that workers composited.</summary>
+    private static byte[] RenderParallelScene(string scene, PixelFormat format, int width, int height, int workers, out int batches)
+    {
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+        using var image = CreateParallelImage(format, width, height, configuration);
+        using var source = new Image<Rgba32>(97, 61);
+        for (var y = 0; y < source.Height; y++)
+        {
+            for (var x = 0; x < source.Width; x++)
+            {
+                source.Frames[0][x, y] = new Rgba32((byte)(x * 13), (byte)(y * 7), (byte)((x * y) + 31), (byte)(255 - (x + y)));
+            }
+        }
+
+        // A backdrop that is not uniform, drawn on the calling thread
+        image.Draw(
+            canvas =>
+            {
+                for (var i = 0; i < 12; i++)
+                {
+                    canvas.FillRectangle(new SolidBrush(new Rgba32((byte)(i * 20), (byte)(255 - (i * 15)), (byte)(i * 7), (byte)(100 + (i * 10)))), new RectangleD(i * width / 12.0, 0, 9, height));
+                }
+            },
+            Ct);
+
+        var count = 0;
+        DrawingSession.TestBatchObserver = (_, started) =>
+        {
+            if (started)
+            {
+                Interlocked.Increment(ref count);
+            }
+        };
+
+        try
+        {
+            image.Draw(canvas => DrawParallelScene(canvas, scene, width, height, source.Frames[0]), Ct);
+        }
+        finally
+        {
+            DrawingSession.TestBatchObserver = null;
+        }
+
+        batches = count;
+        return Bytes(image.Frames[0]);
+    }
+
+    private static void DrawParallelScene(DrawingCanvas canvas, string scene, int width, int height, ImageFrame source)
+    {
+        var center = new PointD(width / 2.0, height / 2.0);
+        var translucent = new SolidBrush(new Rgba32(200, 40, 90, 140));
+        GradientStop[] stops = [new GradientStop(0, new Rgba32(255, 0, 0, 255)), new GradientStop(0.4, new Rgba32(20, 230, 40, 120)), new GradientStop(1, new Rgba32(0, 0, 255, 200))];
+        var star = new PointD[11];
+        for (var i = 0; i < star.Length; i++)
+        {
+            var angle = i * 4 * Math.PI / 11;
+            star[i] = new PointD(center.X + (Math.Cos(angle) * width * 0.48), center.Y + (Math.Sin(angle) * height * 0.48));
+        }
+
+        var curve = new VectorPathBuilder().MoveTo(3.3, 7.1).CubicBezierTo(width * 1.2, -height * 0.3, -width * 0.2, height * 1.3, width - 2.7, height - 4.1).QuadraticBezierTo(width * 0.1, height * 0.9, 3.3, height * 0.6).Close().Build();
+        switch (scene)
+        {
+            case "solid":
+                canvas.FillRectangle(new SolidBrush(new Rgba32(30, 60, 90)), new RectangleD(0.25, 0.75, width - 0.5, height - 1.5));
+                break;
+            case "translucent":
+                canvas.FillEllipse(translucent, center, width * 0.47, height * 0.46);
+                break;
+            case "aliased":
+                canvas.Antialiasing(false, canvas => canvas.FillPolygon(translucent, star, FillRule.EvenOdd));
+                break;
+            case "evenodd-star":
+                canvas.FillPolygon(translucent, star, FillRule.EvenOdd);
+                break;
+            case "curves":
+                canvas.Fill(translucent, curve);
+                break;
+            case "wide-stroke":
+                canvas.Stroke(new Pen(translucent, 37.5) { LineJoin = LineJoin.Round }, curve);
+                break;
+            case "dashed-stroke":
+                canvas.StrokeEllipse(new Pen(translucent, 21) { DashPattern = [30, 7.5], LineCap = LineCap.Round }, center, width * 0.4, height * 0.4);
+                break;
+            case "clipped":
+                canvas.Clip(curve, canvas => canvas.FillPolygon(new LinearGradientBrush(new PointD(0, 0), new PointD(width, height * 0.3), stops), star), FillRule.EvenOdd);
+                break;
+            case "rectangle-clip":
+                canvas.Clip(new RectangleD(10.5, 20.25, width - 31, height - 40.5), canvas => canvas.FillEllipse(translucent, center, width * 0.6, height * 0.6));
+                break;
+            case "opacity-layer":
+                canvas.Layer(0.6, canvas =>
+                {
+                    canvas.FillEllipse(translucent, center, width * 0.45, height * 0.45);
+                    canvas.FillRectangle(new SolidBrush(new Rgba32(0, 200, 100, 200)), new RectangleD(0, height * 0.3, width, height * 0.4));
+                });
+                break;
+            case "bounded-layer":
+                canvas.Layer(new RectangleD(20, 30, width - 60, height - 50), 0.8, canvas => canvas.Fill(new RadialGradientBrush(center, width * 0.5, stops)), CompositeMode.SourceAtop, BlendMode.Screen);
+                break;
+            case "source-mode":
+                canvas.FillEllipse(new SolidBrush(new Rgba32(10, 250, 10, 60)) { CompositeMode = CompositeMode.Source }, center, width * 0.45, height * 0.4);
+                break;
+            case "xor-mode":
+                canvas.FillPolygon(new LinearGradientBrush(new PointD(0, height), new PointD(width, 0), stops) { CompositeMode = CompositeMode.Xor }, star);
+                break;
+            case "multiply-blend":
+                canvas.Fill(new SolidBrush(new Rgba32(250, 120, 60, 200)) { BlendMode = BlendMode.Multiply }, curve);
+                break;
+            case "horizontal-gradient":
+                canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(width, 0), stops));
+                break;
+            case "vertical-gradient":
+                canvas.FillEllipse(new LinearGradientBrush(new PointD(0, 0), new PointD(0, height), stops), center, width * 0.5, height * 0.5);
+                break;
+            case "rotated-gradient":
+                canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(width * 0.2, height * 0.1), stops) { SpreadMode = GradientSpreadMode.Reflect, Transform = AffineTransform.CreateRotation(31) });
+                break;
+            case "radial-gradient":
+                canvas.Fill(new RadialGradientBrush(center, Math.Min(width, height) * 0.4, stops) { SpreadMode = GradientSpreadMode.Repeat });
+                break;
+            case "sweep-gradient":
+                canvas.Fill(new SweepGradientBrush(center, stops));
+                break;
+            case "path-gradient":
+                var colors = new Rgba64[star.Length];
+                for (var i = 0; i < colors.Length; i++)
+                {
+                    colors[i] = new Rgba32((byte)(i * 23), (byte)(250 - (i * 20)), (byte)(i * 11), (byte)(120 + (i * 12)));
+                }
+
+                canvas.Fill(new PathGradientBrush(star, colors, new Rgba32(255, 255, 255, 60)));
+                break;
+            case "dithered-gradient":
+                canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(width, height), [new GradientStop(0, new Rgba32(10, 20, 30)), new GradientStop(1, new Rgba32(14, 26, 33))]) { Dither = true });
+                break;
+            case "brush-opacity":
+                canvas.FillEllipse(new RadialGradientBrush(center, width * 0.3, stops) { Opacity = 0.35 }, center, width * 0.48, height * 0.48);
+                break;
+            case "image":
+                canvas.DrawImage(source, new RectangleD(0, 0, width, height), 0.8);
+                break;
+            case "scaled-image":
+                canvas.DrawImage(source, AffineTransform.CreateScale(width / 80.0, height / 55.0) * AffineTransform.CreateRotation(13, center));
+                break;
+            case "reduced-image":
+                canvas.DrawImage(source, new RectangleD(width * 0.1, height * 0.1, 40.5, 30.25));
+                canvas.Fill(new ImageBrush(source) { Transform = AffineTransform.CreateScale(0.37, 0.41), WrapMode = ImageWrapMode.Reflect });
+                break;
+            case "bicubic-image":
+                canvas.DrawImage(source, new RectangleD(-3.5, 2.25, width + 7, height - 4), ImageSampling.Bicubic, 0.9);
+                break;
+            case "image-brush":
+                canvas.Fill(new ImageBrush(source) { Transform = AffineTransform.CreateRotation(-21) * AffineTransform.CreateScale(2.5, 1.5), WrapMode = ImageWrapMode.Repeat, Opacity = 0.75 }, curve);
+                break;
+            case "pattern":
+                canvas.Fill(new PatternBrush(new RectangleD(0, 0, 23.5, 17.25), static tile =>
+                {
+                    tile.FillEllipse(new SolidBrush(new Rgba32(250, 200, 0, 180)), new PointD(10, 8), 9, 6);
+                    tile.StrokeLine(new Pen(new SolidBrush(new Rgba32(0, 0, 0)), 2), new PointD(0, 0), new PointD(23.5, 17.25));
+                }));
+                break;
+            case "projected-image":
+                canvas.DrawImage(source, new PointD(10, 20), new PointD(width - 5, 0), new PointD(width * 0.8, height - 10), new PointD(30, height * 0.9), ImageSampling.Bilinear, 0.95);
+                break;
+            case "linear-light":
+                canvas.Compositing(CompositingSpace.LinearSrgb, canvas =>
+                {
+                    canvas.FillEllipse(translucent, center, width * 0.45, height * 0.45);
+                    canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(width, height), stops) { Opacity = 0.5 });
+                });
+                break;
+            case "clear":
+                canvas.Clip(curve, canvas => canvas.Clear(new Rgba64(1000, 30000, 65535, 20000)));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(scene), scene, "Unknown scene.");
+        }
+    }
+
+    private static Image CreateParallelImage(PixelFormat format, int width, int height, ImageConfiguration configuration) => format switch
+    {
+        PixelFormat.Rgba32 => new Image<Rgba32>(width, height, configuration),
+        PixelFormat.Bgra32 => new Image<Bgra32>(width, height, configuration),
+        PixelFormat.Rgb24 => new Image<Rgb24>(width, height, configuration),
+        PixelFormat.Gray8 => new Image<Gray8>(width, height, configuration),
+        PixelFormat.Rgba64 => new Image<Rgba64>(width, height, configuration),
+        PixelFormat.La16 => new Image<La16>(width, height, configuration),
+        PixelFormat.Bgr565 => new Image<Bgr565>(width, height, configuration),
+        PixelFormat.RgbaFloat => new Image<RgbaFloat>(width, height, configuration),
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is not a format of the parallel scenes."),
+    };
+
+    private static byte[] Bytes(ImageFrame frame)
+    {
+        var bytes = new byte[frame.Width * frame.Height * PixelFormats.GetBytesPerPixel(frame.PixelFormat)];
+        frame.CopyPixelBytesTo(bytes);
+        return bytes;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Metadata
     // -----------------------------------------------------------------------------------------------------------------
 

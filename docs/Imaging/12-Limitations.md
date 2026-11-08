@@ -50,7 +50,6 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 ## Drawing and text
 
-- Drawing is sequential: it does not use several threads.
 - No mesh gradients.
 - Text lines are broken greedily; no word lists are provided for the scripts that need a dictionary to find word
   boundaries.

@@ -14,4 +14,9 @@
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The unit tests of the reference linters of the GS1 Barcode Syntax Dictionary (see Gs1/README.md) -->
+    <EmbeddedResource Include="Gs1\gs1-linter-tests.json" LogicalName="Meziantou.Framework.Barcodes.Tests.gs1-linter-tests.json" />
+  </ItemGroup>
+
 </Project>

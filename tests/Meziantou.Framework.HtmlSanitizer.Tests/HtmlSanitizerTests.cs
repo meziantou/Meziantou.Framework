@@ -532,6 +532,64 @@ public class HtmlSanitizerTests
     }
 
     [Fact]
+    public void Sanitize_Limits()
+    {
+        #region HtmlSanitizer_Limits
+        var sanitizer = new HtmlSanitizer
+        {
+            MaxInputLength = 10_000,
+            MaxElementCount = 1_000,
+        };
+
+        // A fragment longer than MaxInputLength is rejected before it is parsed
+        Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(new string('a', 10_001)));
+
+        // A short fragment can still create many elements: each paragraph recreates the open formatting elements
+        var amplified = "<p>" + string.Concat(Enumerable.Range(0, 100).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 100));
+        Assert.HasCountLessThan(sanitizer.MaxInputLength, amplified);
+        Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(amplified));
+        #endregion
+    }
+
+    [Fact]
+    public void Sanitize_DefaultLimits()
+    {
+        var sanitizer = new HtmlSanitizer();
+        Assert.Equal(1_000_000, sanitizer.MaxInputLength);
+        Assert.Equal(100_000, sanitizer.MaxElementCount);
+
+        // 1,000 x 1,000 reconstructed formatting elements would create a million elements from about 17,000 characters
+        var amplified = "<p>" + string.Concat(Enumerable.Range(0, 1_000).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 1_000));
+        var exception = Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(amplified));
+        Assert.Equal("html", exception.ParamName);
+        Assert.IsType<Meziantou.Framework.WebPlatform.HtmlParserLimitExceededException>(exception.InnerException);
+
+        Assert.Equal("html", Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment(new string('a', 1_000_001))).ParamName);
+    }
+
+    [Fact]
+    public void Sanitize_FragmentAtTheLimits()
+    {
+        var sanitizer = new HtmlSanitizer { MaxInputLength = 12, MaxElementCount = 2 };
+        Assert.Equal("<p><b>ab</b></p>", sanitizer.SanitizeHtmlFragment("<p><b>ab</b>"));
+        Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment("<p><b>abc</b>"));
+        Assert.Throws<ArgumentException>(() => sanitizer.SanitizeHtmlFragment("<p><b><i>"));
+
+        sanitizer.MaxInputLength = int.MaxValue;
+        sanitizer.MaxElementCount = int.MaxValue;
+        var amplified = "<p>" + string.Concat(Enumerable.Range(0, 100).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 100));
+        Assert.NotEmpty(sanitizer.SanitizeHtmlFragment(amplified));
+    }
+
+    [Fact]
+    public void Sanitize_NegativeLimitsAreRejected()
+    {
+        var sanitizer = new HtmlSanitizer();
+        Assert.Throws<ArgumentOutOfRangeException>(() => sanitizer.MaxInputLength = -1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => sanitizer.MaxElementCount = -1);
+    }
+
+    [Fact]
     public void Sanitize_CanAllowAdditionalElements()
     {
         var sanitizer = new HtmlSanitizer();

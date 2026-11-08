@@ -10,6 +10,7 @@ These instructions complete the repository-level `AGENTS.md`.
 
 ```
 docs/
+  PackageDependencies.md
   <Library>/
     _folder.yml
     <nn>-<Page>.md
@@ -28,6 +29,10 @@ docs/
 - A group folder opens with `01-Overview.md`, which introduces the group and links to its pages.
 - Renumbering or renaming a page or a folder changes its links: update every link to it in the same change.
 - `AGENTS.md` files are instructions, not pages.
+- `PackageDependencies.md` is the one page outside the sections. Its `<DependencyGraph Packages="..." />` elements are
+  drawn by the documentation generator from the dependencies of the packed packages, so they stay current without
+  edits. `Packages` takes package ids where `*` matches any characters; `External="true"` also draws the packages
+  that are not part of this repository.
 - `WebPlatform/10-WptCoverage/` is generated, `_folder.yml` files included: never edit it, run the `wpt-coverage`
   command of `tools/Meziantou.Framework.WebPlatform.SpecUpdate`. Its section pages keep the names of the WPT
   directories (`css/css-align.md`), so they are not numbered.

@@ -39,4 +39,4 @@ data of the file it was read from.
 - [Managing pages](07-ManagingPages.md): move, duplicate, remove and merge pages, page boxes, display coordinates, and
   stamp a page on others.
 - [Extracting images](08-ExtractingImages.md): the images of a page, where they are, and their pixels.
-- [Forms](09-Forms.md): read, fill and flatten the fields of an interactive form.
+- [Forms](09-Forms.md): create, read, fill and flatten the fields of an interactive form.

@@ -2,7 +2,9 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -1400,6 +1402,149 @@ public sealed class TdsServerProtocolTests
 
         await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: "True"));
         _ = await Assert.ThrowsAnyAsync<SqlException>(() => connection.OpenAsync());
+    }
+
+    [Fact]
+    public async Task SqlClient_EncryptStrict_Connects()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 42)));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        // Strict encryption always validates the certificate, so the client pins the self-signed one
+        await using var connection = new SqlConnection(CreateStrictConnectionString(port, tlsCertificateFiles.PemCertificatePath));
+        await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await connection.OpenAsync();
+            return true;
+        });
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            Assert.Equal(42, Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture));
+        }
+    }
+
+    [Fact]
+    public async Task SqlClient_EncryptStrict_AndPreLoginEncryption_WorkOnSameEndpoint()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions
+        {
+            TlsPemCertificatePath = tlsCertificateFiles.PemCertificatePath,
+            TlsPemPrivateKeyPath = tlsCertificateFiles.PemPrivateKeyPath,
+            RequireEncryption = true,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1)));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        var strictResult = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateStrictConnectionString(port, tlsCertificateFiles.PemCertificatePath));
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            return Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
+        });
+        var mandatoryResult = await ExecuteScalarWithTransientSqlRetryAsync(port, encrypt: "Mandatory");
+
+        Assert.Equal(1, strictResult);
+        Assert.Equal(1, mandatoryResult);
+    }
+
+    [Fact]
+    public async Task SqlClient_EncryptStrict_WhenServerDoesNotSupportEncryption_Throws()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateStrictConnectionString(port, tlsCertificateFiles.PemCertificatePath));
+        _ = await Assert.ThrowsAnyAsync<SqlException>(() => connection.OpenAsync());
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5398:Avoid hardcoded SslProtocols values", Justification = "The test checks that the server accepts TLS 1.3")]
+    public async Task RawClient_EncryptStrict_NegotiatesTds80AlpnOverTls13()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsMacOS(), "SslStream does not support TLS 1.3 on macOS.");
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows() && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348), "TLS 1.3 requires Windows 11 or Windows Server 2022.");
+
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+        using var serverCertificate = X509Certificate2.CreateFromPem(File.ReadAllText(tlsCertificateFiles.PemCertificatePath));
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
+        await using var sslStream = new SslStream(client.GetStream());
+        await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+        {
+            TargetHost = "localhost",
+            EnabledSslProtocols = SslProtocols.Tls13,
+            ApplicationProtocols = [new SslApplicationProtocol("tds/8.0")],
+            RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => certificate is not null && certificate.GetCertHashString() == serverCertificate.Thumbprint,
+        }, cancellationTokenSource.Token);
+
+        Assert.Equal(SslProtocols.Tls13, sslStream.SslProtocol);
+        Assert.Equal("tds/8.0", sslStream.NegotiatedApplicationProtocol.ToString());
+
+        // The PRELOGIN exchange happens inside the TLS session, and the server does not offer a second TLS upgrade
+        await sslStream.WriteAsync(RawTdsClient.CreateTdsMessage(0x12, [0x01, 0x00, 0x06, 0x00, 0x01, 0xFF, 0x00]), cancellationTokenSource.Token);
+        var (preLoginType, preLoginPayload) = await RawTdsClient.ReadTdsMessageAsync(sslStream, cancellationTokenSource.Token);
+        Assert.Equal(0x12, preLoginType);
+        Assert.Equal(0x02, preLoginPayload[6]); // ENCRYPT_NOT_SUP
+
+        await sslStream.WriteAsync(RawTdsClient.CreateTdsMessage(0x10, new byte[94]), cancellationTokenSource.Token);
+        var (loginType, loginPayload) = await RawTdsClient.ReadTdsMessageAsync(sslStream, cancellationTokenSource.Token);
+        Assert.Equal(0x04, loginType);
+        Assert.Contains((byte)0xAD, loginPayload); // LOGINACK
     }
 
     [Fact]
@@ -2905,6 +3050,11 @@ public sealed class TdsServerProtocolTests
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)
     {
         return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout={connectTimeout}";
+    }
+
+    private static string CreateStrictConnectionString(int port, string serverCertificatePath)
+    {
+        return CreateConnectionString(port, encrypt: "Strict", trustServerCertificate: false, connectTimeout: 15) + $";Server Certificate={serverCertificatePath}";
     }
 
     private static TlsCertificateFiles CreateTlsCertificateFiles()

@@ -32,10 +32,12 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile, compressed without loss with the PNG predictors or as JPEG, black and white images compressed with CCITT Group 4 or JBIG2), the document information and the XMP
   metadata, the outline (bookmarks), links and annotations (notes, text markups, free texts, stamps, flags), page
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
-  (`PdfContentBuilder.DrawTextBox`), pages moved, duplicated, removed and imported from other documents (merging), a
+  (`PdfContentBuilder.DrawTextBox`: Unicode line breaking, soft hyphens and pluggable hyphenation), tables
+  (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page), pages moved, duplicated, removed and imported from other documents (merging), a
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), positioned
-  text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), image extraction
-  (`PdfPage.GetImages`), interactive forms read, filled and flattened (`PdfDocument.Form`)
+  text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
+  layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
+  (`PdfPage.GetImages`), interactive forms created, read, filled and flattened (`PdfDocument.Form`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
@@ -332,6 +334,33 @@ public static byte[] Merge(IEnumerable<byte[]> files)
 ```
 <!-- endref -->
 
+## Create a form
+
+`PdfInteractiveForm.AddTextField`, `AddCheckBox`, `AddRadioButtons`, `AddComboBox`, `AddListBox` and
+`AddSignatureField` create the fields, their widgets and their appearances. The fonts of the text fields can be
+embedded: they are added to the default resources of the form (`PdfInteractiveForm.AddFont`), whole for the fields
+that can be edited. Check boxes and radio buttons draw their symbols as paths.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfInteractiveFormTests.cs;region=Pdf_CreateForm;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+var page = document.Pages.Add(PdfSize.A4);
+var form = document.Form;
+form.AddTextField(page, "name", new PdfRectangle(50, 780, 300, 800), new PdfTextFieldOptions { Value = "Jane Doe", IsRequired = true });
+form.AddTextField(page, "address.city", new PdfRectangle(50, 750, 300, 770));
+form.AddCheckBox(page, "agree", new PdfRectangle(50, 720, 65, 735), new PdfCheckBoxOptions { IsChecked = true });
+form.AddRadioButtons("size",
+[
+    new PdfRadioButton(page, new PdfRectangle(50, 690, 65, 705), "S"),
+    new PdfRadioButton(page, new PdfRectangle(80, 690, 95, 705), "L"),
+], new PdfRadioButtonOptions { Value = "S" });
+form.AddComboBox(page, "country", new PdfRectangle(50, 650, 200, 670), [new PdfChoiceOption("fr", "France"), new PdfChoiceOption("de", "Germany")], new PdfChoiceFieldOptions { SelectedValues = ["fr"] });
+form.AddSignatureField(page, "signature", new PdfRectangle(50, 550, 250, 620));
+
+var data = document.ToByteArray();
+```
+<!-- endref -->
+
 ## Fill a form
 
 `PdfDocument.Form` reads the fields of an interactive form. Setting a value writes the value and the appearance of the
@@ -481,7 +510,9 @@ signatures of a document.
 - **Signing**: B-B, a CAdES detached signature (`ETSI.CAdES.detached`) with the ESS signing certificate, and B-T, its
   RFC 3161 time stamp; RSA (PKCS #1 v1.5 or PSS) and ECDSA keys, SHA-256, SHA-384 and SHA-512; certification
   signatures (DocMDP) and field locks (FieldMDP); visible signatures (`PdfSignatureAppearance`); the validation data of
-  B-LT (`PdfSigner.AddValidationData`) and the document time stamps of B-LTA (`PdfSigner.TimestampAsync`); every
+  B-LT (`PdfSigner.AddValidationData`; `PdfSigner.AddValidationDataAsync` completes the chains, downloads the
+  missing OCSP responses, revocation lists and issuers when asked, and writes VRI dictionaries) and the document time
+  stamps of B-LTA (`PdfSigner.TimestampAsync`); every
   operation is appended as an incremental update, so that the signatures of the document stay valid; encrypted
   documents are signed with their keys
 - **Verification**: the integrity of the bytes each signature covers, the CMS signature (one signer), the ESS signing
@@ -503,7 +534,9 @@ var isValid = signature.IsValid && signature.CoversWholeDocument;
 ```
 <!-- endref -->
 
-The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it. The field name
+The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it: its `Draw`
+callback draws the appearance, or, without it, the library draws the name of the signer, the date, the reason, the
+location and an optional `Image`. The field name
 is unique: an existing signature field that is not signed yet is signed, another existing name throws.
 `PdfSignatureOptions` also sets the information of the signature dictionary (reason, location, contact, name, time),
 the other certificates of the chain to embed, the certification level and the field lock. A document certified with
@@ -551,10 +584,11 @@ specification says; a content stream that cannot be decoded throws when its data
   embedded. The save checks what the conformance levels require of the document as a whole; the
   content (the order of the structure, the colors of the annotations of PDF/A-1, the values of the numbers) follows
   the other rules of the level.
-- The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
-  not detect columns. The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
+- The text extraction follows the order of the content, or finds the columns from the blank spaces of the page
+  (`PdfTextReadingOrder.Layout`, read from left to right). The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
   text, but not their CIDs: their glyphs get the default width of the font.
-- The API reads, fills and flattens the fields of interactive forms, but does not create them. The text boxes break the
-  lines at the spaces, without the Unicode line breaking rules nor hyphenation.
+- The fields of a saved document whose default appearance names an embedded font are filled with that font only when
+  it is given again (`PdfInteractiveForm.AddFont`); otherwise their values are drawn with Helvetica. The text boxes
+  break the lines at the spaces, without the Unicode line breaking rules nor hyphenation.
 - The renderer composites in sRGB: overprint is not simulated, and the halftones are applied to the red, green and blue
   components only, when `PdfRenderOptions.UseHalftones` asks for them.

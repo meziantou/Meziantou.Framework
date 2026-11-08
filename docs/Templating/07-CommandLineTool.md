@@ -1,9 +1,9 @@
 ---
 title: Command-line tool
-description: Render a template file from the command line, to the console or to a file, with the default or T4 delimiters.
+description: Render template files from the command line, to the console or to files, with arguments, glob patterns and the default or T4 delimiters.
 ---
 
-`Meziantou.Framework.Templating.Tool` renders a template file without writing code: use it in scripts and builds to
+`Meziantou.Framework.Templating.Tool` renders template files without writing code: use it in scripts and builds to
 generate source code or configuration files.
 
 The [command reference](11-CommandReference.md) lists every option of the tool.
@@ -28,8 +28,8 @@ Add `--output` to write it to a file instead. The folder of the file is created 
 Meziantou.Framework.Templating.Tool --input template.txt --output generated/result.txt
 ```
 
-The template uses the [syntax](03-TemplateSyntax.md) of the library. It receives no argument: compute the data it needs
-in its code blocks, for instance by reading a file.
+The template uses the [syntax](03-TemplateSyntax.md) of the library. `--root-directory` sets the folder that relative
+input paths are read from; by default, the current folder.
 
 ## Generate a file next to the template
 
@@ -79,6 +79,94 @@ public static class Weekdays
 The lines that only hold a directive or a statement block leave no empty line; see
 [Line breaks](03-TemplateSyntax.md#line-breaks). `--output` takes precedence over the directive.
 
+## Pass arguments
+
+The template receives values through [arguments](04-PassingArguments.md). `--arg name=value` passes a string; repeat it
+for each argument. `--arguments-file` reads the arguments from the properties of a JSON object:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tool.Tests/Examples/Release.json;format=md-fenced-code-block;language=json -->
+```json
+{
+  "Product": "Contoso",
+  "Version": 2,
+  "Features": [ "Search", "Export" ]
+}
+```
+<!-- endref -->
+
+The template uses the arguments as variables:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tool.Tests/Examples/Release.template;format=md-fenced-code-block;language=text -->
+```text
+<%@ outputextension .txt %>
+<%= Product %> <%= Version %> (<%= Channel %>)
+<% foreach (var feature in Features.EnumerateArray()) { %>
+- <%= feature.GetString() %>
+<% } %>
+```
+<!-- endref -->
+
+```bash
+Meziantou.Framework.Templating.Tool --input Release.template --arguments-file Release.json --arg Channel=preview
+```
+
+The tool writes `Release.txt`:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tool.Tests/Examples/Release.txt;format=md-fenced-code-block;language=text -->
+```text
+Contoso 2 (preview)
+- Search
+- Export
+```
+<!-- endref -->
+
+The type of an argument comes from its JSON value:
+
+| JSON value | C# type |
+| --- | --- |
+| string | `string` |
+| `true`, `false` | `bool` |
+| integer | `long` |
+| other number | `decimal`, or `double` when the value does not fit in a `decimal` |
+| `null` | `object` |
+| object, array | `System.Text.Json.JsonElement` |
+
+`--arg` values come after the file: an `--arg` replaces the property of the same name, and the last `--arg` of a name
+wins. A name must be a valid C# identifier and not a C# keyword, because it becomes the name of a parameter. The JSON
+file can contain comments and trailing commas.
+
+Every template of the run receives every argument, and ignores the ones it does not use.
+
+## Render several templates
+
+Repeat `--input`, or pass a glob pattern, to render several templates in one run. This is faster than one run per
+template, and the templates are compiled in parallel:
+
+```bash
+Meziantou.Framework.Templating.Tool --input "templates/**/*.tt" --output-directory generated --output-extension .txt
+```
+
+The patterns use the syntax of MSBuild: `*` and `?` match a part of a name, `**` matches any number of folders, and
+both `/` and `\` separate folders. A value that names an existing file is that file, even when it contains `*` or `?`.
+A template matched by several values is rendered once.
+
+Each template generates its own file, so the standard output cannot be used. The name of the file is the name of the
+template with the extension of its output directive, or `--output-extension` when it has none. A template without a
+directive and without `--output-extension` is an error. The file is written:
+
+- in `--output-directory`, when you set it. A template matched by a glob pattern keeps its path relative to the part
+  of the pattern before the first wildcard: with `templates/**/*.tt`, `templates/emails/welcome.tt` generates
+  `generated/emails/welcome.txt`. A template passed by its path is written at the root of the folder.
+- next to the template otherwise.
+
+A glob pattern always follows these rules, even when it matches a single template. `--output` names the file of a single
+template, so it cannot be used with several templates.
+
+Before it renders anything, the tool checks the inputs: a pattern that matches no file, a template whose output file is
+unknown, two templates that generate the same file, and a generated file that would replace its template are reported,
+and no file is written. A template that fails to compile or to run does not stop the others: the tool renders them and
+exits with code 1.
+
 ## Use T4-style templates
 
 The tool also reads templates written with the delimiters of T4, `<#` and `#>`, and the `output` directive of T4. It
@@ -121,8 +209,13 @@ Pass both, unless you choose one of the known pairs: `--start-code-block-delimit
 
 | Option | Description |
 | --- | --- |
-| `--input <path>` | The template file. Required. |
-| `--output <path>` | The file to write. When omitted, the file named by an output directive, or the standard output. |
+| `--input <path>` | A template file, or a glob pattern that matches template files. Required; can be repeated. |
+| `--output <path>` | The file to write, for a single template. When omitted, the file named by the output directive or `--output-extension`, or the standard output. |
+| `--output-directory <path>` | The folder of the generated files. When omitted, each file is written next to its template. |
+| `--output-extension <extension>` | The extension of the generated file of a template that has no output directive. |
+| `--root-directory <path>` | The folder that relative input paths and glob patterns are read from. By default, the current folder. |
+| `--arg <name=value>` | A string argument passed to the templates. Can be repeated. |
+| `--arguments-file <path>` | A JSON file whose root object holds the arguments passed to the templates. |
 | `--start-code-block-delimiter <text>` | The start delimiter of code blocks. When omitted, inferred from a known end delimiter or detected from the template. |
 | `--end-code-block-delimiter <text>` | The end delimiter of code blocks. When omitted, inferred from a known start delimiter or detected from the template. |
 | `--output-encoding <name>` | The encoding of the output file: `utf8` (the default, without byte order mark), `utf8-bom`, or a .NET encoding name such as `utf-16`, `unicode` or `utf-32`. |
@@ -135,6 +228,8 @@ Pass both, unless you choose one of the known pairs: `--start-code-block-delimit
 The tool exits with code 0 when it succeeds, and 1 when it fails, with a message on the standard error:
 
 - a missing input file, an empty delimiter, a single unknown delimiter, an unknown line ending or encoding;
+- an invalid argument or arguments file, or a problem with the inputs of a run of several templates (see
+  [Render several templates](#render-several-templates));
 - a compilation error of the template, reported with the path of the template, the line and the column of the error;
 - an exception thrown by the code of the template, reported as `path(line,column): error: message`, at the position of
   the code that threw it.

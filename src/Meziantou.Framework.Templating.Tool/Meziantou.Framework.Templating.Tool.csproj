@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
   </ItemGroup>
 

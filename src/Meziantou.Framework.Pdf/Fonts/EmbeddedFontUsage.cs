@@ -27,6 +27,7 @@ internal sealed class EmbeddedFontUsage
     private bool _writtenCidSet;
     private int _writtenVersion = -1;
     private int _version;
+    private bool _embedAllGlyphs;
 
     public EmbeddedFontUsage(EmbeddedPdfFont font, PdfReference reference)
     {
@@ -36,6 +37,24 @@ internal sealed class EmbeddedFontUsage
 
     /// <summary>Gets the reference to the <c>Type0</c> font dictionary.</summary>
     public PdfReference Reference { get; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the font program is embedded whole: every glyph, and the text of every
+    /// glyph of the character map in the <c>ToUnicode</c> CMap. The fonts of the default resources of an interactive form
+    /// need it, so that viewers can show the text typed in a field (ISO 32000-2, 12.7.4.3).
+    /// </summary>
+    public bool EmbedAllGlyphs
+    {
+        get => _embedAllGlyphs;
+        set
+        {
+            if (_embedAllGlyphs != value)
+            {
+                _embedAllGlyphs = value;
+                _version++;
+            }
+        }
+    }
 
     /// <summary>Records the glyphs of a shaped text.</summary>
     /// <returns><see langword="false"/> when a glyph already shows another text in the document: the text then needs a replacement text to be extracted.</returns>
@@ -78,9 +97,12 @@ internal sealed class EmbeddedFontUsage
         _writtenCidSet = writeCidSet;
         var face = _font.Face;
         var isCff = face.Outlines == FontOutlineKind.Cff;
-        var baseFont = CreateSubsetTag() + "+" + _font.PostScriptName;
+        var glyphs = _embedAllGlyphs ? new SortedSet<int>(Enumerable.Range(0, face.GlyphCount)) : _glyphs;
 
-        var program = isCff ? FontSubsetter.SubsetCff(face, _glyphs, baseFont) : FontSubsetter.SubsetTrueType(face, _glyphs);
+        // A font embedded whole is not a subset: its name has no tag (9.6.4)
+        var baseFont = _embedAllGlyphs ? _font.PostScriptName : CreateSubsetTag() + "+" + _font.PostScriptName;
+
+        var program = isCff ? FontSubsetter.SubsetCff(face, glyphs, baseFont) : FontSubsetter.SubsetTrueType(face, glyphs);
         var fontFile = new PdfStream();
         fontFile.SetData(program);
         if (isCff)
@@ -125,7 +147,7 @@ internal sealed class EmbeddedFontUsage
         {
             // One bit for each CID, the high-order bit of the first byte for the CID 0 (9.8.3.3, Table 125): the CIDs
             // are the glyphs of the subset, the glyphs shown with the glyph 0 and the components of the composite glyphs
-            var present = FontSubsetter.GetClosure(face, _glyphs);
+            var present = FontSubsetter.GetClosure(face, glyphs);
             var bits = new byte[(present.Max / 8) + 1];
             foreach (var cid in present)
             {
@@ -152,7 +174,7 @@ internal sealed class EmbeddedFontUsage
                 [PdfNames.Supplement] = PdfInteger.Get(0),
             },
             [PdfNames.FontDescriptor] = _descriptor,
-            [PdfNames.W] = CreateWidths(),
+            [PdfNames.W] = CreateWidths(glyphs),
         };
         if (!isCff)
         {
@@ -162,7 +184,7 @@ internal sealed class EmbeddedFontUsage
         _cidFont = Set(document, _cidFont, cidFont);
 
         var toUnicode = new PdfStream();
-        toUnicode.SetData(CreateToUnicode());
+        toUnicode.SetData(CreateToUnicode(glyphs));
         _toUnicode = Set(document, _toUnicode, toUnicode);
 
         document.Objects.Set(Reference, new PdfDictionary
@@ -208,12 +230,12 @@ internal sealed class EmbeddedFontUsage
     }
 
     /// <summary>Creates the widths of the glyphs (9.7.4.3): <c>[first [w1 w2 ...] ...]</c> for each range of consecutive glyphs.</summary>
-    private PdfArray CreateWidths()
+    private PdfArray CreateWidths(SortedSet<int> glyphs)
     {
         var result = new PdfArray();
         PdfArray? range = null;
         var previous = -2;
-        foreach (var glyph in _glyphs)
+        foreach (var glyph in glyphs)
         {
             if (range is null || glyph != previous + 1)
             {
@@ -229,15 +251,25 @@ internal sealed class EmbeddedFontUsage
         return result;
     }
 
-    /// <summary>Creates the <c>ToUnicode</c> CMap of the glyphs whose text is known (9.10.3).</summary>
-    private byte[] CreateToUnicode()
+    /// <summary>Creates the <c>ToUnicode</c> CMap of the glyphs whose text is known (9.10.3): the text they were shown for, or the character the character map of a font embedded whole gives them.</summary>
+    private byte[] CreateToUnicode(SortedSet<int> glyphs)
     {
+        var texts = _texts;
+        if (_embedAllGlyphs)
+        {
+            texts = new Dictionary<int, string>(_font.GetCharacterTexts());
+            foreach (var (glyph, text) in _texts)
+            {
+                texts[glyph] = text;
+            }
+        }
+
         var builder = new StringBuilder();
         builder.Append("/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n");
         builder.Append("/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n");
         builder.Append("/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n");
         builder.Append("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n");
-        var entries = _glyphs.Where(_texts.ContainsKey).ToArray();
+        var entries = glyphs.Where(texts.ContainsKey).ToArray();
         for (var start = 0; start < entries.Length; start += MaxEntriesPerSection)
         {
             var count = Math.Min(MaxEntriesPerSection, entries.Length - start);
@@ -245,7 +277,7 @@ internal sealed class EmbeddedFontUsage
             for (var i = start; i < start + count; i++)
             {
                 builder.Append('<').Append(entries[i].ToString("X4", CultureInfo.InvariantCulture)).Append("> <");
-                foreach (var c in _texts[entries[i]])
+                foreach (var c in texts[entries[i]])
                 {
                     builder.Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
                 }

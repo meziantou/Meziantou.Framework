@@ -57,7 +57,10 @@ using (var stream = File.OpenRead("trip.kmz"))
 - The geometries: points, lines, polygons, `MultiGeometry`, and the `gx:Track` and `gx:MultiTrack` tracks of Google
   Earth, as lines. A `LinearRing` alone is a line, as Google Earth draws it. The altitudes are kept as they are
   written, whatever their `altitudeMode`.
-- The styles, the times, the 3D models, the overlays and the network links are ignored: nothing is downloaded.
+- The `when` elements of a `gx:Track` are the [Time](cref:Meziantou.Framework.Geo.GeoPosition.Time) of its positions,
+  in order. A `when` that has no time of day, such as a date alone, gives no time.
+- The styles, the time spans and time stamps of the placemarks, the 3D models, the overlays and the network links are
+  ignored: nothing is downloaded.
 - A KMZ file is read from its `doc.kml` entry, or else its first `.kml` entry. The other files are ignored.
 
 ## What the writer writes
@@ -70,4 +73,6 @@ using (var stream = File.OpenRead("trip.kmz"))
 - The identifier is written when it is a valid XML identifier: a number, such as the `id` of a GeoJSON feature, is
   not.
 - A geometry with altitudes gets the `absolute` altitude mode; otherwise, Google Earth draws it on the ground.
+- A line whose positions all have a time is a `gx:Track`, and a multi-line of such lines a `gx:MultiTrack`. The times
+  of the other positions, and the measures, are not written.
 - The folders are not written back: the `folder` property is an `ExtendedData` item like the others.

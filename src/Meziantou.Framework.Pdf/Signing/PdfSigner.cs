@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
@@ -23,6 +24,8 @@ public static class PdfSigner
     // The placeholders of the byte ranges: wide enough for any offset of a file, replaced in place
     private const string ByteRangePlaceholder = "[0 9999999999 9999999999 9999999999]";
     private const int DefaultTimestampReservedSize = 16384;
+
+    private static readonly PdfName VriName = PdfName.Create("VRI");
 
     /// <summary>Signs a document without time stamp (PAdES B-B).</summary>
     /// <param name="document">The document.</param>
@@ -85,13 +88,15 @@ public static class PdfSigner
         }
 
         var signature = CreateSignatureDictionary("Sig", "ETSI.CAdES.detached", reserved);
-        signature[PdfName.Create("M")] = PdfString.FromText(PdfDate.Format(options.SigningTime ?? DateTimeOffset.UtcNow));
+        var signingTime = options.SigningTime ?? DateTimeOffset.UtcNow;
+        signature[PdfName.Create("M")] = PdfString.FromText(PdfDate.Format(signingTime));
         SetText(signature, "Name", options.SignerName);
         SetText(signature, "Reason", options.Reason);
         SetText(signature, "Location", options.Location);
         SetText(signature, "ContactInfo", options.ContactInfo);
 
-        var field = AddSignatureField(signed, options.FieldName, options.Appearance, signature, nameof(options));
+        var drawAppearance = options.Appearance?.GetDrawing(options, signingTime, nameof(options));
+        var field = AddSignatureField(signed, options.FieldName, options.Appearance, drawAppearance, signature, nameof(options));
         var references = new PdfArray();
         if (options.Certification is { } level)
         {
@@ -136,7 +141,7 @@ public static class PdfSigner
 
     /// <summary>
     /// Adds a document time stamp (ISO 32000-2, 12.8.5): an RFC 3161 time stamp of the file, in a signature field. After
-    /// <see cref="AddValidationData"/>, it protects the validation data of the signatures (PAdES B-LTA).
+    /// <see cref="AddValidationData(PdfDocument, PdfValidationData)"/>, it protects the validation data of the signatures (PAdES B-LTA).
     /// </summary>
     /// <param name="document">The document.</param>
     /// <param name="options">The options.</param>
@@ -155,7 +160,7 @@ public static class PdfSigner
         var (basisLength, signed) = OpenBasis(document);
         var reserved = options.ReservedSize == 0 ? DefaultTimestampReservedSize : options.ReservedSize;
         var signature = CreateSignatureDictionary("DocTimeStamp", "ETSI.RFC3161", reserved);
-        AddSignatureField(signed, options.FieldName, appearance: null, signature, nameof(options));
+        AddSignatureField(signed, options.FieldName, appearance: null, drawAppearance: null, signature, nameof(options));
 
         var file = SaveUpdate(signed, basisLength, reserved);
         var (contentsStart, contentsEnd) = FillByteRange(file, basisLength, reserved);
@@ -178,13 +183,7 @@ public static class PdfSigner
         ArgumentNullException.ThrowIfNull(validationData);
 
         var (basisLength, signed) = OpenBasis(document);
-        var catalog = signed.Catalog;
-        if (catalog.GetResolved(PdfSignatureFields.DssName) is not PdfDictionary store)
-        {
-            store = new PdfDictionary { [PdfNames.Type] = PdfName.Create("DSS") };
-            catalog[PdfSignatureFields.DssName] = signed.Objects.Add(store);
-        }
-
+        var store = GetOrCreateStore(signed);
         var certificates = new List<byte[]>();
         foreach (var certificate in validationData.Certificates)
         {
@@ -202,10 +201,158 @@ public static class PdfSigner
         AddStreams(signed, store, "Certs", certificates);
         AddStreams(signed, store, "OCSPs", validationData.OcspResponses);
         AddStreams(signed, store, "CRLs", validationData.CertificateRevocationLists);
+        return SaveValidationData(signed, basisLength);
+    }
 
+    /// <summary>
+    /// Adds the validation data of the signatures and of the document time stamps to the document security store
+    /// (ISO 32000-2, 12.8.4.3; PAdES B-LT), from the data of the options and of the store, without downloading anything.
+    /// </summary>
+    /// <param name="document">The document.</param>
+    /// <param name="options">The options.</param>
+    /// <returns>The file with the validation data.</returns>
+    /// <exception cref="ArgumentException">The options ask to download the missing data: use <see cref="AddValidationDataAsync"/>.</exception>
+    public static byte[] AddValidationData(PdfDocument document, PdfValidationDataOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.DownloadMissingData)
+            throw new ArgumentException("The missing data is downloaded: use AddValidationDataAsync", nameof(options));
+
+        return AddValidationDataAsync(document, options, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Adds the validation data of the signatures and of the document time stamps to the document security store
+    /// (ISO 32000-2, 12.8.4.3; PAdES B-LT): the chains of the signers and of the time stamp authorities, completed with
+    /// the certificates of the options and of the store, and the revocation evidence of each certificate of the chains
+    /// that is not self-issued. With <see cref="PdfValidationDataOptions.DownloadMissingData"/>, the issuers and the
+    /// revocation evidence that are missing are downloaded.
+    /// </summary>
+    /// <param name="document">The document.</param>
+    /// <param name="options">The options.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The file with the validation data.</returns>
+    /// <exception cref="HttpRequestException">The revocation evidence of a certificate could not be downloaded from any of its addresses.</exception>
+    public static async Task<byte[]> AddValidationDataAsync(PdfDocument document, PdfValidationDataOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(options);
+
+        var (basisLength, signed) = OpenBasis(document);
+        var store = GetOrCreateStore(signed);
+        using var collector = new ValidationDataCollector(options.DownloadMissingData, options.HttpClient);
+        foreach (var certificate in options.Certificates)
+        {
+            collector.AddCertificate(certificate);
+        }
+
+        foreach (var data in ReadStreams(store, "Certs"))
+        {
+            collector.AddCertificate(data);
+        }
+
+        foreach (var data in options.CertificateRevocationLists.Concat(ReadStreams(store, "CRLs")))
+        {
+            collector.AddCertificateRevocationList(data);
+        }
+
+        foreach (var data in options.OcspResponses.Concat(ReadStreams(store, "OCSPs")))
+        {
+            collector.AddOcspResponse(data);
+        }
+
+        // The signatures and the document time stamps (12.8.5): the certificates they embed complete the chains
+        var signatures = new List<(PdfString Contents, List<X509Certificate2> Signers)>();
+        foreach (var field in PdfSignatureFields.GetFields(signed))
+        {
+            if (field.Type == "Sig" && field.Field.GetResolved(PdfSignatureFields.ValueName) is PdfDictionary signature && signature.TryGetResolved<PdfString>(PdfNames.Contents, out var contents))
+            {
+                signatures.Add((contents, collector.AddSignature(contents.Span)));
+            }
+        }
+
+        var sets = new List<(PdfString Contents, ValidationDataSet Data)>();
+        foreach (var (contents, signers) in signatures)
+        {
+            sets.Add((contents, await collector.CollectAsync(signers, cancellationToken).ConfigureAwait(false)));
+        }
+
+        var certificates = AddStreams(signed, store, "Certs", collector.Certificates);
+        var ocsps = AddStreams(signed, store, "OCSPs", collector.OcspResponses);
+        var crls = AddStreams(signed, store, "CRLs", collector.CertificateRevocationLists);
+        if (options.IncludeVri)
+        {
+            // The key of an entry is the SHA-1 digest of the /Contents of the signature, in uppercase hexadecimal (12.8.4.4)
+            if (store.GetResolved(VriName) is not PdfDictionary vri)
+            {
+                vri = [];
+                store[VriName] = vri;
+            }
+
+            foreach (var (contents, data) in sets)
+            {
+                var entry = new PdfDictionary();
+                AddReferences(entry, "Cert", data.Certificates, certificates);
+                AddReferences(entry, "OCSP", data.OcspResponses, ocsps);
+                AddReferences(entry, "CRL", data.CertificateRevocationLists, crls);
+                vri[PdfName.Create(GetVriKey(contents.Span))] = entry;
+            }
+        }
+
+        return SaveValidationData(signed, basisLength);
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "ISO 32000-2 (12.8.4.4) names the entries of the VRI dictionary with the SHA-1 digest of the signature, it is not used for security")]
+    private static string GetVriKey(ReadOnlySpan<byte> contents) => Convert.ToHexString(SHA1.HashData(contents));
+
+    private static void AddReferences(PdfDictionary entry, string key, List<byte[]> values, Dictionary<string, PdfReference> references)
+    {
+        var array = new PdfArray();
+        foreach (var value in values)
+        {
+            if (references.TryGetValue(GetStreamKey(value), out var reference))
+            {
+                array.Add(reference);
+            }
+        }
+
+        if (array.Count > 0)
+        {
+            entry[PdfName.Create(key)] = array;
+        }
+    }
+
+    private static PdfDictionary GetOrCreateStore(PdfDocument document)
+    {
+        var catalog = document.Catalog;
+        if (catalog.GetResolved(PdfSignatureFields.DssName) is not PdfDictionary store)
+        {
+            store = new PdfDictionary { [PdfNames.Type] = PdfName.Create("DSS") };
+            catalog[PdfSignatureFields.DssName] = document.Objects.Add(store);
+        }
+
+        return store;
+    }
+
+    private static byte[] SaveValidationData(PdfDocument document, int basisLength)
+    {
         using var stream = new MemoryStream(basisLength + 65536);
-        signed.SaveIncremental(stream);
+        document.SaveIncremental(stream);
         return stream.ToArray();
+    }
+
+    private static IEnumerable<byte[]> ReadStreams(PdfDictionary store, string key)
+    {
+        if (store.GetResolved(PdfName.Create(key)) is not PdfArray array)
+            yield break;
+
+        foreach (var item in array)
+        {
+            if (PdfReference.ResolveIfReference(item) is PdfStream stream)
+            {
+                yield return stream.GetDecodedData();
+            }
+        }
     }
 
     /// <summary>The certificates of the signed data of a signature and of its time stamps, which some validators need in the store.</summary>
@@ -241,25 +388,34 @@ public static class PdfSigner
         }
     }
 
-    private static void AddStreams(PdfDocument document, PdfDictionary store, string key, IEnumerable<byte[]> values)
+    /// <summary>Adds the values the array of the store does not have yet, each in a stream.</summary>
+    /// <returns>The streams of the array, by the digest of their data.</returns>
+    private static Dictionary<string, PdfReference> AddStreams(PdfDocument document, PdfDictionary store, string key, IEnumerable<byte[]> values)
     {
         var name = PdfName.Create(key);
         var array = store.GetResolved(name) as PdfArray;
         var existing = new HashSet<string>(StringComparer.Ordinal);
+        var references = new Dictionary<string, PdfReference>(StringComparer.Ordinal);
         if (array is not null)
         {
             foreach (var item in array)
             {
                 if (PdfReference.ResolveIfReference(item) is PdfStream stream)
                 {
-                    existing.Add(Convert.ToHexString(SHA256.HashData(stream.GetDecodedData())));
+                    var streamKey = GetStreamKey(stream.GetDecodedData());
+                    existing.Add(streamKey);
+                    if (item is PdfReference reference)
+                    {
+                        references.TryAdd(streamKey, reference);
+                    }
                 }
             }
         }
 
         foreach (var value in values)
         {
-            if (!existing.Add(Convert.ToHexString(SHA256.HashData(value))))
+            var streamKey = GetStreamKey(value);
+            if (!existing.Add(streamKey))
                 continue;
 
             if (array is null)
@@ -270,9 +426,15 @@ public static class PdfSigner
 
             var stream = new PdfStream();
             stream.SetData(value);
-            array.Add(document.Objects.Add(stream));
+            var reference = document.Objects.Add(stream);
+            array.Add(reference);
+            references[streamKey] = reference;
         }
+
+        return references;
     }
+
+    private static string GetStreamKey(byte[] data) => Convert.ToHexString(SHA256.HashData(data));
 
     /// <summary>The file the update is appended to, and the document read from it with the same password.</summary>
     private static (int BasisLength, PdfDocument Document) OpenBasis(PdfDocument document)
@@ -344,7 +506,7 @@ public static class PdfSigner
     /// its widget, invisible on the first page or visible where the appearance says (12.7.5.5).
     /// </summary>
     /// <returns>The field.</returns>
-    private static PdfDictionary AddSignatureField(PdfDocument document, string? fieldName, PdfSignatureAppearance? appearance, PdfDictionary signature, string parameterName)
+    private static PdfDictionary AddSignatureField(PdfDocument document, string? fieldName, PdfSignatureAppearance? appearance, Action<PdfContentBuilder>? drawAppearance, PdfDictionary signature, string parameterName)
     {
         if (document.Pages.Count == 0)
             throw new InvalidOperationException("A document without pages cannot be signed");
@@ -403,7 +565,7 @@ public static class PdfSigner
         {
             // The normal appearance (12.5.5): a form of the size of the rectangle
             var appearanceForm = document.CreateForm(new PdfRectangle(0, 0, appearance.Rectangle.Width, appearance.Rectangle.Height));
-            appearance.Draw?.Invoke(appearanceForm.CreateContentBuilder());
+            drawAppearance?.Invoke(appearanceForm.CreateContentBuilder());
             widget[PdfSignatureFields.AppearanceName] = new PdfDictionary { [PdfNames.N] = appearanceForm.Reference };
         }
 

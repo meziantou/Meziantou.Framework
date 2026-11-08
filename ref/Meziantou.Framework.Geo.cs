@@ -71,13 +71,13 @@ namespace Meziantou.Framework.Geo
 
     public readonly struct GeoBounds : System.IEquatable<Meziantou.Framework.Geo.GeoBounds>
     {
-        public bool CrossesAntimeridian { get => throw null; }
         public double East { get => throw null; init { } }
         public double North { get => throw null; init { } }
         public double South { get => throw null; init { } }
         public double West { get => throw null; init { } }
         public GeoBounds(double West, double South, double East, double North) { }
         public bool Contains(Meziantou.Framework.Geo.GeoPosition position) => throw null;
+        public bool CrossesAntimeridian() => throw null;
         public void Deconstruct(out double West, out double South, out double East, out double North) => throw null;
         public bool Equals(Meziantou.Framework.Geo.GeoBounds other) => throw null;
         #nullable disable

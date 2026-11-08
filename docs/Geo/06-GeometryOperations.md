@@ -81,7 +81,7 @@ Assert.False(split.CrossesAntimeridian);
 
 // The box of the parts crosses the 180th meridian: its west side is east of its east side
 var bounds = split.GetBounds(GeoEdgeType.Geodesic)!.Value;
-Assert.True(bounds.CrossesAntimeridian);
+Assert.True(bounds.CrossesAntimeridian());
 Assert.Equal((177, -178), (bounds.West, bounds.East));
 Assert.True(bounds.Contains(new GeoPosition(Longitude: -179, Latitude: -17)));
 ```

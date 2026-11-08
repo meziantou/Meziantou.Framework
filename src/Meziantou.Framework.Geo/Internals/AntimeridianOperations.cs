@@ -189,6 +189,8 @@ internal static class AntimeridianOperations
                         Longitude = meridian,
                         Latitude = originalA.Latitude + (t * (originalB.Latitude - originalA.Latitude)),
                         Altitude = originalA.Altitude is { } altitudeA && originalB.Altitude is { } altitudeB ? altitudeA + (t * (altitudeB - altitudeA)) : null,
+                        Measure = originalA.Measure is { } measureA && originalB.Measure is { } measureB ? measureA + (t * (measureB - measureA)) : null,
+                        Time = originalA.Time is { } timeA && originalB.Time is { } timeB ? timeA + ((timeB - timeA) * t) : null,
                     },
                     Offset: 0);
 

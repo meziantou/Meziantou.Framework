@@ -16,7 +16,9 @@ namespace Meziantou.Framework.Geo;
 public readonly record struct GeoBounds(double West, double South, double East, double North)
 {
     /// <summary>Gets a value that indicates whether the box crosses the 180th meridian: its west side is east of its east side.</summary>
-    public bool CrossesAntimeridian => West > East;
+    /// <returns><see langword="true"/> when the box crosses the 180th meridian; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>It is a method, not a property, so that <see cref="ToString()"/> shows the four sides only.</remarks>
+    public bool CrossesAntimeridian() => West > East;
 
     /// <summary>Gets a value that indicates whether a position is in the box, edges included. The altitude is ignored.</summary>
     /// <param name="position">The position.</param>
@@ -26,7 +28,7 @@ public readonly record struct GeoBounds(double West, double South, double East, 
         if (!(position.Latitude >= South && position.Latitude <= North))
             return false;
 
-        if (CrossesAntimeridian)
+        if (CrossesAntimeridian())
             return position.Longitude >= West || position.Longitude <= East;
 
         return position.Longitude >= West && position.Longitude <= East;
@@ -61,7 +63,7 @@ public readonly record struct GeoBounds(double West, double South, double East, 
     /// </returns>
     public GeoBounds Union(GeoBounds other)
     {
-        if (!CrossesAntimeridian && !other.CrossesAntimeridian)
+        if (!CrossesAntimeridian() && !other.CrossesAntimeridian())
             return new(Math.Min(West, other.West), Math.Min(South, other.South), Math.Max(East, other.East), Math.Max(North, other.North));
 
         var longitudes = new LongitudeRange();
@@ -92,7 +94,7 @@ public readonly record struct GeoBounds(double West, double South, double East, 
         return new GeoBounds(west, south, east, north);
     }
 
-    private double GetWidth() => CrossesAntimeridian ? East - West + 360 : East - West;
+    private double GetWidth() => CrossesAntimeridian() ? East - West + 360 : East - West;
 
-    private (double West, double East)[] GetLongitudeIntervals() => CrossesAntimeridian ? [(West, 180), (-180, East)] : [(West, East)];
+    private (double West, double East)[] GetLongitudeIntervals() => CrossesAntimeridian() ? [(West, 180), (-180, East)] : [(West, East)];
 }

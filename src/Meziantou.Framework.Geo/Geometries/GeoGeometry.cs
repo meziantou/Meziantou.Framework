@@ -130,11 +130,11 @@ public abstract class GeoGeometry
     /// </returns>
     /// <exception cref="ArgumentException">The box is empty: its south side is north of its north side.</exception>
     /// <remarks>
-    /// A box whose west side is east of its east side crosses the 180th meridian (see <see cref="GeoBounds.CrossesAntimeridian"/>):
+    /// A box whose west side is east of its east side crosses the 180th meridian (see <see cref="GeoBounds.CrossesAntimeridian()"/>):
     /// the result is the part of the geometry east of its west side and the part west of its east side, as a multi-geometry.
     /// Split the geometries that cross the 180th meridian with <see cref="SplitAtAntimeridian"/> first.
     /// </remarks>
-    public GeoGeometry? Clip(GeoBounds bounds) => bounds.CrossesAntimeridian && bounds.South <= bounds.North ? AntimeridianOperations.ClipWrapped(this, bounds) : GeoOperations.Clip(this, bounds);
+    public GeoGeometry? Clip(GeoBounds bounds) => bounds.CrossesAntimeridian() && bounds.South <= bounds.North ? AntimeridianOperations.ClipWrapped(this, bounds) : GeoOperations.Clip(this, bounds);
 
     /// <summary>
     /// Simplifies the lines and the rings of the geometry with the Douglas–Peucker algorithm: the positions that are closer

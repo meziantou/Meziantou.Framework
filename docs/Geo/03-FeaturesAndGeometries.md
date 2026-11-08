@@ -207,7 +207,7 @@ Assert.Equal(new GeoBounds(-122.42, 35.69, 139.69, 37.77), route.GetBounds());
 
 // As a great circle, it crosses the Pacific and goes north of both cities
 var bounds = route.GetBounds(GeoEdgeType.Geodesic)!.Value;
-Assert.True(bounds.CrossesAntimeridian);
+Assert.True(bounds.CrossesAntimeridian());
 Assert.Equal((139.69, -122.42), (bounds.West, bounds.East));
 Assert.Equal(48.7, bounds.North, 1);
 ```

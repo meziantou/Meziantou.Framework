@@ -421,7 +421,7 @@ public sealed class GeometryTests
 
         // The box of the parts crosses the 180th meridian: its west side is east of its east side
         var bounds = split.GetBounds(GeoEdgeType.Geodesic)!.Value;
-        Assert.True(bounds.CrossesAntimeridian);
+        Assert.True(bounds.CrossesAntimeridian());
         Assert.Equal((177, -178), (bounds.West, bounds.East));
         Assert.True(bounds.Contains(new GeoPosition(Longitude: -179, Latitude: -17)));
         #endregion
@@ -499,7 +499,7 @@ public sealed class GeometryTests
 
         // As a great circle, it crosses the Pacific and goes north of both cities
         var bounds = route.GetBounds(GeoEdgeType.Geodesic)!.Value;
-        Assert.True(bounds.CrossesAntimeridian);
+        Assert.True(bounds.CrossesAntimeridian());
         Assert.Equal((139.69, -122.42), (bounds.West, bounds.East));
         Assert.Equal(48.7, bounds.North, 1);
         #endregion
@@ -545,6 +545,15 @@ public sealed class GeometryTests
         var split = Assert.IsType<GeoMultiLineString>(line.SplitAtAntimeridian());
         Assert.Equal([new GeoPosition(170, 0, 100), new(180, 5, 150)], split.LineStrings[0].Positions);
         Assert.Equal([new GeoPosition(-180, 5, 150), new(-170, 10, 200), new(-160, 10)], split.LineStrings[1].Positions);
+
+        // And the measures and times
+        var start = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var track = Assert.IsType<GeoMultiLineString>(new GeoLineString([new(170, 0) { Measure = 10, Time = start }, new(-170, 0) { Measure = 20, Time = start.AddHours(2) }]).SplitAtAntimeridian());
+        var crossing = track.LineStrings[0].Positions[^1];
+        Assert.Equal(15, crossing.Measure);
+        Assert.Equal(start.AddHours(1), crossing.Time);
+        Assert.Equal(crossing with { Longitude = -180 }, track.LineStrings[1].Positions[0]);
+        Assert.Null(split.LineStrings[0].Positions[^1].Measure);
 
         // A line that crosses the meridian twice, and one that touches it
         var twice = Assert.IsType<GeoMultiLineString>(new GeoLineString([new(170, 0), new(-170, 0), new(170, 2)]).SplitAtAntimeridian());
@@ -665,18 +674,18 @@ public sealed class GeometryTests
 
         // The geodesic box of the parts of Fiji and of Russia crosses the 180th meridian
         var fiji = countries["Fiji"].GetBounds(GeoEdgeType.Geodesic)!.Value;
-        Assert.True(fiji.CrossesAntimeridian);
+        Assert.True(fiji.CrossesAntimeridian());
         Assert.InRange(fiji.West, 175, 180);
         Assert.InRange(fiji.East, -180, -178);
         var russia = countries["Russia"].GetBounds(GeoEdgeType.Geodesic)!.Value;
-        Assert.True(russia.CrossesAntimeridian);
+        Assert.True(russia.CrossesAntimeridian());
         Assert.InRange(russia.West, 19, 20);
         Assert.InRange(russia.East, -171, -168);
         Assert.Equal(new GeoBounds(-180, -90, 180, 90), GetBoundsWithoutNorth(countries["Antarctica"]));
 
         // The other countries do not cross it
         var france = countries["France"];
-        Assert.False(france.GetBounds(GeoEdgeType.Geodesic)!.Value.CrossesAntimeridian);
+        Assert.False(france.GetBounds(GeoEdgeType.Geodesic)!.Value.CrossesAntimeridian());
 
         // The country of a few cities
         AssertCountry("France", new GeoPosition(2.35, 48.86));
@@ -704,8 +713,8 @@ public sealed class GeometryTests
     public void Bounds_Antimeridian()
     {
         var pacific = new GeoBounds(West: 170, South: -10, East: -170, North: 10);
-        Assert.True(pacific.CrossesAntimeridian);
-        Assert.False(new GeoBounds(0, 0, 10, 10).CrossesAntimeridian);
+        Assert.True(pacific.CrossesAntimeridian());
+        Assert.False(new GeoBounds(0, 0, 10, 10).CrossesAntimeridian());
         Assert.True(pacific.Contains(new GeoPosition(175, 0)));
         Assert.True(pacific.Contains(new GeoPosition(-175, 0)));
         Assert.True(pacific.Contains(new GeoPosition(180, 0)));

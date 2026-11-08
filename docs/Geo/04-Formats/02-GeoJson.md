@@ -30,6 +30,36 @@ using (var stream = File.Create("large-countries.geojson"))
 [ParseGeometry](cref:Meziantou.Framework.Geo.GeoJson.ParseGeometry) and
 [FormatGeometry](cref:Meziantou.Framework.Geo.GeoJson.FormatGeometry) read and write a single geometry.
 
+## Read a large document
+
+[GeoJson.ReadFeaturesAsync](cref:Meziantou.Framework.Geo.GeoJson.ReadFeaturesAsync) returns the features one at a time,
+as it reads the stream: only the feature being read is in memory, so an export of millions of features can be filtered
+or converted with bounded memory:
+
+<!-- ref:../../../tests/Meziantou.Framework.Geo.Tests/GeoJsonTests.cs;region=Geo_GeoJsonReadFeaturesAsync;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The features are read one at a time: a large export is processed without loading it in memory
+await using var stream = File.OpenRead(path);
+var points = 0;
+await foreach (var feature in GeoJson.ReadFeaturesAsync(stream))
+{
+    if (feature.Geometry is GeoPoint)
+    {
+        points++;
+    }
+}
+
+Assert.Equal(1, points);
+```
+<!-- endref -->
+
+- The members of the `FeatureCollection` can be in any order. The features are returned as soon as the `features`
+  array starts, and a `type` written after the array that is not `FeatureCollection` throws a `FormatException` once
+  they are returned.
+- The `name` of the collection is not returned: use [Read](cref:Meziantou.Framework.Geo.GeoJson.Read) to get it.
+- A `Feature` or a geometry is a single feature: it is read whole.
+- Invalid data throws a `FormatException` when the reader reaches it: the features before it are returned first.
+
 ## What the reader keeps
 
 - The seven geometry types, with their altitudes.

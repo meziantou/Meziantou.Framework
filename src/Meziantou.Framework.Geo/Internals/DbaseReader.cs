@@ -10,28 +10,23 @@ internal sealed class DbaseReader
     private const int HeaderLength = 32;
     private const int FieldDescriptorLength = 32;
 
+    private const string HeaderTooShortMessage = "The .dbf file is too short to have a header.";
+    private const string TruncatedMessage = "The .dbf file is truncated.";
+    private const string RecordsMissingMessage = "The .dbf file is truncated: it has fewer records than its header says.";
+
     private readonly Stream _stream;
     private readonly Field[] _fields;
     private readonly byte[] _record;
     private readonly DbaseTextDecoder _decoder;
 
-    public DbaseReader(Stream stream, Encoding? encoding, string? codePage)
+    private DbaseReader(Stream stream, byte[] header, byte[] descriptors, Encoding? encoding, string? codePage)
     {
         _stream = stream;
-        var header = new byte[HeaderLength];
-        ReadExactly(header, "The .dbf file is too short to have a header.");
-        var recordCount = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(4));
-        var headerLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(8));
         var recordLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(10));
-        if (recordCount > int.MaxValue || headerLength < HeaderLength + 1 || recordLength < 1)
-            throw new FormatException("The header of the .dbf file is invalid.");
-
-        RecordCount = (int)recordCount;
+        RecordCount = (int)BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(4));
         _decoder = DbaseTextDecoder.Create(encoding, codePage, header[29]);
 
         // The field descriptors end with 0x0D; the header may have more bytes after it, such as the database container of Visual FoxPro
-        var descriptors = new byte[headerLength - HeaderLength];
-        ReadExactly(descriptors, "The .dbf file is truncated.");
         var fields = new List<Field>();
         var names = new HashSet<string>(StringComparer.Ordinal);
         var offset = 1; // The deletion flag
@@ -59,12 +54,46 @@ internal sealed class DbaseReader
     /// <summary>Gets the number of records, from the header.</summary>
     public int RecordCount { get; }
 
+    /// <summary>Creates a reader, reading the header of the file.</summary>
+    public static DbaseReader Create(Stream stream, Encoding? encoding, string? codePage)
+    {
+        var header = new byte[HeaderLength];
+        ReadExactly(stream, header, HeaderTooShortMessage);
+        var descriptors = new byte[GetHeaderLength(header) - HeaderLength];
+        ReadExactly(stream, descriptors, TruncatedMessage);
+        return new DbaseReader(stream, header, descriptors, encoding, codePage);
+    }
+
+    /// <summary>Creates a reader, reading the header of the file asynchronously.</summary>
+    public static async ValueTask<DbaseReader> CreateAsync(Stream stream, Encoding? encoding, string? codePage, CancellationToken cancellationToken)
+    {
+        var header = new byte[HeaderLength];
+        await ReadExactlyAsync(stream, header, HeaderTooShortMessage, cancellationToken).ConfigureAwait(false);
+        var descriptors = new byte[GetHeaderLength(header) - HeaderLength];
+        await ReadExactlyAsync(stream, descriptors, TruncatedMessage, cancellationToken).ConfigureAwait(false);
+        return new DbaseReader(stream, header, descriptors, encoding, codePage);
+    }
+
     /// <summary>Reads the next record.</summary>
     /// <param name="deleted">A value that indicates whether the record is marked as deleted.</param>
     /// <returns>The values of the fields, by name.</returns>
     public Dictionary<string, object?> Read(out bool deleted)
     {
-        ReadExactly(_record, "The .dbf file is truncated: it has fewer records than its header says.");
+        ReadExactly(_stream, _record, RecordsMissingMessage);
+        return ParseRecord(out deleted);
+    }
+
+    /// <summary>Reads the next record asynchronously.</summary>
+    /// <returns>The values of the fields, by name, and whether the record is marked as deleted.</returns>
+    public async ValueTask<(Dictionary<string, object?> Properties, bool Deleted)> ReadAsync(CancellationToken cancellationToken)
+    {
+        await ReadExactlyAsync(_stream, _record, RecordsMissingMessage, cancellationToken).ConfigureAwait(false);
+        var properties = ParseRecord(out var deleted);
+        return (properties, deleted);
+    }
+
+    private Dictionary<string, object?> ParseRecord(out bool deleted)
+    {
         deleted = _record[0] is (byte)'*';
         var properties = new Dictionary<string, object?>(_fields.Length, StringComparer.Ordinal);
         foreach (var field in _fields)
@@ -73,6 +102,17 @@ internal sealed class DbaseReader
         }
 
         return properties;
+    }
+
+    private static int GetHeaderLength(byte[] header)
+    {
+        var recordCount = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(4));
+        var headerLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(8));
+        var recordLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(10));
+        if (recordCount > int.MaxValue || headerLength < HeaderLength + 1 || recordLength < 1)
+            throw new FormatException("The header of the .dbf file is invalid.");
+
+        return headerLength;
     }
 
     private object? ReadValue(Field field, ReadOnlySpan<byte> value)
@@ -135,9 +175,15 @@ internal sealed class DbaseReader
         return unique;
     }
 
-    private void ReadExactly(Span<byte> buffer, string message)
+    private static void ReadExactly(Stream stream, Span<byte> buffer, string message)
     {
-        if (_stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false) < buffer.Length)
+        if (stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false) < buffer.Length)
+            throw new FormatException(message);
+    }
+
+    private static async ValueTask ReadExactlyAsync(Stream stream, Memory<byte> buffer, string message, CancellationToken cancellationToken)
+    {
+        if (await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false) < buffer.Length)
             throw new FormatException(message);
     }
 

@@ -69,7 +69,7 @@ internal static class RawTdsClient
         return await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
     }
 
-    private static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
+    public static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
     {
         var message = new byte[8 + payload.Length];
         message[0] = packetType;
@@ -80,7 +80,7 @@ internal static class RawTdsClient
         return message;
     }
 
-    private static async Task<(byte PacketType, byte[] Payload)> ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
+    public static async Task<(byte PacketType, byte[] Payload)> ReadTdsMessageAsync(Stream stream, CancellationToken cancellationToken)
     {
         var header = new byte[8];
         await stream.ReadExactlyAsync(header, cancellationToken);

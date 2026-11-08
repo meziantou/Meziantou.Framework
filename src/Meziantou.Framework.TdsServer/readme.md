@@ -208,6 +208,7 @@ app.MapTdsHandlers(
 
 TLS uses SQL Server PRELOGIN encryption negotiation on the same TCP endpoint. Configure either a PFX file or a PEM certificate/private key pair.
 For `Microsoft.Data.SqlClient` interoperability, the server negotiates TLS 1.2 for encrypted TDS sessions.
+The same endpoint also accepts `Encrypt=Strict` (TDS 8.0) clients, which start with a TLS handshake before any TDS message and negotiate the `tds/8.0` ALPN protocol, with TLS 1.3 when the operating system supports it.
 
 ### PFX
 
@@ -235,4 +236,4 @@ builder.AddTdsServer(options =>
 ```
 <!-- endref -->
 
-Use client connection strings with `Encrypt=True` to require TLS, or `Encrypt=Optional` to allow non-TLS on the same endpoint.
+Use client connection strings with `Encrypt=Strict` or `Encrypt=True` to require TLS, or `Encrypt=Optional` to allow non-TLS on the same endpoint.

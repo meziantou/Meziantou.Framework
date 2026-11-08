@@ -12,6 +12,12 @@ namespace Meziantou.Framework.Tds;
 
 internal sealed class TdsConnectionProcessor
 {
+    /// <summary>The content type of a TLS handshake record, the first byte a TDS 8.0 client sends.</summary>
+    private const byte TlsHandshakeRecordType = 0x16;
+
+    /// <summary>The ALPN protocol identifier of TDS 8.0.</summary>
+    private static readonly SslApplicationProtocol Tds80ApplicationProtocol = new("tds/8.0");
+
     private readonly TdsServerOptions _options;
     private readonly TdsAuthenticationDelegate _authenticationHandler;
     private readonly TdsQueryDelegate _queryHandler;
@@ -40,8 +46,6 @@ internal sealed class TdsConnectionProcessor
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(remoteEndPoint);
 
-        var transportInput = input;
-        var transportOutput = output;
         var writer = new TdsPacketWriter(output, _options.PacketSize);
         SslStream? sslStream = null;
         Task<TdsPacket?>? pendingRead = null;
@@ -49,6 +53,35 @@ internal sealed class TdsConnectionProcessor
         TdsPreLoginNegotiationResult? negotiationResult;
         try
         {
+            // The first byte tells the two modes apart: a TDS 8.0 client (Encrypt=Strict) starts with a TLS
+            // handshake record, any other client starts with a PRELOGIN packet. The byte is put back in front of
+            // the stream so the TLS handshake or the packet reader sees the whole message.
+            var firstByte = new byte[1];
+            if (await input.ReadAsync(firstByte, cancellationToken).ConfigureAwait(false) == 0)
+            {
+                return;
+            }
+
+            using var transportInput = TdsTlsPacketStream.CreateRaw(input, output, firstByte);
+            var transportOutput = output;
+            input = transportInput;
+            var serverCertificate = _options.GetTlsCertificate();
+            var strictEncryption = firstByte[0] == TlsHandshakeRecordType;
+            if (strictEncryption)
+            {
+                if (serverCertificate is null)
+                {
+                    _logger.LogDebug("The client started a TLS handshake (TDS 8.0 strict encryption), but no TLS certificate is configured");
+                    return;
+                }
+
+                sslStream = await AuthenticateStrictAsync(transportInput, serverCertificate, cancellationToken).ConfigureAwait(false);
+                usingTls = true;
+                input = sslStream;
+                output = sslStream;
+                writer = new TdsPacketWriter(output, _options.PacketSize);
+            }
+
             var preLoginPacket = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
             if (preLoginPacket is null)
             {
@@ -63,9 +96,26 @@ internal sealed class TdsConnectionProcessor
             }
 
             TdsPreLoginEncryptionMode clientEncryptionMode;
+            byte[] preLoginResponse;
             try
             {
-                clientEncryptionMode = TdsPreLoginMessage.ParseEncryptionMode(preLoginPacket.Payload);
+                if (strictEncryption)
+                {
+                    // The session is already encrypted, so the ENCRYPTION option no longer negotiates anything and
+                    // clients ignore the value of the response. NOT_SUP states that no TLS upgrade follows.
+                    clientEncryptionMode = TdsPreLoginEncryptionMode.NotSupported;
+                    negotiationResult = new(TdsPreLoginEncryptionMode.NotSupported, UpgradeToTls: false, DowngradeAfterLogin: false, RejectConnection: false);
+                }
+                else
+                {
+                    clientEncryptionMode = TdsPreLoginMessage.ParseEncryptionMode(preLoginPacket.Payload);
+                    negotiationResult = TdsPreLoginEncryptionNegotiator.Negotiate(
+                        clientEncryptionMode,
+                        serverSupportsEncryption: serverCertificate is not null,
+                        serverRequiresEncryption: _options.RequireEncryption);
+                }
+
+                preLoginResponse = TdsPreLoginMessage.CreateResponse(preLoginPacket.Payload, negotiationResult.Value.ResponseEncryptionMode);
             }
             catch (Exception ex)
             {
@@ -74,13 +124,7 @@ internal sealed class TdsConnectionProcessor
                 return;
             }
 
-            var serverCertificate = _options.GetTlsCertificate();
-            negotiationResult = TdsPreLoginEncryptionNegotiator.Negotiate(
-                clientEncryptionMode,
-                serverSupportsEncryption: serverCertificate is not null,
-                serverRequiresEncryption: _options.RequireEncryption);
-
-            await writer.WriteAsync(TdsPacketType.PreLogin, TdsPreLoginMessage.CreateResponse(preLoginPacket.Payload, negotiationResult.Value.ResponseEncryptionMode), cancellationToken).ConfigureAwait(false);
+            await writer.WriteAsync(TdsPacketType.PreLogin, preLoginResponse, cancellationToken).ConfigureAwait(false);
             if (negotiationResult.Value.RejectConnection)
             {
                 _logger.LogDebug("PRELOGIN encryption negotiation failed. ClientMode={ClientMode}, ServerResponse={ServerResponse}", clientEncryptionMode, negotiationResult.Value.ResponseEncryptionMode);
@@ -339,6 +383,30 @@ internal sealed class TdsConnectionProcessor
         _ = task.ContinueWith(static completedTask => _ = completedTask.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
+    /// <summary>Performs the TLS handshake that opens a TDS 8.0 connection, before any TDS packet.</summary>
+    /// <remarks>The protocol versions are left to the operating system, so TLS 1.3 is used when it supports it.</remarks>
+    private static async Task<SslStream> AuthenticateStrictAsync(Stream transport, X509Certificate2 certificate, CancellationToken cancellationToken)
+    {
+        var sslStream = new SslStream(transport, leaveInnerStreamOpen: true);
+        try
+        {
+            await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = certificate,
+                ClientCertificateRequired = false,
+                ApplicationProtocols = [Tds80ApplicationProtocol],
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+            }, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await sslStream.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        return sslStream;
+    }
+
     [SuppressMessage("Security", "CA5398:Do not hardcode SslProtocols", Justification = "SqlClient interoperability with TDS-over-TLS requires TLS 1.2 during PRELOGIN encryption upgrade.")]
     private static async Task<SslStream> UpgradeToTlsAsync(Stream input, Stream output, X509Certificate2 certificate, int packetSize, int maxMessageSize, CancellationToken cancellationToken)
     {
@@ -370,6 +438,16 @@ internal sealed class TdsConnectionProcessor
         private readonly int _maxMessageSize;
         private ReadOnlyMemory<byte> _pendingReadPayload;
         private bool _useTdsPacketMode = true;
+
+        /// <summary>Creates a stream that reads <paramref name="bufferedData"/> and then the transport as-is, without TDS packet framing.</summary>
+        public static TdsTlsPacketStream CreateRaw(Stream readStream, Stream writeStream, ReadOnlyMemory<byte> bufferedData)
+        {
+            return new TdsTlsPacketStream(readStream, writeStream, TdsServerOptions.MinimumPacketSize, TdsServerOptions.MaximumPacketSize)
+            {
+                _useTdsPacketMode = false,
+                _pendingReadPayload = bufferedData,
+            };
+        }
 
         public TdsTlsPacketStream(Stream readStream, Stream writeStream, int packetSize, int maxMessageSize)
         {

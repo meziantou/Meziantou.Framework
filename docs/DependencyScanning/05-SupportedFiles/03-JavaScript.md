@@ -1,6 +1,6 @@
 ---
 title: JavaScript
-description: The npm packages found in package.json files and npm lock files.
+description: The npm packages found in package.json files and in the npm, pnpm, Yarn and Bun lock files.
 ---
 
 ## package.json
@@ -24,11 +24,22 @@ The version is the text of the file, such as `^1.2.0`. More rules:
 
 ## Lock files
 
-[NpmLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.NpmLockFileDependencyScanner) reads `package-lock.json` and `npm-shrinkwrap.json` (lockfile versions 2 and 3). It
-reports the packages installed in `node_modules`, with versions that are not updatable, as their integrity hashes would
-no longer match. The root project, the workspace folders and the links are not reported.
+Each package manager has its own lock file scanner. They report the installed packages as
+[Npm](cref:Meziantou.Framework.DependencyScanning.DependencyType.Npm), with versions that are not updatable, as their
+integrity hashes would no longer match. The root project, the workspaces and the packages installed from a local folder
+are not reported. A package installed under another name is reported as the installed package, with the name it is
+installed under in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the
+`alias` key.
 
-Lockfile version 1 (npm 6 and earlier), `pnpm-lock.yaml`, `yarn.lock` and `bun.lock` are not scanned.
+| Scanner | Files | Notes |
+| --- | --- | --- |
+| [NpmLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.NpmLockFileDependencyScanner) | `package-lock.json`, `npm-shrinkwrap.json` | Lockfile versions 1, 2 and 3. Version 1 (npm 6 and earlier) is read from its `dependencies` tree. |
+| [PnpmLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.PnpmLockFileDependencyScanner) | `pnpm-lock.yaml` | Lockfile versions 5, 6 and 9. A package is reported once per version, even when pnpm writes one entry per set of peer dependencies. |
+| [YarnLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.YarnLockFileDependencyScanner) | `yarn.lock` | The Yarn 1 format and the YAML format of Yarn 2 and later. The patched copies of packages (`patch:`) are not reported. |
+| [BunLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.BunLockFileDependencyScanner) | `bun.lock` | The text lock file of Bun 1.2 and later. The packages installed from a Git repository or a tarball URL have no version in the file and are not reported. The binary `bun.lockb` is not scanned. |
+
+The packages installed from a Git repository or a tarball URL are reported with the version written in the lock file,
+when it has one.
 
 The command-line tool can regenerate `package-lock.json` after an update: see
 [Lock files](../09-CommandLineTool.md#lock-files).

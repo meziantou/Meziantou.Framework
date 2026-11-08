@@ -374,7 +374,8 @@ public abstract partial class Image : IDisposable
     /// <param name="encoder">
     /// The encoder, or <see langword="null"/> to select it from the file extension: <c>.png</c> (PNG, automatic animation mode),
     /// <c>.apng</c> (animated PNG), <c>.gif</c> (GIF), <c>.jpg</c>/<c>.jpeg</c> (JPEG), <c>.avif</c> (AVIF, lossless),
-    /// <c>.heic</c> (HEIC, lossless), and the extensions of the other formats, each with default settings.
+    /// <c>.heic</c> (HEIC, lossless), and the extensions of the other formats, each with default settings. The extensions
+    /// of the custom codecs of <see cref="Configuration"/> come first (<see cref="CustomImageCodec.CreateEncoder"/>).
     /// </param>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty, or <paramref name="encoder"/> is <see langword="null"/> and the extension is not recognized.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The image cannot be encoded without a loss that the encoder settings do not allow (animation, alpha, precision, metadata).</exception>
@@ -384,7 +385,13 @@ public abstract partial class Image : IDisposable
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ThrowIfDisposed();
-        encoder ??= ImageEncoder.FromPath(path);
+        encoder ??= ImageEncoder.FromPath(path, _configuration);
+        if (encoder is CustomImageEncoder custom)
+        {
+            SaveCustom(this, path, custom);
+            return;
+        }
+
         using var writer = ImageWriterCore.Create(path, CreateSaveOptions(encoder), PixelFormat, asynchronous: false);
         WriteTo(writer, _poster, _frames);
     }
@@ -401,6 +408,12 @@ public abstract partial class Image : IDisposable
         ValidateWritableStream(stream);
         ArgumentNullException.ThrowIfNull(encoder);
         ThrowIfDisposed();
+        if (encoder is CustomImageEncoder custom)
+        {
+            custom.Encode(this, stream);
+            return;
+        }
+
         using var writer = ImageWriterCore.Create(stream, CreateSaveOptions(encoder), PixelFormat);
         WriteTo(writer, _poster, _frames);
     }
@@ -417,7 +430,10 @@ public abstract partial class Image : IDisposable
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ThrowIfDisposed();
-        encoder ??= ImageEncoder.FromPath(path);
+        encoder ??= ImageEncoder.FromPath(path, _configuration);
+        if (encoder is CustomImageEncoder custom)
+            return SaveCustomAsync(this, path, custom, cancellationToken);
+
         var options = CreateSaveOptions(encoder);
         return SaveCoreAsync(path, options, _poster, _frames, cancellationToken);
     }
@@ -435,6 +451,9 @@ public abstract partial class Image : IDisposable
         ValidateWritableStream(stream);
         ArgumentNullException.ThrowIfNull(encoder);
         ThrowIfDisposed();
+        if (encoder is CustomImageEncoder custom)
+            return SaveCustomAsync(this, stream, custom, cancellationToken);
+
         var options = CreateSaveOptions(encoder);
         return SaveCoreAsync(stream, options, _poster, _frames, cancellationToken);
     }
@@ -473,9 +492,12 @@ public abstract partial class Image : IDisposable
         => Owner.Allocate(_size.Width, _size.Height, PixelFormats.GetBytesPerPixel(PixelFormat), LayoutOptions);
 
     /// <summary>Attaches a zeroed frame at the end without structural checks (construction, clones, decoders).</summary>
-    private protected ImageFrame AppendFrameCore(FrameMetadata metadata)
+    private protected ImageFrame AppendFrameCore(FrameMetadata metadata) => AppendFrameCore(AllocateFrameStorage(), metadata);
+
+    /// <summary>Attaches a frame over a storage of this image at the end without structural checks (wrapped memory).</summary>
+    private protected ImageFrame AppendFrameCore(PixelStorage storage, FrameMetadata metadata)
     {
-        var frame = CreateFrame(AllocateFrameStorage(), metadata);
+        var frame = CreateFrame(storage, metadata);
         _frames.Add(frame);
         OnFramesAdded();
         return frame;
@@ -662,6 +684,13 @@ public abstract partial class Image : IDisposable
     /// <param name="encoder">The resolved encoder.</param>
     internal void SaveFrame(ImageFrame frame, string path, ImageEncoder encoder)
     {
+        if (encoder is CustomImageEncoder custom)
+        {
+            using var still = CloneStillFrame(frame);
+            SaveCustom(still, path, custom);
+            return;
+        }
+
         using var writer = ImageWriterCore.Create(path, CreateFrameSaveOptions(encoder), PixelFormat, asynchronous: false);
         WriteTo(writer, poster: null, [frame]);
     }
@@ -672,6 +701,13 @@ public abstract partial class Image : IDisposable
     /// <param name="encoder">The encoder.</param>
     internal void SaveFrame(ImageFrame frame, Stream stream, ImageEncoder encoder)
     {
+        if (encoder is CustomImageEncoder custom)
+        {
+            using var still = CloneStillFrame(frame);
+            custom.Encode(still, stream);
+            return;
+        }
+
         using var writer = ImageWriterCore.Create(stream, CreateFrameSaveOptions(encoder), PixelFormat);
         WriteTo(writer, poster: null, [frame]);
     }
@@ -684,6 +720,9 @@ public abstract partial class Image : IDisposable
     /// <returns>A task that completes when the file has been published.</returns>
     internal Task SaveFrameAsync(ImageFrame frame, string path, ImageEncoder encoder, CancellationToken cancellationToken)
     {
+        if (encoder is CustomImageEncoder custom)
+            return SaveCustomFrameAsync(frame, path, stream: null, custom, cancellationToken);
+
         var options = CreateFrameSaveOptions(encoder);
         return SaveCoreAsync(path, options, poster: null, [frame], cancellationToken);
     }
@@ -696,6 +735,9 @@ public abstract partial class Image : IDisposable
     /// <returns>A task that completes when the frame has been written.</returns>
     internal Task SaveFrameAsync(ImageFrame frame, Stream stream, ImageEncoder encoder, CancellationToken cancellationToken)
     {
+        if (encoder is CustomImageEncoder custom)
+            return SaveCustomFrameAsync(frame, path: null, stream, custom, cancellationToken);
+
         var options = CreateFrameSaveOptions(encoder);
         return SaveCoreAsync(stream, options, poster: null, [frame], cancellationToken);
     }

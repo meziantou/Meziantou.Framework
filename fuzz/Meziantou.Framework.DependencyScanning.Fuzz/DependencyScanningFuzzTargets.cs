@@ -77,6 +77,9 @@ public static partial class DependencyScanningFuzzTargets
         new("package.json"),
         new("package-lock.json"),
         new("npm-shrinkwrap.json"),
+        new("pnpm-lock.yaml"),
+        new("yarn.lock"),
+        new("bun.lock"),
         new("packages.lock.json"),
         new("test.nuspec"),
         new("packages.config", "test.csproj"),
@@ -112,7 +115,7 @@ public static partial class DependencyScanningFuzzTargets
         "<Project Sdk=\"Microsoft.NET.Sdk\">", "<PackageReference Include=\"", "Version=\"", "<PackageVersion Include=\"", "<package id=\"", "version=\"", "<dependency>", "<groupId>", "<artifactId>", "<version>", "<parent>", "<properties>", "${",
         "<dependency id=\"", "&amp;", "&#x41;", "<!--", "-->", "<![CDATA[", "]]>", "/>", "</", "FROM ", " AS ", "ARG ", "--platform=", "image: ", "uses: ", "@v4", "@sha256:", "services:", "steps:", "jobs:", "container:", "resources:", "repositories:", "template: ",
         "[dependencies]", "[dev-dependencies]", "[workspace.dependencies]", "[[package]]", "[versions]", "[libraries]", "[project]", "[tool.poetry.dependencies]", "[packages]", "version = ", "name = ", "require (", "module ", "go ", "replace ", " => ", "h1:",
-        "gem ", "source ", "specs:", "GEM", "DEPENDENCIES", ".package(url: ", "from: ", "exact: ", "implementation ", "implementation(\"", "#:package ", "#:sdk ", "[submodule \"", "path = ", "url = ", "DIRC", "-r ", "--hash=", "; python_version",
+        "gem ", "source ", "specs:", "GEM", "DEPENDENCIES", ".package(url: ", "from: ", "exact: ", "implementation ", "implementation(\"", "#:package ", "#:sdk ", "lockfileVersion: ", "__metadata:", "resolution: ", "  version ", "npm:", "workspace:", "file:", "link:", "snapshots:", "(", ")", "_", "[submodule \"", "path = ", "url = ", "DIRC", "-r ", "--hash=", "; python_version",
         "$(", "<PropertyGroup>", "</PropertyGroup>", " Condition=\"", "#:property ", "def ", "val ", "ext.", "ext {", "extra[", " by extra(", "version: ", "version.ref = ", "$", "${project.ext.",
     ];
 

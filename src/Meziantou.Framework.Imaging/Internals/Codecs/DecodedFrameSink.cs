@@ -243,6 +243,22 @@ internal abstract class DecodedFrameSink : IDisposable
         ArgumentNullException.ThrowIfNull(metadata);
     }
 
+    /// <summary>
+    /// Adopts an ICC profile found once the sink was created (a BMP profile stored after the pixel data), with the rules of
+    /// the constructor: a profile that cannot label the representation the decoder chose is not adopted, and one that
+    /// cannot label a requested pixel format is resolved by <see cref="ColorProfileCompatibility.Resolve"/>.
+    /// </summary>
+    /// <param name="profile">The decoded ICC profile.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The profile cannot label the requested pixel format and may not be discarded.</exception>
+    public void AdoptColorProfile(IccProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        if (Request.PixelFormat is null && !ColorProfileCompatibility.IsCompatible(profile, DestinationPixelFormat))
+            return;
+
+        Plan.AdoptSourceColorProfile(profile);
+    }
+
     /// <summary>Completes an eager load and transfers the image to the caller.</summary>
     /// <param name="metadata">The decoded metadata (copied; the source format and the resolved color profile are set).</param>
     /// <param name="animation">The animation settings, or <see langword="null"/> for a still image (created by default when there are several frames or a poster).</param>

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -58,6 +59,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
         private readonly int _paletteCapacity;
         private readonly int _rowLength;
         private readonly int[]? _fixedPalette;
+        private readonly IccProfile? _iccProfile;
         private PooledBuffer? _band;
         private PooledBuffer? _keys;
         private PooledBuffer? _plane;
@@ -105,9 +107,11 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                 _ => 24,
             };
 
-            // BITMAPV4HEADER declares the alpha mask of the 32-bit layout; 5-6-5 stores its three masks after a 40-byte header
-            _dibLength = _layout == BmpPixelLayout.Bgra32 ? BmpFormat.V4HeaderLength : BmpFormat.InfoHeaderLength;
-            _maskLength = _layout == BmpPixelLayout.Bgr565 ? BmpFormat.BitFieldsMaskLength : 0;
+            // BITMAPV5HEADER embeds an ICC profile; BITMAPV4HEADER declares the alpha mask of the 32-bit layout; 5-6-5 stores
+            // its three masks after a 40-byte header (in the header itself for a V5 header)
+            _iccProfile = options.Metadata.IccProfile;
+            _dibLength = _iccProfile is not null ? BmpFormat.V5HeaderLength : _layout == BmpPixelLayout.Bgra32 ? BmpFormat.V4HeaderLength : BmpFormat.InfoHeaderLength;
+            _maskLength = _layout == BmpPixelLayout.Bgr565 && _iccProfile is null ? BmpFormat.BitFieldsMaskLength : 0;
             _fixedPalette = _isIndexed && _encoder.Quantization.Palette is { } palette ? GetFixedPalette(palette, 1 << _bitsPerPixel, nameof(options)) : null;
             _paletteCapacity = _isIndexed ? _fixedPalette?.Length ?? Math.Min(_encoder.Quantization.MaxColors, 1 << _bitsPerPixel) : 0;
             _width = options.CanvasSize.Width;
@@ -261,6 +265,13 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                     if (_row < _height)
                         return false;
 
+                    if (_iccProfile is not null)
+                    {
+                        var profile = _iccProfile.Data.Span;
+                        profile.CopyTo(output.GetSpan(profile.Length));
+                        output.Advance(profile.Length);
+                    }
+
                     _frame = null;
                     _step = Step.None;
                     return true;
@@ -307,7 +318,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
 
         private void EnsureFileLengthFits(int pixelDataOffset)
         {
-            var totalLength = pixelDataOffset + _imageLength;
+            var totalLength = pixelDataOffset + _imageLength + (_iccProfile?.Data.Length ?? 0);
             if (totalLength > uint.MaxValue)
                 throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The BMP file would be {totalLength} bytes, more than the 4,294,967,295 bytes the bfSize field can declare; the canvas is {_width}x{_height}."), ImageFormat.Bmp, "Canvas size");
         }
@@ -445,7 +456,8 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
             var span = output.GetSpan(pixelDataOffset);
             span[..pixelDataOffset].Clear();
             BmpFormat.Magic.CopyTo(span);
-            BinaryPrimitives.WriteUInt32LittleEndian(span[2..], (uint)(pixelDataOffset + _imageLength));
+            var profileLength = _iccProfile?.Data.Length ?? 0;
+            BinaryPrimitives.WriteUInt32LittleEndian(span[2..], (uint)(pixelDataOffset + _imageLength + profileLength));
             BinaryPrimitives.WriteUInt32LittleEndian(span[10..], (uint)pixelDataOffset);
 
             var compression = _layout switch
@@ -482,12 +494,28 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                 BinaryPrimitives.WriteUInt32LittleEndian(dib[52..], 0xFF00_0000);
                 BinaryPrimitives.WriteUInt32LittleEndian(dib[56..], BmpFormat.ColorSpaceSrgb);
             }
+            else if (_layout == BmpPixelLayout.Bgr565 && _dibLength >= BmpFormat.V2HeaderLength)
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(dib[40..], 0xF800);
+                BinaryPrimitives.WriteUInt32LittleEndian(dib[44..], 0x07E0);
+                BinaryPrimitives.WriteUInt32LittleEndian(dib[48..], 0x001F);
+            }
             else if (_layout == BmpPixelLayout.Bgr565)
             {
                 // BI_BITFIELDS after a BITMAPINFOHEADER: the red, green and blue masks follow the header
                 BinaryPrimitives.WriteUInt32LittleEndian(dib[_dibLength..], 0xF800);
                 BinaryPrimitives.WriteUInt32LittleEndian(dib[(_dibLength + 4)..], 0x07E0);
                 BinaryPrimitives.WriteUInt32LittleEndian(dib[(_dibLength + 8)..], 0x001F);
+            }
+
+            if (_iccProfile is not null)
+            {
+                // BITMAPV5HEADER: the profile follows the pixel data, at an offset counted from the start of the header, with
+                // the perceptual intent (LCS_GM_IMAGES)
+                BinaryPrimitives.WriteUInt32LittleEndian(dib[56..], BmpFormat.ColorSpaceProfileEmbedded);
+                BinaryPrimitives.WriteUInt32LittleEndian(dib[108..], BmpFormat.IntentImages);
+                BinaryPrimitives.WriteUInt32LittleEndian(dib[BmpFormat.V5ProfileDataOffset..], (uint)(pixelDataOffset - BmpFormat.FileHeaderLength + _imageLength));
+                BinaryPrimitives.WriteUInt32LittleEndian(dib[BmpFormat.V5ProfileSizeOffset..], (uint)profileLength);
             }
 
             // RGBQUAD entries: blue, green, red and a reserved zero

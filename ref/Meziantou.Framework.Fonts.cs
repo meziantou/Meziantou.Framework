@@ -797,6 +797,7 @@ namespace Meziantou.Framework.Fonts
         public uint GetFeatureTag(System.ReadOnlySpan<byte> table, int feature) => throw null;
         public int GetLookupCount(System.ReadOnlySpan<byte> table) => throw null;
         public static int GetRequiredFeature(System.ReadOnlySpan<byte> table, int languageSystem) => throw null;
+        public int GetScriptCount(System.ReadOnlySpan<byte> table) => throw null;
         public static Meziantou.Framework.Fonts.LayoutTable? Read(System.ReadOnlySpan<byte> table) => throw null;
     }
 
@@ -1002,7 +1003,7 @@ namespace Meziantou.Framework.Fonts
     {
         public static void AddText(Meziantou.Framework.Fonts.GlyphBuffer buffer, System.ReadOnlySpan<char> text, int clusterOffset = 0) { }
         public static bool IsSynthesizedSpace(int codePoint) => throw null;
-        public static void Shape(Meziantou.Framework.Fonts.GlyphBuffer buffer, Meziantou.Framework.Fonts.FontFace face, Meziantou.Framework.UnicodeScript script, System.ReadOnlySpan<uint> languages, bool isRightToLeft, System.ReadOnlySpan<Meziantou.Framework.Fonts.ShapingFeature> features, bool isVertical = false, Meziantou.Framework.Fonts.GlyphScratch? scratch = null, Meziantou.Framework.Fonts.ShapingCache? cache = null, bool areCharactersMirrored = false) { }
+        public static void Shape(Meziantou.Framework.Fonts.GlyphBuffer buffer, Meziantou.Framework.Fonts.FontFace face, Meziantou.Framework.UnicodeScript script, System.ReadOnlySpan<uint> languages, bool isRightToLeft, System.ReadOnlySpan<Meziantou.Framework.Fonts.ShapingFeature> features, bool isVertical = false, Meziantou.Framework.Fonts.GlyphScratch? scratch = null, Meziantou.Framework.Fonts.ShapingCache? cache = null, bool areCharactersMirrored = false, double pointSize = 0d) { }
     }
 
     public sealed class TrueTypeGlyphOutlines

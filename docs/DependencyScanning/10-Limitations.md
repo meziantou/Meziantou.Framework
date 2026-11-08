@@ -13,7 +13,7 @@ description: What the library and the tool do not do, and how to work around it.
   file `${TAG}` or a GitHub Actions expression, is not resolved: the value is reported as written, with a `null`
   resolved version and a location that is not updatable. See
   [Properties and variables](05-SupportedFiles/01-Overview.md#properties-and-variables).
-- **Some formats are not scanned**, such as `pnpm-lock.yaml`, `yarn.lock`, `bun.lock` and npm lockfile version 1. See
+- **Some formats are not scanned**, such as the binary Bun lock file `bun.lockb`. See
   [JavaScript](05-SupportedFiles/03-JavaScript.md#lock-files). Use a [custom scanner](08-CustomScanners.md) for other
   formats.
 - **The library does not choose versions.** It writes the value it is given. The command-line tool chooses versions

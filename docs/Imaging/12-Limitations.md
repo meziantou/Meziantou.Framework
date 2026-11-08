@@ -9,7 +9,8 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 ## General
 
-- **No extension points.** There is no public allocator, custom pixel type, codec plug-in or custom image processor.
+- **No custom pixel types.** Images use the built-in pixel formats; the buffer pool has settings
+  ([ImageBufferPool](cref:Meziantou.Framework.Imaging.ImageBufferPool)) but cannot be replaced by an allocator of yours.
 - **No CMYK pixel format.** CMYK JPEG and TIFF files are converted to RGB when they are loaded, with an explicit
   `CmykConversion` option; CMYK cannot be written. See [Color management](09-Color/03-ColorManagement.md).
 - **No floating-point grayscale.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) are the floating-point formats. OpenEXR and TIFF read and
@@ -27,18 +28,18 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 | Format | Main limitations |
 | --- | --- |
-| JPEG | Hierarchical JPEG, JPEG-LS and lossless JPEG with arithmetic coding are not read. Writing is 8-bit baseline or progressive only (no 12-bit, lossless, arithmetic or CMYK), one frame. Gain maps are only read by `AuxiliaryImageCollection` and are not written. |
+| JPEG | Hierarchical JPEG, JPEG-LS and lossless JPEG with arithmetic coding are not read. Writing is 8-bit baseline or progressive only (no 12-bit, lossless, arithmetic or CMYK), one frame. |
 | GIF | At most 256 colors per frame and one fully transparent color; plain-text extensions are rejected. |
-| PNG / APNG | Sub-byte grayscale requires [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) or [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) (still images), and APNG delta rectangles [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) or MinimumSize; palettes are selected by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize), [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) or [PngPixelLayout.Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed). Sequential writers fix their layout and palette from the first image. Unknown ancillary chunks are not kept. |
+| PNG / APNG | Sub-byte grayscale requires [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) or [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) (still images), and APNG delta rectangles [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) or MinimumSize; palettes are selected by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize), [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) or [PngPixelLayout.Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed). Sequential writers fix their layout and palette from the first image. |
 | WebP | 8-bit RGB(A) only; lossy output is 4:2:0; animations need a seekable destination. |
 | QOI | 8-bit RGB(A) only, one still image, no metadata. |
-| BMP | No embedded JPEG/PNG payloads, no embedded ICC profile; one still image is written. |
+| BMP | No embedded JPEG/PNG payloads, no linked ICC profile; one still image is written. |
 | TGA | No premultiplied alpha; true-color and grayscale output only, no metadata. |
 | Netpbm | Only the first image of a concatenation is read; no metadata. |
 | TIFF | Old-style JPEG compression, YCbCr data in separate planes, L\*a\*b\* and some extra-sample layouts are not read. Writing uses chunky samples (no separate planes), one page per [Save](cref:Meziantou.Framework.Imaging.Image.Save) (use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) for documents) and a seekable destination. |
 | ICO / CUR | At most 256 pixels per side; 32-bit DIB or PNG representations are written. |
 | ANI | One representation per frame; always loops; needs a seekable destination. |
-| AVIF | Gain maps, depth maps and thumbnails are only read by `AuxiliaryImageCollection`; gain maps are not written. Sequences need a seekable destination; the encoder is single-threaded except for grid tiles. |
+| AVIF | Gain maps, depth maps and thumbnails are only read by `AuxiliaryImageCollection`; gain maps are written next to still images only. Sequences need a seekable destination; the encoder is single-threaded except for grid tiles. |
 | HEIC | Bit depths above 12, multilayer and 3D extensions are not read; bursts and live-photo videos are ignored, depth maps, thumbnails and gain maps are only read by `AuxiliaryImageCollection` (Apple's gain map parameters, in maker notes, are not read). Sequences need a seekable destination. |
 | JPEG XL | Floating-point samples, more than 16 bits, premultiplied alpha and CMYK are not read; lossy decoding is close to, not identical with, the reference decoder. Writing has no layers or blending. |
 | JPEG 2000 | Signed samples, more than 16 bits and Part 2 extensions are not read; no decoding of fewer quality layers; a region decode reads the whole compressed data of each tile it meets. Writing has no precincts and no tile-parts beyond one per tile; HTJ2K output has one quality layer and no HT refinement passes. |
@@ -52,10 +53,9 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 ## Drawing and text
 
-- Drawing is sequential: it does not use several threads.
 - No mesh gradients.
 - Text lines are broken greedily.
-- No AAT (`morx`, `kerx`) shaping, no subpixel (LCD) rendering, no ruby in vertical text.
+- No subpixel (LCD) rendering, no ruby in vertical text.
 - Hinting is opt-in and horizontal only.
 - Installed fonts are used only when you ask for them ([Font.LoadInstalled](cref:Meziantou.Framework.Imaging.Typography.Font.LoadInstalled), [FontStack.WithInstalledFallback](cref:Meziantou.Framework.Imaging.Typography.FontStack.WithInstalledFallback)).
 - No SVG glyphs, Type 1 fonts or fonts without outlines.

@@ -10,7 +10,9 @@ namespace Meziantou.Framework.Geo;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The reader reads every shape type. The Z values become the altitudes; the M values (measures) are dropped. A PolyLine
+/// The reader reads every shape type. The Z values become the altitudes and the M values the
+/// <see cref="GeoPosition.Measure"/> of the positions, a value below -10<sup>38</sup> (no data) or NaN becoming no measure;
+/// the M values of the Z shapes are optional. A PolyLine
 /// of one part is a <see cref="GeoLineString"/>, and of several parts a <see cref="GeoMultiLineString"/>; a MultiPoint
 /// is always a <see cref="GeoMultiPoint"/>. The rings of a Polygon are grouped as the shapefile orients them: each
 /// clockwise ring is an exterior ring, and each counterclockwise ring is a hole of the smallest exterior ring that contains
@@ -43,7 +45,9 @@ namespace Meziantou.Framework.Geo;
 /// The writer writes the <c>.shp</c>, <c>.shx</c>, <c>.dbf</c>, <c>.cpg</c> (UTF-8) and <c>.prj</c> (WGS 84 longitudes and
 /// latitudes) files. A shapefile has one shape type: Point for <see cref="GeoPoint"/> features, MultiPoint when a feature
 /// is a <see cref="GeoMultiPoint"/>, PolyLine for lines and Polygon for polygons, with Z (PointZ, MultiPointZ, PolyLineZ,
-/// PolygonZ) when a position has an altitude, the positions without altitude getting 0. Features that mix points, lines
+/// PolygonZ) when a position has an altitude, the positions without altitude getting 0. The M values are written when a
+/// position has a measure, in the Z shapes or in the M shapes (PointM, MultiPointM, PolyLineM, PolygonM) when no position
+/// has an altitude; the positions without measure get the no-data value. The times are not written. Features that mix points, lines
 /// and polygons, or that have a <see cref="GeoGeometryCollection"/>, throw an <see cref="ArgumentException"/>. A feature
 /// without geometry, or with an empty geometry, is a null shape. The exterior rings are written clockwise and the holes
 /// counterclockwise, closed.

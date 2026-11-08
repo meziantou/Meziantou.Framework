@@ -28,8 +28,8 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 - **No Microsoft Entra ID authentication.** SQL logins and integrated Windows authentication (NTLM, Kerberos, through
   an SSPI exchange run by the authentication handler) are supported. See [Authentication](04-Authentication.md).
-- **TLS 1.2 only**, negotiated in the TDS PRELOGIN exchange. `Encrypt=Strict` (TDS 8.0) is not supported. See
-  [Encryption](09-Encryption.md).
+- **TLS 1.2 when TLS is negotiated in the TDS PRELOGIN exchange** (`Encrypt=True` or `Optional`). Use
+  `Encrypt=Strict` for TLS 1.3. See [Encryption](09-Encryption.md).
 - **No encryption by default**: without a certificate, passwords and data travel in clear text.
 
 ## Query engine

@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.TestHarness;
 using Meziantou.Framework.Pdf.TestHarness.Arlington;
 
 namespace Meziantou.Framework.Pdf.Tests;
@@ -71,6 +72,14 @@ public sealed class PdfArlingtonTests
                 return document;
             },
             ["rich"] = PdfWriterTests.CreateRichDocument,
+            ["form"] = PdfInteractiveFormTests.CreateFields,
+            ["form-embedded-font"] = () =>
+            {
+                var document = new PdfDocument();
+                var page = document.Pages.Add(PdfSize.A5);
+                document.Form.AddTextField(page, "name", new PdfRectangle(10, 10, 200, 30), new PdfTextFieldOptions { Font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf"), Value = "Office" });
+                return document;
+            },
             ["xmp"] = () =>
             {
                 var document = PdfWriterTests.CreateRichDocument();

@@ -10,6 +10,7 @@ internal static class FlatGeobufFormat
     public const int HeaderEnvelope = 1;
     public const int HeaderGeometryType = 2;
     public const int HeaderHasZ = 3;
+    public const int HeaderHasM = 4;
     public const int HeaderColumns = 7;
     public const int HeaderFeaturesCount = 8;
     public const int HeaderIndexNodeSize = 9;
@@ -27,6 +28,7 @@ internal static class FlatGeobufFormat
     public const int GeometryEnds = 0;
     public const int GeometryXY = 1;
     public const int GeometryZ = 2;
+    public const int GeometryM = 3;
     public const int GeometryType = 6;
     public const int GeometryParts = 7;
 

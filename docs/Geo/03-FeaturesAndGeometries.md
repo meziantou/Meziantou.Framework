@@ -64,6 +64,46 @@ pattern matching gives its members:
 - [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) is a position to label the geometry: the
   centroid of its largest polygon, so the islands of a country do not pull the label into the sea.
 
+## Measures and times
+
+A position can also have a [Measure](cref:Meziantou.Framework.Geo.GeoPosition.Measure), the M value of WKT, WKB,
+shapefiles and FlatGeobuf, such as the distance from the start of a road, and a
+[Time](cref:Meziantou.Framework.Geo.GeoPosition.Time), such as the time of a point of a GPS track. Both are optional:
+
+<!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=Geo_PositionMeasureAndTime;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The measure and the time are optional, set with an object initializer
+var position = new GeoPosition(Longitude: 2.35, Latitude: 48.86, Altitude: 35)
+{
+    Measure = 1250,
+    Time = new DateTimeOffset(2024, 9, 1, 7, 0, 0, TimeSpan.Zero),
+};
+
+// A with expression keeps the values it does not set
+var moved = position with { Longitude = 2.36 };
+Assert.Equal(1250, moved.Measure);
+Assert.Equal(position.Time, moved.Time);
+Assert.Null(new GeoPosition(2.35, 48.86).Time);
+```
+<!-- endref -->
+
+The formats read and write the values they can hold:
+
+| Format | Measures | Times |
+|---|---|---|
+| [GPX](04-Formats/06-Gpx.md) | no | the `time` of the points, in UTC |
+| [KML](04-Formats/05-KmlAndKmz.md) | no | the `when` of the `gx:Track` elements |
+| [WKT and WKB](04-Formats/07-WktAndWkb.md) | the `M` and `ZM` geometries | no |
+| [Shapefile](04-Formats/04-Shapefile.md) | the M values of the M and Z shapes | no |
+| [FlatGeobuf](04-Formats/09-FlatGeobuf.md) | the M values | no |
+| GeoJSON, TopoJSON, encoded polylines | no | no |
+
+Two positions are equal when their coordinates, altitudes and measures are equal and their times are the same instant.
+[Clip](cref:Meziantou.Framework.Geo.GeoGeometry.Clip) interpolates the measure and the time of the positions it adds
+where a line leaves the box, and [Simplify](cref:Meziantou.Framework.Geo.GeoGeometry.Simplify) keeps the values of the
+positions it keeps. The positions of the polygons that the repair and the boolean operations return have no altitude,
+measure or time.
+
 ## Distances
 
 [GetDistance](cref:Meziantou.Framework.Geo.GeoPosition.GetDistance) returns the great-circle distance between two
@@ -82,6 +122,8 @@ Assert.Equal(343.5, new GeoLineString([paris, london]).GetLength() / 1000, 1);
 
 The distance is computed on a sphere with the mean radius of the Earth: it can differ by up to 0.5% from the distance
 on the ellipsoid that GPS devices use. The altitudes are ignored.
+[Distance](cref:Meziantou.Framework.Geo.GeoGeometry.Distance) measures the distance between two geometries on the
+ellipsoid: see [geometry operations](06-GeometryOperations.md).
 
 ## Point in polygon
 

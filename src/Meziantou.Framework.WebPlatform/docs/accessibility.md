@@ -57,3 +57,28 @@ are referenced by `aria-labelledby`. An element owned with `aria-owns` is not hi
 ancestors; `aria-owns` is ignored on a hidden element and when it references an element that is not rendered. Without a
 browsing context, there is no computed style: only the `hidden` and `aria-hidden` attributes hide the nodes, and there are
 no markers nor generated content.
+
+## Properties and accessibility tree
+
+`Element.GetAccessibilityProperties()` returns the role, the name, the description (`aria-describedby`, then
+`aria-description`, then a `title` that is not the name) and the states of an element: `Checked` and `Pressed`
+(`True`, `False`, `Mixed`), `Expanded`, `Selected`, `Disabled` and `Level`. The states exist only for the roles that
+support them, with the lists of Playwright. The native states come first (an `input` checkbox, `HtmlElementStates.IsActuallyDisabled`,
+the selectedness of an `option`), then the ARIA attributes, then the default semantics of `ElementInternals`. The level of
+`h1`-`h6` is the computed heading level of `HtmlElementStates.GetHeadingLevel` (`headingoffset`, `headingreset`), after a
+valid `aria-level`; `role="heading"` defaults to 2. `aria-disabled` applies to the flat tree descendants, the nearest
+`true` or `false` value winning.
+
+`Element.CaptureAccessibilityTree()` builds an immutable snapshot (`AccessibilityNode`) as `generateAriaTree` of
+Playwright in its default mode: a hidden subtree is skipped (even a descendant with `visibility: visible`), the elements
+with no role, `none` or `generic` are replaced by their content, the texts (text nodes, `::before` and `::after`
+content, a space around the boxes that are not inline) are merged and normalized, a single text equal to the name is
+dropped, and a text field (`input`, `textarea`) shows its value instead of its text content. The traversal uses an
+explicit stack, and one `aria-owns` scan and one set of CSS counters for the whole tree. `AccessibilityNode.ToAriaSnapshot()`
+writes the YAML of `renderAriaSnapshotAsYaml`, with its quoting rules, the `/url` of the links and the `/placeholder` of
+the text fields; the role `image` is written `img`. The tests compare the output with the snapshots of Playwright 1.64.1
+in Chromium; the differences come from the names and the states (table rows and cells, the name of an `article` from
+its heading, a disabled `fieldset`, `headingoffset`).
+
+The WPT runner implements `test_driver.get_accessibility_properties_for_element()` and
+`get_accessibility_properties_for_accessibility_node()` with these APIs.

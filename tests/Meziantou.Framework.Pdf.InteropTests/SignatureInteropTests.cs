@@ -16,7 +16,9 @@ public sealed partial class SignatureInteropTests
     [InlineData("two-signatures")]
     [InlineData("rsa-pss")]
     [InlineData("visible")]
+    [InlineData("visible-default")]
     [InlineData("certified")]
+    [InlineData("long-term")]
     public async Task SignaturesAreValidForPdfsig(string name)
     {
         global::Xunit.Assert.SkipUnless(PdfSigTool.IsSupported, "The release of meziantou/prebuilt has no pdfsig for this platform");
@@ -35,13 +37,20 @@ public sealed partial class SignatureInteropTests
             Reason = "Interop",
             RsaSignaturePadding = name == "rsa-pss" ? RSASignaturePadding.Pss : null,
             Certification = name == "certified" ? PdfCertificationLevel.FormFilling : null,
-            Appearance = name == "visible" ? new PdfSignatureAppearance(0, PdfRectangle.FromSize(60, 60, 200, 50)) { Draw = builder => builder.DrawText("Signed", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 8, 20) } : null,
+            Appearance = name == "visible" ? new PdfSignatureAppearance(0, PdfRectangle.FromSize(60, 60, 200, 50)) { Draw = builder => builder.DrawText("Signed", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 8, 20) }
+                : name == "visible-default" ? new PdfSignatureAppearance(0, PdfRectangle.FromSize(60, 60, 200, 50)) : null,
         });
         var expectedSignatures = 1;
         if (name is "two-signatures" or "certified")
         {
             signed = PdfSigner.Sign(PdfDocument.Open(signed), new PdfSignatureOptions(certificate) { Reason = "Second" });
             expectedSignatures = 2;
+        }
+
+        if (name == "long-term")
+        {
+            // PAdES B-LT: the validation data is appended after the signature, which no longer covers the whole file
+            signed = PdfSigner.AddValidationData(PdfDocument.Open(signed), new PdfValidationDataOptions { IncludeVri = true });
         }
 
         var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "signed-" + name + ".pdf");
@@ -51,7 +60,7 @@ public sealed partial class SignatureInteropTests
         var report = await pdfsig.VerifyAsync(path, XunitCancellationToken);
 
         Assert.HasCount(expectedSignatures, ValidSignatureRegex().Matches(report));
-        Assert.Contains("Total document signed", report, StringComparison.Ordinal);
+        Assert.Contains(name == "long-term" ? "Not total document signed" : "Total document signed", report, StringComparison.Ordinal);
         Assert.Contains("ETSI.CAdES.detached", report, StringComparison.Ordinal);
     }
 

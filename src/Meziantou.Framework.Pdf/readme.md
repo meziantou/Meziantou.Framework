@@ -483,7 +483,9 @@ signatures of a document.
 - **Signing**: B-B, a CAdES detached signature (`ETSI.CAdES.detached`) with the ESS signing certificate, and B-T, its
   RFC 3161 time stamp; RSA (PKCS #1 v1.5 or PSS) and ECDSA keys, SHA-256, SHA-384 and SHA-512; certification
   signatures (DocMDP) and field locks (FieldMDP); visible signatures (`PdfSignatureAppearance`); the validation data of
-  B-LT (`PdfSigner.AddValidationData`) and the document time stamps of B-LTA (`PdfSigner.TimestampAsync`); every
+  B-LT (`PdfSigner.AddValidationData`; `PdfSigner.AddValidationDataAsync` completes the chains, downloads the
+  missing OCSP responses, revocation lists and issuers when asked, and writes VRI dictionaries) and the document time
+  stamps of B-LTA (`PdfSigner.TimestampAsync`); every
   operation is appended as an incremental update, so that the signatures of the document stay valid; encrypted
   documents are signed with their keys
 - **Verification**: the integrity of the bytes each signature covers, the CMS signature (one signer), the ESS signing

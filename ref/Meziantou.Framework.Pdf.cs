@@ -1594,6 +1594,8 @@ namespace Meziantou.Framework.Pdf.Signing
     public static class PdfSigner
     {
         public static byte[] AddValidationData(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfValidationData validationData) => throw null;
+        public static byte[] AddValidationData(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions options) => throw null;
+        public static System.Threading.Tasks.Task<byte[]> AddValidationDataAsync(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static byte[] Sign(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfSignatureOptions options) => throw null;
         public static System.Threading.Tasks.Task<byte[]> SignAsync(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfSignatureOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<byte[]> TimestampAsync(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfTimestampOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
@@ -1613,6 +1615,16 @@ namespace Meziantou.Framework.Pdf.Signing
     {
         public System.Collections.Generic.IList<byte[]> CertificateRevocationLists { get => throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get => throw null; }
+        public System.Collections.Generic.IList<byte[]> OcspResponses { get => throw null; }
+    }
+
+    public sealed class PdfValidationDataOptions
+    {
+        public System.Collections.Generic.IList<byte[]> CertificateRevocationLists { get => throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get => throw null; }
+        public bool DownloadMissingData { get => throw null; init { } }
+        public System.Net.Http.HttpClient? HttpClient { get => throw null; init { } }
+        public bool IncludeVri { get => throw null; init { } }
         public System.Collections.Generic.IList<byte[]> OcspResponses { get => throw null; }
     }
 }

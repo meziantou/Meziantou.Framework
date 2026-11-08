@@ -729,6 +729,153 @@ public sealed class PdfSignerTests
         Assert.Single(PdfSignatureVerifier.GetValidationData(again).CertificateRevocationLists);
     }
 
+    [Fact]
+    public async Task Example_DownloadValidationData()
+    {
+        using var pki = new TestCertificateAuthority();
+        using var authority = new TestTimestampAuthority(DateTimeOffset.UtcNow);
+        using var timestampClient = new HttpClient(authority);
+        var signedFile = await PdfSigner.SignAsync(CreateDocument(), new PdfSignatureOptions(pki.Signer)
+        {
+            TimestampAuthority = new Uri("http://timestamp.example.com/"),
+            HttpClient = timestampClient,
+        }, XunitCancellationToken);
+        var trustedRoot = pki.Root;
+        var httpClient = new HttpClient(pki, disposeHandler: false);
+
+        #region PdfSigning_DownloadValidationData
+        // PAdES B-LT: the chains of the signatures are completed, and the missing revocation evidence is downloaded
+        // from the addresses of the certificates (OCSP responders, revocation lists, issuers)
+        var options = new PdfValidationDataOptions
+        {
+            DownloadMissingData = true,
+            HttpClient = httpClient,
+            IncludeVri = true,
+        };
+        options.Certificates.Add(trustedRoot);
+        var withValidationData = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken);
+        #endregion
+
+        httpClient.Dispose();
+        Assert.Equal(["GET " + TestCertificateAuthority.IntermediateUri, "POST " + TestCertificateAuthority.OcspUri, "GET " + TestCertificateAuthority.RootCrlUri], pki.Requests);
+
+        // The OCSP request identifies the signer by its serial number and by the digests of the name and of the key of its issuer (RFC 6960, 4.1.1)
+        var certificateId = pki.LastOcspCertificateId!.Value;
+        Assert.Equal("1.3.14.3.2.26", certificateId.HashAlgorithm);
+        Assert.Equal(Sha1(pki.Intermediate.SubjectName.RawData), certificateId.IssuerNameHash);
+        var publicKeyInfo = new AsnReader(pki.Intermediate.PublicKey.ExportSubjectPublicKeyInfo(), AsnEncodingRules.DER).ReadSequence();
+        publicKeyInfo.ReadEncodedValue();
+        Assert.Equal(Sha1(publicKeyInfo.ReadBitString(out _)), certificateId.IssuerKeyHash);
+        Assert.Equal(pki.Signer.SerialNumberBytes.ToArray(), certificateId.SerialNumber);
+
+        var data = PdfSignatureVerifier.GetValidationData(withValidationData);
+        Assert.Equal(
+            new[] { pki.Root, pki.Signer, authority.Certificate, pki.Intermediate, pki.Responder }.Select(certificate => certificate.Thumbprint).Order(StringComparer.Ordinal),
+            data.Certificates.Select(certificate => certificate.Thumbprint).Order(StringComparer.Ordinal));
+        Assert.Single(data.OcspResponses);
+        Assert.Equal([pki.RootCrl], data.CertificateRevocationLists);
+
+        // The VRI entry of the signature: the SHA-1 digest of its /Contents, in uppercase hexadecimal (ISO 32000-2, 12.8.4.4)
+        var document = PdfDocument.Open(withValidationData);
+        var store = document.Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!;
+        var signatureContents = GetSignatureDictionary(document).Get<PdfString>(PdfNames.Contents)!;
+        var vri = store.Get<PdfDictionary>(PdfName.Create("VRI"))!;
+        var entry = vri.Get<PdfDictionary>(PdfName.Create(Convert.ToHexString(Sha1(signatureContents.Span))))!;
+        Assert.HasCount(5, entry.Get<PdfArray>(PdfName.Create("Cert"))!);
+        Assert.Equal(store.Get<PdfArray>(PdfName.Create("OCSPs"))![0], entry.Get<PdfArray>(PdfName.Create("OCSP"))![0]);
+        Assert.Equal(store.Get<PdfArray>(PdfName.Create("CRLs"))![0], entry.Get<PdfArray>(PdfName.Create("CRL"))![0]);
+
+        // The chain of the signer is built offline from the store
+        using (var chain = new X509Chain())
+        {
+            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+            chain.ChainPolicy.CustomTrustStore.Add(trustedRoot);
+            chain.ChainPolicy.ExtraStore.AddRange(data.Certificates);
+            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+            chain.ChainPolicy.DisableCertificateDownloads = true;
+            Assert.True(chain.Build(PdfSignatureVerifier.Verify(withValidationData).Single().Certificate!));
+        }
+
+        // PAdES B-LTA, then the validation data of the document time stamp: the data the store has is not downloaded again
+        var timestamped = await PdfSigner.TimestampAsync(PdfDocument.Open(withValidationData), new PdfTimestampOptions(new Uri("http://timestamp.example.com/")) { HttpClient = timestampClient }, XunitCancellationToken);
+        using var secondClient = new HttpClient(pki, disposeHandler: false);
+        var secondOptions = new PdfValidationDataOptions { DownloadMissingData = true, HttpClient = secondClient, IncludeVri = true };
+        var extended = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(timestamped), secondOptions, XunitCancellationToken);
+        Assert.HasCount(3, pki.Requests);
+        Assert.HasCount(2, PdfDocument.Open(extended).Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!.Get<PdfDictionary>(PdfName.Create("VRI"))!);
+        Assert.Single(PdfSignatureVerifier.GetValidationData(extended).OcspResponses);
+
+        var signatures = PdfSignatureVerifier.Verify(extended);
+        Assert.HasCount(2, signatures);
+        Assert.All(signatures, signature => Assert.True(signature.IsValid, signature.Error));
+        Assert.True(signatures[0].AreModificationsPermitted);
+        Assert.Equal([PdfModificationKind.ValidationData, PdfModificationKind.DocumentTimestamp], signatures[0].Modifications.Select(modification => modification.Kind).Distinct().Order());
+    }
+
+    [Fact]
+    public async Task RevocationListsAreDownloadedWhenTheResponderFails()
+    {
+        using var pki = new TestCertificateAuthority { FailOcsp = true };
+        using var httpClient = new HttpClient(pki, disposeHandler: false);
+        var signedFile = PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(pki.Signer));
+        var options = new PdfValidationDataOptions { DownloadMissingData = true, HttpClient = httpClient };
+        options.Certificates.Add(pki.Root);
+
+        var withValidationData = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken);
+
+        var data = PdfSignatureVerifier.GetValidationData(withValidationData);
+        Assert.Empty(data.OcspResponses);
+        Assert.Equal([pki.IntermediateCrl, pki.RootCrl], data.CertificateRevocationLists);
+        Assert.Null(PdfDocument.Open(withValidationData).Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!.Get<PdfDictionary>(PdfName.Create("VRI")));
+
+        pki.FailCrls = true;
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken));
+        Assert.Contains("Test signer", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidationDataIsAssociatedWithTheSignaturesWithoutDownload()
+    {
+        using var pki = new TestCertificateAuthority();
+        var options = new PdfSignatureOptions(pki.Signer);
+        options.Certificates.Add(pki.Intermediate);
+        var signedFile = PdfSigner.Sign(CreateDocument(), options);
+
+        var validationOptions = new PdfValidationDataOptions { IncludeVri = true };
+        validationOptions.Certificates.Add(pki.Root);
+        validationOptions.CertificateRevocationLists.Add(pki.IntermediateCrl);
+        validationOptions.CertificateRevocationLists.Add(pki.RootCrl);
+        validationOptions.CertificateRevocationLists.Add(CertificateRevocationList);
+        var withValidationData = PdfSigner.AddValidationData(PdfDocument.Open(signedFile), validationOptions);
+
+        Assert.Empty(pki.Requests);
+        var document = PdfDocument.Open(withValidationData);
+        var store = document.Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!;
+        Assert.HasCount(3, store.Get<PdfArray>(PdfName.Create("CRLs"))!);
+        var entry = (PdfDictionary)store.Get<PdfDictionary>(PdfName.Create("VRI"))!.Single().Value;
+        Assert.HasCount(3, entry.Get<PdfArray>(PdfName.Create("Cert"))!);
+
+        // The revocation lists of the issuers of the chain only, and no OCSP response
+        var crls = entry.Get<PdfArray>(PdfName.Create("CRL"))!.Select(item => ((PdfStream)PdfReference.ResolveIfReference(item)!).GetDecodedData()).ToList();
+        Assert.Equal([pki.IntermediateCrl, pki.RootCrl], crls);
+        Assert.Null(entry.Get<PdfArray>(PdfName.Create("OCSP")));
+
+        // The streams the store has are referenced, not added again
+        var again = PdfSigner.AddValidationData(document, validationOptions);
+        var againStore = PdfDocument.Open(again).Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!;
+        Assert.HasCount(3, againStore.Get<PdfArray>(PdfName.Create("CRLs"))!);
+        var againEntry = (PdfDictionary)againStore.Get<PdfDictionary>(PdfName.Create("VRI"))!.Single().Value;
+        Assert.Equal(entry.Get<PdfArray>(PdfName.Create("CRL"))!.Cast<PdfReference>().Select(item => item.ObjectNumber), againEntry.Get<PdfArray>(PdfName.Create("CRL"))!.Cast<PdfReference>().Select(item => item.ObjectNumber));
+
+        Assert.Throws<ArgumentException>(() => PdfSigner.AddValidationData(PdfDocument.Open(signedFile), new PdfValidationDataOptions { DownloadMissingData = true }));
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "OCSP certificate identifiers and VRI keys use SHA-1")]
+    private static byte[] Sha1(byte[] data) => SHA1.HashData(data);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "VRI keys use SHA-1")]
+    private static byte[] Sha1(ReadOnlySpan<byte> data) => SHA1.HashData(data);
+
     private static readonly byte[] CertificateRevocationList = CreateCertificateRevocationList();
 
     private static byte[] CreateCertificateRevocationList()

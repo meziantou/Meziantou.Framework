@@ -5,7 +5,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <summary>The base class of the immutable encoder settings accepted by the save and writer APIs.</summary>
 /// <remarks>
 /// Encoders are immutable and thread-safe; a single instance can be reused for any number of save operations.
-/// The set of encoders is closed in this version: there is no codec plug-in interface.
+/// The encoders of the formats the library does not write derive from <see cref="CustomImageEncoder"/>; this class cannot
+/// be derived otherwise.
 /// </remarks>
 public abstract class ImageEncoder
 {
@@ -85,7 +86,10 @@ public abstract class ImageEncoder
     /// <see cref="IcoEncoder"/>, of the matching <see cref="IcoEncoder.Kind"/>.
     /// </returns>
     /// <remarks>This method is thread-safe. To change a setting, create the encoder type directly with an object initializer.</remarks>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is <see cref="ImageFormat.Unknown"/> or not a defined value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
+    /// <see cref="CustomImageCodec.CreateEncoder"/>) or not a defined value.
+    /// </exception>
     public static ImageEncoder Create(ImageFormat format) => format switch
     {
         ImageFormat.Png => new PngEncoder(),
@@ -143,6 +147,30 @@ public abstract class ImageEncoder
     /// <returns>The encoder.</returns>
     /// <exception cref="ArgumentException">The extension is not recognized.</exception>
     internal static ImageEncoder FromPath(string path) => FromExtension(Path.GetExtension(path), nameof(path));
+
+    /// <summary>
+    /// Selects the default encoder for a file name: the encoder of the first custom codec of <paramref name="configuration"/>
+    /// whose format has the extension (<see cref="CustomImageCodec.CreateEncoder"/>), otherwise the built-in one
+    /// (<see cref="FromFileExtension(string)"/>).
+    /// </summary>
+    /// <param name="path">The file path.</param>
+    /// <param name="configuration">The configuration of the image.</param>
+    /// <returns>The encoder.</returns>
+    /// <exception cref="ArgumentException">The extension is not recognized, or belongs to a custom codec that does not write its format.</exception>
+    internal static ImageEncoder FromPath(string path, ImageConfiguration configuration)
+    {
+        var extension = Path.GetExtension(path);
+        if (extension.Length > 1)
+        {
+            foreach (var codec in configuration.Codecs)
+            {
+                if (codec.FormatInfo.HasFileExtension(extension))
+                    return codec.CreateEncoder() ?? throw new ArgumentException($"The {codec.FormatInfo.Name} codec reads files of the extension '{extension}' but does not write them. Specify an encoder explicitly.", nameof(path));
+            }
+        }
+
+        return FromExtension(extension, nameof(path));
+    }
 
     private static ImageEncoder FromExtension(string extension, string parameterName)
     {

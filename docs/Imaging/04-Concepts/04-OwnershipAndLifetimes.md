@@ -10,7 +10,7 @@ how long a frame stays valid, and how to access the pixels.
 
 | Object | Lifetime |
 | --- | --- |
-| [Image](cref:Meziantou.Framework.Imaging.Image) and [Image\<TPixel\>](cref:Meziantou.Framework.Imaging.Image{TPixel}), from a constructor, [Load](cref:Meziantou.Framework.Imaging.Image.Load), [Clone](cref:Meziantou.Framework.Imaging.Image.Clone), [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs), [CloneFrame](cref:Meziantou.Framework.Imaging.Image.CloneFrame), [ClonePosterFrame](cref:Meziantou.Framework.Imaging.Image.ClonePosterFrame), [ImportPixelData](cref:Meziantou.Framework.Imaging.Image.ImportPixelData), [ImportPixelBytes](cref:Meziantou.Framework.Imaging.Image.ImportPixelBytes) or a reader | Yours: dispose it. `Dispose` can be called more than once. |
+| [Image](cref:Meziantou.Framework.Imaging.Image) and [Image\<TPixel\>](cref:Meziantou.Framework.Imaging.Image{TPixel}), from a constructor, [Load](cref:Meziantou.Framework.Imaging.Image.Load), [Clone](cref:Meziantou.Framework.Imaging.Image.Clone), [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs), [CloneFrame](cref:Meziantou.Framework.Imaging.Image.CloneFrame), [ClonePosterFrame](cref:Meziantou.Framework.Imaging.Image.ClonePosterFrame), [ImportPixelData](cref:Meziantou.Framework.Imaging.Image.ImportPixelData), [ImportPixelBytes](cref:Meziantou.Framework.Imaging.Image.ImportPixelBytes), [WrapMemory](cref:Meziantou.Framework.Imaging.Image.WrapMemory) or a reader | Yours: dispose it. `Dispose` can be called more than once. |
 | [ImageFrame](cref:Meziantou.Framework.Imaging.ImageFrame), [ImageFrame\<TPixel\>](cref:Meziantou.Framework.Imaging.ImageFrame{TPixel}) and the frame collections | Views of their image, not disposable. |
 | [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) | Yours: dispose it. Its entries are views; the images they decode are yours. |
 | Clones, extracted frames, images returned by a reader | Independent: they stay valid after the source image or the reader is disposed. |
@@ -114,8 +114,64 @@ public static byte[] RoundTripRawPixels(ReadOnlySpan<byte> rgba, int width, int 
 ```
 <!-- endref -->
 
-The pixels are always copied: the image never wraps your memory, so you can reuse your buffer right away. When your
-rows have padding, pass their stride (`strideInBytes`, `strideInPixels`).
+The pixels are copied, so you can reuse your buffer right away. When your rows have padding, pass their stride
+(`strideInBytes`, `strideInPixels`).
+
+## Wrap memory you own
+
+[Image.WrapMemory](cref:Meziantou.Framework.Imaging.Image.WrapMemory) creates an image over your memory instead of a
+copy: a camera frame, the bitmap of another library, a GPU staging buffer. Reading and writing the pixels of the image
+reads and writes your memory, so an in-place operation hands the result back without a copy:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_WrapMemory;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void BlurCameraFrame(byte[] bgraPixels, int width, int height, int stride)
+{
+    // The image reads and writes the array: the blur changes the pixels of the caller in place
+    using var image = Image.WrapMemory<Bgra32>(bgraPixels, width, height, stride);
+    image.GaussianBlur(1.5);
+}
+```
+<!-- endref -->
+
+It takes a `Memory<byte>` or a pointer, the size, the stride and the pixel format (as a type argument or a
+[PixelFormat](cref:Meziantou.Framework.Imaging.PixelFormat)), and an optional callback that releases the memory once
+the image no longer uses it:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_WrapNativeMemory;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void GrayscaleNativeBuffer(int width, int height)
+{
+    nuint length = (nuint)(width * height * 4);
+    unsafe
+    {
+        var pixels = NativeMemory.AllocZeroed(length);
+
+        // The release callback frees the memory once the image no longer uses it: when it is disposed, or when an
+        // operation that changes the size moves the frame to memory of the library
+        using var image = Image.WrapMemory<Rgba32>(pixels, width, height, release: () => NativeMemory.Free(pixels));
+        image.Grayscale();
+    }
+}
+
+public static void ProcessRentedBuffer(int width, int height)
+{
+    // The owner of pooled memory is disposed once the image no longer uses it
+    var owner = MemoryPool<byte>.Shared.Rent(width * height * 3);
+    using var image = Image.WrapMemory<Rgb24>(owner.Memory, width, height, release: owner.Dispose);
+    image.Flip(FlipMode.Horizontal);
+}
+```
+<!-- endref -->
+
+- The operations that edit pixels in place write to your memory: row callbacks, drawing, filters, color adjustments,
+  flips and the [custom operations](../06-Processing/12-CustomOperations.md).
+- The operations that change the size of the canvas (crop, resize, rotation, transforms) cannot: they move the frame to
+  memory of the library and release yours. Frames you append are memory of the library too.
+- Keep your memory valid, and do not use it during an operation of the image, until the callback runs. Dispose the image
+  to release it: an image has no finalizer.
+- Your memory is not charged to [MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes),
+  and its content is used as it is.
 
 ## Memory accounting
 

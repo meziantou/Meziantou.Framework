@@ -3387,4 +3387,231 @@ public sealed class ProcessingTests
             return pixels;
         }
     }
+
+    [Fact]
+    public void RowOperationsEditEveryFrameAndThePosterInPlace()
+    {
+        using var image = new Image<Gray8>(3, 2, new Gray8(1));
+        image.AppendFrame().ProcessPixelRows(static pixels => pixels.GetRowSpan(1).Fill(new Gray8(2)));
+        image.SetPosterFrame(image.Frames[0]);
+        image.ApplyRowOperation<Gray8, AddPosition>(new AddPosition(10));
+        Assert.Equal([1, 2, 3, 11, 12, 13], ReadGray(image.Frames[0]));
+        Assert.Equal([0, 1, 2, 12, 13, 14], ReadGray(image.Frames[1]));
+        Assert.Equal([1, 2, 3, 11, 12, 13], ReadGray(image.PosterFrame!));
+        Assert.Throws<ArgumentNullException>("image", () => ImageProcessingExtensions.ApplyRowOperation<Gray8, AddPosition>(null!, default));
+    }
+
+    [Fact]
+    public void RowOperationsOnAWiderWorkingFormatConvertWithoutLoss()
+    {
+        using var image = new Image<Rgba32>(2, 1);
+        image.Frames[0][0, 0] = new Rgba32(1, 2, 3, 4);
+        image.Frames[0][1, 0] = new Rgba32(250, 128, 0, 255);
+
+        // Rgba64 holds every integer format: an operation that changes nothing changes nothing
+        image.ApplyRowOperation<Rgba64, InvertRed>(new InvertRed(Enabled: false));
+        Assert.Equal(new Rgba32(1, 2, 3, 4), image.Frames[0][0, 0]);
+        image.ApplyRowOperation<Rgba64, InvertRed>(new InvertRed(Enabled: true));
+        Assert.Equal(new Rgba32(254, 2, 3, 4), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(5, 128, 0, 255), image.Frames[0][1, 0]);
+
+        // RgbaFloat holds every format; the samples an integer format cannot store are clipped
+        image.ApplyRowOperation<RgbaFloat, ScaleColors>(new ScaleColors(2));
+        Assert.Equal(new Rgba32(255, 4, 6, 4), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(10, 255, 0, 255), image.Frames[0][1, 0]);
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.ApplyRowOperation<RgbaFloat, ScaleColors>(new ScaleColors(float.NaN)));
+
+        using var gray = new Image<Gray16>(2, 1, new Gray16(12345));
+        gray.ApplyRowOperation<RgbaFloat, ScaleColors>(new ScaleColors(1));
+        Assert.Equal(new Gray16(12345), gray.Frames[0][1, 0]);
+
+        // The alpha of a format without alpha must stay opaque
+        using var opaque = new Image<Rgb24>(1, 1);
+        Assert.Throws<UnsupportedImageFeatureException>(() => opaque.ApplyRowOperation<Rgba64, ClearAlpha>(default));
+    }
+
+    [Fact]
+    public void RowOperationsRejectAWorkingFormatThatLosesSamplesBeforeAnyChange()
+    {
+        using var floats = new Image<RgbaFloat>(1, 1, new RgbaFloat(2, 0, 0, 1));
+        Assert.Throws<NotSupportedException>(() => floats.ApplyRowOperation<Rgba64, InvertRed>(new InvertRed(Enabled: true)));
+        Assert.Throws<NotSupportedException>(() => floats.ApplyNeighborhoodOperation<Rgba64, ShiftDown<Rgba64>>(default));
+        Assert.Equal(new RgbaFloat(2, 0, 0, 1), floats.Frames[0][0, 0]);
+
+        using var rgba = new Image<Rgba64>(1, 1);
+        Assert.Throws<NotSupportedException>(() => rgba.ApplyRowOperation<Rgba32, ShiftRow<Rgba32>>(default));
+        Assert.Throws<NotSupportedException>(() => rgba.ApplyRowOperation<int, ShiftRow<int>>(default));
+
+        using var cancelled = new Image<Gray8>(2, 2, new Gray8(1));
+        Assert.Throws<OperationCanceledException>(() => cancelled.ApplyRowOperation<Gray8, AddPosition>(new AddPosition(10), new CancellationToken(canceled: true)));
+        Assert.Throws<OperationCanceledException>(() => cancelled.ApplyNeighborhoodOperation<Gray8, ShiftDown<Gray8>>(default, new CancellationToken(canceled: true)));
+        Assert.Equal([1, 1, 1, 1], ReadGray(cancelled.Frames[0]));
+
+        cancelled.Frames[0].ProcessPixelRows(pixels => Assert.Throws<InvalidOperationException>(() => cancelled.ApplyRowOperation<Gray8, AddPosition>(new AddPosition(10))));
+    }
+
+    [Fact]
+    public void NeighborhoodOperationsReadTheFrameBeforeTheOperation()
+    {
+        using var image = new Image<Gray8>(2, 3);
+        image.Frames[0].ProcessPixelRows(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                pixels.GetRowSpan(y).Fill(new Gray8((byte)(y + 1)));
+            }
+        });
+
+        // Each row takes the row above it (the first row repeats itself): reading rows already written would smear row 1 down
+        image.ApplyNeighborhoodOperation<Gray8, ShiftDown<Gray8>>(default);
+        Assert.Equal([1, 1, 1, 1, 2, 2], ReadGray(image.Frames[0]));
+
+        // Through a working format
+        image.ApplyNeighborhoodOperation<Rgba64, ShiftDown<Rgba64>>(default);
+        Assert.Equal([1, 1, 1, 1, 1, 1], ReadGray(image.Frames[0]));
+
+        // The working copy is charged to the image
+        using var limited = new Image<Rgba32>(64, 64, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 20_000 } });
+        Assert.Throws<ImageResourceLimitException>(() => limited.ApplyNeighborhoodOperation<RgbaFloat, ShiftDown<RgbaFloat>>(default));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CustomOperationsGiveTheSameResultWithSeveralWorkers(bool neighborhood)
+    {
+        Rgba32[] Run(int workers, out int[] calls)
+        {
+            using var image = new Image<Rgba32>(300, 256, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Frames[0].ProcessPixelRows(static pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgba32((byte)x, (byte)y, (byte)(x ^ y), 255);
+                    }
+                }
+            });
+
+            calls = new int[image.Height];
+            if (neighborhood)
+            {
+                image.ApplyNeighborhoodOperation<Rgba64, CountedShift>(new CountedShift(calls));
+            }
+            else
+            {
+                image.ApplyRowOperation<Rgba64, CountedInvert>(new CountedInvert(calls));
+            }
+
+            var pixels = new Rgba32[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+
+        var sequential = Run(1, out var sequentialCalls);
+        var parallel = Run(4, out var parallelCalls);
+        Assert.Equal(sequential, parallel);
+        Assert.All(sequentialCalls, count => Assert.Equal(1, count));
+        Assert.All(parallelCalls, count => Assert.Equal(1, count));
+    }
+
+    private static int[] ReadGray(ImageFrame frame)
+    {
+        var bytes = new byte[frame.Width * frame.Height];
+        frame.CopyPixelBytesTo(bytes);
+        return [.. bytes.Select(value => (int)value)];
+    }
+
+    private readonly record struct AddPosition(int RowFactor) : IPixelRowOperation<Gray8>
+    {
+        public void Invoke(int y, Span<Gray8> row)
+        {
+            for (var x = 0; x < row.Length; x++)
+            {
+                row[x] = new Gray8((byte)(row[x].Value + (RowFactor * y) + x));
+            }
+        }
+    }
+
+    private readonly record struct InvertRed(bool Enabled) : IPixelRowOperation<Rgba64>
+    {
+        public void Invoke(int y, Span<Rgba64> row)
+        {
+            if (!Enabled)
+                return;
+
+            foreach (ref var pixel in row)
+            {
+                pixel = new Rgba64((ushort)(ushort.MaxValue - pixel.R), pixel.G, pixel.B, pixel.A);
+            }
+        }
+    }
+
+    private readonly record struct ScaleColors(float Factor) : IPixelRowOperation<RgbaFloat>
+    {
+        public void Invoke(int y, Span<RgbaFloat> row)
+        {
+            foreach (ref var pixel in row)
+            {
+                pixel = new RgbaFloat(pixel.R * Factor, pixel.G * Factor, pixel.B * Factor, pixel.A);
+            }
+        }
+    }
+
+    private readonly struct ClearAlpha : IPixelRowOperation<Rgba64>
+    {
+        public void Invoke(int y, Span<Rgba64> row)
+        {
+            foreach (ref var pixel in row)
+            {
+                pixel = new Rgba64(pixel.R, pixel.G, pixel.B, 0);
+            }
+        }
+    }
+
+    private readonly struct ShiftRow<TPixel> : IPixelRowOperation<TPixel>
+        where TPixel : unmanaged
+    {
+        public void Invoke(int y, Span<TPixel> row)
+        {
+        }
+    }
+
+    private readonly struct ShiftDown<TPixel> : IPixelNeighborhoodOperation<TPixel>
+        where TPixel : unmanaged
+    {
+        public void Invoke(int y, PixelRowSource<TPixel> source, Span<TPixel> destination)
+        {
+            Assert.Equal(destination.Length, source.Width);
+            source.GetRowClamped(y - 1).CopyTo(destination);
+        }
+    }
+
+    private readonly record struct CountedInvert(int[] Calls) : IPixelRowOperation<Rgba64>
+    {
+        public void Invoke(int y, Span<Rgba64> row)
+        {
+            Interlocked.Increment(ref Calls[y]);
+            foreach (ref var pixel in row)
+            {
+                pixel = new Rgba64((ushort)(ushort.MaxValue - pixel.R), (ushort)(ushort.MaxValue - pixel.G), pixel.B, pixel.A);
+            }
+        }
+    }
+
+    private readonly record struct CountedShift(int[] Calls) : IPixelNeighborhoodOperation<Rgba64>
+    {
+        public void Invoke(int y, PixelRowSource<Rgba64> source, Span<Rgba64> destination)
+        {
+            Interlocked.Increment(ref Calls[y]);
+            var above = source.GetRowClamped(y - 1);
+            var below = source.GetRowClamped(y + 1);
+            for (var x = 0; x < destination.Length; x++)
+            {
+                destination[x] = new Rgba64((ushort)((above[x].R + below[x].R) / 2), above[x].G, below[x].B, source.GetRow(y)[x].A);
+            }
+        }
+    }
 }

@@ -76,6 +76,19 @@ public sealed class Image<TPixel> : Image
         AppendFrameCore(new FrameMetadata());
     }
 
+    /// <summary>
+    /// Initializes a new single-frame still image over memory the caller owns (<see cref="Image.WrapMemory{TPixel}(Memory{byte}, int, int, int, Action?, ImageConfiguration?)"/>):
+    /// the arguments are validated, and the memory holds <paramref name="size"/> rows at <paramref name="stride"/>.
+    /// </summary>
+    internal Image(ImageConfiguration configuration, Size size, Memory<byte> memory, nint pointer, long stride, Action? release)
+        : base(configuration, size, scope: null, layoutOptions: null)
+    {
+        _frames = new ImageFrameCollection<TPixel>(this);
+        var layout = PixelStorageLayout.CreateExternal(size.Width, size.Height, PixelFormats.GetBytesPerPixel(PixelFormats.GetPixelFormat<TPixel>()), stride);
+        AppendFrameCore(Owner.AttachExternal(layout, memory, pointer, release), new FrameMetadata());
+        LabelNewImage();
+    }
+
     /// <inheritdoc />
     public override PixelFormat PixelFormat => PixelFormats.GetPixelFormat<TPixel>();
 

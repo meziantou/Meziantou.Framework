@@ -273,6 +273,126 @@ public sealed class PixelAccessTests
     }
 
     [Fact]
+    public void WrappedMemoryIsReadAndWrittenInPlace()
+    {
+        // Two rows of three Rgb24 pixels, a stride of 10 bytes: the padding is never touched
+        var memory = new byte[19];
+        memory.AsSpan().Fill(0xAA);
+        for (var i = 0; i < 9; i++)
+        {
+            memory[i] = (byte)i;
+            memory[10 + i] = (byte)(100 + i);
+        }
+
+        var releases = 0;
+        var image = Image.WrapMemory<Rgb24>(memory, 3, 2, strideInBytes: 10, release: () => releases++);
+        Assert.Equal(new Size(3, 2), image.Size);
+        Assert.True(image.Frames[0].GetStorage().IsExternal);
+        Assert.Equal(new Rgb24(3, 4, 5), image.Frames[0][1, 0]);
+        Assert.Equal(new Rgb24(106, 107, 108), image.Frames[0][2, 1]);
+
+        image.Frames[0][0, 1] = new Rgb24(7, 8, 9);
+        Assert.Equal(new byte[] { 7, 8, 9 }, memory.AsSpan(10, 3).ToArray());
+        image.Flip(FlipMode.Horizontal);
+        Assert.Equal(new byte[] { 6, 7, 8, 3, 4, 5, 0, 1, 2, 0xAA }, memory.AsSpan(0, 10).ToArray());
+        Assert.Equal(0xAA, memory[9]);
+
+        // A copy, a clone and a new frame are memory of the library
+        using (var clone = image.Clone())
+        {
+            Assert.False(clone.Frames[0].GetStorage().IsExternal);
+        }
+
+        Assert.False(image.AppendFrame().GetStorage().IsExternal);
+        Assert.Equal(0, releases);
+        image.Dispose();
+        Assert.Equal(1, releases);
+        image.Dispose();
+        Assert.Equal(1, releases);
+        Assert.Equal(new byte[] { 6, 7, 8 }, memory.AsSpan(0, 3).ToArray());
+    }
+
+    [Fact]
+    public void GeometryChangesReleaseTheWrappedMemory()
+    {
+        var memory = new byte[4 * 4 * 4];
+        var releases = 0;
+        using var image = Image.WrapMemory(PixelFormat.Rgba32, memory, 4, 4, release: () => releases++);
+        var typed = Assert.IsType<Image<Rgba32>>(image);
+        typed.Frames[0][3, 3] = new Rgba32(1, 2, 3, 4);
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, memory.AsSpan(60).ToArray());
+
+        image.Crop(new Rectangle(2, 2, 2, 2));
+        Assert.Equal(1, releases);
+        Assert.False(image.Frames[0].GetStorage().IsExternal);
+        Assert.Equal(new Rgba32(1, 2, 3, 4), typed.Frames[0][1, 1]);
+
+        // The memory is no longer used
+        typed.Frames[0][1, 1] = default;
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, memory.AsSpan(60).ToArray());
+    }
+
+    [Fact]
+    public void NativeMemoryCanBeWrapped()
+    {
+        const int Stride = 9;
+        var freed = false;
+        unsafe
+        {
+            var pointer = (byte*)NativeMemory.AllocZeroed(Stride * 2);
+            var address = (nint)pointer;
+            using (var image = Image.WrapMemory<Gray16>(pointer, 4, 2, Stride, release: () =>
+            {
+                unsafe
+                {
+                    NativeMemory.Free((void*)address);
+                }
+
+                freed = true;
+            }))
+            {
+                image.Frames[0][3, 1] = new Gray16(0x1234);
+                Assert.Equal(new Gray16(0x1234), image.Frames[0][3, 1]);
+                Assert.Equal(BitConverter.IsLittleEndian ? (byte)0x34 : (byte)0x12, pointer[Stride + 6]);
+                using var untyped = Image.WrapMemory(PixelFormat.Gray16, pointer, 4, 2, Stride);
+                Assert.Equal(new Gray16(0x1234), Assert.IsType<Image<Gray16>>(untyped).Frames[0][3, 1]);
+                Assert.False(freed);
+            }
+        }
+
+        Assert.True(freed);
+    }
+
+    [Fact]
+    public void WrapValidatesItsArgumentsBeforeTakingTheMemory()
+    {
+        var released = false;
+        void Release() => released = true;
+        var memory = new byte[12];
+        Assert.Throws<NotSupportedException>(() => Image.WrapMemory<int>(memory, 1, 1, release: Release));
+        Assert.Throws<ArgumentOutOfRangeException>("pixelFormat", () => Image.WrapMemory((PixelFormat)999, memory, 1, 1, release: Release));
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => Image.WrapMemory<Rgba32>(memory, 0, 1, release: Release));
+        Assert.Throws<ArgumentOutOfRangeException>("height", () => Image.WrapMemory<Rgba32>(memory, 1, 0, release: Release));
+        Assert.Throws<ArgumentOutOfRangeException>("strideInBytes", () => Image.WrapMemory<Rgba32>(memory, 2, 1, strideInBytes: 7, release: Release));
+        Assert.Throws<ArgumentException>("memory", () => Image.WrapMemory<Rgba32>(memory, 2, 2, release: Release));
+        Assert.Throws<ArgumentNullException>("address", () =>
+        {
+            unsafe
+            {
+                _ = Image.WrapMemory<Rgba32>((void*)null, 1, 1, release: Release);
+            }
+        });
+        var limits = new ImageConfiguration { Limits = new ImageResourceLimits { MaxWidth = 2 } };
+        Assert.Throws<ImageResourceLimitException>(() => Image.WrapMemory<Rgb24>(memory, 3, 1, configuration: limits, release: Release));
+        Assert.False(released);
+
+        // The last row only needs its visible bytes, and the memory is not charged to the allocation limit
+        var tiny = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 1 } };
+        using var image = Image.WrapMemory<Rgba32>(memory, 1, 2, strideInBytes: 8, configuration: tiny);
+        Assert.Same(tiny, image.Configuration);
+    }
+
+    [Fact]
     public void ImportValidatesStridesAndLengths()
     {
         // Zero stride means tightly packed; the last row only needs the visible length

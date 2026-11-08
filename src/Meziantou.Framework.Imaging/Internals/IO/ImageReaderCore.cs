@@ -76,7 +76,7 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
         var reader = Create(stream, ownsStream, options, pixelFormat, CancellationToken.None);
         try
         {
-            var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, reader._input, reader._context);
+            var codec = ImageInputPump.Detect(ImageCodecRegistry.For(reader._context.Configuration), reader._input, reader._context);
             reader.CreateParser(codec);
             reader.OnOpened(ImageInputPump.Run(reader._input, reader._parser!, reader._context));
             return reader;
@@ -94,7 +94,7 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var codec = await ImageInputPump.DetectAsync(ImageCodecRegistry.Current, reader._input, reader._context).ConfigureAwait(false);
+            var codec = await ImageInputPump.DetectAsync(ImageCodecRegistry.For(reader._context.Configuration), reader._input, reader._context).ConfigureAwait(false);
             reader.CreateParser(codec);
             reader.OnOpened(await ImageInputPump.RunAsync(reader._input, reader._parser!, reader._context).ConfigureAwait(false));
             reader._context.CancellationToken = CancellationToken.None;
@@ -284,6 +284,10 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
 
     private void CreateParser(ImageCodec codec)
     {
+        // A custom codec decodes a whole buffered file at once: it has no frame sequence to stream
+        if (codec is CustomImageCodecAdapter custom)
+            throw new UnsupportedImageFeatureException($"The {custom.Codec.FormatInfo.Name} format is read by a custom codec, which a sequential ImageReader cannot use. Use Image.Load.", codec.Format, "Sequential reading");
+
         // An animated cursor is an animation, but its steps show stored frames in any order and its tables may follow the
         // frames, so the playback order is only known once the whole file is: it cannot be streamed either
         if (codec.Format == ImageFormat.Ani)

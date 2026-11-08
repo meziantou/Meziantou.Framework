@@ -50,6 +50,23 @@ public static void SavePreview(string animationPath, string previewPath)
 - **Set resource limits.** The limits of [ImageResourceLimits](cref:Meziantou.Framework.Imaging.ImageResourceLimits) bound the size of the canvas, the number of frames and
   the memory an image may allocate. They protect a service from files that would exhaust its memory. See
   [Resource limits](05-LoadingAndSaving/07-ResourceLimits.md).
+- **Bound the buffer pool.** The library keeps up to 32 MiB of returned buffers for the next operations, outside every
+  image's budget. In a memory-constrained container, lower [ImageBufferPool.MaxRetainedBytes](cref:Meziantou.Framework.Imaging.ImageBufferPool.MaxRetainedBytes),
+  or set it to 0 to disable retention; [ImageBufferPool.Trim](cref:Meziantou.Framework.Imaging.ImageBufferPool.Trim)
+  releases what the pool holds. The settings never change the output of an operation:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_BufferPool;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ConfigureForSmallContainer()
+{
+    // At startup: keep at most 4 MiB of returned buffers for reuse (0 disables retention)
+    ImageBufferPool.MaxRetainedBytes = 4 * 1024 * 1024;
+}
+```
+<!-- endref -->
+
+- **Process memory you already have.** [Image.WrapMemory](cref:Meziantou.Framework.Imaging.Image.WrapMemory) works on a
+  buffer of another component without copying it. See [Ownership and lifetimes](04-Concepts/04-OwnershipAndLifetimes.md).
 
 ## Use several threads where it pays
 

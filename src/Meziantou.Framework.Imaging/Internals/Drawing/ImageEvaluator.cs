@@ -619,6 +619,50 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         sum[3] += alpha;
     }
 
+    /// <remarks>
+    /// The image and the lease that <see cref="Begin"/> took are shared: the worker only reads the pixels. Its scratch is
+    /// its own: the colors, the samples, the rows it keeps, the sums of the reduced images, and the segments of the pixels
+    /// read one by one, which it rents when it first needs them.
+    /// </remarks>
+    public override PaintEvaluator? CreateWorker()
+    {
+        var worker = (ImageEvaluator)MemberwiseClone();
+        worker._token = 0;
+        worker._colors = worker._samples = worker._floatColors = worker._rows = null;
+        worker._sums = worker._tapCounts = worker._tapWeights = worker._tapColumns = null;
+        worker._segmentColors = worker._segmentKeys = null;
+        worker._segmentColorBytes = worker._segmentKeyBytes = null;
+        worker._segmentCapacity = 0;
+        worker._segmentGeneration = 0;
+        worker._segmentState = 0;
+        worker._cachedRow0 = worker._cachedRow1 = int.MinValue;
+        try
+        {
+            worker._colors = RentLike(_scope, _colors);
+            worker._samples = RentLike(_scope, _samples);
+            worker._floatColors = RentLike(_scope, _floatColors);
+            worker._rows = RentLike(_scope, _rows);
+            worker._sums = RentLike(_scope, _sums);
+            worker._tapCounts = RentLike(_scope, _tapCounts);
+            worker._tapWeights = RentLike(_scope, _tapWeights);
+            worker._tapColumns = RentLike(_scope, _tapColumns);
+        }
+        catch
+        {
+            worker.ReleaseWorker();
+            throw;
+        }
+
+        return worker;
+    }
+
+    public override void ReleaseWorker()
+    {
+        // The lease belongs to the evaluator the worker was created from
+        _token = 0;
+        Dispose();
+    }
+
     public void Dispose()
     {
         End();

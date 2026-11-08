@@ -113,9 +113,49 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   have a single tile, unless they are grids, frames wider than 4,096 pixels or files encoded with
   `AvifEncoder.AutoTiling`, so they decode with less parallelism than files with several tiles. The HEIC encoder writes
   the rows of a large still image as wavefront rows, which the decoder decodes concurrently.
-- The other decoders and encoders, drawing and the other operations run on one thread.
+- Drawing composites the shapes, images and layers that may cover at least 131,072 pixels with several threads, by
+  batches of rows: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
+- The other decoders and encoders and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image.
+
+## Draw large canvases on several threads
+
+Posters, maps and screenshots cover millions of pixels. With
+[ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism)
+above 1, the draw calls on the image share the work of their large shapes between threads:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/PerformanceExamples.cs;region=Imaging_ParallelDrawing;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DrawPoster(string outputPath)
+{
+    // The configuration of the image lets its draw calls composite large shapes on several threads.
+    // The pixels are the same as with one thread.
+    var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Environment.ProcessorCount };
+    using var poster = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255), configuration);
+    poster.Draw(canvas =>
+    {
+        canvas.Fill(new RadialGradientBrush(new PointD(1200, 800), 1400, [new GradientStop(0, new Rgba32(255, 200, 0)), new GradientStop(1, new Rgba32(0, 60, 160))]));
+        canvas.FillEllipse(new SolidBrush(new Rgba32(255, 255, 255, 128)), new PointD(1200, 800), 900, 600);
+    });
+    poster.Save(outputPath);
+}
+```
+<!-- endref -->
+
+- The calling thread computes the coverage of each row of a shape, and hands batches of rows to the other threads,
+  which paint and composite them. Fills, strokes, images, image brushes, patterns, gradients and the end of a layer
+  are drawn this way when their rows may cover at least 131,072 pixels; smaller shapes stay on the calling thread.
+- The pixels are the same as with one thread, and so is the error when a draw call fails.
+- Paints that cost more per pixel gain the most: gradients, images that are turned, scaled or sampled with
+  [ImageSampling.Bicubic](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Bicubic), translucent colors and
+  layers. An opaque solid color on its own gains little: computing the coverage costs about as much as writing the
+  pixels.
+- Texts, clip masks, shadows, blurs and filters, and gradients mixed in a
+  [paint profile](07-Drawing/06-RenderingQuality.md#draw-colors-of-a-color-profile), are drawn on the calling thread.
+- Each thread needs about 128 KB and 40 bytes per pixel of the width of the canvas, counted by
+  [ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes).
+  Set the value to 1, the default, to draw on the calling thread only.
 
 ## Choose encoder settings
 

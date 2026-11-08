@@ -219,6 +219,36 @@ internal sealed class PathGradientEvaluator : PaintEvaluator, IDisposable
         return colors;
     }
 
+    /// <remarks>The triangles and the vertices are shared; the triangles a row crosses and the colors are the worker's.</remarks>
+    public override PaintEvaluator? CreateWorker()
+    {
+        var worker = (PathGradientEvaluator)MemberwiseClone();
+        worker._active = null;
+        worker._colors = null;
+        try
+        {
+            worker._active = RentLike(_scope, _active);
+            worker._colors = RentLike(_scope, _colors);
+        }
+        catch
+        {
+            worker.ReleaseWorker();
+            throw;
+        }
+
+        return worker;
+    }
+
+    public override void ReleaseWorker()
+    {
+        _active?.Dispose();
+        _colors?.Dispose();
+        _active = null;
+        _colors = null;
+        _triangles = null;
+        _vertices = null;
+    }
+
     public void Dispose()
     {
         _triangles?.Dispose();

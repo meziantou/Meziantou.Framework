@@ -53,7 +53,6 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 ## Drawing and text
 
-- Drawing is sequential: it does not use several threads.
 - No mesh gradients.
 - Text lines are broken greedily.
 - No AAT (`morx`, `kerx`) shaping, no subpixel (LCD) rendering, no ruby in vertical text.

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
@@ -4493,6 +4494,26 @@ public sealed class DocumentationExampleTests : IDisposable
                 Assert.Equal(sequential.Frames[0][x, y], parallel.Frames[0][x, y]);
             }
         }
+    }
+
+    [Fact]
+    public void DrawPosterGivesTheSequentialPixels()
+    {
+        var output = GetPath("poster.png");
+        PerformanceExamples.DrawPoster(output);
+
+        using var sequential = new Image<Rgba32>(2400, 1600, new Rgba32(255, 255, 255));
+        sequential.Draw(canvas =>
+        {
+            canvas.Fill(new RadialGradientBrush(new PointD(1200, 800), 1400, [new GradientStop(0, new Rgba32(255, 200, 0)), new GradientStop(1, new Rgba32(0, 60, 160))]));
+            canvas.FillEllipse(new SolidBrush(new Rgba32(255, 255, 255, 128)), new PointD(1200, 800), 900, 600);
+        });
+        using var parallel = Image.Load<Rgba32>(output);
+        var expected = new Rgba32[2400 * 1600];
+        var actual = new Rgba32[expected.Length];
+        sequential.Frames[0].CopyPixelDataTo(expected);
+        parallel.Frames[0].CopyPixelDataTo(actual);
+        Assert.True(expected.AsSpan().SequenceEqual(actual));
     }
 
     [Fact]

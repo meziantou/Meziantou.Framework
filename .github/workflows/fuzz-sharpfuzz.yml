@@ -121,7 +121,7 @@ env:
       { "project": "Meziantou.Framework.SimpleQueryLanguage.Fuzz", "component": "simple-query-language", "day": 5 },
       { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz",  "component": "syntax-highlighting",   "day": 3 },
       { "project": "Meziantou.Framework.TdsServer.Fuzz",           "component": "tds-server",            "day": 4 },
-      { "project": "Meziantou.Framework.TextDiff.Fuzz",            "component": "text-diff",             "day": 5 },
+      { "project": "Meziantou.Framework.TextDiff.Fuzz",            "component": "text-diff",             "day": 0 },
       { "project": "Meziantou.Framework.Toml.Fuzz",                "component": "toml",                  "day": 4 },
       { "project": "Meziantou.Framework.Unicode.Fuzz",             "component": "unicode",               "day": 6 },
       { "project": "Meziantou.Framework.Uri.Fuzz",                 "component": "uri",                   "day": 4 },

@@ -6,16 +6,16 @@ namespace Meziantou.Framework.Geo.Internals;
 
 /// <summary>A table of a FlatBuffers buffer: its fields are read through the vtable, every offset checked against the buffer.</summary>
 [StructLayout(LayoutKind.Auto)]
-internal readonly struct FlatBufferTable
+internal readonly ref struct FlatBufferTable
 {
-    private readonly ReadOnlyMemory<byte> _buffer;
+    private readonly ReadOnlySpan<byte> _buffer;
     private readonly int _position;
     private readonly int _vtable;
     private readonly int _vtableLength;
 
-    private FlatBufferTable(ReadOnlyMemory<byte> buffer, int position)
+    private FlatBufferTable(ReadOnlySpan<byte> buffer, int position)
     {
-        var span = buffer.Span;
+        var span = buffer;
         CheckRange(span, position, 4);
         _buffer = buffer;
         _position = position;
@@ -30,10 +30,10 @@ internal readonly struct FlatBufferTable
     }
 
     /// <summary>Gets the root table of a buffer, whose first four bytes are the offset of the table.</summary>
-    public static FlatBufferTable GetRoot(ReadOnlyMemory<byte> buffer)
+    public static FlatBufferTable GetRoot(ReadOnlySpan<byte> buffer)
     {
-        CheckRange(buffer.Span, 0, 4);
-        var offset = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Span);
+        CheckRange(buffer, 0, 4);
+        var offset = BinaryPrimitives.ReadUInt32LittleEndian(buffer);
         if (offset > (uint)(buffer.Length - 4))
             throw InvalidData();
 
@@ -57,16 +57,20 @@ internal readonly struct FlatBufferTable
         if (GetVectorRange(field, elementSize: 1) is not { } range)
             return null;
 
-        return Encoding.UTF8.GetString(_buffer.Span.Slice(range.Start, range.Count));
+        return Encoding.UTF8.GetString(_buffer.Slice(range.Start, range.Count));
     }
 
-    public FlatBufferTable? GetTable(int field)
+    public bool TryGetTable(int field, out FlatBufferTable table)
     {
         var position = GetFieldPosition(field);
         if (position == 0)
-            return null;
+        {
+            table = default;
+            return false;
+        }
 
-        return new FlatBufferTable(_buffer, Follow(position));
+        table = new FlatBufferTable(_buffer, Follow(position));
+        return true;
     }
 
     /// <summary>Gets the bytes of a vector of scalars, or an empty span when the field is absent.</summary>
@@ -79,15 +83,7 @@ internal readonly struct FlatBufferTable
         }
 
         count = range.Count;
-        return _buffer.Span.Slice(range.Start, range.Count * elementSize);
-    }
-
-    public ReadOnlyMemory<byte> GetVectorMemory(int field)
-    {
-        if (GetVectorRange(field, elementSize: 1) is not { } range)
-            return default;
-
-        return _buffer.Slice(range.Start, range.Count);
+        return _buffer.Slice(range.Start, range.Count * elementSize);
     }
 
     public double[] GetDoubleVector(int field)
@@ -114,18 +110,12 @@ internal readonly struct FlatBufferTable
         return result;
     }
 
-    public FlatBufferTable[] GetTableVector(int field)
+    public TableVector GetTableVector(int field)
     {
         if (GetVectorRange(field, elementSize: 4) is not { } range)
-            return [];
+            return default;
 
-        var result = new FlatBufferTable[range.Count];
-        for (var i = 0; i < range.Count; i++)
-        {
-            result[i] = new FlatBufferTable(_buffer, Follow(range.Start + (i * 4)));
-        }
-
-        return result;
+        return new TableVector(this, range.Start, range.Count);
     }
 
     private (int Start, int Count)? GetVectorRange(int field, int elementSize)
@@ -135,7 +125,7 @@ internal readonly struct FlatBufferTable
             return null;
 
         var vector = Follow(position);
-        var span = _buffer.Span;
+        var span = _buffer;
         CheckRange(span, vector, 4);
         var count = BinaryPrimitives.ReadUInt32LittleEndian(span[vector..]);
         if (count > (uint)(span.Length - vector - 4) / (uint)elementSize)
@@ -151,7 +141,7 @@ internal readonly struct FlatBufferTable
         if (slot + 2 > _vtableLength)
             return 0;
 
-        var offset = BinaryPrimitives.ReadUInt16LittleEndian(_buffer.Span[(_vtable + slot)..]);
+        var offset = BinaryPrimitives.ReadUInt16LittleEndian(_buffer[(_vtable + slot)..]);
         if (offset == 0)
             return 0;
 
@@ -161,7 +151,7 @@ internal readonly struct FlatBufferTable
     /// <summary>Follows the unsigned offset stored at a position.</summary>
     private int Follow(int position)
     {
-        var span = _buffer.Span;
+        var span = _buffer;
         CheckRange(span, position, 4);
         var target = (long)position + BinaryPrimitives.ReadUInt32LittleEndian(span[position..]);
         if (target >= span.Length)
@@ -172,8 +162,8 @@ internal readonly struct FlatBufferTable
 
     private ReadOnlySpan<byte> Read(int position, int length)
     {
-        CheckRange(_buffer.Span, position, length);
-        return _buffer.Span.Slice(position, length);
+        CheckRange(_buffer, position, length);
+        return _buffer.Slice(position, length);
     }
 
     private static void CheckRange(ReadOnlySpan<byte> span, int position, int length)
@@ -183,4 +173,42 @@ internal readonly struct FlatBufferTable
     }
 
     private static FormatException InvalidData() => new("The FlatGeobuf data is not valid: an offset is outside of its buffer.");
+
+    /// <summary>A vector of tables: each table is read when it is accessed.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    public readonly ref struct TableVector
+    {
+        private readonly FlatBufferTable _table;
+        private readonly int _start;
+
+        internal TableVector(FlatBufferTable table, int start, int count)
+        {
+            _table = table;
+            _start = start;
+            Count = count;
+        }
+
+        public int Count { get; }
+
+        public FlatBufferTable this[int index] => new(_table._buffer, _table.Follow(_start + (index * 4)));
+
+        public Enumerator GetEnumerator() => new(this);
+
+        [StructLayout(LayoutKind.Auto)]
+        public ref struct Enumerator
+        {
+            private readonly TableVector _vector;
+            private int _index;
+
+            internal Enumerator(TableVector vector)
+            {
+                _vector = vector;
+                _index = -1;
+            }
+
+            public readonly FlatBufferTable Current => _vector[_index];
+
+            public bool MoveNext() => ++_index < _vector.Count;
+        }
+    }
 }

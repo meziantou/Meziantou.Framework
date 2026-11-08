@@ -12,14 +12,14 @@ internal static class EmbeddedMapLayer
         using var stream = assembly.GetManifestResourceStream(name) ?? throw new InvalidOperationException("The resource '" + name + "' is missing.");
         if (stream is UnmanagedMemoryStream unmanagedStream)
         {
-            nint address;
+            // The memory of the resource lives as long as the assembly, which is never unloaded while its types are used
+            ReadOnlySpan<byte> data;
             unsafe
             {
-                address = (nint)unmanagedStream.PositionPointer;
+                data = new ReadOnlySpan<byte>(unmanagedStream.PositionPointer, checked((int)unmanagedStream.Length));
             }
 
-            using var memory = new UnmanagedMemoryManager(address, checked((int)unmanagedStream.Length));
-            return FlatGeobuf.Read(memory.Memory, options);
+            return FlatGeobuf.Read(data, options);
         }
 
         return FlatGeobuf.Read(stream, options);

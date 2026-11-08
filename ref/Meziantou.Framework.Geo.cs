@@ -48,6 +48,7 @@ namespace Meziantou.Framework.Geo
     {
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.ReadOnlySpan<byte> data, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(string path, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
         public static byte[] Write(Meziantou.Framework.Geo.GeoFeatureCollection features, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) => throw null;
         public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) { }

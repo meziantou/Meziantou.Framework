@@ -37,7 +37,7 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), positioned
   text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
   layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
-  (`PdfPage.GetImages`), interactive forms read, filled and flattened (`PdfDocument.Form`)
+  (`PdfPage.GetImages`), interactive forms created, read, filled and flattened (`PdfDocument.Form`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
@@ -334,6 +334,33 @@ public static byte[] Merge(IEnumerable<byte[]> files)
 ```
 <!-- endref -->
 
+## Create a form
+
+`PdfInteractiveForm.AddTextField`, `AddCheckBox`, `AddRadioButtons`, `AddComboBox`, `AddListBox` and
+`AddSignatureField` create the fields, their widgets and their appearances. The fonts of the text fields can be
+embedded: they are added to the default resources of the form (`PdfInteractiveForm.AddFont`), whole for the fields
+that can be edited. Check boxes and radio buttons draw their symbols as paths.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfInteractiveFormTests.cs;region=Pdf_CreateForm;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+var page = document.Pages.Add(PdfSize.A4);
+var form = document.Form;
+form.AddTextField(page, "name", new PdfRectangle(50, 780, 300, 800), new PdfTextFieldOptions { Value = "Jane Doe", IsRequired = true });
+form.AddTextField(page, "address.city", new PdfRectangle(50, 750, 300, 770));
+form.AddCheckBox(page, "agree", new PdfRectangle(50, 720, 65, 735), new PdfCheckBoxOptions { IsChecked = true });
+form.AddRadioButtons("size",
+[
+    new PdfRadioButton(page, new PdfRectangle(50, 690, 65, 705), "S"),
+    new PdfRadioButton(page, new PdfRectangle(80, 690, 95, 705), "L"),
+], new PdfRadioButtonOptions { Value = "S" });
+form.AddComboBox(page, "country", new PdfRectangle(50, 650, 200, 670), [new PdfChoiceOption("fr", "France"), new PdfChoiceOption("de", "Germany")], new PdfChoiceFieldOptions { SelectedValues = ["fr"] });
+form.AddSignatureField(page, "signature", new PdfRectangle(50, 550, 250, 620));
+
+var data = document.ToByteArray();
+```
+<!-- endref -->
+
 ## Fill a form
 
 `PdfDocument.Form` reads the fields of an interactive form. Setting a value writes the value and the appearance of the
@@ -560,7 +587,8 @@ specification says; a content stream that cannot be decoded throws when its data
 - The text extraction follows the order of the content, or finds the columns from the blank spaces of the page
   (`PdfTextReadingOrder.Layout`, read from left to right). The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
   text, but not their CIDs: their glyphs get the default width of the font.
-- The API reads, fills and flattens the fields of interactive forms, but does not create them. The text boxes break the
-  lines at the spaces, without the Unicode line breaking rules nor hyphenation.
+- The fields of a saved document whose default appearance names an embedded font are filled with that font only when
+  it is given again (`PdfInteractiveForm.AddFont`); otherwise their values are drawn with Helvetica. The text boxes
+  break the lines at the spaces, without the Unicode line breaking rules nor hyphenation.
 - The renderer composites in sRGB: overprint is not simulated, and the halftones are applied to the red, green and blue
   components only, when `PdfRenderOptions.UseHalftones` asks for them.

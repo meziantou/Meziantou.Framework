@@ -131,6 +131,23 @@ namespace Meziantou.Framework.Pdf
         public override string? Value { get => throw null; set { } }
     }
 
+    public sealed class PdfCheckBoxOptions : Meziantou.Framework.Pdf.PdfFormFieldOptions
+    {
+        public bool IsChecked { get => throw null; set { } }
+        public string OnValue { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfCheckBoxStyle Style { get => throw null; set { } }
+    }
+
+    public enum PdfCheckBoxStyle
+    {
+        Check = 0,
+        Circle = 1,
+        Cross = 2,
+        Diamond = 3,
+        Square = 4,
+        Star = 5,
+    }
+
     public sealed class PdfChoiceField : Meziantou.Framework.Pdf.PdfFormField
     {
         public bool IsComboBox { get => throw null; }
@@ -140,6 +157,14 @@ namespace Meziantou.Framework.Pdf
         public System.Collections.Generic.IReadOnlyList<string> SelectedValues { get => throw null; }
         public override string? Value { get => throw null; set { } }
         public void SetSelectedValues(System.Collections.Generic.IEnumerable<string> values) { }
+    }
+
+    public sealed class PdfChoiceFieldOptions : Meziantou.Framework.Pdf.PdfFormFieldOptions
+    {
+        public Meziantou.Framework.Pdf.PdfTextAlignment Alignment { get => throw null; set { } }
+        public bool IsEditable { get => throw null; set { } }
+        public bool IsMultiSelect { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? SelectedValues { get => throw null; set { } }
     }
 
     public sealed class PdfChoiceOption : System.IEquatable<Meziantou.Framework.Pdf.PdfChoiceOption>
@@ -521,6 +546,20 @@ namespace Meziantou.Framework.Pdf
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfAnnotation> Widgets { get => throw null; }
     }
 
+    public class PdfFormFieldOptions
+    {
+        public string? AlternateName { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfColor? BackgroundColor { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfColor? BorderColor { get => throw null; set { } }
+        public double BorderWidth { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; set { } }
+        public double? FontSize { get => throw null; set { } }
+        public bool IsReadOnly { get => throw null; set { } }
+        public bool IsRequired { get => throw null; set { } }
+        public bool SubsetFont { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfColor? TextColor { get => throw null; set { } }
+    }
+
     public abstract class PdfFunction
     {
         public int InputCount { get => throw null; }
@@ -592,6 +631,13 @@ namespace Meziantou.Framework.Pdf
         public bool Exists { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> Fields { get => throw null; }
         public bool NeedAppearances { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfCheckBoxField AddCheckBox(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfCheckBoxOptions? options = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfChoiceField AddComboBox(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfChoiceOption> choices, Meziantou.Framework.Pdf.PdfChoiceFieldOptions? options = null) => throw null;
+        public string AddFont(Meziantou.Framework.Pdf.PdfFont font) => throw null;
+        public Meziantou.Framework.Pdf.PdfChoiceField AddListBox(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfChoiceOption> choices, Meziantou.Framework.Pdf.PdfChoiceFieldOptions? options = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfRadioButtonField AddRadioButtons(string name, System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfRadioButton> buttons, Meziantou.Framework.Pdf.PdfRadioButtonOptions? options = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfSignatureField AddSignatureField(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfFormFieldOptions? options = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfTextField AddTextField(Meziantou.Framework.Pdf.PdfPage page, string name, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfTextFieldOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfFormField? FindField(string fullName) => throw null;
         public void Flatten() { }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> GetFields() => throw null;
@@ -840,10 +886,32 @@ namespace Meziantou.Framework.Pdf
     {
     }
 
+    public sealed class PdfRadioButton : System.IEquatable<Meziantou.Framework.Pdf.PdfRadioButton>
+    {
+        public Meziantou.Framework.Pdf.PdfPage Page { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfRectangle Rectangle { get => throw null; init { } }
+        public string Value { get => throw null; init { } }
+        public PdfRadioButton(Meziantou.Framework.Pdf.PdfPage Page, Meziantou.Framework.Pdf.PdfRectangle Rectangle, string Value) { }
+        public void Deconstruct(out Meziantou.Framework.Pdf.PdfPage Page, out Meziantou.Framework.Pdf.PdfRectangle Rectangle, out string Value) => throw null;
+        public bool Equals(Meziantou.Framework.Pdf.PdfRadioButton? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfRadioButton? left, Meziantou.Framework.Pdf.PdfRadioButton? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfRadioButton? left, Meziantou.Framework.Pdf.PdfRadioButton? right) => throw null;
+    }
+
     public sealed class PdfRadioButtonField : Meziantou.Framework.Pdf.PdfFormField
     {
         public System.Collections.Generic.IReadOnlyList<string> Options { get => throw null; }
         public override string? Value { get => throw null; set { } }
+    }
+
+    public sealed class PdfRadioButtonOptions : Meziantou.Framework.Pdf.PdfFormFieldOptions
+    {
+        public bool AllowToggleOff { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfCheckBoxStyle Style { get => throw null; set { } }
+        public string? Value { get => throw null; set { } }
     }
 
     public sealed class PdfReadOptions
@@ -1102,6 +1170,18 @@ namespace Meziantou.Framework.Pdf
         public bool IsPassword { get => throw null; }
         public int? MaxLength { get => throw null; }
         public override string? Value { get => throw null; set { } }
+    }
+
+    public sealed class PdfTextFieldOptions : Meziantou.Framework.Pdf.PdfFormFieldOptions
+    {
+        public Meziantou.Framework.Pdf.PdfTextAlignment Alignment { get => throw null; set { } }
+        public bool DoNotScroll { get => throw null; set { } }
+        public bool DoNotSpellCheck { get => throw null; set { } }
+        public bool IsComb { get => throw null; set { } }
+        public bool IsMultiline { get => throw null; set { } }
+        public bool IsPassword { get => throw null; set { } }
+        public int? MaxLength { get => throw null; set { } }
+        public string? Value { get => throw null; set { } }
     }
 
     public sealed class PdfTextGlyph

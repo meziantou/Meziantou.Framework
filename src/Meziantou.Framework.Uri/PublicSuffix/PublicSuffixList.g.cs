@@ -8,11 +8,11 @@ namespace Meziantou.Framework;
 static partial class PublicSuffixList
 {
     // Public Suffix List source: https://publicsuffix.org/list/public_suffix_list.dat
-    // Version: 2026-10-31T14:17:28.0000000+00:00
-    // Commit: https://github.com/publicsuffix/list/commit/73f8cc701c084fe07d888ec552b2f0b53281a674
-    private const int EntryCount = 10396;
-    private const int RuleCountValue = 10396;
-    private const long LastUpdatedTicks = 639290530480000000L;
+    // Version: 2026-11-06T09:01:47.0000000+00:00
+    // Commit: https://github.com/publicsuffix/list/commit/94ec5df7273926560d91e77c002000ba1a53fec4
+    private const int EntryCount = 10406;
+    private const int RuleCountValue = 10406;
+    private const long LastUpdatedTicks = 639295525070000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
@@ -7156,6 +7156,7 @@ static partial class PublicSuffixList
         "auth.eu-west-2.amazoncognito.com",
         "auth.eu-west-3.amazoncognito.com",
         "auth.il-central-1.amazoncognito.com",
+        "auth.lovable.app",
         "auth.me-central-1.amazoncognito.com",
         "auth.me-south-1.amazoncognito.com",
         "auth.mx-central-1.amazoncognito.com",
@@ -7616,6 +7617,7 @@ static partial class PublicSuffixList
         "dnsup.net",
         "dnsupdate.info",
         "dnsupdater.de",
+        "docsflowy.site",
         "does-it.net",
         "doesntexist.com",
         "doesntexist.org",
@@ -8563,6 +8565,7 @@ static partial class PublicSuffixList
         "lima.zone",
         "linkyard-cloud.ch",
         "linkyard.cloud",
+        "linkyhost.page",
         "littlestar.jp",
         "live-on.net",
         "live-website.com",
@@ -8618,6 +8621,7 @@ static partial class PublicSuffixList
         "main.jp",
         "malaysiawest-01.azurewebsites.net",
         "mangyshlak.su",
+        "manus.space",
         "map.fastly.net",
         "map.fastlylb.net",
         "marine.ru",
@@ -8970,6 +8974,7 @@ static partial class PublicSuffixList
         "paas.hosted-by-previder.com",
         "paas.massivegrid.com",
         "pabianice.pl",
+        "pagelemon.dev",
         "pages-research.it.hs-heilbronn.de",
         "pages.dev",
         "pages.gay",
@@ -9489,6 +9494,8 @@ static partial class PublicSuffixList
         "same-preview.com",
         "sandbox.deno.net",
         "sandcats.io",
+        "sanity.run",
+        "sanity.studio",
         "sav.case",
         "saves-the-whales.com",
         "sblo.jp",
@@ -9600,6 +9607,7 @@ static partial class PublicSuffixList
         "sk.eu.org",
         "skierniewice.pl",
         "skr.jp",
+        "sliplane.app",
         "small-web.org",
         "smartlabeling.scw.cloud",
         "smushcdn.com",
@@ -10215,6 +10223,7 @@ static partial class PublicSuffixList
         "ap-southeast-6.rds.amazonaws.com",
         "ap-southeast-7.airflow.amazonaws.com",
         "ap-southeast-7.rds.amazonaws.com",
+        "apps.grok.bot",
         "appwrite.run",
         "at.playit.plus",
         "at.ply.gg",
@@ -10341,6 +10350,7 @@ static partial class PublicSuffixList
         "owo.codes",
         "p.azurewebsites.net",
         "pa.crm.dev",
+        "pages.grok.bot",
         "paywhirl.com",
         "pb.crm.dev",
         "pc.crm.dev",

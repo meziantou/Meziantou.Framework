@@ -4,7 +4,7 @@
     <IsTrimmable>false</IsTrimmable>
     <Description>Enables verification of images using file-based snapshots, based on Meziantou.Framework.Imaging</Description>
     <PackageTags>snapshot-testing, image, imaging, testing</PackageTags>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
   </PropertyGroup>
 
   <ItemGroup>

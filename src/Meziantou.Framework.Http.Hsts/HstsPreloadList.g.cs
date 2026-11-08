@@ -5,14 +5,14 @@ namespace Meziantou.Framework.Http;
 
 partial class HstsPreloadList
 {
-    // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/2e8c19f4f602c8756a42d6d5a5c5c37a69facfab/net/http/transport_security_state_static.json
-    // Commit date: 2026-10-24T07:35:09.0000000+00:00
-    // Entries: 95542
+    // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/ae2874435a43aeef98ad724bcd90b06d07d1d8c8/net/http/transport_security_state_static.json
+    // Commit date: 2026-11-03T22:36:44.0000000+00:00
+    // Entries: 95543
     // The index is the label count minus one; see preload-hosts.txt for the host names themselves.
     private static (string? ResourceBaseName, int EntryCount)[] GetResources() =>
     [
         ("preload_1", 52),
-        ("preload_2", 87228),
+        ("preload_2", 87229),
         ("preload_3", 8112),
         ("preload_4", 150),
     ];

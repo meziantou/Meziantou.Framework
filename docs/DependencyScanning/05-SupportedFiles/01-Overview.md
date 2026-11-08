@@ -70,9 +70,14 @@ Assert.Equal("2.9.2", xunitCore.ResolvedVersion);       // null when the propert
 Assert.Equal("2.9.2", xunitCore.Version);               // The resolved version when there is one
 Assert.Equal("XunitVersion", xunitCore.Metadata["property"]);
 
-// The version location is the definition of the property, shared by every package that uses it
+// The resolved version location is the definition of the property, shared by every package that uses it.
+// The raw version location is the Version attribute of the package.
 var xunitAssert = dependencies.Single(dependency => dependency.Name == "xunit.assert");
-Assert.Same(xunitCore.VersionLocation, xunitAssert.VersionLocation);
+Assert.Same(xunitCore.ResolvedVersionLocation, xunitAssert.ResolvedVersionLocation);
+Assert.NotSame(xunitCore.RawVersionLocation, xunitAssert.RawVersionLocation);
+
+// VersionLocation is the resolved version location: updating it updates the property
+Assert.Same(xunitCore.ResolvedVersionLocation, xunitCore.VersionLocation);
 
 await xunitCore.UpdateVersionAsync("2.9.3", cancellationToken);
 Assert.Equal("""
@@ -94,11 +99,15 @@ Assert.Equal("""
   there is one, and the raw version otherwise. Compare versions and check vulnerabilities with the resolved version;
   use the raw version to show where a version comes from.
 - The name of the property is in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `property` key.
-- **One update changes every dependency that uses the property.** The dependencies that use the same definition share
-  the same [VersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.VersionLocation) instance: after an update through one of them, the next update through another one expects
-  the new value.
-- A version that is exactly one reference is updatable where the property is defined. A version made of several parts,
-  such as `$(Major).1.0`, is resolved, but it is not updatable.
+- [ResolvedVersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.ResolvedVersionLocation) is the definition of the property, and [VersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.VersionLocation) is the same location.
+  **One update changes every dependency that uses the property**: the dependencies that use the same definition share
+  the same location instance, so after an update through one of them, the next update through another one expects the
+  new value.
+- [RawVersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.RawVersionLocation) is where the reference is written, such as the `Version` attribute. Updating it replaces the
+  reference, for instance with a literal version, so that only this dependency stops using the property.
+- A version made of several parts, such as `$(Major).1.0`, is resolved, but it is not written in one place: it has no
+  [ResolvedVersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.ResolvedVersionLocation), and its [VersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.VersionLocation) is not updatable. Neither is the one of a version that cannot be
+  resolved.
 - A property is only resolved when the file defines it once, with a literal value. A property defined several times, in
   a condition, from other properties, or in another file (`Directory.Build.props`, `gradle.properties`, a parent pom,
   environment variables), is not resolved.

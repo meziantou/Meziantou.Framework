@@ -83,11 +83,11 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
         foreach (var sdk in doc.Descendants(ns + "Sdk"))
         {
-            if (!TryGetTrimmedValue(context, sdk, sdk.Attribute(NameXName), out var name, out var nameLocation))
+            if (!TryGetTrimmedValue(context, sdk, sdk.Attribute(NameXName), isVersion: false, out var name, out var nameLocation))
                 continue;
 
             // An SDK that only declares a MinimumVersion has no exact version to report
-            if (!TryGetTrimmedValue(context, sdk, sdk.Attribute(VersionXName), out var version, out var versionLocation))
+            if (!TryGetTrimmedValue(context, sdk, sdk.Attribute(VersionXName), isVersion: true, out var version, out var versionLocation))
                 continue;
 
             ReportValue(context, properties, name, version, DependencyType.NuGet, nameLocation, versionLocation);
@@ -152,7 +152,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             resolved = new ResolvedValue(null, null, resolved.VariableName);
         }
 
-        context.ReportDependency(this, name, version, resolved, type, nameLocation);
+        context.ReportDependency(this, name, version, resolved, type, nameLocation, rawVersionLocation: versionLocation);
     }
 
     private void ReportSdkAttribute(ScanFileContext context, VariableDefinitions properties, XNamespace ns, XElement element, XAttribute sdkAttribute)
@@ -169,12 +169,12 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 if (entries.Count != 1 || element.Name != ns + "Import")
                     continue;
 
-                if (!TryGetTrimmedValue(context, element, element.Attribute(VersionXName), out var version, out var versionLocation))
+                if (!TryGetTrimmedValue(context, element, element.Attribute(VersionXName), isVersion: true, out var version, out var versionLocation))
                     continue;
 
                 var name = value.Substring(entryStart, entryLength);
                 ReportValue(context, properties, name, version, DependencyType.NuGet,
-                    nameLocation: CreateLocation(context, name, element, sdkAttribute, entryStart, entryLength, value.Length),
+                    nameLocation: CreateLocation(context, name, element, sdkAttribute, entryStart, entryLength, value.Length, isVersion: false),
                     versionLocation);
                 continue;
             }
@@ -196,9 +196,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 nameLocation: MsBuildProperties.IsExpression(nameValue)
                     ? new NonUpdatableLocation(context)
                     : new XmlLocation(context.FileSystem, context.FullPath, element, sdkAttribute, nameStart, nameLength),
-                versionLocation: MsBuildProperties.IsExpression(versionValue)
-                    ? new NonUpdatableLocation(context)
-                    : new XmlLocation(context.FileSystem, context.FullPath, element, sdkAttribute, versionStart, versionLength));
+                versionLocation: new XmlLocation(context.FileSystem, context.FullPath, element, sdkAttribute, versionStart, versionLength));
         }
     }
 
@@ -214,9 +212,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             var targetFramework = value.Substring(start, length);
             ReportValue(context, properties, name: null, targetFramework, DependencyType.DotNetTargetFramework,
                 nameLocation: null,
-                versionLocation: MsBuildProperties.IsExpression(targetFramework)
-                    ? new NonUpdatableLocation(context)
-                    : new XmlLocation(context.FileSystem, context.FullPath, element, start, length));
+                versionLocation: new XmlLocation(context.FileSystem, context.FullPath, element, start, length));
         }
     }
 
@@ -243,7 +239,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         foreach (var (start, length) in SplitList(value))
         {
             var entry = value.Substring(start, length);
-            result.Add((entry, CreateLocation(context, entry, element, attribute, start, length, value.Length)));
+            result.Add((entry, CreateLocation(context, entry, element, attribute, start, length, value.Length, isVersion: false)));
         }
 
         return result;
@@ -257,8 +253,8 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
     {
         var attribute = item.Attributes().FirstOrDefault(attribute => attribute.Name.Namespace == XNamespace.None && attribute.Name.LocalName.Equals(metadataName, StringComparison.OrdinalIgnoreCase));
         var element = item.Elements().FirstOrDefault(element => element.Name.Namespace == ns && HasName(element, metadataName));
-        var found = TryGetTrimmedValue(context, item, attribute, out value, out location)
-            || (element is not null && TryGetTrimmedValue(context, element, attribute: null, element.Value, out value, out location));
+        var found = TryGetTrimmedValue(context, item, attribute, isVersion: true, out value, out location)
+            || (element is not null && TryGetTrimmedValue(context, element, attribute: null, element.Value, isVersion: true, out value, out location));
 
         if (found && itemCount > 1)
         {
@@ -268,7 +264,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         return found;
     }
 
-    private static bool TryGetTrimmedValue(ScanFileContext context, XElement element, XAttribute? attribute, [NotNullWhen(true)] out string? value, [NotNullWhen(true)] out Location? location)
+    private static bool TryGetTrimmedValue(ScanFileContext context, XElement element, XAttribute? attribute, bool isVersion, [NotNullWhen(true)] out string? value, [NotNullWhen(true)] out Location? location)
     {
         if (attribute is null)
         {
@@ -277,11 +273,11 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             return false;
         }
 
-        return TryGetTrimmedValue(context, element, attribute, attribute.Value, out value, out location);
+        return TryGetTrimmedValue(context, element, attribute, attribute.Value, isVersion, out value, out location);
     }
 
     /// <summary>Gets the trimmed value of <paramref name="attribute"/>, or of <paramref name="element"/> when <paramref name="attribute"/> is <see langword="null"/>.</summary>
-    private static bool TryGetTrimmedValue(ScanFileContext context, XElement element, XAttribute? attribute, string rawValue, [NotNullWhen(true)] out string? value, [NotNullWhen(true)] out Location? location)
+    private static bool TryGetTrimmedValue(ScanFileContext context, XElement element, XAttribute? attribute, string rawValue, bool isVersion, [NotNullWhen(true)] out string? value, [NotNullWhen(true)] out Location? location)
     {
         var (start, length) = Trim(rawValue, 0, rawValue.Length);
         if (length == 0)
@@ -292,14 +288,17 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         }
 
         value = rawValue.Substring(start, length);
-        location = CreateLocation(context, value, element, attribute, start, length, rawValue.Length);
+        location = CreateLocation(context, value, element, attribute, start, length, rawValue.Length, isVersion);
         return true;
     }
 
-    private static Location CreateLocation(ScanFileContext context, string value, XElement element, XAttribute? attribute, int start, int length, int rawValueLength)
+    /// <remarks>
+    /// The location of a version that references properties is its raw version location, which can replace the references.
+    /// A name that references properties is not updatable: updating it would replace the indirection with a literal value.
+    /// </remarks>
+    private static Location CreateLocation(ScanFileContext context, string value, XElement element, XAttribute? attribute, int start, int length, int rawValueLength, bool isVersion)
     {
-        // Updating a property, item or metadata reference would replace the indirection with a literal value
-        if (MsBuildProperties.IsExpression(value))
+        if (!isVersion && MsBuildProperties.IsExpression(value))
             return new NonUpdatableLocation(context);
 
         if (start == 0 && length == rawValueLength)

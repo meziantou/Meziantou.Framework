@@ -97,7 +97,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
         {
             if (dependency.Version is { } version && MsBuildProperties.IsExpression(version))
             {
-                context.ReportDependency(this, dependency.Name, version, properties.Resolve(version, MsBuildProperties.GetReferences(version)), dependency.Type, dependency.NameLocation);
+                context.ReportDependency(this, dependency.Name, version, properties.Resolve(version, MsBuildProperties.GetReferences(version)), dependency.Type, dependency.NameLocation, dependency.VersionLocation);
             }
             else
             {

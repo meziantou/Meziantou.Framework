@@ -878,6 +878,8 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var junit = result.Where(d => d.Name!.StartsWith("org.junit.jupiter:", StringComparison.Ordinal)).ToArray();
         Assert.Same(junit[0].VersionLocation, junit[1].VersionLocation);
         Assert.Equal(("$junitVersion", "junitVersion"), (junit[0].RawVersion, junit[0].Metadata["property"]));
+        Assert.Equal((12, 61), (((ILocationLineInfo)junit[0].RawVersionLocation!).LineNumber, ((ILocationLineInfo)junit[0].RawVersionLocation!).LinePosition));
+        Assert.Equal((15, 68), (((ILocationLineInfo)Assert.Single(result, d => d.Name == "org.slf4j:slf4j-api").RawVersionLocation!).LineNumber, ((ILocationLineInfo)Assert.Single(result, d => d.Name == "org.slf4j:slf4j-api").RawVersionLocation!).LinePosition));
         Assert.Equal("slf4jVersion", Assert.Single(result, d => d.Name == "org.slf4j:slf4j-api").RawVersion);
         Assert.False(Assert.Single(result, d => d.Name == "org.example:composite").VersionLocation!.IsUpdatable);
         foreach (var name in new[] { "org.example:twice", "org.example:computed", "org.example:property-path", "org.example:undefined" })
@@ -931,7 +933,13 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         Assert.Null(a.RawVersion);
         Assert.Equal("1.0.0", a.ResolvedVersion);
         Assert.Equal("shared", a.Metadata["property"]);
-        Assert.False(Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin").VersionLocation!.IsUpdatable);
+        Assert.Null(a.RawVersionLocation);
+        Assert.Same(a.VersionLocation, a.ResolvedVersionLocation);
+
+        // A version that is not defined has no location
+        var kotlin = Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin");
+        Assert.Null(kotlin.VersionLocation);
+        Assert.Null(kotlin.ResolvedVersionLocation);
         Assert.Equal(6, result.Count(d => d.Type == DependencyType.JavaPackage));
     }
 
@@ -2391,6 +2399,13 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         Assert.All(xunit, d => Assert.Equal("XunitVersion", d.Metadata["property"]));
         Assert.True(xunit[0].VersionLocation!.IsUpdatable);
         Assert.Equal(5, ((ILocationLineInfo)xunit[0].VersionLocation!).LineNumber);
+        Assert.All(xunit, d => Assert.Same(d.VersionLocation, d.ResolvedVersionLocation));
+
+        // The raw version location is where the reference is written, one per dependency
+        var xunitCore = Assert.Single(xunit, d => d.Name == "xunit.core");
+        var xunitAssert = Assert.Single(xunit, d => d.Name == "xunit.assert");
+        Assert.Equal(21, ((ILocationLineInfo)xunitCore.RawVersionLocation!).LineNumber);
+        Assert.NotSame(xunitCore.RawVersionLocation, xunitAssert.RawVersionLocation);
 
         var targetFramework = Assert.Single(result, d => d.RawVersion == "$(DefaultTargetFramework)");
         Assert.Equal("net10.0", targetFramework.Version);
@@ -2404,6 +2419,8 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var composite = Assert.Single(result, d => d.Name == "Composite");
         Assert.Equal(("3.1.3", "$(Major).1.$(Major)"), (composite.Version, composite.RawVersion));
         Assert.False(composite.VersionLocation!.IsUpdatable);
+        Assert.Null(composite.ResolvedVersionLocation);
+        Assert.True(composite.RawVersionLocation!.IsUpdatable);
 
         // A property that is conditional, defined twice, defined from other properties, holding a list, or not
         // defined in the file, and a property function, are not resolved
@@ -2412,18 +2429,23 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             var dependency = Assert.Single(result, d => d.RawVersion == rawVersion);
             Assert.Equal(rawVersion, dependency.Version);
             Assert.Null(dependency.ResolvedVersion);
+            Assert.Null(dependency.ResolvedVersionLocation);
             Assert.False(dependency.VersionLocation!.IsUpdatable);
         }
 
         // Updating one dependency updates the property, so the next update of a dependency that uses it expects the new value
         await xunit[0].UpdateVersionAsync("2.9.4", XunitCancellationToken);
         await xunit[1].UpdateVersionAsync("2.9.5", XunitCancellationToken);
+
+        // Updating the raw version replaces the reference, so this dependency stops using the property
+        await composite.RawVersionLocation!.UpdateAsync("3.2.0", XunitCancellationToken);
         await targetFramework.UpdateVersionAsync("net11.0", XunitCancellationToken);
         await sdk.UpdateVersionAsync("1.1.0", XunitCancellationToken);
         AssertFileContentEqual("Directory.Packages.props", Original
             .Replace("<xunitversion> 2.9.3 </xunitversion>", "<xunitversion> 2.9.5 </xunitversion>", StringComparison.Ordinal)
             .Replace("<DefaultTargetFramework>net10.0</DefaultTargetFramework>", "<DefaultTargetFramework>net11.0</DefaultTargetFramework>", StringComparison.Ordinal)
-            .Replace("<ContosoSdkVersion>1.0.0</ContosoSdkVersion>", "<ContosoSdkVersion>1.1.0</ContosoSdkVersion>", StringComparison.Ordinal), ignoreNewLines: true);
+            .Replace("<ContosoSdkVersion>1.0.0</ContosoSdkVersion>", "<ContosoSdkVersion>1.1.0</ContosoSdkVersion>", StringComparison.Ordinal)
+            .Replace("Version=\"$(Major).1.$(Major)\"", "Version=\"3.2.0\"", StringComparison.Ordinal), ignoreNewLines: true);
 
         // A rescan finds the new values
         var rescanned = await GetDependencies<MsBuildReferencesDependencyScanner>();
@@ -3945,6 +3967,8 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         Assert.Equal("${NODE_VERSION}", node.RawVersion);
         Assert.Equal("18.20.0", node.ResolvedVersion);
         Assert.Equal("NODE_VERSION", node.Metadata["property"]);
+        Assert.Equal((5, 11), (((ILocationLineInfo)node.RawVersionLocation!).LineNumber, ((ILocationLineInfo)node.RawVersionLocation!).LinePosition));
+        Assert.Same(node.VersionLocation, node.ResolvedVersionLocation);
         Assert.Equal("$BASE_IMAGE", sdk.RawVersion);
         Assert.Equal("8.0", sdk.ResolvedVersion);
 
@@ -4018,6 +4042,8 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var worker = Assert.Single(result, d => d.Name == "${REGISTRY:-docker.io}/worker");
         Assert.Equal("${TAG}", worker.RawVersion);
         Assert.Null(worker.ResolvedVersion);
+        Assert.Null(worker.ResolvedVersionLocation);
+        Assert.False(worker.VersionLocation!.IsUpdatable);
 
         // Other scanners of YAML files do not report the images of a compose file
         Assert.Empty(await GetDependencies<AzureDevOpsScanner>());

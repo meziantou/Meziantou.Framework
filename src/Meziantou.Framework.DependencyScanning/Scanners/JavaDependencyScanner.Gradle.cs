@@ -30,9 +30,12 @@ public sealed partial class JavaDependencyScanner
             // implementation "group:artifact:$version" or "group:artifact:${version}"
             if (token is { Kind: GradleTokenKind.String, IsVerbatim: false } && IsInterpolatedSingleLineString(text, token) && GradleInterpolatedCoordinateRegex().Match(token.GetContent(text)) is { Success: true } interpolatedMatch)
             {
-                var version = interpolatedMatch.Groups["version"].Value;
+                var versionGroup = interpolatedMatch.Groups["version"];
+                var version = versionGroup.Value;
                 variables ??= GetGradleVariables(context, text, tokens, isKotlin);
-                context.ReportDependency(this, interpolatedMatch.Groups["name"].Value, version, variables.Resolve(version, GetGradleReferences(version, isKotlin)), DependencyType.JavaPackage, new NonUpdatableLocation(context));
+                lineMap ??= new TextLineMap(text);
+                context.ReportDependency(this, interpolatedMatch.Groups["name"].Value, version, variables.Resolve(version, GetGradleReferences(version, isKotlin)), DependencyType.JavaPackage, new NonUpdatableLocation(context),
+                    TextLocation.FromIndex(context.FileSystem, context.FullPath, lineMap, token.ContentStart + versionGroup.Index, version.Length));
                 continue;
             }
 
@@ -53,7 +56,9 @@ public sealed partial class JavaDependencyScanner
                         var version = mapVersion.GetContent(text);
                         var references = mapVersion.Kind is GradleTokenKind.Identifier ? [new VariableReference(0, version.Length, version)] : GetGradleReferences(version, isKotlin);
                         variables ??= GetGradleVariables(context, text, tokens, isKotlin);
-                        context.ReportDependency(this, mapName, version, variables.Resolve(version, references), DependencyType.JavaPackage, new NonUpdatableLocation(context));
+                        lineMap ??= new TextLineMap(text);
+                        context.ReportDependency(this, mapName, version, variables.Resolve(version, references), DependencyType.JavaPackage, new NonUpdatableLocation(context),
+                            TextLocation.FromIndex(context.FileSystem, context.FullPath, lineMap, mapVersion.ContentStart, version.Length));
                     }
                 }
 

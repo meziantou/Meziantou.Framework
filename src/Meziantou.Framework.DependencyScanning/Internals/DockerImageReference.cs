@@ -119,8 +119,8 @@ internal readonly struct DockerImageReference
     /// <param name="value">The image reference.</param>
     /// <param name="getLocation">Maps a (start, length) range of <paramref name="value"/> to a location.</param>
     /// <param name="requireTagOrDigest">Whether a reference without a tag or a digest is ignored.</param>
-    /// <param name="variable">When <paramref name="value"/> is the value of a variable, the reference to the variable as written, such as <c>${BASE_IMAGE}</c>, and the name of the variable.</param>
-    public static void Report(DependencyScanner scanner, ScanFileContext context, string value, Func<int, int, Location?> getLocation, bool requireTagOrDigest = false, (string RawValue, string Name)? variable = null)
+    /// <param name="variable">When <paramref name="value"/> is the value of a variable, the reference to the variable as written, such as <c>${BASE_IMAGE}</c>, its location, and the name of the variable.</param>
+    public static void Report(DependencyScanner scanner, ScanFileContext context, string value, Func<int, int, Location?> getLocation, bool requireTagOrDigest = false, (string RawValue, Location RawLocation, string Name)? variable = null)
     {
         if (!TryParse(value, out var reference))
             return;
@@ -132,6 +132,7 @@ internal readonly struct DockerImageReference
         KeyValuePair<string, object?>[] variableMetadata = variable is { } v ? [KeyValuePair.Create<string, object?>(VariableResolverExtensions.PropertyMetadataKey, v.Name)] : [];
         if (reference.Digest is not null)
         {
+            Location digestLocation = new NonUpdatableLocation(context);
             context.ReportDependency(
                 scanner,
                 reference.Name,
@@ -139,7 +140,8 @@ internal readonly struct DockerImageReference
                 resolvedVersion: reference.Digest,
                 DependencyType.DockerImage,
                 nameLocation,
-                new NonUpdatableLocation(context),
+                rawVersionLocation: variable?.RawLocation ?? digestLocation,
+                resolvedVersionLocation: digestLocation,
                 tags: [],
                 metadata: [
                     KeyValuePair.Create<string, object?>("digest", reference.Digest),
@@ -152,11 +154,12 @@ internal readonly struct DockerImageReference
             if (IsVariable(reference.Tag))
             {
                 // A variable that is not defined in the file, such as ${NODE_VERSION:-18} in a compose file, has an unknown value
-                context.ReportDependency(scanner, reference.Name, rawVersion: reference.Tag, resolvedVersion: null, DependencyType.DockerImage, nameLocation, new NonUpdatableLocation(context), tags: [], metadata: []);
+                context.ReportDependency(scanner, reference.Name, rawVersion: reference.Tag, resolvedVersion: null, DependencyType.DockerImage, nameLocation, getLocation(reference.TagIndex, reference.Tag.Length), resolvedVersionLocation: null, tags: [], metadata: []);
             }
             else
             {
-                context.ReportDependency(scanner, reference.Name, rawVersion: variable?.RawValue ?? reference.Tag, resolvedVersion: reference.Tag, DependencyType.DockerImage, nameLocation, getLocation(reference.TagIndex, reference.Tag.Length), tags: [], variableMetadata);
+                var tagLocation = getLocation(reference.TagIndex, reference.Tag.Length);
+                context.ReportDependency(scanner, reference.Name, rawVersion: variable?.RawValue ?? reference.Tag, resolvedVersion: reference.Tag, DependencyType.DockerImage, nameLocation, variable?.RawLocation ?? tagLocation, tagLocation, tags: [], variableMetadata);
             }
         }
         else

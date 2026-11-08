@@ -272,7 +272,8 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
         var imageText = imageToken.GetText(text).ToString();
         if (reference.IsWholeImage)
         {
-            DockerImageReference.Report(this, context, argument.Value, GetArgumentLocation, requireTagOrDigest: true, variable: (imageText, argument.Name));
+            var rawLocation = new TextLocation(context.FileSystem, context.FullPath, imageToken.Line, imageToken.Column, imageText.Length);
+            DockerImageReference.Report(this, context, argument.Value, GetArgumentLocation, requireTagOrDigest: true, variable: (imageText, rawLocation, argument.Name));
             return;
         }
 
@@ -282,7 +283,8 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
         Location nameLocation = imageReference.Name.Contains('$', StringComparison.Ordinal)
             ? new NonUpdatableLocation(context)
             : new TextLocation(context.FileSystem, context.FullPath, imageToken.Line, imageToken.Column, imageReference.Name.Length);
-        context.ReportDependency(this, imageReference.Name, rawVersion: tag, resolvedVersion: argument.Value, DependencyType.DockerImage, nameLocation, GetArgumentLocation(0, argument.Value.Length),
+        var rawVersionLocation = new TextLocation(context.FileSystem, context.FullPath, imageToken.Line, imageToken.Column + imageReference.TagIndex, tag.Length);
+        context.ReportDependency(this, imageReference.Name, rawVersion: tag, resolvedVersion: argument.Value, DependencyType.DockerImage, nameLocation, rawVersionLocation, GetArgumentLocation(0, argument.Value.Length),
             tags: [], metadata: [KeyValuePair.Create<string, object?>(VariableResolverExtensions.PropertyMetadataKey, argument.Name)]);
 
         Location GetArgumentLocation(int start, int length)

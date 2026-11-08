@@ -15,8 +15,9 @@ namespace Meziantou.Framework.DependencyScanning.Fuzz;
 /// the file unchanged: otherwise the reported value is not at the reported location. Updating a location to another value
 /// writes this value and nothing else, the in-memory overloads, the dependency type filters, and the directory and file
 /// list scans agree with the scan of the file, and an update the file cannot take is refused as documented. The version
-/// is the resolved version when there is one, and the raw version otherwise, and the dependencies that share a version
-/// location, such as the definition of a property, have the same version.
+/// is the resolved version when there is one, and the raw version otherwise, the version location is the resolved version
+/// location, the raw version location holds the raw version, and the dependencies that share a version location, such as
+/// the definition of a property, have the same version.
 /// </summary>
 public static partial class DependencyScanningFuzzTargets
 {
@@ -140,9 +141,15 @@ public static partial class DependencyScanningFuzzTargets
             FuzzAssert.True(dependency.Version is null || dependency.VersionLocation is not null, $"The version of {dependency} has no location");
             CheckLineInfo(fileSystem, dependency, dependency.NameLocation);
             CheckLineInfo(fileSystem, dependency, dependency.VersionLocation);
+            CheckLineInfo(fileSystem, dependency, dependency.RawVersionLocation);
+            CheckLineInfo(fileSystem, dependency, dependency.ResolvedVersionLocation);
             CheckNotUpdatable(dependency, dependency.NameLocation);
             CheckNotUpdatable(dependency, dependency.VersionLocation);
+            CheckNotUpdatable(dependency, dependency.RawVersionLocation);
+            CheckNotUpdatable(dependency, dependency.ResolvedVersionLocation);
             FuzzAssert.Equal(dependency.ResolvedVersion ?? dependency.RawVersion, dependency.Version, $"The version of {dependency} is neither its resolved version nor its raw version");
+            FuzzAssert.True(dependency.RawVersion is null || dependency.RawVersionLocation is not null, $"The raw version of {dependency} has no location");
+            FuzzAssert.True(dependency.ResolvedVersionLocation is null || ReferenceEquals(dependency.ResolvedVersionLocation, dependency.VersionLocation), $"The version location of {dependency} is not its resolved version location");
         }
 
         CheckSharedVersionLocations(dependencies);
@@ -242,7 +249,7 @@ public static partial class DependencyScanningFuzzTargets
         FuzzAssert.Equal(Describe(expected), Describe(actual), "Scanning the content from memory found other dependencies than scanning the file");
         foreach (var dependency in actual)
         {
-            foreach (var location in (ReadOnlySpan<Location?>)[dependency.NameLocation, dependency.VersionLocation])
+            foreach (var location in (ReadOnlySpan<Location?>)[dependency.NameLocation, dependency.VersionLocation, dependency.RawVersionLocation])
             {
                 FuzzAssert.True(location is null || !location.IsUpdatable, $"The location {location} of {dependency} scanned from memory is updatable");
                 CheckNotUpdatable(dependency, location);
@@ -291,7 +298,7 @@ public static partial class DependencyScanningFuzzTargets
         var checkedUpdates = 0;
         foreach (var dependency in dependencies)
         {
-            foreach (var (location, value) in (ReadOnlySpan<(Location?, string?)>)[(dependency.NameLocation, dependency.Name), (dependency.VersionLocation, dependency.Version)])
+            foreach (var (location, value) in (ReadOnlySpan<(Location?, string?)>)[(dependency.NameLocation, dependency.Name), (dependency.VersionLocation, dependency.Version), (dependency.RawVersionLocation, dependency.RawVersion)])
             {
                 // A git submodule commit is updated by running git
                 if (location is null || value is null || !location.IsUpdatable || location.GetType().Name is "GitSubmoduleVersionLocation")

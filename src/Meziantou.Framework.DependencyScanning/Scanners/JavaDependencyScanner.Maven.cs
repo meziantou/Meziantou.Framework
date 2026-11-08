@@ -66,7 +66,7 @@ public sealed partial class JavaDependencyScanner
             // A property reference, such as ${junit.version}, must be updated where the property is defined
             if (version.Contains("${", StringComparison.Ordinal))
             {
-                context.ReportDependency(this, name, version, properties.Resolve(version, GetMavenPropertyReferences(version)), DependencyType.JavaPackage, new NonUpdatableLocation(context));
+                context.ReportDependency(this, name, version, properties.Resolve(version, GetMavenPropertyReferences(version)), DependencyType.JavaPackage, new NonUpdatableLocation(context), CreateMavenLocation(context, versionElement));
                 continue;
             }
 

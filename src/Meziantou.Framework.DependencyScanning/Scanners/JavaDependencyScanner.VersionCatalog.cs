@@ -57,11 +57,11 @@ public sealed partial class JavaDependencyScanner
             // The library only references the version, so it has no raw version
             if (versions.TryGetValue(reference.VersionReference, out var version))
             {
-                context.ReportDependency(this, reference.Name, rawVersion: null, version.Version, DependencyType.JavaPackage, new NonUpdatableLocation(context), version.Location, tags: [], metadata);
+                context.ReportDependency(this, reference.Name, rawVersion: null, version.Version, DependencyType.JavaPackage, new NonUpdatableLocation(context), rawVersionLocation: null, version.Location, tags: [], metadata);
             }
             else
             {
-                context.ReportDependency(this, reference.Name, rawVersion: null, resolvedVersion: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), new NonUpdatableLocation(context), tags: [], metadata);
+                context.ReportDependency(this, reference.Name, rawVersion: null, resolvedVersion: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), rawVersionLocation: null, resolvedVersionLocation: null, tags: [], metadata);
             }
         }
     }

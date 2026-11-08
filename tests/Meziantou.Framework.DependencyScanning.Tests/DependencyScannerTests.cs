@@ -651,9 +651,14 @@ public sealed class DependencyScannerTests
         Assert.Equal("2.9.2", xunitCore.Version);               // The resolved version when there is one
         Assert.Equal("XunitVersion", xunitCore.Metadata["property"]);
 
-        // The version location is the definition of the property, shared by every package that uses it
+        // The resolved version location is the definition of the property, shared by every package that uses it.
+        // The raw version location is the Version attribute of the package.
         var xunitAssert = dependencies.Single(dependency => dependency.Name == "xunit.assert");
-        Assert.Same(xunitCore.VersionLocation, xunitAssert.VersionLocation);
+        Assert.Same(xunitCore.ResolvedVersionLocation, xunitAssert.ResolvedVersionLocation);
+        Assert.NotSame(xunitCore.RawVersionLocation, xunitAssert.RawVersionLocation);
+
+        // VersionLocation is the resolved version location: updating it updates the property
+        Assert.Same(xunitCore.ResolvedVersionLocation, xunitCore.VersionLocation);
 
         await xunitCore.UpdateVersionAsync("2.9.3", cancellationToken);
         Assert.Equal("""

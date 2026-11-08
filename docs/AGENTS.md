@@ -10,7 +10,8 @@ These instructions complete the repository-level `AGENTS.md`.
 
 ```
 docs/
-  PackageDependencies.md
+  index.md
+  _PackageDependencies.md
   <Library>/
     _folder.yml
     <nn>-<Page>.md
@@ -29,7 +30,13 @@ docs/
 - A group folder opens with `01-Overview.md`, which introduces the group and links to its pages.
 - Renumbering or renaming a page or a folder changes its links: update every link to it in the same change.
 - `AGENTS.md` files are instructions, not pages.
-- `PackageDependencies.md` is the one page outside the sections. Its `<DependencyGraph Packages="..." />` elements are
+- The menu sorts the entries of a folder by file or folder name, ordinally, and the URL comes from the title: the
+  name only sets the position. `_PackageDependencies.md` comes after the sections because `_` sorts after uppercase
+  letters; keep its name.
+- `index.md` is the home page. It introduces the collection, and its `<SectionList />` element lists the sections,
+  which the generator fills in when it builds the site, so a new section needs no edit there. The `site.homeTitle`
+  of `docgen.json` names its menu entry "Introduction", the first one.
+- `_PackageDependencies.md` is the one page outside the sections. Its `<DependencyGraph Packages="..." />` elements are
   drawn by the documentation generator from the dependencies of the packed packages, so they stay current without
   edits. `Packages` takes package ids where `*` matches any characters; `External="true"` also draws the packages
   that are not part of this repository.

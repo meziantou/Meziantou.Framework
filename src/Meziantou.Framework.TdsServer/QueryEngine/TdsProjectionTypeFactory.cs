@@ -4,6 +4,8 @@ using System.Reflection.Emit;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
+[RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
 internal static class TdsProjectionTypeFactory
 {
     /// <summary>

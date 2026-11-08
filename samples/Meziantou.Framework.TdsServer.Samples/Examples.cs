@@ -27,6 +27,17 @@ public static class Examples
         #endregion
     }
 
+    public static void SqlServerBrowser(WebApplicationBuilder builder)
+    {
+        #region TdsServer_SqlServerBrowserHosted
+        builder.AddTdsServer(options =>
+        {
+            options.AddTcpListener(port: 14330, bindAddress: IPAddress.Any);
+            options.EnableSqlServerBrowser("SALES", bindAddress: IPAddress.Any); // UDP port 1434
+        });
+        #endregion
+    }
+
     public static void ServeHttpToo(string[] args)
     {
         #region TdsServer_ServeHttpToo

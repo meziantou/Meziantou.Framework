@@ -8,7 +8,8 @@ The library implements the protocol of SQL Server, not a database. This page lis
 ## General
 
 - **Needs the ASP.NET Core shared framework.**
-- **Not trimmable**: the package is not marked as compatible with trimming or Native AOT.
+- **The query engine needs reflection**: the package is trimmable and compatible with Native AOT, but the query
+  engine is not. See [Trimming and Native AOT](03-HostingTheServer.md#trimming-and-native-aot).
 - **No database**: the server stores nothing and runs no SQL by itself. Your query handler, or the
   [query engine](07-QueryEngine.md), answers every request.
 
@@ -22,7 +23,6 @@ The library implements the protocol of SQL Server, not a database. This page lis
 - **Errors close the `SqlClient` connection**: the server sends errors with the "server error" status, which
   `SqlClient` treats as severe. See [Return an error](06-ReturningResults.md#return-an-error).
 - **Text columns use one collation.** [Variant](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Variant), [UserDefined](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.UserDefined) and `Table` columns are sent as `nvarchar` text.
-- **No SQL Server Browser**: clients connect with `host,port`, not with an instance name.
 
 ## Authentication and encryption
 

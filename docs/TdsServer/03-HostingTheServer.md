@@ -162,6 +162,7 @@ builder.AddTdsServer(options =>
 | [RequireEncryption](cref:Meziantou.Framework.Tds.TdsServerOptions.RequireEncryption) | `false` | Rejects the clients that do not encrypt. See [Encryption](09-Encryption.md). |
 | [TlsPfxPath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPath), [TlsPfxPassword](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPassword) | none | The TLS certificate, as a PFX file. |
 | [TlsPemCertificatePath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPemCertificatePath), [TlsPemPrivateKeyPath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPemPrivateKeyPath) | none | The TLS certificate, as PEM files. |
+| [SqlServerBrowser](cref:Meziantou.Framework.Tds.TdsServerOptions.SqlServerBrowser) | none | Answers the SQL Server Browser requests, so clients can connect with an instance name. See [Connect with an instance name](10-ConnectingClients.md#connect-with-an-instance-name). |
 
 The server buffers a whole request before it parses it, so [MaxMessageSize](cref:Meziantou.Framework.Tds.TdsServerOptions.MaxMessageSize) bounds the memory a client can make the
 server allocate, including before it logs in. A larger request closes the connection. Raise the limit when clients
@@ -169,3 +170,15 @@ send large SQL batches or parameters.
 
 The TLS certificate is loaded when the server starts ([AddTdsServer](cref:Meziantou.Framework.Tds.Hosting.TdsServerBuilderExtensions.AddTdsServer) or [StartAsync](cref:Meziantou.Framework.Tds.TdsServer.StartAsync)): a missing file or an invalid
 combination of options throws there, not on the first connection.
+
+## Trimming and Native AOT
+
+The package is trimmable and compatible with Native AOT: the server, the hosting extensions and the SQL Server Browser
+responder do not use reflection. The [query engine](07-QueryEngine.md) does: it translates SQL to LINQ expression
+trees and creates types at run time, so [TdsQueryEngineOptions](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions), [CreateQueryHandler](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngine.CreateQueryHandler) and
+[MapTdsQueryEngine](cref:Meziantou.Framework.Tds.Hosting.TdsEndpointRouteBuilderExtensions.MapTdsQueryEngine) are marked with `RequiresUnreferencedCode` and `RequiresDynamicCode`, and the compiler warns
+when a trimmed or Native AOT application uses them. Write your own query handler in these applications.
+
+A `Json` column accepts a `string`, a `JsonNode`, a `JsonElement` or a `JsonDocument`. Other values are serialized
+with `JsonSerializer` and reflection, which trimmed and Native AOT applications disable by default: the request then
+fails. Serialize these values yourself.

@@ -11,6 +11,8 @@
 - Serializes result sets and protocol tokens back to clients
 - Native JSON column type serialization (`TDSType.JSON`, UTF-8 payload)
 - ASP.NET Core hosting integration through `IHostApplicationBuilder`
+- Optional SQL Server Browser responder (UDP 1434), so clients can connect with `host\INSTANCE`
+- Trimmable and Native AOT-compatible (except the query engine)
 
 ## Security: configure TLS
 

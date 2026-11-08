@@ -54,8 +54,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 - Drawing is sequential: it does not use several threads.
 - No mesh gradients.
-- Text lines are broken greedily; no word lists are provided for the scripts that need a dictionary to find word
-  boundaries.
+- Text lines are broken greedily.
 - No AAT (`morx`, `kerx`) shaping, no subpixel (LCD) rendering, no ruby in vertical text.
 - Hinting is opt-in and horizontal only.
 - Installed fonts are used only when you ask for them ([Font.LoadInstalled](cref:Meziantou.Framework.Imaging.Typography.Font.LoadInstalled), [FontStack.WithInstalledFallback](cref:Meziantou.Framework.Imaging.Typography.FontStack.WithInstalledFallback)).

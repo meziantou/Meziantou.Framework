@@ -936,9 +936,9 @@
     "urls": {
       "public_suffix_list.dat": "https://publicsuffix.org/list/public_suffix_list.dat"
     },
-    "downloaded": "2026-11-01",
+    "downloaded": "2026-11-08",
     "files": {
-      "public_suffix_list.dat": "617d1b276660e5a01209d7b58159450e400cf636634a7a9c2cfd50a1c6675d01"
+      "public_suffix_list.dat": "027fe126522e646b2335c3d564750d7223f0994a1a460107ce4f3a40bd682310"
     }
   },
   "hyphenation": {

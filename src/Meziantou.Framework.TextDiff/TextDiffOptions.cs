@@ -42,4 +42,35 @@ public sealed class TextDiffOptions
     /// than the original line terminators.
     /// </remarks>
     public bool IgnoreEndOfLine { get; set; }
+
+    /// <summary>
+    /// Gets or sets the time after which the diff stops searching for matching chunks. Defaults to <see langword="null"/>:
+    /// no time limit.
+    /// </summary>
+    /// <remarks>
+    /// Once the time limit is reached, every region of the texts that is not diffed yet is reported as deleted and
+    /// inserted as a whole, so the diff completes quickly and is still valid: it rebuilds both texts, but may report as
+    /// changed chunks that a full search would match. The common start and end of a region are still matched. A
+    /// <see langword="null"/> value and <see cref="System.Threading.Timeout.InfiniteTimeSpan"/> disable the limit.
+    /// </remarks>
+    public TimeSpan? Timeout { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of deleted and inserted chunks the Myers search looks for in a region before it
+    /// settles for a diff that may not be minimal. Defaults to <see langword="null"/>: no limit, the diff is minimal.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The cost of the Myers search grows with the square of the number of differences. When the shortest edit script
+    /// of a region needs more than this many deleted and inserted chunks, the search stops and splits the region at the
+    /// furthest point it reached, as git does, then diffs both parts. A region that needs at most this many edits is
+    /// still diffed exactly.
+    /// </para>
+    /// <para>
+    /// The limit applies to <see cref="TextDiffAlgorithm.Myers"/>, and to the regions <see cref="TextDiffAlgorithm.Patience"/>
+    /// and <see cref="TextDiffAlgorithm.Histogram"/> hand to Myers. <see cref="TextDiffAlgorithm.HuntSzymanski"/> does
+    /// not use it; use <see cref="Timeout"/> to bound it.
+    /// </para>
+    /// </remarks>
+    public int? MaxEditCost { get; set; }
 }

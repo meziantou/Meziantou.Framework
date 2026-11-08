@@ -91,11 +91,11 @@ var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", o
 <!-- endref -->
 
 Each lock file format has its own scanner, separate from the scanner of the manifest it is generated from. Leave the
-lock file scanners out to get the declared dependencies only: [CargoLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.CargoLockFileDependencyScanner),
+lock file scanners out to get the declared dependencies only: [BunLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.BunLockFileDependencyScanner), [CargoLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.CargoLockFileDependencyScanner),
 [ComposerLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.ComposerLockFileDependencyScanner), [GitHubActionsLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.GitHubActionsLockFileDependencyScanner), [GoSumDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.GoSumDependencyScanner),
 [HelmChartLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.HelmChartLockFileDependencyScanner), [NpmLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.NpmLockFileDependencyScanner), [NuGetLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.NuGetLockFileDependencyScanner),
-[ProjectAssetsDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.ProjectAssetsDependencyScanner), [PythonLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.PythonLockFileDependencyScanner), [RubyGemLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.RubyGemLockFileDependencyScanner) and
-[SwiftPackageLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.SwiftPackageLockFileDependencyScanner). See [Supported files](05-SupportedFiles/01-Overview.md) for the files of each
+[PnpmLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.PnpmLockFileDependencyScanner), [ProjectAssetsDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.ProjectAssetsDependencyScanner), [PythonLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.PythonLockFileDependencyScanner), [RubyGemLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.RubyGemLockFileDependencyScanner),
+[SwiftPackageLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.SwiftPackageLockFileDependencyScanner) and [YarnLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.YarnLockFileDependencyScanner). See [Supported files](05-SupportedFiles/01-Overview.md) for the files of each
 scanner.
 
 ## Use another file system

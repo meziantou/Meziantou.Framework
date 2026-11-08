@@ -505,7 +505,17 @@ public sealed class DecodeInteropTests
 
     private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleAztecCodes()
     {
-        yield break;
+        yield return (Barcode2D.CreateAztec("Hello"), "Hello");
+        yield return (Barcode2D.CreateAztec("0123456789012345678901234567890123456789"), "0123456789012345678901234567890123456789");
+        yield return (Barcode2D.CreateAztec("Hello, World! It's 10:30. Mixed CASE, punctuation: {[(<>)]} @#$%^&*_~|\\\r\n"), "Hello, World! It's 10:30. Mixed CASE, punctuation: {[(<>)]} @#$%^&*_~|\\\r\n");
+        yield return (Barcode2D.CreateAztec("NUL\0\0\0 is a binary shift"), "NUL\0\0\0 is a binary shift");
+        yield return (Barcode2D.CreateAztec([0x00, 0x01, 0xE9, 0xFF, 0x41, 0x42]), "\0\u0001\u00E9\u00FFAB");
+        yield return (Barcode2D.CreateAztec("héllo wörld, 漢字 Ελληνικά"), "héllo wörld, 漢字 Ελληνικά");
+        yield return (Barcode2D.CreateAztec("COMPACT", new AztecOptions { Compact = true, Layers = 4 }), "COMPACT");
+        yield return (Barcode2D.CreateAztec("FULL RANGE", new AztecOptions { Compact = false }), "FULL RANGE");
+        yield return (Barcode2D.CreateAztec("Ten layers", new AztecOptions { Layers = 10 }), "Ten layers");
+        yield return (Barcode2D.CreateAztec("More error correction", new AztecOptions { ErrorCorrectionPercent = 80 }), "More error correction");
+        yield return (Barcode2D.CreateAztec(string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 40))), string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 40)));
     }
 
     private static string GetZXingFormat(Barcode2DType type) => type switch

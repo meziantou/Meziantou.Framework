@@ -310,12 +310,56 @@ public static class BarcodesFuzzTargets
         return new Pdf417Options();
     }
 
+    // Bits 0-1 of the flags: the shape (any, any, compact, full-range); bits 2-3: what the size byte sets (nothing, the error
+    // correction percentage, the number of layers, both). The values out of range throw ArgumentOutOfRangeException, which
+    // the caller handles as invalid options.
     private static AztecOptions? CreateAztecOptions(byte flags, byte sizeByte)
     {
         if ((flags & 0x0F) == 0)
             return null;
 
-        return new AztecOptions();
+        var options = new AztecOptions
+        {
+            Compact = (flags & 0x03) switch
+            {
+                2 => true,
+                3 => false,
+                _ => null,
+            },
+        };
+
+        switch ((flags >> 2) & 0x03)
+        {
+            case 1:
+                SetAztecOption(options, sizeByte, sizeByte is < 5 or > 95, (options, value) => options.ErrorCorrectionPercent = value);
+                break;
+
+            case 2:
+                SetAztecOption(options, sizeByte % 34, sizeByte % 34 is 0 or 33, (options, value) => options.Layers = value);
+                break;
+
+            case 3:
+                options.ErrorCorrectionPercent = 5 + (sizeByte % 16 * 6);
+                options.Layers = 1 + (sizeByte >> 3);
+                break;
+        }
+
+        return options;
+    }
+
+    private static void SetAztecOption(AztecOptions options, int value, bool outOfRange, Action<AztecOptions, int> setter)
+    {
+        try
+        {
+            setter(options, value);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            FuzzAssert.True(outOfRange, $"The option value {value} is valid but throws");
+            throw;
+        }
+
+        FuzzAssert.False(outOfRange, $"The option value {value} is out of range but does not throw");
     }
 
     // The structure of a Data Matrix symbol: its size, finder and timing patterns
@@ -328,9 +372,171 @@ public static class BarcodesFuzzTargets
     {
     }
 
-    // The structure of an Aztec symbol: its size, finder pattern and orientation marks
+    // The structure of an Aztec symbol: its size, finder pattern and orientation marks, the reference grid of a full-range
+    // symbol, and a mode message whose Reed-Solomon check words are valid and that gives the number of layers of the size
+    // and a number of data codewords that leaves the requested error correction
     private static void CheckAztec(Barcode2D barcode, AztecOptions? options)
     {
+        var size = barcode.Width;
+        FuzzAssert.Equal(size, barcode.Height, "An Aztec symbol is square");
+        var center = size / 2;
+
+        // A full-range finder has 4 dark rings (distances 0, 2, 4, 6) and a light ring at distance 5; the ring at distance 5
+        // of a compact symbol has the orientation marks
+        var compact = !(IsRing(barcode, center, 6, dark: true) && IsRing(barcode, center, 5, dark: false));
+        var radius = compact ? 5 : 7;
+        for (var distance = 0; distance < radius; distance++)
+        {
+            FuzzAssert.True(IsRing(barcode, center, distance, dark: distance % 2 == 0), $"The ring {distance} of the finder pattern");
+        }
+
+        bool Module(int row, int column) => barcode[center + row, center + column];
+        FuzzAssert.True(Module(-radius, -radius) && Module(-radius, -radius + 1) && Module(-radius + 1, -radius), "The top left orientation mark");
+        FuzzAssert.True(Module(-radius, radius) && Module(-radius + 1, radius) && !Module(-radius, radius - 1), "The top right orientation mark");
+        FuzzAssert.True(Module(radius - 1, radius) && !Module(radius, radius) && !Module(radius, radius - 1), "The bottom right orientation mark");
+        FuzzAssert.True(!Module(radius, -radius) && !Module(radius - 1, -radius) && !Module(radius, -radius + 1), "The bottom left orientation mark");
+
+        int layers;
+        if (compact)
+        {
+            FuzzAssert.True(size is 15 or 19 or 23 or 27, $"A compact Aztec symbol of {size} modules");
+            layers = (size - 11) / 4;
+            FuzzAssert.True(options?.Compact is not false, "A compact symbol when full-range is requested");
+        }
+        else
+        {
+            layers = 0;
+            for (var i = 1; i <= 32; i++)
+            {
+                var baseSize = 14 + (4 * i);
+                if (baseSize + 1 + (2 * (((baseSize / 2) - 1) / 15)) == size)
+                {
+                    layers = i;
+                }
+            }
+
+            FuzzAssert.True(layers > 0, $"A full-range Aztec symbol of {size} modules");
+            FuzzAssert.True(options?.Compact is not true, "A full-range symbol when compact is requested");
+            FuzzAssert.True(layers >= 4 || options?.Compact is false || options?.Layers is not null, "A full-range symbol of 1 to 3 layers holds less than the compact symbol of the same size");
+
+            // The reference grid: every 16th row and column from the center alternates dark and light modules
+            for (var offset = 0; offset <= center; offset += 16)
+            {
+                foreach (var line in new[] { center - offset, center + offset })
+                {
+                    for (var i = 0; i < size; i++)
+                    {
+                        var expected = (i - center) % 2 == 0;
+                        FuzzAssert.True(barcode[line, i] == expected && barcode[i, line] == expected, $"The reference grid line {line - center}");
+                    }
+                }
+            }
+        }
+
+        if (options?.Layers is { } requestedLayers)
+        {
+            FuzzAssert.Equal(requestedLayers, layers, "The number of layers");
+        }
+
+        // The mode message, clockwise from the top left corner of the finder, skipping the reference grid
+        var modeMessage = new int[compact ? 7 : 10];
+        var bitIndex = 0;
+        void AddBit(bool bit)
+        {
+            modeMessage[bitIndex / 4] = (modeMessage[bitIndex / 4] << 1) | (bit ? 1 : 0);
+            bitIndex++;
+        }
+
+        var sideLength = compact ? 7 : 10;
+        var positions = new int[sideLength];
+        for (var i = 0; i < sideLength; i++)
+        {
+            positions[i] = compact ? i - 3 : i - 5 + (i / 5);
+        }
+
+        for (var i = 0; i < sideLength; i++)
+        {
+            AddBit(Module(-radius, positions[i]));
+        }
+
+        for (var i = 0; i < sideLength; i++)
+        {
+            AddBit(Module(positions[i], radius));
+        }
+
+        for (var i = sideLength - 1; i >= 0; i--)
+        {
+            AddBit(Module(radius, positions[i]));
+        }
+
+        for (var i = sideLength - 1; i >= 0; i--)
+        {
+            AddBit(Module(positions[i], -radius));
+        }
+
+        FuzzAssert.True(HasValidGf16Syndromes(modeMessage, compact ? 5 : 6), "The check words of the mode message");
+        var info = compact ? (modeMessage[0] << 4) | modeMessage[1] : (modeMessage[0] << 12) | (modeMessage[1] << 8) | (modeMessage[2] << 4) | modeMessage[3];
+        var messageLayers = (compact ? info >> 6 : info >> 11) + 1;
+        var dataWords = (compact ? info & 0x3F : info & 0x7FF) + 1;
+        FuzzAssert.Equal(layers, messageLayers, "The number of layers in the mode message");
+
+        var wordSize = layers switch
+        {
+            <= 2 => 6,
+            <= 8 => 8,
+            <= 22 => 10,
+            _ => 12,
+        };
+        var totalWords = ((compact ? 88 : 112) + (16 * layers)) * layers / wordSize;
+        var percent = options?.ErrorCorrectionPercent ?? 23;
+        FuzzAssert.True(dataWords + ((totalWords * percent) + 99) / 100 + 3 <= totalWords, $"{dataWords} data codewords of {totalWords} leave {percent}% and 3 codewords of error correction");
+    }
+
+    private static bool IsRing(Barcode2D barcode, int center, int distance, bool dark)
+    {
+        for (var i = -distance; i <= distance; i++)
+        {
+            if (barcode[center - distance, center + i] != dark || barcode[center + distance, center + i] != dark || barcode[center + i, center - distance] != dark || barcode[center + i, center + distance] != dark)
+                return false;
+        }
+
+        return true;
+    }
+
+    // The values of the codeword (highest degree first) at α^1 to α^checkWords in GF(16), x^4 + x + 1, are 0
+    private static bool HasValidGf16Syndromes(int[] codeword, int checkWords)
+    {
+        var exp = new int[30];
+        var value = 1;
+        for (var i = 0; i < exp.Length; i++)
+        {
+            exp[i] = value;
+            value <<= 1;
+            if (value >= 16)
+            {
+                value ^= 0x13;
+            }
+        }
+
+        var log = new int[16];
+        for (var i = 0; i < 15; i++)
+        {
+            log[exp[i]] = i;
+        }
+
+        for (var root = 1; root <= checkWords; root++)
+        {
+            var syndrome = 0;
+            foreach (var coefficient in codeword)
+            {
+                syndrome = (syndrome is 0 ? 0 : exp[(log[syndrome] + root) % 15]) ^ coefficient;
+            }
+
+            if (syndrome is not 0)
+                return false;
+        }
+
+        return true;
     }
 
     private static bool SameModules(Barcode2D a, Barcode2D b)

@@ -339,6 +339,57 @@ public sealed class ZintMatrixTests
         return builder.ToString();
     }
 
+    public static TheoryData<string, bool, int> AztecCodes()
+    {
+        // The data, whether the symbol is compact, and the number of layers. The payloads use one mode (upper, lower or
+        // digit), where the encodation cannot legitimately differ. The size is given to zint: zint picks the size from
+        // tables of capacities that do not follow a formula, where we reserve the requested percentage of the symbol capacity
+        // plus 3 codewords. With the same size, the error correction codewords fill what the data leaves in both encoders.
+        return new TheoryData<string, bool, int>
+        {
+            { "HELLO", true, 1 },
+            { "HELLO WORLD", true, 2 },
+            { "12345678901234567890", true, 2 },
+            { "AZTEC", true, 3 },
+            { "AZTEC", true, 4 },
+            { "AZTEC", false, 1 },
+            { "AZTEC", false, 2 },
+            { "0123456789", false, 4 },
+            { "abcdefghijklmnopqrstuvwxyz", false, 5 },
+            { new string('7', 200), false, 9 },
+            { string.Concat(Enumerable.Repeat("ABCDEFGHIJ", 30)), false, 15 },
+            { new string('5', 1500), false, 23 },
+            { string.Concat(Enumerable.Repeat("XYZ", 200)), false, 32 },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(AztecCodes))]
+    public async Task Aztec_MatchesZint(string data, bool compact, int layers)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var barcode = Barcode2D.CreateAztec(data, new AztecOptions { Compact = compact, Layers = layers });
+
+        // zint numbers the compact sizes 1 to 4, and the full-range sizes 5 to 36
+        var version = compact ? layers : layers + 4;
+        var expected = await tools.GetZintMatrixAsync(["-b", "92", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, barcode.Width);
+        AssertSameModules(expected, barcode.Width, barcode.Height, (row, column) => barcode[row, column]);
+    }
+
+    [Theory]
+    [InlineData("ÉCI", true, 2)]
+    [InlineData("ÀÉÎÕÜ", false, 3)]
+    [InlineData("日本", true, 2)]
+    public async Task AztecWithEci_MatchesZint(string data, bool compact, int layers)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var barcode = Barcode2D.CreateAztec(data, new AztecOptions { Compact = compact, Layers = layers });
+
+        var version = compact ? layers : layers + 4;
+        var expected = await tools.GetZintMatrixAsync(["-b", "92", "--eci=26", "--vers=" + version.ToString(CultureInfo.InvariantCulture)], data, barcode.Width);
+        AssertSameModules(expected, barcode.Width, barcode.Height, (row, column) => barcode[row, column]);
+    }
+
     private static string GetZintLevel(ErrorCorrectionLevel level) => level switch
     {
         ErrorCorrectionLevel.L => "1",

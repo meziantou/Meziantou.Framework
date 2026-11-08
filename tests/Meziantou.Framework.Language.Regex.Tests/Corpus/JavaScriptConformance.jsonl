@@ -409,6 +409,15 @@
 {"pattern": "[\\c]", "flags": "", "valid": true, "captures": 0, "names": []}
 {"pattern": "[\\c]", "flags": "u", "valid": false}
 {"pattern": "[\\c]", "flags": "v", "valid": false}
+{"pattern": "[\\c-a]", "flags": "", "valid": false}
+{"pattern": "[a-\\c]", "flags": "", "valid": false}
+{"pattern": "[\\cA-\\c-\\c]", "flags": "", "valid": false}
+{"pattern": "[\\c-\\c]", "flags": "", "valid": false}
+{"pattern": "[\\c-z]", "flags": "", "valid": true, "captures": 0, "names": []}
+{"pattern": "[\\d-\\Dd-a]", "flags": "", "valid": false}
+{"pattern": "[\\d-\\D-a]", "flags": "", "valid": true, "captures": 0, "names": []}
+{"pattern": "[\\D-\\D--\\f]", "flags": "", "valid": false}
+{"pattern": "[\\d-\\D--a]", "flags": "", "valid": true, "captures": 0, "names": []}
 {"pattern": "[\\cA]", "flags": "", "valid": true, "captures": 0, "names": []}
 {"pattern": "[\\cA]", "flags": "u", "valid": true, "captures": 0, "names": []}
 {"pattern": "[\\cA]", "flags": "v", "valid": true, "captures": 0, "names": []}
@@ -2047,6 +2056,15 @@
 {"pattern": "[\\k]", "flags": "", "valid": true, "captures": 0, "names": []}
 {"pattern": "[\\k]", "flags": "u", "valid": false}
 {"pattern": "[\\k]", "flags": "v", "valid": false}
+{"pattern": "(?<a>.)[\\k]", "flags": "", "valid": false}
+{"pattern": "[\\k](?<a>.)", "flags": "", "valid": false}
+{"pattern": "(?<a>.)[\\k<a>]", "flags": "", "valid": false}
+{"pattern": "[\\k<a>]", "flags": "", "valid": true, "captures": 0, "names": []}
+{"pattern": "[\\w-\u0000]", "flags": "", "valid": true, "captures": 0, "names": []}
+{"pattern": "[\\w-\u0000]", "flags": "u", "valid": false}
+{"pattern": "[\\w-\u0000]", "flags": "v", "valid": false}
+{"pattern": "[\\x01-&&b]", "flags": "v", "valid": false}
+{"pattern": "[\\x01-!!]", "flags": "v", "valid": false}
 {"pattern": "[\\/]", "flags": "", "valid": true, "captures": 0, "names": []}
 {"pattern": "[\\/]", "flags": "u", "valid": true, "captures": 0, "names": []}
 {"pattern": "[\\/]", "flags": "v", "valid": true, "captures": 0, "names": []}

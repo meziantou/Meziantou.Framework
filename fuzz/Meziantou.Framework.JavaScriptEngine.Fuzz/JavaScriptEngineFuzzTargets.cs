@@ -64,6 +64,7 @@ public static partial class JavaScriptEngineFuzzTargets
         new("javascript-execute", Execute) { Seeds = GetScriptSeeds, Dictionary = Tokens },
         new("javascript-module", ExecuteModule) { Seeds = GetModuleSeeds, Dictionary = Tokens },
         new("javascript-regexp", RegExpMatch) { Seeds = GetRegExpSeeds, Dictionary = RegExpTokens },
+        new("javascript-regexp-parser", RegExpParser) { Seeds = GetRegExpParserSeeds, Dictionary = RegExpTokens },
         new("javascript-json-module", JsonModule) { Seeds = GetJsonSeeds, Dictionary = JsonTokens },
         new("javascript-engine-options", EngineOptions) { Seeds = GetEngineOptionsSeeds, Dictionary = EngineOptionsTokens },
         new("javascript-string-parsers", StringParsers) { Seeds = GetStringParserSeeds, Dictionary = StringParserTokens },
@@ -638,7 +639,7 @@ public static partial class JavaScriptEngineFuzzTargets
     {
         public Dictionary<string, JsModule?> Modules { get; } = new(StringComparer.Ordinal);
 
-        protected override void LoadImportedModule(JsModuleLoadRequest request)
+        protected internal override void LoadImportedModule(JsModuleLoadRequest request)
         {
             if (Modules.GetValueOrDefault(request.Specifier) is { } module)
             {
@@ -655,7 +656,7 @@ public static partial class JavaScriptEngineFuzzTargets
     {
         private readonly Dictionary<string, JsModule> _modules = new(StringComparer.Ordinal);
 
-        protected override void LoadImportedModule(JsModuleLoadRequest request)
+        protected internal override void LoadImportedModule(JsModuleLoadRequest request)
         {
             var name = request.Specifier.StartsWith("./", StringComparison.Ordinal) ? request.Specifier[2..] : request.Specifier;
             if (!ModuleSources.TryGetValue(name, out var source))

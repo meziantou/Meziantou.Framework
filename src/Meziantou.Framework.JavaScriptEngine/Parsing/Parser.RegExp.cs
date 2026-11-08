@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using Meziantou.Framework.JavaScriptEngine.Ast;
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Regex;
 
 namespace Meziantou.Framework.JavaScriptEngine.Parsing;
 
@@ -28,52 +26,19 @@ internal sealed partial class Parser
     /// <summary>Validates the flags and the pattern of a regular expression (the early errors of RegularExpressionLiteral); returns the error message, or null.</summary>
     internal static string? ValidateRegularExpression(string pattern, string flags)
     {
-        var options = RegexPatternOptions.None;
-        foreach (var c in flags)
-        {
-            var option = c switch
-            {
-                'd' => RegexPatternOptions.HasIndices,
-                'g' => RegexPatternOptions.Global,
-                'i' => RegexPatternOptions.IgnoreCase,
-                'm' => RegexPatternOptions.Multiline,
-                's' => RegexPatternOptions.DotAll,
-                'u' => RegexPatternOptions.Unicode,
-                'v' => RegexPatternOptions.UnicodeSets,
-                'y' => RegexPatternOptions.Sticky,
-                _ => RegexPatternOptions.None,
-            };
-
-            if (option == RegexPatternOptions.None || (options & option) != 0)
-                return "Invalid flags";
-
-            options |= option;
-        }
-
-        if ((options & RegexPatternOptions.Unicode) != 0 && (options & RegexPatternOptions.UnicodeSets) != 0)
+        if (!RegExpFlagsExtensions.TryParse(flags, out var parsedFlags))
             return "Invalid flags";
-
-        if ((options & RegexPatternOptions.UnicodeSets) != 0)
-        {
-            // The v flag is the u flag (Unicode mode) plus the class set grammar
-            options |= RegexPatternOptions.Unicode;
-        }
 
         var key = (pattern, flags);
         if (RegExpValidationCache.TryGetValue(key, out var cached))
             return cached;
 
+        // A pattern nested too deeply to be parsed on the stack is not validated here: the RegExp constructor reports
+        // the error at runtime
         string? result = null;
-        var tree = RegexSyntaxTree.ParseText(pattern, new RegexParseOptions(RegexDialect.JavaScript) { PatternOptions = options });
-        foreach (var diagnostic in tree.GetDiagnostics())
+        if (!RegExpParser.TryParse(pattern, parsedFlags, out _, out var error) && error is not RegExpParser.TooLargeMessage)
         {
-            // REGEX0200: the pattern is nested too deeply to be checked on the stack of the parser (the rest is not
-            // validated here: the RegExp constructor reports the error at runtime)
-            if (diagnostic.Severity == DiagnosticSeverity.Error && diagnostic.Id != "REGEX0200")
-            {
-                result = diagnostic.Message;
-                break;
-            }
+            result = error;
         }
 
         // ConcurrentDictionary.Count takes all the locks of the dictionary: the number of entries is tracked separately

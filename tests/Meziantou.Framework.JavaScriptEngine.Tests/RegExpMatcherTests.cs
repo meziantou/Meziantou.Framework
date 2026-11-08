@@ -837,4 +837,145 @@ public sealed class RegExpMatcherTests
         Assert.Equal(1, Index("(?:ab|cd)e", "", "xcde"));
         Assert.Equal(["abc", "b"], Exec("a(b)c", "", "xxabc"));
     }
+
+    /// <summary>
+    /// Replays the conformance corpus of Meziantou.Framework.Language.Regex (its <c>Corpus/conformance.md</c>): patterns
+    /// with no flag, "u" or "v", and the verdict of V8 (node 24): whether the pattern is valid, and its number of
+    /// capturing groups and its group names.
+    /// </summary>
+    [Fact]
+    public void Parse_MatchesV8Conformance()
+    {
+        using var stream = typeof(RegExpMatcherTests).Assembly.GetManifestResourceStream("Corpus.JavaScriptConformance.jsonl")!;
+        using var reader = new StreamReader(stream);
+        var failures = new List<string>();
+        var count = 0;
+        while (reader.ReadLine() is { } line)
+        {
+            if (line.Length == 0)
+                continue;
+
+            count++;
+            using var document = System.Text.Json.JsonDocument.Parse(line);
+            var root = document.RootElement;
+            var pattern = root.GetProperty("pattern").GetString()!;
+            var flags = root.GetProperty("flags").GetString()!;
+            Assert.True(RegExpFlagsExtensions.TryParse(flags, out var parsedFlags));
+            var description = $"/{Escape(pattern)}/{flags}";
+            var isValid = RegExpParser.TryParse(pattern, parsedFlags, out var result, out var error);
+            if (isValid != root.GetProperty("valid").GetBoolean())
+            {
+                failures.Add(isValid ? $"{description}: expected a SyntaxError" : $"{description}: unexpected SyntaxError: {error}");
+                continue;
+            }
+
+            if (!isValid)
+                continue;
+
+            var captures = root.GetProperty("captures").GetInt32();
+            if (result!.GroupCount != captures)
+            {
+                failures.Add($"{description}: expected {captures} groups, got {result.GroupCount}");
+            }
+
+            var expectedNames = root.GetProperty("names").EnumerateArray().Select(name => name.GetString()!).Order(StringComparer.Ordinal).ToArray();
+            var actualNames = result.GroupNames.OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+            if (!expectedNames.SequenceEqual(actualNames, StringComparer.Ordinal))
+            {
+                failures.Add($"{description}: expected the names [{string.Join(", ", expectedNames)}], got [{string.Join(", ", actualNames)}]");
+            }
+        }
+
+        Assert.True(count > 5000);
+        if (failures.Count > 0)
+        {
+            Assert.Fail($"{failures.Count} differences:\n" + string.Join('\n', failures.Take(50)));
+        }
+    }
+
+    [Theory]
+    [InlineData("(?<a>.)[\\k]", "", false)]
+    [InlineData("[\\k]", "", true)]
+    [InlineData("\\k<a>(?<a>x)", "", true)]
+    [InlineData("\\k<b>(?<a>x)", "", false)]
+    [InlineData("[^\\q{ab}--\\q{ab}]", "v", false)]
+    [InlineData("[^[\\q{ab}&&a]]", "v", true)]
+    [InlineData("[^\\q{a}]", "v", true)]
+    [InlineData("[^\\q{}]", "v", false)]
+    [InlineData("a{2}{3}", "", false)]
+    [InlineData("{", "", true)]
+    [InlineData("a{,5}", "", true)]
+    [InlineData("}", "u", false)]
+    [InlineData("a{99999999999,99999999998}", "", false)]
+    [InlineData("(?i-:a)", "", true)]
+    [InlineData("(?-:a)", "", false)]
+    [InlineData("(?i-i:a)", "", false)]
+    [InlineData("(?i)a", "", false)]
+    [InlineData("\\c*", "", true)]
+    [InlineData("[\\c1]", "", true)]
+    [InlineData("(?<a>x)|(?<a>y)", "", true)]
+    [InlineData("(?<a>x)(?<a>y)", "", false)]
+    [InlineData("^*", "", false)]
+    [InlineData("(?=a)*", "", true)]
+    [InlineData("(?=a)*", "u", false)]
+    [InlineData("(?<=a)*", "", false)]
+    [InlineData("[a-\\d]", "", true)]
+    [InlineData("[a-\\d]", "u", false)]
+    [InlineData("\\-", "u", false)]
+    [InlineData("[\\-]", "u", true)]
+    [InlineData("\\u{110000}", "u", false)]
+    [InlineData("(?<\\u{1d4d0}>.)", "", true)]
+    [InlineData("[&&]", "v", false)]
+    [InlineData("[a&&&b]", "v", false)]
+    [InlineData("[\\&]", "v", true)]
+    [InlineData("[!!]", "v", false)]
+    [InlineData("[!]", "v", true)]
+    [InlineData("[a-z&&b]", "v", false)]
+    [InlineData("[ab--c]", "v", false)]
+    [InlineData("[\\p{RGI_Emoji}--\\q{x}]", "v", true)]
+    [InlineData("\\P{RGI_Emoji}", "v", false)]
+    [InlineData("\\p{RGI_Emoji}", "u", false)]
+    [InlineData("\\1(a)", "u", true)]
+    [InlineData("\\2(a)", "u", false)]
+    [InlineData("\\00", "u", false)]
+    [InlineData(")", "", false)]
+    [InlineData("(", "", false)]
+    [InlineData("[", "", false)]
+    [InlineData("\\", "", false)]
+    public void Parse_EarlyErrors(string pattern, string flags, bool expected)
+    {
+        Assert.True(RegExpFlagsExtensions.TryParse(flags, out var parsedFlags));
+        Assert.Equal(expected, RegExpParser.TryParse(pattern, parsedFlags, out _, out _));
+    }
+
+    [Fact]
+    public void Parse_AnnexBEscapes()
+    {
+        // A decimal escape is a backreference when there are that many groups, else a legacy octal escape or the digit
+        Assert.Equal(["aa", "a"], Exec("(a)\\1", "", "aa"));
+        Assert.Equal(["a\u0001"], Exec("a\\1", "", "a\u0001"));
+        Assert.Equal(["\u0008"], Exec("\\10", "", "\u0008"));
+        Assert.Equal(["\u00FF"], Exec("\\377", "", "\u00FF"));
+        Assert.Equal(["\u00208"], Exec("\\408", "", "\u00208"));
+        Assert.Equal(["8"], Exec("\\8", "", "8"));
+
+        // "\c" not followed by a control letter is a backslash, and the quantifier applies to the "c" only
+        Assert.Equal(["\\ccc"], Exec("\\c+", "", "\\ccc"));
+        Assert.Equal(["\u0011"], Exec("[\\c1]", "", "\u0011"));
+
+        // "\u{...}" is "u" repeated without the "u" flag
+        Assert.Equal(["uuu"], Exec("\\u{3}", "", "uuu"));
+    }
+
+    [Fact]
+    public void Parse_TooDeep()
+    {
+        var pattern = new string('(', 300) + new string(')', 300);
+        Assert.False(RegExpParser.TryParse(pattern, RegExpFlags.None, out _, out var error));
+        Assert.Equal(RegExpParser.TooLargeMessage, error);
+
+        pattern = new string('(', 200) + new string(')', 200);
+        Assert.True(RegExpParser.TryParse(pattern, RegExpFlags.None, out var result, out _));
+        Assert.Equal(200, result!.GroupCount);
+    }
 }

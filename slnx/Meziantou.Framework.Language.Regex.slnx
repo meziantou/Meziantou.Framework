@@ -1,9 +1,11 @@
 <Solution>
   <Folder Name="/fuzz/">
     <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Ini/Meziantou.Framework.Language.Ini.csproj" />
@@ -13,6 +15,8 @@
     <Project Path="../src/Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
     <Project Path="../src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Language.Regex.Tests/Meziantou.Framework.Language.Regex.Tests.csproj" />

@@ -6,6 +6,8 @@
   <ItemGroup>
     <EmbeddedResource Include="Corpus/*.jsonl" />
     <EmbeddedResource Include="Corpus/*.txt.gz" LogicalName="Corpus.%(Filename)%(Extension)" />
+    <!-- The conformance corpus of Meziantou.Framework.Language.Regex: patterns and the verdicts of V8 -->
+    <EmbeddedResource Include="../Meziantou.Framework.Language.Regex.Tests/Corpus/JavaScriptConformance.jsonl" LogicalName="Corpus.JavaScriptConformance.jsonl" Link="Corpus/JavaScriptConformance.jsonl" />
     <!-- test_parsing of JSONTestSuite (JSONTestSuite/README.md) -->
     <EmbeddedResource Include="JSONTestSuite/test_parsing/*.json" LogicalName="JSONTestSuite.%(Filename)%(Extension)" />
     <!-- Test data of CLDR (common/testData and common/uca of the CLDR release) -->

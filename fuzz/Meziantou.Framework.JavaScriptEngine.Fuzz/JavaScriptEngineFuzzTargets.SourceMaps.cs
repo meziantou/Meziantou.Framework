@@ -314,7 +314,7 @@ public static partial class JavaScriptEngineFuzzTargets
                 }
             }
 
-            var sources = string.Join(',', Sources.Select(source => JsonSerializer.Serialize(source)));
+            var sources = string.Join(',', Sources.Select(source => System.Text.Json.JsonSerializer.Serialize(source)));
             return $$"""{"version":3,"sources":[{{sources}}],"names":["n"],"mappings":"{{mappings}}"}""";
         }
 

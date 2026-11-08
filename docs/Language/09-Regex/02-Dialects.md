@@ -60,6 +60,9 @@ malformed escape stands for its own letter, and `\x4` matches `x4`. With them, t
 an error. `u` makes the pattern a sequence of code points and enables `\u{…}`; `v` adds nested classes, `&&`, `--`, and
 `\q{…}` string disjunctions. The names of `\p{…}` are checked against the specification.
 
+Once the pattern has a group name, `\k` is a named backreference in both grammars. `\k` alone, and `\k` inside a class
+such as `[\k]`, are then errors, while they stand for the letter `k` in a pattern without group names.
+
 The specification forbids two groups of the same name that can both take part in a match, such as
 `(?<a>x)(?:y|(?<a>z))`, and so does the parser.
 

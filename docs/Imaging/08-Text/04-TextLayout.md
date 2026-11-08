@@ -228,7 +228,9 @@ has for it, or the default ones when the font has none.
 
 Each run of one script, direction and font is shaped with the OpenType Layout tables of its font: the `GSUB` table
 substitutes glyphs (ligatures, contextual forms, the forms of joining scripts) and the `GPOS` table positions them
-(kerning, marks). A font without `GPOS` kerning is kerned by its `kern` table.
+(kerning, marks). A font without `GPOS` kerning is kerned by its `kern` table. A font made for Apple systems is shaped
+with its own tables (Apple Advanced Typography): `morx` instead of `GSUB`, `kerx` instead of `GPOS`, and the tracking of
+its `trak` table at the size of the text (see [Shaping](../../Fonts/06-Shaping.md#fonts-of-apple-systems)).
 
 | Scripts | Shaping |
 | --- | --- |

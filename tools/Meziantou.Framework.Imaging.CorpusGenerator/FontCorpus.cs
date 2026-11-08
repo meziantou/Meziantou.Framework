@@ -45,7 +45,7 @@ internal static partial class FontCorpus
     // The tables whose presence is recorded as a feature of the font.
     private static readonly string[] NotableTables =
     [
-        "CFF ", "CFF2", "glyf", "kern", "GDEF", "GSUB", "GPOS", "BASE", "fvar", "avar", "gvar", "HVAR", "MVAR", "STAT", "COLR", "CPAL", "sbix", "CBDT", "CBLC", "SVG ",
+        "CFF ", "CFF2", "glyf", "kern", "GDEF", "GSUB", "GPOS", "BASE", "fvar", "avar", "gvar", "HVAR", "MVAR", "STAT", "COLR", "CPAL", "sbix", "CBDT", "CBLC", "SVG ", "morx", "kerx", "feat", "trak", "ankr",
     ];
 
     private static readonly SyntheticFont[] SyntheticFonts =
@@ -66,6 +66,12 @@ internal static partial class FontCorpus
         new("fonts/synthetic-languages", "fonts/synthetic/languages.ttf", static () => FontSamples.Languages().Build(), nameof(FontSamples.Languages), "ttf", 1),
         new("fonts/synthetic-variable-axes", "fonts/synthetic/variable.axes.ttf", static () => FontSamples.Variable(withAxisVariations: true).Build(), nameof(FontSamples.Variable) + " with version 2 of the avar table", "ttf", 1),
         new("fonts/synthetic-variable-charstrings", "fonts/synthetic/variable-charstrings.otf", static () => FontSamples.VariableCharstrings().Build(), nameof(FontSamples.VariableCharstrings), "otf", 1),
+        new("fonts/synthetic-aat-morphing", "fonts/synthetic/aat-morphing.ttf", static () => FontSamples.AatMorphing().Build(), nameof(FontSamples.AatMorphing), "ttf", 1),
+        new("fonts/synthetic-aat-kerning", "fonts/synthetic/aat-kerning.ttf", static () => FontSamples.AatKerning().Build(), nameof(FontSamples.AatKerning), "ttf", 1),
+        new("fonts/synthetic-aat-tracking", "fonts/synthetic/aat-tracking.ttf", static () => FontSamples.AatTracking().Build(), nameof(FontSamples.AatTracking), "ttf", 1),
+        new("fonts/synthetic-aat-selection", "fonts/synthetic/aat-selection.ttf", static () => FontSamples.AatSelection(withMorx: true).Build(), nameof(FontSamples.AatSelection) + " with morx and GSUB", "ttf", 1),
+        new("fonts/synthetic-aat-selection-without-morx", "fonts/synthetic/aat-selection.without-morx.ttf", static () => FontSamples.AatSelection(withMorx: false).Build(), nameof(FontSamples.AatSelection) + " without substitution table", "ttf", 1),
+        new("fonts/synthetic-aat-selection-empty-gsub", "fonts/synthetic/aat-selection.empty-gsub.ttf", static () => FontSamples.AatSelection(withMorx: false, withEmptySubstitutions: true).Build(), nameof(FontSamples.AatSelection) + " with a GSUB table without script", "ttf", 1),
 
         // The color fonts have no outline vectors: the reference tool draws their glyphs with their paints. They have
         // renders instead.
@@ -116,6 +122,40 @@ internal static partial class FontCorpus
         ["TestRVRN-CFF2.otf"] = "9734b58ae11a8a9a1a5759fe8d79f0856a29e155cfe891aa88e67d08620554b2",
         ["AdobeVFPrototype-Subset.otf"] = "0f7e3b59c2c44ba3683bd636b4f24541ec405f9132b4d37eef1baa78ebb559db",
         ["TestGPOSFour.ttf"] = "281f3412f17191e65fb4f29c60521e745c8d248bea091909a13d7c96c2392795",
+        ["TestMORXOne.ttf"] = "fa907c56191881a5734cbbebea55ae6ddbf3ba92c15093fb6edf0ecf5b87d7ad",
+        ["TestMORXTwo.ttf"] = "851cb67867657620e9be9850cc3260fc7ad7b671424e2da36469cc68c63e7cfc",
+        ["TestMORXThree.ttf"] = "cf4c559f65260f051f989a1ec204defa9260130db40c448a7c147385ef9063dc",
+        ["TestMORXFour.ttf"] = "d80ef2fb8cfe47d08d9736e7014669fe0672a3319d2dcf693fc8d3600dd85070",
+        ["TestMORXEight.ttf"] = "9b22dad9cdaf17d0e006f2066c44c9675e4466f1477dfb7572cfc0f12d7c20bc",
+        ["TestMORXNine.ttf"] = "c62bf88c16e0709a4a24ad67a4f4c7ee7469119dae42d567bf5c5544964f9068",
+        ["TestMORXTen.ttf"] = "89ac0d7a54542e6849048257487a7e139f94f21407f9d0f931c15ecce218228d",
+        ["TestMORXEleven.ttf"] = "e76591c1387cbafab57be85b13b78c498cff525e6c6eef17c1594148dd15ae0f",
+        ["TestMORXTwelve.ttf"] = "7dfb9f5de3265b7ae6f7aef22992e465c5c378a6e6ec7622b82a2227adddcdfc",
+        ["TestMORXThirteen.ttf"] = "15410fef273acef4b337e4fe5954bcd6e2f5021f05d437f81d9eecce73af9d0e",
+        ["TestMORXFourteen.ttf"] = "5d5c07d1c0681088cde16bc5933b92818b5226fdcedcdeab9d53018c67574580",
+        ["TestMORXSixteen.ttf"] = "ffefcbadd666b335be388b285fd40fa1b2ea61344c0b4b60ac5c0650da723649",
+        ["TestMORXSeventeen.ttf"] = "30f754fef272ee6e495d7204723769d5dc97010175eb4d7eb6c015d99a3dc8be",
+        ["TestMORXEighteen.ttf"] = "f515b0e5b3a0d517fc1598fd5f4374451f6c1c88c433a646c104a8aab4345ceb",
+        ["TestMORXTwenty.ttf"] = "2500e618d470c989063651e551ec64b341dc9103612b1adf02a009496887a55e",
+        ["TestMORXTwentyone.ttf"] = "6973dab49f79952d3db0cf55608e860184f0625bcc3bf930bad95caedc499c24",
+        ["TestMORXTwentytwo.ttf"] = "adf000262c5da27dccb09d8b937347c1c8fe276b12c0462ef73836101f8519a9",
+        ["TestMORXTwentythree.ttf"] = "2430018b47ea3651d6ad5d369a31db590943628d909c3059a376ece37a536e03",
+        ["TestMORXTwentyfive.ttf"] = "d1c7e85ed17328b2172e336dec89a4020efbe7a26bafa8ba35e787598795cffc",
+        ["TestMORXTwentysix.ttf"] = "588a06c3b0be4c6f22aabd9348bbc9565eb43437c1166b53ece61b54f5fe2feb",
+        ["TestMORXTwentyseven.ttf"] = "a560f36e404b61d9f9bdfc61b889288133f1237cd75c1a5f0b4a05529b28477a",
+        ["TestMORXTwentyeight.ttf"] = "5c5be94b72de8831dfa911527cbdd7f508582ecc1b28a4f39c1f985caa6c354e",
+        ["TestMORXTwentynine.ttf"] = "86bb0e21c4791d5c329955e73a62f234d9e2292e47125bdf6fc7233e2b8afad3",
+        ["TestMORXThirtyone.ttf"] = "2d4d73f07fde5a52bc877b017811c79b9367ac2a520a5a0b75e2e1522155395f",
+        ["TestMORXThirtytwo.ttf"] = "412f2704de813098182b9ddbc68e78fcda9ef094395ee224c6596e677d54bceb",
+        ["TestMORXThirtyfive.ttf"] = "2db3f388045d26f55eccf144f80b170a4891d2301c0089c81536f6298b25aa41",
+        ["TestMORXThirtyseven.ttf"] = "182fe99528152a40ddd60b9cbc61cd0cd06ba45de25846800790b63e599700de",
+        ["TestMORXThirtyeight.ttf"] = "8eccf9aa454c3a9b40e4e064fe1c0c2f536823bf27efd33ef13133a99ceed6c1",
+        ["TestMORXThirtynine.ttf"] = "584008b90abb8effbd5e5c6160c25cfeecf459b272e59e09a5a7f1ef25317703",
+        ["TestMORXForty.ttf"] = "6e0954c52c46ece22c0e29bfac4bfdf82a09083a8e8d982954cbdeb20f2c1e9e",
+        ["TestMORXFourtyone.ttf"] = "9fdcca5f5d0939e7d8619e47b69c28b3d0579a04de26a8fbe80f4390b9dc8013",
+        ["TestAATMorx.ttf"] = "ea32f2dc35ba518185fdcad5fcb629f18ee2b976dca05365956a294216555674",
+        ["MORXTwentyeight.ttf"] = "1297b0def4c6c74e83758991bc6793ba51b54e3bafb12c4e23c3b15d0d3f50a6",
+        ["TRAK.ttf"] = "cf3fdeb89ad8e723633fa7f364d0c0097448236884a8299a41a106904c50b7be",
     };
 
     private static readonly ExternalFont[] ExternalFonts =
@@ -584,6 +624,44 @@ internal static partial class FontCorpus
         TextRenderingFont("trt-cff2", "AdobeVFPrototype-Subset.otf", "OFL-1.1", "Adobe Systems Incorporated"),
         TextRenderingFont("trt-gpos-four", "TestGPOSFour.ttf", "OFL-1.1", "Unicode, Inc."),
 
+        // The fonts of the tests of the extended glyph metamorphosis table (MORX-1 to MORX-42) and of the tracking table
+        // (aat-trak, a test of the HarfBuzz project): each one has a finite-state machine made for one behavior of
+        // a subtable. TestMORXThirtythree.ttf, which has no license, is left out.
+        TextRenderingFont("trt-morx-one", "TestMORXOne.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-two", "TestMORXTwo.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-three", "TestMORXThree.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-four", "TestMORXFour.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-eight", "TestMORXEight.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-nine", "TestMORXNine.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-ten", "TestMORXTen.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-eleven", "TestMORXEleven.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twelve", "TestMORXTwelve.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-thirteen", "TestMORXThirteen.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-fourteen", "TestMORXFourteen.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-sixteen", "TestMORXSixteen.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-seventeen", "TestMORXSeventeen.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-eighteen", "TestMORXEighteen.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twenty", "TestMORXTwenty.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentyone", "TestMORXTwentyone.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentytwo", "TestMORXTwentytwo.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentythree", "TestMORXTwentythree.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentyfive", "TestMORXTwentyfive.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentysix", "TestMORXTwentysix.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentyseven", "TestMORXTwentyseven.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentyeight", "TestMORXTwentyeight.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-twentynine", "TestMORXTwentynine.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-thirtyone", "TestMORXThirtyone.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-thirtytwo", "TestMORXThirtytwo.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-thirtyfive", "TestMORXThirtyfive.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-thirtyseven", "TestMORXThirtyseven.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-thirtyeight", "TestMORXThirtyeight.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-thirtynine", "TestMORXThirtynine.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-forty", "TestMORXForty.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-morx-fourtyone", "TestMORXFourtyone.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-aat-morx", "TestAATMorx.ttf", "OFL-1.1", "Unicode, Inc."),
+        InHouseFont("hb-morx-twentyeight", "MORXTwentyeight.ttf", "OFL-1.1", "Unicode, Inc."),
+        InHouseFont("hb-trak", "TRAK.ttf", "OFL-1.1", "Unicode, Inc."),
+
         // Color fonts of the googlefonts/color-fonts project, stored as they are. The test glyphs are built by a
         // script of the project for each paint of the COLR table; the smiley is one emoji of the Twemoji set.
         ColorFont("colr-test-glyphs", "test_glyphs-glyf_colr_1.ttf", "8aa611b1ca97044ac6f13dc982fde29256612f0a5acc6ef47ca541a7a5b99b28", "Apache-2.0", "The googlefonts/color-fonts authors"),
@@ -698,6 +776,20 @@ internal static partial class FontCorpus
             ReservedFontName: null,
             Unicodes: null,
             HasOutlineVectors: false);
+    }
+
+    private static ExternalFont InHouseFont(string id, string fileName, string license, string author)
+    {
+        return new ExternalFont(
+            "fonts/" + id,
+            "fonts/harfbuzz/" + fileName,
+            "harfbuzz/" + fileName,
+            TextRenderingHashes[fileName],
+            $"https://github.com/harfbuzz/harfbuzz/blob/{AotsCommit}/test/shape/data/in-house/fonts/{fileName}",
+            author,
+            license,
+            ReservedFontName: null,
+            Unicodes: null);
     }
 
     private static ExternalFont TextRenderingFont(string id, string fileName, string license, string author)
@@ -1623,6 +1715,74 @@ internal static partial class FontCorpus
         ("\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22 \u0E1B\u0E39\u0E48 \u0E1F\u0E49\u0E32 \u0E0D\u0E35\u0E48\u0E1B\u0E38\u0E48\u0E19 \u0E01\u0E0F\u0E38", null),
     ];
 
+    // The fonts of Apple Advanced Typography. The morphing font: the substitutions that are always on, one per format of
+    // lookup table; the ligatures, the small capitals, the stylistic set and the contextual alternates, on and off
+    // through the OpenType features (a feature applied by default selects nothing); the rearrangement and the insertions;
+    // a subtable that reads the glyphs backward and one for vertical lines; the order of the glyphs of a right-to-left
+    // run; the marks of a font without positioning table, and the characters without visible form.
+    private static readonly ShapingText[] AatMorphingShapingCases =
+    [
+        ("DEGHK", null),
+
+        // A lookup table of format 10, which the reference shaper does not read for a substitution.
+        ("I", null),
+        ("fi fl ffi fffi ffl ff", null),
+        ("fi fl ffi", "-liga"),
+        ("fi abc S", "liga,ss01"),
+        ("abc ABC", "smcp"),
+        ("abc", "smcp,-smcp"),
+        ("AT T XY X Y AXYT", null),
+        ("AT XY", "-calt"),
+        ("MPN MN MPPN NPM M", null),
+        ("Q QQ RZ RPZ RQZ Z", null),
+        ("12 21 112 122", null),
+        ("\u05D0\u05D1 \u05D0\u05D2 \u05D1\u05D0 \u05D2\u05D0", null),
+        ("A\u0301 \u0301 i\u0301 f\u0301i", null),
+        ("A\u200DB A\u00ADB f\u200Ci", null),
+        new("BAB DT", null, Direction: "ttb"),
+    ];
+
+    // The kerning font: pairs in each format (format 2 is read by the reference shaper as indexes of values, a
+    // divergence listed by the conformance tests), cross-stream pairs and values, a state machine forward and backward,
+    // marks placed by anchor points and by coordinates, the order of the glyphs of a right-to-left run, a vertical line.
+    private static readonly ShapingText[] AatKerningShapingCases =
+    [
+        ("AV VA AVA VAV", null),
+        ("AV VA", "-kern"),
+        ("A\u0301V", null),
+        ("JK JKA JKJK", null),
+        ("To Te Yo Ye TY", null),
+        ("LO LQ PO PQ OL", null),
+        ("CD CDC DC CCD", null),
+        ("EF FE EEF", null),
+        ("GH GHGH HG", null),
+        ("A\u0301 B\u0301 A\u0300 B\u0300 A\u0301\u0300 \u0301", null),
+        ("\u05D0\u05D1 \u05D1\u05D0", null),
+        new("AV VA", null, Direction: "ttb"),
+    ];
+
+    // The tracking font, at sizes in and out of the range of its table, between two sizes of it, and without size.
+    private static readonly ShapingText[] AatTrackingShapingCases =
+    [
+        ("ABA\u0301B", null),
+        new("ABA\u0301B", null, PointSize: 4),
+        new("ABA\u0301B", null, PointSize: 8),
+        new("ABA\u0301B", null, PointSize: 10),
+        new("ABA\u0301B", null, PointSize: 12),
+        new("ABA\u0301B", null, PointSize: 18),
+        new("ABA\u0301B", null, PointSize: 24),
+        new("ABA\u0301B", null, PointSize: 30),
+        new("ABA\u0301B", null, PointSize: 72),
+        new("ABA\u0301B", null, PointSize: 144),
+    ];
+
+    // The fonts that have the tables of Apple Advanced Typography and of OpenType Layout: which ones the shaper uses.
+    private static readonly ShapingText[] AatSelectionShapingCases =
+    [
+        ("AB BA", null),
+        ("AB", "-kern"),
+    ];
+
     private static readonly Dictionary<string, ShapingText[]> ShapingCases = new(StringComparer.Ordinal)
     {
         ["fonts/synthetic-thai-forms"] = ThaiFormsShapingCases,
@@ -1678,6 +1838,49 @@ internal static partial class FontCorpus
         ["fonts/trt-rvrn"] = RvrnShapingCases,
         ["fonts/trt-rvrn-cff2"] = RvrnShapingCases,
         ["fonts/trt-gpos-four"] = MarkVariationShapingCases,
+        ["fonts/synthetic-aat-morphing"] = AatMorphingShapingCases,
+        ["fonts/synthetic-aat-kerning"] = AatKerningShapingCases,
+        ["fonts/synthetic-aat-tracking"] = AatTrackingShapingCases,
+        ["fonts/synthetic-aat-selection"] = AatSelectionShapingCases,
+        ["fonts/synthetic-aat-selection-without-morx"] = AatSelectionShapingCases,
+        ["fonts/synthetic-aat-selection-empty-gsub"] = AatSelectionShapingCases,
+
+        // The texts of the tests of the suites: the denials of service of MORX-24, MORX-34 and MORX-36, which the
+        // library refuses (TextShaperTests), are left out.
+        ["fonts/trt-morx-one"] = [Codes("0041 0042 0043")],
+        ["fonts/trt-morx-two"] = [Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 24FF"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 278A"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 278B"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 0033"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 0034"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 0035"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 0036"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 0037"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 0038"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 0039"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 2793"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 24EB"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 24EC"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 24ED"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 24EE"), Codes("004F 004F 004F 0041 0042 0058 0059 005A 0043 0044 004F 004F 004F 24EF"), Codes("004F 004F 004F 0041 0042 0043 0044 0045 0046 0047 004F 004F 004F 0033 0031 0034 0031"), Codes("004F 0042 0043 0044 0031")],
+        ["fonts/trt-morx-three"] = [Codes("0041 0042 0058 0043 0044 0030"), Codes("0041 0042 0058 0043 0044 0031"), Codes("0041 0042 0058 0043 0044 0032"), Codes("0041 0042 0058 0043 0044 0033"), Codes("0041 0042 0058 0043 0044 0034"), Codes("0041 0042 0058 0043 0044 0035"), Codes("0041 0042 0058 0043 0044 0036"), Codes("0041 0042 0058 0043 0044 0037"), Codes("0041 0042 0058 0043 0044 0038"), Codes("0041 0042 0058 0043 0044 0039"), Codes("0041 0042 0058 0043 0044 2793"), Codes("0041 0042 0058 0043 0044 24EB"), Codes("0041 0042 0058 0043 0044 24EC"), Codes("0041 0042 0058 0043 0044 24ED"), Codes("0041 0042 0058 0043 0044 24EE"), Codes("0041 0042 0058 0043 0044 24EF")],
+        ["fonts/trt-morx-four"] = [Codes("0050 0051 0052 0041 0058 0059 005A 0031"), Codes("0050 0051 0052 0041 0058 0059 005A 0032"), Codes("0050 0051 0052 0041 0044 0058 0059 005A 0033"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 0034"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 0035"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 0036"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 0037"), Codes("0050 0051 0052 0041 0043 0044 0058 0059 005A 0038"), Codes("0050 0051 0052 0041 0043 0044 0058 0059 005A 0039"), Codes("0050 0051 0052 0041 0042 0044 0058 0059 005A 2793"), Codes("0050 0051 0052 0041 0042 0044 0058 0059 005A 24EB"), Codes("0050 0051 0052 0041 0042 0043 0044 0058 0059 005A 24EC"), Codes("0050 0051 0052 0041 0042 0043 0044 0058 0059 005A 24ED"), Codes("0050 0051 0052 0041 0042 0043 0044 0058 0059 005A 24EE"), Codes("0050 0051 0052 0041 0042 0043 0044 0058 0059 005A 24EF"), Codes("0050 0051 0052 0041 0058 0059 005A 0033"), Codes("0050 0051 0052 0041 0058 0059 005A 0034"), Codes("0050 0051 0052 0041 0058 0059 005A 0035"), Codes("0050 0051 0052 0041 0058 0059 005A 0036"), Codes("0050 0051 0052 0041 0058 0059 005A 0037"), Codes("0050 0051 0052 0041 0058 0059 005A 0038"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 0038"), Codes("0050 0051 0052 0041 0058 0059 005A 0039"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 0039"), Codes("0050 0051 0052 0041 0058 0059 005A 2793"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 2793"), Codes("0050 0051 0052 0041 0058 0059 005A 24EB"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 24EB"), Codes("0050 0051 0052 0041 0058 0059 005A 24EC"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 24EC"), Codes("0050 0051 0052 0041 0042 0043 0058 0059 005A 24EC"), Codes("0050 0051 0052 0041 0058 0059 005A 24ED"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 24ED"), Codes("0050 0051 0052 0041 0042 0043 0058 0059 005A 24ED"), Codes("0050 0051 0052 0041 0058 0059 005A 24EE"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 24EE"), Codes("0050 0051 0052 0041 0042 0043 0058 0059 005A 24EE"), Codes("0050 0051 0052 0041 0058 0059 005A 24EF"), Codes("0050 0051 0052 0041 0042 0058 0059 005A 24EF"), Codes("0050 0051 0052 0041 0042 0043 0058 0059 005A 24EF")],
+        ["fonts/trt-morx-eight"] = [Codes("0030 0041 0042 0043"), Codes("0031 0041 0042 0043"), Codes("0032 0041 0042 0043")],
+        ["fonts/trt-morx-nine"] = [Codes("0041 0042 0058 0041 0042")],
+        ["fonts/trt-morx-ten"] = [Codes("0041 0042 0041 0042 0041 0042")],
+        ["fonts/trt-morx-eleven"] = [Codes("0042 0041 0042 0042 0041 0041 0042 0058")],
+        ["fonts/trt-morx-twelve"] = [Codes("0058 0041 0042 0043 0058 0031"), Codes("0058 0041 0042 0043 0058 0032"), Codes("0058 0041 0042 0043 0058 0033")],
+        ["fonts/trt-morx-thirteen"] = [Codes("0041 0042 0043 0044 0045")],
+        ["fonts/trt-morx-fourteen"] = [Codes("0041 0042 0043 0044 0045"), Codes("0041 0042 0042 0042 0043 0043 0043 0044 0044 0044 0042 0043 0044 0043 0045")],
+        ["fonts/trt-morx-sixteen"] = [Codes("0041 0042 0043 0044 0045")],
+        ["fonts/trt-morx-seventeen"] = [Codes("0041 0042")],
+        ["fonts/trt-morx-eighteen"] = [Codes("0041 0042 0043 0044 0045"), Codes("0041 0042 0042 0042 0044 0045"), Codes("0041 0042 0044 0045"), Codes("0041 0042 0045"), Codes("0041 0043 0044 0045"), Codes("0044")],
+        ["fonts/trt-morx-twenty"] = [Codes("0041 0042 0043 0044 0045"), Codes("0041 0042 0043"), Codes("0041 0042 0045"), Codes("0041 0045"), Codes("0045 0045"), Codes("0041"), Codes("0045")],
+        ["fonts/trt-morx-twentyone"] = [Codes("0041 0042 0043 0044 0045")],
+        ["fonts/trt-morx-twentytwo"] = [Codes("0041")],
+        ["fonts/trt-morx-twentythree"] = [Codes("0041 0042 0043 0044 0045")],
+        ["fonts/trt-morx-twentyfive"] = [Codes("0041 0042 0043 0044 0045"), Codes("0045 0042 0043 0044 0041"), Codes("0043 0042 0041 0042 0043"), Codes("0041 0042 0043"), Codes("0043 0042 0041"), Codes("0041 0042"), Codes("0042 0041"), Codes("0041"), Codes("0042")],
+        ["fonts/trt-morx-twentysix"] = [Codes("0041 0042"), Codes("0042")],
+        ["fonts/trt-morx-twentyseven"] = [Codes("0041 0045 0042"), Codes("0041 0045 0043"), Codes("0041 0045 0044")],
+        ["fonts/trt-morx-twentyeight"] = [Codes("0041 0045 0044"), Codes("0041 0078 0045 0044"), Codes("0041 0045 0079 0044"), Codes("0041 0078 0045 0079 0044"), Codes("0041 0078 0078 0078 0045 0079 0079 0079 0044")],
+        ["fonts/trt-morx-twentynine"] = [Codes("0050 0051 0052 004D 004D 0058 0058 004D 004D 0059 0059 0041 005A 005A"), Codes("0050 0051 0052 004D 004D 0058 0058 004D 004D 0059 0059 0042 005A 005A"), Codes("0050 0051 0052 004D 004D 0058 0058 004D 004D 0059 0059 0043 005A 005A"), Codes("0050 0051 0052 004D 004D 0058 0058 004D 004D 0059 0059 0044 005A 005A"), Codes("0050 0051 0052 004D 004D 0058 0058 0058 0041 0059 0059 0041 005A 005A"), Codes("0050 0051 0052 004D 004D 0058 0058 0058 0041 0059 0059 0042 005A 005A"), Codes("0050 0051 0052 004D 004D 0058 0058 0058 0042 0059 0059 0041 005A 005A"), Codes("0050 0051 0052 004D 004D 0058 0058 0058 0042 0059 0059 0042 005A 005A")],
+        ["fonts/trt-morx-thirtyone"] = [Codes("0058 0058 0041 0059 0059 0041 005A 005A"), Codes("0058 0058 0041 0059 0059 0042 0059 0059"), Codes("0058 0058 0042 0059 0059 0041 005A 005A"), Codes("0058 0058 0042 0059 0059 0042 005A 005A"), Codes("004D 0050 0051 0052 0041 0058 0059 005A 0041"), Codes("004D 0050 0051 0052 0041 0058 0059 005A 0042"), Codes("004D 0050 0051 0052 0042 0058 0059 005A 0041"), Codes("004D 0050 0051 0052 0042 0058 0059 005A 0042")],
+        ["fonts/trt-morx-thirtytwo"] = [Codes("0041"), Codes("0058 0041 0059"), Codes("0042"), Codes("0058 0042 0059")],
+        ["fonts/trt-morx-thirtyfive"] = [Codes("0041"), Codes("0058 0041 0059")],
+        ["fonts/trt-morx-thirtyseven"] = [Codes("0041 0042"), Codes("0042 0041"), Codes("05D0 05D1"), Codes("05D1 05D0")],
+        ["fonts/trt-morx-thirtyeight"] = [Codes("0041 0042"), Codes("0042 0041"), Codes("05D0 05D1"), Codes("05D1 05D0")],
+        ["fonts/trt-morx-thirtynine"] = [Codes("0041 0042"), Codes("0042 0041"), Codes("05D0 05D1"), Codes("05D1 05D0")],
+        ["fonts/trt-morx-forty"] = [Codes("0041 0042"), Codes("0042 0041"), Codes("05D0 05D1"), Codes("05D1 05D0")],
+        ["fonts/trt-morx-fourtyone"] = [Codes("0061 0063"), Codes("0062 0063"), Codes("0063 0063"), Codes("0061 0062 0063 0063")],
+        ["fonts/trt-aat-morx"] = [Codes("0041 0042 0043 0045 0046 0047 0058")],
+        ["fonts/hb-morx-twentyeight"] = [Codes("0041 0078 0045 0079 0044 0079 0079")],
+        ["fonts/hb-trak"] = [Codes("0041 0042 0043"), Codes("0041 0042 0043", pointSize: 0.5), Codes("0041 0042 0043", pointSize: 1), Codes("0041 0042 0043", pointSize: 2), Codes("0041 0042 0043", pointSize: 9), Codes("0041 0042 0043", pointSize: 24), Codes("0041 0042 0043", pointSize: 72), Codes("0041 0042 0043", pointSize: 144)],
     };
 
     // The WOFF2 files are written by the reference encoder, except the variants: it does not transform the horizontal
@@ -2289,7 +2492,7 @@ internal static partial class FontCorpus
         var fontFile = work / "shaping.font";
         File.WriteAllBytes(fontFile, font);
         var results = new List<object?>();
-        foreach (var (text, features, variations, language, direction) in cases)
+        foreach (var (text, features, variations, language, direction, pointSize) in cases)
         {
             var codePoints = text.EnumerateRunes().Select(rune => rune.Value.ToString("X4", CultureInfo.InvariantCulture)).ToList();
             List<string> arguments = ["--shapers=ot", "--font-funcs=ot", "--output-format=json", "--no-glyph-names"];
@@ -2311,6 +2514,11 @@ internal static partial class FontCorpus
             if (direction is not null)
             {
                 arguments.Add("--direction=" + direction);
+            }
+
+            if (pointSize is not null)
+            {
+                arguments.Add("--font-ptem=" + pointSize.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             arguments.Add("--unicodes=" + string.Join(',', codePoints.Select(codePoint => "U+" + codePoint)));
@@ -2343,6 +2551,11 @@ internal static partial class FontCorpus
             if (direction is not null)
             {
                 result["direction"] = direction;
+            }
+
+            if (pointSize is not null)
+            {
+                result["pointSize"] = pointSize.Value;
             }
 
             result["glyphs"] = glyphs;
@@ -2511,13 +2724,18 @@ internal static partial class FontCorpus
     private static partial Regex HarfBuzzVersionRegex();
 
     /// <summary>
-    /// A text to shape, with the features, the instance of a variable font and the language it is shaped with, and the
-    /// direction of its line when it is not the one of its script: <c>ttb</c> for a vertical line of upright glyphs.
+    /// A text to shape, with the features, the instance of a variable font and the language it is shaped with, the
+    /// direction of its line when it is not the one of its script (<c>ttb</c> for a vertical line of upright glyphs),
+    /// and the size in points that the tracking of a font depends on.
     /// </summary>
-    private sealed record ShapingText(string Text, string? Features, string? Variations = null, string? Language = null, string? Direction = null)
+    private sealed record ShapingText(string Text, string? Features, string? Variations = null, string? Language = null, string? Direction = null, double? PointSize = null)
     {
         public static implicit operator ShapingText((string Text, string? Features) value) => new(value.Text, value.Features);
     }
+
+    /// <summary>A text given as the hexadecimal code points of its characters, as the tests of the suites give it.</summary>
+    private static ShapingText Codes(string codePoints, string? features = null, double? pointSize = null)
+        => new(string.Concat(codePoints.Split(' ').Select(codePoint => char.ConvertFromUtf32(int.Parse(codePoint, NumberStyles.HexNumber, CultureInfo.InvariantCulture)))), features, PointSize: pointSize);
 
     /// <summary>Lines of text the reference renderer draws with a font.</summary>
     private sealed record RenderSet(int Size, int Ascent, int Descent, int PerLine, string[]? Texts = null, string? Variations = null, int Palette = 0, string? Foreground = null, string[]? Exclude = null, int ImageShift = 0);

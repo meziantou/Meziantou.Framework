@@ -14,7 +14,9 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// restart intervals, interleaved and non-interleaved scans with subsampled components, Huffman tables with long codes,
 /// compared exactly with the samples given to the encoder (upsampled and converted by the documented contract); plus a
 /// datastream written by hand, the differences that need the modulo 2^16, scan and entropy defects, truncation, input
-/// variants, readers and limits. The golden corpus compares the same decoder with libjpeg-turbo and FFmpeg.
+/// variants, readers and limits. The golden corpus compares the same decoder with libjpeg-turbo and FFmpeg. JPEG-LS (ITU-T
+/// T.87) is tested the same way with the test-side encoder of <see cref="JpegLsTestImage"/>, and with the conformance
+/// streams of T.87 in the interop tests.
 /// </summary>
 public sealed class JpegLosslessDecoderTests
 {
@@ -702,6 +704,176 @@ public sealed class JpegLosslessDecoderTests
         var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
         image.Frames[0].CopyPixelBytesTo(bytes);
         return bytes;
+    }
+
+    public static TheoryData<int, int> JpegLsCases
+    {
+        get
+        {
+            var data = new TheoryData<int, int>();
+            foreach (var precision in new[] { 2, 5, 8, 12, 16 })
+            {
+                foreach (var near in new[] { 0, 1, 3 })
+                {
+                    data.Add(precision, near);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(JpegLsCases))]
+    public void JpegLsDecodesToTheReconstructedSamples(int precision, int near)
+    {
+        // JPEG-LS (T.87): files of the test-side encoder, decoded to the samples the encoder reconstructs (the source
+        // samples when NEAR is 0), in every interleave mode, with and without preset parameters and restart intervals
+        if (near > ((1 << precision) - 1) / 2)
+            return;
+
+        foreach (var (width, height) in new[] { (1, 1), (1, 7), (9, 1), (23, 17) })
+        {
+            foreach (var layout in new[] { "gray", "4:4:4", "4:2:0", "mixed-chroma" })
+            {
+                var image = JpegLsTestImage.CreateRandom(width, height, Layouts[layout], precision, seed: (precision * 7) + near + width + layout.Length);
+                var interleaves = Layouts[layout].Length == 1 ? new[] { 0 } : layout == "4:4:4" ? new[] { 0, 1, 2 } : new[] { 0, 1 };
+                foreach (var interleave in interleaves)
+                {
+                    var encodings = new (string Name, JpegLsTestOptions Options)[]
+                    {
+                        ("defaults", new JpegLsTestOptions { Near = near, Interleave = interleave }),
+                        ("restart every 2 lines", new JpegLsTestOptions { Near = near, Interleave = interleave, RestartInterval = 2 }),
+                        ("preset thresholds and a small reset", new JpegLsTestOptions { Near = near, Interleave = interleave, Preset = (0, near + 1, Math.Min(near + 2, (1 << precision) - 1), Math.Min(near + 3, (1 << precision) - 1), 3) }),
+                    };
+
+                    foreach (var (name, options) in encodings)
+                    {
+                        var data = image.Encode(options);
+                        var description = $"{precision} bits, NEAR {near}, {width}x{height} {layout}, ILV {interleave}, {name}";
+                        var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+                        Assert.Equal(ImageFormat.Jpeg, info.Format);
+                        Assert.Equal(precision, info.BitsPerComponent);
+                        Assert.Equal(Layouts[layout].Length == 1 ? ImageColorModel.Grayscale : ImageColorModel.Rgb, info.ColorModel);
+                        using var decoded = Image.Load(data);
+                        Assert.Equal(image.PixelFormat, decoded.PixelFormat);
+                        AssertPixels(image.GetExpectedPixels(), decoded, description);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void JpegLsPresetsAndColorTransformsAreApplied()
+    {
+        // A MAXVAL below the precision, which bounds the samples and the range of the errors
+        var bounded = JpegLsTestImage.CreateRandom(19, 11, Layouts["4:4:4"], 12, seed: 3, maxValue: 1000);
+        foreach (var near in new[] { 0, 2 })
+        {
+            using var decoded = Image.Load(bounded.Encode(new JpegLsTestOptions { Near = near, Interleave = 1, Preset = (1000, 0, 0, 0, 0) }));
+            AssertPixels(bounded.GetExpectedPixels(), decoded, $"MAXVAL 1000, NEAR {near}");
+        }
+
+        // The HP color transforms of CharLS (APP8 mrfx): the components code differences of the RGB samples, modulo 256
+        var color = JpegLsTestImage.CreateRandom(17, 9, Layouts["4:4:4"], 8, seed: 5);
+        foreach (var transform in new[] { 1, 2, 3 })
+        {
+            foreach (var (interleave, near) in new[] { (1, 0), (1, 3), (2, 0), (2, 2) })
+            {
+                using var decoded = Image.Load(color.Encode(new JpegLsTestOptions { ColorTransform = transform, Interleave = interleave, Near = near }));
+                AssertPixels(color.GetExpectedPixels(), decoded, $"HP transform {transform}, ILV {interleave}, NEAR {near}");
+            }
+
+            // CharLS and FFmpeg only transform the components of an interleaved scan
+            var separate = color.Encode(new JpegLsTestOptions { ColorTransform = transform });
+            Assert.Equal("JPEG-LS HP color transform", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(separate)).Feature);
+        }
+    }
+
+    [Fact]
+    public void JpegLsDefectsAreReported()
+    {
+        var image = JpegLsTestImage.CreateRandom(13, 7, Layouts["4:4:4"], 8, seed: 2);
+        var data = image.Encode(new JpegLsTestOptions { Interleave = 1, RestartInterval = 2 });
+        var scan = FindSegment(data, 0xDA);
+        var parameters = scan + 4 + 1 + (2 * 3);
+
+        // Scan parameters: NEAR above MAXVAL / 2, an interleave mode above 2, components that are not interleaved
+        Assert.Contains("NEAR", Load(Patch(data, parameters, 128)).Message, StringComparison.Ordinal);
+        Assert.Contains("interleave mode 3", Load(Patch(data, parameters + 1, 3)).Message, StringComparison.Ordinal);
+        Assert.Contains("not interleaved", Load(Patch(data, parameters + 1, 0)).Message, StringComparison.Ordinal);
+
+        // Unsupported: a mapping table, a point transform, LSE segments of other types than 1, other HP transforms
+        Assert.Equal("JPEG-LS mapping tables", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Patch(data, scan + 6, 1), new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan })).Feature);
+        Assert.Equal("JPEG-LS point transform", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Patch(data, parameters + 2, 1))).Feature);
+        foreach (var (type, feature) in new[] { (2, "JPEG-LS mapping tables"), (3, "JPEG-LS mapping tables"), (4, "JPEG-LS oversize dimensions"), (5, "JPEG-LS extensions") })
+        {
+            byte[] extended = [.. data.AsSpan(0, 2), .. JpegTestImage.Segment(0xF8, [(byte)type, 1, 0, 0, 0]), .. data.AsSpan(2)];
+            Assert.Equal(feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(extended)).Feature);
+        }
+
+        var transformed = image.Encode(new JpegLsTestOptions { ColorTransform = 1, Interleave = 1 });
+        var app8 = FindSegment(transformed, 0xE8);
+        Assert.Equal("JPEG-LS HP color transform", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Patch(transformed, app8 + 8, 4))).Feature);
+        var deep = JpegLsTestImage.CreateRandom(5, 4, Layouts["4:4:4"], 12, seed: 1).Encode();
+        byte[] deepTransformed = [.. deep.AsSpan(0, 2), .. JpegTestImage.Segment(0xE8, [.. "mrfx"u8, 1]), .. deep.AsSpan(2)];
+        Assert.Equal("JPEG-LS HP color transform", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(deepTransformed)).Feature);
+
+        // Preset parameters out of their ranges
+        foreach (var preset in new (int, int, int, int, int)[] { (256, 0, 0, 0, 0), (0, 5, 4, 0, 0), (0, 0, 0, 0, 2), (0, 300, 0, 0, 0) })
+        {
+            byte[] presetData = [.. data.AsSpan(0, 2), .. JpegTestImage.Segment(0xF8, [1, (byte)(preset.Item1 >> 8), (byte)preset.Item1, 0, (byte)preset.Item2, 0, (byte)preset.Item3, 0, (byte)preset.Item4, 0, (byte)preset.Item5]), .. data.AsSpan(2)];
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(presetData));
+        }
+
+        // Restart markers: out of sequence, missing
+        var restarts = FindRestartMarkers(data);
+        Assert.HasCount(3, restarts); // 7 lines, every 2 lines
+        using (var decoded = Image.Load(data))
+        {
+            AssertPixels(image.GetExpectedPixels(), decoded, "restart every 2 lines");
+        }
+
+        Assert.Contains("out of sequence", Load(Patch(data, restarts[1] + 1, 0xD5)).Message, StringComparison.Ordinal);
+        Assert.Contains("restart marker is missing", Load(Remove(data, restarts[2], 2)).Message, StringComparison.Ordinal);
+
+        // Truncation, with and without the EOI marker
+        for (var length = 8; length < data.Length; length++)
+        {
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(data.AsSpan(0, length)));
+            if (length > scan + 16 && length < data.Length - 8)
+            {
+                byte[] cut = [.. data.AsSpan(0, length), 0xFF, 0xD9];
+                Assert.Throws<InvalidImageContentException>(() => Image.Load(cut));
+            }
+        }
+
+        // Corrupted bytes fail with image exceptions only
+        for (var position = 2; position < data.Length; position++)
+        {
+            foreach (var mask in new byte[] { 0x01, 0x40, 0x80, 0xFF })
+            {
+                try
+                {
+                    using var decoded = Image.Load(Patch(data, position, (byte)(data[position] ^ mask)));
+                    Assert.NotEqual(0, decoded.Height);
+                }
+                catch (ImageException)
+                {
+                    // Malformed, unsupported or over a limit: explicit
+                }
+            }
+        }
+
+        static InvalidImageContentException Load(byte[] data) => Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+    }
+
+    private static byte[] Patch(byte[] data, int offset, byte value)
+    {
+        var result = data.ToArray();
+        result[offset] = value;
+        return result;
     }
 
     private static void AssertPixels(byte[] expected, Image image, string context)

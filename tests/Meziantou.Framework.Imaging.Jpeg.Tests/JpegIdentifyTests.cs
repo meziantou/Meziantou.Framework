@@ -103,7 +103,6 @@ public sealed class JpegIdentifyTests
     [InlineData((byte)0xC1, 1, 4, "JPEG 4-bit precision")]
     [InlineData((byte)0xC2, 1, 16, "JPEG 16-bit precision")]
     [InlineData((byte)0xC0, 2, 8, "JPEG 2 components")]
-    [InlineData((byte)0xF7, 3, 8, "JPEG-LS")]
     public void RecognizedUnsupportedModesAreRejectedExplicitly(byte marker, int components, int precision, string feature)
     {
         var data = SyntheticImages.Jpeg(marker, components, precision);

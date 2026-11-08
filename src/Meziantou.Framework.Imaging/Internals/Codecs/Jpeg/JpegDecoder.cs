@@ -84,7 +84,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// JPEG-LS frames (ITU-T T.87, SOF55) have the geometry of the lossless frames, and full planes: the entropy-coded data of
 /// each scan is buffered and decoded at its end (<see cref="JpegLsScanDecoder"/>), with the coding parameters of the last
 /// LSE segment of type 1 before it, and the rows are written once every component is decoded. The HP color transforms
-/// (APP8 <c>mrfx</c>, from HP's LOCO-I implementation, which CharLS writes) of 8-bit samples are undone before.
+/// (APP8 <c>mrfx</c>, from HP's LOCO-I implementation, which CharLS writes) of three 8-bit components of an interleaved
+/// scan are undone before.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -760,6 +761,10 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
             components[i] = component;
         }
+
+        // CharLS and FFmpeg apply the HP color transforms to the components of an interleaved scan only
+        if (count == 1 && _structure!.JpegLsColorTransform != 0)
+            throw Unsupported("The HP color transforms of JPEG-LS components coded in separate scans are not supported.", "JPEG-LS HP color transform");
 
         var coding = JpegLsParameters.Create(_precision, near: parameters[0], _jpegLsPreset);
         if (_scanCount == 0)

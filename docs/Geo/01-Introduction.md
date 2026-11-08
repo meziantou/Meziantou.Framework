@@ -25,8 +25,9 @@ dependency outside .NET, and it supports trimming.
 - **Draw maps**: `Meziantou.Framework.Charts` draws the features as choropleths and points on maps. See
   [maps](../Charts/04-Gallery/09-Maps.md).
 
-The positions are longitudes and latitudes in degrees, on WGS 84, as GPS devices, GeoJSON and web maps use them. The
-library does not convert between coordinate reference systems.
+The positions are longitudes and latitudes in degrees, on WGS 84, as GPS devices, GeoJSON and web maps use them.
+[Coordinate reference systems](05-Projections.md#convert-between-coordinate-reference-systems) convert data in UTM,
+Lambert 93, Web Mercator and other projections to them.
 
 ## Namespace
 

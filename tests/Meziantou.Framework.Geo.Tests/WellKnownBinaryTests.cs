@@ -56,6 +56,19 @@ public sealed class WellKnownBinaryTests
         Assert.Equal([new GeoPosition(0, 0, 0), new(1, 0, 0), new(1, 1, 0), new(0, 0, 0)], Assert.Single(Assert.Single(multiPolygon.Polygons).Rings));
         var collection = Assert.IsType<GeoGeometryCollection>(WellKnownBinary.ParseHex("01070000A0E6100000020000000101000080000000000000F03F00000000000000400000000000000000010200008002000000000000000000000000000000000000000000000000000000000000000000F03F000000000000F03F0000000000000000"));
         Assert.Equal([new GeoPosition(1, 2, 0), new(0, 0, 0), new(1, 1, 0)], collection.GetPositions());
+
+        WellKnownBinary.ParseHex("01070000A0E6100000020000000101000080000000000000F03F00000000000000400000000000000000010200008002000000000000000000000000000000000000000000000000000000000000000000F03F000000000000F03F0000000000000000", out var srid);
+        Assert.Equal(4326, srid);
+
+        // SRID 2154, big-endian
+        WellKnownBinary.Read(Convert.FromHexString("00200000010000086A3FF00000000000004000000000000000"), out srid);
+        Assert.Equal(2154, srid);
+
+        // Without the SRID flag, and with an SRID on a part only (the SRID of the root counts)
+        WellKnownBinary.ParseHex("0101000000000000000000F03F0000000000000040", out srid);
+        Assert.Null(srid);
+        WellKnownBinary.ParseHex("010400000001000000" + "0101000020E6100000000000000000F03F0000000000000040", out srid);
+        Assert.Null(srid);
     }
 
     [Fact]

@@ -359,6 +359,120 @@ public sealed class ShapefileTests
         }
     }
 
+    private const string Lambert93Prj = """PROJCS["RGF_1993_Lambert_93",GEOGCS["GCS_RGF_1993",DATUM["D_RGF_1993",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Lambert_Conformal_Conic"],PARAMETER["False_Easting",700000.0],PARAMETER["False_Northing",6600000.0],PARAMETER["Central_Meridian",3.0],PARAMETER["Standard_Parallel_1",49.0],PARAMETER["Standard_Parallel_2",44.0],PARAMETER["Latitude_Of_Origin",46.5],UNIT["Meter",1.0]]""";
+
+    [Fact]
+    public void Read_ProjectedCoordinateSystem()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            // A shapefile in Lambert 93, as the open data of France: the .prj file of the writer is replaced
+            var path = Path.Combine(directory.FullName, "communes.shp");
+            var polygon = new GeoPolygon([[new(652310.72, 6862414.64), new(652310.72, 6862514.64), new(652410.72, 6862414.64), new(652310.72, 6862414.64)]]);
+            Shapefile.Write([new GeoFeature(polygon, new Dictionary<string, object?> { ["name"] = "Paris" }), new GeoFeature(geometry: null)], path);
+            File.Delete(Path.Combine(directory.FullName, "communes.prj"));
+            File.WriteAllText(Path.Combine(directory.FullName, "communes.PRJ"), Lambert93Prj);
+
+            var features = Shapefile.Read(path);
+            var crs = Assert.IsType<ProjectedCoordinateSystem>(features.CoordinateReferenceSystem);
+            Assert.Equal("RGF_1993_Lambert_93", crs.Name);
+            Assert.Equal(polygon.Rings, ((GeoPolygon)features[0].Geometry!).Rings);
+
+            var converted = Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true });
+            Assert.Same(CoordinateReferenceSystem.Wgs84, converted.CoordinateReferenceSystem);
+            var position = ((GeoPolygon)converted[0].Geometry!).Rings[0][0];
+            Assert.Equal(2.35, position.Longitude, 1e-6);
+            Assert.Equal(48.86, position.Latitude, 1e-6);
+            Assert.Equal("Paris", converted[0].Properties["name"]);
+            Assert.Null(converted[1].Geometry);
+
+            // The same files in a zip archive
+            using var zip = new MemoryStream();
+            using (var archive = new ZipArchive(zip, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var file in directory.GetFiles())
+                {
+                    archive.CreateEntryFromFile(file.FullName, "data/" + file.Name);
+                }
+            }
+
+            zip.Position = 0;
+            var zipped = Shapefile.ReadZip(zip, new ShapefileReaderOptions { TransformToWgs84 = true });
+            Assert.Equal(position, ((GeoPolygon)zipped[0].Geometry!).Rings[0][0]);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Read_CoordinateSystemOfThePrjFile()
+    {
+        // The files of GDAL have a .prj file of WGS 84: the positions are not converted
+        var features = Shapefile.Read(GetPath("points.shp"), new ShapefileReaderOptions { TransformToWgs84 = true });
+        var crs = Assert.IsType<GeographicCoordinateSystem>(features.CoordinateReferenceSystem);
+        Assert.Equal(new GeoPosition(2.3522, 48.8566), ((GeoPoint)features[0].Geometry!).Position);
+        Assert.Equal(Ellipsoid.Wgs84.SemiMajorAxis, crs.Ellipsoid.SemiMajorAxis);
+
+        // Streams have no .prj file
+        using var shp = File.OpenRead(GetPath("points.shp"));
+        Assert.Null(Shapefile.Read(shp, dbf: null).CoordinateReferenceSystem);
+    }
+
+    [Fact]
+    public void Read_InvalidPrjFile()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var path = Path.Combine(directory.FullName, "points.shp");
+            Shapefile.Write([new GeoFeature(new GeoPoint(new GeoPosition(1, 2)))], path);
+
+            // Ignored unless the positions must be converted
+            File.WriteAllText(Path.Combine(directory.FullName, "points.prj"), "PROJCS[");
+            Assert.Null(Shapefile.Read(path).CoordinateReferenceSystem);
+            Assert.Throws<FormatException>(() => Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true }));
+
+            File.WriteAllText(Path.Combine(directory.FullName, "points.prj"), """PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Albers_Conic_Equal_Area"],UNIT["metre",1]]""");
+            Assert.Null(Shapefile.Read(path).CoordinateReferenceSystem);
+            Assert.Throws<NotSupportedException>(() => Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true }));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Documentation_ReadProjected()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        var path = Path.Combine(directory.FullName, "communes.shp");
+        Shapefile.Write([new GeoFeature(new GeoPoint(new GeoPosition(652310.72, 6862414.64)))], path);
+        File.WriteAllText(Path.ChangeExtension(path, ".prj"), Lambert93Prj);
+        try
+        {
+            #region Geo_ShapefileReadProjected
+            // The .prj file declares Lambert 93: the positions are converted to longitudes and latitudes
+            var features = Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true });
+            var position = ((GeoPoint)features[0].Geometry!).Position;
+            Assert.Equal(2.35, position.Longitude, 1e-6);
+            Assert.Equal(48.86, position.Latitude, 1e-6);
+
+            // Without the option, the positions are those of the file, and CoordinateReferenceSystem tells what they are
+            var projected = Shapefile.Read(path);
+            Assert.Equal("RGF_1993_Lambert_93", projected.CoordinateReferenceSystem!.Name);
+            Assert.False(projected.CoordinateReferenceSystem.IsGeographic);
+            #endregion
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void Write_RoundTrip()
     {

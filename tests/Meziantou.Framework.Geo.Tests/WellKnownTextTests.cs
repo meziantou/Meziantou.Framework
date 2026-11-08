@@ -107,6 +107,29 @@ public sealed class WellKnownTextTests
     {
         Assert.Equal(new GeoPosition(2.35, 48.86), Assert.IsType<GeoPoint>(WellKnownText.Parse("SRID=4326;POINT(2.35 48.86)")).Position);
         Assert.Equal([new GeoPosition(0, 0, 10), new(1, 1, 20)], Assert.IsType<GeoLineString>(WellKnownText.Parse(" srid = 3857 ; LINESTRING Z (0 0 10, 1 1 20)")).Positions);
+
+        WellKnownText.Parse(" srid = 3857 ; LINESTRING Z (0 0 10, 1 1 20)", out var srid);
+        Assert.Equal(3857, srid);
+        WellKnownText.Parse("SRID=-1;POINT EMPTY", out srid);
+        Assert.Equal(-1, srid);
+        WellKnownText.Parse("POINT (1 2)", out srid);
+        Assert.Null(srid);
+    }
+
+    [Fact]
+    public void Parse_ExtendedWktWithProjectedSrid()
+    {
+        #region Geo_WellKnownTextSrid
+        // The extended WKT of PostGIS gives the SRID of the coordinates, here Lambert 93 (EPSG:2154)
+        var geometry = WellKnownText.Parse("SRID=2154;POINT (652310.72 6862414.64)", out var srid);
+        Assert.Equal(2154, srid);
+
+        // FromEpsg gets the coordinate reference system of the SRID, to convert the geometry to longitudes and latitudes
+        var crs = CoordinateReferenceSystem.FromEpsg(srid!.Value)!;
+        var point = (GeoPoint)geometry.Transform(crs, CoordinateReferenceSystem.Wgs84);
+        Assert.Equal(2.35, point.Position.Longitude, 1e-6);
+        Assert.Equal(48.86, point.Position.Latitude, 1e-6);
+        #endregion
     }
 
     [Theory]

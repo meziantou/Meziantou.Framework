@@ -1,15 +1,18 @@
 ---
 title: Limitations
-description: What the library does not do: coordinate systems, curved edges, per-point data and other formats.
+description: What the library does not do: some projections and datum grids, curved edges, per-point data and other formats.
 ---
 
 ## Coordinates
 
-- **WGS 84 only.** The positions are longitudes and latitudes in degrees. The library does not convert between
-  coordinate reference systems: the SRID of EWKT and EWKB and the `.prj` file of a shapefile are not used.
-  [Transform](cref:Meziantou.Framework.Geo.GeoGeometry.Transform) applies a conversion you provide, such as the inverse
-  of the Mercator projection for Web Mercator data; convert other projected data, such as a shapefile in Lambert 93 or
-  UTM, with another tool first.
+- **Few projections, no grids.** The [coordinate reference systems](05-Projections.md#convert-between-coordinate-reference-systems)
+  are those of the transverse Mercator, Lambert conformal conic and Mercator projections, such as UTM, Lambert 93 and
+  Web Mercator. Other projections, such as the oblique Mercator of Switzerland, the Albers or the Lambert azimuthal
+  equal-area projections of statistical maps, and the state plane systems that use them, need a
+  [CoordinateReferenceSystem](cref:Meziantou.Framework.Geo.CoordinateReferenceSystem) of your own. The datums are
+  shifted with Helmert transformations, not with grids, so a conversion between datums is accurate to a few meters, and
+  the WKT 2 definitions are only read by their EPSG code. The writers do not write the SRID of EWKT and EWKB, and
+  write a `.prj` file of WGS 84.
 - **Straight edges for the geometry operations.** The [geometry operations](06-GeometryOperations.md) and
   [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) treat the edges as straight lines on an
   equirectangular map. Only [GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains) and

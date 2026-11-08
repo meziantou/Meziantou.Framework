@@ -64,8 +64,11 @@ Assert.Equal("0101000000A835CD3B4ED1024076E09C11A56D4840", hex);
 
 - The seven geometry types, with the Z values as altitudes and the M values as
   [measures](cref:Meziantou.Framework.Geo.GeoPosition.Measure). The curves, triangles and surfaces are rejected.
-- The extended formats of PostGIS: the `SRID=4326;` prefix of EWKT and the flags of EWKB. The SRID is ignored: the
-  positions must be longitudes and latitudes.
+- The extended formats of PostGIS: the `SRID=4326;` prefix of EWKT and the flags of EWKB. The overloads with an
+  `srid` parameter return the SRID; the positions are those of the text. Convert them with
+  [FromEpsg](cref:Meziantou.Framework.Geo.CoordinateReferenceSystem.FromEpsg) and
+  [Transform](cref:Meziantou.Framework.Geo.GeoGeometry.Transform), as in
+  [coordinate reference systems](../05-Projections.md#read-the-coordinate-reference-system-of-a-file).
 - WKB in both byte orders. The writer writes ISO WKB in little-endian order.
 - An empty point (`POINT EMPTY`) is read as an empty [GeoMultiPoint](cref:Meziantou.Framework.Geo.GeoMultiPoint), as a
   [GeoPoint](cref:Meziantou.Framework.Geo.GeoPoint) always has a position.

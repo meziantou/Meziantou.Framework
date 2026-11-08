@@ -79,5 +79,6 @@ Assert.Equal(48.86, position!.Value.Latitude, 1e-9);
 | Encoded polyline | `EncodedPolyline` | ✓ | ✓ |
 | FlatGeobuf (with its spatial index) | `FlatGeobuf` | ✓ | ✓ |
 
-The positions are longitudes and latitudes in degrees (WGS 84): the library does not convert between coordinate
-reference systems.
+The positions are longitudes and latitudes in degrees (WGS 84). `CoordinateReferenceSystem` converts data in Web
+Mercator, UTM, Lambert 93 and other transverse Mercator, Lambert conformal conic and Mercator projections to them, from
+an EPSG code (the SRID of EWKT and EWKB) or the WKT of a `.prj` file.

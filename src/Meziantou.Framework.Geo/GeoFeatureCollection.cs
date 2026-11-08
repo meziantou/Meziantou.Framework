@@ -21,6 +21,13 @@ public sealed class GeoFeatureCollection : Collection<GeoFeature>
     /// <summary>Gets or sets the name of the collection, such as the name of a KML document or of a TopoJSON object, or <see langword="null"/>.</summary>
     public string? Name { get; set; }
 
+    /// <summary>
+    /// Gets or sets the coordinate reference system of the positions, such as the one of the <c>.prj</c> file of a shapefile,
+    /// or <see langword="null"/> when it is not known: the positions are then expected to be longitudes and latitudes of WGS 84.
+    /// </summary>
+    /// <remarks>The writers do not use it: convert the positions with <see cref="GeoGeometry.Transform(CoordinateReferenceSystem, CoordinateReferenceSystem)"/> before writing them.</remarks>
+    public CoordinateReferenceSystem? CoordinateReferenceSystem { get; set; }
+
     /// <summary>Gets the smallest box that contains the geometries of the features.</summary>
     /// <returns>The box, or <see langword="null"/> when no feature has a position.</returns>
     public GeoBounds? GetBounds() => GeoBounds.FromPositions(this.Where(feature => feature.Geometry is not null).SelectMany(feature => feature.Geometry!.GetPositions()));

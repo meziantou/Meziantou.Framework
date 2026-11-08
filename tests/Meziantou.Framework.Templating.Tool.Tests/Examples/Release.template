@@ -1,0 +1,5 @@
+<%@ outputextension .txt %>
+<%= Product %> <%= Version %> (<%= Channel %>)
+<% foreach (var feature in Features.EnumerateArray()) { %>
+- <%= feature.GetString() %>
+<% } %>

@@ -24,7 +24,7 @@ assembly, then runs it with the arguments you pass.
 - **Use .NET libraries** from a template: import namespaces, reference assemblies, include C# files and share helpers
   through a base class. See [Using code and libraries](05-UsingCodeAndLibraries.md).
 - **Share a header, a footer or a layout** between templates with partial templates, layouts and sections. See
-  [Composing templates](12-ComposingTemplates.md).
+  [Composing templates](10-ComposingTemplates.md).
 - **Write HTML emails** that encode every value for its context, and get the subject and the embedded images of the
   message. See [HTML emails](06-HtmlEmails/01-Overview.md).
 - **Generate files from scripts and builds** with the command-line tool, which also reads T4-style templates. See
@@ -50,4 +50,4 @@ Every public type is in the [Meziantou.Framework.Templating](cref:Meziantou.Fram
 
 - [Getting started](02-GettingStarted.md): install the package and render your first template.
 - [Template syntax](03-TemplateSyntax.md): the blocks a template is made of.
-- [Limitations](10-Limitations.md): what the library does not do.
+- [Limitations](11-Limitations.md): what the library does not do.

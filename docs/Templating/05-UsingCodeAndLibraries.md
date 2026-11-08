@@ -100,7 +100,7 @@ Assert.Equal(@"c:\templates\shared-helpers.cs", directives[1].Value);
 - The paths are read when the template is compiled. A relative path is resolved from the current directory of the
   process: prefer full paths.
 - An included file is compiled as C#, not as a template: it can declare helper classes for the template, but it writes
-  nothing. To render another template, use the `render` directive: see [Composing templates](12-ComposingTemplates.md).
+  nothing. To render another template, use the `render` directive: see [Composing templates](10-ComposingTemplates.md).
 - The types of arguments need a reference too. See [Passing arguments](04-PassingArguments.md#pass-values-of-your-own-types).
 
 ## Share helpers between templates

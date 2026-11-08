@@ -57,7 +57,7 @@ When [SourceFileName](cref:Meziantou.Framework.Templating.Template.SourceFileNam
 The library throws a [TemplateException](cref:Meziantou.Framework.Templating.TemplateException) itself in a few cases: a missing argument when [ThrowOnMissingArgument](cref:Meziantou.Framework.Templating.Template.ThrowOnMissingArgument) is set
 (see [Passing arguments](04-PassingArguments.md#pass-values-by-name)), and a section that is never ended in an HTML email
 (see [Subject and embedded images](06-HtmlEmails/03-SubjectAndEmbeddedImages.md#capture-the-subject)), and a partial
-template or a layout that cannot be found or is not used correctly (see [Composing templates](12-ComposingTemplates.md#errors)).
+template or a layout that cannot be found or is not used correctly (see [Composing templates](10-ComposingTemplates.md#errors)).
 
 ## Inspect the generated code
 

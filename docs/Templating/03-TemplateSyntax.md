@@ -104,7 +104,7 @@ The `+` must follow the delimiter immediately: `<% + ... %>` is a statement bloc
 | `include` | Compiles a C# source file with the template |
 | `inherits` | Sets the base class of the generated class ([BaseClassFullTypeName](cref:Meziantou.Framework.Templating.Template.BaseClassFullTypeName)) |
 | `implements` | Adds interfaces, separated by commas, to the generated class |
-| `render`, `layout`, `section`, … | Render other templates: see [Composing templates](12-ComposingTemplates.md) |
+| `render`, `layout`, `section`, … | Render other templates: see [Composing templates](10-ComposingTemplates.md) |
 
 [Using code and libraries](05-UsingCodeAndLibraries.md) shows each of them. Other directives write nothing and change
 nothing, but your code can read them from [Blocks](cref:Meziantou.Framework.Templating.Template.Blocks); the [command-line tool](07-CommandLineTool.md) reads

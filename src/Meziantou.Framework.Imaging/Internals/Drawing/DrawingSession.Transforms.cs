@@ -279,9 +279,11 @@ internal sealed partial class DrawingSession
     private ProjectiveView GeometryView => _isProjective ? _projectionView : new ProjectiveView(_transform, -1, -1, Width + 1, Height + 1, reach: 0);
 
     /// <summary>Gets the sink of a fill whose shape is given in the coordinates of the drawing.</summary>
-    private PathSink BeginFill()
+    private PathSink BeginFill() => BeginFill(BeginDeviceFill());
+
+    /// <summary>Gets the sink of a fill whose shape is given in the coordinates of the drawing, for a sink that receives it in the pixels of the canvas.</summary>
+    private PathSink BeginFill(PathSink sink)
     {
-        var sink = BeginDeviceFill();
         if (UsesProjectiveGeometry)
         {
             var projected = _projectiveSink ??= new ProjectiveSink();

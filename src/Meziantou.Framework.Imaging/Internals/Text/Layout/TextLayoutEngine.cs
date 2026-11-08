@@ -2453,6 +2453,7 @@ internal sealed class TextLayoutEngine
         {
             Fonts = [.. _fonts],
             HintedOutlines = _hinter?.Build(),
+            SubpixelRendering = _options.SubpixelRendering,
             Brushes = [.. brushes],
             Runs = [.. runs],
             Glyphs = [.. glyphs],

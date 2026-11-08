@@ -39,6 +39,93 @@ public sealed class DrawingTextTests
     }
 
     [Fact]
+    public void SubpixelRenderingIsOffByDefault()
+    {
+        Assert.Equal(TextSubpixelRendering.None, TextLayoutOptions.Default.SubpixelRendering);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { SubpixelRendering = (TextSubpixelRendering)3 });
+    }
+
+    [Theory]
+    [InlineData(TextSubpixelRendering.Rgb)]
+    [InlineData(TextSubpixelRendering.Bgr)]
+    public void SubpixelRenderingGivesEachColorTheCoverageOfItsStripe(TextSubpixelRendering rendering)
+    {
+        // A is drawn from 2.5 to 14.5 pixels: pixel 2 is covered on its right half, pixel 14 on its left half. Black on
+        // white, the stripe on the covered side of an edge is darker than the other one.
+        var lcd = DrawSubpixelText<Rgb24>(rendering, new Rgb24(255, 255, 255));
+        var gray = DrawSubpixelText<Rgb24>(TextSubpixelRendering.None, new Rgb24(255, 255, 255));
+        var (left, right) = rendering == TextSubpixelRendering.Rgb ? (0, 2) : (2, 0);
+        Assert.True(lcd[Index(2, 7) + left] > lcd[Index(2, 7) + right]);
+        Assert.True(lcd[Index(14, 7) + left] < lcd[Index(14, 7) + right]);
+
+        // Grayscale antialiasing gives the three colors one coverage.
+        Assert.Equal(gray[Index(2, 7)], gray[Index(2, 7) + 2]);
+
+        // The pixels inside the glyph are black, those far from it are white, and the filter keeps the ink: the
+        // darkness of a row is the one of grayscale antialiasing, within a few percent.
+        Assert.Equal([0, 0, 0], lcd[Index(8, 7)..(Index(8, 7) + 3)]);
+        Assert.Equal([255, 255, 255], lcd[Index(18, 7)..(Index(18, 7) + 3)]);
+        Assert.Equal(Darkness(gray), Darkness(lcd), 0.02 * Darkness(gray));
+
+        // Bgra32 stores the same colors in the other order.
+        var bgra = DrawSubpixelText<Bgra32>(rendering, new Bgra32(255, 255, 255, 255));
+        for (var pixel = 0; pixel < 20 * 16; pixel++)
+        {
+            Assert.Equal(lcd[pixel * 3], bgra[(pixel * 4) + 2]);
+            Assert.Equal(lcd[(pixel * 3) + 1], bgra[(pixel * 4) + 1]);
+            Assert.Equal(lcd[(pixel * 3) + 2], bgra[pixel * 4]);
+        }
+
+        static int Index(int x, int y) => ((y * 20) + x) * 3;
+        static double Darkness(int[] samples) => samples.Sum(sample => 255.0 - sample);
+    }
+
+    [Fact]
+    public void SubpixelRenderingFallsBackToGrayscale()
+    {
+        // A pixel format of gray levels, a paint that is not a single color, a text along a path
+        Assert.Equal(DrawSubpixelText<Gray8>(TextSubpixelRendering.None, new Gray8(255)), DrawSubpixelText<Gray8>(TextSubpixelRendering.Rgb, new Gray8(255)));
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(20, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255))]);
+        Assert.Equal(DrawSubpixelText<Rgb24>(TextSubpixelRendering.None, new Rgb24(255, 255, 255), gradient), DrawSubpixelText<Rgb24>(TextSubpixelRendering.Rgb, new Rgb24(255, 255, 255), gradient));
+
+        // A pixel that is not opaque gets one coverage for its three colors: white over a translucent gray stays gray.
+        var translucent = DrawSubpixelText<Rgba32>(TextSubpixelRendering.Rgb, new Rgba32(128, 128, 128, 128), new SolidBrush(new Rgba32(255, 255, 255)));
+        for (var pixel = 0; pixel < 20 * 16; pixel++)
+        {
+            Assert.Equal(translucent[pixel * 4], translucent[(pixel * 4) + 1]);
+            Assert.Equal(translucent[pixel * 4], translucent[(pixel * 4) + 2]);
+        }
+    }
+
+    [Fact]
+    public void SubpixelRenderingAppliesTheClipAndTheTransformation()
+    {
+        var layout = TextLayout.Create("A", new TextStyle(Boxes, 16), new TextLayoutOptions { SubpixelRendering = TextSubpixelRendering.Rgb });
+        using var image = new Image<Rgb24>(40, 16, new Rgb24(255, 255, 255));
+        image.Draw(canvas => canvas.Clip(new RectangleD(0, 0, 8, 16), clipped => clipped.FillText(new SolidBrush(new Rgba32(0, 0, 0)), layout, new PointD(0.5, 0))), Ct);
+        var samples = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        Assert.Equal(0, samples[((7 * 40) + 7) * 3]);
+        Assert.Equal(255, samples[((7 * 40) + 8) * 3]);
+
+        // Twice as large: the edge of the glyph is at 5 pixels, and has the colors of an edge that covers the right of its pixel.
+        using var scaled = new Image<Rgb24>(40, 32, new Rgb24(255, 255, 255));
+        scaled.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), transformed => transformed.FillText(new SolidBrush(new Rgba32(0, 0, 0)), layout, new PointD(0.25, 0))), Ct);
+        samples = DrawingTestSupport.ReadSamples(scaled.Frames[0]);
+        var edge = ((14 * 40) + 4) * 3;
+        Assert.True(samples[edge] > samples[edge + 2]);
+        Assert.Equal(0, samples[((14 * 40) + 6) * 3]);
+    }
+
+    private static int[] DrawSubpixelText<TPixel>(TextSubpixelRendering rendering, TPixel background, Brush? brush = null)
+        where TPixel : unmanaged
+    {
+        var layout = TextLayout.Create("A", new TextStyle(Boxes, 16), new TextLayoutOptions { SubpixelRendering = rendering });
+        using var image = new Image<TPixel>(20, 16, background);
+        image.Draw(canvas => canvas.FillText(brush ?? new SolidBrush(new Rgba32(0, 0, 0)), layout, new PointD(0.5, 0)), Ct);
+        return DrawingTestSupport.ReadSamples(image.Frames[0]);
+    }
+
+    [Fact]
     public void GlyphsFollowEachOtherByTheirAdvanceAndTheirKerning()
     {
         // A advances by 16 pixels and B by 8. The kerning table moves B 2 pixels closer after A, and A 1 pixel further

@@ -111,6 +111,7 @@ public sealed class TextLayout
         _characterBoundaries = data.CharacterBoundaries;
         _textLength = data.TextLength;
         _vertical = data.Vertical;
+        SubpixelRendering = data.SubpixelRendering;
         foreach (var run in _runs)
         {
             HasEmboldenedGlyphs |= run.EmboldenWidth > 0;
@@ -204,6 +205,9 @@ public sealed class TextLayout
     internal bool HasColorGlyphs => _colorIndexes is not null;
 
     internal int RunCount => _runs.Length;
+
+    /// <summary>Gets how the glyphs are antialiased when the layout is filled at a point (<see cref="TextLayoutOptions.SubpixelRendering"/>).</summary>
+    internal TextSubpixelRendering SubpixelRendering { get; }
 
     /// <summary>Gets a run of glyphs of one font, one size, one paint and one orientation.</summary>
     internal void GetRun(int index, out FontFace face, out double scale, out int start, out int count, out int brush, out bool isSideways, out double widthScale)

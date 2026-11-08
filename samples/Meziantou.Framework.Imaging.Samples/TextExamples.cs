@@ -158,4 +158,20 @@ internal static class TextExamples
         return hit;
     }
     #endregion
+
+    /// <summary>Subpixel rendering: small hinted text for an LCD screen whose pixels are red, green and blue stripes.</summary>
+    #region Imaging_DrawSubpixelText
+    public static void DrawSubpixelText(string fontPath, string outputPath)
+    {
+        // Each color of a pixel gets the coverage of its stripe of the screen: three times the horizontal resolution.
+        // Use TextSubpixelRendering.Bgr for a screen whose stripes are blue, green and red from left to right.
+        var options = new TextLayoutOptions { Hinting = TextHinting.Light, SubpixelRendering = TextSubpixelRendering.Rgb };
+        var layout = TextLayout.Create("Settings and preferences", new TextStyle(Font.Load(fontPath), size: 12), options);
+
+        // A solid color on opaque pixels: on a transparent pixel, the colors would get fringes on any background
+        using var image = new Image<Rgb24>((int)layout.Width + 8, (int)Math.Ceiling(layout.Height) + 8, new Rgb24(255, 255, 255));
+        image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(4, 4)));
+        image.Save(outputPath);
+    }
+    #endregion
 }

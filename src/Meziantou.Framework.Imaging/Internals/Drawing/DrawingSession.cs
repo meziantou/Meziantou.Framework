@@ -730,6 +730,9 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(brush);
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
+        if (layout.SubpixelRendering != TextSubpixelRendering.None && TryFillSubpixelText(brush, layout, origin))
+            return;
+
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
@@ -906,6 +909,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         IsActive = false;
         DisposeRendering();
+        DisposeSubpixelText();
         DisposeLayers();
         DisposeClips();
         DisposePatterns();

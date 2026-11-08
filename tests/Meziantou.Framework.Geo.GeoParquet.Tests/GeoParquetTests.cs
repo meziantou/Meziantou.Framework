@@ -1,6 +1,6 @@
+using System.Buffers.Binary;
 using System.Globalization;
-using Parquet;
-using Parquet.Schema;
+using System.Text.Json;
 
 namespace Meziantou.Framework.Geo.Tests;
 
@@ -8,6 +8,9 @@ namespace Meziantou.Framework.Geo.Tests;
 // https://github.com/opengeospatial/geoparquet/tree/76e3219b1cdf0250f87e62b2cdffd824163025f4 (Apache 2.0, see LICENSE.txt):
 // test_data/data-<type>-encoding_wkb.parquet with the WKT of their geometries in data-<type>-wkt.csv, and examples/example.parquet,
 // five countries of Natural Earth written by GeoPandas.
+// The files of TestData/generated are written by pyarrow, the reference implementation of Parquet, with generate.py:
+// every compression codec, data pages of versions 1 and 2, and the dictionary, delta and BYTE_STREAM_SPLIT encodings, with
+// the values pyarrow reads from them in expected.json.
 public sealed class GeoParquetTests
 {
     private static string GetPath(string name) => Path.Combine(AppContext.BaseDirectory, "TestData", name);
@@ -79,16 +82,7 @@ public sealed class GeoParquetTests
         await Assert.ThrowsAsync<ArgumentException>(() => GeoParquet.ReadAsync(GetPath("example.parquet"), new GeoParquetReaderOptions { GeometryColumn = "name" }, TestContext.Current.CancellationToken));
 
         // A Parquet file without the "geo" metadata
-        using var plain = new MemoryStream();
-        var id = new DataField<int>("id");
-        await using (var writer = await ParquetWriter.CreateAsync(new ParquetSchema(id), plain, cancellationToken: TestContext.Current.CancellationToken))
-        {
-            using var rowGroup = writer.CreateRowGroup();
-            await rowGroup.WriteAsync(id, new ReadOnlyMemory<int>([1]), cancellationToken: TestContext.Current.CancellationToken);
-        }
-
-        plain.Position = 0;
-        await Assert.ThrowsAsync<FormatException>(() => GeoParquet.ReadAsync(plain, cancellationToken: TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<FormatException>(() => GeoParquet.ReadAsync(GetPath("generated/no-geo.parquet"), cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -100,19 +94,117 @@ public sealed class GeoParquetTests
         Assert.Equal(GeoJson.Format(expected), GeoJson.Format(new GeoFeatureCollection(features)));
     }
 
+    [Theory]
+    [InlineData("uncompressed-v1")]
+    [InlineData("snappy-v1")]
+    [InlineData("snappy-v2")]
+    [InlineData("gzip-v2")]
+    [InlineData("brotli-v1")]
+    [InlineData("lz4raw-v2")]
+    [InlineData("zstd-v2")]
+    [InlineData("plain-v1")]
+    [InlineData("delta-v2")]
+    [InlineData("split-v1")]
+    [InlineData("pages-v1")]
+    public async Task ReadAsync_MatchesPyArrow(string name)
+    {
+#if !NET11_0_OR_GREATER
+        if (name is "zstd-v2")
+        {
+            // Zstandard is part of .NET from .NET 11
+            await Assert.ThrowsAsync<NotSupportedException>(() => GeoParquet.ReadAsync(GetPath($"generated/{name}.parquet"), cancellationToken: TestContext.Current.CancellationToken));
+            return;
+        }
+#endif
+
+        var features = await GeoParquet.ReadAsync(GetPath($"generated/{name}.parquet"), cancellationToken: TestContext.Current.CancellationToken);
+        using var expected = JsonDocument.Parse(File.ReadAllBytes(GetPath("generated/expected.json")));
+        var rows = expected.RootElement.EnumerateArray().ToList();
+        Assert.HasCount(rows.Count, features);
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var feature = features[i];
+            foreach (var property in rows[i].EnumerateObject())
+            {
+                if (property.Name is "geometry")
+                {
+                    if (property.Value.ValueKind is JsonValueKind.Null)
+                    {
+                        Assert.Null(feature.Geometry);
+                    }
+                    else
+                    {
+                        Assert.Equal(WellKnownText.Format(WellKnownText.Parse(property.Value.GetString()!)), WellKnownText.Format(feature.Geometry!));
+                    }
+                }
+                else if (property.Value.ValueKind is JsonValueKind.Null)
+                {
+                    Assert.False(feature.Properties.ContainsKey(property.Name), $"Row {i}, column {property.Name}");
+                }
+                else
+                {
+                    AssertValue(property.Value.GetString()!, feature.Properties[property.Name], $"Row {i}, column {property.Name}");
+                }
+            }
+
+            // The bbox structure and the list of strings are not properties
+            Assert.False(feature.Properties.ContainsKey("bbox"));
+            Assert.False(feature.Properties.ContainsKey("tags"));
+        }
+
+        Assert.IsType<sbyte>(features[0].Properties["i8"]);
+        Assert.IsType<ulong>(features[0].Properties["u64"]);
+        Assert.IsType<DateOnly>(features[0].Properties["day"]);
+        Assert.Equal(DateTimeKind.Unspecified, ((DateTime)features[0].Properties["ts_ms"]!).Kind);
+        Assert.Equal(DateTimeKind.Utc, ((DateTime)features[0].Properties["ts_us_utc"]!).Kind);
+        Assert.IsType<TimeOnly>(features[0].Properties["time_ms"]);
+        Assert.IsType<decimal>(features[0].Properties["dec_wide"]);
+    }
+
+    [Fact]
+    public async Task ReadAsync_CorruptedData_ThrowsFormatException()
+    {
+        // Every byte of the metadata and of the first pages of the file is changed in turn: the reader reports invalid data
+        // as a FormatException (or a NotSupportedException for an unknown feature), never as another exception
+        var data = File.ReadAllBytes(GetPath("generated/snappy-v2.parquet"));
+        var offsets = Enumerable.Range(0, 2048).Concat(Enumerable.Range(data.Length - 4096, 4096));
+        foreach (var offset in offsets)
+        {
+            var corrupted = (byte[])data.Clone();
+            corrupted[offset] ^= 0x5A;
+            using var stream = new MemoryStream(corrupted);
+            try
+            {
+                await GeoParquet.ReadAsync(stream, cancellationToken: TestContext.Current.CancellationToken);
+            }
+            catch (Exception ex) when (ex is FormatException or NotSupportedException)
+            {
+            }
+        }
+
+        foreach (var length in new[] { 0, 4, 8, 12, 100, data.Length / 2, data.Length - 9, data.Length - 1 })
+        {
+            using var truncated = new MemoryStream(data, 0, length);
+            await Assert.ThrowsAsync<FormatException>(() => GeoParquet.ReadAsync(truncated, cancellationToken: TestContext.Current.CancellationToken));
+        }
+    }
+
     [Fact]
     public async Task ReadFeaturesAsync_LargeFile_ReadsOneRowGroupAtATime()
     {
-        const int RowGroups = 40;
-        const int Rows = 5_000;
-        var data = await CreateLargeFileAsync(RowGroups, Rows);
+        // 24 row groups of 500 rows
+        const int RowGroups = 24;
+        const int Rows = 500;
+        var data = File.ReadAllBytes(GetPath("generated/rowgroups.parquet"));
+        var metadataLength = GetMetadataLength(data);
+        var rowGroupLength = (data.Length - metadataLength) / RowGroups;
         using var stream = new CountingStream(data);
         var index = 0;
         await foreach (var feature in GeoParquet.ReadFeaturesAsync(stream, cancellationToken: TestContext.Current.CancellationToken))
         {
             // The columns of a row group are read when its first feature is returned, not before
             var rowGroup = index / Rows;
-            Assert.True(stream.BytesRead < (rowGroup + 2L) * data.Length / RowGroups, $"Feature {index} was returned after reading {stream.BytesRead} bytes out of {data.Length}");
+            Assert.True(stream.BytesRead < metadataLength + ((rowGroup + 2L) * rowGroupLength), $"Feature {index} was returned after reading {stream.BytesRead} bytes out of {data.Length}");
             Assert.Equal(index, feature.Properties["id"]);
             index++;
         }
@@ -123,16 +215,15 @@ public sealed class GeoParquetTests
     [Fact]
     public async Task ReadFeaturesAsync_BboxCovering_SkipsTheRowGroupsOutsideOfTheBox()
     {
-        const int RowGroups = 40;
-        const int Rows = 5_000;
-        var data = await CreateLargeFileAsync(RowGroups, Rows);
+        var data = File.ReadAllBytes(GetPath("generated/rowgroups.parquet"));
+        var metadataLength = GetMetadataLength(data);
 
-        // The row group 10 covers the longitudes -140 to -139
+        // The row group 10 has the longitudes from -30 to -25.1
         using var stream = new CountingStream(data);
-        var features = await GeoParquet.ReadFeaturesAsync(stream, new GeoParquetReaderOptions { Bounds = new GeoBounds(-139.9, 0, -139.5, 1) }, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        var features = await GeoParquet.ReadFeaturesAsync(stream, new GeoParquetReaderOptions { Bounds = new GeoBounds(-29.95, 0, -29.5, 1) }, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
         Assert.NotEmpty(features);
-        Assert.All(features, feature => Assert.Equal(10, (int)feature.Properties["id"]! / Rows));
-        Assert.True(stream.BytesRead < data.Length / 10, $"{stream.BytesRead} bytes read out of {data.Length}");
+        Assert.All(features, feature => Assert.Equal(10, (int)feature.Properties["id"]! / 500));
+        Assert.True(stream.BytesRead < metadataLength + ((data.Length - metadataLength) / 10), $"{stream.BytesRead} bytes read out of {data.Length}");
     }
 
     [Fact]
@@ -167,53 +258,40 @@ public sealed class GeoParquetTests
         Assert.NotEmpty(flatGeobuf);
     }
 
-    // A GeoParquet 1.1 file of points, with a bbox covering column: the row group g has the longitudes -180 + g * 4 to -179 + g * 4
-    private static async Task<byte[]> CreateLargeFileAsync(int rowGroups, int rows)
+    // The metadata at the end of the file, with its length and the "PAR1" signature, which the reader reads first
+    private static int GetMetadataLength(byte[] data) => BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(data.Length - 8)) + 8;
+
+    private static void AssertValue(string expected, object? actual, string message)
     {
-        var id = new DataField<int>("id");
-        var geometry = new DataField<byte[]>("geometry");
-        var xmin = new DataField<double>("xmin");
-        var ymin = new DataField<double>("ymin");
-        var xmax = new DataField<double>("xmax");
-        var ymax = new DataField<double>("ymax");
-        var schema = new ParquetSchema(id, geometry, new StructField("bbox", xmin, ymin, xmax, ymax));
-        var dataFields = schema.GetDataFields();
-
-        using var stream = new MemoryStream();
-        await using (var writer = await ParquetWriter.CreateAsync(schema, stream, cancellationToken: TestContext.Current.CancellationToken))
+        switch (actual)
         {
-            writer.CustomMetadata = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["geo"] = """{"version":"1.1.0","primary_column":"geometry","columns":{"geometry":{"encoding":"WKB","geometry_types":["Point"],"covering":{"bbox":{"xmin":["bbox","xmin"],"ymin":["bbox","ymin"],"xmax":["bbox","xmax"],"ymax":["bbox","ymax"]}}}}}""",
-            };
-
-            for (var g = 0; g < rowGroups; g++)
-            {
-                var ids = new int[rows];
-                var geometries = new byte[rows][];
-                var longitudes = new double[rows];
-                var latitudes = new double[rows];
-                for (var i = 0; i < rows; i++)
-                {
-                    ids[i] = (g * rows) + i;
-                    longitudes[i] = -180 + (g * 4) + (i % 100 * 0.01);
-                    latitudes[i] = i / 100 * 0.01;
-                    geometries[i] = WellKnownBinary.Write(new GeoPoint(new GeoPosition(longitudes[i], latitudes[i])));
-                }
-
-                // The columns of the bbox structure, which can be null, are written with nullable values
-                static ReadOnlyMemory<double?> ToNullable(double[] values) => Array.ConvertAll(values, value => (double?)value);
-
-                using var rowGroup = writer.CreateRowGroup();
-                await rowGroup.WriteAsync(id, new ReadOnlyMemory<int>(ids), cancellationToken: TestContext.Current.CancellationToken);
-                await rowGroup.WriteAsync(geometry, geometries);
-                await rowGroup.WriteAsync(dataFields[2], ToNullable(longitudes), cancellationToken: TestContext.Current.CancellationToken);
-                await rowGroup.WriteAsync(dataFields[3], ToNullable(latitudes), cancellationToken: TestContext.Current.CancellationToken);
-                await rowGroup.WriteAsync(dataFields[4], ToNullable(longitudes), cancellationToken: TestContext.Current.CancellationToken);
-                await rowGroup.WriteAsync(dataFields[5], ToNullable(latitudes), cancellationToken: TestContext.Current.CancellationToken);
-            }
+            case float value:
+                Assert.Equal(double.Parse(expected, CultureInfo.InvariantCulture), value, message);
+                break;
+            case double value:
+                Assert.Equal(double.Parse(expected, CultureInfo.InvariantCulture), value, message);
+                break;
+            case decimal value:
+                Assert.Equal(decimal.Parse(expected, CultureInfo.InvariantCulture), value, message);
+                break;
+            case bool value:
+                Assert.Equal(expected, value ? "true" : "false", message);
+                break;
+            case byte[] value:
+                Assert.Equal(expected, Convert.ToHexStringLower(value), message);
+                break;
+            case DateTime value:
+                Assert.Equal(expected, value.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff", CultureInfo.InvariantCulture), message);
+                break;
+            case DateOnly value:
+                Assert.Equal(expected, value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), message);
+                break;
+            case TimeOnly value:
+                Assert.Equal(expected, value.ToString(value.Ticks % TimeSpan.TicksPerSecond is 0 ? "HH:mm:ss" : "HH:mm:ss.ffffff", CultureInfo.InvariantCulture), message);
+                break;
+            default:
+                Assert.Equal(expected, Convert.ToString(actual, CultureInfo.InvariantCulture), message);
+                break;
         }
-
-        return stream.ToArray();
     }
 }

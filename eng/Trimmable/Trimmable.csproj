@@ -39,6 +39,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo\Meziantou.Framework.Geo.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.GeoPackage\Meziantou.Framework.Geo.GeoPackage.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.GeoParquet\Meziantou.Framework.Geo.GeoParquet.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps\Meziantou.Framework.Geo.Maps.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.Data\Meziantou.Framework.Geo.Maps.Data.Afghanistan\Meziantou.Framework.Geo.Maps.Data.Afghanistan.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.Data\Meziantou.Framework.Geo.Maps.Data.Africa\Meziantou.Framework.Geo.Maps.Data.Africa.csproj" />
@@ -398,6 +399,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.FullPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.GeoPackage" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Geo.GeoParquet" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps.Data.Afghanistan" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps.Data.Africa" />

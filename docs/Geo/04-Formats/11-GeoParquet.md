@@ -5,7 +5,8 @@ description: Read GeoParquet files, the columnar format of geospatial data lakes
 
 [GeoParquet](https://geoparquet.org/) stores features in Apache Parquet files: a column holds the geometries as WKB,
 and the other columns hold the properties. GDAL, GeoPandas, DuckDB and the cloud data catalogs write it for large
-datasets. The reader is in the `Meziantou.Framework.Geo.GeoParquet` package, which depends on `Parquet.Net`:
+datasets. The reader is in the `Meziantou.Framework.Geo.GeoParquet` package, which reads Parquet files itself, with no
+dependency outside .NET:
 
 ```shell
 dotnet add package Meziantou.Framework.Geo.GeoParquet
@@ -65,3 +66,18 @@ The features are kept whole: a feature that crosses the edge of the box is not c
   lists and maps, such as the bbox covering column, are not read.
 - **Not kept**: the identifiers, as GeoParquet has none, and the coordinate system. The coordinates are expected to be
   longitudes and latitudes (OGC:CRS84, the default of GeoParquet), and are not converted otherwise.
+
+## Supported Parquet files
+
+The reader reads the files that GDAL, GeoPandas (pyarrow), DuckDB and Spark write:
+
+- **Compression**: none, Snappy, GZIP, Brotli, LZ4 and Zstandard. Zstandard needs .NET 11 or later: on .NET 10, such a
+  file throws a `NotSupportedException`. LZO is not supported.
+- **Pages and encodings**: data pages of versions 1 and 2, dictionaries, and the PLAIN, RLE, DELTA_BINARY_PACKED,
+  DELTA_LENGTH_BYTE_ARRAY, DELTA_BYTE_ARRAY and BYTE_STREAM_SPLIT encodings.
+- **Types**: the integers, signed or not, the floating-point numbers, the booleans, the strings, the byte arrays, the
+  decimals (a `decimal`, or a `double` beyond 28 digits), the dates (`DateOnly`), the times (`TimeOnly`), the
+  timestamps (`DateTime`, in UTC when the column is adjusted to UTC) and the UUIDs (`Guid`).
+- **Not supported**: encrypted files and column chunks stored in other files throw a `NotSupportedException`.
+
+Invalid data throws a `FormatException`.

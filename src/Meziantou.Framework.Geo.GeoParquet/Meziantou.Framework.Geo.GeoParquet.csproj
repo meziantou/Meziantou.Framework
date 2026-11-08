@@ -4,18 +4,12 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Geo</RootNamespace>
     <Version>1.0.0</Version>
-    <!-- Parquet.Net and Microsoft.IO.RecyclableMemoryStream, which it depends on, do not pass trim analysis (IL2026/IL2070) -->
-    <SkipTrimmableValidation>true</SkipTrimmableValidation>
     <Description>Reads GeoParquet files (.parquet), the columnar format of geospatial data lakes, as the features of Meziantou.Framework.Geo, one row group at a time, skipping the row groups outside of a region.</Description>
     <PackageTags>geo;gis;geoparquet;parquet;features;wkb</PackageTags>
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Parquet.Net" Version="6.1.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />

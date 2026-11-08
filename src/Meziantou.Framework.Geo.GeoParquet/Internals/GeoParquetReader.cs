@@ -1,7 +1,5 @@
 using System.Runtime.CompilerServices;
-using System.Text.Json;
-using Parquet;
-using Parquet.Schema;
+using Meziantou.Framework.Geo.Internals.Parquet;
 
 namespace Meziantou.Framework.Geo.Internals;
 
@@ -13,73 +11,77 @@ internal static class GeoParquetReader
 {
     public static async IAsyncEnumerable<GeoFeature> ReadAsync(Stream stream, GeoParquetReaderOptions? options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        ParquetReader reader;
+        ParquetFile file;
         try
         {
-            reader = await ParquetReader.CreateAsync(stream, parquetOptions: null, leaveStreamOpen: true, cancellationToken).ConfigureAwait(false);
+            file = await ParquetFile.OpenAsync(stream, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is IOException || IsParquetError(ex))
+        catch (OverflowException ex)
         {
-            // Parquet.Net reports data that does not have the signature of the format as an IOException
-            throw new FormatException("The data is not a valid Parquet file: " + ex.Message, ex);
+            throw new FormatException("The metadata of the Parquet file is not valid: " + ex.Message, ex);
         }
 
-        await using (reader.ConfigureAwait(false))
+        var metadata = GeoParquetMetadata.Read(file.KeyValueMetadata, options?.GeometryColumn);
+        var columns = file.Columns;
+        var geometryColumn = Array.FindIndex(columns, column => column.Path.Length == 1 && column.Name == metadata.GeometryColumn);
+        if (geometryColumn < 0)
+            throw new FormatException($"The GeoParquet file has no column '{metadata.GeometryColumn}'.");
+
+        if (columns[geometryColumn].PhysicalType is not (ParquetColumn.ByteArray or ParquetColumn.FixedLenByteArray))
+            throw new FormatException($"The geometry column '{metadata.GeometryColumn}' of the GeoParquet file is not a binary column.");
+
+        // The properties are the top-level columns that are not repeated; the columns of a structure, a list or a map,
+        // such as the bbox covering, are not read
+        var coveringColumn = metadata.Covering?.Column;
+        var propertyColumns = Enumerable.Range(0, columns.Length)
+            .Where(i => i != geometryColumn && columns[i].Path.Length == 1 && columns[i].MaxRepetitionLevel == 0 && columns[i].Name != coveringColumn)
+            .ToArray();
+        var covering = metadata.Covering is { } c ? GetCoveringColumns(columns, c) : null;
+        var bounds = options?.Bounds;
+
+        for (var rowGroup = 0; rowGroup < file.RowGroupCount; rowGroup++)
         {
-            var metadata = GeoParquetMetadata.Read(reader.CustomMetadata, options?.GeometryColumn);
-            var fields = reader.Schema.GetDataFields();
-            var geometryField = Array.Find(fields, field => field.Path.Length == 1 && field.Name == metadata.GeometryColumn)
-                ?? throw new FormatException($"The GeoParquet file has no column '{metadata.GeometryColumn}'.");
-            if (!ParquetColumns.IsBinary(geometryField))
-                throw new FormatException($"The geometry column '{metadata.GeometryColumn}' of the GeoParquet file is not a binary column.");
+            if (bounds is { } box && covering is { } coveringColumns && !MayIntersect(file, rowGroup, coveringColumns, box))
+                continue;
 
-            // The properties are the top-level columns; the columns of a struct, a list or a map, such as the bbox covering, are not read
-            var coveringColumn = metadata.Covering?.Column;
-            var propertyFields = fields
-                .Where(field => field.Path.Length == 1 && !ReferenceEquals(field, geometryField) && field.Name != coveringColumn && ParquetColumns.IsSupported(field))
-                .ToArray();
-            var covering = metadata.Covering is { } c ? GetCoveringFields(fields, c) : null;
-            var bounds = options?.Bounds;
-
-            for (var i = 0; i < reader.RowGroupCount; i++)
+            var rowCount = file.GetRowCount(rowGroup);
+            object?[] geometries;
+            var values = new object?[propertyColumns.Length][];
+            try
             {
-                using var rowGroup = reader.OpenRowGroupReader(i);
-                if (bounds is { } box && covering is not null && !ParquetColumns.MayIntersect(rowGroup, covering.Value, box))
+                geometries = await file.ReadColumnAsync(rowGroup, geometryColumn, cancellationToken).ConfigureAwait(false);
+                for (var j = 0; j < propertyColumns.Length; j++)
+                {
+                    values[j] = await file.ReadColumnAsync(rowGroup, propertyColumns[j], cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (OverflowException ex)
+            {
+                throw new FormatException("A value of the Parquet file is out of range: " + ex.Message, ex);
+            }
+
+            for (var row = 0; row < rowCount; row++)
+            {
+                var geometry = geometries[row] switch
+                {
+                    byte[] wkb => ReadGeometry(wkb),
+                    null => null,
+                    _ => throw new FormatException($"The geometry column '{metadata.GeometryColumn}' of the GeoParquet file is not a binary column."),
+                };
+
+                if (bounds is { } filter && (geometry?.GetBounds() is not { } geometryBounds || !Intersects(filter, geometryBounds)))
                     continue;
 
-                var rowCount = checked((int)rowGroup.RowCount);
-                byte[]?[] geometries;
-                var values = new object?[propertyFields.Length][];
-                try
+                var properties = new Dictionary<string, object?>(propertyColumns.Length, StringComparer.Ordinal);
+                for (var j = 0; j < propertyColumns.Length; j++)
                 {
-                    geometries = await ParquetColumns.ReadBinaryAsync(rowGroup, geometryField, rowCount, cancellationToken).ConfigureAwait(false);
-                    for (var j = 0; j < propertyFields.Length; j++)
+                    if (values[j][row] is { } value)
                     {
-                        values[j] = await ParquetColumns.ReadAsync(rowGroup, propertyFields[j], rowCount, cancellationToken).ConfigureAwait(false);
+                        properties[columns[propertyColumns[j]].Name] = value;
                     }
                 }
-                catch (Exception ex) when (IsParquetError(ex))
-                {
-                    throw new FormatException("The Parquet file cannot be read: " + ex.Message, ex);
-                }
 
-                for (var row = 0; row < rowCount; row++)
-                {
-                    var geometry = geometries[row] is { } wkb ? ReadGeometry(wkb) : null;
-                    if (bounds is { } filter && (geometry?.GetBounds() is not { } geometryBounds || !Intersects(filter, geometryBounds)))
-                        continue;
-
-                    var properties = new Dictionary<string, object?>(propertyFields.Length, StringComparer.Ordinal);
-                    for (var j = 0; j < propertyFields.Length; j++)
-                    {
-                        if (values[j][row] is { } value)
-                        {
-                            properties[propertyFields[j].Name] = value;
-                        }
-                    }
-
-                    yield return new GeoFeature(geometry, properties);
-                }
+                yield return new GeoFeature(geometry, properties);
             }
         }
     }
@@ -93,17 +95,26 @@ internal static class GeoParquetReader
 
     private static bool Intersects(GeoBounds a, GeoBounds b) => b.West <= a.East && b.East >= a.West && b.South <= a.North && b.North >= a.South;
 
-    private static (DataField XMin, DataField YMin, DataField XMax, DataField YMax)? GetCoveringFields(DataField[] fields, GeoParquetCovering covering)
+    /// <summary>
+    /// Gets a value that indicates whether a row group may have geometries in a box: <see langword="false"/> only when
+    /// the statistics of the bbox covering show that every geometry is outside of it.
+    /// </summary>
+    private static bool MayIntersect(ParquetFile file, int rowGroup, (int XMin, int YMin, int XMax, int YMax) covering, GeoBounds box)
+    {
+        return !(file.GetDoubleStatistics(rowGroup, covering.XMin).Min > box.East
+            || file.GetDoubleStatistics(rowGroup, covering.XMax).Max < box.West
+            || file.GetDoubleStatistics(rowGroup, covering.YMin).Min > box.North
+            || file.GetDoubleStatistics(rowGroup, covering.YMax).Max < box.South);
+    }
+
+    private static (int XMin, int YMin, int XMax, int YMax)? GetCoveringColumns(ParquetColumn[] columns, GeoParquetCovering covering)
     {
         var xmin = Find(covering.XMin);
         var ymin = Find(covering.YMin);
         var xmax = Find(covering.XMax);
         var ymax = Find(covering.YMax);
-        return xmin is null || ymin is null || xmax is null || ymax is null ? null : (xmin, ymin, xmax, ymax);
+        return xmin < 0 || ymin < 0 || xmax < 0 || ymax < 0 ? null : (xmin, ymin, xmax, ymax);
 
-        DataField? Find(string[] path) => Array.Find(fields, field => field.Path.ToList().SequenceEqual(path, StringComparer.Ordinal));
+        int Find(string[] path) => Array.FindIndex(columns, column => column.Path.AsSpan().SequenceEqual(path));
     }
-
-    // Parquet.Net reports invalid data with several exception types
-    private static bool IsParquetError(Exception exception) => exception is EndOfStreamException or ParquetException or InvalidDataException or InvalidOperationException or ArgumentException or NotSupportedException or IndexOutOfRangeException or OverflowException or JsonException;
 }

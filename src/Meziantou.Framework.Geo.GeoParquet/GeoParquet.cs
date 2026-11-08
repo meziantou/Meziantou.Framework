@@ -22,6 +22,12 @@ namespace Meziantou.Framework.Geo;
 /// column, are not read. The features have no identifier.
 /// </para>
 /// <para>
+/// The Parquet files are read without dependency: the pages of versions 1 and 2, with the PLAIN, dictionary, RLE, delta and
+/// BYTE_STREAM_SPLIT encodings, uncompressed or compressed with Snappy, GZIP, Brotli, LZ4 or Zstandard. Zstandard needs
+/// .NET 11 or later: on .NET 10, such a file throws a <see cref="NotSupportedException"/>, as do LZO, encrypted files and
+/// column chunks stored in other files.
+/// </para>
+/// <para>
 /// The file is read one row group at a time: the memory holds the columns of a row group, not the whole file. With
 /// <see cref="GeoParquetReaderOptions.Bounds"/>, the row groups whose bbox covering statistics are outside of the box
 /// are skipped.
@@ -36,6 +42,7 @@ public static class GeoParquet
     /// <returns>The features, in the order of the file, in a collection named after the file, without its extension.</returns>
     /// <exception cref="ArgumentException">The file has no geometry column named <see cref="GeoParquetReaderOptions.GeometryColumn"/>.</exception>
     /// <exception cref="FormatException">The file is not a valid GeoParquet file, its geometry column is not encoded as WKB, or a geometry is not valid.</exception>
+    /// <exception cref="NotSupportedException">The file uses a feature that is not supported: Zstandard on .NET 10, LZO, encryption, or column chunks in other files.</exception>
     public static async Task<GeoFeatureCollection> ReadAsync(string path, GeoParquetReaderOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -55,6 +62,7 @@ public static class GeoParquet
     /// <returns>The features, in the order of the data.</returns>
     /// <exception cref="ArgumentException">The data has no geometry column named <see cref="GeoParquetReaderOptions.GeometryColumn"/>.</exception>
     /// <exception cref="FormatException">The data is not valid GeoParquet, its geometry column is not encoded as WKB, or a geometry is not valid.</exception>
+    /// <exception cref="NotSupportedException">The stream cannot seek, or the file uses a feature that is not supported: Zstandard on .NET 10, LZO, encryption, or column chunks in other files.</exception>
     public static async Task<GeoFeatureCollection> ReadAsync(Stream stream, GeoParquetReaderOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -77,6 +85,7 @@ public static class GeoParquet
     /// <returns>The features, in the order of the file. The file is opened when the enumeration starts, and closed when it ends.</returns>
     /// <exception cref="ArgumentException">The file has no geometry column named <see cref="GeoParquetReaderOptions.GeometryColumn"/>.</exception>
     /// <exception cref="FormatException">The file is not a valid GeoParquet file, its geometry column is not encoded as WKB, or a geometry is not valid. The features read before the error are returned first.</exception>
+    /// <exception cref="NotSupportedException">The file uses a feature that is not supported: Zstandard on .NET 10, LZO, encryption, or column chunks in other files.</exception>
     public static IAsyncEnumerable<GeoFeature> ReadFeaturesAsync(string path, GeoParquetReaderOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -93,6 +102,7 @@ public static class GeoParquet
     /// <returns>The features, in the order of the data.</returns>
     /// <exception cref="ArgumentException">The data has no geometry column named <see cref="GeoParquetReaderOptions.GeometryColumn"/>.</exception>
     /// <exception cref="FormatException">The data is not valid GeoParquet, its geometry column is not encoded as WKB, or a geometry is not valid. The features read before the error are returned first.</exception>
+    /// <exception cref="NotSupportedException">The stream cannot seek, or the file uses a feature that is not supported: Zstandard on .NET 10, LZO, encryption, or column chunks in other files.</exception>
     public static IAsyncEnumerable<GeoFeature> ReadFeaturesAsync(Stream stream, GeoParquetReaderOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);

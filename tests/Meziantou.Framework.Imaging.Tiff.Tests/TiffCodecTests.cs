@@ -1978,9 +1978,11 @@ public sealed class TiffCodecTests
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, strip[..^2])));
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])));
 
+        // A codestream of signed samples is not the one of a page of unsigned samples
+        var signed = Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 1, 1, Jpeg2000TestFiles.Signed)));
+        Assert.Equal(ImageFormat.Tiff, signed.Format);
+
         // What the codestream cannot be: a JPEG 2000 feature that is not supported is one of the page
-        var signed = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(5, 3, 1, 1, Jpeg2000TestFiles.Signed)));
-        Assert.Equal((ImageFormat.Tiff, "Compression: signed samples"), (signed.Format, signed.Feature));
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(6, 4, 3, 2, Jpeg2000TestFiles.Subsampled)));
 
         // What the page cannot declare with this compression: these are known from the directory, without reading a block

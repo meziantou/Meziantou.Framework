@@ -75,7 +75,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     {
         var scope = _context.Scope;
         var tools = coding.Tools;
-        using var packets = new Jpeg2000PacketReader(scope, siz, coding, geometry, tile, _context.CancellationToken);
+        using var packets = new Jpeg2000PacketReader(scope, siz, coding, geometry, tile, _context.Configuration.Jpeg2000Decoding.QualityLayerLimit ?? int.MaxValue, _context.CancellationToken);
         packets.ReadPackets();
         tools |= packets.Tools;
 

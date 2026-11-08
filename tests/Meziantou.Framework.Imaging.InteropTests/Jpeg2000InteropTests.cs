@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Jpeg2000;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
@@ -190,6 +191,10 @@ public sealed class Jpeg2000InteropTests
         {
             var prefix = await openJpeg.DecodeComponentsAsync(path, ["-l", layer.ToString(CultureInfo.InvariantCulture)], XunitCancellationToken);
             errors.Add(GetMeanDifference(source, ToPixels(prefix, layout), layout.ChannelCount));
+
+            // The library decodes the same layers
+            using var limited = Image.Load(await File.ReadAllBytesAsync(path, XunitCancellationToken), LayerLimit(layer));
+            AssertChannels(ImageSnapshots.Capture(limited).Frames[0].Pixels, prefix, tolerance: isLossy ? 1 : 0, $"{context}, {layer} layer(s): OpenJPEG {openJpeg.Version} decodes other samples than the library.");
         }
 
         var description = string.Join(", ", errors.Select(error => error.ToString("0.###", CultureInfo.InvariantCulture)));
@@ -513,7 +518,134 @@ public sealed class Jpeg2000InteropTests
         {
             Assert.True(source.Span.SequenceEqual(decoded.Span), context + ": a lossless codestream does not decode to the samples given to the encoder.");
         }
+
+        // The first layers alone, as opj_decompress -l decodes them
+        var data = await File.ReadAllBytesAsync(output, XunitCancellationToken);
+        var layerCount = ReferenceJpeg2000.Parse(data).LayerCount;
+        for (var layer = 1; layer < layerCount; layer++)
+        {
+            var prefix = await openJpeg.DecodeComponentsAsync(output, ["-l", layer.ToString(CultureInfo.InvariantCulture)], XunitCancellationToken);
+            using var limited = Image.Load(data, LayerLimit(layer));
+            AssertChannels(ImageSnapshots.Capture(limited).Frames[0].Pixels, prefix, isExact ? 0 : layout.ScaleFrom8Bit, context + $", {layer} layer(s): OpenJPEG {openJpeg.Version} decodes other samples than the library.");
+        }
     }
+
+    /// <summary>
+    /// The corpus fixtures of several quality layers (progression orders, tile-parts by layer, the high-throughput block
+    /// coder): each limit gives the samples <c>opj_decompress -l</c> gives, exactly for the reversible path and within one
+    /// level of 8 bits for the irreversible one.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(LayeredFixtures))]
+    public async Task QualityLayerLimitsDecodeTheLayersOpenJpegDecodes(string id)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var fixture = GoldenCorpus.Default.Get(id);
+        var data = fixture.ReadInput();
+        var structure = ReferenceJpeg2000.Parse(data);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(QualityLayerLimitsDecodeTheLayersOpenJpegDecodes));
+        var path = directory / (id.Replace('/', '-') + Path.GetExtension(fixture.InputPath));
+        await File.WriteAllBytesAsync(path, data, XunitCancellationToken);
+        var isExact = structure.CodingStyles.All(style => style.IsReversible) && structure.EnumeratedColorSpace != 18;
+        for (var layer = 1; layer <= structure.LayerCount; layer++)
+        {
+            var reference = await openJpeg.DecodeComponentsAsync(path, ["-l", layer.ToString(CultureInfo.InvariantCulture)], XunitCancellationToken);
+            using var image = Image.Load(data, LayerLimit(layer));
+            var decoded = ImageSnapshots.Capture(image).Frames[0].Pixels;
+            AssertChannels(decoded, reference, isExact ? 0 : decoded.Layout.ScaleFrom8Bit, $"{id}, {layer} layer(s): OpenJPEG {openJpeg.Version} decodes other samples than the library.");
+        }
+    }
+
+    public static TheoryData<string> LayeredFixtures()
+    {
+        var data = new TheoryData<string>();
+        foreach (var id in GoldenCorpus.Default.GetIds(format: "jp2", kind: "valid"))
+        {
+            // The fixtures OpenJPEG does not read as the Recommendation says (HT refinement segments in a later packet
+            // than their HT cleanup segment) are left out: their cross-check records the limit
+            var fixture = GoldenCorpus.Default.Get(id);
+            var openJpegDiffers = fixture.Entry.Reference?.CrossChecks?.Any(check => check.Decoder.StartsWith("OpenJPEG", StringComparison.Ordinal) && check.Result == FixtureCrossCheck.Differs) ?? false;
+            if (!openJpegDiffers && ReferenceJpeg2000.Parse(fixture.ReadInput()).LayerCount > 1)
+            {
+                data.Add(id);
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// Signed samples of every depth, in one and three components, reversible or not: the library gives the samples
+    /// <c>opj_decompress</c> gives, offset by half their range.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(SignedSeeds))]
+    public async Task SignedSamplesDecodeToTheSamplesOpenJpegDecodesOffsetByHalfTheirRange(int seed)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        // Every depth meets one and three components over the seeds. opj_compress refuses some raw images of three signed
+        // components of 2, 5 or 10 bits ("invalid raw image parameters": a width of 2 or 3 modulo 4, an odd number of
+        // pixels), so that these depths are in one component only
+        var random = new SeededRandom(seed);
+        var componentCount = seed % 2 == 0 ? 1 : 3;
+        int[] depths = componentCount == 1 ? [2, 4, 5, 8, 10, 12, 16] : [4, 8, 12, 16];
+        var depth = depths[(seed / 2) % depths.Length];
+        var width = random.Next(1, 60);
+        var height = random.Next(1, 50);
+        var irreversible = random.Next(3) == 0;
+        var levels = random.Next(0, Math.Min(5, System.Numerics.BitOperations.Log2((uint)Math.Min(width, height)) + 1));
+        List<string> arguments = ["-n", (levels + 1).ToString(CultureInfo.InvariantCulture), "-r", Pick(random, "1", "8,1", "20,4")];
+        if (irreversible)
+        {
+            arguments.Add("-I");
+        }
+
+        if (componentCount == 3 && random.Next(2) == 0)
+        {
+            arguments.AddRange(["-mct", "0"]);
+        }
+
+        // Signed samples over the whole range, the extremes included
+        var raw = new List<byte>();
+        var minimum = -(1 << (depth - 1));
+        for (var component = 0; component < componentCount; component++)
+        {
+            for (var i = 0; i < width * height; i++)
+            {
+                var value = i switch
+                {
+                    0 => minimum,
+                    1 => -minimum - 1,
+                    _ => minimum + random.Next(1 << depth),
+                };
+                if (depth > 8)
+                {
+                    raw.Add((byte)(value >> 8));
+                }
+
+                raw.Add((byte)value);
+            }
+        }
+
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(SignedSamplesDecodeToTheSamplesOpenJpegDecodesOffsetByHalfTheirRange));
+        var input = directory / $"seed-{seed}.raw";
+        var output = directory / $"seed-{seed}.j2k";
+        await File.WriteAllBytesAsync(input, [.. raw], XunitCancellationToken);
+        var format = string.Create(CultureInfo.InvariantCulture, $"{width},{height},{componentCount},{depth},s@") + string.Join(':', Enumerable.Repeat("1x1", componentCount));
+        var context = $"seed {seed}: {width}x{height}, {componentCount} component(s) of {depth} signed bits, opj_compress {string.Join(' ', arguments)}";
+        await openJpeg.EncodeAsync(input, output, ["-F", format, .. arguments], XunitCancellationToken);
+        Assert.All(ReferenceJpeg2000.Parse(await File.ReadAllBytesAsync(output, XunitCancellationToken)).Components, component => Assert.True(component.IsSigned, context));
+
+        var reference = await openJpeg.DecodeComponentsAsync(output, XunitCancellationToken);
+        Assert.All(reference, channel => Assert.True(channel.IsSigned, context));
+        using var image = await Image.LoadAsync(output, cancellationToken: XunitCancellationToken);
+        var decoded = ImageSnapshots.Capture(image).Frames[0].Pixels;
+        AssertChannels(decoded, reference, irreversible ? decoded.Layout.ScaleFrom8Bit : 0, context + $": OpenJPEG {openJpeg.Version} decodes other samples than the library.", componentCount);
+    }
+
+    public static TheoryData<int> SignedSeeds => [.. Enumerable.Range(1, 24)];
+
+    private static ImageDecodeOptions LayerLimit(int layers) => new() { Configuration = new ImageConfiguration { Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = layers } } };
 
     [Theory]
     [MemberData(nameof(Seeds))]
@@ -618,7 +750,7 @@ public sealed class Jpeg2000InteropTests
             {
                 using var image = await Image.LoadAsync(copy, cancellationToken: XunitCancellationToken);
                 var decoded = ImageSnapshots.Capture(image).Frames[0].Pixels;
-                if (reference.Count != decoded.Layout.ChannelCount || reference.Any(channel => channel.Width != decoded.Width || channel.Height != decoded.Height || channel.IsSigned))
+                if (reference.Count != decoded.Layout.ChannelCount || reference.Any(channel => channel.Width != decoded.Width || channel.Height != decoded.Height))
                     continue;
 
                 compared++;
@@ -680,14 +812,17 @@ public sealed class Jpeg2000InteropTests
         for (var channel = 0; channel < count; channel++)
         {
             var plane = channels[channel];
-            Assert.Equal((expected.Width, expected.Height, false), (plane.Width, plane.Height, plane.IsSigned));
+            Assert.Equal((expected.Width, expected.Height), (plane.Width, plane.Height));
             long maximum = (1L << plane.Precision) - 1;
+
+            // The library offsets a signed sample by half its range
+            var offset = plane.IsSigned ? 1L << (plane.Precision - 1) : 0;
             var samples = plane.Samples.Span;
             for (var y = 0; y < expected.Height; y++)
             {
                 for (var x = 0; x < expected.Width; x++)
                 {
-                    var actual = (int)((((long)samples[(y * expected.Width) + x] * layout.MaxSampleValue) + (maximum / 2)) / maximum);
+                    var actual = (int)((((samples[(y * expected.Width) + x] + offset) * layout.MaxSampleValue) + (maximum / 2)) / maximum);
                     var value = expected.GetSample(x, y, channel);
                     if (Math.Abs(value - actual) > tolerance)
                     {

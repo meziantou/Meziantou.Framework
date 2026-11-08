@@ -22,9 +22,9 @@ internal sealed class Jpeg2000Palette
     /// <summary>Gets the number of bits of the values of a column.</summary>
     public int GetColumnPrecision(int column) => (_columnDepths[column] & 0x7F) + 1;
 
-    /// <summary>Gets a value indicating whether the values of a column are signed.</summary>
-    public bool IsColumnSigned(int column) => (_columnDepths[column] & 0x80) != 0;
-
-    /// <summary>Gets the values of a column, one per entry, when the column has at most 16 bits.</summary>
+    /// <summary>
+    /// Gets the values of a column, one per entry, when the column has at most 16 bits. The values of a signed column are
+    /// offset by half their range.
+    /// </summary>
     public ReadOnlySpan<ushort> GetColumn(int column) => _entries.AsSpan(column * EntryCount, EntryCount);
 }

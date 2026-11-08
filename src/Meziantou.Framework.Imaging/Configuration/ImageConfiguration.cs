@@ -60,6 +60,22 @@ public sealed class ImageConfiguration
         }
     } = OpenExrDecodingOptions.Default;
 
+    /// <summary>
+    /// Gets the options of the JPEG 2000 decoder: the quality layers it decodes. Defaults to
+    /// <see cref="Jpeg2000DecodingOptions.Default"/>, which decodes every layer.
+    /// </summary>
+    /// <remarks>Eager loads, sequential readers and collections read them alike. The other formats ignore them.</remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    public Jpeg2000DecodingOptions Jpeg2000Decoding
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    } = Jpeg2000DecodingOptions.Default;
+
     /// <summary>Gets the environment of the fonts loaded with this configuration.</summary>
     internal Internals.ImageFontEnvironment FontEnvironment => field ??= new Internals.ImageFontEnvironment(this);
 

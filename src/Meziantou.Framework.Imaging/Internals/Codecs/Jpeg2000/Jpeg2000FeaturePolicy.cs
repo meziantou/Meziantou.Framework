@@ -9,7 +9,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>
-/// Samples: unsigned, of 1 to 16 bits. Signed samples and deeper samples are rejected: no pixel format holds them.
+/// Samples: of 1 to 16 bits. Deeper samples are rejected: no pixel format holds them. Signed samples are read with the
+/// offset of half their range, as unsigned samples are after their DC level shifting (T.800, G.1.2): a signed sample
+/// <c>v</c> of <c>B</c> bits is the unsigned sample <c>v + 2^(B-1)</c>, which is what the inverse transformations give
+/// before the level shift of unsigned samples. The values of a signed palette column are offset alike. A signed
+/// component that indexes a palette is rejected: an index is not signed.
 /// </description></item>
 /// <item><description>
 /// Channels: one gray level, three colors or four inks, and at most one opacity channel that applies to the whole image
@@ -47,9 +51,6 @@ internal static class Jpeg2000FeaturePolicy
         for (var i = 0; i < siz.Components.Length; i++)
         {
             var component = siz.Components[i];
-            if (component.IsSigned)
-                throw Jpeg2000Format.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The component {i} of the JPEG 2000 image has signed samples."), "signed samples");
-
             if (component.Precision > 16)
                 throw Jpeg2000Format.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The component {i} of the JPEG 2000 image has samples of {component.Precision} bits; at most 16 are supported."), "sample depth");
         }
@@ -330,8 +331,8 @@ internal static class Jpeg2000FeaturePolicy
             if (mapping.PaletteColumn >= palette.ColumnCount)
                 throw Jpeg2000Format.Invalid(string.Create(CultureInfo.InvariantCulture, $"the component mapping box uses the column {mapping.PaletteColumn} of the palette; the palette has {palette.ColumnCount}."));
 
-            if (palette.IsColumnSigned(mapping.PaletteColumn))
-                throw Jpeg2000Format.Unsupported("The palette of the JPEG 2000 image has signed values.", "signed samples");
+            if (components[mapping.Component].IsSigned)
+                throw Jpeg2000Format.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The component {mapping.Component} of the JPEG 2000 image indexes a palette and has signed samples."), "signed palette indexes");
 
             var precision = palette.GetColumnPrecision(mapping.PaletteColumn);
             if (precision > 16)

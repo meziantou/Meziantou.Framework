@@ -302,12 +302,40 @@ public static class BarcodesFuzzTargets
         return new DataMatrixOptions();
     }
 
+    // The bits 0x01, 0x02 and 0x04 of the flags set the error correction level, the columns and the row height, from the
+    // size byte; some values are out of range and must be rejected
     private static Pdf417Options? CreatePdf417Options(byte flags, byte sizeByte)
     {
         if ((flags & 0x0F) == 0)
             return null;
 
-        return new Pdf417Options();
+        var options = new Pdf417Options();
+        if ((flags & 0x01) != 0)
+        {
+            var level = (sizeByte % 10) - 1;
+            SetOption(level is >= 0 and <= 8, () => options.SecurityLevel = level, nameof(Pdf417Options.SecurityLevel));
+        }
+
+        if ((flags & 0x02) != 0)
+        {
+            var columns = sizeByte % 32;
+            SetOption(columns is >= 1 and <= 30, () => options.Columns = columns, nameof(Pdf417Options.Columns));
+        }
+
+        if ((flags & 0x04) != 0)
+        {
+            var rowHeight = sizeByte % 22;
+            SetOption(rowHeight is >= 1 and <= 20, () => options.RowHeight = rowHeight, nameof(Pdf417Options.RowHeight));
+        }
+
+        return options;
+    }
+
+    // An invalid value throws an ArgumentOutOfRangeException, which the caller catches
+    private static void SetOption(bool valid, Action set, string name)
+    {
+        set();
+        FuzzAssert.True(valid, $"The invalid value of {name} is accepted");
     }
 
     private static AztecOptions? CreateAztecOptions(byte flags, byte sizeByte)
@@ -323,9 +351,74 @@ public static class BarcodesFuzzTargets
     {
     }
 
-    // The structure of a PDF417 symbol: its size, start and stop patterns
+    // The structure of a PDF417 symbol: its size, start and stop patterns, rows, and the clusters of the codewords
     private static void CheckPdf417(Barcode2D barcode, Pdf417Options? options)
     {
+        const string StartPattern = "11111111010101000";
+        const string StopPattern = "111111101000101001";
+
+        FuzzAssert.Equal(1, barcode.Width % 17, "The width is 17 modules per column, plus the final bar");
+        var columns = ((barcode.Width - 1) / 17) - 4;
+        FuzzAssert.True(columns is >= 1 and <= 30, $"{columns} data columns");
+        if (options?.Columns is { } expectedColumns)
+        {
+            FuzzAssert.Equal(expectedColumns, columns, "The number of columns of the options");
+        }
+
+        var rowHeight = options?.RowHeight ?? 3;
+        FuzzAssert.Equal(0, barcode.Height % rowHeight, "The height is a multiple of the row height");
+        var rows = barcode.Height / rowHeight;
+        FuzzAssert.True(rows is >= 3 and <= 90, $"{rows} rows");
+        FuzzAssert.True(rows * columns <= 928, $"{rows} rows of {columns} columns hold more than 928 codewords");
+
+        Span<int> widths = stackalloc int[8];
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            var symbolRow = row / rowHeight;
+            for (var column = 0; column < barcode.Width; column++)
+            {
+                if (barcode[row, column] != barcode[symbolRow * rowHeight, column])
+                    FuzzAssert.Fail($"The row {row} differs from the first row of its group at column {column}");
+            }
+
+            for (var i = 0; i < StartPattern.Length; i++)
+            {
+                FuzzAssert.Equal(StartPattern[i] == '1', barcode[row, i], $"The start pattern of the row {row}");
+            }
+
+            for (var i = 0; i < StopPattern.Length; i++)
+            {
+                FuzzAssert.Equal(StopPattern[i] == '1', barcode[row, barcode.Width - StopPattern.Length + i], $"The stop pattern of the row {row}");
+            }
+
+            // The row indicators and the data codewords: 4 bars and 4 spaces of 1 to 6 modules, in the cluster of the row
+            for (var codeword = 0; codeword < columns + 2; codeword++)
+            {
+                var start = 17 * (codeword + 1);
+                widths.Clear();
+                var count = 0;
+                for (var i = 0; i < 17; i++)
+                {
+                    if (i > 0 && barcode[row, start + i] != barcode[row, start + i - 1])
+                    {
+                        count++;
+                        if (count >= 8)
+                            break;
+                    }
+
+                    widths[count]++;
+                }
+
+                FuzzAssert.True(count == 7 && barcode[row, start] && !barcode[row, start + 16], $"The codeword {codeword} of the row {row} does not have 4 bars and 4 spaces");
+                foreach (var width in widths)
+                {
+                    FuzzAssert.True(width is >= 1 and <= 6, $"The codeword {codeword} of the row {row} has an element of {width} modules");
+                }
+
+                var cluster = (widths[0] - widths[2] + widths[4] - widths[6] + 9) % 9;
+                FuzzAssert.Equal(3 * (symbolRow % 3), cluster, $"The cluster of the codeword {codeword} of the row {row}");
+            }
+        }
     }
 
     // The structure of an Aztec symbol: its size, finder pattern and orientation marks

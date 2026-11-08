@@ -11,8 +11,6 @@ description: What the template engine, the HTML email templates and the command-
   by a user of your application.
 - **Templates do not compose.** A template cannot include another template, and there are no layouts or partial
   templates: `include` adds a C# file. Run the templates separately and pass the text of one as an argument of another.
-- **No escape sequence for the delimiters.** Write a delimiter from an expression, or choose other delimiters. See
-  [Change the delimiters](03-TemplateSyntax.md#change-the-delimiters).
 - **Restricted types.** The types of arguments, [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) and the base class must be public, not nested and not
   generic. See [Passing arguments](04-PassingArguments.md#pass-values-of-your-own-types).
 - **`dynamic` code is never unloaded.** See [Avoid dynamic code](08-CompilationAndMemory.md#avoid-dynamic-code).

@@ -3227,8 +3227,11 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public bool AllowBitDepthReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
+        public int? BitDepth { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling ChromaSubsampling { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.JpegEntropyCoding EntropyCoding { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public int LosslessPredictor { get => throw null; init { } }
         public bool OptimizeHuffmanTables { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegEncodingProcess Process { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
@@ -3239,6 +3242,13 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         Baseline = 0,
         Progressive = 1,
+        Lossless = 2,
+    }
+
+    public enum JpegEntropyCoding
+    {
+        Huffman = 0,
+        Arithmetic = 1,
     }
 
     public enum JpegXlCompression

@@ -90,6 +90,17 @@ an 8-bit pixel format and 16 bits for a 16-bit one. Each sample is predicted fro
 ([LosslessPredictor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.LosslessPredictor), 1 to 7) and the difference is coded:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveLosslessJpeg;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveLosslessJpeg(string sourcePath, string jpegPath)
+{
+    using var image = Image.Load(sourcePath);
+    image.Save(jpegPath, new JpegEncoder
+    {
+        Process = JpegEncodingProcess.Lossless,
+        LosslessPredictor = 7,
+    });
+}
+```
 <!-- endref -->
 
 - Color pixel formats are written as RGB components, without chroma subsampling; the JFIF segment, and so the JFIF
@@ -105,6 +116,18 @@ and [EntropyCoding](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.Entropy
 the file decodes to the same pixels as the Huffman-coded one:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveTwelveBitJpeg;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveTwelveBitJpeg(string sourcePath, string jpegPath)
+{
+    using var image = Image.Load<Rgb48>(sourcePath);
+    image.Save(jpegPath, new JpegEncoder
+    {
+        Quality = 90,
+        BitDepth = 12,
+        EntropyCoding = JpegEntropyCoding.Arithmetic,
+    });
+}
+```
 <!-- endref -->
 
 - A 12-bit file uses the quantization tables of an 8-bit one, as libjpeg does, so its coefficients are quantized

@@ -12,7 +12,7 @@ are large and opened by fewer readers: choose lossy 4:2:0 output for files that 
 | | Reading | Writing |
 | --- | --- | --- |
 | Images | Still images and image sequences, grids (the tiles of phone photos) | Still images and image sequences, grids |
-| Samples | 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome | 8, 10 or 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome |
+| Samples | 8 to 16 bits (above 12 bits, intra pictures, as the 16-bit profiles define them); 4:4:4, 4:2:2, 4:2:0 and monochrome | 8, 10 or 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome |
 | Alpha | Straight alpha | Lossless alpha |
 | Geometry | Clean aperture applied; orientation reported | Orientation of still images |
 | Metadata | ICC profile, EXIF, XMP, CICP color description, content light level, mastering display, pixel aspect ratio | The same |
@@ -123,6 +123,6 @@ a bit-rate or luma-sample-rate limit on playback.
 - Encoding a large image takes time: a lower [Effort](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Effort) encodes faster. With [GridTileSize](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.GridTileSize) and
   [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, the tiles are coded concurrently, and the file is identical.
 - A side is at most 65,528 pixels, and a still image at most 4 GiB.
-- Premultiplied alpha, bit depths above 12 bits and the screen content, multilayer and 3D extensions of HEVC are
-  rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
+- Premultiplied alpha, extended precision processing, inter pictures of more than 12 bits and the screen content,
+  multilayer and 3D extensions of HEVC are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
 - HEVC is covered by patents in many countries: check the licensing terms that apply to what you distribute.

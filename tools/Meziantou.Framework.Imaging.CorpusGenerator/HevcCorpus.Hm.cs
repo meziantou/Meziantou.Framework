@@ -37,6 +37,11 @@ internal static partial class HevcCorpus
         // The profiles of version 1
         yield return HmIntra("hm-intra-main-68x52", Noise(TestSrc2("68x52"), 8, 201), "yuv420p", 2, [], "hevc.profile=main", "hevc.encoder=hm", "hevc.crop=bottom", "hevc.crop=right");
         yield return HmIntra("hm-intra-main10-68x52", Noise(TestSrc2("68x52"), 8, 202), "yuv420p10le", 1, [], "hevc.profile=main10", "hevc.bitDepth=10").Hash("crc");
+        // The 16-bit profiles of the range extensions, which are intra only
+        yield return HmIntra("hm-intra-16bit-444-32x32", Noise(TestSrc2("32x32"), 8, 301), "yuv444p16le", 1, ["--Profile=main_444_16_intra"], "hevc.profile=rext-444-16-intra", "hevc.bitDepth=16")
+            .Without(DecoderFfmpeg, FfmpegHighBitDepth);
+        yield return HmIntra("hm-intra-16bit-400-32x32", Noise(TestSrc2("32x32"), 8, 302), "gray16le", 1, ["--Profile=monochrome16"], "hevc.bitDepth=16", "hevc.chroma=4:0:0")
+            .Without(DecoderFfmpeg, FfmpegHighBitDepth);
         yield return HmIntra("hm-intra-main-still-picture-66x50", Noise(Mandelbrot("66x50"), 8, 203), "yuv420p", 1, ["--Profile=main-still-picture"], "hevc.profile=mainStillPicture").Hash("checksum");
         yield return Hm("hm-low-delay-p-main-64x64", Moving("64x64"), "yuv420p", 4, HmLowDelayP, "hevc.profile=main", "hevc.sliceTypes=P", "hevc.rps=sps");
         yield return Hm("hm-low-delay-b-main10-64x64", Rotating("64x64"), "yuv420p10le", 5, HmLowDelayB, "hevc.profile=main10", "hevc.sliceTypes=B", "hevc.refs=2").Hash("crc");
@@ -240,20 +245,16 @@ internal static partial class HevcCorpus
 
     private static IEnumerable<HevcVector> UnsupportedVectors()
     {
-        // What the library rejects (hevc.unsupported): bit depths above 12, luma and chroma planes of different bit
-        // depths, extended precision processing, CABAC bypass alignment, field sequences. The digests are recorded when
+        // What the library rejects (hevc.unsupported): inter prediction above 12 bits, luma and chroma planes of different
+        // bit depths, extended precision processing, CABAC bypass alignment, field sequences. The digests are recorded when
         // two decoders agree
-        yield return HmIntra("hm-unsupported-16bit-444-32x32", Noise(TestSrc2("32x32"), 8, 301), "yuv444p16le", 1, ["--Profile=main_444_16_intra"], "hevc.unsupported=bitDepth", "hevc.bitDepth=16")
-            .Without(DecoderFfmpeg, FfmpegHighBitDepth);
-        yield return HmIntra("hm-unsupported-16bit-400-32x32", Noise(TestSrc2("32x32"), 8, 302), "gray16le", 1, ["--Profile=monochrome16"], "hevc.unsupported=bitDepth", "hevc.bitDepth=16", "hevc.chroma=4:0:0")
-            .Without(DecoderFfmpeg, FfmpegHighBitDepth);
         yield return HmIntra("hm-unsupported-luma10-chroma8-32x32", Noise(TestSrc2("32x32"), 8, 303), "yuv420p-y10-c8", 1, ["--Profile=main-RExt", "--InputBitDepth=10", "--InternalBitDepth=10", "--InternalBitDepthC=8"], "hevc.unsupported=unequalBitDepth", "hevc.bitDepth=10", "hevc.bitDepthChroma=8")
             with { InputPixelFormat = "yuv420p10le", Excluded = [(DecoderFfmpeg, FfmpegUnequalBitDepth)] };
         yield return HmIntra("hm-unsupported-luma8-chroma10-32x32", Noise(TestSrc2("32x32"), 8, 304), "yuv420p-y8-c10", 1, ["--Profile=main-RExt", "--InternalBitDepth=8", "--InternalBitDepthC=10"], "hevc.unsupported=unequalBitDepth", "hevc.bitDepth=8", "hevc.bitDepthChroma=10")
             with { InputPixelFormat = "yuv420p", Excluded = [(DecoderFfmpeg, FfmpegUnequalBitDepth)] };
         yield return HmIntra("hm-unsupported-extended-precision-12bit-32x32", Noise(TestSrc2("32x32"), 8, 305), "yuv444p12le", 1, ["--Profile=main_444_16_intra", "--ExtendedPrecision=1"], "hevc.unsupported=extendedPrecision")
             with { WithoutDigests = true, Excluded = [(DecoderFfmpeg, FfmpegExtendedPrecision), (DecoderLibde265, Libde265ExtendedPrecision)] };
-        yield return HmIntra("hm-unsupported-extended-precision-16bit-32x32", Noise(TestSrc2("32x32"), 8, 306), "yuv444p16le", 1, ["--Profile=main_444_16_intra", "--ExtendedPrecision=1"], "hevc.unsupported=extendedPrecision", "hevc.unsupported=bitDepth")
+        yield return HmIntra("hm-unsupported-extended-precision-16bit-32x32", Noise(TestSrc2("32x32"), 8, 306), "yuv444p16le", 1, ["--Profile=main_444_16_intra", "--ExtendedPrecision=1"], "hevc.unsupported=extendedPrecision", "hevc.bitDepth=16")
             with { WithoutDigests = true, Excluded = [(DecoderFfmpeg, FfmpegHighBitDepth), (DecoderLibde265, Libde265ExtendedPrecision)] };
         yield return HmIntra("hm-unsupported-bypass-alignment-444-8bit-32x32", Noise(TestSrc2("32x32"), 8, 307), "yuv444p", 1, ["--Profile=high_throughput_444_16_intra", "--AlignCABACBeforeBypass=1", "--InternalBitDepth=8"], "hevc.unsupported=cabacBypassAlignment", "hevc.profile=highThroughput-444-16-intra")
             .Without(DecoderFfmpeg, FfmpegBypassAlignment);

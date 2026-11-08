@@ -92,6 +92,13 @@ internal static class HevcConstants
     /// <summary>The largest number of tile rows (Table A.8, level 6.2 and above).</summary>
     public const int MaxTileRows = 22;
 
-    /// <summary>The largest bit depth of the samples that the decoder supports.</summary>
-    public const int MaxBitDepth = 12;
+    /// <summary>The largest bit depth of the samples that the decoder supports: the one of the 16-bit profiles of the range extensions (clause A.3.5).</summary>
+    public const int MaxBitDepth = 16;
+
+    /// <summary>
+    /// The largest bit depth of the samples of a picture that is predicted from other pictures: the one of the profiles that
+    /// allow inter prediction (Main 12 and Main 4:4:4 12, clause A.3.5); the 16-bit profiles are intra only. The intermediate
+    /// samples of the fractional sample interpolation (clause 8.5.3.3.3) fit 16 bits up to that depth.
+    /// </summary>
+    public const int MaxInterBitDepth = 12;
 }

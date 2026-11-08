@@ -251,9 +251,11 @@ public sealed class HeicDecoderTests
         // A NAL unit has a header of two bytes
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(Still(configuration: HeifFileBuilder.HevcConfiguration(1, 8, 8, [(33, [[0x42]])])).Build()));
 
-        // Bit depths: 8 to 12, the same for luma and chroma unless the image is monochrome
-        var deep = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Still(configuration: HeifFileBuilder.HevcConfiguration(1, 13, 13, [])).Build()));
-        Assert.Equal((ImageFormat.Heic, "bit depth"), (deep.Format, deep.Feature));
+        // Bit depths: 8 to 15 as the record declares them (16 bits are told by its sequence parameter set), the same for luma
+        // and chroma unless the image is monochrome
+        Assert.Equal((13, PixelFormat.Rgb48), (Image.Identify(Still(configuration: HeifFileBuilder.HevcConfiguration(1, 13, 13, [])).Build()) is var deep ? (deep.BitsPerComponent, deep.PixelFormat) : default));
+        var unequal = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Still(configuration: HeifFileBuilder.HevcConfiguration(1, 13, 12, [])).Build()));
+        Assert.Equal((ImageFormat.Heic, "bit depth"), (unequal.Format, unequal.Feature));
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Still(configuration: HeifFileBuilder.HevcConfiguration(1, 10, 8, [])).Build()));
         Assert.Equal(10, Image.Identify(Still(configuration: HeifFileBuilder.HevcConfiguration(0, 10, 8, [])).Build()).BitsPerComponent);
     }

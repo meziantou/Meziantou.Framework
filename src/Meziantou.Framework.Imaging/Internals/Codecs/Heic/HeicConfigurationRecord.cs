@@ -20,6 +20,7 @@ internal static class HeicConfigurationRecord
     /// <exception cref="UnsupportedImageFeatureException">The record declares a version or a sample format that is not supported.</exception>
     public static HeifSampleFormat Read(HeifCodecBinding binding, ref HeifBoxReader reader)
     {
+        var record = reader.Data[reader.Position..];
         if (reader.ReadByte() is not 1)
             throw binding.Unsupported("The version of the HEVC configuration record is not supported.", "configuration record version");
 
@@ -52,12 +53,34 @@ internal static class HeicConfigurationRecord
             }
         }
 
+        // bitDepthLumaMinus8 and bitDepthChromaMinus8 have three bits: 16-bit samples, the deepest of HEVC, are written as 8
+        // bits. The sequence parameter set of the record tells them apart
+        if ((bitDepthLuma is 8 || bitDepthChroma is 8) && TryGetSequenceParameterSetBitDepths(record, out var spsLuma, out var spsChroma))
+        {
+            bitDepthLuma = bitDepthLuma is 8 && spsLuma is 16 ? 16 : bitDepthLuma;
+            bitDepthChroma = bitDepthChroma is 8 && spsChroma is 16 ? 16 : bitDepthChroma;
+        }
+
         var isMonochrome = chromaFormat is 0;
-        if (bitDepthLuma > 12 || (!isMonochrome && bitDepthChroma != bitDepthLuma))
+        if (!isMonochrome && bitDepthChroma != bitDepthLuma)
             throw binding.Unsupported($"The bit depths of the HEIC image ({bitDepthLuma} for luma, {bitDepthChroma} for chroma) are not supported.", "bit depth");
 
         // chroma_format_idc: 1 is 4:2:0, 2 is 4:2:2, 3 is 4:4:4
         return new HeifSampleFormat(bitDepthLuma, isMonochrome, chromaFormat is 1 or 2 ? 1 : 0, chromaFormat is 1 ? 1 : 0);
+    }
+
+    /// <summary>Gets the bit depths of the first sequence parameter set of a record.</summary>
+    private static bool TryGetSequenceParameterSetBitDepths(ReadOnlySpan<byte> record, out int luma, out int chroma)
+    {
+        luma = chroma = 0;
+        var position = default(Position);
+        while (TryReadNalUnit(record, ref position, out var nalUnit))
+        {
+            if (nalUnit.Length > HevcNalUnitHeader.Length && HevcNalUnitHeader.Read(nalUnit).NalUnitType is HevcConstants.NalSps)
+                return HevcSequenceParameterSet.TryReadBitDepths(nalUnit, out luma, out chroma);
+        }
+
+        return false;
     }
 
     /// <summary>

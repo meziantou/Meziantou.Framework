@@ -367,7 +367,6 @@ internal static class ErrorFixtureStages
         // the sequence parameter set of each coded item and of each track (it is in the configuration record, or else in
         // the coded data) and compares it with the record: a sample format that the record does not announce, a feature
         // of the bitstream that is not decoded and a chroma sample location that is not converted are found there
-        "invalid/heic/bitstream-16bit",
         "invalid/heic/bitstream-extended-precision",
         "invalid/heic/chroma-sample-location-3",
         "invalid/heic/grid-size-mismatch",

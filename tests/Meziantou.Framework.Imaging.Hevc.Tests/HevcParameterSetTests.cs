@@ -165,11 +165,51 @@ public sealed class HevcParameterSetTests
         Assert.True(extended is { IntraSmoothingDisabledFlag: true, HighPrecisionOffsetsEnabledFlag: true, PersistentRiceAdaptationEnabledFlag: true, SubWidthC: 1, SubHeightC: 1 });
     }
 
+    [Theory]
+    [InlineData(0, 8)]
+    [InlineData(4, 12)]
+    [InlineData(5, 13)]
+    [InlineData(8, 16)]
+    public void BitDepthsOf8To16BitsAreRead(uint bitDepthMinus8, int bitDepth)
+    {
+        // The 16-bit profiles of the range extensions; 9 (17 bits) is outside the range of the syntax element
+        var nalUnit = WriteSps(new SpsOptions { ChromaFormatIdc = 3, BitDepthLumaMinus8 = bitDepthMinus8, BitDepthChromaMinus8 = bitDepthMinus8 });
+        Assert.Equal(bitDepth, HevcSequenceParameterSet.Parse(CreateScope(), nalUnit).BitDepth);
+        Assert.True(HevcSequenceParameterSet.TryReadBitDepths(nalUnit, out var luma, out var chroma));
+        Assert.Equal((bitDepth, bitDepth), (luma, chroma));
+        Assert.False(HevcSequenceParameterSet.TryReadBitDepths(nalUnit.AsSpan(0, 6), out _, out _));
+        Assert.Throws<InvalidImageContentException>(() => HevcSequenceParameterSet.Parse(CreateScope(), WriteSps(new SpsOptions { BitDepthLumaMinus8 = 9, BitDepthChromaMinus8 = 9 })));
+    }
+
+    [Theory]
+    [InlineData(4, false)]
+    [InlineData(5, true)]
+    [InlineData(8, true)]
+    public void InterSlicesAreOnlyReadUpTo12Bits(uint bitDepthMinus8, bool isRejected)
+    {
+        // The profiles of more than 12 bits are intra only (clause A.3.5): a P slice of a 13-bit sequence is not decoded
+        var sps = HevcSequenceParameterSet.Parse(CreateScope(), WriteSps(new SpsOptions { ChromaFormatIdc = 1, BitDepthLumaMinus8 = bitDepthMinus8, BitDepthChromaMinus8 = bitDepthMinus8 }));
+
+        // Clause 7.3.2.3.1: pps_pic_parameter_set_id, pps_seq_parameter_set_id and the flags, without tiles or extensions
+        var ppsWriter = new HevcTestBitWriter();
+        ppsWriter.UE(0).UE(0).Flag(false).Flag(false).U(3, 0).Flag(false).Flag(false).UE(0).UE(0).SE(0).Flag(false).Flag(false);
+        ppsWriter.Flag(false).SE(0).SE(0).Flag(false).Flag(false).Flag(false).Flag(false).Flag(false).Flag(false).Flag(true).Flag(false);
+        ppsWriter.Flag(false).Flag(false).UE(0).Flag(false).Flag(false);
+        var ppsNalUnit = ppsWriter.ToNalUnit(HevcConstants.NalPps);
+        var pps = HevcPictureParameterSet.ParseRbsp(ReferenceHevcStream.GetRbsp(ppsNalUnit));
+        using var layout = HevcPictureLayout.Create(CreateScope(), sps, pps);
+
+        // first_slice_segment_in_pic_flag, slice_pic_parameter_set_id and slice_type 1 (P) of a TRAIL_R picture
+        var slice = new HevcTestBitWriter().Flag(true).UE(0).UE(1).ToNalUnit(HevcConstants.NalTrailR);
+        var exception = Record.Exception(() => HevcSliceSegmentHeader.Parse(ReferenceHevcStream.GetRbsp(slice), HevcNalUnitHeader.Read(slice), layout, sliceHeader: null));
+        Assert.NotNull(exception);
+        Assert.Equal(isRejected, exception is UnsupportedImageFeatureException { Feature: "inter prediction of samples of more than 12 bits" });
+    }
+
     [Fact]
     public void FeaturesThatAreNotSupportedAreNamed()
     {
         AssertUnsupported(new SpsOptions { ChromaFormatIdc = 3, SeparateColourPlaneFlag = true }, "separate colour planes");
-        AssertUnsupported(new SpsOptions { BitDepthLumaMinus8 = 5, BitDepthChromaMinus8 = 5 }, "a bit depth of more than 12 bits");
         AssertUnsupported(new SpsOptions { BitDepthLumaMinus8 = 2 }, "luma and chroma samples of different bit depths");
         AssertUnsupported(new SpsOptions { RangeExtension = "000010000" }, "extended precision processing");
         AssertUnsupported(new SpsOptions { RangeExtension = "000000001" }, "CABAC bypass alignment");

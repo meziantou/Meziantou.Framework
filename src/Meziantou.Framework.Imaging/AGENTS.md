@@ -372,12 +372,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The HEVC decoder (`Hevc/`) follows Rec. ITU-T H.265 clause by clause and keeps its names: a comment names the clause
     a method implements. The specification is a PDF, so its constant tables (`Hevc/Tables`) are transcribed by hand,
     each with its edition and table number, and what the specification defines by a procedure (scans, derived arrays)
-    is computed. Every plane must stay bit-exact with the reference decoders, in every chroma format at 8, 10 and 12
-    bits: there is no tolerance in HEVC decoding. `HevcDecoder.Tools` reports the coding tools a bitstream used; it is a
+    is computed. Every plane must stay bit-exact with the reference decoders, in every chroma format at 8 to 16 bits:
+    there is no tolerance in HEVC decoding. `HevcDecoder.Tools` reports the coding tools a bitstream used; it is a
     diagnostic for the tests and never changes the decoding.
   - No concealment: a missing reference picture, an incomplete picture, a slice that does not start where the previous
     one ended or a value outside its range is `InvalidImageContentException`; the screen content, multilayer and
-    extended-precision extensions, bit depths above 12 and separate color planes are
+    extended-precision extensions, inter pictures of more than 12 bits (only the intra profiles allow 13 to 16 bits,
+    and the fractional sample interpolation keeps 16-bit intermediate samples) and separate color planes are
     `UnsupportedImageFeatureException`. Only the base layer is decoded.
   - The decoder is given access units in decoding order and outputs pictures in output order (clause C.5.2): the
     container feeds the samples of a track until the decoder outputs the next image, and the composition offsets of the

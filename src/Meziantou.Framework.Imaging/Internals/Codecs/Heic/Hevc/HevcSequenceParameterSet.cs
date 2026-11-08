@@ -195,6 +195,75 @@ internal sealed class HevcSequenceParameterSet
         return ParseRbsp(buffer.Load(nalUnit[HevcNalUnitHeader.Length..]));
     }
 
+    /// <summary>
+    /// Reads the bit depths of the samples of a sequence parameter set (<c>bit_depth_luma_minus8</c> and
+    /// <c>bit_depth_chroma_minus8</c>) without parsing the rest of it.
+    /// </summary>
+    /// <param name="nalUnit">The NAL unit, with its header and its emulation prevention bytes.</param>
+    /// <param name="luma">Receives the bit depth of the luma samples.</param>
+    /// <param name="chroma">Receives the bit depth of the chroma samples.</param>
+    /// <returns><see langword="false"/> when the NAL unit is not a sequence parameter set, or ends or is malformed before the bit depths.</returns>
+    public static bool TryReadBitDepths(ReadOnlySpan<byte> nalUnit, out int luma, out int chroma)
+    {
+        luma = chroma = 0;
+        if (nalUnit.Length <= HevcNalUnitHeader.Length || HevcNalUnitHeader.Read(nalUnit).NalUnitType is not HevcConstants.NalSps)
+            return false;
+
+        // The fields before the bit depths take less than 256 bytes (a profile_tier_level of 7 sub-layers is 98 bytes)
+        Span<byte> rbsp = stackalloc byte[256];
+        var length = 0;
+        var zeros = 0;
+        foreach (var value in nalUnit[HevcNalUnitHeader.Length..])
+        {
+            if (length == rbsp.Length)
+                break;
+
+            if (zeros >= 2 && value is 3)
+            {
+                zeros = 0;
+                continue;
+            }
+
+            zeros = value is 0 ? zeros + 1 : 0;
+            rbsp[length++] = value;
+        }
+
+        try
+        {
+            var reader = new HevcBitReader(rbsp[..length]);
+            reader.Skip(4);
+            var maxSubLayersMinus1 = (int)reader.ReadBits(3);
+            if (maxSubLayersMinus1 > 6)
+                return false;
+
+            reader.Skip(1);
+            _ = HevcProfileTierLevel.Parse(ref reader, profilePresentFlag: true, maxSubLayersMinus1);
+            _ = reader.ReadUE(HevcConstants.MaxSpsCount - 1, "sps_seq_parameter_set_id");
+            if (reader.ReadUE(3, "chroma_format_idc") is 3)
+            {
+                reader.Skip(1);
+            }
+
+            _ = reader.ReadUE();
+            _ = reader.ReadUE();
+            if (reader.ReadFlag())
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    _ = reader.ReadUE();
+                }
+            }
+
+            luma = reader.ReadUE(8, "bit_depth_luma_minus8") + 8;
+            chroma = reader.ReadUE(8, "bit_depth_chroma_minus8") + 8;
+            return true;
+        }
+        catch (ImageException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Reads a sequence parameter set from the payload of its NAL unit, without emulation prevention bytes.</summary>
     /// <exception cref="InvalidImageContentException">The payload is malformed or truncated.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The sequence uses a feature that the decoder does not support.</exception>
@@ -237,10 +306,9 @@ internal sealed class HevcSequenceParameterSet
                 throw HevcErrors.Invalid("the conformance cropping window is empty.");
         }
 
-        var bitDepthLumaMinus8 = reader.ReadUE(8, "bit_depth_luma_minus8");
-        var bitDepthChromaMinus8 = reader.ReadUE(8, "bit_depth_chroma_minus8");
-        if (bitDepthLumaMinus8 + 8 > HevcConstants.MaxBitDepth || bitDepthChromaMinus8 + 8 > HevcConstants.MaxBitDepth)
-            throw HevcErrors.Unsupported("a bit depth of more than 12 bits");
+        // Clause 7.4.3.2.1: 8 to 16 bits (HevcConstants.MaxBitDepth)
+        var bitDepthLumaMinus8 = reader.ReadUE(HevcConstants.MaxBitDepth - 8, "bit_depth_luma_minus8");
+        var bitDepthChromaMinus8 = reader.ReadUE(HevcConstants.MaxBitDepth - 8, "bit_depth_chroma_minus8");
 
         if (sps.ChromaFormatIdc is not 0 && bitDepthLumaMinus8 != bitDepthChromaMinus8)
             throw HevcErrors.Unsupported("luma and chroma samples of different bit depths");

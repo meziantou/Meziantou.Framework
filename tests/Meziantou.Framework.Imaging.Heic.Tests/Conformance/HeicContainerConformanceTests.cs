@@ -4,6 +4,7 @@ using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Heif;
+using Meziantou.Framework.Imaging.TestHarness.Hevc;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
@@ -97,6 +98,70 @@ public sealed class HeicContainerConformanceTests
         }
 
         Assert.True(worst <= unit, string.Create(CultureInfo.InvariantCulture, $"{id} with matrix coefficients {matrix}, {(fullRange ? "full" : "limited")} range: a sample is {worst} away from the exact conversion (one unit is {unit})."));
+    }
+
+    /// <summary>
+    /// The stream of a committed 16-bit HEVC vector (the profiles of 16 bits are intra only) as the item of a file. The
+    /// <c>hvcC</c> record holds <c>bitDepth - 8</c> on three bits, so it declares 8 bits; its sequence parameter set
+    /// declares 16. The image has 16-bit pixels, the conversion of <see cref="ReferenceYuvConverter"/> of the planes of the
+    /// library (which <c>HevcDecoderConformanceTests</c> verifies against the digests of the reference decoders).
+    /// </summary>
+    [Theory]
+    [InlineData("hevc/hm-intra-16bit-444-32x32", false)]
+    [InlineData("hevc/hm-intra-16bit-444-32x32", true)]
+    [InlineData("hevc/hm-intra-16bit-400-32x32", true)]
+    public void SixteenBitStreamsLoadAsSixteenBitImages(string vectorId, bool fullRange)
+    {
+        var corpus = GoldenCorpus.Default;
+        var units = ReferenceHevcStream.SplitAnnexB(File.ReadAllBytes(corpus.GetHevcVectorPath(corpus.GetHevcVector(vectorId))));
+        static bool IsParameterSet(ReadOnlyMemory<byte> unit) => ReferenceHevcStream.GetNalUnitType(unit.Span) is ReferenceHevcStream.NalVps or ReferenceHevcStream.NalSps or ReferenceHevcStream.NalPps;
+        var sequence = ReferenceHevcStream.ReadSequenceParameterSet(units.Single(unit => ReferenceHevcStream.GetNalUnitType(unit.Span) is ReferenceHevcStream.NalSps).Span);
+        Assert.Equal(16, sequence.BitDepthLuma);
+        var arrays = new[] { ReferenceHevcStream.NalVps, ReferenceHevcStream.NalSps, ReferenceHevcStream.NalPps }.Select(type => (type, units.Where(unit => ReferenceHevcStream.GetNalUnitType(unit.Span) == type).Select(unit => unit.ToArray()).ToArray()));
+        var builder = new HeifFileBuilder { PrimaryItemId = 1, MajorBrand = "heix" };
+        builder.CompatibleBrands.Clear();
+        foreach (var brand in new[] { "mif1", "heix", "miaf" })
+        {
+            builder.CompatibleBrands.Add(brand);
+        }
+
+        var isMonochrome = sequence.ChromaFormatIdc is 0;
+        builder.AddItem(1, "hvc1", ReferenceHevcStream.ToLengthPrefixed(units.Where(unit => !IsParameterSet(unit))),
+            -builder.AddProperty(HeifFileBuilder.HevcConfiguration(sequence.ChromaFormatIdc, 16, 16, arrays)),
+            builder.AddProperty(HeifFileBuilder.ImageSize((uint)sequence.CropWidth, (uint)sequence.CropHeight)),
+            builder.AddProperty(HeifFileBuilder.ColorNclx(1, 13, isMonochrome ? 2 : 1, fullRange)));
+        var data = builder.Build();
+        Assert.Equal(8, ReferenceHeif.Parse(data).PrimaryItem!.HevcConfiguration!.BitDepthLuma);
+
+        var info = Image.Identify(data);
+        Assert.Equal((16, isMonochrome ? PixelFormat.Gray16 : PixelFormat.Rgb48), (info.BitsPerComponent, info.PixelFormat));
+        using var image = Image.Load(data);
+        Assert.Equal(info.PixelFormat, image.PixelFormat);
+        var actual = ImageSnapshots.Capture(image).Frames[0].Pixels;
+        Assert.Equal(ushort.MaxValue, actual.Layout.MaxSampleValue);
+        if (isMonochrome)
+        {
+            // A full-range gray sample of 16 bits is the pixel itself
+            var planes = DecodePlanes(data);
+            for (var i = 0; i < actual.Width * actual.Height; i++)
+            {
+                Assert.Equal(planes[0][i], actual.GetSample(i % actual.Width, i / actual.Width, 0));
+            }
+
+            return;
+        }
+
+        var expected = ConvertPrimaryItem(data, 1, fullRange, ushort.MaxValue);
+        var worst = 0;
+        for (var i = 0; i < actual.Width * actual.Height; i++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+            {
+                worst = Math.Max(worst, Math.Abs(expected[(3 * i) + channel] - actual.GetSample(i % actual.Width, i / actual.Width, channel)));
+            }
+        }
+
+        Assert.True(worst <= 1, string.Create(CultureInfo.InvariantCulture, $"{vectorId}, {(fullRange ? "full" : "limited")} range: a sample is {worst} away from the exact conversion."));
     }
 
     [Theory]
@@ -389,11 +454,28 @@ public sealed class HeicContainerConformanceTests
     }
 
     /// <summary>
-    /// Decodes the primary item with the HEVC decoder of the library, crops its planes to the conformance window (whose
-    /// left and top offsets are zero in these files) and converts them with the exact-rational converter of the harness,
-    /// at the chroma sample position of the picture. The items of these tests have no alpha plane, grid or clean aperture.
+    /// Converts the planes of the primary item that <see cref="DecodePlanes(byte[], out HevcSequenceParameterSet)"/> gives
+    /// with the exact-rational converter of the harness, at the chroma sample position of the picture. The items of these
+    /// tests have no alpha plane, grid or clean aperture.
     /// </summary>
     private static int[] ConvertPrimaryItem(byte[] data, int matrix, bool fullRange, int outputMaximum)
+    {
+        var planes = DecodePlanes(data, out var sps);
+        Assert.HasCount(3, planes);
+        var subsamplingX = sps.SubWidthC is 2 ? 1 : 0;
+        var subsamplingY = sps.SubHeightC is 2 ? 1 : 0;
+        var location = sps.Vui is { ChromaLocInfoPresentFlag: true } vui ? vui.ChromaSampleLocTypeTopField : 0;
+        var (cositedHorizontally, cositedVertically) = ReferenceYuvConverter.GetHevcChromaSiting(sps.ChromaFormatIdc, location);
+        return ReferenceYuvConverter.ConvertToRgb(planes[0], planes[1], planes[2], sps.OutputWidth, sps.OutputHeight, sps.BitDepth, subsamplingX, subsamplingY, cositedHorizontally, cositedVertically, matrix, fullRange, outputMaximum);
+    }
+
+    private static ushort[][] DecodePlanes(byte[] data) => DecodePlanes(data, out _);
+
+    /// <summary>
+    /// Decodes the primary item with the HEVC decoder of the library and crops its planes to the conformance window (whose
+    /// left and top offsets are zero in these files).
+    /// </summary>
+    private static ushort[][] DecodePlanes(byte[] data, out HevcSequenceParameterSet sps)
     {
         var file = ReferenceHeif.Parse(data);
         var item = file.PrimaryItem!;
@@ -425,13 +507,12 @@ public sealed class HeicContainerConformanceTests
         Assert.NotNull(picture);
         try
         {
-            var sps = picture.Sps;
+            sps = picture.Sps;
             var (width, height) = (sps.OutputWidth, sps.OutputHeight);
             var subsamplingX = sps.SubWidthC is 2 ? 1 : 0;
             var subsamplingY = sps.SubHeightC is 2 ? 1 : 0;
-            Assert.Equal(3, picture.PlaneCount);
-            var planes = new ushort[3][];
-            for (var plane = 0; plane < 3; plane++)
+            var planes = new ushort[picture.PlaneCount][];
+            for (var plane = 0; plane < planes.Length; plane++)
             {
                 var source = picture.GetPlane(plane);
                 var (planeWidth, planeHeight) = plane is 0 ? (width, height) : (width >> subsamplingX, height >> subsamplingY);
@@ -442,9 +523,7 @@ public sealed class HeicContainerConformanceTests
                 }
             }
 
-            var location = sps.Vui is { ChromaLocInfoPresentFlag: true } vui ? vui.ChromaSampleLocTypeTopField : 0;
-            var (cositedHorizontally, cositedVertically) = ReferenceYuvConverter.GetHevcChromaSiting(sps.ChromaFormatIdc, location);
-            return ReferenceYuvConverter.ConvertToRgb(planes[0], planes[1], planes[2], width, height, sps.BitDepth, subsamplingX, subsamplingY, cositedHorizontally, cositedVertically, matrix, fullRange, outputMaximum);
+            return planes;
         }
         finally
         {

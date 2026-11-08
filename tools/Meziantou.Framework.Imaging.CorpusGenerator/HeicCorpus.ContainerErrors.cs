@@ -359,7 +359,6 @@ internal static partial class HeicCorpus
         // Bitstreams the HEVC decoder rejects, around the committed vectors that record them
         foreach (var (name, vector, chroma, luma, chromaDepth, feature, notes) in new (string, string, int, int, int, string, string)[]
         {
-            ("bitstream-16bit", "hevc/hm-unsupported-16bit-444-32x32", 3, 16, 16, "bit-depth", "16-bit samples: the decoder reads 8 to 12 bits"),
             ("bitstream-unequal-bit-depths", "hevc/hm-unsupported-luma10-chroma8-32x32", 1, 10, 8, "bit-depth", "10-bit luma samples and 8-bit chroma samples: the planes of an image have one bit depth"),
             ("bitstream-extended-precision", "hevc/hm-unsupported-extended-precision-12bit-32x32", 3, 12, 12, "extended-precision", "extended_precision_processing_flag is set"),
         })

@@ -60752,34 +60752,6 @@
       "notes": "The alpha auxiliary image declares 6x9 and the color image 16x16."
     },
     {
-      "id": "invalid/heic/bitstream-16bit",
-      "kind": "unsupported",
-      "format": "heic",
-      "input": {
-        "path": "invalid/heic/bitstream-16bit.heic",
-        "sha256": "c42bdc4efc73769b779cb201a1d1877c60ce614c715ab5540c10bfa13cc62da1",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs (BuildUnsupported)",
-        "tools": [
-          "HM 18.0 (payload: the committed HEVC vector)",
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Heic"
-      },
-      "features": [
-        "heic.unsupported=bit-depth"
-      ],
-      "notes": "The stream of the committed vector hevc/hm-unsupported-16bit-444-32x32 as the item of a file: 16-bit samples: the decoder reads 8 to 12 bits."
-    },
-    {
       "id": "invalid/heic/bitstream-extended-precision",
       "kind": "unsupported",
       "format": "heic",
@@ -145546,6 +145518,188 @@
         ]
       },
       {
+        "id": "hevc/hm-intra-16bit-400-32x32",
+        "input": {
+          "path": "hevc/hm-intra-16bit-400-32x32.hevc",
+          "sha256": "c86e2c534200687cdea73dd49009286316e622a51ae872408187515b1fa0fc82",
+          "role": "encoded"
+        },
+        "provenance": {
+          "origin": "generated",
+          "license": "CC0-1.0",
+          "author": "Meziantou.Framework.Imaging contributors",
+          "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HevcCorpus.cs (Vectors)",
+          "tools": [
+            "ffmpeg 9.0.2",
+            "HM 18.0"
+          ],
+          "commands": [
+            "ffmpeg -hide_banner -nostdin -loglevel error -y -filter_threads 1 -f lavfi -i testsrc2=size=32x32,noise=alls=8:allf=t:all_seed=302 -frames:v 1 -sws_flags accurate_rnd+full_chroma_int+bitexact -pix_fmt gray16le -f rawvideo {source}.yuv",
+            "TAppEncoder -i {source}.yuv -b {input} --SourceWidth=32 --SourceHeight=32 --FramesToBeEncoded=1 --InputChromaFormat=400 --InputBitDepth=16 --Profile=monochrome16 --Level=3.1 --FrameRate=10 --ConformanceWindowMode=1 --MaxCUWidth=64 --MaxCUHeight=64 --MaxPartitionDepth=4 --QuadtreeTULog2MaxSize=5 --QuadtreeTULog2MinSize=2 --QuadtreeTUMaxDepthInter=3 --QuadtreeTUMaxDepthIntra=3 --QP=30 --FastSearch=1 --SearchRange=16 --SEIDecodedPictureHash=1 --IntraPeriod=1 --GOPSize=1"
+          ]
+        },
+        "features": [
+          "hevc.amp",
+          "hevc.bitDepth=16",
+          "hevc.chroma=4:0:0",
+          "hevc.ctb=64",
+          "hevc.ctbs=1x1",
+          "hevc.deblocking=1",
+          "hevc.encoder=hm",
+          "hevc.frameTypes=intra",
+          "hevc.level=3.1",
+          "hevc.maxTb=32",
+          "hevc.minCb=8",
+          "hevc.minTb=4",
+          "hevc.nal=IDR_W_RADL",
+          "hevc.pictureHash=md5",
+          "hevc.pocLsbBits=8",
+          "hevc.profile=rext-400-16",
+          "hevc.sao=luma",
+          "hevc.sei=decodedPictureHash",
+          "hevc.signDataHiding=1",
+          "hevc.sliceQp=30",
+          "hevc.sliceTypes=I",
+          "hevc.strongIntraSmoothing=1",
+          "hevc.tuDepthInter=2",
+          "hevc.tuDepthIntra=2"
+        ],
+        "pixelFormat": "gray16le",
+        "bitDepth": 16,
+        "chromaFormat": "4:0:0",
+        "pictureCount": 1,
+        "frameCount": 1,
+        "outputOrder": "decoding",
+        "decoders": {
+          "agree": [
+            "libde265",
+            "hm"
+          ],
+          "excluded": [
+            {
+              "decoder": "ffmpeg",
+              "outcome": "rejects",
+              "reason": "FFmpeg's hevc decoder does not decode bit depths above 12.",
+              "observed": "[hevc] The following bit-depths are currently specified: 8, 9, 10 and 12 bits, chroma_format_idc is 0, depth is 16"
+            }
+          ]
+        },
+        "pictureHash": {
+          "type": "md5",
+          "verifiedBy": [
+            "libde265",
+            "hm"
+          ]
+        },
+        "frames": [
+          {
+            "width": 32,
+            "height": 32,
+            "poc": 0,
+            "decodeOrder": 0,
+            "planes": [
+              "0c77226cb70e298b7eabd940e59b35f4eafaf1859c5d57a505b4415a114e6a45"
+            ],
+            "hash": [
+              "48832845a6830d53a997f1f577fa607d"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hevc/hm-intra-16bit-444-32x32",
+        "input": {
+          "path": "hevc/hm-intra-16bit-444-32x32.hevc",
+          "sha256": "66a2fcafd09dfbbb942f5a65ee93a86b11deb5a8a45823682523c3dc2e6824d1",
+          "role": "encoded"
+        },
+        "provenance": {
+          "origin": "generated",
+          "license": "CC0-1.0",
+          "author": "Meziantou.Framework.Imaging contributors",
+          "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HevcCorpus.cs (Vectors)",
+          "tools": [
+            "ffmpeg 9.0.2",
+            "HM 18.0"
+          ],
+          "commands": [
+            "ffmpeg -hide_banner -nostdin -loglevel error -y -filter_threads 1 -f lavfi -i testsrc2=size=32x32,noise=alls=8:allf=t:all_seed=301 -frames:v 1 -sws_flags accurate_rnd+full_chroma_int+bitexact -pix_fmt yuv444p16le -f rawvideo {source}.yuv",
+            "TAppEncoder -i {source}.yuv -b {input} --SourceWidth=32 --SourceHeight=32 --FramesToBeEncoded=1 --InputChromaFormat=444 --InputBitDepth=16 --Profile=main_444_16_intra --Level=3.1 --FrameRate=10 --ConformanceWindowMode=1 --MaxCUWidth=64 --MaxCUHeight=64 --MaxPartitionDepth=4 --QuadtreeTULog2MaxSize=5 --QuadtreeTULog2MinSize=2 --QuadtreeTUMaxDepthInter=3 --QuadtreeTUMaxDepthIntra=3 --QP=30 --FastSearch=1 --SearchRange=16 --SEIDecodedPictureHash=1 --IntraPeriod=1 --GOPSize=1"
+          ]
+        },
+        "features": [
+          "hevc.amp",
+          "hevc.bitDepth=16",
+          "hevc.chroma=4:4:4",
+          "hevc.ctb=64",
+          "hevc.ctbs=1x1",
+          "hevc.deblocking=1",
+          "hevc.encoder=hm",
+          "hevc.frameTypes=intra",
+          "hevc.level=3.1",
+          "hevc.maxTb=32",
+          "hevc.minCb=8",
+          "hevc.minTb=4",
+          "hevc.nal=IDR_W_RADL",
+          "hevc.pictureHash=md5",
+          "hevc.pocLsbBits=8",
+          "hevc.profile=rext-444-16-intra",
+          "hevc.sao=chroma,luma",
+          "hevc.sei=decodedPictureHash",
+          "hevc.signDataHiding=1",
+          "hevc.sliceQp=30",
+          "hevc.sliceTypes=I",
+          "hevc.strongIntraSmoothing=1",
+          "hevc.tuDepthInter=2",
+          "hevc.tuDepthIntra=2"
+        ],
+        "pixelFormat": "yuv444p16le",
+        "bitDepth": 16,
+        "chromaFormat": "4:4:4",
+        "pictureCount": 1,
+        "frameCount": 1,
+        "outputOrder": "decoding",
+        "decoders": {
+          "agree": [
+            "libde265",
+            "hm"
+          ],
+          "excluded": [
+            {
+              "decoder": "ffmpeg",
+              "outcome": "rejects",
+              "reason": "FFmpeg's hevc decoder does not decode bit depths above 12.",
+              "observed": "[hevc] The following bit-depths are currently specified: 8, 9, 10 and 12 bits, chroma_format_idc is 3, depth is 16"
+            }
+          ]
+        },
+        "pictureHash": {
+          "type": "md5",
+          "verifiedBy": [
+            "libde265",
+            "hm"
+          ]
+        },
+        "frames": [
+          {
+            "width": 32,
+            "height": 32,
+            "poc": 0,
+            "decodeOrder": 0,
+            "planes": [
+              "311e9264be6a7f6f05ce4f16fb7fb2d314bca7bfd874f0521df1d3332fd681d0",
+              "1028210f28874166b1f5e0c4890c321a77bb3930fcb0e5e40d8134b17111978c",
+              "f06cdfbef085ccc4973c2057a6f763836053510ee3687485a823196ce17e648b"
+            ],
+            "hash": [
+              "ea7ad996dbaa7a67b569d67bd6a6f146",
+              "4bdbc0bb679484aba49cf498c9cb0e57",
+              "8389bbe35f27e6c845b7c28f7120054e"
+            ]
+          }
+        ]
+      },
+      {
         "id": "hevc/hm-intra-ctb16-cb16-64x48",
         "input": {
           "path": "hevc/hm-intra-ctb16-cb16-64x48.hevc",
@@ -156889,190 +157043,6 @@
         ]
       },
       {
-        "id": "hevc/hm-unsupported-16bit-400-32x32",
-        "input": {
-          "path": "hevc/hm-unsupported-16bit-400-32x32.hevc",
-          "sha256": "c86e2c534200687cdea73dd49009286316e622a51ae872408187515b1fa0fc82",
-          "role": "encoded"
-        },
-        "provenance": {
-          "origin": "generated",
-          "license": "CC0-1.0",
-          "author": "Meziantou.Framework.Imaging contributors",
-          "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HevcCorpus.cs (Vectors)",
-          "tools": [
-            "ffmpeg 9.0.2",
-            "HM 18.0"
-          ],
-          "commands": [
-            "ffmpeg -hide_banner -nostdin -loglevel error -y -filter_threads 1 -f lavfi -i testsrc2=size=32x32,noise=alls=8:allf=t:all_seed=302 -frames:v 1 -sws_flags accurate_rnd+full_chroma_int+bitexact -pix_fmt gray16le -f rawvideo {source}.yuv",
-            "TAppEncoder -i {source}.yuv -b {input} --SourceWidth=32 --SourceHeight=32 --FramesToBeEncoded=1 --InputChromaFormat=400 --InputBitDepth=16 --Profile=monochrome16 --Level=3.1 --FrameRate=10 --ConformanceWindowMode=1 --MaxCUWidth=64 --MaxCUHeight=64 --MaxPartitionDepth=4 --QuadtreeTULog2MaxSize=5 --QuadtreeTULog2MinSize=2 --QuadtreeTUMaxDepthInter=3 --QuadtreeTUMaxDepthIntra=3 --QP=30 --FastSearch=1 --SearchRange=16 --SEIDecodedPictureHash=1 --IntraPeriod=1 --GOPSize=1"
-          ]
-        },
-        "features": [
-          "hevc.amp",
-          "hevc.bitDepth=16",
-          "hevc.chroma=4:0:0",
-          "hevc.ctb=64",
-          "hevc.ctbs=1x1",
-          "hevc.deblocking=1",
-          "hevc.encoder=hm",
-          "hevc.frameTypes=intra",
-          "hevc.level=3.1",
-          "hevc.maxTb=32",
-          "hevc.minCb=8",
-          "hevc.minTb=4",
-          "hevc.nal=IDR_W_RADL",
-          "hevc.pictureHash=md5",
-          "hevc.pocLsbBits=8",
-          "hevc.profile=rext-400-16",
-          "hevc.sao=luma",
-          "hevc.sei=decodedPictureHash",
-          "hevc.signDataHiding=1",
-          "hevc.sliceQp=30",
-          "hevc.sliceTypes=I",
-          "hevc.strongIntraSmoothing=1",
-          "hevc.tuDepthInter=2",
-          "hevc.tuDepthIntra=2",
-          "hevc.unsupported=bitDepth"
-        ],
-        "pixelFormat": "gray16le",
-        "bitDepth": 16,
-        "chromaFormat": "4:0:0",
-        "pictureCount": 1,
-        "frameCount": 1,
-        "outputOrder": "decoding",
-        "decoders": {
-          "agree": [
-            "libde265",
-            "hm"
-          ],
-          "excluded": [
-            {
-              "decoder": "ffmpeg",
-              "outcome": "rejects",
-              "reason": "FFmpeg's hevc decoder does not decode bit depths above 12.",
-              "observed": "[hevc] The following bit-depths are currently specified: 8, 9, 10 and 12 bits, chroma_format_idc is 0, depth is 16"
-            }
-          ]
-        },
-        "pictureHash": {
-          "type": "md5",
-          "verifiedBy": [
-            "libde265",
-            "hm"
-          ]
-        },
-        "frames": [
-          {
-            "width": 32,
-            "height": 32,
-            "poc": 0,
-            "decodeOrder": 0,
-            "planes": [
-              "0c77226cb70e298b7eabd940e59b35f4eafaf1859c5d57a505b4415a114e6a45"
-            ],
-            "hash": [
-              "48832845a6830d53a997f1f577fa607d"
-            ]
-          }
-        ]
-      },
-      {
-        "id": "hevc/hm-unsupported-16bit-444-32x32",
-        "input": {
-          "path": "hevc/hm-unsupported-16bit-444-32x32.hevc",
-          "sha256": "66a2fcafd09dfbbb942f5a65ee93a86b11deb5a8a45823682523c3dc2e6824d1",
-          "role": "encoded"
-        },
-        "provenance": {
-          "origin": "generated",
-          "license": "CC0-1.0",
-          "author": "Meziantou.Framework.Imaging contributors",
-          "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HevcCorpus.cs (Vectors)",
-          "tools": [
-            "ffmpeg 9.0.2",
-            "HM 18.0"
-          ],
-          "commands": [
-            "ffmpeg -hide_banner -nostdin -loglevel error -y -filter_threads 1 -f lavfi -i testsrc2=size=32x32,noise=alls=8:allf=t:all_seed=301 -frames:v 1 -sws_flags accurate_rnd+full_chroma_int+bitexact -pix_fmt yuv444p16le -f rawvideo {source}.yuv",
-            "TAppEncoder -i {source}.yuv -b {input} --SourceWidth=32 --SourceHeight=32 --FramesToBeEncoded=1 --InputChromaFormat=444 --InputBitDepth=16 --Profile=main_444_16_intra --Level=3.1 --FrameRate=10 --ConformanceWindowMode=1 --MaxCUWidth=64 --MaxCUHeight=64 --MaxPartitionDepth=4 --QuadtreeTULog2MaxSize=5 --QuadtreeTULog2MinSize=2 --QuadtreeTUMaxDepthInter=3 --QuadtreeTUMaxDepthIntra=3 --QP=30 --FastSearch=1 --SearchRange=16 --SEIDecodedPictureHash=1 --IntraPeriod=1 --GOPSize=1"
-          ]
-        },
-        "features": [
-          "hevc.amp",
-          "hevc.bitDepth=16",
-          "hevc.chroma=4:4:4",
-          "hevc.ctb=64",
-          "hevc.ctbs=1x1",
-          "hevc.deblocking=1",
-          "hevc.encoder=hm",
-          "hevc.frameTypes=intra",
-          "hevc.level=3.1",
-          "hevc.maxTb=32",
-          "hevc.minCb=8",
-          "hevc.minTb=4",
-          "hevc.nal=IDR_W_RADL",
-          "hevc.pictureHash=md5",
-          "hevc.pocLsbBits=8",
-          "hevc.profile=rext-444-16-intra",
-          "hevc.sao=chroma,luma",
-          "hevc.sei=decodedPictureHash",
-          "hevc.signDataHiding=1",
-          "hevc.sliceQp=30",
-          "hevc.sliceTypes=I",
-          "hevc.strongIntraSmoothing=1",
-          "hevc.tuDepthInter=2",
-          "hevc.tuDepthIntra=2",
-          "hevc.unsupported=bitDepth"
-        ],
-        "pixelFormat": "yuv444p16le",
-        "bitDepth": 16,
-        "chromaFormat": "4:4:4",
-        "pictureCount": 1,
-        "frameCount": 1,
-        "outputOrder": "decoding",
-        "decoders": {
-          "agree": [
-            "libde265",
-            "hm"
-          ],
-          "excluded": [
-            {
-              "decoder": "ffmpeg",
-              "outcome": "rejects",
-              "reason": "FFmpeg's hevc decoder does not decode bit depths above 12.",
-              "observed": "[hevc] The following bit-depths are currently specified: 8, 9, 10 and 12 bits, chroma_format_idc is 3, depth is 16"
-            }
-          ]
-        },
-        "pictureHash": {
-          "type": "md5",
-          "verifiedBy": [
-            "libde265",
-            "hm"
-          ]
-        },
-        "frames": [
-          {
-            "width": 32,
-            "height": 32,
-            "poc": 0,
-            "decodeOrder": 0,
-            "planes": [
-              "311e9264be6a7f6f05ce4f16fb7fb2d314bca7bfd874f0521df1d3332fd681d0",
-              "1028210f28874166b1f5e0c4890c321a77bb3930fcb0e5e40d8134b17111978c",
-              "f06cdfbef085ccc4973c2057a6f763836053510ee3687485a823196ce17e648b"
-            ],
-            "hash": [
-              "ea7ad996dbaa7a67b569d67bd6a6f146",
-              "4bdbc0bb679484aba49cf498c9cb0e57",
-              "8389bbe35f27e6c845b7c28f7120054e"
-            ]
-          }
-        ]
-      },
-      {
         "id": "hevc/hm-unsupported-bypass-alignment-444-8bit-32x32",
         "input": {
           "path": "hevc/hm-unsupported-bypass-alignment-444-8bit-32x32.hevc",
@@ -157309,7 +157279,7 @@
           "hevc.strongIntraSmoothing=1",
           "hevc.tuDepthInter=2",
           "hevc.tuDepthIntra=2",
-          "hevc.unsupported=bitDepth,extendedPrecision"
+          "hevc.unsupported=extendedPrecision"
         ],
         "pixelFormat": "yuv444p16le",
         "bitDepth": 16,

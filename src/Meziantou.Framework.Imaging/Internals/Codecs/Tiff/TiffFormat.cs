@@ -57,6 +57,7 @@ internal static class TiffFormat
     public const ushort PageNumberTag = 297;
     public const ushort SoftwareTag = 305;
     public const ushort PredictorTag = 317;
+    public const ushort WhitePointTag = 318;
     public const ushort ColorMapTag = 320;
     public const ushort TileWidthTag = 322;
     public const ushort TileLengthTag = 323;
@@ -68,6 +69,15 @@ internal static class TiffFormat
     public const ushort ExtraSamplesTag = 338;
     public const ushort SampleFormatTag = 339;
     public const ushort JpegTablesTag = 347;
+    public const ushort JpegProcTag = 512;
+    public const ushort JpegInterchangeFormatTag = 513;
+    public const ushort JpegInterchangeFormatLengthTag = 514;
+    public const ushort JpegRestartIntervalTag = 515;
+    public const ushort JpegLosslessPredictorsTag = 517;
+    public const ushort JpegPointTransformsTag = 518;
+    public const ushort JpegQTablesTag = 519;
+    public const ushort JpegDcTablesTag = 520;
+    public const ushort JpegAcTablesTag = 521;
     public const ushort YCbCrCoefficientsTag = 529;
     public const ushort YCbCrSubSamplingTag = 530;
     public const ushort YCbCrPositioningTag = 531;
@@ -85,6 +95,8 @@ internal static class TiffFormat
     public const int PhotometricCmyk = 5;
     public const int PhotometricYCbCr = 6;
     public const int PhotometricCieLab = 8;
+    public const int PhotometricIccLab = 9;
+    public const int PhotometricItuLab = 10;
 
     // Compression values
     public const int CompressionNone = 1;
@@ -137,6 +149,12 @@ internal static class TiffFormat
     /// <summary>The largest accepted <c>JPEGTables</c> field: four quantization tables and eight Huffman tables fit in far less.</summary>
     public const int MaxJpegTablesLength = 64 * 1024;
 
+    /// <summary>
+    /// The largest number of bytes read for the header of the JPEG interchange format of an old-style JPEG page (its
+    /// markers before the first start of scan): application segments such as thumbnails can make it long.
+    /// </summary>
+    public const int MaxOldJpegHeaderLength = 1024 * 1024;
+
     // ResolutionUnit values
     public const int ResolutionUnitNone = 1;
     public const int ResolutionUnitInch = 2;
@@ -176,6 +194,8 @@ internal static class TiffFormat
         PhotometricCmyk => "CMYK (separated)",
         PhotometricYCbCr => "YCbCr",
         PhotometricCieLab => "CIE L*a*b*",
+        PhotometricIccLab => "ICC L*a*b*",
+        PhotometricItuLab => "ITU L*a*b*",
         _ => string.Create(CultureInfo.InvariantCulture, $"photometric interpretation {photometric}"),
     };
 }

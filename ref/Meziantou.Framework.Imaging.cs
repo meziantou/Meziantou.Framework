@@ -230,6 +230,13 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.CieLab left, Meziantou.Framework.Imaging.CieLab right) => throw null;
     }
 
+    public sealed class CieLabConversionOptions
+    {
+        public static Meziantou.Framework.Imaging.CieLabConversionOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccProfile DestinationProfile { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
+    }
+
     public readonly struct CieLch : System.IEquatable<Meziantou.Framework.Imaging.CieLch>
     {
         public double C { get => throw null; }
@@ -1007,6 +1014,7 @@ namespace Meziantou.Framework.Imaging
         YCbCr = 6,
         Cmyk = 7,
         Ycck = 8,
+        CieLab = 9,
     }
 
     public sealed class ImageConfiguration
@@ -1021,6 +1029,7 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class ImageDecodeOptions
     {
+        public Meziantou.Framework.Imaging.CieLabConversionOptions? CieLabConversion { get => throw null; init { } }
         public Meziantou.Framework.Imaging.CmykConversionOptions? CmykConversion { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
         public Meziantou.Framework.Imaging.PixelConversionOptions Conversion { get => throw null; init { } }
@@ -1287,6 +1296,7 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class ImageReaderOptions
     {
+        public Meziantou.Framework.Imaging.CieLabConversionOptions? CieLabConversion { get => throw null; init { } }
         public Meziantou.Framework.Imaging.CmykConversionOptions? CmykConversion { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
         public Meziantou.Framework.Imaging.PixelConversionOptions Conversion { get => throw null; init { } }

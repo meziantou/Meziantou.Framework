@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -72,6 +73,38 @@ public sealed partial class HtmlSanitizer
     /// <summary>Gets or sets a value indicating whether HTML comments are kept in the sanitized output. Comments are removed by default because downlevel-hidden conditional comments (<c>&lt;!--[if IE]&gt;&lt;script&gt;…&lt;/script&gt;&lt;![endif]--&gt;</c>) are executed by legacy browsers.</summary>
     public bool AllowComments { get; set; }
 
+    /// <summary>
+    /// Gets or sets the maximum length of the fragment, in UTF-16 code units. <see cref="SanitizeHtmlFragment"/> throws an
+    /// <see cref="ArgumentException"/> for a longer fragment. The default is 1,000,000. Use <see cref="int.MaxValue"/> to
+    /// remove the limit.
+    /// </summary>
+    public int MaxInputLength
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    } = 1_000_000;
+
+    /// <summary>
+    /// Gets or sets the maximum number of elements the parser creates for the fragment. <see cref="SanitizeHtmlFragment"/>
+    /// throws an <see cref="ArgumentException"/> for a fragment that creates more elements. The number of elements is not
+    /// bounded by the length of the fragment: the parser recreates the open formatting elements (<c>b</c>, <c>i</c>,
+    /// <c>a</c>, …) in each new paragraph, so a few kilobytes can create millions of elements. The default is 100,000.
+    /// Use <see cref="int.MaxValue"/> to remove the limit.
+    /// </summary>
+    public int MaxElementCount
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    } = 100_000;
+
     private static HashSet<string> ToHashSet(string[] values) => new(values, StringComparer.OrdinalIgnoreCase);
 
     // Only the elements of the HTML namespace are kept: the SVG and MathML elements are parsed with other rules (foreign
@@ -95,17 +128,30 @@ public sealed partial class HtmlSanitizer
     /// <summary>Sanitizes an HTML fragment by removing dangerous elements, attributes, and URLs while preserving safe HTML structure.</summary>
     /// <param name="html">The HTML fragment to sanitize.</param>
     /// <returns>A sanitized HTML fragment safe for rendering.</returns>
+    /// <exception cref="ArgumentException">The fragment is longer than <see cref="MaxInputLength"/>, or creates more elements than <see cref="MaxElementCount"/>.</exception>
     [return: NotNullIfNotNull(nameof(html))]
     public string? SanitizeHtmlFragment(string? html)
     {
         if (html is null)
             return null;
 
+        if (html.Length > MaxInputLength)
+            throw new ArgumentException($"The fragment is longer than {MaxInputLength.ToString(CultureInfo.InvariantCulture)} characters (see {nameof(MaxInputLength)})", nameof(html));
+
         // The fragment is parsed as the content of a body element, the way a browser parses the markup inserted in a page
         // that is not in quirks mode (where a table start tag does not close a p element)
         var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
         var body = document.Body!;
-        var fragment = new HtmlDocumentParser().ParseFragment(html, body);
+        DocumentFragment fragment;
+        try
+        {
+            fragment = new HtmlDocumentParser(new HtmlParserOptions { MaxElementCount = MaxElementCount }).ParseFragment(html, body);
+        }
+        catch (HtmlParserLimitExceededException ex)
+        {
+            throw new ArgumentException($"The fragment creates more than {MaxElementCount.ToString(CultureInfo.InvariantCulture)} elements (see {nameof(MaxElementCount)})", nameof(html), ex);
+        }
+
         Sanitize(fragment);
         body.Append(fragment);
         return body.GetHtml();

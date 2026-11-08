@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.Sanitizers.Fuzz;
 
@@ -80,6 +82,7 @@ public static class HtmlSanitizerFuzzTargets
         new("html-sanitizer", Sanitize) { Seeds = GetHtmlSeeds, Dictionary = HtmlTokens },
         new("html-sanitizer-config", SanitizeWithConfiguration) { Seeds = GetConfiguredHtmlSeeds, Dictionary = [.. HtmlTokens, .. ConfiguredTokens] },
         new("url-sanitizer", SanitizeUrl) { Seeds = GetUrlSeeds, Dictionary = UrlTokens },
+        new("html-sanitizer-limits", SanitizeWithLimits) { Seeds = GetLimitSeeds, Dictionary = [.. HtmlTokens, "<b class=1>", "<i>", "<a href=x>", "<p>x"] },
     ];
 
     /// <summary>The input is a byte of options (<c>AllowComments</c>), then the HTML fragment.</summary>
@@ -177,7 +180,17 @@ public static class HtmlSanitizerFuzzTargets
 
     private static void SanitizeAndCheck(HtmlSanitizer sanitizer, string html)
     {
-        var sanitized = sanitizer.SanitizeHtmlFragment(html);
+        string sanitized;
+        try
+        {
+            sanitized = sanitizer.SanitizeHtmlFragment(html);
+        }
+        catch (ArgumentException ex) when (ex.InnerException is HtmlParserLimitExceededException)
+        {
+            // A few kilobytes can create more elements than MaxElementCount (html-sanitizer-limits checks the limits)
+            return;
+        }
+
         try
         {
             CheckOutput(sanitizer, sanitized);
@@ -189,6 +202,90 @@ public static class HtmlSanitizerFuzzTargets
 
         var twice = sanitizer.SanitizeHtmlFragment(sanitized);
         FuzzAssert.Equal(sanitized, twice, "Sanitizing the output again changes it");
+    }
+
+    /// <summary>
+    /// Byte 0 is <c>MaxElementCount</c>, byte 1 is <c>MaxInputLength</c> divided by 16, then the HTML fragment. A
+    /// fragment longer than <c>MaxInputLength</c> is rejected before it is parsed. A shorter one either gives the output
+    /// of the default limits, with no more elements than <c>MaxElementCount</c>, or is rejected because the parser
+    /// creates more elements, which the parser reports with the same limit, and with any lower one.
+    /// </summary>
+    private static void SanitizeWithLimits(ReadOnlySpan<byte> data)
+    {
+        var maxElementCount = (int)FuzzInput.ReadByte(ref data);
+        var maxInputLength = FuzzInput.ReadByte(ref data) * 16;
+        var html = FuzzText.Decode(data);
+        var sanitizer = new HtmlSanitizer { MaxElementCount = maxElementCount, MaxInputLength = maxInputLength };
+
+        string sanitized;
+        try
+        {
+            sanitized = sanitizer.SanitizeHtmlFragment(html);
+        }
+        catch (ArgumentException ex)
+        {
+            FuzzAssert.Equal("html", ex.ParamName, "The limit exception does not name the parameter");
+            if (html.Length > maxInputLength)
+            {
+                FuzzAssert.True(ex.InnerException is null, "A fragment longer than MaxInputLength is parsed");
+                return;
+            }
+
+            FuzzAssert.True(ex.InnerException is HtmlParserLimitExceededException, $"A fragment within MaxInputLength is rejected: {ex.Message}");
+            FuzzAssert.True(ExceedsElementCount(html, maxElementCount), "The parser accepts with MaxElementCount the fragment that the sanitizer rejects");
+            if (maxElementCount > 0)
+            {
+                FuzzAssert.True(ExceedsElementCount(html, maxElementCount - 1), "The parser accepts with a lower MaxElementCount a fragment that it rejects");
+            }
+
+            return;
+        }
+
+        FuzzAssert.True(html.Length <= maxInputLength, "A fragment longer than MaxInputLength is sanitized");
+        FuzzAssert.Equal(new HtmlSanitizer().SanitizeHtmlFragment(html), sanitized, "The limits change the output");
+
+        var fragment = new HtmlDocumentParser().ParseFragment(html, HtmlDocumentParser.ParseDocument("<!DOCTYPE html>").Body!);
+        var elementCount = CountElements(fragment);
+        FuzzAssert.True(elementCount <= maxElementCount, $"The fragment has {elementCount.ToString(CultureInfo.InvariantCulture)} elements, more than MaxElementCount");
+
+        static bool ExceedsElementCount(string html, int maxElementCount)
+        {
+            var body = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>").Body!;
+            try
+            {
+                new HtmlDocumentParser(new HtmlParserOptions { MaxElementCount = maxElementCount }).ParseFragment(html, body);
+                return false;
+            }
+            catch (HtmlParserLimitExceededException)
+            {
+                return true;
+            }
+        }
+
+        static int CountElements(Node root)
+        {
+            var count = 0;
+            var pending = new Stack<Node>();
+            pending.Push(root);
+            while (pending.TryPop(out var node))
+            {
+                for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+                {
+                    if (child is Element element)
+                    {
+                        count++;
+                        if (element is HtmlTemplateElement template)
+                        {
+                            pending.Push(template.Content);
+                        }
+                    }
+
+                    pending.Push(child);
+                }
+            }
+
+            return count;
+        }
     }
 
     /// <summary>
@@ -746,6 +843,23 @@ public static class HtmlSanitizerFuzzTargets
         ];
 
         return fragments;
+    }
+
+    /// <summary>The fragments of html-sanitizer with limits that keep them, that reject them, and fragments whose formatting elements are recreated in each paragraph.</summary>
+    private static IEnumerable<FuzzSeed> GetLimitSeeds()
+    {
+        string[] fragments =
+        [
+            .. GetHtmlFragments(),
+            "<p>" + string.Concat(Enumerable.Range(0, 20).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 20)),
+            "<p><b><i><u><s><a href=x>" + string.Concat(Enumerable.Repeat("<p>x", 30)), "<p><b>ab</b>", "<p><b>abc</b>", "<p><b><i>",
+        ];
+
+        byte[][] limits = [[255, 255], [2, 1], [0, 255], [40, 64]];
+        for (var i = 0; i < fragments.Length; i++)
+        {
+            yield return FuzzSeed.FromText(i.ToString("D3", CultureInfo.InvariantCulture), limits[i % limits.Length], fragments[i]);
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetUrlSeeds()

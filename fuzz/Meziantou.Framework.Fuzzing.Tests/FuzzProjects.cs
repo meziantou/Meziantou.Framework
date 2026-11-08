@@ -36,6 +36,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.SimpleQueryLanguage.Fuzz", SimpleQueryLanguage.Fuzz.SimpleQueryLanguageFuzzTargets.All),
         ("Meziantou.Framework.SyntaxHighlighting.Fuzz", SyntaxHighlighting.Fuzz.SyntaxHighlightingFuzzTargets.All),
         ("Meziantou.Framework.TdsServer.Fuzz", TdsServer.Fuzz.TdsServerFuzzTargets.All),
+        ("Meziantou.Framework.TextDiff.Fuzz", TextDiffFuzz.TextDiffFuzzTargets.All),
         ("Meziantou.Framework.Toml.Fuzz", Toml.Fuzz.TomlFuzzTargets.All),
         ("Meziantou.Framework.Unicode.Fuzz", UnicodeFuzz.UnicodeFuzzTargets.All),
         ("Meziantou.Framework.Uri.Fuzz", UriFuzz.UriFuzzTargets.All),

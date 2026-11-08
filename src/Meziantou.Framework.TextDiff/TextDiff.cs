@@ -12,9 +12,12 @@ public static class TextDiff
     /// <param name="newText">The modified text.</param>
     /// <param name="options">The chunking and comparison options. Defaults to a line diff using
     /// <see cref="TextDiffAlgorithm.Myers"/> with no option ignored.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The chunks of both texts in order, each tagged with what happened to it.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="oldText"/> or <paramref name="newText"/> is <see langword="null"/>.</exception>
-    public static TextDiffResult ComputeDiff(string oldText, string newText, TextDiffOptions? options = null)
+    /// <exception cref="ArgumentOutOfRangeException">An option of <paramref name="options"/> is out of range.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled.</exception>
+    public static TextDiffResult ComputeDiff(string oldText, string newText, TextDiffOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(oldText);
         ArgumentNullException.ThrowIfNull(newText);
@@ -29,7 +32,8 @@ public static class TextDiff
         var newChunks = ToArray(options.Chunker.Chunk(processedNew));
 
         var comparer = BuildComparer(options);
-        var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer);
+        var budget = DiffBudget.Create(options, cancellationToken);
+        var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer, budget);
 
         return BuildResult(oldChunks, newChunks, diff);
     }
@@ -47,13 +51,16 @@ public static class TextDiff
     /// is not used by this overload.
     /// </param>
     /// <param name="options">The comparison options. Defaults to <see cref="TextDiffAlgorithm.Myers"/> with no
-    /// option ignored.</param>
+    /// option ignored. <see cref="TextDiffOptions.Timeout"/> covers all the levels.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The chunks produced by the first chunker, each of which may carry a finer diff of its own.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="oldText"/>, <paramref name="newText"/> or
     /// <paramref name="chunkers"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="chunkers"/> holds fewer than two chunkers, or one of
     /// them is <see langword="null"/>.</exception>
-    public static TextDiffHierarchyResult ComputeHierarchyDiff(string oldText, string newText, IReadOnlyList<TextChunker> chunkers, TextDiffOptions? options = null)
+    /// <exception cref="ArgumentOutOfRangeException">An option of <paramref name="options"/> is out of range.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled.</exception>
+    public static TextDiffHierarchyResult ComputeHierarchyDiff(string oldText, string newText, IReadOnlyList<TextChunker> chunkers, TextDiffOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(oldText);
         ArgumentNullException.ThrowIfNull(newText);
@@ -67,13 +74,20 @@ public static class TextDiff
         var processedNew = options.IgnoreEndOfLine ? NormalizeLineEndings(newText) : newText;
 
         var comparer = BuildComparer(options);
-        return ComputeHierarchyDiffCore(processedOld, processedNew, chunkerArray, chunkerIndex: 0, options, comparer);
+        var budget = DiffBudget.Create(options, cancellationToken);
+        return ComputeHierarchyDiffCore(processedOld, processedNew, chunkerArray, chunkerIndex: 0, options, comparer, budget);
     }
 
     private static void ValidateOptions(TextDiffOptions options)
     {
         if (!Enum.IsDefined(options.Algorithm))
             throw new ArgumentOutOfRangeException(nameof(options), options.Algorithm, $"'{nameof(TextDiffOptions.Algorithm)}' is not a valid {nameof(TextDiffAlgorithm)} value.");
+
+        if (options.Timeout is { } timeout && timeout < TimeSpan.Zero && timeout != Timeout.InfiniteTimeSpan)
+            throw new ArgumentOutOfRangeException(nameof(options), timeout, $"'{nameof(TextDiffOptions.Timeout)}' must be positive or {nameof(Timeout)}.{nameof(Timeout.InfiniteTimeSpan)}.");
+
+        if (options.MaxEditCost is < 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.MaxEditCost, $"'{nameof(TextDiffOptions.MaxEditCost)}' must not be negative.");
     }
 
     private static IEqualityComparer<string> BuildComparer(TextDiffOptions options)
@@ -136,13 +150,14 @@ public static class TextDiff
         TextChunker[] chunkers,
         int chunkerIndex,
         TextDiffOptions options,
-        IEqualityComparer<string> comparer)
+        IEqualityComparer<string> comparer,
+        DiffBudget budget)
     {
         var chunker = chunkers[chunkerIndex];
         var oldChunks = ToArray(chunker.Chunk(oldText));
         var newChunks = ToArray(chunker.Chunk(newText));
-        var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer);
-        return BuildHierarchyResult(oldChunks, newChunks, diff, chunkers, chunkerIndex, options, comparer);
+        var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer, budget);
+        return BuildHierarchyResult(oldChunks, newChunks, diff, chunkers, chunkerIndex, options, comparer, budget);
     }
 
     private static TextDiffHierarchyResult BuildHierarchyResult(
@@ -152,7 +167,8 @@ public static class TextDiff
         TextChunker[] chunkers,
         int chunkerIndex,
         TextDiffOptions options,
-        IEqualityComparer<string> comparer)
+        IEqualityComparer<string> comparer,
+        DiffBudget budget)
     {
         var leftModified = diff.LeftModified;
         var rightModified = diff.RightModified;
@@ -219,7 +235,7 @@ public static class TextDiff
             {
                 var deleted = oldChunks[deletedStart + i];
                 var inserted = newChunks[insertedStart + i];
-                var children = ComputeHierarchyDiffCore(deleted, inserted, chunkers, chunkerIndex + 1, options, comparer);
+                var children = ComputeHierarchyDiffCore(deleted, inserted, chunkers, chunkerIndex + 1, options, comparer, budget);
                 entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Replace, deleted, inserted, children.Entries));
             }
 

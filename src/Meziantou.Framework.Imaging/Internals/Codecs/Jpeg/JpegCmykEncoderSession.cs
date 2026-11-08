@@ -64,6 +64,10 @@ internal sealed class JpegCmykEncoderSession : ImageEncoderSession
         if (_encoder.Process == JpegEncodingProcess.Progressive)
             throw new UnsupportedImageFeatureException("CMYK JPEG output is baseline sequential: set JpegEncoder.Process to Baseline.", ImageFormat.Jpeg, "Progressive CMYK JPEG");
 
+        // A gain map maps an RGB rendition to another one: inks have no such rendition
+        if (_encoder.GainMap is not null)
+            throw new UnsupportedImageFeatureException("A gain map cannot be written next to CMYK pixels: convert the image to RGB first, or remove JpegEncoder.GainMap.", ImageFormat.Jpeg, "Gain map with CMYK pixels");
+
         _width = options.CanvasSize.Width;
         _height = options.CanvasSize.Height;
         _blocksWide = (_width + 7) / 8;

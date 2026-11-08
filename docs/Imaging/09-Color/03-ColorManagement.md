@@ -301,6 +301,53 @@ public static IReadOnlyList<AuxiliaryImageKind> SaveHdrRendition(string photoPat
   parameters come from the ISO 21496-1 metadata (JPEG, HEIC, AVIF) or from the `hdrgm` XMP properties of Ultra HDR;
   the gain maps of Apple that have no ISO 21496-1 metadata are listed without parameters.
 
+## Write a photo with its gain map
+
+[JpegEncoder.GainMap](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.GainMap) and [AvifEncoder.GainMap](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GainMap) write a gain map next to the image: an Ultra HDR JPEG file, or an
+AVIF file with a tone map item. A [GainMap](cref:Meziantou.Framework.Imaging.Formats.GainMap) is the gain map image and its [GainMapMetadata](cref:Meziantou.Framework.Imaging.Metadata.GainMapMetadata), for example the
+ones of a photo that was read, after the same edit:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_WriteGainMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeHdrPhoto(string photoPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    var images = AuxiliaryImageCollection.Load(photoPath);
+    if (images.GainMapImage is { GainMapMetadata: { } metadata } gainMapImage)
+    {
+        // The samples of the gain map are its coded values, often at a fraction of the size of the photo: it gets the
+        // same geometry (the same resize, crop or rotation), scaled to its own size
+        using var gainMap = gainMapImage.Decode();
+        var scaleX = (double)gainMap.Width / photo.Width;
+        var scaleY = (double)gainMap.Height / photo.Height;
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        gainMap.Resize(new ResizeOptions(Math.Max(1, (int)Math.Round(photo.Width * scaleX, MidpointRounding.AwayFromZero)), Math.Max(1, (int)Math.Round(photo.Height * scaleY, MidpointRounding.AwayFromZero))) { Mode = ResizeMode.Stretch });
+
+        // An Ultra HDR file: the gain map image follows the photo, with its parameters (ISO 21496-1 and XMP). An
+        // AvifEncoder with a GainMap writes the same photo as an AVIF file
+        photo.Save(outputPath, new JpegEncoder { Quality = 90, GainMap = new GainMap(gainMap, metadata) });
+    }
+    else
+    {
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        photo.Save(outputPath, new JpegEncoder { Quality = 90 });
+    }
+}
+```
+<!-- endref -->
+
+- The samples of the gain map image are its coded values, as [AuxiliaryImage.Decode](cref:Meziantou.Framework.Imaging.AuxiliaryImage.Decode) returns them: a grayscale image gives
+  one gain for the three channels. Its color description (ICC profile or CICP) is the one of the alternate rendition,
+  which a gain map that does not use the color space of the base image applies in.
+- The gain map image is encoded with the settings of the encoder, but with full chroma resolution: the gain multiplies
+  its errors. Both images are kept in memory until the file is written.
+- The parameters are written as the metadata of ISO 21496-1 and, in a JPEG file, as the `hdrgm` XMP properties of
+  Ultra HDR 1.0, merged with the XMP packet of each image. XMP cannot describe a gain map in the color space of the
+  alternate rendition: the readers of Ultra HDR 1.0, which only read XMP, apply such a gain map in the color space of
+  the base image.
+- Only a still image has a gain map: an animation, or an animated gain map image, throws an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). The gain map image of an AVIF file must be opaque.
+
 ## Choose a rendering intent
 
 [IccColorTransformOptions](cref:Meziantou.Framework.Imaging.IccColorTransformOptions) select how colors that differ between two media are rendered:

@@ -545,6 +545,147 @@ public sealed class BmpCodecTests
         Assert.Null(Image.Identify(Bmp(1, 1, 24, [[1, 2, 3, 0]], pixelsPerMeter: (0, 5670))).Metadata.Resolution);
     }
 
+    [Theory]
+    [InlineData(BmpPixelLayout.Auto, BmpCompression.None)]
+    [InlineData(BmpPixelLayout.Bgra32, BmpCompression.None)]
+    [InlineData(BmpPixelLayout.Bgr565, BmpCompression.None)]
+    [InlineData(BmpPixelLayout.Indexed8, BmpCompression.None)]
+    [InlineData(BmpPixelLayout.Indexed4, BmpCompression.RunLength)]
+    public void TheIccProfileIsEmbeddedAfterThePixelData(BmpPixelLayout layout, BmpCompression compression)
+    {
+        var profile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        using var source = CreateImage(5, 3, seed: 4);
+        source.Metadata.IccProfile = profile;
+        var encoder = new BmpEncoder { PixelLayout = layout, Compression = compression, AllowBitDepthReduction = true, AllowColorReduction = true, BackgroundColor = new Rgba64(0, 0, 0) };
+        var data = Save(source, encoder);
+
+        // A BITMAPV5HEADER with PROFILE_EMBEDDED, whose profile ends the file
+        Assert.Equal(124u, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(14)));
+        Assert.Equal(0x4D424544u, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(70)));
+        Assert.Equal(4u, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(122)));
+        var profileOffset = 14 + (int)BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(126));
+        var profileSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(130));
+        Assert.Equal(data.Length, profileOffset + profileSize);
+        Assert.Equal((uint)data.Length, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(2)));
+        Assert.True(profileOffset >= BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(10)) + BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(34)));
+        Assert.Equal(profile.Data.ToArray(), data.AsSpan(profileOffset).ToArray());
+
+        // The pixels are those of the same layout without a profile
+        source.Metadata.IccProfile = null;
+        var expected = Decode(Save(source, encoder));
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal(expected, GetPixels(decoded.Frames[0]));
+        Assert.Equal(profile.Data, decoded.Metadata.IccProfile?.Data);
+        Assert.Equal(profile.Data, Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }).Metadata.IccProfile?.Data);
+
+        // The header walk stops before the profile
+        Assert.Null(Image.Identify(data).Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void AnEmbeddedProfileIsReadBeforeOrAfterThePixelData()
+    {
+        var profile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve()).Data.ToArray();
+        byte[][] rows = [[1, 2, 3, 4, 5, 6, 0, 0], [7, 8, 9, 10, 11, 12, 0, 0]];
+        Rgba32[] expected = [new(9, 8, 7), new(12, 11, 10), new(3, 2, 1), new(6, 5, 4)];
+        foreach (var data in new[]
+        {
+            WithEmbeddedProfile(Bmp(2, 2, 24, rows, headerLength: 124, gap: profile.Length + 3), profile, 14 + 124 + 2),
+            WithEmbeddedProfile(Bmp(2, 2, 24, rows, headerLength: 124), profile, profileOffset: null, trailingGap: 5),
+        })
+        {
+            using var image = Image.Load<Rgba32>(data);
+            Assert.Equal(expected, GetPixels(image.Frames[0]));
+            Assert.Equal(profile, image.Metadata.IccProfile?.Data.ToArray());
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(4096)]
+    public async Task AnEmbeddedProfileAfterThePixelDataIsReadFromAStreamAndByAReader(int maxBytesPerRead)
+    {
+        var profile = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+        using var source = CreateImage(9, 4, seed: 1);
+        source.Metadata.IccProfile = profile;
+        var data = Save(source, new BmpEncoder { PixelLayout = BmpPixelLayout.Bgra32 });
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = maxBytesPerRead })
+        {
+            using var image = await Image.LoadAsync<Rgba32>(stream, cancellationToken: XunitCancellationToken);
+            Assert.Equal(profile.Data, image.Metadata.IccProfile?.Data);
+        }
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = maxBytesPerRead })
+        {
+            using var reader = Image.OpenReader<Rgba32>(stream);
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            Assert.Equal(profile.Data, frame.Metadata.IccProfile?.Data);
+            Assert.Equal(GetPixels(source.Frames[0]), GetPixels(frame.Frames[0]));
+        }
+    }
+
+    [Fact]
+    public void MalformedEmbeddedProfilesAreRejectedAndOthersIgnored()
+    {
+        var profile = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve()).Data.ToArray();
+        byte[][] rows = [[1, 2, 3, 0], [4, 5, 6, 0]];
+        var valid = WithEmbeddedProfile(Bmp(1, 2, 24, rows, headerLength: 124), profile, profileOffset: null);
+        using (var image = Image.Load(valid))
+        {
+            Assert.NotNull(image.Metadata.IccProfile);
+        }
+
+        // A profile that overlaps the header, the pixel data or the end of the pixel data
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(valid, 126, [100, 0, 0, 0])));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(valid, 126, [128, 0, 0, 0])));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(WithEmbeddedProfile(Bmp(1, 2, 24, rows, headerLength: 124, gap: profile.Length - 1), profile, 14 + 124)));
+
+        // A truncated profile, at every length
+        for (var length = valid.Length - profile.Length; length < valid.Length; length++)
+        {
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(valid.AsSpan(0, length)));
+        }
+
+        // A profile larger than the metadata limit
+        var limits = new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = profile.Length - 1 } } };
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(valid, limits)).Kind);
+
+        // A linked profile (a file name), an empty profile, a gray profile and a malformed profile are not adopted
+        var gray = IccTestProfiles.Gray(IccTestProfiles.Gamma(563)).Data.ToArray();
+        var garbage = new byte[200];
+        foreach (var data in new[]
+        {
+            Edit(valid, 70, [.. "KNIL"u8]),
+            Edit(valid, 130, [0, 0, 0, 0]),
+            WithEmbeddedProfile(Bmp(1, 2, 24, rows, headerLength: 124), gray, profileOffset: null),
+            WithEmbeddedProfile(Bmp(1, 2, 24, rows, headerLength: 124), garbage, profileOffset: null),
+        })
+        {
+            using var image = Image.Load<Rgba32>(data);
+            Assert.Null(image.Metadata.IccProfile);
+            Assert.Equal([new Rgba32(6, 5, 4), new Rgba32(3, 2, 1)], GetPixels(image.Frames[0]));
+        }
+
+        // A requested pixel format that the profile cannot label follows the conversion options
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load<Gray8>(valid));
+        using var discarded = Image.Load<Gray8>(valid, new ImageDecodeOptions { Conversion = new PixelConversionOptions { DiscardIncompatibleColorProfile = true } });
+        Assert.Null(discarded.Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void AGrayProfileCannotLabelTheRgbSamplesOfABmp()
+    {
+        using var source = CreateImage(2, 2, seed: 3);
+        using var gray = source.CloneAs<Gray8>();
+        gray.Metadata.IccProfile = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Save(gray, new BmpEncoder()));
+        var data = Save(gray, new BmpEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        Assert.Equal(40u, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(14)));
+    }
+
     [Fact]
     public void TruncationAtEveryByteIsReported()
     {
@@ -1141,6 +1282,31 @@ public sealed class BmpCodecTests
 
         body.CopyTo(data, offset);
         return data;
+    }
+
+    /// <summary>Embeds a profile in a file with a <c>BITMAPV5HEADER</c>: at an offset of the file, or appended after a gap.</summary>
+    private static byte[] WithEmbeddedProfile(byte[] data, byte[] profile, int? profileOffset, int trailingGap = 0)
+    {
+        byte[] result;
+        int offset;
+        if (profileOffset is { } at)
+        {
+            result = (byte[])data.Clone();
+            offset = at;
+        }
+        else
+        {
+            offset = data.Length + trailingGap;
+            result = new byte[offset + profile.Length];
+            data.CopyTo(result, 0);
+            BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(2), (uint)result.Length);
+        }
+
+        profile.CopyTo(result, offset);
+        BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(70), 0x4D424544); // PROFILE_EMBEDDED
+        BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(126), (uint)(offset - 14));
+        BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(130), (uint)profile.Length);
+        return result;
     }
 
     /// <summary>Assembles a BMP file; <paramref name="rows"/> are the stored rows, in storage order.</summary>

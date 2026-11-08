@@ -3115,6 +3115,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.GainMap? GainMap { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Size? GridTileSize { get => throw null; init { } }
         public int KeyFrameInterval { get => throw null; init { } }
         public bool PremultiplyAlpha { get => throw null; init { } }
@@ -3181,6 +3182,13 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         RequireExact = 0,
         RoundToNearest = 1,
+    }
+
+    public sealed class GainMap
+    {
+        public Meziantou.Framework.Imaging.Image Image { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.GainMapMetadata Metadata { get => throw null; }
+        public GainMap(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Metadata.GainMapMetadata metadata) { }
     }
 
     public enum GifAlphaMode
@@ -3340,6 +3348,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling ChromaSubsampling { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.GainMap? GainMap { get => throw null; init { } }
         public bool OptimizeHuffmanTables { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegEncodingProcess Process { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
@@ -3418,6 +3427,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public bool OptimizeFrames { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
         public Meziantou.Framework.Imaging.QuantizeOptions Quantization { get => throw null; init { } }
+        public bool WriteUnsafeToCopyChunks { get => throw null; init { } }
     }
 
     public enum PngFilter
@@ -3690,6 +3700,7 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.OpenExrWindows? OpenExrWindows { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifOrientation Orientation { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.PixelAspectRatio? PixelAspectRatio { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.PngChunk> PngChunks { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.ImageResolution? Resolution { get => throw null; set { } }
         public Meziantou.Framework.Imaging.ImageFormat SourceFormat { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.ImageTextEntry> TextEntries { get => throw null; }
@@ -3780,6 +3791,27 @@ namespace Meziantou.Framework.Imaging.Metadata
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class PngChunk : System.IEquatable<Meziantou.Framework.Imaging.Metadata.PngChunk>
+    {
+        public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
+        public bool IsPrivate { get => throw null; }
+        public bool IsSafeToCopy { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.PngChunkPosition Position { get => throw null; }
+        public string Type { get => throw null; }
+        public PngChunk(string type, Meziantou.Framework.Imaging.Metadata.MetadataBlob data, Meziantou.Framework.Imaging.Metadata.PngChunkPosition position = Meziantou.Framework.Imaging.Metadata.PngChunkPosition.BeforeImageData) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.PngChunk? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public enum PngChunkPosition
+    {
+        BeforePalette = 0,
+        BeforeImageData = 1,
+        AfterImageData = 2,
     }
 
     public sealed class XmpProfile

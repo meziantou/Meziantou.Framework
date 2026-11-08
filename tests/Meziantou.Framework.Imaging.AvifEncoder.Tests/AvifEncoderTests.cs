@@ -1330,6 +1330,122 @@ public sealed class AvifEncoderTests
         Assert.Equal([0u, 250_000u], track.Samples.Select(sample => sample.Duration));
     }
 
+    [Fact]
+    public void AGainMapIsWrittenAsAToneMapItem()
+    {
+        using var image = CreateSmoothImage(48, 32, transparent: false);
+        using var gainMap = CreateSmoothImage(24, 16, transparent: false, phase: 3);
+        var metadata = new GainMapMetadata(0, 2.5, [new GainMapChannel(-0.5, 2.5, gamma: 1, baseOffset: 1.0 / 64, alternateOffset: 1.0 / 64)]);
+        var data = Encode(image, new AvifEncoder { GainMap = new GainMap(gainMap, metadata) });
+
+        // A hidden gain map item, and a tone map item derived from the primary item and the gain map, offered with the
+        // primary item as an alternative ('altr' group) and announced by the 'tmap' brand
+        var file = ReferenceHeif.Parse(data);
+        Assert.True(file.HasBrand("tmap"));
+        var primary = Assert.NotNull(file.PrimaryItem);
+        var toneMap = Assert.Single(file.Items, item => item.Type is "tmap");
+        Assert.False(toneMap.IsHidden);
+        Assert.Equal((48L, 32L), toneMap.Size);
+        var derivation = Assert.Single(file.ItemReferences, reference => reference.Type is "dimg");
+        Assert.Equal(toneMap.Id, derivation.FromItemId);
+        Assert.Equal(primary.Id, derivation.ToItemIds[0]);
+        var gainMapItem = Assert.NotNull(file.FindItem(derivation.ToItemIds[1]));
+        Assert.Equal("av01", gainMapItem.Type);
+        Assert.True(gainMapItem.IsHidden);
+        Assert.Equal((24L, 16L), gainMapItem.Size);
+        var toneMapData = file.ReadItemData(toneMap);
+        Assert.Equal(0, toneMapData[0]);
+        Assert.Equal(metadata, GainMapMetadataReader.ReadIso(toneMapData.AsSpan(1), ImageFormat.Avif));
+        // The 'altr' box: its type, its version and flags, the identifier of the group, the number of entities, the entities
+        var group = data.AsSpan().IndexOf("altr"u8);
+        Assert.Equal(2u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(group + 12)));
+        Assert.Equal(toneMap.Id, System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(group + 16)));
+        Assert.Equal(primary.Id, System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(group + 20)));
+
+        // The primary image is the one written without gain map, and the gain map image is lossless like it
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal(GetBytes(image), GetBytes(decoded));
+        var images = AuxiliaryImageCollection.Load(data);
+        var written = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.GainMap, written.Kind);
+        Assert.Equal(metadata, written.GainMapMetadata);
+        using var decodedGainMap = written.Decode<Rgba32>();
+        Assert.Equal(GetBytes(gainMap), GetBytes(decodedGainMap));
+        using var rendition = images.DecodeHdr(2.5);
+        using var expected = metadata.Apply(image, gainMap, 2.5);
+        var expectedPixels = new RgbaFloat[48 * 32];
+        var actualPixels = new RgbaFloat[48 * 32];
+        expected.Frames[0].CopyPixelDataTo(expectedPixels);
+        rendition.Frames[0].CopyPixelDataTo(actualPixels);
+        Assert.Equal(expectedPixels, actualPixels);
+    }
+
+    [Fact]
+    public void AGainMapInTheColorSpaceOfTheAlternateRenditionMatchesLibavif()
+    {
+        // The images of a file of libavif 1.3.0 whose gain map applies in BT.2020, written again losslessly with the color
+        // description of the alternate rendition on the gain map image: the rendition is the reference of the original file
+        // (ISO 21496-1 evaluated with numpy on the planes libavif decodes)
+        const string Directory = "tests/Meziantou.Framework.Imaging.Avif.Tests/GainMaps/";
+        var source = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(Directory + "gainmap-bt2020-alternate.avif"));
+        var sourceGainMap = Assert.NotNull(source.GainMapImage);
+        var metadata = Assert.NotNull(sourceGainMap.GainMapMetadata);
+        Assert.False(metadata.UseBaseColorSpace);
+        using var baseImage = Image.Load(GainMapTestFiles.Read(Directory + "gainmap-bt2020-alternate.avif"));
+        using var gainMap = sourceGainMap.Decode();
+        gainMap.Metadata.Cicp = new CicpColorDescription(9, 16, 9, fullRange: true);
+        var data = Encode(baseImage, new AvifEncoder { GainMap = new GainMap(gainMap, metadata) });
+
+        var toneMap = Assert.Single(ReferenceHeif.Parse(data).Items, item => item.Type is "tmap");
+        Assert.Equal(9, toneMap.Nclx?.ColorPrimaries);
+        var images = AuxiliaryImageCollection.Load(data);
+        using var rendition = images.DecodeHdr(hdrHeadroom: 5);
+        Assert.Equal(new CicpColorDescription(9, 8, 0, fullRange: true), rendition.Metadata.Cicp);
+        GainMapTestFiles.AssertClose(rendition, GainMapTestFiles.ReadHalfFloats(Directory + "gainmap-bt2020-alternate.reference.f16"), channels: 3, tolerance: 0.05, medianTolerance: 0.002, context: "written again");
+    }
+
+    [Fact]
+    public async Task AGainMapKeepsTheOtherItemsOfTheImage()
+    {
+        // Alpha, EXIF, XMP and a grid: the items of the primary image move with the new boxes
+        using var image = CreateSmoothImage(160, 96, transparent: true);
+        image.Metadata.ExifProfile = new ExifProfile(new MetadataBlob([(byte)'M', (byte)'M', 0, 42, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0]));
+        image.Metadata.XmpProfile = new XmpProfile(new MetadataBlob("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>"u8));
+        using var gainMap = CreateSmoothImage(40, 24, transparent: false);
+        var metadata = new GainMapMetadata(0, 1, [new GainMapChannel(0, 1, 1, 0, 0)]);
+        var encoder = new AvifEncoder { GridTileSize = new Size(64, 64), GainMap = new GainMap(gainMap, metadata) };
+        var data = Encode(image, encoder);
+
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal(GetBytes(image), GetBytes(decoded));
+        Assert.Equal(image.Metadata.XmpProfile.Data, decoded.Metadata.XmpProfile?.Data);
+        Assert.NotNull(decoded.Metadata.ExifProfile);
+        var file = ReferenceHeif.Parse(data);
+        Assert.Equal("grid", file.PrimaryItem?.Type);
+        Assert.NotNull(file.AlphaItem);
+        var written = Assert.Single(AuxiliaryImageCollection.Load(data));
+        Assert.Equal(new Size(40, 24), written.Size);
+        using var decodedGainMap = written.Decode<Rgba32>();
+        Assert.Equal(GetBytes(gainMap), GetBytes(decodedGainMap));
+
+        using var stream = new MemoryStream();
+        await image.SaveAsync(stream, encoder, XunitCancellationToken);
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public void AGainMapNeedsAStillImageAndAnOpaqueGainMapImage()
+    {
+        using var image = CreateSmoothImage(16, 16, transparent: false);
+        using var transparent = CreateSmoothImage(16, 16, transparent: true);
+        var metadata = new GainMapMetadata(0, 1, [new GainMapChannel(0, 1, 1, 0, 0)]);
+        Assert.Equal("Gain map with alpha", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new AvifEncoder { GainMap = new GainMap(transparent, metadata) })).Feature);
+
+        using var animation = CreateSmoothImage(16, 16, transparent: false);
+        animation.AppendFrame();
+        Assert.Equal("Gain map with an animation", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(animation, new AvifEncoder { GainMap = new GainMap(image, metadata) })).Feature);
+    }
+
     // A copy of an image whose operations use up to that many workers
     private static Image<Rgba32> WithWorkers(Image<Rgba32> image, int workers)
     {

@@ -26,6 +26,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// leaves the canvas, data after the last row and a missing end-of-bitmap marker are malformed, never clamped. Bytes after
 /// the end-of-bitmap marker are not read.
 /// </para>
+/// <para>
+/// The ICC profile of a <c>BITMAPV5HEADER</c> whose <c>bV5CSType</c> is <c>PROFILE_EMBEDDED</c> lies at
+/// <c>bV5ProfileData</c> bytes from the start of the header: between the palette and the pixel data, or after the pixel
+/// data (where Windows places it). The full scan and the decode walk read it wherever it is (the bytes between the pixel
+/// data and the profile are skipped); the header walk stops before it. A profile that overlaps the headers, the palette
+/// or the pixel data is malformed.
+/// </para>
 /// </remarks>
 internal sealed class BmpStructureParser : ImageParser<ImageInfo>
 {
@@ -51,6 +58,12 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
     private PooledBuffer? _rowBuffer;
     private PooledBuffer? _expandedRow;
     private ImageInfo? _result;
+    private long _profileStart = -1;
+    private int _profileLength;
+    private byte[]? _profile;
+    private int _profileFilled;
+    private bool _profileRead;
+    private State _afterProfile;
 
     public BmpStructureParser(ImageCodecContext context, StructureWalk walk, BmpDecoder? decoder = null)
         : base(ImageFormat.Bmp)
@@ -75,7 +88,10 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
         TrailingMasks,
         Palette,
         Gap,
+        Profile,
         Rows,
+        TrailingGap,
+        Finish,
         Done,
     }
 
@@ -85,7 +101,7 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets the canvas size.</summary>
     public Size Size => new(Layout.Header.Width, Layout.Header.Height);
 
-    /// <summary>Gets the metadata: BMP stores only the physical resolution.</summary>
+    /// <summary>Gets the metadata: BMP stores the physical resolution and, in a <c>BITMAPV5HEADER</c>, an embedded ICC profile.</summary>
     public ImageMetadata Metadata => _metadata.Metadata;
 
     /// <summary>Gets the default working representation.</summary>
@@ -134,6 +150,7 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
                         return ParseStatus.NeedMoreData(_headerLength);
 
                     var header = BmpInfoHeader.Parse(remaining[.._headerLength], _headerLength, _headerKind);
+                    ReadProfileLocation(remaining[.._headerLength], header);
                     Advance(ref consumed, _headerLength);
                     if (header.TrailingMaskLength == 0)
                     {
@@ -195,13 +212,23 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
 
                 case State.Gap:
                 {
-                    if (_position < _pixelDataOffset)
+                    // A profile stored before the pixel data is read on the way
+                    var profileBeforePixels = _profileStart >= 0 && !_profileRead && _profileStart < _pixelDataOffset;
+                    if (profileBeforePixels && _position == _profileStart)
+                    {
+                        _afterProfile = State.Gap;
+                        _state = State.Profile;
+                        break;
+                    }
+
+                    var end = profileBeforePixels ? _profileStart : _pixelDataOffset;
+                    if (_position < end)
                     {
                         var remaining = buffer[consumed..];
                         if (remaining.IsEmpty)
                             return ParseStatus.NeedMoreData(1);
 
-                        var skip = (int)Math.Min(remaining.Length, _pixelDataOffset - _position);
+                        var skip = (int)Math.Min(remaining.Length, end - _position);
                         Advance(ref consumed, skip);
                         break;
                     }
@@ -210,16 +237,71 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
                     break;
                 }
 
+                case State.Profile:
+                {
+                    var remaining = buffer[consumed..];
+                    if (remaining.IsEmpty)
+                        return ParseStatus.NeedMoreData(1);
+
+                    var count = Math.Min(remaining.Length, _profileLength - _profileFilled);
+                    remaining[..count].CopyTo(_profile.AsSpan(_profileFilled));
+                    _profileFilled += count;
+                    Advance(ref consumed, count);
+                    if (_profileFilled == _profileLength)
+                    {
+                        // A profile that is not a valid RGB profile is ignored, as in the other formats
+                        _metadata.TryAdoptIccProfile(_profile!, grayscaleSamples: false);
+                        _profile = null;
+                        _profileRead = true;
+                        _state = _afterProfile;
+                    }
+
+                    break;
+                }
+
+                case State.TrailingGap:
+                {
+                    if (_position < _profileStart)
+                    {
+                        var remaining = buffer[consumed..];
+                        if (remaining.IsEmpty)
+                            return ParseStatus.NeedMoreData(1);
+
+                        var skip = (int)Math.Min(remaining.Length, _profileStart - _position);
+                        Advance(ref consumed, skip);
+                        break;
+                    }
+
+                    _afterProfile = State.Finish;
+                    _state = State.Profile;
+                    break;
+                }
+
+                case State.Finish:
+                {
+                    _state = State.Done;
+                    _result = CreateInfo(ImageIdentifyMode.FullScan);
+                    _decoder?.OnEnd(this);
+                    return ParseStatus.Complete;
+                }
+
                 case State.Rows:
                 {
                     var status = Layout.Header.IsRunLength ? ReadRunLengthRows(buffer, ref consumed) : ReadRows(buffer, ref consumed);
                     if (!status.IsComplete)
                         return status;
 
-                    _state = State.Done;
-                    _result = CreateInfo(ImageIdentifyMode.FullScan);
-                    _decoder?.OnEnd(this);
-                    return ParseStatus.Complete;
+                    if (_profileStart >= 0 && !_profileRead)
+                    {
+                        if (_profileStart < _position)
+                            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP embedded ICC profile starts at offset {_profileStart}, inside the pixel data (which ends at offset {_position})."));
+
+                        _state = State.TrailingGap;
+                        break;
+                    }
+
+                    _state = State.Finish;
+                    break;
                 }
 
                 default:
@@ -284,10 +366,52 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
         if (_pixelDataOffset < minimumOffset)
             throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP pixel data offset is {_pixelDataOffset}, before the end of the header and palette ({minimumOffset})."));
 
+        if (_profileStart >= 0)
+        {
+            var profileEnd = _profileStart + _profileLength;
+            if (_profileStart < minimumOffset || (_profileStart < _pixelDataOffset && profileEnd > _pixelDataOffset))
+                throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP embedded ICC profile (offset {_profileStart}, {_profileLength} bytes) overlaps the headers, the palette or the pixel data."));
+
+            if (!header.IsRunLength && _profileStart >= _pixelDataOffset && _profileStart < _pixelDataOffset + (_rowLength * header.Height))
+                throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP embedded ICC profile starts at offset {_profileStart}, inside the pixel data."));
+
+            if (_walk == StructureWalk.Header)
+            {
+                // The header walk stops before the profile
+                _profileStart = -1;
+            }
+            else
+            {
+                _metadata.Charge(_profileLength);
+                _profile = new byte[_profileLength];
+            }
+        }
+
         if (_walk == StructureWalk.FullScan)
         {
             _context.Tracker.ChargeScannedFrame();
         }
+    }
+
+    /// <summary>
+    /// Reads the location of the embedded ICC profile of a <c>BITMAPV5HEADER</c> (<c>bV5ProfileData</c>, relative to the
+    /// start of the header, and <c>bV5ProfileSize</c>). A linked profile (a file name) and an empty profile are ignored.
+    /// </summary>
+    private void ReadProfileLocation(ReadOnlySpan<byte> rawHeader, BmpInfoHeader header)
+    {
+        if (header.HeaderLength != BmpFormat.V5HeaderLength || header.ColorSpaceType != BmpFormat.ColorSpaceProfileEmbedded)
+            return;
+
+        var offset = BinaryPrimitives.ReadUInt32LittleEndian(rawHeader[BmpFormat.V5ProfileDataOffset..]);
+        var size = BinaryPrimitives.ReadUInt32LittleEndian(rawHeader[BmpFormat.V5ProfileSizeOffset..]);
+        if (size is 0)
+            return;
+
+        if (size > int.MaxValue)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.MetadataBytes, _context.Limits.MaxMetadataBytes, size);
+
+        _profileStart = BmpFormat.FileHeaderLength + (long)offset;
+        _profileLength = (int)size;
     }
 
     /// <summary>Prepares the pixel walk; returns false when the sequential reader asked to yield after the header.</summary>

@@ -124,6 +124,17 @@ internal static partial class ExrCorpus
         public List<(string Name, string Type, object Value)> Attributes { get; init; } = [];
 
         public string? Type { get; init; }
+
+        /// <summary>Gets the name of the part (required for the parts of a multi-part file).</summary>
+        public string? Name { get; init; }
+
+        /// <summary>
+        /// Gets the number of samples of each pixel (x, y) of a deep part, whose channels give the value of the sample s of a
+        /// pixel as their value at the level s.
+        /// </summary>
+        public Func<int, int, int>? DeepCounts { get; init; }
+
+        public bool IsDeep => Type?.StartsWith("deep", StringComparison.Ordinal) == true;
     }
 
     /// <summary>The sizes of the levels of a description, in the order exr-from-raw reads their samples.</summary>
@@ -153,11 +164,23 @@ internal static partial class ExrCorpus
         return result;
     }
 
-    /// <summary>The samples of a channel, little-endian in its pixel type, for every level.</summary>
+    /// <summary>The number of samples of each pixel of a deep part, as exr-from-raw reads them.</summary>
+    private static byte[] DeepCounts(Description d)
+    {
+        var bytes = new byte[d.Width * d.Height * 4];
+        for (var y = 0; y < d.Height; y++)
+        {
+            for (var x = 0; x < d.Width; x++)
+                BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(((y * d.Width) + x) * 4), d.DeepCounts!(x, y));
+        }
+
+        return bytes;
+    }
+
+    /// <summary>The samples of a channel, little-endian in its pixel type, for every level (for every sample of each pixel of a deep part).</summary>
     private static byte[] Samples(Description d, Channel channel)
     {
         var builder = new List<byte>();
-        Span<byte> sample = stackalloc byte[4];
         var level = 0;
         foreach (var (_, _, width, height) in Levels(d))
         {
@@ -168,22 +191,14 @@ internal static partial class ExrCorpus
 
                 for (var x = 0; x < width; x += channel.XSampling)
                 {
-                    var value = channel.Value(level, x, y);
-                    switch (channel.PixelType)
+                    if (d.DeepCounts is null)
                     {
-                        case "HALF":
-                            BinaryPrimitives.WriteHalfLittleEndian(sample, (Half)value);
-                            builder.AddRange(sample[..2].ToArray());
-                            break;
-                        case "FLOAT":
-                            BinaryPrimitives.WriteSingleLittleEndian(sample, (float)value);
-                            builder.AddRange(sample.ToArray());
-                            break;
-                        default:
-                            BinaryPrimitives.WriteUInt32LittleEndian(sample, (uint)value);
-                            builder.AddRange(sample.ToArray());
-                            break;
+                        Append(channel.Value(level, x, y));
+                        continue;
                     }
+
+                    for (var sample = 0; sample < d.DeepCounts(x, y); sample++)
+                        Append(channel.Value(sample, x, y));
                 }
             }
 
@@ -191,11 +206,35 @@ internal static partial class ExrCorpus
         }
 
         return [.. builder];
+
+        void Append(double value)
+        {
+            Span<byte> sample = stackalloc byte[4];
+            switch (channel.PixelType)
+            {
+                case "HALF":
+                    BinaryPrimitives.WriteHalfLittleEndian(sample, (Half)value);
+                    builder.AddRange(sample[..2].ToArray());
+                    break;
+                case "FLOAT":
+                    BinaryPrimitives.WriteSingleLittleEndian(sample, (float)value);
+                    builder.AddRange(sample.ToArray());
+                    break;
+                default:
+                    BinaryPrimitives.WriteUInt32LittleEndian(sample, (uint)value);
+                    builder.AddRange(sample.ToArray());
+                    break;
+            }
+        }
     }
 
-    /// <summary>Writes a file with exr-from-raw.</summary>
-    private static (byte[] Data, string Command) Write(Corpus<ExrTools> c, Description d)
+    /// <summary>Writes a single-part file with exr-from-raw.</summary>
+    private static (byte[] Data, string Command) Write(Corpus<ExrTools> c, Description d) => Write(c, [d], multiPart: false);
+
+    /// <summary>Writes a file with exr-from-raw: a multi-part file when <paramref name="multiPart"/> is set.</summary>
+    private static (byte[] Data, string Command) Write(Corpus<ExrTools> c, Description[] parts, bool multiPart)
     {
+        Py.Assert(multiPart || parts.Length == 1, "one part");
         var directory = c.Scratch / "write";
         if (Directory.Exists(directory))
             Directory.Delete(directory, recursive: true);
@@ -204,95 +243,124 @@ internal static partial class ExrCorpus
         using (var stream = File.Create(directory / "description.json"))
         using (var json = new Utf8JsonWriter(stream))
         {
-            json.WriteStartObject();
-            if (d.Type is not null)
-                json.WriteString("type", d.Type);
-
-            json.WritePropertyName("dataWindow");
-            WriteInts(json, d.X0, d.Y0, d.X0 + d.Width - 1, d.Y0 + d.Height - 1);
-            if (d.DisplayWindow is { } display)
+            if (multiPart)
             {
-                json.WritePropertyName("displayWindow");
-                WriteInts(json, display);
-            }
-
-            json.WriteString("compression", d.Compression);
-            if (d.LineOrder is not null)
-                json.WriteString("lineOrder", d.LineOrder);
-
-            if (d.Tiles is { } tiles)
-            {
-                json.WriteStartObject("tiles");
-                json.WriteNumber("xSize", tiles.Width);
-                json.WriteNumber("ySize", tiles.Height);
-                json.WriteString("levelMode", tiles.LevelMode);
-                json.WriteString("roundingMode", tiles.RoundingMode);
-                json.WriteEndObject();
-            }
-
-            json.WriteStartArray("channels");
-            for (var i = 0; i < d.Channels.Length; i++)
-            {
-                var channel = d.Channels[i];
-                var file = $"channel{i.ToString(CultureInfo.InvariantCulture)}.raw";
-                var isDeep = d.Type?.StartsWith("deep", StringComparison.Ordinal) == true;
-                if (!isDeep)
-                    File.WriteAllBytes(directory / file, Samples(d, channel));
-
                 json.WriteStartObject();
-                json.WriteString("name", channel.Name);
-                json.WriteString("pixelType", channel.PixelType);
-                json.WriteNumber("xSampling", channel.XSampling);
-                json.WriteNumber("ySampling", channel.YSampling);
-                json.WriteBoolean("pLinear", channel.PLinear);
-                if (!isDeep)
-                    json.WriteString("file", file);
+                json.WriteStartArray("parts");
+            }
 
+            for (var p = 0; p < parts.Length; p++)
+                WritePart(json, directory, parts[p], multiPart ? string.Create(CultureInfo.InvariantCulture, $"part{p}.") : "");
+
+            if (multiPart)
+            {
+                json.WriteEndArray();
                 json.WriteEndObject();
             }
-
-            json.WriteEndArray();
-            if (d.Attributes.Count > 0)
-            {
-                json.WriteStartArray("attributes");
-                foreach (var (name, type, value) in d.Attributes)
-                {
-                    json.WriteStartObject();
-                    json.WriteString("name", name);
-                    json.WriteString("type", type);
-                    json.WritePropertyName(value is byte[] ? "data" : "value");
-                    switch (value)
-                    {
-                        case byte[] bytes:
-                            json.WriteStringValue(Convert.ToHexStringLower(bytes));
-                            break;
-                        case string text:
-                            json.WriteStringValue(text);
-                            break;
-                        case float[] numbers:
-                            json.WriteStartArray();
-                            foreach (var number in numbers)
-                                json.WriteNumberValue(number);
-                            json.WriteEndArray();
-                            break;
-                        default:
-                            json.WriteNumberValue(Convert.ToDouble(value, CultureInfo.InvariantCulture));
-                            break;
-                    }
-
-                    json.WriteEndObject();
-                }
-
-                json.WriteEndArray();
-            }
-
-            json.WriteEndObject();
         }
 
         var output = directory / "output.exr";
         List<string> command = [c.Tools.ExrFromRaw, (directory / "description.json").Value, output.Value];
         Proc.Run(command);
         return (File.ReadAllBytes(output), CommonCorpus.Display(command, c.Tools, [((directory / "description.json").Value, "{description}.json"), (output.Value, "{output}.exr")]));
+    }
+
+    /// <summary>Writes the description of a part, and the files of its samples.</summary>
+    private static void WritePart(Utf8JsonWriter json, FullPath directory, Description d, string prefix)
+    {
+        json.WriteStartObject();
+        if (d.Type is not null)
+            json.WriteString("type", d.Type);
+
+        if (d.Name is not null)
+            json.WriteString("name", d.Name);
+
+        json.WritePropertyName("dataWindow");
+        WriteInts(json, d.X0, d.Y0, d.X0 + d.Width - 1, d.Y0 + d.Height - 1);
+        if (d.DisplayWindow is { } display)
+        {
+            json.WritePropertyName("displayWindow");
+            WriteInts(json, display);
+        }
+
+        json.WriteString("compression", d.Compression);
+        if (d.LineOrder is not null)
+            json.WriteString("lineOrder", d.LineOrder);
+
+        if (d.Tiles is { } tiles)
+        {
+            json.WriteStartObject("tiles");
+            json.WriteNumber("xSize", tiles.Width);
+            json.WriteNumber("ySize", tiles.Height);
+            json.WriteString("levelMode", tiles.LevelMode);
+            json.WriteString("roundingMode", tiles.RoundingMode);
+            json.WriteEndObject();
+        }
+
+        if (d.IsDeep && d.DeepCounts is not null)
+        {
+            var counts = prefix + "sampleCounts.raw";
+            File.WriteAllBytes(directory / counts, DeepCounts(d));
+            json.WriteString("sampleCounts", counts);
+        }
+
+        json.WriteStartArray("channels");
+        for (var i = 0; i < d.Channels.Length; i++)
+        {
+            var channel = d.Channels[i];
+            var file = prefix + $"channel{i.ToString(CultureInfo.InvariantCulture)}.raw";
+            var hasSamples = !d.IsDeep || d.DeepCounts is not null;
+            if (hasSamples)
+                File.WriteAllBytes(directory / file, Samples(d, channel));
+
+            json.WriteStartObject();
+            json.WriteString("name", channel.Name);
+            json.WriteString("pixelType", channel.PixelType);
+            json.WriteNumber("xSampling", channel.XSampling);
+            json.WriteNumber("ySampling", channel.YSampling);
+            json.WriteBoolean("pLinear", channel.PLinear);
+            if (hasSamples)
+                json.WriteString("file", file);
+
+            json.WriteEndObject();
+        }
+
+        json.WriteEndArray();
+        if (d.Attributes.Count > 0)
+        {
+            json.WriteStartArray("attributes");
+            foreach (var (name, type, value) in d.Attributes)
+            {
+                json.WriteStartObject();
+                json.WriteString("name", name);
+                json.WriteString("type", type);
+                json.WritePropertyName(value is byte[] ? "data" : "value");
+                switch (value)
+                {
+                    case byte[] bytes:
+                        json.WriteStringValue(Convert.ToHexStringLower(bytes));
+                        break;
+                    case string text:
+                        json.WriteStringValue(text);
+                        break;
+                    case float[] numbers:
+                        json.WriteStartArray();
+                        foreach (var number in numbers)
+                            json.WriteNumberValue(number);
+                        json.WriteEndArray();
+                        break;
+                    default:
+                        json.WriteNumberValue(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+                        break;
+                }
+
+                json.WriteEndObject();
+            }
+
+            json.WriteEndArray();
+        }
+
+        json.WriteEndObject();
 
         static void WriteInts(Utf8JsonWriter json, params int[] values)
         {
@@ -318,11 +386,14 @@ internal static partial class ExrCorpus
         };
     }
 
-    /// <summary>The header and the samples exr-to-raw gives for a file.</summary>
-    private sealed record Dump(JsonElement Part, int[] DataWindow, int[] DisplayWindow, List<DecodedChannel> Channels, string Command);
+    /// <summary>
+    /// The header and the samples exr-to-raw gives for a part of a file; for deep data, the number of samples of each pixel
+    /// (<see cref="SampleCounts"/>), the samples of the channels being those of each pixel one after the other.
+    /// </summary>
+    private sealed record Dump(JsonElement Part, int[] DataWindow, int[] DisplayWindow, List<DecodedChannel> Channels, string Command, uint[]? SampleCounts = null);
 
-    /// <summary>Decodes a file with exr-to-raw; <see langword="null"/> when OpenEXR refuses it.</summary>
-    private static Dump? Decode(Corpus<ExrTools> c, byte[] data)
+    /// <summary>Decodes a part of a file with exr-to-raw; <see langword="null"/> when OpenEXR refuses it.</summary>
+    private static Dump? Decode(Corpus<ExrTools> c, byte[] data, int partIndex = 0)
     {
         var directory = c.Scratch / "dump";
         if (Directory.Exists(directory))
@@ -336,7 +407,7 @@ internal static partial class ExrCorpus
             return null;
 
         using var header = JsonDocument.Parse(File.ReadAllBytes(directory / "header.json"));
-        var part = header.RootElement.GetProperty("parts")[0].Clone();
+        var part = header.RootElement.GetProperty("parts")[partIndex].Clone();
         var dataWindow = part.GetProperty("dataWindow").EnumerateArray().Select(value => value.GetInt32()).ToArray();
         var displayWindow = part.GetProperty("displayWindow").EnumerateArray().Select(value => value.GetInt32()).ToArray();
         var width = dataWindow[2] - dataWindow[0] + 1;
@@ -356,7 +427,16 @@ internal static partial class ExrCorpus
             channels.Add(new DecodedChannel(channel.GetProperty("name").GetString()!, type, bits, channel.GetProperty("pLinear").GetBoolean()));
         }
 
-        return new Dump(part, dataWindow, displayWindow, channels, CommonCorpus.Display(command, c.Tools, [(input.Value, "{input}"), (directory.Value, "{output}")]));
+        uint[]? counts = null;
+        if (part.TryGetProperty("sampleCounts", out var countsFile))
+        {
+            var bytes = File.ReadAllBytes(directory / countsFile.GetString()!);
+            counts = new uint[bytes.Length / 4];
+            for (var i = 0; i < counts.Length; i++)
+                counts[i] = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(4 * i));
+        }
+
+        return new Dump(part, dataWindow, displayWindow, channels, CommonCorpus.Display(command, c.Tools, [(input.Value, "{input}"), (directory.Value, "{output}")]), counts);
     }
 
     /// <summary>The expected pixels: RGBA floats of the display window, by the rules of the library.</summary>

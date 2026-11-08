@@ -5,8 +5,8 @@ using System.Text;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The header of a single-part OpenEXR file: the attributes the library reads, validated, and the geometry of its chunks
-/// (OpenEXR File Layout, "Component Three: Header" and "Component Four: Offset Tables").
+/// The header of a part of an OpenEXR file: the attributes the library reads, validated, and the geometry of its chunks
+/// (OpenEXR File Layout, "Component Three: Header" and "Component Four: Offset Tables"). A single-part file has one.
 /// </summary>
 /// <remarks>
 /// The attributes are given one by one (<see cref="ReadAttribute"/>) as the structure parser reaches them; <see cref="Complete"/>
@@ -24,17 +24,38 @@ internal sealed class ExrHeader
     private bool _hasTiles;
     private int? _chunkCount;
     private string? _type;
+    private int? _deepVersion;
 
-    public ExrHeader(int versionField)
+    public ExrHeader(int versionField, int partIndex = 0)
     {
         VersionField = versionField;
+        PartIndex = partIndex;
+        IsTiled = (versionField & ExrFormat.SingleTileFlag) != 0;
     }
 
     /// <summary>Gets the version field (the version number in the low byte, the flags above).</summary>
     public int VersionField { get; }
 
-    /// <summary>Gets a value indicating whether the image is stored as tiles (bit 9 of the version field).</summary>
-    public bool IsTiled => (VersionField & ExrFormat.SingleTileFlag) != 0;
+    /// <summary>Gets the index of the part in the file (0 for a single-part file).</summary>
+    public int PartIndex { get; }
+
+    /// <summary>Gets a value indicating whether the file has several parts (bit 12 of the version field).</summary>
+    public bool IsMultipart => (VersionField & ExrFormat.MultipartFlag) != 0;
+
+    /// <summary>Gets the <c>name</c> attribute of the part, or <see langword="null"/>.</summary>
+    public string? Name { get; private set; }
+
+    /// <summary>Gets a value indicating whether the header has at least one attribute (a multi-part file ends its headers with an empty one).</summary>
+    public bool HasAttributes => _names.Count > 0;
+
+    /// <summary>
+    /// Gets a value indicating whether the part is stored as tiles: bit 9 of the version field for a single-part image,
+    /// otherwise its <c>type</c> attribute (once <see cref="Complete"/> or <see cref="CompleteOtherPart"/> ran).
+    /// </summary>
+    public bool IsTiled { get; private set; }
+
+    /// <summary>Gets a value indicating whether the part holds deep data (once <see cref="Complete"/> or <see cref="CompleteOtherPart"/> ran).</summary>
+    public bool IsDeep { get; private set; }
 
     /// <summary>Gets the longest attribute, type or channel name the file may have.</summary>
     public int MaxNameLength => (VersionField & ExrFormat.LongNamesFlag) != 0 ? ExrFormat.LongNameMaxLength : ExrFormat.ShortNameMaxLength;
@@ -89,9 +110,9 @@ internal sealed class ExrHeader
     /// <summary>
     /// Gets a value indicating whether the image is decoded to <see cref="PixelFormat.RgbaHalf"/>: every channel holds HALF
     /// samples and there is no alpha channel (the colors divided by alpha need the precision of a float to be multiplied
-    /// back to the same halves).
+    /// back to the same halves). A deep image is composited in single precision.
     /// </summary>
-    public bool UsesHalfPixels => IsHalfOnly && !HasAlpha;
+    public bool UsesHalfPixels => IsHalfOnly && !HasAlpha && !IsDeep;
 
     /// <summary>Gets the number of scan lines per chunk of a scan-line image.</summary>
     public int LinesPerChunk { get; private set; }
@@ -177,6 +198,17 @@ internal sealed class ExrHeader
                 _type = Encoding.Latin1.GetString(value);
                 break;
 
+            case "name":
+                ExpectType(name, type, "string");
+                Name = Encoding.UTF8.GetString(value);
+                break;
+
+            case "version":
+                ExpectType(name, type, "int");
+                ExpectSize(name, value, 4);
+                _deepVersion = BinaryPrimitives.ReadInt32LittleEndian(value);
+                break;
+
             case "chunkCount":
                 ExpectType(name, type, "int");
                 ExpectSize(name, value, 4);
@@ -186,28 +218,16 @@ internal sealed class ExrHeader
     }
 
     /// <summary>Determines whether the value of an attribute is read (the structure parser skips the other values).</summary>
-    public static bool IsRead(string name) => name is "channels" or "compression" or "dataWindow" or "displayWindow" or "lineOrder" or "tiles" or "chromaticities" or "type" or "chunkCount";
+    public static bool IsRead(string name) => name is "channels" or "compression" or "dataWindow" or "displayWindow" or "lineOrder" or "tiles" or "chromaticities" or "type" or "chunkCount" or "name" or "version";
 
     /// <summary>Checks the header once every attribute is read and computes the geometry of the chunks.</summary>
     /// <param name="limits">The resource limits of the operation.</param>
     /// <param name="options">The channels and the window the image is decoded from.</param>
     public void Complete(ImageResourceLimits limits, OpenExrDecodingOptions options)
     {
-        if (_type is not null)
-        {
-            switch (_type)
-            {
-                case "scanlineimage" when !IsTiled:
-                case "tiledimage" when IsTiled:
-                    break;
-                case "deepscanline" or "deeptile":
-                    throw ExrFormat.Unsupported("The OpenEXR image holds deep data, which is not supported.", "Deep data");
-                case "scanlineimage" or "tiledimage":
-                    throw ExrFormat.Invalid($"the type attribute '{_type}' contradicts the tile flag of the version field.");
-                default:
-                    throw ExrFormat.Invalid($"the type attribute '{_type}' is not defined.");
-            }
-        }
+        ResolveType();
+        if (IsDeep && options.DeepData == OpenExrDeepDataMode.Reject)
+            throw ExrFormat.Unsupported("The OpenEXR image holds deep data: a list of samples per pixel, whose depths would be lost. Set the DeepData of ImageConfiguration.OpenExrDecoding to flatten them.", "Deep data");
 
         if (_channels is null)
             throw MissingAttribute("channels");
@@ -247,10 +267,22 @@ internal sealed class ExrHeader
                 throw ExrFormat.Invalid($"the data window is not a whole number of samples of the channel '{channel.Name}'.");
         }
 
+        if (IsDeep)
+        {
+            if (Compression is not (ExrCompressionMethod.None or ExrCompressionMethod.Rle or ExrCompressionMethod.Zips or ExrCompressionMethod.Zstd))
+                throw ExrFormat.Invalid($"the compression {ExrFormat.GetName(Compression)} is not valid for deep data.");
+
+            if (_deepVersion is not (null or 1))
+                throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR deep data have the version {_deepVersion}; only version 1 is supported."), "Deep data version");
+        }
+
         if (!ExrFormat.IsDecodable(Compression))
             throw ExrFormat.Unsupported($"The OpenEXR image is compressed with {ExrFormat.GetName(Compression)}, which is not supported.", "Compression: " + ExrFormat.GetName(Compression));
 
         ResolveRoles(options.Layer);
+        if (IsDeep && (!HasAlpha || !Roles.Contains(ExrChannelRole.Depth)))
+            throw ExrFormat.Unsupported("The OpenEXR deep image has no Z channel or no alpha channel: its samples cannot be flattened.", "Deep data without depth or alpha");
+
         if (options.WindowMode == OpenExrWindowMode.DisplayWindow && !display.Contains(data))
             throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR image has pixels outside its display window: the data window ({data.MinX}, {data.MinY}) - ({data.MaxX}, {data.MaxY}) is not inside the display window ({display.MinX}, {display.MinY}) - ({display.MaxX}, {display.MaxY}), and they would be lost. Set the WindowMode of ImageConfiguration.OpenExrDecoding to crop them or to decode the data window."), "Pixels outside the display window");
 
@@ -270,6 +302,64 @@ internal sealed class ExrHeader
 
         if (_chunkCount is { } declared && declared != ChunkCount)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunkCount attribute is {declared}, but the image has {ChunkCount} chunks."));
+    }
+
+    /// <summary>
+    /// Checks the header of a part of a multi-part file that is not decoded: its type and the number of its chunks, which
+    /// give the size of its offset table.
+    /// </summary>
+    public void CompleteOtherPart()
+    {
+        ResolveType();
+        if (_chunkCount is not { } count)
+            throw MissingAttribute("chunkCount");
+
+        if (count < 0)
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunkCount attribute is {count}."));
+
+        ChunkCount = count;
+    }
+
+    /// <summary>Checks the type of the part against the version field, and the attributes a multi-part file requires.</summary>
+    private void ResolveType()
+    {
+        if (IsMultipart)
+        {
+            if (_type is null)
+                throw MissingAttribute("type");
+
+            if (Name is null)
+                throw MissingAttribute("name");
+
+            if (_chunkCount is null)
+                throw MissingAttribute("chunkCount");
+        }
+
+        if (_type is null)
+        {
+            if ((VersionField & ExrFormat.NonImageFlag) != 0)
+                throw MissingAttribute("type");
+
+            return;
+        }
+
+        (IsTiled, IsDeep) = _type switch
+        {
+            "scanlineimage" => (false, false),
+            "tiledimage" => (true, false),
+            "deepscanline" => (false, true),
+            "deeptile" => (true, true),
+            _ => throw ExrFormat.Invalid($"the type attribute '{_type}' is not defined."),
+        };
+
+        if (IsDeep && (VersionField & ExrFormat.NonImageFlag) == 0)
+            throw ExrFormat.Invalid($"the type attribute '{_type}' is deep data, but the non-image flag of the version field is not set.");
+
+        if (!IsMultipart && !IsDeep && IsTiled != ((VersionField & ExrFormat.SingleTileFlag) != 0))
+            throw ExrFormat.Invalid($"the type attribute '{_type}' contradicts the tile flag of the version field.");
+
+        if (!IsMultipart && IsDeep && (VersionField & ExrFormat.SingleTileFlag) != 0)
+            throw ExrFormat.Invalid("the tile flag of the version field is set for deep data.");
     }
 
     /// <summary>Gets the size of a level of a tiled image along one axis.</summary>
@@ -410,6 +500,13 @@ internal sealed class ExrHeader
         {
             var channel = _channels[i];
             ExrChannelRole role;
+            if (IsDeep && channel.Name is "Z" or "ZBack")
+            {
+                // The depths of the samples, which flattening consumes
+                roles[i] = channel.Name == "Z" ? ExrChannelRole.Depth : ExrChannelRole.DepthBack;
+                continue;
+            }
+
             if (layer is null)
             {
                 role = GetColorRole(channel.Name) ?? throw ExrFormat.Unsupported($"The OpenEXR image has the channel '{channel.Name}', which is not one of R, G, B, A and Y: it would be lost. Set the Layer of ImageConfiguration.OpenExrDecoding to decode one layer and ignore the other channels.", "Extra channels");

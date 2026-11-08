@@ -103,7 +103,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
     internal static int GetWorkerCount(int maxDegreeOfParallelism, ExrHeader header)
     {
         var data = header.DataWindow;
-        if (maxDegreeOfParallelism <= 1 || header.FirstLevelChunkCount < 2 || data.Width * data.Height < RowBands.MinPixelsForParallelism)
+        if (header.IsDeep || maxDegreeOfParallelism <= 1 || header.FirstLevelChunkCount < 2 || data.Width * data.Height < RowBands.MinPixelsForParallelism)
             return 1;
 
         return (int)Math.Min(maxDegreeOfParallelism, header.FirstLevelChunkCount);
@@ -115,6 +115,12 @@ internal sealed class ExrDecoder : IImageDecodeObserver
     public void OnChunk(long index, ReadOnlySpan<byte> stored)
     {
         var header = _header ?? throw new InvalidOperationException("The OpenEXR header was not parsed.");
+        if (header.IsDeep)
+        {
+            DecodeDeep(header, index, stored);
+            return;
+        }
+
         if (_workers > 1)
         {
             AddToBatch(header, index, stored);
@@ -473,6 +479,48 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         var uncompressed = buffer.Span[..layout.GetDataLength()];
         decompressor.Decompress(stored, uncompressed, layout);
         WriteChunk(header, _planes, target, layout, x0, y0, uncompressed);
+    }
+
+    /// <summary>
+    /// Decodes a deep chunk (compression notes, section 1.6) and flattens its pixels: the three sizes, the sample count
+    /// table and the samples. Every chunk of deep data is one line or one tile.
+    /// </summary>
+    private void DecodeDeep(ExrHeader header, long index, ReadOnlySpan<byte> payload)
+    {
+        var layout = GetChunk(header, index, out var x0, out var y0);
+        var tableStored = (int)BinaryPrimitives.ReadUInt64LittleEndian(payload);
+        var samplesStored = (int)BinaryPrimitives.ReadUInt64LittleEndian(payload[8..]);
+        var sampleLength = BinaryPrimitives.ReadUInt64LittleEndian(payload[16..]);
+        if (sampleLength > (ulong)CheckedSizes.MaxBufferLength)
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"a deep chunk has {sampleLength} bytes of samples."));
+
+        RentFirstWorker(header);
+        var width = layout.Width;
+        var rows = layout.Lines;
+        var tableLength = ExrDeepPixels.GetTableLength(width, rows);
+        using var tableBuffer = _context.Scope.Rent(Math.Max(tableLength, 4), AllocationKind.DecoderState, clear: false);
+        var table = tableBuffer.Span[..tableLength];
+        _decompressor!.DecompressDeepTable(payload.Slice(24, tableStored), table, width, header.IsTiled ? header.TileWidth * header.TileHeight * 4 : 0);
+        Span<int> rowTotals = rows <= 256 ? stackalloc int[rows] : new int[rows];
+        var counts = unsafe(MemoryMarshal.Cast<byte, int>(table));
+        if (!BitConverter.IsLittleEndian)
+        {
+            BinaryPrimitives.ReverseEndianness(counts, counts);
+        }
+
+        var required = ExrDeepPixels.GetRowTotals(counts, width, rows, header.Channels, rowTotals);
+        if (required > (long)sampleLength)
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"a deep chunk has {required} bytes of samples according to its sample counts, but {sampleLength} bytes."));
+
+        using var sampleBuffer = _context.Scope.Rent(Math.Max((int)sampleLength, 1), AllocationKind.DecoderState, clear: false);
+        var samples = sampleBuffer.Span[..(int)sampleLength];
+        _decompressor.DecompressDeepSamples(payload.Slice(24 + tableStored, samplesStored), samples, header.Channels, rowTotals);
+        using (var lease = AcquireTarget())
+        {
+            ExrDeepPixels.Flatten(header, lease.Storage, counts, width, rows, rowTotals, samples, x0, y0);
+        }
+
+        _context.CancellationToken.ThrowIfCancellationRequested();
     }
 
     private void RentFirstWorker(ExrHeader header)

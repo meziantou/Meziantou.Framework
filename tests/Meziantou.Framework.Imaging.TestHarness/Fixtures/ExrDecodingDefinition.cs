@@ -3,15 +3,26 @@ using System.Text.Json.Serialization;
 namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 /// <summary>
-/// A decoding of an OpenEXR fixture with options of <c>OpenExrDecodingOptions</c> (a layer, a window mode): the file is an
-/// <see cref="FixtureKinds.Unsupported"/> fixture, rejected with the default options (extra channels, layers, pixels
-/// outside the display window), and these decodings are its pixel references. A decoding gives either the pixels or the
-/// error the options still give (a layer the file does not have).
+/// A decoding of an OpenEXR fixture with options of <c>OpenExrDecodingOptions</c> (a part, a deep data mode, a layer, a
+/// window mode): the file is an <see cref="FixtureKinds.Unsupported"/> fixture, rejected with the default options (several
+/// parts, deep data, extra channels, layers, pixels outside the display window), and these decodings are its pixel
+/// references. A decoding gives either the pixels or the error the options still give (a layer the file does not have).
 /// </summary>
 public sealed class ExrDecodingDefinition
 {
     /// <summary>The window modes (names of <c>OpenExrWindowMode</c>).</summary>
     public static IReadOnlyList<string> WindowModes { get; } = ["DisplayWindow", "CropToDisplayWindow", "DataWindow"];
+
+    /// <summary>The deep data modes (names of <c>OpenExrDeepDataMode</c>).</summary>
+    public static IReadOnlyList<string> DeepDataModes { get; } = ["Reject", "Flatten"];
+
+    /// <summary>Gets the name of the part, or <see langword="null"/> to decode files of one part only.</summary>
+    [JsonPropertyName("part")]
+    public string? Part { get; init; }
+
+    /// <summary>Gets the deep data mode: one of <see cref="DeepDataModes"/>, <c>Reject</c> when absent.</summary>
+    [JsonPropertyName("deepData")]
+    public string? DeepData { get; init; }
 
     /// <summary>Gets the layer (<see cref="string.Empty"/> for the default layer), or <see langword="null"/> to decode every channel.</summary>
     [JsonPropertyName("layer")]

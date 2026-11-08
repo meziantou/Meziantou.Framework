@@ -70,9 +70,15 @@ public sealed class ExrDecoderConformanceTests
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         foreach (var decoding in fixture.ExrDecodings)
         {
-            var options = new OpenExrDecodingOptions { Layer = decoding.Layer, WindowMode = Enum.Parse<OpenExrWindowMode>(decoding.WindowMode) };
+            var options = new OpenExrDecodingOptions
+            {
+                Part = decoding.Part,
+                DeepData = Enum.Parse<OpenExrDeepDataMode>(decoding.DeepData ?? "Reject"),
+                Layer = decoding.Layer,
+                WindowMode = Enum.Parse<OpenExrWindowMode>(decoding.WindowMode),
+            };
             var configuration = new ImageConfiguration { OpenExrDecoding = options };
-            var description = $"{id}, layer {decoding.Layer ?? "(every channel)"}, {decoding.WindowMode}";
+            var description = $"{id}, part {decoding.Part ?? "(single)"}, deep data {decoding.DeepData ?? "Reject"}, layer {decoding.Layer ?? "(every channel)"}, {decoding.WindowMode}";
             if (decoding.ExpectedError is { } error)
             {
                 Assert.Equal(error.Feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = configuration })).Feature);

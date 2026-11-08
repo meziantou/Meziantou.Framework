@@ -6,8 +6,10 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Incremental reader of single-part OpenEXR files (OpenEXR File Layout): the magic number and the version field, the
-/// header attributes, the offset table, then the chunks, in the three walks of the codec infrastructure.
+/// Incremental reader of OpenEXR files (OpenEXR File Layout): the magic number and the version field, the header attributes
+/// of each part, the offset tables, then the chunks of the part that is decoded, in the three walks of the codec
+/// infrastructure. A multi-part file is decoded from the part <see cref="OpenExrDecodingOptions.Part"/> names: the offset
+/// tables of the other parts are skipped, and so are their chunks, as bytes between two chunks of the part.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -22,7 +24,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The input is read forward only: the offsets of the table are sorted, and the chunks are read in that order. A chunk
 /// must start at its offset, carry the coordinates of its entry of the table, and end before the next chunk starts; bytes
 /// between two chunks are skipped, and bytes after the last one are not read. Every chunk is read, so a truncated file
-/// is an error.
+/// is an error. In a multi-part file, a chunk starts with the index of its part, which must be the part decoded.
 /// </para>
 /// <para>
 /// When workers decode the chunks (<see cref="ExrDecoder.BatchChunkCount"/>), the decoder collects them in a batch: the parser
@@ -47,8 +49,11 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     private readonly ExrDecoder? _decoder;
     private readonly DecodedMetadataBuilder _metadata;
 
+    private readonly List<ExrHeader> _headers = [];
+    private ExrHeader _current = null!;
     private State _state;
     private long _position;
+    private long _tableSkipAfter;
     private long _skip;
     private long _tableEntries;
     private long _cursor;
@@ -79,7 +84,9 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         Preamble,
         Attributes,
         SkipAttribute,
+        SkipTablesBefore,
         OffsetTable,
+        SkipTablesAfter,
         Chunks,
         SkipChunk,
         Done,
@@ -151,8 +158,22 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
 
                     if (remaining[0] == 0)
                     {
-                        // The null byte that ends the header
+                        // The null byte that ends the header; in a multi-part file, an empty header ends the headers
                         Advance(ref consumed, 1);
+                        if (_current.IsMultipart && _current.HasAttributes)
+                        {
+                            _current = new ExrHeader(_current.VersionField, _headers.Count);
+                            _headers.Add(_current);
+                            break;
+                        }
+
+                        if (_current.IsMultipart)
+                        {
+                            _headers.RemoveAt(_headers.Count - 1);
+                            if (_headers.Count == 0)
+                                throw ExrFormat.Invalid("the multi-part file has no part.");
+                        }
+
                         if (OnHeaderEnd())
                             return ParseStatus.Complete;
 
@@ -166,26 +187,53 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
                     break;
                 }
 
-                case State.SkipAttribute or State.SkipChunk:
+                case State.SkipAttribute or State.SkipChunk or State.SkipTablesBefore or State.SkipTablesAfter:
                 {
                     var count = (int)Math.Min(_skip, remaining.Length);
                     Advance(ref consumed, count);
                     _skip -= count;
                     if (_skip > 0)
-                        return _state == State.SkipAttribute ? ParseStatus.NeedMoreData(1) : NeedChunkBytes(1, isEndOfInput);
+                        return _state == State.SkipChunk ? NeedChunkBytes(1, isEndOfInput) : ParseStatus.NeedMoreData(1);
 
-                    _state = _state == State.SkipAttribute ? State.Attributes : State.Chunks;
+                    switch (_state)
+                    {
+                        case State.SkipAttribute:
+                            _state = State.Attributes;
+                            break;
+                        case State.SkipTablesBefore:
+                            _state = State.OffsetTable;
+                            break;
+                        case State.SkipTablesAfter:
+                            SortOffsets();
+                            _state = State.Chunks;
+                            break;
+                        default:
+                            _state = State.Chunks;
+                            break;
+                    }
+
                     break;
                 }
 
                 case State.OffsetTable:
                 {
-                    if (remaining.Length < 8)
-                        return ParseStatus.NeedMoreData(8);
+                    if (Header.ChunkCount > 0)
+                    {
+                        if (remaining.Length < 8)
+                            return ParseStatus.NeedMoreData(8);
 
-                    ReadOffsets(remaining, ref consumed);
-                    if (_tableEntries < Header.ChunkCount)
-                        return ParseStatus.NeedMoreData(8);
+                        ReadOffsets(remaining, ref consumed);
+                        if (_tableEntries < Header.ChunkCount)
+                            return ParseStatus.NeedMoreData(8);
+                    }
+
+                    if (_tableSkipAfter > 0)
+                    {
+                        // The offset tables of the parts after the decoded one
+                        _skip = _tableSkipAfter;
+                        _state = State.SkipTablesAfter;
+                        break;
+                    }
 
                     SortOffsets();
                     _state = State.Chunks;
@@ -230,21 +278,20 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         if ((version & 0xFF) != ExrFormat.Version)
             throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR file has the format version {version & 0xFF}; only version 2 is supported."), "Format version");
 
-        if ((version & ExrFormat.MultipartFlag) != 0)
-            throw ExrFormat.Unsupported("The OpenEXR file has several parts, which is not supported.", "Multi-part file");
-
-        if ((version & ExrFormat.NonImageFlag) != 0)
-            throw ExrFormat.Unsupported("The OpenEXR image holds deep data, which is not supported.", "Deep data");
-
         if ((version & ~0xFF & ~ExrFormat.KnownFlags) != 0)
             throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR version field 0x{version:X8} has flags that are not defined."), "Version flags");
 
-        Header = new ExrHeader(version);
+        if ((version & ExrFormat.SingleTileFlag) != 0 && (version & (ExrFormat.MultipartFlag | ExrFormat.NonImageFlag)) != 0)
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the version field 0x{version:X8} has the single tile flag with the multi-part or the non-image flag."));
+
+        _current = new ExrHeader(version);
+        _headers.Add(_current);
+        Header = _current;
     }
 
     private ParseStatus ReadAttribute(ReadOnlySpan<byte> remaining, ref int consumed)
     {
-        var maxName = Header.MaxNameLength;
+        var maxName = _current.MaxNameLength;
         var nameLength = remaining[..Math.Min(remaining.Length, maxName + 1)].IndexOf((byte)0);
         if (nameLength < 0)
         {
@@ -288,7 +335,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         if (!ExrHeader.IsRead(name))
         {
             // The values the library does not read are skipped as they arrive
-            Header.ReadAttribute(name, type, default);
+            _current.ReadAttribute(name, type, default);
             Advance(ref consumed, headerLength);
             _skip = size;
             _state = State.SkipAttribute;
@@ -301,7 +348,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         if (remaining.Length < headerLength + size)
             return ParseStatus.NeedMoreData(headerLength + size);
 
-        Header.ReadAttribute(name, type, remaining.Slice(headerLength, size));
+        _current.ReadAttribute(name, type, remaining.Slice(headerLength, size));
         Advance(ref consumed, headerLength + size);
         return ParseStatus.Complete;
     }
@@ -309,8 +356,10 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     /// <returns><see langword="true"/> when the walk stops here (header walk, or a yield to a sequential reader).</returns>
     private bool OnHeaderEnd()
     {
-        var header = Header;
-        header.Complete(_context.Limits, _context.Configuration.OpenExrDecoding);
+        var options = _context.Configuration.OpenExrDecoding;
+        var header = SelectPart(options.Part);
+        Header = header;
+        header.Complete(_context.Limits, options);
         Size = new Size((int)header.ImageWindow.Width, (int)header.ImageWindow.Height);
         ExrColorDescription.Apply(header, _metadata.Metadata);
         var (data, display) = (header.DataWindow, header.DisplayWindow);
@@ -322,7 +371,24 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
             return true;
         }
 
-        _state = State.OffsetTable;
+        // The offset tables of the parts before the decoded one are skipped, then those after it once its table is read
+        long before = 0;
+        long after = 0;
+        foreach (var part in _headers)
+        {
+            if (part.PartIndex < header.PartIndex)
+            {
+                before += part.ChunkCount;
+            }
+            else if (part.PartIndex > header.PartIndex)
+            {
+                after += part.ChunkCount;
+            }
+        }
+
+        _skip = before * 8;
+        _tableSkipAfter = after * 8;
+        _state = _skip > 0 ? State.SkipTablesBefore : State.OffsetTable;
         PrepareOffsets();
         if (_walk == StructureWalk.FullScan)
         {
@@ -335,19 +401,50 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         return _context.TryConsumeYield();
     }
 
+    /// <summary>Selects the part that is decoded: the only one, or the one <see cref="OpenExrDecodingOptions.Part"/> names.</summary>
+    private ExrHeader SelectPart(string? name)
+    {
+        var first = _headers[0];
+        if (!first.IsMultipart)
+        {
+            if (name is not null && !string.Equals(first.Name, name, StringComparison.Ordinal))
+            {
+                var actual = first.Name is null ? "has no name" : $"is named '{first.Name}'";
+                throw ExrFormat.Unsupported($"The OpenEXR file has no part named '{name}': its only part {actual}.", "Missing part");
+            }
+
+            return first;
+        }
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var part in _headers)
+        {
+            part.CompleteOtherPart();
+            if (!names.Add(part.Name!))
+                throw ExrFormat.Invalid($"the file has two parts named '{part.Name}'.");
+        }
+
+        var list = string.Join(", ", _headers.Select(part => $"'{part.Name}'"));
+        if (name is null)
+            throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR file has {_headers.Count} parts ({list}): the other parts would be lost. Set the Part of ImageConfiguration.OpenExrDecoding to decode one of them."), "Multi-part file");
+
+        return _headers.Find(part => string.Equals(part.Name, name, StringComparison.Ordinal))
+            ?? throw ExrFormat.Unsupported($"The OpenEXR file has no part named '{name}': its parts are {list}.", "Missing part");
+    }
+
     private void PrepareOffsets()
     {
         var count = Header.ChunkCount;
         if (count > CheckedSizes.MaxBufferLength / sizeof(long))
             throw CheckedSizes.CreateOverflowException(_context.Limits);
 
-        _offsets = _context.Scope.Rent((int)count * sizeof(long), AllocationKind.DecoderState, clear: false);
-        _order = _context.Scope.Rent((int)count * sizeof(int), AllocationKind.DecoderState, clear: false);
+        _offsets = _context.Scope.Rent((int)Math.Max(count, 1) * sizeof(long), AllocationKind.DecoderState, clear: false);
+        _order = _context.Scope.Rent((int)Math.Max(count, 1) * sizeof(int), AllocationKind.DecoderState, clear: false);
     }
 
-    private Span<long> Offsets => unsafe(MemoryMarshal.Cast<byte, long>(_offsets!.Span));
+    private Span<long> Offsets => unsafe(MemoryMarshal.Cast<byte, long>(_offsets!.Span))[..(int)Header.ChunkCount];
 
-    private Span<int> Order => unsafe(MemoryMarshal.Cast<byte, int>(_order!.Span));
+    private Span<int> Order => unsafe(MemoryMarshal.Cast<byte, int>(_order!.Span))[..(int)Header.ChunkCount];
 
     private void ReadOffsets(ReadOnlySpan<byte> remaining, ref int consumed)
     {
@@ -373,7 +470,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     private void SortOffsets()
     {
         _tableEnd = _position;
-        if (_context.IsLenient && Offsets.ContainsAnyInRange(long.MinValue, _position - 1))
+        if (_context.IsLenient && !Header.IsMultipart && Offsets.ContainsAnyInRange(long.MinValue, _position - 1))
         {
             // The chunks are found by walking them: the table keeps the entries to check, and the order marks the chunks seen
             _isRebuildingTable = true;
@@ -412,11 +509,13 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk {index} starts at the offset {target}, inside the chunk before it."));
 
         var header = Header;
-        var headerLength = header.IsTiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
+        var headerLength = ChunkHeaderLength;
         if (remaining.Length < headerLength)
             return NeedChunkBytes(headerLength, isEndOfInput);
 
-        var expected = header.IsTiled ? GetTileIndex(remaining, index) : GetScanLineIndex(remaining, index);
+        CheckPartNumber(remaining, index);
+        var coordinates = remaining[CoordinatesOffset..];
+        var expected = header.IsTiled ? GetTileIndex(coordinates, index) : GetScanLineIndex(coordinates, index);
         if (expected != index)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk at the offset {target} is the chunk {expected}, but the offset table gives it to the chunk {index}."));
 
@@ -430,12 +529,13 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     private ParseStatus ReadRebuiltChunk(ReadOnlySpan<byte> remaining, bool isEndOfInput, ref int consumed)
     {
         var header = Header;
-        var headerLength = header.IsTiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
+        var headerLength = ChunkHeaderLength;
         if (remaining.Length < headerLength)
             return NeedChunkBytes(headerLength, isEndOfInput);
 
         var position = (int)_cursor;
-        var index = (int)(header.IsTiled ? GetTileIndex(remaining, position) : GetScanLineIndex(remaining, position));
+        var coordinates = remaining[CoordinatesOffset..];
+        var index = (int)(header.IsTiled ? GetTileIndex(coordinates, position) : GetScanLineIndex(coordinates, position));
         if (!header.IsTiled)
         {
             // OpenEXR rebuilds a table of scan lines from chunks stored in their line order, increasing for a random order
@@ -462,21 +562,58 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         return status;
     }
 
-    /// <summary>Reads the size and the data of the chunk whose coordinates start <paramref name="remaining"/>.</summary>
+    /// <summary>
+    /// Gets the length of the fields of a chunk before its stored data: the part number of a multi-part file, the
+    /// coordinates, and the size of the data (three sizes for deep data: the offset table, the samples, and the samples
+    /// once uncompressed).
+    /// </summary>
+    private int ChunkHeaderLength => CoordinatesOffset + (Header.IsTiled ? 16 : 4) + (Header.IsDeep ? 24 : 4);
+
+    /// <summary>Gets the position of the coordinates in a chunk: after the part number of a multi-part file.</summary>
+    private int CoordinatesOffset => Header.IsMultipart ? 4 : 0;
+
+    private void CheckPartNumber(ReadOnlySpan<byte> chunk, int index)
+    {
+        if (!Header.IsMultipart)
+            return;
+
+        var part = BinaryPrimitives.ReadInt32LittleEndian(chunk);
+        if (part != Header.PartIndex)
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk {index} of the part {Header.PartIndex} is at an offset where the chunk of the part {part} is."));
+    }
+
+    /// <summary>Reads the size and the data of the chunk that starts <paramref name="remaining"/>.</summary>
     private ParseStatus ReadChunkData(ReadOnlySpan<byte> remaining, bool isEndOfInput, ref int consumed, int headerLength, int index)
     {
         var header = Header;
-        var size = BinaryPrimitives.ReadInt32LittleEndian(remaining[(headerLength - 4)..]);
+        long size;
+        var payloadStart = headerLength;
+        if (header.IsDeep)
+        {
+            // The decoder reads the three sizes before the data
+            payloadStart -= 24;
+            var tableSize = BinaryPrimitives.ReadUInt64LittleEndian(remaining[payloadStart..]);
+            var sampleSize = BinaryPrimitives.ReadUInt64LittleEndian(remaining[(payloadStart + 8)..]);
+            if (tableSize > int.MaxValue || sampleSize > int.MaxValue)
+                throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the deep chunk {index} has the sizes {tableSize} and {sampleSize}."));
+
+            size = (long)tableSize + (long)sampleSize;
+        }
+        else
+        {
+            size = BinaryPrimitives.ReadInt32LittleEndian(remaining[(headerLength - 4)..]);
+        }
+
         if (size < 0 || size > int.MaxValue - headerLength)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk {index} has the size {size}."));
 
         if (_walk == StructureWalk.Decode && index < header.FirstLevelChunkCount)
         {
             if (remaining.Length < headerLength + size)
-                return NeedChunkBytes(headerLength + size, isEndOfInput);
+                return NeedChunkBytes((int)(headerLength + size), isEndOfInput);
 
-            _decoder!.OnChunk(index, remaining.Slice(headerLength, size));
-            Advance(ref consumed, headerLength + size);
+            _decoder!.OnChunk(index, remaining.Slice(payloadStart, (int)(headerLength - payloadStart + size)));
+            Advance(ref consumed, (int)(headerLength + size));
             _cursor++;
             return ParseStatus.Complete;
         }
@@ -507,7 +644,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
 
         var header = Header;
         var next = _cursor + decoder.BatchChunkCount;
-        var headerLength = header.IsTiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
+        var headerLength = ChunkHeaderLength;
         var window = decoder.BatchByteCount + ((long)decoder.BatchChunkCount * headerLength);
         if (!_isRebuildingTable)
         {

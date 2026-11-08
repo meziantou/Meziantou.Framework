@@ -1,11 +1,6 @@
 {
   "wai-aria/accessibility_properties_basic.tentative.html": {
-    "total": 3,
-    "failures": {
-      "ARIA checkbox with aria-checked true": "FAIL",
-      "HTML checkbox with checked true": "FAIL",
-      "tablist subtree": "FAIL"
-    }
+    "total": 3
   },
   "wai-aria/aria-actions/aria-actions-host-accname-excludes-target.tentative.html": {
     "total": 1,
@@ -40,13 +35,7 @@
     }
   },
   "wai-aria/checked/checked.tentative.html": {
-    "total": 4,
-    "failures": {
-      "checkbox with aria-checked false": "FAIL",
-      "checkbox with aria-checked mixed": "FAIL",
-      "checkbox with aria-checked true": "FAIL",
-      "checkbox with missing aria-checked": "FAIL"
-    }
+    "total": 4
   },
   "wai-aria/heading/invalid-nesting.html": {
     "total": 14
@@ -74,13 +63,7 @@
     }
   },
   "wai-aria/pressed/pressed.tentative.html": {
-    "total": 4,
-    "failures": {
-      "button with aria-pressed false": "FAIL",
-      "button with aria-pressed mixed": "FAIL",
-      "button with aria-pressed true": "FAIL",
-      "button with missing aria-pressed": "FAIL"
-    }
+    "total": 4
   },
   "wai-aria/role/abstract-roles.html": {
     "total": 12
@@ -162,9 +145,6 @@
     "total": 7
   },
   "wai-aria/subtree/tablist.tentative.html": {
-    "total": 1,
-    "failures": {
-      "accessibility tree for #tablist": "FAIL"
-    }
+    "total": 1
   }
 }

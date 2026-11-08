@@ -16,6 +16,7 @@ public sealed partial class SignatureInteropTests
     [InlineData("two-signatures")]
     [InlineData("rsa-pss")]
     [InlineData("visible")]
+    [InlineData("visible-default")]
     [InlineData("certified")]
     [InlineData("long-term")]
     public async Task SignaturesAreValidForPdfsig(string name)
@@ -36,7 +37,8 @@ public sealed partial class SignatureInteropTests
             Reason = "Interop",
             RsaSignaturePadding = name == "rsa-pss" ? RSASignaturePadding.Pss : null,
             Certification = name == "certified" ? PdfCertificationLevel.FormFilling : null,
-            Appearance = name == "visible" ? new PdfSignatureAppearance(0, PdfRectangle.FromSize(60, 60, 200, 50)) { Draw = builder => builder.DrawText("Signed", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 8, 20) } : null,
+            Appearance = name == "visible" ? new PdfSignatureAppearance(0, PdfRectangle.FromSize(60, 60, 200, 50)) { Draw = builder => builder.DrawText("Signed", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 8, 20) }
+                : name == "visible-default" ? new PdfSignatureAppearance(0, PdfRectangle.FromSize(60, 60, 200, 50)) : null,
         });
         var expectedSignatures = 1;
         if (name is "two-signatures" or "certified")

@@ -505,7 +505,9 @@ var isValid = signature.IsValid && signature.CoversWholeDocument;
 ```
 <!-- endref -->
 
-The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it. The field name
+The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it: its `Draw`
+callback draws the appearance, or, without it, the library draws the name of the signer, the date, the reason, the
+location and an optional `Image`. The field name
 is unique: an existing signature field that is not signed yet is signed, another existing name throws.
 `PdfSignatureOptions` also sets the information of the signature dictionary (reason, location, contact, name, time),
 the other certificates of the chain to embed, the certification level and the field lock. A document certified with

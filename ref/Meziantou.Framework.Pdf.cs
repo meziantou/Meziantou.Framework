@@ -1421,6 +1421,9 @@ namespace Meziantou.Framework.Pdf.Signing
     public sealed class PdfSignatureAppearance
     {
         public System.Action<Meziantou.Framework.Pdf.PdfContentBuilder>? Draw { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; init { } }
+        public double FontSize { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfImage? Image { get => throw null; init { } }
         public int PageIndex { get => throw null; }
         public Meziantou.Framework.Pdf.PdfRectangle Rectangle { get => throw null; }
         public PdfSignatureAppearance(int pageIndex, Meziantou.Framework.Pdf.PdfRectangle rectangle) { }

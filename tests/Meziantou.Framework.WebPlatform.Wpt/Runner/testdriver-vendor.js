@@ -274,6 +274,16 @@
     return Promise.resolve(__wpt_computed_label(element));
   };
 
+  // The accessibility properties of the library (Element.GetAccessibilityProperties and Element.CaptureAccessibilityTree)
+  internal.get_accessibility_properties_for_element = function (element) {
+    return Promise.resolve(JSON.parse(__wpt_accessibility_properties(element, null)));
+  };
+
+  internal.get_accessibility_properties_for_accessibility_node = function (accId) {
+    const properties = __wpt_accessibility_properties(null, String(accId));
+    return properties === null ? Promise.reject(new Error("no such node: " + accId)) : Promise.resolve(JSON.parse(properties));
+  };
+
   // https://w3c.github.io/webdriver/#perform-actions: the actions of each tick are dispatched in the order of the input
   // sources, then the tick lasts its duration (the longest duration of its actions) on the clock of the runner. The runner
   // performs the ticks from tasks of the event loop (see WptActionSequence in WptTestDriver.cs), so that the microtasks run

@@ -130,6 +130,9 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
 - YCbCr data in separate planes is read when it is not subsampled (`YCbCrSubSampling` 1, 1), like libtiff;
   subsampled or JPEG-compressed planes are rejected.
 - The orientation of a page is reported, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient).
+- [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) reads only the strips or the tiles that an area meets, each one
+  whole: a page of one strip is still decompressed whole, so write large pages with tiles for viewports. See
+  [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - 64-bit floating-point samples are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Compressed data is never repaired: a damaged strip is an
   [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException), never a page completed with white.
 - Some writers store one `BitsPerSample` value for all the samples, extra values, or no byte counts for a page of one

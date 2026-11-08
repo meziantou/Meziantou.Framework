@@ -47,14 +47,26 @@ internal sealed class TiffRowExpander : IDisposable
     /// </param>
     /// <param name="scope">The scope charged for the lookup table of a palette and the scratch rows of the conversions.</param>
     public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope)
+        : this(page, inkConversion, scope, page.Size.Width)
+    {
+    }
+
+    /// <summary>Creates the expander of rows of <paramref name="width"/> pixels of a page: a part of its rows (a region).</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="inkConversion">The conversion of the inks of a CMYK page to RGB; <see langword="null"/> for the other pages.</param>
+    /// <param name="scope">The scope charged for the lookup table of a palette and the scratch row of 16-bit inks.</param>
+    /// <param name="width">The number of pixels of a row to expand, at most the width of the page.</param>
+    public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope, int width)
     {
         ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(scope);
         if ((page.IsCmyk || page.IsCieLab) != (inkConversion is not null))
             throw new ArgumentException("A CMYK or L*a*b* page, and only it, needs the conversion of its colors.", nameof(inkConversion));
 
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(width, page.Size.Width);
         _page = page;
-        _width = page.Size.Width;
+        _width = width;
         _inkConversion = inkConversion;
         if (page.IsPalette)
         {
@@ -76,8 +88,8 @@ internal sealed class TiffRowExpander : IDisposable
     public int ExpandedRowLength => _width * PixelFormats.GetBytesPerPixel(_page.SourcePixelFormat);
 
     /// <summary>Expands one decoded row.</summary>
-    /// <param name="stored">The decoded samples of the row; only the first <c>Width</c> pixels are read (a tile row is padded).</param>
-    /// <param name="destination">Exactly <c>Width</c> pixels of <see cref="TiffPage.SourcePixelFormat"/>.</param>
+    /// <param name="stored">The decoded samples of the row; only the first <c>width</c> pixels are read (a tile row is padded).</param>
+    /// <param name="destination">Exactly <c>width</c> pixels of <see cref="TiffPage.SourcePixelFormat"/>.</param>
     public void Expand(ReadOnlySpan<byte> stored, Span<byte> destination)
     {
         var page = _page;

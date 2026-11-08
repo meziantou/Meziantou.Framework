@@ -93,7 +93,7 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
         if (Region is not null && !codec.SupportsRegionDecoding)
             throw CreateUnsupportedRegionException(codec.Format);
 
-        return codec.SupportsScaledDecoding ? this : ForFullResolution(codec.Format);
+        return codec.SupportsScaledDecoding ? this : ForFullResolution(codec.Format, codec.SupportsRegionDecoding);
     }
 
     /// <summary>
@@ -101,17 +101,42 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// rejected, and a <see cref="TargetSize"/> is satisfied by the full image.
     /// </summary>
     /// <param name="format">The format of the decoder.</param>
+    /// <param name="supportsRegion">Whether the decoder reads <see cref="Region"/>.</param>
     /// <returns>This request.</returns>
-    /// <exception cref="UnsupportedImageFeatureException">The request asks for an exact scale or for a region.</exception>
-    public ImageDecodeRequest ForFullResolution(ImageFormat format)
+    /// <exception cref="UnsupportedImageFeatureException">The request asks for an exact scale, or for a region that the decoder does not read.</exception>
+    public ImageDecodeRequest ForFullResolution(ImageFormat format, bool supportsRegion = false)
     {
-        if (Region is not null)
+        if (Region is not null && !supportsRegion)
             throw CreateUnsupportedRegionException(format);
 
         if (ScaleDenominator > 1)
             throw CreateUnsupportedScaleException(format, string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(format)} images are only decoded at full resolution"));
 
         return this;
+    }
+
+    /// <summary>
+    /// Gets the part of <see cref="Region"/> that is in an image of <paramref name="size"/> pixels, or the whole image when
+    /// the request has no region.
+    /// </summary>
+    /// <param name="size">The size of the stored image, before its orientation.</param>
+    /// <param name="format">The format, for the error.</param>
+    /// <returns>The area to decode, never empty.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The region does not meet the image.</exception>
+    public Rectangle GetRegion(Size size, ImageFormat format)
+    {
+        var image = new Rectangle(0, 0, size.Width, size.Height);
+        if (Region is not { } region)
+            return image;
+
+        // The region may extend past the image: only its part in the image is decoded. Its right and bottom edges are
+        // computed on 64 bits, as a region may end past int.MaxValue
+        var x1 = (int)Math.Min(size.Width, (long)region.X + region.Width);
+        var y1 = (int)Math.Min(size.Height, (long)region.Y + region.Height);
+        if (region.X >= x1 || region.Y >= y1)
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The region {region} does not meet the image of {size.Width}x{size.Height} pixels."), format, "Region decoding");
+
+        return Rectangle.FromLTRB(region.X, region.Y, x1, y1);
     }
 
     /// <summary>Gets <c>ceil(length / denominator)</c>.</summary>

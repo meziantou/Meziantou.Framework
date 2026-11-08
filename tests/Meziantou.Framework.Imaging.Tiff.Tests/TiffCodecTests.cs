@@ -3263,6 +3263,208 @@ public sealed class TiffCodecTests
         Assert.Equal(expected, GetBytes(page));
     }
 
+    /// <summary>Areas of a page of <paramref name="width"/> by <paramref name="height"/> pixels: single pixels, areas across blocks and planes of tiles, areas that extend past the page, and the whole page.</summary>
+    private static Rectangle[] GetRegions(int width, int height) =>
+    [
+        new(0, 0, 1, 1),
+        new(width - 1, height - 1, 1, 1),
+        new(width / 3, height / 4, 1, 1),
+        new(3, 2, width / 2, height / 3),
+        new(width / 5, height / 2, 7, height),
+        new(1, height / 2, width - 2, 3),
+        new(width / 2, 0, 3, height),
+        new(width - 2, height - 2, int.MaxValue - width, int.MaxValue - height),
+        new(0, 0, width, height),
+    ];
+
+    /// <summary>Gets the bytes of the pixels of an area of rows of <paramref name="width"/> pixels.</summary>
+    private static byte[] Crop(byte[] pixels, int width, int bytesPerPixel, Rectangle area)
+    {
+        var result = new byte[area.Width * area.Height * bytesPerPixel];
+        for (var y = 0; y < area.Height; y++)
+        {
+            pixels.AsSpan((((area.Y + y) * width) + area.X) * bytesPerPixel, area.Width * bytesPerPixel).CopyTo(result.AsSpan(y * area.Width * bytesPerPixel));
+        }
+
+        return result;
+    }
+
+    /// <summary>Checks that every area of <see cref="GetRegions"/> decodes to the pixels of the full decode in that area, with one and several workers.</summary>
+    private static void AssertRegionsAreCropsOfTheFullDecode(byte[] data, ImageDecodeOptions options)
+    {
+        using var full = Image.Load(data, options);
+        var expected = GetBytes(full);
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(full.PixelFormat);
+        foreach (var region in GetRegions(full.Width, full.Height))
+        {
+            var area = Rectangle.Intersect(region, new Rectangle(0, 0, full.Width, full.Height));
+            foreach (var workers in new[] { 1, 16 })
+            {
+                using var audit = new PoolAudit();
+                using (var actual = Image.Load(data, new ImageDecodeOptions { Region = region, CmykConversion = options.CmykConversion, CieLabConversion = options.CieLabConversion, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } }))
+                {
+                    Assert.Equal(area.Size, actual.Size);
+                    Assert.Equal(full.PixelFormat, actual.PixelFormat);
+                    if (!Crop(expected, full.Width, bytesPerPixel, area).AsSpan().SequenceEqual(GetBytes(actual)))
+                        Assert.Fail(string.Create(CultureInfo.InvariantCulture, $"The region {region} decoded by {workers} workers differs from the full decode."));
+                }
+
+                audit.AssertClean(string.Create(CultureInfo.InvariantCulture, $"the region {region}"));
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(WorkerPages))]
+    public void ARegionHasThePixelsOfTheFullDecodeInThatArea(string name)
+    {
+        var data = CreateWorkerPage(name);
+        AssertRegionsAreCropsOfTheFullDecode(data, ImageDecodeOptions.Default);
+
+        // The page of a document and a page read from a stream are decoded the same way
+        var region = new Rectangle(70, 50, 100, 60);
+        using var full = Image.Load(data);
+        var expected = Crop(GetBytes(full), full.Width, PixelFormats.GetBytesPerPixel(full.PixelFormat), region);
+        using var document = ImageCollection.Load(data, new ImageConfiguration { MaxDegreeOfParallelism = 16 });
+        using var page = document[0].Decode(new ImageDecodeOptions { Region = region });
+        Assert.Equal(expected, GetBytes(page));
+        using var stream = new MemoryStream(data, writable: false);
+        using var streamed = Image.Load(stream, new ImageDecodeOptions { Region = region });
+        Assert.Equal(expected, GetBytes(streamed));
+    }
+
+    [Theory]
+    [MemberData(nameof(PlanarPages))]
+    public void ARegionOfSeparatePlanesHasThePixelsOfTheFullDecodeInThatArea(string name)
+    {
+        var bigEndian = name.EndsWith("-big-endian", StringComparison.Ordinal);
+        var options = name switch
+        {
+            _ when name.StartsWith("cmyk-", StringComparison.Ordinal) => InkOptions,
+            _ when name.StartsWith("lab-", StringComparison.Ordinal) => new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default },
+            _ => ImageDecodeOptions.Default,
+        };
+        AssertRegionsAreCropsOfTheFullDecode(new TiffFileBuilder { BigEndian = bigEndian }.AddPage(CreatePlanarPageSpec(name, planar: true)).Build(), options);
+    }
+
+    [Fact]
+    public void ARegionOfJpegStripsAndTilesHasThePixelsOfTheFullDecodeInThatArea()
+    {
+        (int H, int V)[] sampling = [(2, 1), (1, 1), (1, 1)];
+        var tiles = Enumerable.Range(0, 6).Select(index => JpegTestImage.CreateRandom(16, 16, sampling, seed: 40 + index)).ToArray();
+        var tiled = new TiffPageSpec { Width = 40, Height = 24, SamplesPerPixel = 3, Photometric = 6, Compression = 7, TileWidth = 16, TileLength = 16, EncodedBlocks = [.. tiles.Select(static tile => tile.Encode())], Samples = [] };
+        tiled.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 1]));
+        AssertRegionsAreCropsOfTheFullDecode(new TiffFileBuilder().AddPage(tiled).Build(), ImageDecodeOptions.Default);
+
+        var strips = Enumerable.Range(0, 3).Select(index => JpegTestImage.CreateRandom(40, 16, sampling, seed: 50 + index)).ToArray();
+        var stripped = new TiffPageSpec { Width = 40, Height = 40, SamplesPerPixel = 3, Photometric = 6, Compression = 7, RowsPerStrip = 16, EncodedBlocks = [.. strips.Select(static strip => strip.Encode())], Samples = [] };
+        stripped.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 1]));
+        AssertRegionsAreCropsOfTheFullDecode(new TiffFileBuilder().AddPage(stripped).Build(), ImageDecodeOptions.Default);
+    }
+
+    [Fact]
+    public void ARegionOfPackedAndPaletteSamplesStartsAnywhereInAByte()
+    {
+        // 1, 2 and 4-bit gray and palette samples: the expansion starts at the byte that holds the first pixel of the region
+        foreach (var bits in new[] { 1, 2, 4 })
+        {
+            var samples = new byte[((37 * bits) + 7) / 8 * 11];
+            Noise(samples, seed: bits);
+            AssertRegionsAreCropsOfTheFullDecode(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 37, Height = 11, BitsPerSample = bits, Photometric = 1, RowsPerStrip = 4, Samples = samples }).Build(), ImageDecodeOptions.Default);
+
+            var map = new ushort[3 << bits];
+            for (var i = 0; i < map.Length; i++)
+            {
+                map[i] = (ushort)(i * 997 % 256 * 257);
+            }
+
+            var palette = new TiffPageSpec { Width = 37, Height = 11, BitsPerSample = bits, Photometric = 3, TileWidth = 16, TileLength = 16, Samples = samples };
+            palette.ExtraFields.Add(TiffFieldSpec.Shorts(320, map));
+            AssertRegionsAreCropsOfTheFullDecode(new TiffFileBuilder().AddPage(palette).Build(), ImageDecodeOptions.Default);
+        }
+    }
+
+    [Theory]
+    [InlineData("lzw-tiles", 1)]
+    [InlineData("lzw-tiles", 16)]
+    [InlineData("lzw-predictor", 1)]
+    [InlineData("lzw-predictor", 16)]
+    [InlineData("lzw-planar-tiles-alpha-16bit", 16)]
+    public void OnlyTheBlocksThatARegionMeetsAreRead(string name, int workers)
+    {
+        // Every block that the region does not meet is empty: a full decode fails, the region does not read them. The
+        // tiles have 64x48 pixels (5 across), the strips 7 rows
+        var spec = CreateWorkerPageSpec(name);
+        var region = new Rectangle(70, 50, 40, 40);
+        var page = new TiffFileBuilder().AddPage(spec).Build();
+        using var full = Image.Load(page);
+        var expected = Crop(GetBytes(full), full.Width, PixelFormats.GetBytesPerPixel(full.PixelFormat), region);
+
+        var blocksPerPlane = spec.TileWidth is null ? (spec.Height + spec.RowsPerStrip - 1) / spec.RowsPerStrip : 5 * 5;
+        var damaged = new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = spec.Width,
+            Height = spec.Height,
+            SamplesPerPixel = spec.SamplesPerPixel,
+            BitsPerSample = spec.BitsPerSample,
+            Photometric = spec.Photometric,
+            ExtraSamples = spec.ExtraSamples,
+            SampleFormat = spec.SampleFormat,
+            PlanarConfiguration = spec.PlanarConfiguration,
+            Compression = spec.Compression,
+            Predictor = spec.Predictor,
+            RowsPerStrip = spec.RowsPerStrip,
+            TileWidth = spec.TileWidth,
+            TileLength = spec.TileLength,
+            EncodedBlocks = [.. spec.BuildBlocks().Select((block, i) => IsInRegion(i % blocksPerPlane) ? block : [])],
+            Samples = [],
+        }).Build();
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(damaged, WithWorkers(workers)));
+        using var actual = Image.Load(damaged, new ImageDecodeOptions { Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+        Assert.Equal(expected, GetBytes(actual));
+
+        bool IsInRegion(int block) => spec.TileWidth is null
+            ? block * spec.RowsPerStrip < region.Bottom && (block + 1) * spec.RowsPerStrip > region.Y
+            : block / 5 == 1 && block % 5 is 1;
+    }
+
+    [Fact]
+    public void ARegionAllocatesTheMemoryOfItsBlocksInsteadOfThePage()
+    {
+        // A 40x40 region in a single 64x48 tile of a 300x230 page: the image, the band of tiles and the expanded rows have the
+        // width of the region or of its tile
+        var data = CreateWorkerPage("lzw-tiles");
+        using var full = Image.Load<Rgb24>(data);
+        using var region = Image.Load<Rgb24>(data, new ImageDecodeOptions { Region = new Rectangle(70, 50, 40, 40) });
+        var fullScope = full.Owner.Scope;
+        var regionScope = region.Owner.Scope;
+        // The pixels are rented from pools whose buffers may be a little larger than asked for
+        Assert.InRange(regionScope.GetLiveBytes(Internals.AllocationKind.ImagePixels), 40 * 40 * 3, 2 * 40 * 40 * 3);
+        Assert.Equal(0, regionScope.GetLiveBytes(Internals.AllocationKind.DecoderState));
+        var fullState = fullScope.GetDiagnostics().PeakLiveBytes - fullScope.GetLiveBytes(Internals.AllocationKind.ImagePixels);
+        var regionState = regionScope.GetDiagnostics().PeakLiveBytes - regionScope.GetLiveBytes(Internals.AllocationKind.ImagePixels);
+
+        // The working memory of a tile (its rows, the LZW tables) is the same; the band of tiles is one tile wide instead of five
+        Assert.True(fullState - regionState >= (300 - 64) * 48 * 3, string.Create(CultureInfo.InvariantCulture, $"Peak decoder state {regionState} bytes for the region, {fullState} bytes for the page."));
+        Assert.True(regionScope.GetDiagnostics().PeakLiveBytes * 4 < fullScope.GetDiagnostics().PeakLiveBytes);
+    }
+
+    [Fact]
+    public void ARegionOutsideThePageOrWithAScaleIsRejected()
+    {
+        var data = CreateWorkerPage("lzw-tiles");
+        var outside = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(300, 0, 10, 10) }));
+        Assert.Equal("Region decoding", outside.Feature);
+        Assert.Equal(ImageFormat.Tiff, outside.Format);
+        Assert.Equal("Region decoding", Assert.Throws<UnsupportedImageFeatureException>(() => ImageCollection.Load(data)[0].Decode(new ImageDecodeOptions { Region = new Rectangle(0, 230, 10, 10) })).Feature);
+
+        // TIFF is only decoded at full resolution: an exact scale is rejected, a target size is the full page
+        Assert.Equal("Scaled decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(0, 0, 10, 10), ScaleDenominator = 2 })).Feature);
+        using var target = Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(0, 0, 10, 10), TargetSize = new Size(5, 5) });
+        Assert.Equal(new Size(10, 10), target.Size);
+    }
+
     [Theory]
     [InlineData(2)]
     [InlineData(3)]

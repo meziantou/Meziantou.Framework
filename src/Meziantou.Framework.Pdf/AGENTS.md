@@ -16,8 +16,10 @@ the XML documentation and `readme.md` consistent in the same change.
   libraries (PDFsharp, PdfPig, PeachPDF, pdf.js, PDFium, Poppler, MuPDF, qpdf, PDFBox, ...): they are design references
   and test oracles only. Cite the clause in the comments of the code that implements it.
 - Fully managed, trimmable and NativeAOT-compatible (`IsTrimmable`): no reflection. The dependencies of the
-  repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles) and `Meziantou.Framework.Fonts`
-  (the fonts to embed: the reader, the shaper and the subsetter `FontSubsetter`, the AFM metrics of the standard fonts).
+  repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles), `Meziantou.Framework.Fonts`
+  (the fonts to embed: the reader, the shaper and the subsetter `FontSubsetter`, the AFM metrics of the standard fonts)
+  and `Meziantou.Framework.Unicode` (the line breaking and the hyphenation of the content builder, the normalization of
+  the passwords).
   The library uses their public API only, so it depends on them with normal (minimum) versions: never give it access to
   their internals again (`InternalsVisibleTo`); make a type public in Fonts or
   Imaging, or compile its source into this library, instead.

@@ -5,8 +5,12 @@ description: What the library does not do, so that you can plan around it.
 
 ## Creating documents
 
-- The content builder breaks a text into lines at its spaces ([Wrap a paragraph](03-CreatingDocuments/03-Text.md#wrap-a-paragraph)),
-  but it does not apply the Unicode line breaking rules, hyphenate words, nor lay out tables.
+- The content builder breaks the lines of a text box and of the cells of a table with the Unicode line breaking
+  algorithm, without a dictionary: the languages written without spaces between their words (Thai, Lao, Khmer,
+  Burmese) are broken between their characters only when a word does not fit. It does not apply the bidirectional
+  algorithm to the lines.
+- The cells of a table hold text: no image, nested table or cell that spans several rows. The justified lines stretch
+  the spaces only.
 - The standard 14 fonts show the characters of `WinAnsiEncoding` (Symbol and ZapfDingbats their own); other characters
   need an embedded font.
 - The fonts with CFF2 outlines, the bitmap fonts and the instances of variable fonts are not embedded.

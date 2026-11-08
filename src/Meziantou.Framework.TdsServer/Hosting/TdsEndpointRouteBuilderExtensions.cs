@@ -28,6 +28,17 @@ public static class TdsEndpointRouteBuilderExtensions
         return endpoints;
     }
 
+    /// <summary>Registers the handler of the bulk loads sent by <c>SqlBulkCopy</c>.</summary>
+    /// <remarks>This sets <see cref="TdsServerOptions.BulkLoadHandler"/>.</remarks>
+    public static IEndpointRouteBuilder MapTdsBulkLoadHandler(this IEndpointRouteBuilder endpoints, TdsBulkLoadHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+        ArgumentNullException.ThrowIfNull(handler);
+
+        endpoints.ServiceProvider.GetRequiredService<TdsServerOptions>().BulkLoadHandler = handler;
+        return endpoints;
+    }
+
     /// <summary>Registers the built-in TDS query engine as the query callback.</summary>
     public static IEndpointRouteBuilder MapTdsQueryEngine(this IEndpointRouteBuilder endpoints, TdsQueryEngineOptions options)
     {

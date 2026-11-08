@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using Meziantou.Framework.Tds.Handler;
 
 namespace Meziantou.Framework.Tds;
 
@@ -70,6 +71,13 @@ public sealed class TdsServerOptions
     /// <see cref="TlsPfxPath"/> or the PEM options for any deployment that is not loopback-only.
     /// </remarks>
     public bool RequireEncryption { get; set; }
+
+    /// <summary>Gets or sets the handler of the bulk loads sent by <c>SqlBulkCopy</c>.</summary>
+    /// <remarks>
+    /// When this is <see langword="null"/>, the requests that <c>SqlBulkCopy</c> sends to read the destination table go
+    /// to the query handler, and its rows are rejected with the error 50001.
+    /// </remarks>
+    public TdsBulkLoadHandler? BulkLoadHandler { get; set; }
 
     /// <summary>Gets or sets the path to a PFX certificate file used for TLS.</summary>
     public string? TlsPfxPath { get; set; }

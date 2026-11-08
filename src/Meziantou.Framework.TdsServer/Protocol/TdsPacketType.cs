@@ -6,6 +6,7 @@ internal enum TdsPacketType : byte
     Rpc = 0x03,
     TabularResult = 0x04,
     Attention = 0x06,
+    BulkLoad = 0x07,
     Login7 = 0x10,
     Sspi = 0x11,
     PreLogin = 0x12,

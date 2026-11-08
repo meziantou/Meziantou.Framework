@@ -53,9 +53,11 @@ Assert.Equal("Reporting", context.ApplicationName);
 | `Encrypt` | `Optional` to connect to a server without a certificate. See [Encryption](09-Encryption.md). |
 | `TrustServerCertificate` | `True` to accept a self-signed certificate, in tests. |
 | `Connect Timeout`, `Command Timeout` | As with SQL Server. A command timeout cancels the request on the server. |
+| `MultipleActiveResultSets` | `True` to keep several readers open on one connection. See [Concurrency](05-HandlingQueries.md#concurrency). |
+| `Integrated Security` | `True` for Windows authentication, when the authentication handler runs the SSPI exchange. See [Integrated Windows authentication](04-Authentication.md#integrated-windows-authentication-sspi). |
 
-Do not set `Integrated Security` or an `Authentication` mode other than SQL Password: the server only supports SQL
-logins. Do not set `MultipleActiveResultSets=True`: the server does not support it.
+Do not set an `Authentication` mode other than SQL Password: the server does not support Microsoft Entra ID
+authentication.
 
 ## Run queries
 

@@ -19,6 +19,7 @@ answers.
 - **Answer queries and stored procedure calls**: read the SQL text, the procedure name and the typed parameters, and
   return result sets, informational messages or SQL Server-style errors. See [Handling queries](05-HandlingQueries.md)
   and [Returning results](06-ReturningResults.md).
+- **Receive bulk loads** from `SqlBulkCopy`. See [Bulk loads](12-BulkLoads.md).
 - **Encrypt connections** with TLS, from a PFX file or a PEM certificate and key. See [Encryption](09-Encryption.md).
 
 ## How it works

@@ -71,7 +71,7 @@ internal sealed partial class TdsConnectionProcessor
             return CreateErrorResponse(208, $"Invalid object name '{string.Join('.', tableName)}'.", payloadSizePerPacket);
         }
 
-        return CreateTableMetadataResponse(columns, readsColumnAliases, payloadSizePerPacket);
+        return CreateTableMetadataResponse(columns, readsColumnAliases, transactionCount: queryContext.TransactionId is null ? 0 : 1, payloadSizePerPacket);
     }
 
     private async Task<byte[]> ExecuteBulkLoadAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, TdsSessionState session, int payloadSizePerPacket, CancellationToken cancellationToken)
@@ -144,11 +144,11 @@ internal sealed partial class TdsConnectionProcessor
     /// (an empty result set, as <c>SET FMTONLY ON</c> returns), the output of <c>sp_tablecollations_100</c>, and the
     /// column aliases of graph tables for SqlClient 7 and later.
     /// </summary>
-    private static byte[] CreateTableMetadataResponse(IReadOnlyList<TdsColumn> columns, bool readsColumnAliases, int payloadSizePerPacket)
+    private static byte[] CreateTableMetadataResponse(IReadOnlyList<TdsColumn> columns, bool readsColumnAliases, int transactionCount, int payloadSizePerPacket)
     {
-        var transactionCount = new TdsResultSet();
-        transactionCount.Columns.Add(new TdsColumn("TranCount", TdsColumnType.Int32));
-        transactionCount.Rows.Add([0]);
+        var transactionCountResultSet = new TdsResultSet();
+        transactionCountResultSet.Columns.Add(new TdsColumn("TranCount", TdsColumnType.Int32));
+        transactionCountResultSet.Rows.Add([transactionCount]);
 
         var tableColumns = new TdsResultSet();
         foreach (var column in columns)
@@ -177,7 +177,7 @@ internal sealed partial class TdsConnectionProcessor
             otherResults.ResultSets.Add(aliases);
         }
 
-        var transactionCountResponse = CreateSingleResultResponse(transactionCount, payloadSizePerPacket);
+        var transactionCountResponse = CreateSingleResultResponse(transactionCountResultSet, payloadSizePerPacket);
         var tableColumnsResponse = CreateSingleResultResponse(tableColumns, payloadSizePerPacket);
         WidenColumnMetadata(tableColumnsResponse);
         return [.. transactionCountResponse, .. tableColumnsResponse, .. TdsResponseSerializer.CreateQueryResponse(otherResults, payloadSizePerPacket)];

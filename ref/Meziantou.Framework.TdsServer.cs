@@ -28,6 +28,7 @@ namespace Meziantou.Framework.Tds
         public string? TlsPemPrivateKeyPath { get => throw null; set { } }
         public string? TlsPfxPassword { get => throw null; set { } }
         public string? TlsPfxPath { get => throw null; set { } }
+        public Meziantou.Framework.Tds.Handler.TdsTransactionDelegate? TransactionHandler { get => throw null; set { } }
         public Meziantou.Framework.Tds.TdsServerOptions AddTcpListener(int port = 1433, System.Net.IPAddress? bindAddress = null) => throw null;
         public Meziantou.Framework.Tds.TdsServerOptions EnableSqlServerBrowser(string instanceName, int port = 1434, System.Net.IPAddress? bindAddress = null) => throw null;
     }
@@ -155,6 +156,14 @@ namespace Meziantou.Framework.Tds.Handler
         Table = 22,
     }
 
+    public sealed class TdsOutputParameter
+    {
+        public string Name { get => throw null; }
+        public Meziantou.Framework.Tds.Handler.TdsColumnType Type { get => throw null; }
+        public object? Value { get => throw null; }
+        public TdsOutputParameter(string name, Meziantou.Framework.Tds.Handler.TdsColumnType type, object? value) { }
+    }
+
     public sealed class TdsQueryContext
     {
         public string? CommandText { get => throw null; init { } }
@@ -163,6 +172,7 @@ namespace Meziantou.Framework.Tds.Handler
         public string? ProcedureName { get => throw null; init { } }
         public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
         public required Meziantou.Framework.Tds.Handler.TdsQueryRequestType RequestType { get => throw null; init { } }
+        public long? TransactionId { get => throw null; init { } }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
     }
 
@@ -179,6 +189,7 @@ namespace Meziantou.Framework.Tds.Handler
     public sealed class TdsQueryParameter
     {
         public bool IsNull { get => throw null; }
+        public bool IsOutput { get => throw null; init { } }
         public required string Name { get => throw null; init { } }
         public required Meziantou.Framework.Tds.Handler.TdsColumnType Type { get => throw null; init { } }
         public required object Value { get => throw null; init { } }
@@ -203,7 +214,10 @@ namespace Meziantou.Framework.Tds.Handler
     {
         public Meziantou.Framework.Tds.Handler.TdsQueryError? Error { get => throw null; set { } }
         public System.Collections.ObjectModel.Collection<string> InfoMessages { get => throw null; }
+        public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsOutputParameter> OutputParameters { get => throw null; }
+        public long? RecordsAffected { get => throw null; set { } }
         public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsResultSet> ResultSets { get => throw null; }
+        public int? ReturnValue { get => throw null; set { } }
         public static Meziantou.Framework.Tds.Handler.TdsQueryResult FromError(Meziantou.Framework.Tds.Handler.TdsQueryError error) => throw null;
     }
 
@@ -211,6 +225,28 @@ namespace Meziantou.Framework.Tds.Handler
     {
         public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsColumn> Columns { get => throw null; }
         public System.Collections.ObjectModel.Collection<System.Collections.Generic.IReadOnlyList<object?>> Rows { get => throw null; }
+    }
+
+    public sealed class TdsTransactionContext
+    {
+        public bool IsConnectionClosing { get => throw null; init { } }
+        public System.Data.IsolationLevel IsolationLevel { get => throw null; init { } }
+        public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public required Meziantou.Framework.Tds.Handler.TdsTransactionRequestType RequestType { get => throw null; init { } }
+        public string? SavepointName { get => throw null; init { } }
+        public required long TransactionId { get => throw null; init { } }
+        public string? TransactionName { get => throw null; init { } }
+        public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
+    }
+
+    public delegate System.Threading.Tasks.ValueTask<Meziantou.Framework.Tds.Handler.TdsQueryError?> TdsTransactionDelegate(Meziantou.Framework.Tds.Handler.TdsTransactionContext context, System.Threading.CancellationToken cancellationToken);
+
+    public enum TdsTransactionRequestType
+    {
+        Begin = 0,
+        Commit = 1,
+        Rollback = 2,
+        Save = 3,
     }
 }
 namespace Meziantou.Framework.Tds.Hosting

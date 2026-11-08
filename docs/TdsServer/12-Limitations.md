@@ -15,13 +15,12 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 ## Protocol
 
-- **SQL batches, RPC calls and bulk loads only.** Transactions (`BeginTransaction`) are not supported: their requests,
-  like any other request type, return the error 50001 "Unsupported packet type".
+- **SQL batches, RPC calls, bulk loads and local transactions only.** Other request types return the error 50001
+  "Unsupported packet type".
+- **No distributed transactions** (`System.Transactions`, MSDTC): their requests return the error 50001. See
+  [Transactions](05-HandlingQueries.md#transactions).
 - **Bulk loads are received batch by batch**: a batch of `SqlBulkCopy` cannot be larger than `MaxMessageSize`, and
   decimal columns are declared `decimal(38, 10)`. See [Bulk loads](11-BulkLoads.md).
-- **No output parameters, return values or row counts**: `ExecuteNonQuery` returns -1.
-- **Errors close the `SqlClient` connection**: the server sends errors with the "server error" status, which
-  `SqlClient` treats as severe. See [Return an error](06-ReturningResults.md#return-an-error).
 - **Text columns use one collation.** [Variant](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Variant), [UserDefined](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.UserDefined) and `Table` columns are sent as `nvarchar` text.
 
 ## Authentication and encryption

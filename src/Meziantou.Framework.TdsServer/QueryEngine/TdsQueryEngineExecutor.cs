@@ -218,19 +218,26 @@ internal sealed class TdsQueryEngineExecutor
 
     private async ValueTask<TdsQueryResult> ExecuteTextQueryAsync(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext, CancellationToken cancellationToken)
     {
-        var translatedQuery = TranslateQuery(commandText, parameters, queryExecutionContext);
-        IReadOnlyList<object?> rows;
-        try
+        // All the statements are translated before the first one runs, so an invalid statement runs none of them
+        var translatedQueries = TranslateQueries(commandText, parameters, queryExecutionContext);
+        var result = new TdsQueryResult();
+        foreach (var translatedQuery in translatedQueries)
         {
-            rows = await _options.MaterializeAsync(translatedQuery, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is ArithmeticException or FormatException or InvalidCastException or XPathException)
-        {
-            // Only running the query tells whether a value divides by zero, overflows, or cannot be converted
-            throw CreateEvaluationError(ex);
+            IReadOnlyList<object?> rows;
+            try
+            {
+                rows = await _options.MaterializeAsync(translatedQuery, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is ArithmeticException or FormatException or InvalidCastException or XPathException)
+            {
+                // Only running the query tells whether a value divides by zero, overflows, or cannot be converted
+                throw CreateEvaluationError(ex);
+            }
+
+            result.ResultSets.Add(TdsQueryResultBuilder.CreateResultSet(rows, translatedQuery.ElementType));
         }
 
-        return TdsQueryResultBuilder.FromRows(rows, translatedQuery.ElementType);
+        return result;
     }
 
     private static TdsQueryEngineException CreateEvaluationError(Exception exception)
@@ -254,7 +261,7 @@ internal sealed class TdsQueryEngineExecutor
         return SqlParser.Parse(sql, options, out _);
     }
 
-    private IQueryable TranslateQuery(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
+    private List<IQueryable> TranslateQueries(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
     {
         SqlParseResult parseResult;
         try
@@ -273,13 +280,28 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("Invalid SQL query.");
         }
 
-        if (parseResult.Script.Batches.Count != 1 ||
-            parseResult.Script.Batches[0].Statements.Count != 1 ||
-            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement)
+        // "GO" separates batches in client tools and is not part of T-SQL, so a request holds one batch
+        if (parseResult.Script.Batches.Count != 1 || parseResult.Script.Batches[0].Statements.Count == 0)
         {
-            throw new TdsQueryEngineException("Only a single SELECT statement is supported.");
+            throw new TdsQueryEngineException("Only SELECT statements are supported.");
         }
 
+        var queries = new List<IQueryable>(parseResult.Script.Batches[0].Statements.Count);
+        foreach (var statement in parseResult.Script.Batches[0].Statements)
+        {
+            if (statement is not SqlSelectStatement selectStatement)
+            {
+                throw new TdsQueryEngineException("Only SELECT statements are supported.");
+            }
+
+            queries.Add(TranslateSelectStatement(selectStatement, parameters, queryExecutionContext));
+        }
+
+        return queries;
+    }
+
+    private IQueryable TranslateSelectStatement(SqlSelectStatement selectStatement, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
+    {
         if (selectStatement.SelectSpecification.ForClause is not null)
         {
             throw new TdsQueryEngineException("The SQL query uses a SELECT feature that is not supported.");

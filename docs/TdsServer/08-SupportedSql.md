@@ -3,14 +3,16 @@ title: Supported SQL
 description: The SELECT statements, operators and functions the query engine translates, and how they treat NULL.
 ---
 
-The [query engine](07-QueryEngine.md) translates one `SELECT` statement per request to a LINQ query. It does not run
+The [query engine](07-QueryEngine.md) translates the `SELECT` statements of a request to LINQ queries. It does not run
 other statements. This page lists what it translates; anything else returns the error 50004 with a message that names
 the problem.
 
 ## Statements and clauses
 
-- One `SELECT` statement, optionally preceded by non-recursive common table expressions (`WITH … AS (…)`), including
-  column lists.
+- One or more `SELECT` statements, separated by `;` or not. Each statement returns a result set, in order: read them
+  with `SqlDataReader.NextResult`, or fill a `DataSet`. All the statements are translated before the first one runs, so
+  an invalid statement returns an error and no result set. Parameters are shared by all the statements.
+- Each statement can start with non-recursive common table expressions (`WITH … AS (…)`), including column lists.
 - `TOP`, `DISTINCT`, `SELECT *` on a single table, and selected columns and expressions with aliases.
 - `FROM` a query root or a derived table (`FROM (SELECT …) AS t`).
 - `INNER JOIN`, `LEFT JOIN` and `RIGHT JOIN`, on query roots or derived tables.
@@ -94,5 +96,6 @@ engine options.
 
 - Recursive common table expressions.
 - Scalar subqueries with `GROUP BY`, `HAVING` or `DISTINCT`, and subqueries in `GROUP BY` queries.
-- `INSERT`, `UPDATE`, `DELETE`, `MERGE` and other statements that change data, and any statement other than `SELECT`.
-- Several statements in one request, and several result sets.
+- `INSERT`, `UPDATE`, `DELETE`, `MERGE` and other statements that change data, and any statement other than `SELECT`,
+  such as `DECLARE` and `SET`.
+- `GO`: it separates batches in client tools such as SQL Server Management Studio, and is not part of T-SQL.

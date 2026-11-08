@@ -4767,6 +4767,106 @@ public sealed class TdsQueryEngineTests
             expectedErrorNumber: 1033);
     }
 
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_ReturnOneResultSetPerStatement()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Name FROM customers WHERE Id = 1;
+                    SELECT Region FROM orders WHERE Id = 3
+                    SELECT Id FROM customers WHERE Id > 10;
+                    """;
+            },
+            """
+            Id Name
+            1 Alice
+
+            Region
+            South
+
+            Id
+            """,
+            expectedMaterializedQueries: """
+                Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id, Name = customer2.Name})
+                Order[].Where(order => (order.Id == 3)).Select(order2 => new TdsProjection() {Region = order2.Region})
+                Customer[].Where(customer => (customer.Id > 10)).Select(customer2 => new TdsProjection() {Id = customer2.Id})
+                """);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_ShareParametersAndUseTheirOwnCommonTableExpressions()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH c AS (SELECT Id, Name FROM customers WHERE Id = @id) SELECT Name FROM c;
+                    WITH c AS (SELECT Id, Amount FROM orders WHERE Id = @id) SELECT Amount FROM c;
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 2 });
+            },
+            """
+            Name
+            Bob
+
+            Amount
+            20
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_ReadWithDataSet_FillsOneTablePerStatement()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions()));
+        await server.StartAsync();
+
+        var tableCount = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(Assert.Single(server.Ports)));
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT Id FROM customers; SELECT Id FROM orders";
+            using var adapter = new SqlDataAdapter(command);
+            using var dataSet = new DataSet() { Locale = CultureInfo.InvariantCulture };
+            adapter.Fill(dataSet);
+            Assert.Equal(3, dataSet.Tables[0].Rows.Count);
+            Assert.Equal(3, dataSet.Tables[1].Rows.Count);
+            return dataSet.Tables.Count;
+        });
+
+        Assert.Equal(2, tableCount);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_WithAnInvalidStatement_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id FROM customers; SELECT Id FROM unknown_table",
+            expectedMessageContains: "unknown_table");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_MultipleStatements_WithANonSelectStatement_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id FROM customers; DELETE FROM customers",
+            expectedMessageContains: "Only SELECT statements are supported.");
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();
@@ -4983,18 +5083,28 @@ public sealed class TdsQueryEngineTests
 
     private static async Task<string> ReadResultAsync(SqlDataReader reader)
     {
+        // Result sets are separated by an empty line
         var lines = new List<string>();
-        if (reader.FieldCount > 0)
+        do
         {
-            lines.Add(string.Join(' ', Enumerable.Range(0, reader.FieldCount).Select(reader.GetName)));
-        }
+            if (lines.Count > 0)
+            {
+                lines.Add(string.Empty);
+            }
 
-        while (await reader.ReadAsync())
-        {
-            var values = Enumerable.Range(0, reader.FieldCount)
-                .Select(index => FormatValue(reader.GetValue(index)));
-            lines.Add(string.Join(' ', values));
+            if (reader.FieldCount > 0)
+            {
+                lines.Add(string.Join(' ', Enumerable.Range(0, reader.FieldCount).Select(reader.GetName)));
+            }
+
+            while (await reader.ReadAsync())
+            {
+                var values = Enumerable.Range(0, reader.FieldCount)
+                    .Select(index => FormatValue(reader.GetValue(index)));
+                lines.Add(string.Join(' ', values));
+            }
         }
+        while (await reader.NextResultAsync());
 
         return string.Join('\n', lines);
     }

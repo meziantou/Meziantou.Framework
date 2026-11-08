@@ -55,11 +55,11 @@ internal sealed class CustomImageCodecAdapter(CustomImageCodec codec) : ImageCod
 
         try
         {
-            return Complete(image!, request, context);
+            return Complete(image, request, context);
         }
         catch
         {
-            image!.Dispose();
+            image.Dispose();
             throw;
         }
     }

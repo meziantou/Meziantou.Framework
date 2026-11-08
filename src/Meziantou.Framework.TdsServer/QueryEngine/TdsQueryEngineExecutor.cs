@@ -644,7 +644,26 @@ internal sealed class TdsQueryEngineExecutor
 
         if (leftKey.Type != rightKey.Type)
         {
-            rightKey = ConvertExpression(rightKey, leftKey.Type);
+            // Converting a nullable key to its non-nullable type throws on NULL, e.g. int = int?
+            var keyType = IsNullableValueType(leftKey.Type) || IsNullableValueType(rightKey.Type) ? MakeNullableType(leftKey.Type) : leftKey.Type;
+            leftKey = ConvertExpression(leftKey, keyType);
+            rightKey = ConvertExpression(rightKey, keyType);
+        }
+
+        // A NULL key never equals another key in SQL. Some LINQ providers match null keys with each other, so the rows
+        // whose key is NULL are removed from the sides that do not keep their unmatched rows. A FULL JOIN keeps the
+        // unmatched rows of both sides, so it relies on the provider, as LINQ to objects and SQL databases skip NULL keys.
+        if (!isFullJoin)
+        {
+            if (!isLeftJoin && CanJoinKeyBeNull(leftKey))
+            {
+                left = left with { Query = FilterNullKeys(left, leftKey, leftParameter) };
+            }
+
+            if (!isRightJoin && CanJoinKeyBeNull(rightKey))
+            {
+                right = right with { Query = FilterNullKeys(right, rightKey, rightParameter) };
+            }
         }
 
         var carrierMembers = left.Aliases
@@ -681,6 +700,28 @@ internal sealed class TdsQueryEngineExecutor
 
         return new QuerySource(left.Query.Provider.CreateQuery(call), carrierType, aliases);
     }
+
+    private static IQueryable FilterNullKeys(QuerySource source, Expression key, ParameterExpression parameter)
+    {
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Where),
+            [source.RowType],
+            source.Query.Expression,
+            Expression.Quote(Expression.Lambda(BuildIsNotNull(key), parameter)));
+
+        return source.Query.Provider.CreateQuery(call);
+    }
+
+    private static bool CanJoinKeyBeNull(Expression key)
+    {
+        // The key of a non-nullable column is converted to Nullable<T> when the other key is nullable
+        return CanBeNull(key is UnaryExpression { NodeType: ExpressionType.Convert } conversion ? conversion.Operand : key);
+    }
+
+    private static bool IsNullableValueType(Type type) => Nullable.GetUnderlyingType(type) is not null;
+
+    private static Type MakeNullableType(Type type) => type.IsValueType && !IsNullableValueType(type) ? typeof(Nullable<>).MakeGenericType(type) : type;
 
     private static MethodCallExpression BuildInnerJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
     {

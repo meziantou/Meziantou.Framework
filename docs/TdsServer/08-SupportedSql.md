@@ -50,8 +50,8 @@ The engine follows the three-valued logic of SQL:
 - `NOT IN` over a list that contains `NULL` matches no row.
 - `UPPER`, `LOWER`, `LEN`, `LTRIM`, `RTRIM`, `TRIM`, `LEFT`, `RIGHT` and `REPLACE` return `NULL` for a `NULL` argument.
 - `ROUND` rounds halfway values away from zero: `ROUND(2.5, 0)` is 3 and `ROUND(-2.5, 0)` is -3.
-
-One difference: `JOIN … ON` matches `NULL` keys with each other, where SQL Server does not.
+- `JOIN … ON` never matches a `NULL` key, not even with another `NULL` key. An outer join keeps the row of its outer
+  side with `NULL` columns for the other side.
 
 ## XML methods
 

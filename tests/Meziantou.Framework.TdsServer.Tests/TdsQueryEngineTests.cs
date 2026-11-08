@@ -163,6 +163,124 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_InnerJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    INNER JOIN nullable_customers n2 ON n1.Name = n2.Name
+                    ORDER BY n1.Id
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Name != null)).Join(NullableCustomer[].Where(nullableCustomer2 => (nullableCustomer2.Name != null)), nullableCustomer3 => nullableCustomer3.Name, nullableCustomer4 => nullableCustomer4.Name, (nullableCustomer5, nullableCustomer6) => new TdsCarrier() {n1 = nullableCustomer5, n2 = nullableCustomer6}).OrderBy(carrier => carrier.n1.Id).Select(carrier2 => new TdsProjection() {LeftId = carrier2.n1.Id, RightId = carrier2.n2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_LeftJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    LEFT JOIN nullable_customers n2 ON n1.Score = n2.Score
+                    ORDER BY n1.Id
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            3 NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].LeftJoin(NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Score != null)), nullableCustomer2 => nullableCustomer2.Score, nullableCustomer3 => nullableCustomer3.Score, (nullableCustomer4, nullableCustomer5) => new TdsCarrier() {n1 = nullableCustomer4, n2 = nullableCustomer5}).OrderBy(carrier => carrier.n1.Id).Select(carrier2 => new TdsProjection() {LeftId = carrier2.n1.Id, RightId = IIF((carrier2.n2 == null), null, Convert(carrier2.n2.Id, Nullable`1))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RightJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    RIGHT JOIN nullable_customers n2 ON n1.Name = n2.Name
+                    ORDER BY n2.Id
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            NULL 3
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Name != null)).RightJoin(NullableCustomer[], nullableCustomer2 => nullableCustomer2.Name, nullableCustomer3 => nullableCustomer3.Name, (nullableCustomer4, nullableCustomer5) => new TdsCarrier() {n1 = nullableCustomer4, n2 = nullableCustomer5}).OrderBy(carrier => carrier.n2.Id).Select(carrier2 => new TdsProjection() {LeftId = IIF((carrier2.n1 == null), null, Convert(carrier2.n1.Id, Nullable`1)), RightId = carrier2.n2.Id})");
+    }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public async Task SqlClient_QueryEngine_FullJoin_DoesNotMatchNullKeys()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n1.Id AS LeftId, n2.Id AS RightId
+                    FROM nullable_customers n1
+                    FULL JOIN nullable_customers n2 ON n1.Name = n2.Name
+                    """;
+            },
+            """
+            LeftId RightId
+            1 1
+            2 2
+            3 NULL
+            NULL 3
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].FullJoin(NullableCustomer[], nullableCustomer => nullableCustomer.Name, nullableCustomer2 => nullableCustomer2.Name, (nullableCustomer3, nullableCustomer4) => new TdsCarrier() {n1 = nullableCustomer3, n2 = nullableCustomer4}, null).Select(carrier => new TdsProjection() {LeftId = IIF((carrier.n1 == null), null, Convert(carrier.n1.Id, Nullable`1)), RightId = IIF((carrier.n2 == null), null, Convert(carrier.n2.Id, Nullable`1))})");
+    }
+#endif
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_InnerJoin_NonNullableKeyWithNullableKey_DoesNotMatchNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT o.Id, n.Id AS NullableId
+                    FROM orders o
+                    INNER JOIN nullable_customers n ON o.Amount = n.Score
+                    """;
+            },
+            """
+            Id NullableId
+            3 2
+            """,
+            expectedMaterializedQueries: "Order[].Join(NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Score != null)), order => Convert(order.Amount, Nullable`1), nullableCustomer2 => nullableCustomer2.Score, (order2, nullableCustomer3) => new TdsCarrier() {o = order2, n = nullableCustomer3}).Select(carrier => new TdsProjection() {Id = carrier.o.Id, NullableId = carrier.n.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_RightJoin_ReturnsRowsFromRightSource()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

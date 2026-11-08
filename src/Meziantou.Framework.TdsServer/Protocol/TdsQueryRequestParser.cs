@@ -134,7 +134,7 @@ internal static class TdsQueryRequestParser
         };
     }
 
-    private static TdsQueryParameter? TryParseParameter(ReadOnlySpan<byte> payload, ref int position)
+    internal static TdsQueryParameter? TryParseParameter(ReadOnlySpan<byte> payload, ref int position)
     {
         if (position + 2 > payload.Length)
         {

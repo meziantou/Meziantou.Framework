@@ -220,19 +220,26 @@ internal sealed class TdsQueryEngineExecutor
 
     private async ValueTask<TdsQueryResult> ExecuteTextQueryAsync(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext, CancellationToken cancellationToken)
     {
-        var translatedQuery = TranslateQuery(commandText, parameters, queryExecutionContext);
-        IReadOnlyList<object?> rows;
-        try
+        // All the statements are translated before the first one runs, so an invalid statement runs none of them
+        var translatedQueries = TranslateQueries(commandText, parameters, queryExecutionContext);
+        var result = new TdsQueryResult();
+        foreach (var translatedQuery in translatedQueries)
         {
-            rows = await _options.MaterializeAsync(translatedQuery, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is ArithmeticException or FormatException or InvalidCastException or XPathException)
-        {
-            // Only running the query tells whether a value divides by zero, overflows, or cannot be converted
-            throw CreateEvaluationError(ex);
+            IReadOnlyList<object?> rows;
+            try
+            {
+                rows = await _options.MaterializeAsync(translatedQuery, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is ArithmeticException or FormatException or InvalidCastException or XPathException)
+            {
+                // Only running the query tells whether a value divides by zero, overflows, or cannot be converted
+                throw CreateEvaluationError(ex);
+            }
+
+            result.ResultSets.Add(TdsQueryResultBuilder.CreateResultSet(rows, translatedQuery.ElementType));
         }
 
-        return TdsQueryResultBuilder.FromRows(rows, translatedQuery.ElementType);
+        return result;
     }
 
     private static TdsQueryEngineException CreateEvaluationError(Exception exception)
@@ -256,7 +263,7 @@ internal sealed class TdsQueryEngineExecutor
         return SqlParser.Parse(sql, options, out _);
     }
 
-    private IQueryable TranslateQuery(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
+    private List<IQueryable> TranslateQueries(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
     {
         SqlParseResult parseResult;
         try
@@ -275,13 +282,28 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("Invalid SQL query.");
         }
 
-        if (parseResult.Script.Batches.Count != 1 ||
-            parseResult.Script.Batches[0].Statements.Count != 1 ||
-            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement)
+        // "GO" separates batches in client tools and is not part of T-SQL, so a request holds one batch
+        if (parseResult.Script.Batches.Count != 1 || parseResult.Script.Batches[0].Statements.Count == 0)
         {
-            throw new TdsQueryEngineException("Only a single SELECT statement is supported.");
+            throw new TdsQueryEngineException("Only SELECT statements are supported.");
         }
 
+        var queries = new List<IQueryable>(parseResult.Script.Batches[0].Statements.Count);
+        foreach (var statement in parseResult.Script.Batches[0].Statements)
+        {
+            if (statement is not SqlSelectStatement selectStatement)
+            {
+                throw new TdsQueryEngineException("Only SELECT statements are supported.");
+            }
+
+            queries.Add(TranslateSelectStatement(selectStatement, parameters, queryExecutionContext));
+        }
+
+        return queries;
+    }
+
+    private IQueryable TranslateSelectStatement(SqlSelectStatement selectStatement, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
+    {
         if (selectStatement.SelectSpecification.ForClause is not null)
         {
             throw new TdsQueryEngineException("The SQL query uses a SELECT feature that is not supported.");
@@ -646,7 +668,26 @@ internal sealed class TdsQueryEngineExecutor
 
         if (leftKey.Type != rightKey.Type)
         {
-            rightKey = ConvertExpression(rightKey, leftKey.Type);
+            // Converting a nullable key to its non-nullable type throws on NULL, e.g. int = int?
+            var keyType = IsNullableValueType(leftKey.Type) || IsNullableValueType(rightKey.Type) ? MakeNullableType(leftKey.Type) : leftKey.Type;
+            leftKey = ConvertExpression(leftKey, keyType);
+            rightKey = ConvertExpression(rightKey, keyType);
+        }
+
+        // A NULL key never equals another key in SQL. Some LINQ providers match null keys with each other, so the rows
+        // whose key is NULL are removed from the sides that do not keep their unmatched rows. A FULL JOIN keeps the
+        // unmatched rows of both sides, so it relies on the provider, as LINQ to objects and SQL databases skip NULL keys.
+        if (!isFullJoin)
+        {
+            if (!isLeftJoin && CanJoinKeyBeNull(leftKey))
+            {
+                left = left with { Query = FilterNullKeys(left, leftKey, leftParameter) };
+            }
+
+            if (!isRightJoin && CanJoinKeyBeNull(rightKey))
+            {
+                right = right with { Query = FilterNullKeys(right, rightKey, rightParameter) };
+            }
         }
 
         var carrierMembers = left.Aliases
@@ -683,6 +724,28 @@ internal sealed class TdsQueryEngineExecutor
 
         return new QuerySource(left.Query.Provider.CreateQuery(call), carrierType, aliases);
     }
+
+    private static IQueryable FilterNullKeys(QuerySource source, Expression key, ParameterExpression parameter)
+    {
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Where),
+            [source.RowType],
+            source.Query.Expression,
+            Expression.Quote(Expression.Lambda(BuildIsNotNull(key), parameter)));
+
+        return source.Query.Provider.CreateQuery(call);
+    }
+
+    private static bool CanJoinKeyBeNull(Expression key)
+    {
+        // The key of a non-nullable column is converted to Nullable<T> when the other key is nullable
+        return CanBeNull(key is UnaryExpression { NodeType: ExpressionType.Convert } conversion ? conversion.Operand : key);
+    }
+
+    private static bool IsNullableValueType(Type type) => Nullable.GetUnderlyingType(type) is not null;
+
+    private static Type MakeNullableType(Type type) => type.IsValueType && !IsNullableValueType(type) ? typeof(Nullable<>).MakeGenericType(type) : type;
 
     private static MethodCallExpression BuildInnerJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
     {
@@ -1133,10 +1196,11 @@ internal sealed class TdsQueryEngineExecutor
             SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
             SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
             SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlLikeBooleanExpression likeExpression => BuildLikeBoolean(likeExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
             SqlNotBooleanExpression notExpression => BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext, !negated),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => BuildBinaryBoolean(binary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: true),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => BuildBinaryBoolean(orBinary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: false),
-            _ => throw new TdsQueryEngineException("Only comparison, IN, EXISTS, and IS NULL predicates combined with AND/OR/NOT are supported."),
+            _ => throw new TdsQueryEngineException("Only comparison, IN, EXISTS, LIKE, and IS NULL predicates combined with AND/OR/NOT are supported."),
         };
     }
 
@@ -1151,10 +1215,7 @@ internal sealed class TdsQueryEngineExecutor
     {
         var left = BuildScalar(comparison.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext);
         var right = BuildScalar(comparison.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext, left.Type);
-        if (left.Type != right.Type)
-        {
-            right = ConvertExpression(right, left.Type);
-        }
+        UnifyComparisonTypes(ref left, ref right);
 
         var comparisonOperator = negated ? NegateComparisonOperator(comparison.ComparisonOperator) : comparison.ComparisonOperator;
         return BuildComparisonCore(left, right, comparisonOperator, "Comparison operator");
@@ -1220,6 +1281,22 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         return comparison;
+    }
+
+    private static void UnifyComparisonTypes(ref Expression left, ref Expression right)
+    {
+        if (left.Type == right.Type)
+        {
+            return;
+        }
+
+        // Converting a nullable value to its non-nullable type throws on NULL, e.g. Id = Score with an int? Score
+        if (IsNullableValueType(right.Type))
+        {
+            left = ConvertExpression(left, MakeNullableType(left.Type));
+        }
+
+        right = ConvertExpression(right, left.Type);
     }
 
     private static SqlComparisonBooleanExpressionType NegateComparisonOperator(SqlComparisonBooleanExpressionType comparisonOperator)
@@ -1359,6 +1436,62 @@ internal sealed class TdsQueryEngineExecutor
         return negated ? Expression.Not(any) : any;
     }
 
+    /// <remarks>
+    /// <c>x LIKE p</c> and <c>x NOT LIKE p</c> are UNKNOWN when x, p or the escape character is NULL. A constant pattern
+    /// made of literal text with an optional <c>%</c> at its ends is translated to <c>==</c>, <c>StartsWith</c>,
+    /// <c>EndsWith</c> or <c>Contains</c>, which LINQ providers usually support. Other patterns call
+    /// <see cref="SqlLikePattern.Like(string?, string?, string?)"/>.
+    /// </remarks>
+    private Expression BuildLikeBoolean(SqlLikeBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)
+    {
+        var value = BuildScalar(expression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
+        var pattern = BuildScalar(expression.LikePattern, aliases, parameter, parameters, cteRoots, queryExecutionContext, typeof(string));
+        var escape = expression.EscapeClause is null
+            ? null
+            : BuildScalar(expression.EscapeClause, aliases, parameter, parameters, cteRoots, queryExecutionContext, typeof(string));
+        if (IsNullConstant(value) || IsNullConstant(pattern) || (escape is not null && IsNullConstant(escape)))
+        {
+            return Expression.Constant(value: false, typeof(bool));
+        }
+
+        // SQL Server converts a value of another type to text, e.g. Id LIKE '4%'
+        value = EnsureString(value);
+        pattern = EnsureString(pattern);
+        escape = escape is null ? null : EnsureString(escape);
+
+        var hasNot = expression.HasNot ^ negated;
+        if (pattern is ConstantExpression { Value: string patternText } && escape is null or ConstantExpression)
+        {
+            var escapeCharacter = SqlLikePattern.GetEscapeCharacter((string?)((ConstantExpression?)escape)?.Value);
+            if (SqlLikePattern.TryGetSimplePattern(patternText, escapeCharacter, out var kind, out var text))
+            {
+                var textExpression = Expression.Constant(text, typeof(string));
+                var ordinal = Expression.Constant(StringComparison.Ordinal);
+                Expression match = kind switch
+                {
+                    SqlLikePattern.SimplePatternKind.Equals => Expression.Equal(value, textExpression),
+                    SqlLikePattern.SimplePatternKind.StartsWith => Expression.Call(value, typeof(string).GetMethod(nameof(string.StartsWith), [typeof(string), typeof(StringComparison)])!, textExpression, ordinal),
+                    SqlLikePattern.SimplePatternKind.EndsWith => Expression.Call(value, typeof(string).GetMethod(nameof(string.EndsWith), [typeof(string), typeof(StringComparison)])!, textExpression, ordinal),
+                    _ => Expression.Call(value, typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!, textExpression),
+                };
+
+                if (hasNot)
+                {
+                    match = Expression.Not(match);
+                }
+
+                return CanBeNull(value) ? Expression.AndAlso(BuildIsNotNull(value), match) : match;
+            }
+        }
+
+        var call = Expression.Call(
+            typeof(SqlLikePattern).GetMethod(nameof(SqlLikePattern.Like))!,
+            value,
+            pattern,
+            escape ?? Expression.Constant(null, typeof(string)));
+        return Expression.Equal(call, Expression.Constant(!hasNot, typeof(bool?)));
+    }
+
     private Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)
     {
         var value = BuildScalar(expression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
@@ -1430,6 +1563,178 @@ internal sealed class TdsQueryEngineExecutor
             Expression.Quote(Expression.Lambda(value, parameter)));
 
         return source.Query.Provider.CreateQuery(call);
+    }
+
+    /// <summary>Translates a subquery used as a value, e.g. <c>(SELECT MAX(Amount) FROM orders o WHERE o.Id = c.Id)</c>.</summary>
+    /// <remarks>
+    /// The subquery is NULL when it returns no row. An aggregate always returns one row. Other subqueries call
+    /// <see cref="ScalarSubqueryCore{T}(IEnumerable{T})"/>, which reports the error 512 of SQL Server when there are
+    /// several rows.
+    /// </remarks>
+    private Expression BuildScalarSubquery(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Type? targetType)
+    {
+        if (queryExpression is not SqlQuerySpecification querySpecification)
+        {
+            throw new TdsQueryEngineException("Only simple query specifications are supported in scalar subqueries.");
+        }
+
+        if (querySpecification.SelectClause.IsDistinct ||
+            querySpecification.IntoClause is not null ||
+            querySpecification.WindowClause is not null ||
+            querySpecification.ForClause is not null ||
+            querySpecification.GroupByClause is not null ||
+            querySpecification.HavingClause is not null)
+        {
+            throw new TdsQueryEngineException("The scalar subquery uses a SELECT feature that is not supported.");
+        }
+
+        if (querySpecification.SelectClause.SelectExpressions.Count != 1 ||
+            querySpecification.SelectClause.SelectExpressions[0] is not SqlSelectScalarExpression selectExpression)
+        {
+            throw new TdsQueryEngineException("Only one expression can be specified in the select list when the subquery is not introduced with EXISTS.", errorNumber: 116);
+        }
+
+        var source = BuildSource(querySpecification.FromClause, cteRoots, parameters, queryExecutionContext);
+        source = source with { Aliases = CreateScopedAliases(source.Aliases, outerAliases, outerParameter) };
+        if (querySpecification.WhereClause?.Expression is not null)
+        {
+            source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters, cteRoots, queryExecutionContext);
+        }
+
+        Expression result;
+        if (selectExpression.Expression is SqlAggregateFunctionCallExpression aggregateFunction)
+        {
+            if (querySpecification.SelectClause.Top is not null || querySpecification.OrderByClause is not null)
+            {
+                throw new TdsQueryEngineException("The scalar subquery uses a SELECT feature that is not supported.");
+            }
+
+            result = BuildSubqueryAggregate(aggregateFunction, source, parameters, cteRoots, queryExecutionContext);
+        }
+        else
+        {
+            if (querySpecification.OrderByClause is not null)
+            {
+                if (querySpecification.SelectClause.Top is null)
+                {
+                    throw new TdsQueryEngineException("The ORDER BY clause is invalid in subqueries unless TOP is also specified.", errorNumber: 1033);
+                }
+
+                source = ApplyOrderBy(source, querySpecification.OrderByClause, parameters, cteRoots, queryExecutionContext);
+            }
+
+            var rowParameter = Expression.Parameter(source.RowType, GetUniqueParameterName(GetTypeParameterName(source.RowType), outerParameter.Name));
+            var value = BuildScalar(selectExpression.Expression, source.Aliases, rowParameter, parameters, cteRoots, queryExecutionContext);
+
+            // An empty subquery is NULL, so the value must be able to hold NULL
+            var valueType = MakeNullableType(value.Type);
+            value = EnsureExpressionType(value, valueType);
+            var call = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Select),
+                [source.RowType, valueType],
+                source.Query.Expression,
+                Expression.Quote(Expression.Lambda(value, rowParameter)));
+            var query = source.Query.Provider.CreateQuery(call);
+            if (querySpecification.SelectClause.Top is not null)
+            {
+                query = ApplyTop(query, querySpecification.SelectClause.Top, parameters);
+            }
+
+            result = Expression.Call(
+                typeof(TdsQueryEngineExecutor).GetMethod(nameof(ScalarSubqueryCore), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(valueType),
+                query.Expression);
+        }
+
+        return targetType is null ? result : EnsureExpressionType(result, MakeNullableType(targetType));
+    }
+
+    private Expression BuildSubqueryAggregate(SqlAggregateFunctionCallExpression aggregateFunction, QuerySource source, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
+    {
+        var functionName = aggregateFunction.FunctionName.ToUpperInvariant();
+        if (functionName == "COUNT")
+        {
+            if (!aggregateFunction.IsStar || aggregateFunction.ArgCount != 0)
+            {
+                throw new TdsQueryEngineException("Only COUNT(*) aggregate is supported.");
+            }
+
+            return Expression.Call(typeof(Queryable), nameof(Queryable.Count), [source.RowType], source.Query.Expression);
+        }
+
+        var methodName = functionName switch
+        {
+            "SUM" => nameof(Queryable.Sum),
+            "MIN" => nameof(Queryable.Min),
+            "MAX" => nameof(Queryable.Max),
+            "AVG" => nameof(Queryable.Average),
+            _ => throw new TdsQueryEngineException($"Aggregate function '{aggregateFunction.FunctionName}' is not supported."),
+        };
+
+        if (aggregateFunction.IsStar || aggregateFunction.ArgCount != 1 || aggregateFunction.Arguments.SingleOrDefault() is not SqlScalarExpression argumentExpression)
+        {
+            throw new TdsQueryEngineException($"Aggregate function '{aggregateFunction.FunctionName}' requires exactly one column argument.");
+        }
+
+        // The aggregates of SQL are NULL over no row, so the selector is nullable: Min and Max then return null
+        // instead of throwing, and Average returns null instead of throwing
+        var rowParameter = Expression.Parameter(source.RowType, "row");
+        var selectorBody = BuildScalar(argumentExpression, source.Aliases, rowParameter, parameters, cteRoots, queryExecutionContext);
+        var selectorType = MakeNullableType(selectorBody.Type);
+        var selector = Expression.Quote(Expression.Lambda(EnsureExpressionType(selectorBody, selectorType), rowParameter));
+        if (methodName is nameof(Queryable.Min) or nameof(Queryable.Max))
+        {
+            return Expression.Call(typeof(Queryable), methodName, [source.RowType, selectorType], source.Query.Expression, selector);
+        }
+
+        var aggregate = Expression.Call(ResolveQueryableAggregateMethod(methodName, source.RowType, selectorType), source.Query.Expression, selector);
+        if (methodName != nameof(Queryable.Sum))
+        {
+            return aggregate;
+        }
+
+        // Sum returns 0 over no row
+        return Expression.Condition(
+            Expression.Call(typeof(Queryable), nameof(Queryable.Any), [source.RowType], source.Query.Expression),
+            aggregate,
+            Expression.Constant(null, aggregate.Type));
+    }
+
+    private static MethodInfo ResolveQueryableAggregateMethod(string methodName, Type sourceType, Type selectorType)
+    {
+        var selectorParameterType = typeof(Expression<>).MakeGenericType(typeof(Func<,>).MakeGenericType(sourceType, selectorType));
+        foreach (var method in typeof(Queryable).GetMethods(BindingFlags.Public | BindingFlags.Static))
+        {
+            if (!string.Equals(method.Name, methodName, StringComparison.Ordinal) || !method.IsGenericMethodDefinition || method.GetGenericArguments().Length != 1 || method.GetParameters().Length != 2)
+            {
+                continue;
+            }
+
+            var closedMethod = method.MakeGenericMethod(sourceType);
+            if (closedMethod.GetParameters()[1].ParameterType == selectorParameterType)
+            {
+                return closedMethod;
+            }
+        }
+
+        throw new TdsQueryEngineException($"Aggregate function '{methodName}' does not support values of type '{GetNonNullableType(selectorType).Name}'.");
+    }
+
+    private static T? ScalarSubqueryCore<T>(IEnumerable<T> values)
+    {
+        using var enumerator = values.GetEnumerator();
+        if (!enumerator.MoveNext())
+        {
+            return default;
+        }
+
+        var value = enumerator.Current;
+        if (enumerator.MoveNext())
+        {
+            throw new TdsQueryEngineException("Subquery returned more than 1 value. This is not permitted when the subquery follows =, !=, <, <= , >, >= or when the subquery is used as an expression.", errorNumber: 512);
+        }
+
+        return value;
     }
 
     private IQueryable TranslateExistsSubquery(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
@@ -1556,10 +1861,7 @@ internal sealed class TdsQueryEngineExecutor
     {
         var left = BuildGroupScalar(comparison.Left, source, parameter, parameters, cteRoots, queryExecutionContext);
         var right = BuildGroupScalar(comparison.Right, source, parameter, parameters, cteRoots, queryExecutionContext, left.Type);
-        if (left.Type != right.Type)
-        {
-            right = ConvertExpression(right, left.Type);
-        }
+        UnifyComparisonTypes(ref left, ref right);
 
         return BuildComparisonCore(left, right, comparison.ComparisonOperator, "HAVING comparison operator");
     }
@@ -1677,7 +1979,7 @@ internal sealed class TdsQueryEngineExecutor
             return result;
         }
 
-        throw new TdsQueryEngineException("Only column references, literals, SQL parameters, scalar functions, and arithmetic expressions are supported in expressions.");
+        throw new TdsQueryEngineException("Only column references, literals, SQL parameters, scalar functions, scalar subqueries, and arithmetic expressions are supported in expressions.");
     }
 
     private bool TryBuildScalar(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, out Expression result, Type? targetType = null)
@@ -1716,6 +2018,10 @@ internal sealed class TdsQueryEngineExecutor
 
                 var variableType = targetType ?? queryParameter.Value.GetType();
                 result = Expression.Constant(ConvertValue(queryParameter.Value, variableType), variableType);
+                return true;
+
+            case SqlScalarSubQueryExpression subquery:
+                result = BuildScalarSubquery(subquery.QueryExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, targetType);
                 return true;
 
             default:

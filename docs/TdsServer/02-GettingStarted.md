@@ -171,4 +171,4 @@ See [The query engine](07-QueryEngine.md).
 
 - [Hosting the server](03-HostingTheServer.md): endpoints, packet sizes, logging.
 - [Encryption](09-Encryption.md): configure TLS before exposing the server beyond the local machine.
-- [Limitations](11-Limitations.md): what the server does not do.
+- [Limitations](12-Limitations.md): what the server does not do.

@@ -1,6 +1,6 @@
 ---
 title: Geometry operations
-description: Repair, clip and simplify geometries, combine polygons, measure distances, compute buffers and convex hulls, and convert positions from another coordinate system.
+description: Repair, clip and simplify geometries, split them along the 180th meridian, combine polygons, measure distances, compute buffers and convex hulls, and convert positions from another coordinate system.
 ---
 
 The operations are methods of [GeoGeometry](cref:Meziantou.Framework.Geo.GeoGeometry). They return new geometries:
@@ -56,7 +56,47 @@ Assert.HasCount(2, pieces.LineStrings);
 
 It returns `null` when nothing is inside the box, and the geometry itself when all of it is. The points outside the box
 are dropped, the lines are cut where they cross its edges, and the polygons are cut as by
-[Intersection](cref:Meziantou.Framework.Geo.GeoGeometry.Intersection).
+[Intersection](cref:Meziantou.Framework.Geo.GeoGeometry.Intersection). A box whose west side is east of its east side
+crosses the 180th meridian: the result has the part of the geometry on each side.
+
+## Split along the 180th meridian
+
+[SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian) cuts the lines and the polygons
+that cross the 180th meridian into a part on each side, as [RFC 7946](https://www.rfc-editor.org/rfc/rfc7946#section-3.1.9)
+wants it. The edges whose ends are more than 180° of longitude apart, such as an edge from 177 to -178, are taken the short
+way, across the meridian:
+
+<!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=GeoGeometry_SplitAtAntimeridian;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Fiji, as a ring whose edges cross the 180th meridian
+var fiji = new GeoPolygon([[new(177, -19), new(-178, -19), new(-178, -16), new(177, -16), new(177, -19)]]);
+Assert.True(fiji.CrossesAntimeridian);
+
+// Split along the 180th meridian, as RFC 7946 wants it: a polygon on each side
+var split = Assert.IsType<GeoMultiPolygon>(fiji.SplitAtAntimeridian());
+Assert.Equal(new GeoBounds(177, -19, 180, -16), split.Polygons[0].GetBounds());
+Assert.Equal(new GeoBounds(-180, -19, -178, -16), split.Polygons[1].GetBounds());
+Assert.True(split.Contains(new GeoPosition(Longitude: 179, Latitude: -17)));
+Assert.False(split.CrossesAntimeridian);
+
+// The box of the parts crosses the 180th meridian: its west side is east of its east side
+var bounds = split.GetBounds(GeoEdgeType.Geodesic)!.Value;
+Assert.True(bounds.CrossesAntimeridian());
+Assert.Equal((177, -178), (bounds.West, bounds.East));
+Assert.True(bounds.Contains(new GeoPosition(Longitude: -179, Latitude: -17)));
+```
+<!-- endref -->
+
+- A line becomes a [GeoMultiLineString](cref:Meziantou.Framework.Geo.GeoMultiLineString) whose parts end and start on
+  the meridian, at the longitudes 180 and -180. The position where it crosses is interpolated in degrees.
+- A polygon becomes a [GeoMultiPolygon](cref:Meziantou.Framework.Geo.GeoMultiPolygon) with a polygon on each side. A
+  ring that goes around a pole, such as the coast of Antarctica, is closed through the pole it is nearest to.
+- The longitudes greater than 180 or smaller than -180 go around the world, back to [-180, 180]. The points are moved,
+  not split.
+
+The geometries with no edge to split and no longitude to move are returned as they are. The edges whose ends are both on
+the meridian, such as the edges of a box around the whole world from -180 to 180, are not split. The parts of the
+polygons are cut as by [Clip](cref:Meziantou.Framework.Geo.GeoGeometry.Clip): see [Precision](#precision).
 
 ## Simplify
 
@@ -173,7 +213,7 @@ distant points stay apart. The buffers of the parts of a multi-geometry or a col
   pieces are combined as by [Union](cref:Meziantou.Framework.Geo.GeoGeometry.Union): the positions of the result are on
   the grid of ten-millionths of a degree.
 - A buffer that contains a pole is not handled. A buffer that crosses the 180th meridian is not cut: its longitudes go
-  beyond 180 or -180.
+  beyond 180 or -180. Cut it with [SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian).
 
 ## Convex hull
 
@@ -218,6 +258,6 @@ closed lines, for instance the coastlines of land polygons.
 The operations on polygons are exact on a grid of ten-millionths of a degree, about a centimeter: the positions of the
 polygons they return are on that grid, and lose their altitude, measure and time. An edge that passes within about a unit and a half of a
 vertex is cut at that vertex, so a part only a few units wide, a few centimeters, can move by a few units or
-disappear. The edges are straight lines in degrees, as on an equirectangular map, and the shapes that cross the 180th
-meridian are not handled. The coordinates of the polygons must be between -100,000 and 100,000: convert projected
+disappear. The edges are straight lines in degrees, as on an equirectangular map: split the shapes that cross the 180th
+meridian with [SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian) first. The coordinates of the polygons must be between -100,000 and 100,000: convert projected
 coordinates to degrees with [Transform](cref:Meziantou.Framework.Geo.GeoGeometry.Transform) first.

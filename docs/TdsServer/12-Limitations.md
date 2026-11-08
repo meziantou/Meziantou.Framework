@@ -15,27 +15,26 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 ## Protocol
 
-- **SQL batches, RPC calls and local transactions only.** Bulk loads (`SqlBulkCopy`) are not supported: their
-  requests, like any other request type, return the error 50001 "Unsupported packet type".
+- **SQL batches, RPC calls, bulk loads and local transactions only.** Other request types return the error 50001
+  "Unsupported packet type".
 - **No distributed transactions** (`System.Transactions`, MSDTC): their requests return the error 50001. See
   [Transactions](05-HandlingQueries.md#transactions).
-- **No Multiple Active Result Sets (MARS)**: a connection with `MultipleActiveResultSets=True` fails.
-- **One request at a time per connection.**
+- **Bulk loads are received batch by batch**: a batch of `SqlBulkCopy` cannot be larger than `MaxMessageSize`, and
+  decimal columns are declared `decimal(38, 10)`. See [Bulk loads](11-BulkLoads.md).
 - **Text columns use one collation.** [Variant](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Variant), [UserDefined](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.UserDefined) and `Table` columns are sent as `nvarchar` text.
 
 ## Authentication and encryption
 
-- **SQL logins only.** There is no SSPI exchange, so integrated Windows authentication (NTLM, Kerberos) and Microsoft
-  Entra ID authentication are not supported. See [Authentication](04-Authentication.md).
+- **No Microsoft Entra ID authentication.** SQL logins and integrated Windows authentication (NTLM, Kerberos, through
+  an SSPI exchange run by the authentication handler) are supported. See [Authentication](04-Authentication.md).
 - **TLS 1.2 when TLS is negotiated in the TDS PRELOGIN exchange** (`Encrypt=True` or `Optional`). Use
   `Encrypt=Strict` for TLS 1.3. See [Encryption](09-Encryption.md).
 - **No encryption by default**: without a certificate, passwords and data travel in clear text.
 
 ## Query engine
 
-- One `SELECT` statement per request: no `LIKE`, no recursive common table expressions, no scalar subqueries in the
-  selected columns, no `INSERT`, `UPDATE` or `DELETE`, no multiple statements or result sets. See
+- `SELECT` statements only: no recursive common table expressions, no `INSERT`, `UPDATE` or `DELETE`. See
   [Supported SQL](08-SupportedSql.md).
-- `JOIN … ON` matches `NULL` keys with each other.
+- `LIKE` compares characters ordinally, so it is case-sensitive.
 - The XML methods take XPath 1.0, not XQuery.
 - A stored procedure that returns an `IQueryable` is enumerated synchronously.

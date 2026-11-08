@@ -285,7 +285,8 @@ public sealed class GeometryTests
         Assert.HasCount(1, Assert.IsType<GeoMultiPoint>(new GeoMultiPoint([new(0, 0), new(6, 0)]).Clip(bounds)).Positions);
         Assert.Equal(25, GetArea(new GeoMultiPolygon([square]).Clip(bounds)!), 1e-9);
         Assert.IsType<GeoGeometryCollection>(new GeoGeometryCollection([square, new GeoPoint(new(50, 50))]).Clip(bounds));
-        Assert.Throws<ArgumentException>("bounds", () => square.Clip(new GeoBounds(10, 0, 0, 10)));
+        Assert.Throws<ArgumentException>("bounds", () => square.Clip(new GeoBounds(0, 10, 10, 0)));
+        Assert.Throws<ArgumentException>("bounds", () => square.Clip(new GeoBounds(double.NaN, 0, 10, 10)));
 
         // A line that only touches the box at a corner, and one that goes along an edge
         Assert.Null(new GeoLineString([new(0, 10), new(5, 5), new(0, 0)]).Clip(bounds));
@@ -636,6 +637,340 @@ public sealed class GeometryTests
 
             Assert.NotNull(repaired.Simplify(0.01));
         }
+    }
+
+    [Fact]
+    public void Antimeridian_Fiji()
+    {
+        #region GeoGeometry_SplitAtAntimeridian
+        // Fiji, as a ring whose edges cross the 180th meridian
+        var fiji = new GeoPolygon([[new(177, -19), new(-178, -19), new(-178, -16), new(177, -16), new(177, -19)]]);
+        Assert.True(fiji.CrossesAntimeridian);
+
+        // Split along the 180th meridian, as RFC 7946 wants it: a polygon on each side
+        var split = Assert.IsType<GeoMultiPolygon>(fiji.SplitAtAntimeridian());
+        Assert.Equal(new GeoBounds(177, -19, 180, -16), split.Polygons[0].GetBounds());
+        Assert.Equal(new GeoBounds(-180, -19, -178, -16), split.Polygons[1].GetBounds());
+        Assert.True(split.Contains(new GeoPosition(Longitude: 179, Latitude: -17)));
+        Assert.False(split.CrossesAntimeridian);
+
+        // The box of the parts crosses the 180th meridian: its west side is east of its east side
+        var bounds = split.GetBounds(GeoEdgeType.Geodesic)!.Value;
+        Assert.True(bounds.CrossesAntimeridian());
+        Assert.Equal((177, -178), (bounds.West, bounds.East));
+        Assert.True(bounds.Contains(new GeoPosition(Longitude: -179, Latitude: -17)));
+        #endregion
+
+        // Straight in degrees, the edges of the ring go the long way: the polygon is the rest of the band
+        Assert.False(fiji.Contains(new GeoPosition(179, -17)));
+        Assert.True(fiji.Contains(new GeoPosition(0, -17)));
+        Assert.Equal(new GeoBounds(-178, -19, 177, -16), fiji.GetBounds());
+
+        // As great circles, the edges cross the 180th meridian, and the southern one bends toward the South Pole
+        Assert.True(fiji.Contains(new GeoPosition(179, -17), GeoEdgeType.Geodesic));
+        Assert.True(fiji.Contains(new GeoPosition(-178.5, -17), GeoEdgeType.Geodesic));
+        Assert.False(fiji.Contains(new GeoPosition(0, -17), GeoEdgeType.Geodesic));
+        var geodesicBounds = fiji.GetBounds(GeoEdgeType.Geodesic)!.Value;
+        Assert.Equal((177, -178, -16), (geodesicBounds.West, geodesicBounds.East, geodesicBounds.North));
+        Assert.True(geodesicBounds.South < -19);
+
+        // The label is on the islands, not on the other side of the world
+        var (longitude, latitude, _) = fiji.LabelPosition!.Value;
+        Assert.Equal(179.5, longitude, 1e-9);
+        Assert.Equal(-17.5, latitude, 1e-9);
+        Assert.Equal(178.5, split.LabelPosition!.Value.Longitude, 1e-9);
+
+        // Clip to a box that crosses the 180th meridian: a part on each side
+        var clipped = Assert.IsType<GeoMultiPolygon>(split.Clip(new GeoBounds(178, -18, -179, -17)));
+        Assert.Equal([new GeoBounds(178, -18, 180, -17), new GeoBounds(-180, -18, -179, -17)], clipped.Polygons.Select(polygon => polygon.GetBounds()!.Value));
+        Assert.Same(split.Polygons[0], split.Polygons[0].Clip(new GeoBounds(170, -20, -170, -10)));
+        Assert.Null(split.Clip(new GeoBounds(170, 0, -170, 10)));
+        Assert.Throws<ArgumentException>("bounds", () => split.Clip(new GeoBounds(178, -17, -179, -18)));
+    }
+
+    [Fact]
+    public void Antimeridian_Chukotka()
+    {
+        // A part of Russia that crosses the 180th meridian
+        var chukotka = new GeoPolygon([[new(160, 60), new(-170, 60), new(-170, 70), new(160, 70), new(160, 60)]]);
+        var anadyr = new GeoPosition(177.5, 64.7);
+        var lavrentiya = new GeoPosition(-171, 65.6);
+        Assert.True(chukotka.Contains(anadyr, GeoEdgeType.Geodesic));
+        Assert.True(chukotka.Contains(lavrentiya, GeoEdgeType.Geodesic));
+        Assert.False(chukotka.Contains(new GeoPosition(0, 65), GeoEdgeType.Geodesic));
+        Assert.False(chukotka.Contains(lavrentiya));
+        Assert.True(new GeoMultiPolygon([chukotka]).Contains(lavrentiya, GeoEdgeType.Geodesic));
+
+        var split = Assert.IsType<GeoMultiPolygon>(chukotka.SplitAtAntimeridian());
+        Assert.True(split.Contains(anadyr));
+        Assert.True(split.Contains(lavrentiya));
+        Assert.False(split.Contains(new GeoPosition(0, 65)));
+
+        var (longitude, latitude, _) = chukotka.LabelPosition!.Value;
+        Assert.Equal(175, longitude, 1e-9);
+        Assert.Equal(65, latitude, 1e-9);
+
+        // A hole on the other side of the 180th meridian stays in its polygon
+        var withHole = new GeoPolygon(
+        [
+            [new(160, 60), new(-170, 60), new(-170, 70), new(160, 70), new(160, 60)],
+            [new(-175, 62), new(-172, 62), new(-172, 64), new(-175, 64), new(-175, 62)],
+        ]);
+        var splitWithHole = withHole.SplitAtAntimeridian();
+        Assert.False(Assert.IsType<GeoMultiPolygon>(splitWithHole).Contains(new GeoPosition(-173, 63)));
+        Assert.True(((GeoMultiPolygon)splitWithHole).Contains(new GeoPosition(-171, 63)));
+    }
+
+    [Fact]
+    public void Antimeridian_Route()
+    {
+        #region Geo_GeodesicBounds
+        var tokyo = new GeoPosition(Longitude: 139.69, Latitude: 35.69);
+        var sanFrancisco = new GeoPosition(Longitude: -122.42, Latitude: 37.77);
+        var route = new GeoLineString([tokyo, sanFrancisco]);
+
+        // Straight in degrees, the edge goes the long way, over Asia, Europe and the Atlantic
+        Assert.Equal(new GeoBounds(-122.42, 35.69, 139.69, 37.77), route.GetBounds());
+
+        // As a great circle, it crosses the Pacific and goes north of both cities
+        var bounds = route.GetBounds(GeoEdgeType.Geodesic)!.Value;
+        Assert.True(bounds.CrossesAntimeridian());
+        Assert.Equal((139.69, -122.42), (bounds.West, bounds.East));
+        Assert.Equal(48.7, bounds.North, 1);
+        #endregion
+
+        Assert.True(route.CrossesAntimeridian);
+        Assert.Equal(35.69, bounds.South);
+
+        // Split, the route ends and starts again on the 180th meridian
+        var split = Assert.IsType<GeoMultiLineString>(route.SplitAtAntimeridian());
+        Assert.HasCount(2, split.LineStrings);
+        var (east, west) = (split.LineStrings[0].Positions, split.LineStrings[1].Positions);
+        Assert.Equal(tokyo, east[0]);
+        Assert.Equal(180, east[^1].Longitude);
+        Assert.Equal(-180, west[0].Longitude);
+        Assert.Equal(sanFrancisco, west[^1]);
+        Assert.Equal(east[^1].Latitude, west[0].Latitude);
+        Assert.Equal(36.5465, west[0].Latitude, 4);
+        var splitBounds = split.GetBounds(GeoEdgeType.Geodesic)!.Value;
+        Assert.Equal((139.69, 35.69, -122.42), (splitBounds.West, splitBounds.South, splitBounds.East));
+
+        // Clipped to a box around the Pacific: the two parts
+        Assert.HasCount(2, Assert.IsType<GeoMultiLineString>(split.Clip(new GeoBounds(170, 30, -170, 50))).LineStrings);
+
+        // The label is over the Pacific
+        var (longitude, latitude, _) = route.LabelPosition!.Value;
+        Assert.Equal(-171.365, longitude, 1e-9);
+        Assert.Equal(36.73, latitude, 1e-9);
+        Assert.InRange(split.LabelPosition!.Value.Longitude, -180, -170);
+
+        // The box of the cities of the features
+        GeoFeatureCollection features = [new GeoFeature(new GeoPoint(tokyo)), new GeoFeature(geometry: null), new GeoFeature(new GeoPoint(sanFrancisco))];
+        Assert.Equal(new GeoBounds(139.69, 35.69, -122.42, 37.77), features.GetBounds(GeoEdgeType.Geodesic));
+        Assert.Equal(new GeoBounds(-122.42, 35.69, 139.69, 37.77), features.GetBounds(GeoEdgeType.Planar));
+        Assert.Null(new GeoFeatureCollection().GetBounds(GeoEdgeType.Geodesic));
+        Assert.Throws<ArgumentOutOfRangeException>("edgeType", () => features.GetBounds((GeoEdgeType)2));
+    }
+
+    [Fact]
+    public void Antimeridian_SplitLinesAndPoints()
+    {
+        // The positions where a line crosses the meridian are interpolated, altitudes included
+        var line = new GeoLineString([new(170, 0, 100), new(-170, 10, 200), new(-160, 10)]);
+        var split = Assert.IsType<GeoMultiLineString>(line.SplitAtAntimeridian());
+        Assert.Equal([new GeoPosition(170, 0, 100), new(180, 5, 150)], split.LineStrings[0].Positions);
+        Assert.Equal([new GeoPosition(-180, 5, 150), new(-170, 10, 200), new(-160, 10)], split.LineStrings[1].Positions);
+
+        // And the measures and times
+        var start = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var track = Assert.IsType<GeoMultiLineString>(new GeoLineString([new(170, 0) { Measure = 10, Time = start }, new(-170, 0) { Measure = 20, Time = start.AddHours(2) }]).SplitAtAntimeridian());
+        var crossing = track.LineStrings[0].Positions[^1];
+        Assert.Equal(15, crossing.Measure);
+        Assert.Equal(start.AddHours(1), crossing.Time);
+        Assert.Equal(crossing with { Longitude = -180 }, track.LineStrings[1].Positions[0]);
+        Assert.Null(split.LineStrings[0].Positions[^1].Measure);
+
+        // A line that crosses the meridian twice, and one that touches it
+        var twice = Assert.IsType<GeoMultiLineString>(new GeoLineString([new(170, 0), new(-170, 0), new(170, 2)]).SplitAtAntimeridian());
+        Assert.HasCount(3, twice.LineStrings);
+        var touching = new GeoLineString([new(170, 0), new(180, 0), new(180, 1), new(170, 1)]);
+        Assert.Same(touching, touching.SplitAtAntimeridian());
+        var crossingAtVertex = Assert.IsType<GeoMultiLineString>(new GeoLineString([new(170, 0), new(180, 0), new(-170, 0)]).SplitAtAntimeridian());
+        Assert.Equal([new GeoPosition(170, 0), new(180, 0)], crossingAtVertex.LineStrings[0].Positions);
+        Assert.Equal([new GeoPosition(-180, 0), new(-170, 0)], crossingAtVertex.LineStrings[1].Positions);
+
+        // The longitudes past 180 move around the world
+        var beyond = Assert.IsType<GeoMultiLineString>(new GeoLineString([new(175, 0), new(185, 0)]).SplitAtAntimeridian());
+        Assert.Equal([new GeoPosition(-180, 0), new(-175, 0)], beyond.LineStrings[1].Positions);
+        Assert.Equal(new GeoPosition(-170, 5), Assert.IsType<GeoPoint>(new GeoPoint(new(190, 5)).SplitAtAntimeridian()).Position);
+        Assert.Equal([new GeoPosition(-170, 5), new(10, 5)], Assert.IsType<GeoMultiPoint>(new GeoMultiPoint([new(190, 5), new(10, 5)]).SplitAtAntimeridian()).Positions);
+        Assert.Equal([new GeoPosition(-170, 5)], Assert.IsType<GeoLineString>(new GeoLineString([new(190, 5)]).SplitAtAntimeridian()).Positions);
+
+        // The geometries that do not cross the meridian are returned as they are, a box around the whole world included
+        var world = new GeoPolygon([[new(-180, -90), new(180, -90), new(180, 90), new(-180, 90), new(-180, -90)]]);
+        Assert.False(world.CrossesAntimeridian);
+        Assert.Same(world, world.SplitAtAntimeridian());
+        GeoGeometry[] unchanged = [new GeoPoint(new(10, 10)), new GeoMultiPoint([new(10, 10)]), new GeoMultiLineString([touching]), new GeoMultiPolygon([world]), new GeoGeometryCollection([world])];
+        foreach (var geometry in unchanged)
+        {
+            Assert.Same(geometry, geometry.SplitAtAntimeridian());
+        }
+
+        var multiLineString = Assert.IsType<GeoMultiLineString>(new GeoMultiLineString([touching, line]).SplitAtAntimeridian());
+        Assert.HasCount(3, multiLineString.LineStrings);
+        var multiPolygon = Assert.IsType<GeoMultiPolygon>(new GeoMultiPolygon([world, new GeoPolygon([[new(177, -19), new(-178, -19), new(-178, -16), new(177, -16)]])]).SplitAtAntimeridian());
+        Assert.HasCount(3, multiPolygon.Polygons);
+        Assert.Same(world, multiPolygon.Polygons[0]);
+        var collection = Assert.IsType<GeoGeometryCollection>(new GeoGeometryCollection([new GeoPoint(new(10, 10)), line]).SplitAtAntimeridian());
+        Assert.IsType<GeoMultiLineString>(collection.Geometries[1]);
+
+        // Clip to a box that crosses the 180th meridian
+        var points = new GeoMultiPoint([new(175, 0), new(-175, 0), new(0, 0)]);
+        Assert.Equal([new GeoPosition(175, 0), new(-175, 0)], Assert.IsType<GeoMultiPoint>(points.Clip(new GeoBounds(170, -10, -170, 10))).Positions);
+        var point = new GeoPoint(new(175, 0));
+        Assert.Same(point, point.Clip(new GeoBounds(170, -10, -170, 10)));
+        Assert.IsType<GeoGeometryCollection>(new GeoGeometryCollection([point, new GeoLineString([new(-175, 0), new(-172, 0)])]).Clip(new GeoBounds(170, -10, -170, 10)));
+    }
+
+    [Fact]
+    public void Geodesic_ContainsAndBounds()
+    {
+        #region Geo_GeodesicContains
+        var polygon = new GeoPolygon([[new(-60, 70), new(60, 70), new(60, 80), new(-60, 80), new(-60, 70)]]);
+
+        // Straight in degrees, the edges follow the parallels 70 and 80
+        Assert.True(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 75)));
+        Assert.False(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 82)));
+
+        // As great circles, they bend toward the North Pole: the southern edge passes at 79.7° on the meridian 0
+        Assert.False(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 75), GeoEdgeType.Geodesic));
+        Assert.True(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 82), GeoEdgeType.Geodesic));
+        #endregion
+
+        Assert.True(polygon.Contains(new GeoPosition(0, 79.5)));
+        Assert.True(polygon.Contains(new GeoPosition(0, 79.9), GeoEdgeType.Geodesic));
+        Assert.False(polygon.Contains(new GeoPosition(0, 79.5), GeoEdgeType.Geodesic));
+        Assert.True(polygon.Contains(new GeoPosition(0, 75), GeoEdgeType.Planar));
+        Assert.Throws<ArgumentOutOfRangeException>("edgeType", () => polygon.Contains(new GeoPosition(0, 75), (GeoEdgeType)2));
+        Assert.Throws<ArgumentOutOfRangeException>("edgeType", () => new GeoMultiPolygon([]).Contains(new GeoPosition(0, 75), (GeoEdgeType)2));
+
+        var bounds = polygon.GetBounds(GeoEdgeType.Geodesic)!.Value;
+        Assert.Equal((-60, 70, 60), (bounds.West, bounds.South, bounds.East));
+        Assert.Equal(84.96, bounds.North, 2);
+        Assert.Equal(polygon.GetBounds(), polygon.GetBounds(GeoEdgeType.Planar));
+        Assert.Throws<ArgumentOutOfRangeException>("edgeType", () => polygon.GetBounds((GeoEdgeType)2));
+        Assert.Null(new GeoMultiPolygon([]).GetBounds(GeoEdgeType.Geodesic));
+
+        // Near the equator and for short edges, both give the same answer
+        var square = new GeoPolygon([[new(0, 0), new(10, 0), new(10, 10), new(0, 10), new(0, 0)], [new(4, 4), new(6, 4), new(6, 6), new(4, 6), new(4, 4)]]);
+        foreach (var position in new GeoPosition[] { new(2, 2), new(5, 5), new(12, 5), new(5, -1), new(-170, 5), new(9.9, 9.5) })
+        {
+            Assert.Equal(square.Contains(position), square.Contains(position, GeoEdgeType.Geodesic));
+        }
+
+        // A ring that goes around the South Pole contains it, whatever its direction
+        GeoPosition[] coast = [new(0, -70), new(90, -70), new(180, -70), new(-90, -70), new(0, -70)];
+        foreach (var ring in new[] { coast, coast.Reverse().ToArray() })
+        {
+            var antarctica = new GeoPolygon([ring]);
+            Assert.True(antarctica.Contains(new GeoPosition(0, -80), GeoEdgeType.Geodesic));
+            Assert.True(antarctica.Contains(new GeoPosition(-135, -89.9), GeoEdgeType.Geodesic));
+            Assert.False(antarctica.Contains(new GeoPosition(45, -60), GeoEdgeType.Geodesic));
+            Assert.False(antarctica.Contains(new GeoPosition(45, -73), GeoEdgeType.Geodesic)); // the edges bend toward the pole
+            Assert.Equal(new GeoBounds(-180, -90, 180, -70), antarctica.GetBounds(GeoEdgeType.Geodesic));
+
+            var split = Assert.IsType<GeoMultiPolygon>(antarctica.SplitAtAntimeridian());
+            Assert.HasCount(2, split.Polygons);
+            Assert.True(split.Contains(new GeoPosition(45, -80)));
+            Assert.True(split.Contains(new GeoPosition(-45, -80)));
+            Assert.False(split.Contains(new GeoPosition(45, -60)));
+            Assert.Equal(new GeoBounds(-180, -90, 180, -70), split.GetBounds());
+        }
+
+        // A ring around the North Pole
+        var arctic = new GeoPolygon([[new(0, 80), new(120, 80), new(-120, 80)]]);
+        Assert.True(arctic.Contains(new GeoPosition(50, 89), GeoEdgeType.Geodesic));
+        Assert.False(arctic.Contains(new GeoPosition(50, 70), GeoEdgeType.Geodesic));
+        Assert.Equal(new GeoBounds(-180, 80, 180, 90), arctic.GetBounds(GeoEdgeType.Geodesic));
+    }
+
+    [Fact]
+    public void Geodesic_Countries()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
+        var countries = GeoJson.Parse(File.ReadAllText(path)).ToDictionary(country => (string)country.Properties["name"]!, country => country.Geometry!, StringComparer.Ordinal);
+
+        // Natural Earth splits the countries along the 180th meridian, as RFC 7946 wants it
+        foreach (var geometry in countries.Values)
+        {
+            Assert.False(geometry.CrossesAntimeridian);
+            Assert.Same(geometry, geometry.SplitAtAntimeridian());
+        }
+
+        // The geodesic box of the parts of Fiji and of Russia crosses the 180th meridian
+        var fiji = countries["Fiji"].GetBounds(GeoEdgeType.Geodesic)!.Value;
+        Assert.True(fiji.CrossesAntimeridian());
+        Assert.InRange(fiji.West, 175, 180);
+        Assert.InRange(fiji.East, -180, -178);
+        var russia = countries["Russia"].GetBounds(GeoEdgeType.Geodesic)!.Value;
+        Assert.True(russia.CrossesAntimeridian());
+        Assert.InRange(russia.West, 19, 20);
+        Assert.InRange(russia.East, -171, -168);
+        Assert.Equal(new GeoBounds(-180, -90, 180, 90), GetBoundsWithoutNorth(countries["Antarctica"]));
+
+        // The other countries do not cross it
+        var france = countries["France"];
+        Assert.False(france.GetBounds(GeoEdgeType.Geodesic)!.Value.CrossesAntimeridian());
+
+        // The country of a few cities
+        AssertCountry("France", new GeoPosition(2.35, 48.86));
+        AssertCountry("Russia", new GeoPosition(177.5, 64.7));
+        AssertCountry("Fiji", new GeoPosition(178.44, -18.14));
+        AssertCountry("Antarctica", new GeoPosition(106.8, -78.46));
+        AssertCountry("Antarctica", new GeoPosition(-135, -89.9));
+        AssertCountry("Brazil", new GeoPosition(-47.88, -15.79));
+
+        void AssertCountry(string name, GeoPosition position)
+        {
+            var found = countries.Where(country => country.Value switch
+            {
+                GeoPolygon polygon => polygon.Contains(position, GeoEdgeType.Geodesic),
+                GeoMultiPolygon multiPolygon => multiPolygon.Contains(position, GeoEdgeType.Geodesic),
+                _ => false,
+            }).Select(country => country.Key).ToArray();
+            Assert.Equal([name], found);
+        }
+
+        static GeoBounds GetBoundsWithoutNorth(GeoGeometry geometry) => geometry.GetBounds(GeoEdgeType.Geodesic)!.Value with { North = 90 };
+    }
+
+    [Fact]
+    public void Bounds_Antimeridian()
+    {
+        var pacific = new GeoBounds(West: 170, South: -10, East: -170, North: 10);
+        Assert.True(pacific.CrossesAntimeridian());
+        Assert.False(new GeoBounds(0, 0, 10, 10).CrossesAntimeridian());
+        Assert.True(pacific.Contains(new GeoPosition(175, 0)));
+        Assert.True(pacific.Contains(new GeoPosition(-175, 0)));
+        Assert.True(pacific.Contains(new GeoPosition(180, 0)));
+        Assert.False(pacific.Contains(new GeoPosition(0, 0)));
+        Assert.False(pacific.Contains(new GeoPosition(175, 20)));
+
+        Assert.True(pacific.Intersects(new GeoBounds(-175, -5, -160, 5)));
+        Assert.True(new GeoBounds(-175, -5, -160, 5).Intersects(pacific));
+        Assert.False(pacific.Intersects(new GeoBounds(0, -5, 10, 5)));
+        Assert.False(pacific.Intersects(new GeoBounds(175, 20, 176, 30)));
+        Assert.True(pacific.Intersects(new GeoBounds(160, -20, -160, 20)));
+        Assert.True(new GeoBounds(0, 0, 10, 10).Intersects(new GeoBounds(10, 10, 20, 20)));
+        Assert.False(new GeoBounds(0, 0, 10, 10).Intersects(new GeoBounds(11, 0, 20, 10)));
+
+        Assert.Equal(new GeoBounds(170, -20, -160, 10), pacific.Union(new GeoBounds(-175, -20, -160, 0)));
+        Assert.Equal(new GeoBounds(0, -10, -170, 10), pacific.Union(new GeoBounds(0, 0, 10, 10)));
+        Assert.Equal(new GeoBounds(-180, -10, 180, 10), pacific.Union(new GeoBounds(-170, -10, 170, 10)));
+        Assert.Equal(new GeoBounds(160, -10, -170, 10), new GeoBounds(160, 0, 175, 5).Union(pacific));
+
+        // Without a box that crosses the meridian, the union does not cross it either
+        Assert.Equal(new GeoBounds(-180, 0, 180, 1), new GeoBounds(170, 0, 180, 1).Union(new GeoBounds(-180, 0, -170, 1)));
     }
 
     private static double GetSignedArea(IReadOnlyList<GeoPosition> ring)

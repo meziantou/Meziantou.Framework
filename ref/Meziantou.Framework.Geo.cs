@@ -77,6 +77,7 @@ namespace Meziantou.Framework.Geo
         public double West { get => throw null; init { } }
         public GeoBounds(double West, double South, double East, double North) { }
         public bool Contains(Meziantou.Framework.Geo.GeoPosition position) => throw null;
+        public bool CrossesAntimeridian() => throw null;
         public void Deconstruct(out double West, out double South, out double East, out double North) => throw null;
         public bool Equals(Meziantou.Framework.Geo.GeoBounds other) => throw null;
         #nullable disable
@@ -84,6 +85,7 @@ namespace Meziantou.Framework.Geo
         #nullable restore
         public static Meziantou.Framework.Geo.GeoBounds? FromPositions(System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPosition> positions) => throw null;
         public override int GetHashCode() => throw null;
+        public bool Intersects(Meziantou.Framework.Geo.GeoBounds other) => throw null;
         #nullable disable
         public override string ToString() => throw null;
         #nullable restore
@@ -114,6 +116,12 @@ namespace Meziantou.Framework.Geo
         public int SegmentsPerQuarterCircle { get => throw null; set { } }
     }
 
+    public enum GeoEdgeType
+    {
+        Planar = 0,
+        Geodesic = 1,
+    }
+
     public sealed class GeoFeature
     {
         public Meziantou.Framework.Geo.GeoGeometry? Geometry { get => throw null; }
@@ -127,12 +135,14 @@ namespace Meziantou.Framework.Geo
         public string? Name { get => throw null; set { } }
         public GeoFeatureCollection(System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoFeature> features) { }
         public Meziantou.Framework.Geo.GeoBounds? GetBounds() => throw null;
+        public Meziantou.Framework.Geo.GeoBounds? GetBounds(Meziantou.Framework.Geo.GeoEdgeType edgeType) => throw null;
         protected override void InsertItem(int index, Meziantou.Framework.Geo.GeoFeature item) { }
         protected override void SetItem(int index, Meziantou.Framework.Geo.GeoFeature item) { }
     }
 
     public abstract class GeoGeometry
     {
+        public bool CrossesAntimeridian { get => throw null; }
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Geo.GeoPosition? LabelPosition { get => throw null; }
         public abstract Meziantou.Framework.Geo.GeoGeometryType Type { get; }
@@ -143,11 +153,13 @@ namespace Meziantou.Framework.Geo
         public double? Distance(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoLineString> GetBoundaryLines() => throw null;
         public Meziantou.Framework.Geo.GeoBounds? GetBounds() => throw null;
+        public Meziantou.Framework.Geo.GeoBounds? GetBounds(Meziantou.Framework.Geo.GeoEdgeType edgeType) => throw null;
         public abstract System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPosition> GetPositions();
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoGeometry> GetSimpleGeometries() => throw null;
         public Meziantou.Framework.Geo.GeoGeometry? Intersection(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
         public Meziantou.Framework.Geo.GeoGeometry MakeValid() => throw null;
         public Meziantou.Framework.Geo.GeoGeometry? Simplify(double tolerance) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry SplitAtAntimeridian() => throw null;
         public Meziantou.Framework.Geo.GeoGeometry Transform(System.Func<Meziantou.Framework.Geo.GeoPosition, Meziantou.Framework.Geo.GeoPosition> transform) => throw null;
         public Meziantou.Framework.Geo.GeoGeometry? Union(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
     }
@@ -218,6 +230,7 @@ namespace Meziantou.Framework.Geo
         public override Meziantou.Framework.Geo.GeoGeometryType Type { get => throw null; }
         public GeoMultiPolygon(System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPolygon> polygons) { }
         public bool Contains(Meziantou.Framework.Geo.GeoPosition position) => throw null;
+        public bool Contains(Meziantou.Framework.Geo.GeoPosition position, Meziantou.Framework.Geo.GeoEdgeType edgeType) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPosition> GetPositions() => throw null;
     }
 
@@ -235,6 +248,7 @@ namespace Meziantou.Framework.Geo
         public override Meziantou.Framework.Geo.GeoGeometryType Type { get => throw null; }
         public GeoPolygon(System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPosition>> rings) { }
         public bool Contains(Meziantou.Framework.Geo.GeoPosition position) => throw null;
+        public bool Contains(Meziantou.Framework.Geo.GeoPosition position, Meziantou.Framework.Geo.GeoEdgeType edgeType) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPosition> GetPositions() => throw null;
     }
 

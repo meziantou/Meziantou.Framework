@@ -66,6 +66,7 @@ The callbacks are registered with:
 | `MapTdsAuthenticationHandler(handler)` | The authentication callback |
 | `MapTdsQueryHandler(handler)` | The query callback |
 | `MapTdsQueryEngine(options)` | The [query engine](07-QueryEngine.md) as the query callback |
+| `MapTdsBulkLoadHandler(handler)` | The [bulk load](11-BulkLoads.md) callbacks, in [TdsServerOptions.BulkLoadHandler](cref:Meziantou.Framework.Tds.TdsServerOptions.BulkLoadHandler) |
 
 Without an authentication callback, every login fails with "No authentication handler configured"; without a query
 callback, every request returns the error 50003 "No query handler configured".

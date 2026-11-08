@@ -16,6 +16,7 @@ picture: an animation, transparency or 16-bit samples in a lossy file need an ex
 | Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats), YCbCr, or RGB for lossless files |
 | Chroma subsampling | Any integral sampling | 4:4:4, 4:2:2 or 4:2:0 |
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
+| Gain maps | Listed and rendered by [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection) (Ultra HDR) | Ultra HDR, with [GainMap](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.GainMap) |
 | Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless, JPEG-LS and hierarchical files | - |
 
 8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit files, and lossless and JPEG-LS files of more than 8 bits, load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
@@ -152,6 +153,7 @@ public static void SaveTwelveBitJpeg(string sourcePath, string jpegPath)
 | [OptimizeHuffmanTables](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.OptimizeHuffmanTables) | Computes the Huffman tables of a baseline file from the image: smaller, same pixels, slower; no effect on progressive files, whose tables are always computed | `false` |
 | [RestartInterval](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.RestartInterval) | The number of MCUs between two restart markers, 0 to 65,535; 0 writes none | 0 |
 | [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits when [BitDepth](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BitDepth) is not set | `false` |
+| [GainMap](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.GainMap) | Writes a gain map next to a still image, as an Ultra HDR file: the gain map image follows the image, with its parameters (see [Color management](../09-Color/03-ColorManagement.md)); 8-bit Huffman-coded output only | `null` |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata JPEG cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 The component layout follows the pixel format, never the pixel values: a gray pixel format writes one grayscale

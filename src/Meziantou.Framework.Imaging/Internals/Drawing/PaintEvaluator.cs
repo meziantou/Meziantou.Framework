@@ -35,4 +35,20 @@ internal abstract class PaintEvaluator
         return false;
     }
 
+    /// <summary>
+    /// Creates an evaluator for another thread: it gives the same colors as this one, which was prepared and begun, with
+    /// scratch of its own. What both read is shared and must not change until the worker is released.
+    /// </summary>
+    /// <returns>The worker, or <see langword="null"/> when the paint is evaluated on the calling thread only.</returns>
+    /// <exception cref="ImageResourceLimitException">The scratch of the worker exceeds the allocation limit.</exception>
+    public virtual PaintEvaluator? CreateWorker() => null;
+
+    /// <summary>Releases the scratch of an evaluator that <see cref="CreateWorker"/> created; what it shares stays.</summary>
+    public virtual void ReleaseWorker()
+    {
+    }
+
+    /// <summary>Rents a buffer of the length of another one, for the scratch of a worker.</summary>
+    /// <exception cref="ImageResourceLimitException">The buffer exceeds the allocation limit.</exception>
+    private protected static PooledBuffer? RentLike(AllocationScope scope, PooledBuffer? buffer) => buffer is null ? null : scope.Rent(buffer.Length, AllocationKind.Temporary, clear: true);
 }

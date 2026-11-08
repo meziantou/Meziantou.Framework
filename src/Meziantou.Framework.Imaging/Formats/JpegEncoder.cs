@@ -66,15 +66,17 @@ public sealed class JpegEncoder : ImageEncoder
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="JpegChromaSubsampling"/>.</exception>
     public JpegChromaSubsampling ChromaSubsampling
     {
-        get;
+        get => _chromaSubsampling;
         init
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The chroma subsampling is not valid.");
 
-            field = value;
+            _chromaSubsampling = value;
         }
     }
+
+    private JpegChromaSubsampling _chromaSubsampling;
 
     /// <summary>Gets the coding process. Defaults to <see cref="JpegEncodingProcess.Baseline"/>.</summary>
     /// <remarks>
@@ -239,4 +241,36 @@ public sealed class JpegEncoder : ImageEncoder
     /// rounding) when <see cref="BitDepth"/> is not set. Defaults to <see langword="false"/>.
     /// </summary>
     public bool AllowBitDepthReduction { get; init; }
+
+    /// <summary>
+    /// Gets the gain map written next to the image, or <see langword="null"/> (the default) for none.
+    /// </summary>
+    /// <remarks>
+    /// The file is an Ultra HDR file: the gain map image is a second JPEG image after the primary image, which a Multi-Picture
+    /// Format index (APP2 <c>MPF</c>) locates. The parameters are written twice, as the metadata of ISO 21496-1 (an APP2
+    /// segment in each image, the primary image only giving the version) and as the <c>hdrgm</c> XMP properties of Adobe and
+    /// Ultra HDR 1.0 (in the XMP packet of the gain map image, with a container directory in the one of the primary image,
+    /// merged with the XMP packet of each image when it has one), which cannot express
+    /// <see cref="Metadata.GainMapMetadata.UseBaseColorSpace"/> set to <see langword="false"/>. The encoded images are kept in
+    /// memory until the file is written, since the index of the primary image gives the length of both.
+    /// The image must be a still image. The gain map image is encoded with the same settings but full chroma resolution
+    /// (<see cref="JpegChromaSubsampling.Ratio444"/>: the gain amplifies its errors), and its metadata (the ICC profile of
+    /// the alternate rendition) with <see cref="ImageEncoder.MetadataHandling"/>. A gain map is only written with 8-bit
+    /// Huffman-coded output (<see cref="JpegEncodingProcess.Baseline"/> or <see cref="JpegEncodingProcess.Progressive"/>),
+    /// which Ultra HDR readers decode: the image is rejected with an <see cref="ArgumentException"/> otherwise.
+    /// </remarks>
+    public GainMap? GainMap
+    {
+        get => _gainMap;
+        init => _gainMap = value;
+    }
+
+    private GainMap? _gainMap;
+
+    /// <inheritdoc />
+    private protected override void PrepareGainMapImageSettings()
+    {
+        _gainMap = null;
+        _chromaSubsampling = JpegChromaSubsampling.Ratio444;
+    }
 }

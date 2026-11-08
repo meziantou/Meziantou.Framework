@@ -32,7 +32,7 @@ The public API is low level: it is the one these libraries need. Update the pack
 | Color fonts | `COLR` versions 0 and 1, `CPAL`, and glyphs that are images (`sbix`, `CBDT`) |
 | Metrics | Horizontal and vertical metrics, `BASE` baselines, the constants and glyph constructions of the `MATH` table |
 | Hinting | Outlines fitted to the pixel grid of a size, with or without the TrueType instructions of the font |
-| Shaping | The `GSUB` and `GPOS` tables, and the shaping models of complex scripts: Arabic, Hebrew, Indic, Khmer, Myanmar, Thai and Lao, Hangul, and the universal shaping engine |
+| Shaping | The `GSUB` and `GPOS` tables, and the shaping models of complex scripts: Arabic, Hebrew, Indic, Khmer, Myanmar, Thai and Lao, Hangul, and the universal shaping engine; the `morx`, `kerx`, `feat` and `trak` tables of the fonts made for Apple systems (Apple Advanced Typography) |
 | Installed fonts | Windows, macOS and Linux |
 | Other | Subsets of TrueType and CFF outlines, AFM files |
 

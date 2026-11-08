@@ -133380,6 +133380,74 @@
       ]
     },
     {
+      "id": "fonts/hb-morx-twentyeight",
+      "file": {
+        "path": "fonts/harfbuzz/MORXTwentyeight.ttf",
+        "sha256": "1297b0def4c6c74e83758991bc6793ba51b54e3bafb12c4e23c3b15d0d3f50a6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/in-house/fonts/MORXTwentyeight.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/hb-morx-twentyeight.json",
+        "sha256": "bc42cbc0eb1a49575dc4cc1d124b364ea6784d690491d0051323fc2c44c78592",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/hb-morx-twentyeight.json",
+        "sha256": "346541685524eee8838b041aa43b15bcd1499b421328deb7e47a2e92dda2f6c6",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/hb-trak",
+      "file": {
+        "path": "fonts/harfbuzz/TRAK.ttf",
+        "sha256": "cf3fdeb89ad8e723633fa7f364d0c0097448236884a8299a41a106904c50b7be",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/in-house/fonts/TRAK.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=STAT",
+        "font.table=glyf",
+        "font.table=morx",
+        "font.table=trak"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/hb-trak.json",
+        "sha256": "25eb07f13758ac046c27d5bf96654e501d2629cfff20ffb4f0dd76aa0fa9bc7d",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/hb-trak.json",
+        "sha256": "92f18f398d5560bd4dd183da11d4df9cc2cc8705a8b003f5048198c5f319ea7c",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-color-emoji",
       "file": {
         "path": "fonts/noto-color-emoji/Noto-COLRv1.subset.ttf",
@@ -135094,6 +135162,231 @@
       ]
     },
     {
+      "id": "fonts/synthetic-aat-kerning",
+      "file": {
+        "path": "fonts/synthetic/aat-kerning.ttf",
+        "sha256": "fd9b7f64f2289f8fd4918649288e7edac3d4db3a66dad17f1fa75f1078210340",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (AatKerning)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=ankr",
+        "font.table=glyf",
+        "font.table=kerx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-aat-kerning.json",
+        "sha256": "d8fec1bef154bafff823d6357c70f880b2655b2bd78772af8163ee305b3377d0",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-aat-kerning.json",
+        "sha256": "478899ab1442e43f4de835f915d6c66fddb775269f15a1f654ae9969d7fe7bee",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-aat-morphing",
+      "file": {
+        "path": "fonts/synthetic/aat-morphing.ttf",
+        "sha256": "54b678f819eb7300f6cfe8e096e6336ac7ca18072d8d354c881908cf94009b9b",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (AatMorphing)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=feat",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-aat-morphing.json",
+        "sha256": "037b04df9364f5f2052219fdf1db8b39bdb2ba6fd36e5c8317035493dceaba3e",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-aat-morphing.json",
+        "sha256": "3bf03473c4b64a7c4b51d280c1b4303e3c5d41e96853b124c574680faf2fae8c",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-aat-selection",
+      "file": {
+        "path": "fonts/synthetic/aat-selection.ttf",
+        "sha256": "c2af4a12a2fa11991d17f97f504a62cc006734984eb1d28a41e4d49687f274ac",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (AatSelection with morx and GSUB)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf",
+        "font.table=kerx",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-aat-selection.json",
+        "sha256": "87a2ff30a62b69a8cda23e5c1add16afb8dc71ac9ffe02bca2b44daecf80981b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-aat-selection.json",
+        "sha256": "030b3dc84db0a1608d0af3fe56b6a71b4ca67222519b4b76b55aede158968b23",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-aat-selection-empty-gsub",
+      "file": {
+        "path": "fonts/synthetic/aat-selection.empty-gsub.ttf",
+        "sha256": "cfd24c034097f9e54348f02f1ca9deb2ff6be8752d9e1a14d7905e567e8ad35a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (AatSelection with a GSUB table without script)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf",
+        "font.table=kerx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-aat-selection-empty-gsub.json",
+        "sha256": "87a2ff30a62b69a8cda23e5c1add16afb8dc71ac9ffe02bca2b44daecf80981b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-aat-selection-empty-gsub.json",
+        "sha256": "ace5732595b1445c81bd412ca67729dd2845e70ba38879e81073a4ae872c71be",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-aat-selection-without-morx",
+      "file": {
+        "path": "fonts/synthetic/aat-selection.without-morx.ttf",
+        "sha256": "44909d894a6da422ae577e23c55c191b3816c12bd6aa00fbdf49c783a6752f3c",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (AatSelection without substitution table)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GPOS",
+        "font.table=glyf",
+        "font.table=kerx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-aat-selection-without-morx.json",
+        "sha256": "87a2ff30a62b69a8cda23e5c1add16afb8dc71ac9ffe02bca2b44daecf80981b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-aat-selection-without-morx.json",
+        "sha256": "844138490832127ed95fdaa4dd3b49a88ff80ee945d0b734cec53a9570a91114",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-aat-tracking",
+      "file": {
+        "path": "fonts/synthetic/aat-tracking.ttf",
+        "sha256": "bfac044d39b8ac02448891ec89698f7d2c744001fb8e9fe5a6a4af11faa222a6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (AatTracking)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=STAT",
+        "font.table=glyf",
+        "font.table=trak"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-aat-tracking.json",
+        "sha256": "08dc5b3499d31fdbc9c5589a3aebae6f5c8e947adcc85ea975906e074dfd20b7",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-aat-tracking.json",
+        "sha256": "3e2d10dd113e15c894aef70835affb1f7647a7d1b81fb24162ff56baaa14009b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/synthetic-arabic-forms",
       "file": {
         "path": "fonts/synthetic/arabic-forms.ttf",
@@ -136200,6 +136493,39 @@
       }
     },
     {
+      "id": "fonts/trt-aat-morx",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestAATMorx.ttf",
+        "sha256": "ea32f2dc35ba518185fdcad5fcb629f18ee2b976dca05365956a294216555674",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestAATMorx.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-aat-morx.json",
+        "sha256": "592a56a15ff0c9ffca4186341fd1e824680b0601352b78c9f62d7ae2e1aac346",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-aat-morx.json",
+        "sha256": "18945eaf83b032de3d0f6dd75a9f68b55440780b9842f989c1500c6e79543f81",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/trt-avar",
       "file": {
         "path": "fonts/text-rendering-tests/TestAVAR.ttf",
@@ -136456,6 +136782,1029 @@
         "path": "fonts/vectors/trt-hvar-two.json",
         "sha256": "35c0a960bd3a4c79d0a1ed9576dab14801ac5a724ef46d23fbe7ca187054e429",
         "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-eight",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXEight.ttf",
+        "sha256": "9b22dad9cdaf17d0e006f2066c44c9675e4466f1477dfb7572cfc0f12d7c20bc",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXEight.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-eight.json",
+        "sha256": "9f3b4c2dba59c259bcb97ebbd4c1b20c8f8a641c1fea94ff2de6a632bae15e9b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-eight.json",
+        "sha256": "0851a8239eef6ed1a350fad6dd2199f4dc374599170582422845eb6efe56376d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-eighteen",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXEighteen.ttf",
+        "sha256": "f515b0e5b3a0d517fc1598fd5f4374451f6c1c88c433a646c104a8aab4345ceb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXEighteen.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-eighteen.json",
+        "sha256": "b6418a73ae3c143cb6513a8dc8562f81359691454458592a82c3b714420a6c70",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-eighteen.json",
+        "sha256": "e37233dcd254f8afd202f7095bcd1987713f5c07fb2a70b2b910e8b60ba85d21",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-eleven",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXEleven.ttf",
+        "sha256": "e76591c1387cbafab57be85b13b78c498cff525e6c6eef17c1594148dd15ae0f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXEleven.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-eleven.json",
+        "sha256": "09e23f4ccf0f2f27eec2f70c6d324bc91a8177ee5cd5af1d261fc206d859a79b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-eleven.json",
+        "sha256": "675bec71dcb6ca51c52636b7dfa92467e337f719de35c8c455116d15fd6860b0",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-forty",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXForty.ttf",
+        "sha256": "6e0954c52c46ece22c0e29bfac4bfdf82a09083a8e8d982954cbdeb20f2c1e9e",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXForty.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-forty.json",
+        "sha256": "5b60ddf4f86a9c09b2b4cd415d8549a83766e10a47e173c579a6ff1d5c792a30",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-forty.json",
+        "sha256": "57beda1359c255fe01c032b344d92d469066feb840ef45161b2e10836bd82bcd",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-four",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXFour.ttf",
+        "sha256": "d80ef2fb8cfe47d08d9736e7014669fe0672a3319d2dcf693fc8d3600dd85070",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXFour.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-four.json",
+        "sha256": "37f6b5328ad0fc4ce9b5a2305d019e66a86568f74db31e95e37620630a52fb34",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-four.json",
+        "sha256": "0968e54b6054bd2bb5232e50c7f801270104276032e444bf670f7391545b3144",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-fourteen",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXFourteen.ttf",
+        "sha256": "5d5c07d1c0681088cde16bc5933b92818b5226fdcedcdeab9d53018c67574580",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXFourteen.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-fourteen.json",
+        "sha256": "7df9293aab4350a08317598942fafe263772b8d51c1c95adfda438171801e34f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-fourteen.json",
+        "sha256": "0d5562d1e97d420ed7659b341922430b8ab79a862116f86766442a898c64752b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-fourtyone",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXFourtyone.ttf",
+        "sha256": "9fdcca5f5d0939e7d8619e47b69c28b3d0579a04de26a8fbe80f4390b9dc8013",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXFourtyone.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-fourtyone.json",
+        "sha256": "9cf512f15744b0640b3cb6ff1e13fd7cf18a76a539fc21e0d305e5af5082c446",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-fourtyone.json",
+        "sha256": "8558c1a12ca60f5aba316d9c0f6746fcef3632fbda6ce55e9ebae73c23e9149f",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-nine",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXNine.ttf",
+        "sha256": "c62bf88c16e0709a4a24ad67a4f4c7ee7469119dae42d567bf5c5544964f9068",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXNine.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-nine.json",
+        "sha256": "01f6b987dbc43216bbf043f1248e00d2b15fefd78f05e5092afc46a41a5c3987",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-nine.json",
+        "sha256": "680e510a7d45bdac3c449c9c37d69e16a634f8d317ac694eeb456fe422b0f661",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-one",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXOne.ttf",
+        "sha256": "fa907c56191881a5734cbbebea55ae6ddbf3ba92c15093fb6edf0ecf5b87d7ad",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXOne.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-one.json",
+        "sha256": "9028f7443b30855f02696f12e41b827c9b54561915c15fba117dad6cf20e02d0",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-one.json",
+        "sha256": "6d9b88f1f8a985efbe38a217a91448ebcd0ebf3643a6adf46ff7017077a5847c",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-seventeen",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXSeventeen.ttf",
+        "sha256": "30f754fef272ee6e495d7204723769d5dc97010175eb4d7eb6c015d99a3dc8be",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXSeventeen.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-seventeen.json",
+        "sha256": "fd2fa298c0ec133ab77a559eb227ca5f1408d0bbac462637556e1897ea6abfdb",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-seventeen.json",
+        "sha256": "0d03bac8befd9fe65ac8be2b9c363a98c721ef063c8a3921377ed68eacff6296",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-sixteen",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXSixteen.ttf",
+        "sha256": "ffefcbadd666b335be388b285fd40fa1b2ea61344c0b4b60ac5c0650da723649",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXSixteen.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-sixteen.json",
+        "sha256": "d6ff335df1745d1b027f0260408f179045a0000495b3fcc488d9617489a42b0d",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-sixteen.json",
+        "sha256": "ca29d10d9abf356fb0afe3a111227b6f91c06ca672e43034c52978718a78ede6",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-ten",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTen.ttf",
+        "sha256": "89ac0d7a54542e6849048257487a7e139f94f21407f9d0f931c15ecce218228d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTen.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-ten.json",
+        "sha256": "3509dfcd608cba83b741f2c9d940596f099e4e7c95e58c1ec8132060b3e0b01c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-ten.json",
+        "sha256": "426b48ef24bf982f23da35496434245a2b9031eb74736be526a0ebae12283e3d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-thirteen",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThirteen.ttf",
+        "sha256": "15410fef273acef4b337e4fe5954bcd6e2f5021f05d437f81d9eecce73af9d0e",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThirteen.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-thirteen.json",
+        "sha256": "d7bb9d43b2c9edad20e377065ca17c61f7409c047815c29ff2de0e077eb18217",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-thirteen.json",
+        "sha256": "ca29d10d9abf356fb0afe3a111227b6f91c06ca672e43034c52978718a78ede6",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-thirtyeight",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThirtyeight.ttf",
+        "sha256": "8eccf9aa454c3a9b40e4e064fe1c0c2f536823bf27efd33ef13133a99ceed6c1",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThirtyeight.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-thirtyeight.json",
+        "sha256": "cd2afb8f53b0aac741bb9743ee8c0c778878f844532dc2380cbfaa090a271ed7",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-thirtyeight.json",
+        "sha256": "1eea16cd43c76db80d6bf49913aaae010ad27fed114466bd2b033c7eb1e57cea",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-thirtyfive",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThirtyfive.ttf",
+        "sha256": "2db3f388045d26f55eccf144f80b170a4891d2301c0089c81536f6298b25aa41",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThirtyfive.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-thirtyfive.json",
+        "sha256": "ea4071c6e2dd84195c0e51818f8bbeb7a8dc5ca025ef785756754f56675d9e85",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-thirtyfive.json",
+        "sha256": "3000cb1e9058f7d78f903ee33d0be79adc493429953eaa84fdf50a7c186da3ec",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-thirtynine",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThirtynine.ttf",
+        "sha256": "584008b90abb8effbd5e5c6160c25cfeecf459b272e59e09a5a7f1ef25317703",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThirtynine.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-thirtynine.json",
+        "sha256": "8123fc8e94f57b92f351767d8b8ddf2611774426fb272780fdc27a7c3089783f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-thirtynine.json",
+        "sha256": "6644d388c1d19a23ad5f6a39d03108e88f7428147fe102188c60df32c1adbfb3",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-thirtyone",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThirtyone.ttf",
+        "sha256": "2d4d73f07fde5a52bc877b017811c79b9367ac2a520a5a0b75e2e1522155395f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThirtyone.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-thirtyone.json",
+        "sha256": "a476a2f65435bfea878a9a4aa064419f5b7745a67eb923b863ed6625f8174cf8",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-thirtyone.json",
+        "sha256": "2954d308335d512ff4e9219b6b89e9a887f2eaf5616f688dc22959854261f5b5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-thirtyseven",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThirtyseven.ttf",
+        "sha256": "182fe99528152a40ddd60b9cbc61cd0cd06ba45de25846800790b63e599700de",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThirtyseven.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-thirtyseven.json",
+        "sha256": "6478cd9b0a9fabd9b755fa4c8c6c17fcee6832f8a9ffca6167b867b2fb4ea024",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-thirtyseven.json",
+        "sha256": "6deeeaaab46ab71832fb0396b0a3b61b4b7e44ec55adb698fac17800d29d5d3b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-thirtytwo",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThirtytwo.ttf",
+        "sha256": "412f2704de813098182b9ddbc68e78fcda9ef094395ee224c6596e677d54bceb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThirtytwo.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-thirtytwo.json",
+        "sha256": "caeea198a7f35fc209768240e5f4d1959dda0215b93d9ca018bbb208f454adb4",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-thirtytwo.json",
+        "sha256": "780ffe7622bfbfa0b8014c35fca0aa55af27e38149d18b310729fcb60d5d3c2a",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-three",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXThree.ttf",
+        "sha256": "cf4c559f65260f051f989a1ec204defa9260130db40c448a7c147385ef9063dc",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXThree.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-three.json",
+        "sha256": "e86bc86157317f8bd86bfd9ab1c14aacc1254f7490bd17d8bb57aad72cb1897c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-three.json",
+        "sha256": "b808c87f38dad675502b2670e94921c044217db280f65a5857b0d51710abc949",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twelve",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwelve.ttf",
+        "sha256": "7dfb9f5de3265b7ae6f7aef22992e465c5c378a6e6ec7622b82a2227adddcdfc",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwelve.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twelve.json",
+        "sha256": "26bdf989e07c37cf1db75ee41172deeb79b46f37ca415a9fd28378abaec3ee64",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twelve.json",
+        "sha256": "5a6c47d2fb74333c7a006d63d562e0069cb0d7d44159115cc8a7b531b6a3e80c",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twenty",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwenty.ttf",
+        "sha256": "2500e618d470c989063651e551ec64b341dc9103612b1adf02a009496887a55e",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwenty.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twenty.json",
+        "sha256": "6fafa2452fe56a1637a62f442742098fac9fa099eccbc156f8d0b53b470ff998",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twenty.json",
+        "sha256": "191ae6d8cd527d4589419e8bbaa8106575f25b857a94815aecc3078492da2429",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentyeight",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentyeight.ttf",
+        "sha256": "5c5be94b72de8831dfa911527cbdd7f508582ecc1b28a4f39c1f985caa6c354e",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentyeight.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentyeight.json",
+        "sha256": "bc42cbc0eb1a49575dc4cc1d124b364ea6784d690491d0051323fc2c44c78592",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentyeight.json",
+        "sha256": "a34d0b34e12db5331f7da14604bd3a582ed80743398ffb5cb49e06a1d2529d8a",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentyfive",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentyfive.ttf",
+        "sha256": "d1c7e85ed17328b2172e336dec89a4020efbe7a26bafa8ba35e787598795cffc",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentyfive.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentyfive.json",
+        "sha256": "36fe2c47fc322bd194b7a1b890f5c7d7f58efa1a3852120f1cb32f3645fcaa3e",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentyfive.json",
+        "sha256": "350f2c2ef17841c82e6bd5b27d5a5077cc0ec73a7137da67cb9b73399c7ef39f",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentynine",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentynine.ttf",
+        "sha256": "86bb0e21c4791d5c329955e73a62f234d9e2292e47125bdf6fc7233e2b8afad3",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentynine.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentynine.json",
+        "sha256": "35c12cc6899da82c8feb1f78c4e499169706dfdb41dfa05a7492f578fac964ba",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentynine.json",
+        "sha256": "2d63a8de780b36ed81092011121fb3973f3aa02422dae38ad3fe86ad04ea7bc6",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentyone",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentyone.ttf",
+        "sha256": "6973dab49f79952d3db0cf55608e860184f0625bcc3bf930bad95caedc499c24",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentyone.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentyone.json",
+        "sha256": "37e9ec72b9eaca8a754851e0c8c84953b868aa50f6e324c99950a6a98b2ba196",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentyone.json",
+        "sha256": "312191b4bb732411322b0e5625646b54536641580b94519dfc91df857d4b86a7",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentyseven",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentyseven.ttf",
+        "sha256": "a560f36e404b61d9f9bdfc61b889288133f1237cd75c1a5f0b4a05529b28477a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentyseven.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentyseven.json",
+        "sha256": "0b59d5e0a85962072abcb3f77fe66a0d490e6d6f04c419a4d116b09e11c3a75c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentyseven.json",
+        "sha256": "9d35c1a6ed31cf40ae2de981d634181e170233c7a2fc2c482e63c1cea374bd1d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentysix",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentysix.ttf",
+        "sha256": "588a06c3b0be4c6f22aabd9348bbc9565eb43437c1166b53ece61b54f5fe2feb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentysix.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentysix.json",
+        "sha256": "1ebf756439c50bdcc9341584c893330193382dfd8d631dbe4d3291864c85dcab",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentysix.json",
+        "sha256": "4a43079cfd1403be58e5da09fa3aaa2f3003afcd266e7572f25b26f2b2cc6e87",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentythree",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentythree.ttf",
+        "sha256": "2430018b47ea3651d6ad5d369a31db590943628d909c3059a376ece37a536e03",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentythree.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentythree.json",
+        "sha256": "7f198d2e21cd185abeec304dc0cb80d16b0a2edca2c53b4a3b6bc4c7e26d20ad",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentythree.json",
+        "sha256": "ac474d7d150c2b3dec8d659349bea4d6b15244e52d51ea87f0af49e1ddb73d21",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-twentytwo",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwentytwo.ttf",
+        "sha256": "adf000262c5da27dccb09d8b937347c1c8fe276b12c0462ef73836101f8519a9",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwentytwo.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-twentytwo.json",
+        "sha256": "0b8ae2521a1d039c05ec5f934bc78484c1e0555234d152027ca91ce70cd4fe92",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-twentytwo.json",
+        "sha256": "994ddf7bf3464bbce5084e7881ad73f0be5e90b79cc81f14aa695a4eead2f76c",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-morx-two",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestMORXTwo.ttf",
+        "sha256": "851cb67867657620e9be9850cc3260fc7ad7b671424e2da36469cc68c63e7cfc",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestMORXTwo.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=morx"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-morx-two.json",
+        "sha256": "9ec0bb27c18b725dd1c785621be58c8d2151f35342dff537412ab6cc78a93c89",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-morx-two.json",
+        "sha256": "3f8e36e5efd26d1478552fc924410217f79861ce3ab49b2b126372d27ad54819",
+        "role": "shaping-vectors"
       }
     },
     {

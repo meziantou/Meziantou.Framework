@@ -36,7 +36,23 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return ((JpegEncoder)options.Encoder).Process == JpegEncodingProcess.Lossless ? new JpegLosslessEncoderSession(options) : new Session(options);
+        var encoder = (JpegEncoder)options.Encoder;
+        if (encoder.GainMap is { } gainMap)
+        {
+            // Ultra HDR readers decode baseline JPEG images, and the Multi-Picture Format index describes a baseline primary image
+            if (encoder.Process == JpegEncodingProcess.Lossless || encoder.EntropyCoding != JpegEntropyCoding.Huffman || encoder.BitDepth is not (null or 8))
+                throw new ArgumentException("A JPEG gain map is only written with 8-bit Huffman-coded output: leave JpegEncoder.Process (baseline or progressive), JpegEncoder.EntropyCoding and JpegEncoder.BitDepth at their defaults, or remove the gain map.", nameof(options));
+
+            // The gain map image keeps the metadata policy of the encoder: its ICC profile describes the alternate rendition
+            return GainMapEncoderSession.Create(
+                options,
+                gainMap,
+                encoder.MetadataHandling,
+                static options => new Session(options),
+                (output, primary, gainMapFile) => JpegGainMapAssembler.Write(output, primary.Span, gainMapFile, gainMap.Metadata));
+        }
+
+        return encoder.Process == JpegEncodingProcess.Lossless ? new JpegLosslessEncoderSession(options) : new Session(options);
     }
 
     /// <summary>

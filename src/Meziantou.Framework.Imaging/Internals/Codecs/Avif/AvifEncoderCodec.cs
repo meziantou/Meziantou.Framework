@@ -38,6 +38,18 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             encoder.GridTileSize,
             encoder.AutoTiling);
 
+        if (encoder.GainMap is { } gainMap)
+        {
+            // The color description of the gain map image is the one of the alternate rendition, a property of the tone map item
+            var alternate = gainMap.Image.Metadata;
+            return GainMapEncoderSession.Create(
+                options,
+                gainMap,
+                MetadataHandling.Strip,
+                options => new HeifEncoderSession(options, AvifBinding.Instance, settings),
+                (output, primary, gainMapFile) => AvifGainMapAssembler.Write(output, primary.Span, gainMapFile, gainMap.Metadata, alternate.Cicp, alternate.IccProfile is { } icc ? icc.Data.Span : default));
+        }
+
         return new HeifEncoderSession(options, AvifBinding.Instance, settings);
     }
 }

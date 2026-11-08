@@ -10,7 +10,7 @@ description: What the library and the tool do not do, and how to work around it.
   that is not updatable. The exceptions are the Dockerfile `ARG` defaults and the Maven properties described in
   [Containers](05-SupportedFiles/04-Containers.md#dockerfiles) and
   [Other ecosystems](05-SupportedFiles/06-OtherEcosystems.md#java).
-- **Some formats are not scanned**, such as `pnpm-lock.yaml`, `yarn.lock`, `bun.lock` and npm lockfile version 1. See
+- **Some formats are not scanned**, such as the binary Bun lock file `bun.lockb`. See
   [JavaScript](05-SupportedFiles/03-JavaScript.md#lock-files). Use a [custom scanner](08-CustomScanners.md) for other
   formats.
 - **The library does not choose versions.** It writes the value it is given. The command-line tool chooses versions

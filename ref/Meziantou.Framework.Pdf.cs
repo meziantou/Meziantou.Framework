@@ -4,6 +4,11 @@
 
 namespace Meziantou.Framework.Pdf
 {
+    public interface IPdfHyphenator
+    {
+        int Hyphenate(System.ReadOnlySpan<char> word, System.Span<int> breakPositions);
+    }
+
     public sealed class InvalidPdfContentException : Meziantou.Framework.Pdf.PdfException
     {
         public InvalidPdfContentException(string? message) { }
@@ -191,6 +196,7 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfContentBuilder CurveToFromCurrentPoint(double x2, double y2, double x3, double y3) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder DrawForm(Meziantou.Framework.Pdf.PdfForm form) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder DrawImage(Meziantou.Framework.Pdf.PdfImage image, double x, double y, double width, double height) => throw null;
+        public Meziantou.Framework.Pdf.PdfTableDrawResult DrawTable(Meziantou.Framework.Pdf.PdfTable table, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfTableDrawResult? previous = null) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder DrawText(string text, Meziantou.Framework.Pdf.PdfFont font, double fontSize, double x, double y) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder DrawTextBox(string text, Meziantou.Framework.Pdf.PdfFont font, double fontSize, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfTextBoxOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder DrawTextBox(string text, Meziantou.Framework.Pdf.PdfFont font, double fontSize, Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfTextBoxOptions? options, out string remainingText) => throw null;
@@ -790,6 +796,13 @@ namespace Meziantou.Framework.Pdf
     {
     }
 
+    public sealed class PdfPatternHyphenator : Meziantou.Framework.Pdf.IPdfHyphenator
+    {
+        public Meziantou.Framework.Hyphenator Hyphenator { get => throw null; }
+        public PdfPatternHyphenator(Meziantou.Framework.Hyphenator hyphenator) { }
+        public int Hyphenate(System.ReadOnlySpan<char> word, System.Span<int> breakPositions) => throw null;
+    }
+
     [System.Flags]
     public enum PdfPermissions
     {
@@ -974,6 +987,84 @@ namespace Meziantou.Framework.Pdf
         public void MapRole(string type, string mappedType) { }
     }
 
+    public sealed class PdfTable
+    {
+        public Meziantou.Framework.Pdf.PdfColor BorderColor { get => throw null; set { } }
+        public double BorderWidth { get => throw null; set { } }
+        public double CellPadding { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Pdf.PdfTableColumn> Columns { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfFont Font { get => throw null; set { } }
+        public double FontSize { get => throw null; set { } }
+        public int HeaderRowCount { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.IPdfHyphenator? Hyphenator { get => throw null; set { } }
+        public double LineHeight { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Pdf.PdfTableRow> Rows { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfColor? TextColor { get => throw null; set { } }
+        public PdfTable(params System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfTableColumn> columns) { }
+        public Meziantou.Framework.Pdf.PdfTableRow AddHeaderRow(params System.ReadOnlySpan<string> cells) => throw null;
+        public Meziantou.Framework.Pdf.PdfTableRow AddRow(params System.ReadOnlySpan<string> cells) => throw null;
+        public double[] GetColumnWidths(double availableWidth) => throw null;
+    }
+
+    public sealed class PdfTableCell
+    {
+        public Meziantou.Framework.Pdf.PdfTextAlignment? Alignment { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfColor? Background { get => throw null; set { } }
+        public int ColumnSpan { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; set { } }
+        public double? FontSize { get => throw null; set { } }
+        public string Text { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfColor? TextColor { get => throw null; set { } }
+        public PdfTableCell(string text) { }
+    }
+
+    public sealed class PdfTableColumn
+    {
+        public Meziantou.Framework.Pdf.PdfTextAlignment Alignment { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfTableColumnWidth Width { get => throw null; set { } }
+        public PdfTableColumn(Meziantou.Framework.Pdf.PdfTableColumnWidth width, Meziantou.Framework.Pdf.PdfTextAlignment alignment = Meziantou.Framework.Pdf.PdfTextAlignment.Left) { }
+    }
+
+    public readonly struct PdfTableColumnWidth : System.IEquatable<Meziantou.Framework.Pdf.PdfTableColumnWidth>
+    {
+        public static Meziantou.Framework.Pdf.PdfTableColumnWidth Auto { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfTableColumnWidthType Type { get => throw null; }
+        public double Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.Pdf.PdfTableColumnWidth other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Pdf.PdfTableColumnWidth Fixed(double points) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Pdf.PdfTableColumnWidth Relative(double weight = 1d) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfTableColumnWidth left, Meziantou.Framework.Pdf.PdfTableColumnWidth right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfTableColumnWidth left, Meziantou.Framework.Pdf.PdfTableColumnWidth right) => throw null;
+    }
+
+    public enum PdfTableColumnWidthType
+    {
+        Auto = 0,
+        Fixed = 1,
+        Relative = 2,
+    }
+
+    public sealed class PdfTableDrawResult
+    {
+        public double Bottom { get => throw null; }
+        public bool IsComplete { get => throw null; }
+        public int RowCount { get => throw null; }
+    }
+
+    public sealed class PdfTableRow
+    {
+        public Meziantou.Framework.Pdf.PdfColor? Background { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Pdf.PdfTableCell> Cells { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; set { } }
+        public double? FontSize { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfColor? TextColor { get => throw null; set { } }
+        public PdfTableRow(params System.ReadOnlySpan<string> cells) { }
+        public Meziantou.Framework.Pdf.PdfTableCell AddCell(string text) => throw null;
+    }
+
     public enum PdfTextAlignment
     {
         Left = 0,
@@ -993,6 +1084,7 @@ namespace Meziantou.Framework.Pdf
     public sealed class PdfTextBoxOptions
     {
         public Meziantou.Framework.Pdf.PdfTextAlignment Alignment { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.IPdfHyphenator? Hyphenator { get => throw null; set { } }
         public double LineHeight { get => throw null; set { } }
     }
 

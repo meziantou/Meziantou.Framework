@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Geo</RootNamespace>
     <Version>1.0.1</Version>
-    <Description>Geographic features and geometries, geometry operations (repair, clip, simplify, union, intersection, difference), map projections, and readers and writers for GeoJSON, TopoJSON, WKT, WKB, KML, KMZ, GPX, Shapefile and FlatGeobuf, with no dependency outside .NET.</Description>
+    <Description>Geographic features and geometries, geometry operations (repair, clip, simplify, union, intersection, difference, distance, buffer, convex hull), map projections, and readers and writers for GeoJSON, TopoJSON, WKT, WKB, KML, KMZ, GPX, Shapefile and FlatGeobuf, with no dependency outside .NET.</Description>
     <PackageTags>geo;gis;geojson;topojson;wkt;wkb;kml;kmz;gpx;shapefile;flatgeobuf;map;projection;mercator;clip;simplify;make-valid</PackageTags>
 
     <!-- Every public member must be documented -->

@@ -1,6 +1,6 @@
 ---
 title: Limitations
-description: What the library does not do: some projections and datum grids, curved edges, buffers, per-point data and other formats.
+description: What the library does not do: some projections and datum grids, curved edges, per-point data and other formats.
 ---
 
 ## Coordinates
@@ -18,8 +18,6 @@ description: What the library does not do: some projections and datum grids, cur
   [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) and the
   [geometry operations](06-GeometryOperations.md) treat the edges as straight lines on an equirectangular map, not as
   great circles, and do not handle the shapes that cross the 180th meridian.
-- **No buffers.** The [geometry operations](06-GeometryOperations.md) repair, clip, simplify and combine polygons,
-  but do not compute buffers, distances between geometries or convex hulls.
 
 ## Data that the model does not keep
 

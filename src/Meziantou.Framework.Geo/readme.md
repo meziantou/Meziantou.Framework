@@ -1,8 +1,8 @@
 # Meziantou.Framework.Geo
 
 Reads and writes maps in GeoJSON, TopoJSON, Shapefile, KML, KMZ, GPX, WKT, WKB, encoded polylines and FlatGeobuf, with
-features, geometries, geometry operations (repair, clip, simplify, union, intersection, difference) and map projections.
-No dependency outside .NET.
+features, geometries, geometry operations (repair, clip, simplify, union, intersection, difference, distance, buffer,
+convex hull) and map projections. No dependency outside .NET.
 
 ## Usage
 

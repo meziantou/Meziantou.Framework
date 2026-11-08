@@ -40,6 +40,8 @@ public static class TdsEndpointRouteBuilderExtensions
     }
 
     /// <summary>Registers the built-in TDS query engine as the query callback.</summary>
+    [RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
     public static IEndpointRouteBuilder MapTdsQueryEngine(this IEndpointRouteBuilder endpoints, TdsQueryEngineOptions options)
     {
         ArgumentNullException.ThrowIfNull(endpoints);

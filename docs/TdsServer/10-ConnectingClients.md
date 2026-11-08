@@ -46,7 +46,7 @@ Assert.Equal("Reporting", context.ApplicationName);
 
 | Keyword | Use |
 | --- | --- |
-| `Server` / `Data Source` | `host,port`, with a comma. Without a port, the client uses 1433. Named instances (`host\name`) need the SQL Server Browser service, which the server does not provide. |
+| `Server` / `Data Source` | `host,port`, with a comma. Without a port, the client uses 1433. `host\instance` needs the [SQL Server Browser responder](#connect-with-an-instance-name). |
 | `User ID`, `Password` | Sent to the authentication handler ([UserName](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.UserName), `Password`). |
 | `Initial Catalog` / `Database` | Sent to the authentication handler (`Database`). The database the client sees after the login is the one the handler returns. |
 | `Application Name` | Sent to the authentication handler ([ApplicationName](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.ApplicationName)). |
@@ -58,6 +58,58 @@ Assert.Equal("Reporting", context.ApplicationName);
 
 Do not set an `Authentication` mode other than SQL Password: the server does not support Microsoft Entra ID
 authentication.
+
+## Connect with an instance name
+
+A client given an instance name (`host\instance`) instead of a port asks the SQL Server Browser service of the host for
+the port, on UDP port 1434. Call [EnableSqlServerBrowser](cref:Meziantou.Framework.Tds.TdsServerOptions.EnableSqlServerBrowser) to answer these requests with the port of the first TCP endpoint:
+
+<!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsServerProtocolTests.cs;region=TdsServer_SqlServerBrowser;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new TdsServerOptions();
+options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+options.EnableSqlServerBrowser("SALES"); // UDP port 1434, on 127.0.0.1
+
+using var server = new TdsServer(
+    options,
+    authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+    queryHandler: (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+await server.StartAsync();
+
+var connectionString = new SqlConnectionStringBuilder
+{
+    DataSource = @"127.0.0.1\SALES", // host\instance: the client asks the SQL Server Browser for the port
+    UserID = "app",
+    Password = "Password123!",
+    Encrypt = SqlConnectionEncryptOption.Optional,
+}.ConnectionString;
+
+await using var connection = new SqlConnection(connectionString);
+await connection.OpenAsync();
+```
+<!-- endref -->
+
+In an ASP.NET Core application, the responder starts and stops with the application:
+
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/Examples.cs;region=TdsServer_SqlServerBrowserHosted;format=md-fenced-code-block;dedent=true -->
+```csharp
+builder.AddTdsServer(options =>
+{
+    options.AddTcpListener(port: 14330, bindAddress: IPAddress.Any);
+    options.EnableSqlServerBrowser("SALES", bindAddress: IPAddress.Any); // UDP port 1434
+});
+```
+<!-- endref -->
+
+- The responder answers the requests for one instance name, without case sensitivity, and the requests that list the
+  instances of the host. It ignores the requests for the dedicated administrator connection (DAC).
+- Clients only send their requests to port 1434, and one program can listen on it per address. It fails to start when
+  the port is in use, for instance by the SQL Server Browser service of a local SQL Server.
+- Like the TCP endpoints, it binds to the loopback address by default. Pass `bindAddress` to answer the clients of
+  other machines.
+- For more settings (the server name, an existing [TdsSqlServerBrowserOptions](cref:Meziantou.Framework.Tds.TdsSqlServerBrowserOptions)), set
+  [SqlServerBrowser](cref:Meziantou.Framework.Tds.TdsServerOptions.SqlServerBrowser). With [TdsServer](cref:Meziantou.Framework.Tds.TdsServer), port `0` binds a free UDP port, which [SqlServerBrowserPort](cref:Meziantou.Framework.Tds.TdsServer.SqlServerBrowserPort)
+  returns, to test the protocol without the client.
 
 ## Run queries
 

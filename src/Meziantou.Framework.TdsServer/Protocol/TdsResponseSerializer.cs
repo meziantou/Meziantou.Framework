@@ -781,7 +781,9 @@ internal static class TdsResponseSerializer
             {
                 string text => text,
                 JsonNode jsonNode => jsonNode.ToJsonString(),
-                _ => JsonSerializer.Serialize(value),
+                JsonElement jsonElement => jsonElement.GetRawText(),
+                JsonDocument jsonDocument => jsonDocument.RootElement.GetRawText(),
+                _ => SerializeJsonWithReflection(value),
             },
             TdsColumnType.Decimal => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture).ToString(System.Globalization.CultureInfo.InvariantCulture),
             TdsColumnType.Money => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture).ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -791,6 +793,18 @@ internal static class TdsResponseSerializer
             TdsColumnType.Variant => value.ToString() ?? string.Empty,
             _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
         };
+    }
+
+    // Trimmed and Native AOT applications disable reflection-based serialization by default
+    // (JsonSerializerIsReflectionEnabledByDefault=false). The trimmer then removes the reflection call.
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Guarded by JsonSerializer.IsReflectionEnabledByDefault, which is false in trimmed applications")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Guarded by JsonSerializer.IsReflectionEnabledByDefault, which is false in Native AOT applications")]
+    private static string SerializeJsonWithReflection(object value)
+    {
+        if (!JsonSerializer.IsReflectionEnabledByDefault)
+            throw new InvalidOperationException($"Cannot serialize a value of type '{value.GetType()}' to JSON because reflection-based serialization is disabled. Return a string, a JsonNode, a JsonElement or a JsonDocument instead.");
+
+        return JsonSerializer.Serialize(value, value.GetType());
     }
 
     private static void WriteToken(BinaryWriter writer, byte token, MemoryStream bodyStream)

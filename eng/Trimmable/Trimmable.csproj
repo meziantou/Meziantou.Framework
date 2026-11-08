@@ -344,6 +344,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId.Interfaces\Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.SyntaxHighlighting\Meziantou.Framework.SyntaxHighlighting.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TaggedValues\Meziantou.Framework.TaggedValues.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TdsServer\Meziantou.Framework.TdsServer.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryContainers\Meziantou.Framework.TemporaryContainers.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj" />
@@ -701,6 +702,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.StronglyTypedId.Interfaces" />
     <TrimmerRootAssembly Include="Meziantou.Framework.SyntaxHighlighting" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TaggedValues" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.TdsServer" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryContainers" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryDirectory" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TextDiff" />

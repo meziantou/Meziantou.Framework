@@ -4,6 +4,8 @@ using Meziantou.Framework.Tds.Handler;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
+[RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
 internal static class TdsQueryResultBuilder
 {
     public static TdsQueryResult FromValue(object? value)

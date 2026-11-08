@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Tds
     public sealed class TdsServer : System.IDisposable
     {
         public System.Collections.Generic.IReadOnlyList<int> Ports { get => throw null; }
+        public int? SqlServerBrowserPort { get => throw null; }
         public TdsServer(Meziantou.Framework.Tds.TdsServerOptions? options, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler) { }
         public TdsServer(Meziantou.Framework.Tds.TdsServerOptions? options, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler, Microsoft.Extensions.Logging.ILogger? logger) { }
         public void Dispose() { }
@@ -22,11 +23,23 @@ namespace Meziantou.Framework.Tds
         public int MaxMessageSize { get => throw null; set { } }
         public int PacketSize { get => throw null; set { } }
         public bool RequireEncryption { get => throw null; set { } }
+        public Meziantou.Framework.Tds.TdsSqlServerBrowserOptions? SqlServerBrowser { get => throw null; set { } }
         public string? TlsPemCertificatePath { get => throw null; set { } }
         public string? TlsPemPrivateKeyPath { get => throw null; set { } }
         public string? TlsPfxPassword { get => throw null; set { } }
         public string? TlsPfxPath { get => throw null; set { } }
         public Meziantou.Framework.Tds.TdsServerOptions AddTcpListener(int port = 1433, System.Net.IPAddress? bindAddress = null) => throw null;
+        public Meziantou.Framework.Tds.TdsServerOptions EnableSqlServerBrowser(string instanceName, int port = 1434, System.Net.IPAddress? bindAddress = null) => throw null;
+    }
+
+    public sealed class TdsSqlServerBrowserOptions
+    {
+        public const string DefaultInstanceName = "MSSQLSERVER";
+        public const int DefaultPort = 1434;
+        public System.Net.IPAddress BindAddress { get => throw null; set { } }
+        public string InstanceName { get => throw null; set { } }
+        public int Port { get => throw null; set { } }
+        public string? ServerName { get => throw null; set { } }
     }
 
     public sealed class TdsTcpListenerOptions
@@ -207,6 +220,8 @@ namespace Meziantou.Framework.Tds.Hosting
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsAuthenticationHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate handler) => throw null;
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsBulkLoadHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsBulkLoadHandler handler) => throw null;
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsHandlers(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticate, Meziantou.Framework.Tds.Handler.TdsQueryDelegate query) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The query engine compiles LINQ expression trees and creates projection types and generic instantiations at run time.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The query engine translates SQL into LINQ expression trees and reads the members of the query roots and stored procedures with reflection.")]
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryEngine(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsQueryDelegate handler) => throw null;
     }
@@ -220,6 +235,8 @@ namespace Meziantou.Framework.Tds.QueryEngine
 {
     public static class TdsQueryEngine
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The query engine compiles LINQ expression trees and creates projection types and generic instantiations at run time.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The query engine translates SQL into LINQ expression trees and reads the members of the query roots and stored procedures with reflection.")]
         public static Meziantou.Framework.Tds.Handler.TdsQueryDelegate CreateQueryHandler(Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
     }
 

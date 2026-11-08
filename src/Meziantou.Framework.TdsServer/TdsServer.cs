@@ -14,6 +14,7 @@ public sealed class TdsServer : IDisposable
     private readonly TdsQueryDelegate _queryHandler;
     private readonly ILogger _logger;
     private readonly List<TcpListener> _listeners = [];
+    private TdsSqlServerBrowserResponder? _browserResponder;
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
@@ -45,6 +46,10 @@ public sealed class TdsServer : IDisposable
     /// <summary>Gets the ports currently bound by the server.</summary>
     public IReadOnlyList<int> Ports => _listeners.Select(listener => ((IPEndPoint)listener.LocalEndpoint).Port).ToArray();
 
+    /// <summary>Gets the UDP port bound by the SQL Server Browser responder, or <see langword="null"/> when it is not running.</summary>
+    /// <seealso cref="TdsServerOptions.SqlServerBrowser"/>
+    public int? SqlServerBrowserPort => _browserResponder?.Port;
+
     /// <summary>Starts the server.</summary>
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -67,6 +72,12 @@ public sealed class TdsServer : IDisposable
                 var listener = new TcpListener(listenerOption.BindAddress, listenerOption.Port);
                 listener.Start();
                 _listeners.Add(listener);
+            }
+
+            if (_options.SqlServerBrowser is { } browserOptions)
+            {
+                var tcpPort = Ports[0];
+                _browserResponder = TdsSqlServerBrowserResponder.Start(browserOptions, () => tcpPort, _logger);
             }
         }
         catch
@@ -108,6 +119,8 @@ public sealed class TdsServer : IDisposable
         }
 
         _listeners.Clear();
+        _browserResponder?.Dispose();
+        _browserResponder = null;
     }
 
     internal static void WarnWhenEncryptionIsUnavailable(TdsServerOptions options, ILogger logger)

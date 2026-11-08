@@ -115,9 +115,10 @@ public sealed class JpegDecoderConformanceTests
         Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("jpeg.sampling=4:2:0") && fixture.Entry.Expected!.Width % 2 == 1 && fixture.Entry.Expected.Height % 2 == 1);
         Assert.Contains(fixtures, fixture => fixture.Entry.Reference!.CrossChecks!.Any(check => check.Result == FixtureCrossCheck.Differs && check.Notes!.Contains("category 16", StringComparison.Ordinal)));
 
-        // The lossless process with arithmetic coding is the one that is still rejected
+        // No lossless process is rejected: the arithmetic-coded one (SOF11) is tested in JpegLosslessDecoderTests, with files
+        // of the test-side encoder that the ISO reference decoder reads back to their samples (InteropTests)
         var rejected = GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Unsupported).Select(GoldenCorpus.Default.Get).Where(fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.process=lossless", StringComparison.Ordinal))).ToList();
-        Assert.Equal("jpeg.process=lossless-arithmetic", Assert.Single(rejected).Entry.Features!.Single(feature => feature.StartsWith("jpeg.process=", StringComparison.Ordinal)));
+        Assert.Empty(rejected);
     }
 
     [Fact]

@@ -6,7 +6,8 @@ namespace Meziantou.Framework.Imaging.Tests.Codecs;
 /// A lossless JPEG test image (ITU-T T.81 Annex H) defined by the samples of its components, with an independent
 /// test-side encoder written from the specification, one sample at a time: the prediction of H.1.2.1 (the first line of a
 /// scan and of a restart interval, the first sample of the other lines, the seven predictors), the difference modulo 2^16
-/// and its Huffman coding (table H.2), the point transform, interleaved and non-interleaved scans with the samples that
+/// and its Huffman coding (table H.2) or its arithmetic coding (H.1.4.3, with <see cref="JpegTestArithmeticCoder"/>: the
+/// conditioning on the differences on the left and above of table H.3), the point transform, interleaved and non-interleaved scans with the samples that
 /// complete the MCUs, and restart intervals. The expected pixels are the samples themselves, upsampled and converted by
 /// the contract of the library transcribed in <see cref="JpegTestImage"/>, and scaled to 16 bits when the precision is
 /// not 8 bits. Nothing here uses the library decoder.
@@ -210,13 +211,28 @@ internal sealed class JpegLosslessTestImage
             frame.AddRange([component.Id, (byte)((component.Declared.H << 4) | component.Declared.V), 0]);
         }
 
-        output.AddRange(JpegTestImage.Segment(options.FrameMarker, [.. frame]));
+        output.AddRange(JpegTestImage.Segment(options.FrameMarker ?? (options.Arithmetic ? (byte)0xCB : (byte)0xC3), [.. frame]));
         var tableCount = options.TablePerComponent ? Components.Length : Math.Min(2, Components.Length);
         var tables = new HuffmanCode[tableCount];
         for (var t = 0; t < tableCount; t++)
         {
             tables[t] = HuffmanCode.Create(options.Huffman, options.HuffmanSeed + t);
-            output.AddRange(JpegTestImage.Segment(0xC4, tables[t].ToDefinition((byte)t)));
+            if (!options.Arithmetic)
+            {
+                output.AddRange(JpegTestImage.Segment(0xC4, tables[t].ToDefinition((byte)t)));
+            }
+        }
+
+        if (options.Conditioning is { } conditioning)
+        {
+            // DC conditioning tables: the lower bound in the low bits, the upper one in the high bits (T.81 B.2.4.3)
+            var dac = new List<byte>();
+            for (var t = 0; t < conditioning.Count; t++)
+            {
+                dac.AddRange([(byte)t, (byte)((conditioning[t].Upper << 4) | conditioning[t].Lower)]);
+            }
+
+            output.AddRange(JpegTestImage.Segment(0xCC, [.. dac]));
         }
 
         if (options.RestartInterval > 0 && options.RestartRows == 0)
@@ -246,7 +262,7 @@ internal sealed class JpegLosslessTestImage
 
             header.AddRange([(byte)scan.Predictor, (byte)options.UnusedScanParameters.End, (byte)((options.UnusedScanParameters.High << 4) | scan.PointTransform)]);
             output.AddRange(JpegTestImage.Segment(0xDA, [.. header]));
-            EncodeScan(output, scan, tables, tableCount, mcusX, mcusY, restartInterval, padding);
+            EncodeScan(output, scan, tables, tableCount, mcusX, mcusY, restartInterval, padding, options);
         }
 
         output.AddRange([0xFF, 0xD9]);
@@ -257,7 +273,7 @@ internal sealed class JpegLosslessTestImage
 
     /// <summary>Writes the entropy-coded data of one scan, one sample at a time (T.81 H.1.2).</summary>
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    private void EncodeScan(List<byte> output, JpegLosslessTestScan scan, HuffmanCode[] tables, int tableCount, int mcusX, int mcusY, int restartInterval, Random? padding)
+    private void EncodeScan(List<byte> output, JpegLosslessTestScan scan, HuffmanCode[] tables, int tableCount, int mcusX, int mcusY, int restartInterval, Random? padding, JpegLosslessTestOptions options)
     {
         var interleaved = scan.Components.Length > 1;
         var pointTransform = scan.PointTransform;
@@ -298,6 +314,7 @@ internal sealed class JpegLosslessTestImage
         }
 
         var codes = new List<(int Bits, int Length)>();
+        var arithmetic = options.Arithmetic ? new ArithmeticState(output, scan, planes, tableCount) : null;
         var firstLine = scan.Components.ToDictionary(index => index, _ => 0);
         var restartIndex = 0;
         for (var mcu = 0; mcu < mcusX * mcusY; mcu++)
@@ -307,14 +324,29 @@ internal sealed class JpegLosslessTestImage
             if (restartInterval > 0 && mcu > 0 && mcu % restartInterval == 0)
             {
                 // The prediction is reset: the line of this MCU is predicted like the first one of the scan
-                output.AddRange(JpegTestImage.PackBits(codes));
-                codes.Clear();
+                if (arithmetic is not null)
+                {
+                    arithmetic.Coder.Flush(options.DiscardFinalZeros);
+                }
+                else
+                {
+                    output.AddRange(JpegTestImage.PackBits(codes));
+                    codes.Clear();
+                }
+
                 output.AddRange([0xFF, (byte)(0xD0 + (restartIndex & 7))]);
                 restartIndex++;
+                arithmetic?.Restart();
                 foreach (var index in scan.Components)
                 {
                     firstLine[index] = my * planes[index].V;
                 }
+            }
+
+            if (mx == 0)
+            {
+                // A line of MCUs starts without a difference on its left
+                arithmetic?.StartMcuRow();
             }
 
             foreach (var index in scan.Components)
@@ -356,24 +388,40 @@ internal sealed class JpegLosslessTestImage
                             };
                         }
 
-                        WriteDifference(codes, table, values[(y * columns) + x] - prediction);
+                        if (arithmetic is not null)
+                        {
+                            arithmetic.WriteDifference(index, GetTable(index, tableCount), by, x, GetRepresentative(values[(y * columns) + x] - prediction), options.Conditioning);
+                        }
+                        else
+                        {
+                            WriteDifference(codes, table, values[(y * columns) + x] - prediction);
+                        }
                     }
                 }
             }
         }
 
-        output.AddRange(JpegTestImage.PackBits(codes));
+        if (arithmetic is not null)
+        {
+            arithmetic.Coder.Flush(options.DiscardFinalZeros);
+        }
+        else
+        {
+            output.AddRange(JpegTestImage.PackBits(codes));
+        }
+    }
+
+    /// <summary>The representative of a difference modulo 2^16 between -32767 and 32768.</summary>
+    private static int GetRepresentative(int difference)
+    {
+        var value = ((difference % 65536) + 65536) % 65536;
+        return value > 32768 ? value - 65536 : value;
     }
 
     /// <summary>Writes a difference modulo 2^16: its category, then the bits that select the value in the category (T.81 table H.2).</summary>
     private void WriteDifference(List<(int Bits, int Length)> codes, HuffmanCode table, int difference)
     {
-        // The representative of the difference modulo 2^16 between -32767 and 32768
-        var value = ((difference % 65536) + 65536) % 65536;
-        if (value > 32768)
-        {
-            value -= 65536;
-        }
+        var value = GetRepresentative(difference);
 
         if (value == 32768)
         {
@@ -394,6 +442,117 @@ internal sealed class JpegLosslessTestImage
         {
             // A negative difference is coded as the low bits of the difference minus one
             codes.Add(((value < 0 ? value - 1 : value) & ((1 << category) - 1), category));
+        }
+    }
+
+    /// <summary>
+    /// The arithmetic coding of the differences of a scan (T.81 H.1.4.3): one statistics area of 158 bins per conditioning
+    /// table (table H.3: four bins for each of the 25 pairs of classes of <c>Da</c> and <c>Db</c>, then the magnitude
+    /// categories and bits of a small and of a large <c>Db</c>), and the differences on the left and above of each sample.
+    /// </summary>
+    private sealed class ArithmeticState
+    {
+        private readonly List<byte> _output;
+        private readonly int[] _components;
+        private readonly Dictionary<int, int[]> _left = [];
+        private readonly Dictionary<int, int[]> _above = [];
+        private readonly (int State, int Mps)[][] _statistics;
+
+        public ArithmeticState(List<byte> output, JpegLosslessTestScan scan, Dictionary<int, (int[] Values, int Columns, int Lines, int H, int V)> planes, int tableCount)
+        {
+            _output = output;
+            _components = scan.Components;
+            foreach (var index in scan.Components)
+            {
+                _left[index] = new int[planes[index].V];
+                _above[index] = new int[planes[index].Columns];
+            }
+
+            _statistics = new (int, int)[tableCount][];
+            Restart();
+        }
+
+        public JpegTestArithmeticCoder Coder { get; private set; } = null!;
+
+        /// <summary>A new segment: new statistics, and no difference around the next sample.</summary>
+        public void Restart()
+        {
+            for (var t = 0; t < _statistics.Length; t++)
+            {
+                _statistics[t] = new (int, int)[158];
+            }
+
+            foreach (var index in _components)
+            {
+                Array.Clear(_left[index]);
+                Array.Clear(_above[index]);
+            }
+
+            Coder = new JpegTestArithmeticCoder(_output);
+        }
+
+        public void StartMcuRow()
+        {
+            foreach (var index in _components)
+            {
+                Array.Clear(_left[index]);
+            }
+        }
+
+        /// <summary>Codes a difference: zero or not, its sign, then its magnitude minus one as a category and its bits (figures F.20, F.23 and F.24).</summary>
+        public void WriteDifference(int component, int table, int line, int column, int difference, IReadOnlyList<(int Lower, int Upper)>? conditioning)
+        {
+            var (lower, upper) = conditioning is not null && table < conditioning.Count ? conditioning[table] : (0, 1);
+            var statistics = _statistics[table];
+            var left = _left[component][line];
+            var above = _above[component][column];
+            var context = 4 * ((5 * Classify(left, lower, upper)) + Classify(above, lower, upper));
+            if (difference == 0)
+            {
+                Coder.Code(ref statistics[context], 0);
+            }
+            else
+            {
+                Coder.Code(ref statistics[context], 1);
+                Coder.Code(ref statistics[context + 1], difference < 0 ? 1 : 0);
+                var size = Math.Abs(difference) - 1;
+                ref var magnitudeOne = ref statistics[context + 2 + (difference < 0 ? 1 : 0)];
+                if (size == 0)
+                {
+                    Coder.Code(ref magnitudeOne, 0);
+                }
+                else
+                {
+                    Coder.Code(ref magnitudeOne, 1);
+                    var bin = Math.Abs(above) > 1 << upper ? 129 : 100;
+                    var bound = 2;
+                    while (size >= bound)
+                    {
+                        Coder.Code(ref statistics[bin], 1);
+                        bound <<= 1;
+                        bin++;
+                    }
+
+                    Coder.Code(ref statistics[bin], 0);
+                    for (var bit = bound >> 2; bit != 0; bit >>= 1)
+                    {
+                        Coder.Code(ref statistics[bin + 14], (size & bit) != 0 ? 1 : 0);
+                    }
+                }
+            }
+
+            _left[component][line] = difference;
+            _above[component][column] = difference;
+        }
+
+        /// <summary>The class of a difference (T.81 F.1.4.4.1.2): zero, small positive or negative, large positive or negative.</summary>
+        private static int Classify(int difference, int lower, int upper)
+        {
+            var magnitude = Math.Abs(difference);
+            if (magnitude <= (1 << lower) >> 1)
+                return 0;
+
+            return (magnitude > 1 << upper ? 3 : 1) + (difference < 0 ? 1 : 0);
         }
     }
 

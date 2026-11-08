@@ -58,10 +58,21 @@ public sealed class IsoJpegTool
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The decoded image, at the precision of the file (a maximum value of 255 or 4095).</returns>
     /// <exception cref="InvalidOperationException">The tool rejected the file.</exception>
-    public async Task<ReferencePnm> DecodeAsync(FullPath inputPath, CancellationToken cancellationToken)
+    public Task<ReferencePnm> DecodeAsync(FullPath inputPath, CancellationToken cancellationToken) => DecodeAsync(inputPath, [], cancellationToken);
+
+    /// <summary>Decodes a JPEG or JPEG-LS file to a Netpbm file with the specified options.</summary>
+    /// <param name="inputPath">The JPEG or JPEG-LS file.</param>
+    /// <param name="arguments">
+    /// The options, for example <c>-c</c>: three components are then the stored samples, which the tool otherwise converts
+    /// from YCbCr when the file does not say they are RGB.
+    /// </param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The decoded image, at the precision of the file.</returns>
+    /// <exception cref="InvalidOperationException">The tool rejected the file.</exception>
+    public async Task<ReferencePnm> DecodeAsync(FullPath inputPath, IEnumerable<string> arguments, CancellationToken cancellationToken)
     {
         var output = inputPath + ".isojpeg.pnm";
-        await ConvertAsync([inputPath, output], output, cancellationToken).ConfigureAwait(false);
+        await ConvertAsync([.. arguments, inputPath, output], output, cancellationToken).ConfigureAwait(false);
         return ReferencePnm.Parse(await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false));
     }
 

@@ -8,8 +8,9 @@ using Meziantou.Framework.Imaging.Tests.Codecs;
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
-/// Lossless JPEG decoding (ITU-T T.81 Annex H, SOF3) on synthetic inputs encoded by the independent test-side encoder
-/// (<see cref="JpegLosslessTestImage"/>): every predictor at every precision from 2 to 16 bits, the point transform,
+/// Lossless JPEG decoding (ITU-T T.81 Annex H, SOF3 and SOF11) on synthetic inputs encoded by the independent test-side
+/// encoder (<see cref="JpegLosslessTestImage"/>), with Huffman and arithmetic coding: every predictor at every precision
+/// from 2 to 16 bits, the point transform,
 /// restart intervals, interleaved and non-interleaved scans with subsampled components, Huffman tables with long codes,
 /// compared exactly with the samples given to the encoder (upsampled and converted by the documented contract); plus a
 /// datastream written by hand, the differences that need the modulo 2^16, scan and entropy defects, truncation, input
@@ -85,6 +86,9 @@ public sealed class JpegLosslessDecoderTests
                     ("fixed tables", new JpegLosslessTestOptions { Predictor = predictor }),
                     ("long codes, restart every line", new JpegLosslessTestOptions { Predictor = predictor, Huffman = JpegTestHuffmanStyle.Skewed, RestartRows = 1 }),
                     ("restart every 3 lines, a table per component", new JpegLosslessTestOptions { Predictor = predictor, Huffman = JpegTestHuffmanStyle.Skewed, HuffmanSeed = 9, RestartRows = 3, TablePerComponent = true }),
+                    ("arithmetic coding", new JpegLosslessTestOptions { Predictor = predictor, Arithmetic = true }),
+                    ("arithmetic coding, conditioning L = 2, U = 5 then L = 1, U = 15, restart every 2 lines, final zeros omitted", new JpegLosslessTestOptions { Predictor = predictor, Arithmetic = true, Conditioning = [(2, 5), (1, 15)], RestartRows = 2, DiscardFinalZeros = true, TablePerComponent = true }),
+                    ("arithmetic coding, conditioning L = U = 0", new JpegLosslessTestOptions { Predictor = predictor, Arithmetic = true, Conditioning = [(0, 0), (0, 0)] }),
                 };
 
                 foreach (var (name, options) in encodings)
@@ -122,6 +126,8 @@ public sealed class JpegLosslessDecoderTests
             ("interleaved, predictor 7, restart every 2 MCU rows", new JpegLosslessTestOptions { Predictor = 7, RestartRows = 2, PaddingSeed = 3 }),
             ("one scan per component (reversed), a predictor each", new JpegLosslessTestOptions { Scans = [.. all.Reverse().Select(index => new JpegLosslessTestScan([index], 2 + index))], RestartRows = 2 }),
             ("first component alone then the others interleaved", new JpegLosslessTestOptions { Scans = sampling.Length == 3 ? [new([0], 5), new([1, 2], 6)] : [new([0], 5)], Huffman = JpegTestHuffmanStyle.Skewed, PaddingSeed = 4 }),
+            ("arithmetic, interleaved, predictor 6, restart every MCU row", new JpegLosslessTestOptions { Arithmetic = true, Predictor = 6, RestartRows = 1, PaddingSeed = 5, Conditioning = [(1, 3)] }),
+            ("arithmetic, one scan per component, a table each", new JpegLosslessTestOptions { Arithmetic = true, Scans = [.. all.Select(index => new JpegLosslessTestScan([index], 7 - index))], TablePerComponent = true, Conditioning = [(0, 2), (3, 4), (1, 1)] }),
         };
 
         foreach (var (name, options) in encodings)
@@ -179,6 +185,8 @@ public sealed class JpegLosslessDecoderTests
             var image = JpegLosslessTestImage.CreateRandom(11, 8, Layouts["4:4:4"], precision, seed: precision + pointTransform + predictor, rgb: true, pointTransform: pointTransform);
             using var decoded = Image.Load(image.Encode(new JpegLosslessTestOptions { Predictor = predictor, PointTransform = pointTransform, RestartRows = 3 }));
             AssertPixels(image.GetExpectedPixels(), decoded, $"{precision} bits, point transform {pointTransform}, predictor {predictor}");
+            using var arithmetic = Image.Load(image.Encode(new JpegLosslessTestOptions { Predictor = predictor, PointTransform = pointTransform, RestartRows = 3, Arithmetic = true }));
+            AssertPixels(image.GetExpectedPixels(), arithmetic, $"{precision} bits, point transform {pointTransform}, predictor {predictor}, arithmetic coding");
         }
 
         // Each scan has its own point transform
@@ -201,6 +209,10 @@ public sealed class JpegLosslessDecoderTests
             using var decoded = Image.Load(data);
             Assert.Equal(PixelFormat.Gray16, decoded.PixelFormat);
             Assert.Equal(samples, unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(decoded).AsSpan())).ToArray());
+
+            // Arithmetic coding: the difference 32,768 is the largest magnitude of the last category
+            using var arithmetic = Image.Load(image.Encode(new JpegLosslessTestOptions { Predictor = predictor, Arithmetic = true }));
+            Assert.Equal(samples, unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(arithmetic).AsSpan())).ToArray());
         }
     }
 
@@ -293,13 +305,20 @@ public sealed class JpegLosslessDecoderTests
             Assert.Throws<InvalidImageContentException>(() => Image.Load(invalid));
         }
 
-        // The lossless process with arithmetic coding (SOF11) is recognized and not decoded
-        var arithmetic = image.Encode(new JpegLosslessTestOptions { FrameMarker = 0xCB });
-        foreach (var action in new Action[] { () => Image.Identify(arithmetic), () => Image.Load(arithmetic) })
+        // The lossless process with arithmetic coding (SOF11) has the same precisions
+        var arithmetic = image.Encode(new JpegLosslessTestOptions { Arithmetic = true });
+        var arithmeticFrame = FindSegment(arithmetic, 0xCB);
+        foreach (var precision in new[] { 1, 17 })
         {
-            var exception = Assert.Throws<UnsupportedImageFeatureException>(action);
-            Assert.Equal("JPEG lossless with arithmetic coding", exception.Feature);
-            Assert.Equal(ImageFormat.Jpeg, exception.Format);
+            var invalid = arithmetic.ToArray();
+            invalid[arithmeticFrame + 4] = (byte)precision;
+            Assert.Contains("between 2 and 16", Assert.Throws<InvalidImageContentException>(() => Image.Identify(invalid)).Message, StringComparison.Ordinal);
+        }
+
+        Assert.Equal(8, Image.Identify(arithmetic).BitsPerComponent);
+        using (var decodedArithmetic = Image.Load(arithmetic))
+        {
+            AssertPixels(image.GetExpectedPixels(), decodedArithmetic, "arithmetic coding");
         }
 
         // A lossless frame uses no quantization table: a file without one is decoded, and its selectors are not looked up

@@ -97,7 +97,6 @@ public sealed class JpegIdentifyTests
     [Theory]
     [InlineData((byte)0xC5, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC7, 3, 8, "JPEG hierarchical")]
-    [InlineData((byte)0xCB, 3, 8, "JPEG lossless with arithmetic coding")]
     [InlineData((byte)0xCD, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xCF, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC1, 3, 10, "JPEG 10-bit precision")]

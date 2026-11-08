@@ -31,8 +31,23 @@ internal sealed class JpegLosslessTestOptions
     /// </summary>
     public int? PaddingSeed { get; init; }
 
-    /// <summary>Gets the frame marker: 0xC3 (lossless, Huffman coding) unless a test needs another one.</summary>
-    public byte FrameMarker { get; init; } = 0xC3;
+    /// <summary>
+    /// Gets the frame marker: 0xC3 (lossless, Huffman coding), or 0xCB (lossless, arithmetic coding) when
+    /// <see cref="Arithmetic"/> is set, unless a test needs another one.
+    /// </summary>
+    public byte? FrameMarker { get; init; }
+
+    /// <summary>Gets a value indicating whether the differences are arithmetic coded (T.81 H.1.4.3, SOF11) instead of Huffman coded.</summary>
+    public bool Arithmetic { get; init; }
+
+    /// <summary>
+    /// Gets the bounds <c>L</c> and <c>U</c> of the DC conditioning table of each table identifier, written in a DAC
+    /// segment; <see langword="null"/> writes no segment, and the decoder uses the defaults <c>L = 0</c> and <c>U = 1</c>.
+    /// </summary>
+    public IReadOnlyList<(int Lower, int Upper)>? Conditioning { get; init; }
+
+    /// <summary>Gets a value indicating whether the zero bytes at the end of each arithmetic-coded segment are omitted.</summary>
+    public bool DiscardFinalZeros { get; init; }
 
     /// <summary>Gets the values of the scan parameters that have no meaning in a lossless scan and shall be zero: <c>Se</c> and <c>Ah</c>.</summary>
     public (int End, int High) UnusedScanParameters { get; init; }

@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.Tests.Codecs;
 using Meziantou.Framework.Imaging.TestHarness.Pnm;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
@@ -156,9 +157,68 @@ public sealed class JpegDecoderDifferentialTests
         }
     }
 
+    public static TheoryData<int, bool> ArithmeticLosslessCases
+    {
+        get
+        {
+            var data = new TheoryData<int, bool>();
+            foreach (var precision in new[] { 8, 10, 12, 16 })
+            {
+                data.Add(precision, false);
+                data.Add(precision, true);
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// The lossless process with arithmetic coding (SOF11): no tool at hand writes it (the encoder of the reference codec
+    /// fails on lossless frames), so the files are written by the test-side encoder (<see cref="JpegLosslessTestImage"/>),
+    /// and the reference decoder must read them back to the samples given to that encoder, like the library. The point
+    /// transform is left out: the reference decoder predicts the first sample of a scan with <c>2^(P - 1)</c> instead of
+    /// <c>2^(P - Pt - 1)</c> (T.81 H.1.2.1), which libjpeg-turbo and the library use.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ArithmeticLosslessCases))]
+    public async Task ArithmeticLosslessFilesDecodeToTheirSamplesInTheReferenceDecoder(int precision, bool rgb)
+    {
+        var isoJpeg = await RequiredTools.IsoJpegAsync();
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(ArithmeticLosslessFilesDecodeToTheirSamplesInTheReferenceDecoder));
+        var maxValue = (1 << precision) - 1;
+        (int H, int V)[] sampling = rgb ? [(1, 1), (1, 1), (1, 1)] : [(1, 1)];
+        var image = JpegLosslessTestImage.CreateRandom(29, 13, sampling, precision, seed: precision * (rgb ? 3 : 1), rgb);
+        var stored = image.GetStoredSamples();
+        var expected = rgb ? stored : [.. stored.SelectMany(sample => new[] { sample, sample, sample })];
+        int[] all = [.. Enumerable.Range(0, sampling.Length)];
+        var encodings = new (string Name, JpegLosslessTestOptions Options)[]
+        {
+            ("p1", new JpegLosslessTestOptions { Arithmetic = true }),
+            ("p4-restart", new JpegLosslessTestOptions { Arithmetic = true, Predictor = 4, RestartRows = 2 }),
+            ("p5-conditioning", new JpegLosslessTestOptions { Arithmetic = true, Predictor = 5, Conditioning = [(2, 5), (0, 0)], TablePerComponent = true }),
+            ("p6-zeros-omitted", new JpegLosslessTestOptions { Arithmetic = true, Predictor = 6, RestartRows = 1, DiscardFinalZeros = true, Conditioning = [(1, 15), (3, 3)] }),
+            ("p7-separate-scans", new JpegLosslessTestOptions { Arithmetic = true, Scans = [.. all.Select(index => new JpegLosslessTestScan([index], 7 - (2 * index)))] }),
+        };
+
+        foreach (var (name, options) in encodings)
+        {
+            var path = directory / string.Create(CultureInfo.InvariantCulture, $"sof11-{precision}-{(rgb ? "rgb" : "gray")}-{name}.jpg");
+            var data = image.Encode(options);
+            await File.WriteAllBytesAsync(path, data, XunitCancellationToken);
+            Assert.Equal(0xCB, data[FindFrameHeader(data) + 1]);
+
+            // Without -c, the reference decoder converts three components from YCbCr: they are RGB samples here
+            var reference = await isoJpeg.DecodeAsync(path, ["-c"], XunitCancellationToken);
+            Assert.Equal((29, 13, maxValue), (reference.Width, reference.Height, reference.MaxValue));
+            Assert.Equal(expected, GetSamples(reference, maxValue));
+
+            using var decoded = Image.Load(data);
+            Assert.Equal(expected, GetSamples(decoded, maxValue));
+        }
+    }
+
     [Theory]
     [InlineData("-n", "JPEG DNL height")]
-    [InlineData("-y 2 -h", "JPEG hierarchical")]
     public async Task ProcessesTheLibraryDoesNotReadAreRejected(string options, string feature)
     {
         var isoJpeg = await RequiredTools.IsoJpegAsync();

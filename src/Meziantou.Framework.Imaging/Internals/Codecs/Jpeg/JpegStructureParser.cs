@@ -16,11 +16,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </list>
 /// Supported: baseline (SOF0), extended sequential (SOF1, or SOF9 with arithmetic coding) and progressive (SOF2, or
 /// SOF10 with arithmetic coding) frames of 8-bit or
-/// 12-bit samples, and lossless frames (SOF3, Huffman coded) of 2-bit to 16-bit samples, with 1, 3 or 4 components (a
+/// 12-bit samples, and lossless frames (SOF3, or SOF11 with arithmetic coding) of 2-bit to 16-bit samples, with 1, 3 or 4 components (a
 /// 4-component frame is CMYK or YCCK: it is identified here, and decoded only
 /// with a color conversion, see <see cref="JpegDecoder"/>). A baseline frame only has 8-bit samples by definition; a
 /// 12-bit one is read as an extended sequential frame, as common decoders do. Recognized and rejected with
-/// <see cref="UnsupportedImageFeatureException"/>: arithmetic-coded lossless frames (SOF11), hierarchical (SOF5-7, SOF13-15, DHP, EXP),
+/// <see cref="UnsupportedImageFeatureException"/>: hierarchical (SOF5-7, SOF13-15, DHP, EXP),
 /// JPEG-LS, other precisions than 8 and 12 bits of the frames that are not lossless, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
 /// Malformed or misplaced markers and segments, a missing frame header or scan, interleaved scans of more than 10 blocks
 /// per MCU, progressive scans with invalid spectral selection, successive approximation or coefficient progression (see
@@ -113,21 +113,22 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     }
 
     /// <summary>
-    /// Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive, 0xC3 lossless, 0xC9 and
-    /// 0xCA the extended sequential and progressive ones with arithmetic coding), or 0 before the frame header.
+    /// Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive, 0xC3 lossless, 0xC9,
+    /// 0xCA and 0xCB the extended sequential, progressive and lossless ones with arithmetic coding), or 0 before the frame
+    /// header.
     /// </summary>
     public byte FrameMarker { get; private set; }
 
     public bool IsProgressive => FrameMarker is MarkerSof2 or MarkerSof10;
 
     /// <summary>Gets a value indicating whether the scans are arithmetic coded rather than Huffman coded.</summary>
-    public bool IsArithmetic => FrameMarker is MarkerSof9 or MarkerSof10;
+    public bool IsArithmetic => FrameMarker is MarkerSof9 or MarkerSof10 or MarkerSof11;
 
     /// <summary>
     /// Gets a value indicating whether the frame is lossless (T.81 Annex H): its scans code the samples themselves, from
     /// their prediction, instead of the coefficients of their transform.
     /// </summary>
-    public bool IsLossless => FrameMarker == MarkerSof3;
+    public bool IsLossless => FrameMarker is MarkerSof3 or MarkerSof11;
 
     /// <summary>Gets the number of bits of a sample (8 or 12, or 2 to 16 for a lossless frame), or 0 before the frame header.</summary>
     public int Precision { get; private set; }
@@ -439,11 +440,9 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             case MarkerSof3:
             case MarkerSof9:
             case MarkerSof10:
+            case MarkerSof11:
                 ProcessFrameHeader(marker, payload);
                 break;
-
-            case MarkerSof11:
-                throw Unsupported("Lossless JPEG with arithmetic coding (SOF11) is not supported.", "JPEG lossless with arithmetic coding");
 
             case 0xC5 or 0xC6 or 0xC7 or 0xCD or 0xCE or 0xCF or MarkerDhp or MarkerExp:
                 throw Unsupported("Hierarchical JPEG is not supported.", "JPEG hierarchical");
@@ -553,7 +552,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (width == 0)
             throw Invalid("The JPEG frame width is zero.");
 
-        if (marker == MarkerSof3)
+        if (marker is MarkerSof3 or MarkerSof11)
         {
             if (precision is < 2 or > 16)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The precision of the lossless JPEG frame is {precision} bits; it must be between 2 and 16."));

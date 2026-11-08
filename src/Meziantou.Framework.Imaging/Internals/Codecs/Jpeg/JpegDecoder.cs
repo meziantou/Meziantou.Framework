@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The JPEG pixel decoder plugged into the <see cref="JpegStructureParser"/> marker walk, shared by eager loads
 /// and sequential readers: sequential frames (baseline SOF0 and extended
 /// sequential SOF1) and progressive frames (SOF2), of 8-bit or 12-bit samples, Huffman coded or arithmetic coded (SOF9
-/// and SOF10), and lossless frames (SOF3, Huffman coded) of 2-bit to 16-bit samples. The walker validates the container (markers, segment lengths,
+/// and SOF10), and lossless frames (SOF3, or SOF11 with arithmetic coding) of 2-bit to 16-bit samples. The walker validates the container (markers, segment lengths,
 /// frame and scan headers, progressive scan parameters and coefficient progression, unsupported modes, metadata, limits);
 /// this observer parses the tables, decodes every scan and writes the rows through the frame sink.
 /// </summary>
@@ -536,7 +536,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     /// <param name="selectors">The table selectors of each component: the DC table in the high bits, the AC table in the low bits.</param>
     /// <param name="dc">Whether the scan codes DC differences.</param>
     /// <param name="ac">Whether the scan codes AC coefficients.</param>
-    private JpegArithmeticConditioning[] CreateArithmeticConditioning(ReadOnlySpan<byte> selectors, bool dc, bool ac)
+    /// <param name="dcBinCount">The number of bins of a DC statistics area: more for the differences of a lossless frame.</param>
+    private JpegArithmeticConditioning[] CreateArithmeticConditioning(ReadOnlySpan<byte> selectors, bool dc, bool ac, int dcBinCount = JpegArithmeticConditioning.DcBinCount)
     {
         var dcStatistics = new byte[]?[4];
         var acStatistics = new byte[]?[4];
@@ -551,7 +552,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             // The selector of a table the scan does not use has no meaning
             var (lower, upper) = dc ? _dcConditioning[dcId] : default;
             result[i] = new JpegArithmeticConditioning(
-                dc ? dcStatistics[dcId] ??= new byte[JpegArithmeticConditioning.DcBinCount] : [],
+                dc ? dcStatistics[dcId] ??= new byte[dcBinCount] : [],
                 ac ? acStatistics[acId] ??= new byte[JpegArithmeticConditioning.AcBinCount] : [],
                 lower,
                 upper,
@@ -652,12 +653,30 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         var count = payload[0];
         var parameters = payload[(1 + (2 * count))..];
         var scanComponents = new JpegScanDecoder.ScanComponent[count];
+        JpegArithmeticConditioning[]? conditioning = null;
+        if (_arithmetic)
+        {
+            Span<byte> selectors = stackalloc byte[count];
+            for (var i = 0; i < count; i++)
+            {
+                selectors[i] = payload[2 + (2 * i)];
+            }
+
+            conditioning = CreateArithmeticConditioning(selectors, dc: true, ac: false, JpegArithmeticConditioning.LosslessBinCount);
+        }
+
         for (var i = 0; i < count; i++)
         {
             var id = payload[1 + (2 * i)];
             var component = _components.First(component => component.Id == id);
             if (component.IsDecoded)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} is coded in several lossless scans."));
+
+            if (conditioning is not null)
+            {
+                scanComponents[i] = new JpegScanDecoder.ScanComponent(component, dcTable: null, acTable: null, quantization: []) { Arithmetic = conditioning[i] };
+                continue;
+            }
 
             var dcId = payload[2 + (2 * i)] >> 4;
             if (dcId > 3)
@@ -679,7 +698,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scanCount++;
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
-        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient };
+        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, _arithmetic) { AcceptsGarbledRestartNumbers = IsLenient };
     }
 
     /// <summary>

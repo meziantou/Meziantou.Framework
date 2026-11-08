@@ -24,6 +24,17 @@ internal static class LoadingExamples
     }
     #endregion
 
+    /// <summary>Decodes a viewport of a large image without decoding the rest of it.</summary>
+    #region Imaging_DecodeRegion
+    public static Image LoadViewport(string path, Rectangle viewport)
+    {
+        // The area is in pixels of the stored image, before its orientation. A tiled TIFF page reads only the tiles the
+        // area meets, an AVIF or HEIC grid decodes only the tiles it needs, and the pixels are those of a full decode.
+        // Other formats throw UnsupportedImageFeatureException
+        return Image.Load(path, new ImageDecodeOptions { Region = viewport });
+    }
+    #endregion
+
     /// <summary>An asynchronous load from a stream, for example the body of an HTTP request.</summary>
     #region Imaging_LoadAsync
     public static async Task<Image> LoadUploadAsync(Stream upload, CancellationToken cancellationToken)

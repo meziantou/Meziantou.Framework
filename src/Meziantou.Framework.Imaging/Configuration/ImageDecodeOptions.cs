@@ -137,6 +137,12 @@ public sealed class ImageDecodeOptions
     /// the reduced image keeps the pixel that covers it.
     /// </para>
     /// <para>
+    /// A TIFF page reads and decompresses only the strips or the tiles that the area meets, and an AVIF or HEIC grid decodes
+    /// only the tiles that the area needs (an AVIF or HEIC image that is not a grid is decoded whole, and only the area is
+    /// kept). The pixels are those of a full decode in that area. The blocks and the tiles that are not decoded are not
+    /// validated: an error in them is not reported.
+    /// </para>
+    /// <para>
     /// The other formats cannot decode an area: a load with a region is an <see cref="UnsupportedImageFeatureException"/>, and
     /// so is an area that does not meet the image.
     /// </para>

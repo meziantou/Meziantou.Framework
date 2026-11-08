@@ -108,6 +108,8 @@ Write expressions the provider can translate: Entity Framework Core cannot trans
   several columns. Without it, free text matches nothing.
 - [SetUnhandledPropertyHandler](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.SetUnhandledPropertyHandler) receives the key, the operator and the value of a term whose key has no handler. Return
   an expression, or `null` to search the term as free text, which is also what happens without this handler.
+- Without [SetUnhandledPropertyHandler](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.SetUnhandledPropertyHandler), a key without a handler is reported in [Diagnostics](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery{T}.Diagnostics); see
+  [Malformed queries](03-QuerySyntax.md#malformed-queries).
 
 ## The predicate
 

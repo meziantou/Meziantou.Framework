@@ -127,6 +127,7 @@ public partial class QuerySyntax
             var start = position;
             position++; // skip initial quote
             var sb = new StringBuilder();
+            var isTerminated = false;
 
             while (position < text.Length)
             {
@@ -140,7 +141,10 @@ public partial class QuerySyntax
                     position++;
 
                     if (l != '"')
+                    {
+                        isTerminated = true;
                         break;
+                    }
                 }
 
                 sb.Append(c);
@@ -150,7 +154,7 @@ public partial class QuerySyntax
             var length = position - start;
             var span = new TextSpan(start, length);
             var value = sb.ToString();
-            return new QueryToken(QuerySyntaxKind.QuotedTextToken, text, span, value);
+            return new QueryToken(QuerySyntaxKind.QuotedTextToken, text, span, value) { IsUnterminated = !isTerminated };
         }
 
         private static QueryToken ReadText(ref int position, string text)

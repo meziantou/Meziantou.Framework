@@ -8,8 +8,6 @@ description: What the library does not do, so you can plan around it.
 - **Filtering only.** A query does not sort, page or select fields: `sort:date` is a key like any other, with the
   handler you give it.
 - **One syntax.** The operators, keywords and date keywords are fixed, and in English.
-- **No syntax errors to report.** A malformed query is read as text, so there is no error position to show the user;
-  see [Malformed queries](03-QuerySyntax.md#malformed-queries).
 - **Size limits.** Deeply nested queries, and queries whose `OR` groups expand too much, throw a
   [QueryTooComplexException](cref:Meziantou.Framework.SimpleQueryLanguage.QueryTooComplexException); see [Queries from users](04-InMemoryQueries.md#queries-from-users).
 - **Dates in UTC.** Date keywords and relative dates use UTC days; there is no time zone option.

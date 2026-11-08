@@ -4,7 +4,8 @@ description: Parse HTML from strings, bytes and streams with the right encoding,
 ---
 
 [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) implements the parsing algorithm of the HTML Standard: it builds the same tree as a browser for any
-input, valid or not. It never throws on invalid markup.
+input, valid or not. It never throws on invalid markup, but it can throw when the markup exceeds the
+[MaxElementCount](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.MaxElementCount) you set (see [Limit the number of elements](#limit-the-number-of-elements)).
 
 ## Parse a string
 
@@ -83,6 +84,28 @@ Assert.Equal("Café", link.TextContent);
 | [ScriptingEnabled](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.ScriptingEnabled) | false | Parses `<noscript>` as a browser with scripting enabled does (as text). Scripts never run in a parsed document |
 | [AllowDeclarativeShadowRoots](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.AllowDeclarativeShadowRoots) | true | `<template shadowrootmode>` creates a shadow root |
 | [CustomElementRegistry](cref:Meziantou.Framework.WebPlatform.Dom.CustomElementRegistry) | none | The registry that defines the custom elements the parser creates |
+| [MaxElementCount](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.MaxElementCount) | none | The maximum number of elements the parser creates (see below) |
+
+## Limit the number of elements
+
+The number of elements of a document is not bounded by the length of its markup: as a browser, the parser recreates the
+open formatting elements (`b`, `i`, `a`, ...) in each new paragraph, so a few kilobytes of markup can create millions of
+elements. When the markup comes from an untrusted source, set [MaxElementCount](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.MaxElementCount): the parser throws an
+[HtmlParserLimitExceededException](cref:Meziantou.Framework.WebPlatform.HtmlParserLimitExceededException) as soon as it would create more elements. The limit applies to
+`Parse`, `ParseAsync` and `ParseFragment`; the root `html` element of a document is not counted.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/ParseErrorTests.cs;region=WebPlatform_MaxElementCount;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new HtmlParserOptions { MaxElementCount = 1_000 };
+
+// Each paragraph recreates the open formatting elements: 100 x 100 elements from about 1,600 characters
+var html = "<p>" + string.Concat(Enumerable.Range(0, 100).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 100));
+Assert.Throws<HtmlParserLimitExceededException>(() => HtmlDocumentParser.ParseDocument(html, options));
+
+var body = HtmlDocumentParser.ParseDocument("").Body!;
+Assert.Throws<HtmlParserLimitExceededException>(() => new HtmlDocumentParser(options).ParseFragment(html, body));
+```
+<!-- endref -->
 
 ## Report the parse errors
 

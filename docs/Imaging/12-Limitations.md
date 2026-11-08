@@ -34,7 +34,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | BMP | No embedded JPEG/PNG payloads, no linked ICC profile; one still image is written. |
 | TGA | No premultiplied alpha; true-color and grayscale output only, no metadata. |
 | Netpbm | Only the first image of a concatenation is read; no metadata. |
-| TIFF | Old-style JPEG compression, YCbCr data in separate planes, L\*a\*b\* and some extra-sample layouts are not read. Writing uses chunky samples (no separate planes), one page per [Save](cref:Meziantou.Framework.Imaging.Image.Save) (use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) for documents) and a seekable destination. |
+| TIFF | Subsampled YCbCr data in separate planes, ITU L\*a\*b\*, lightness-only L\*a\*b\* and some extra-sample layouts are not read; L\*a\*b\* pages need a color conversion. Writing uses chunky samples (no separate planes), one page per [Save](cref:Meziantou.Framework.Imaging.Image.Save) (use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) for documents) and a seekable destination. |
 | ICO / CUR | At most 256 pixels per side; 32-bit DIB or PNG representations are written. |
 | ANI | One representation per frame; always loops; needs a seekable destination. |
 | AVIF | Gain maps, depth maps and thumbnails are only read by `AuxiliaryImageCollection`; gain maps are written next to still images only. Sequences need a seekable destination; the encoder is single-threaded except for grid tiles. |
@@ -53,7 +53,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 - No mesh gradients.
 - Text lines are broken greedily.
-- No AAT (`morx`, `kerx`) shaping, no subpixel (LCD) rendering, no ruby in vertical text.
+- No subpixel (LCD) rendering, no ruby in vertical text.
 - Hinting is opt-in and horizontal only.
 - Installed fonts are used only when you ask for them ([Font.LoadInstalled](cref:Meziantou.Framework.Imaging.Typography.Font.LoadInstalled), [FontStack.WithInstalledFallback](cref:Meziantou.Framework.Imaging.Typography.FontStack.WithInstalledFallback)).
 - No SVG glyphs, Type 1 fonts or fonts without outlines.

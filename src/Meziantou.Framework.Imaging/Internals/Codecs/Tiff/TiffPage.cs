@@ -11,10 +11,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The supported subset is checked here, once: unsigned integer samples; grayscale (<c>WhiteIsZero</c> and
 /// <c>BlackIsZero</c>, 1, 2, 4, 8 or 16 bits), RGB (8 or 16 bits), palette color (1, 2, 4 or 8 bits), CMYK (8 or 16 bits)
-/// and YCbCr (8 bits) data; signed integer grayscale and RGB samples of 8 or 16 bits; floating-point <c>BlackIsZero</c>
-/// grayscale and RGB samples of 16 (half precision), 24 or 32 bits; chunky and separate planar configurations (separate
-/// planes except for YCbCr data); strips or tiles; no
-/// compression, Deflate, LZW, PackBits, the CCITT facsimile compressions, JPEG and JPEG 2000; the horizontal differencing
+/// YCbCr (8 bits) and CIE L*a*b* (8 or 16 bits, 8 for <c>ICCLab</c>) data; signed integer grayscale and RGB samples of 8
+/// or 16 bits; floating-point <c>BlackIsZero</c> grayscale and RGB samples of 16 (half precision), 24 or 32 bits; chunky
+/// and separate planar configurations (separate planes of YCbCr data without subsampling only); strips or tiles; no
+/// compression, Deflate, LZW, PackBits, the CCITT facsimile compressions, JPEG, old-style JPEG and JPEG 2000; the horizontal differencing
 /// predictor, and the floating-point predictor of TIFF Technical Note 3. Everything else is recognized and rejected with
 /// <see cref="UnsupportedImageFeatureException"/>, never guessed.
 /// </para>
@@ -98,7 +98,7 @@ internal sealed class TiffPage
     /// <summary>Gets the number of bits of one pixel of a decoded block.</summary>
     public int BitsPerPixel => SamplesPerPixel * DecodedBitsPerSample;
 
-    /// <summary>Gets the photometric interpretation (0, 1, 2, 3, 5 or 6).</summary>
+    /// <summary>Gets the photometric interpretation (0, 1, 2, 3, 5, 6, 8 or 9).</summary>
     public int Photometric { get; private set; }
 
     /// <summary>Gets a value indicating whether 0 is white (<c>WhiteIsZero</c>): the decoder inverts the samples.</summary>
@@ -115,6 +115,18 @@ internal sealed class TiffPage
 
     /// <summary>Gets a value indicating whether the samples are luma and chroma.</summary>
     public bool IsYCbCr => Photometric == TiffFormat.PhotometricYCbCr;
+
+    /// <summary>
+    /// Gets a value indicating whether the samples are CIE L*a*b* colors: <c>CIELab</c> (signed a* and b*) or
+    /// <c>ICCLab</c> (a* and b* offset by half of their range, as ICC profiles encode them).
+    /// </summary>
+    public bool IsCieLab => Photometric is TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab;
+
+    /// <summary>
+    /// Gets the chromaticity of the white the L*a*b* colors of the page are relative to (<c>WhitePoint</c>), or
+    /// <see langword="null"/> for D50, which Adobe's TIFF technical note gives as the default (TIFF 6.0 gives none).
+    /// </summary>
+    public (double X, double Y)? WhitePoint { get; private set; }
 
     /// <summary>Gets a value indicating whether the last sample is a straight alpha channel.</summary>
     public bool HasAlpha { get; private set; }
@@ -137,6 +149,13 @@ internal sealed class TiffPage
     /// <summary>Gets the conversion and the subsampling of a YCbCr page, or <see langword="null"/>.</summary>
     public TiffYCbCrConverter? YCbCr { get; private set; }
 
+    /// <summary>
+    /// Gets the conversion of the data units the blocks store, or <see langword="null"/>: the one of a YCbCr page with
+    /// chunky samples. The blocks of a page of separate YCbCr planes hold one sample per pixel, which the expander converts
+    /// once the planes are interleaved (<see cref="TiffRowExpander"/>).
+    /// </summary>
+    public TiffYCbCrConverter? BlockYCbCr => IsPlanar ? null : YCbCr;
+
     /// <summary>Gets the compression (1, 2, 3, 4, 5, 7, 8, 32773 or 32946).</summary>
     public int Compression { get; private set; }
 
@@ -147,7 +166,13 @@ internal sealed class TiffPage
     public bool IsCcitt => Compression is TiffFormat.CompressionCcittRle or TiffFormat.CompressionCcittFax3 or TiffFormat.CompressionCcittFax4;
 
     /// <summary>Gets a value indicating whether each strip or tile is a JPEG datastream.</summary>
-    public bool IsJpeg => Compression == TiffFormat.CompressionJpeg;
+    public bool IsJpeg => Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg;
+
+    /// <summary>Gets a value indicating whether the page uses the old-style JPEG compression of TIFF 6.0 (<see cref="OldJpeg"/>).</summary>
+    public bool IsOldJpeg => Compression == TiffFormat.CompressionOldJpeg;
+
+    /// <summary>Gets how the blocks of an old-style JPEG page become JPEG datastreams, or <see langword="null"/> for the other pages.</summary>
+    public TiffOldJpegLayout? OldJpeg { get; private set; }
 
     /// <summary>Gets a value indicating whether each block holds a JPEG 2000 codestream.</summary>
     public bool IsJpeg2000 => Compression == TiffFormat.CompressionJpeg2000;
@@ -234,6 +259,7 @@ internal sealed class TiffPage
         TiffFormat.PhotometricPalette => ImageColorModel.Indexed,
         TiffFormat.PhotometricCmyk => ImageColorModel.Cmyk,
         TiffFormat.PhotometricYCbCr => ImageColorModel.YCbCr,
+        TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab => ImageColorModel.CieLab,
         TiffFormat.PhotometricRgb => HasAlpha ? ImageColorModel.Rgba : ImageColorModel.Rgb,
         _ => HasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale,
     };
@@ -336,8 +362,8 @@ internal sealed class TiffPage
         if (!Directory.TryGetUnsigned(TiffFormat.PhotometricInterpretationTag, out var photometric))
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} has no PhotometricInterpretation tag, which is required."));
 
-        if (photometric is not (TiffFormat.PhotometricWhiteIsZero or TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb or TiffFormat.PhotometricPalette or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricYCbCr))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; WhiteIsZero, BlackIsZero, RGB, palette color, CMYK and YCbCr are supported."), string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric}"));
+        if (photometric is not (TiffFormat.PhotometricWhiteIsZero or TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb or TiffFormat.PhotometricPalette or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricYCbCr or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; WhiteIsZero, BlackIsZero, RGB, palette color, CMYK, YCbCr, CIE L*a*b* and ICC L*a*b* are supported."),string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric}"));
 
         Photometric = (int)photometric;
         var isSampleFormatSupported = SampleFormat switch
@@ -353,8 +379,12 @@ internal sealed class TiffPage
 
         switch (Photometric)
         {
-            case TiffFormat.PhotometricRgb or TiffFormat.PhotometricCmyk when BitsPerSample < 8:
+            case TiffFormat.PhotometricRgb or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab when BitsPerSample < 8:
                 throw UnsupportedBitsPerSample(bits[0], string.Create(CultureInfo.InvariantCulture, $"{TiffFormat.GetPhotometricName(Photometric)} data is supported with 8 and 16 bits"));
+
+            // The 16-bit encodings of ICC L*a*b* differ between the versions of the ICC specification, and nothing tells them apart
+            case TiffFormat.PhotometricIccLab when BitsPerSample != 8:
+                throw UnsupportedBitsPerSample(bits[0], "ICC L*a*b* data is supported with 8 bits");
 
             case TiffFormat.PhotometricPalette when BitsPerSample > 8:
                 throw UnsupportedBitsPerSample(bits[0], "palette color data is supported with 1, 2, 4 and 8 bits");
@@ -363,9 +393,13 @@ internal sealed class TiffPage
                 throw UnsupportedBitsPerSample(bits[0], "YCbCr data is supported with 8 bits, and with 9 to 16 bits with JPEG compression");
         }
 
+        // An L*a*b* page may store the lightness only (TIFF 6.0 section 23): it is not read
+        if (IsCieLab && SamplesPerPixel < 3)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores {SamplesPerPixel} {TiffFormat.GetPhotometricName(Photometric)} sample(s) per pixel; the three samples of L*, a* and b* are supported, with or without an alpha sample."), "PhotometricInterpretation: L*a*b* lightness only");
+
         var colorSamples = Photometric switch
         {
-            TiffFormat.PhotometricRgb or TiffFormat.PhotometricYCbCr => 3,
+            TiffFormat.PhotometricRgb or TiffFormat.PhotometricYCbCr or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab => 3,
             TiffFormat.PhotometricCmyk => 4,
             _ => 1,
         };
@@ -392,7 +426,7 @@ internal sealed class TiffPage
             };
 
             if (BitsPerSample < 8 || IsPalette || IsYCbCr)
-                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores an alpha channel with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data; alpha is supported with 8- and 16-bit grayscale, RGB and CMYK data."), "ExtraSamples: alpha with this sample layout");
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores an alpha channel with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data; alpha is supported with 8- and 16-bit grayscale, RGB, CMYK and L*a*b* data."), "ExtraSamples: alpha with this sample layout");
         }
 
         switch (Photometric)
@@ -407,6 +441,10 @@ internal sealed class TiffPage
 
             case TiffFormat.PhotometricYCbCr:
                 ResolveYCbCr();
+                break;
+
+            case TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab:
+                ResolveWhitePoint();
                 break;
         }
     }
@@ -502,6 +540,18 @@ internal sealed class TiffPage
         }
     }
 
+    private void ResolveWhitePoint()
+    {
+        if (Directory.TryReadRationalArray(TiffFormat.WhitePointTag, 2) is not { } chromaticity)
+            return;
+
+        // A chromaticity has positive x, y and 1 - x - y
+        if (!(chromaticity[0] > 0 && chromaticity[1] > 0 && chromaticity[0] + chromaticity[1] < 1))
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares the white point ({chromaticity[0]}, {chromaticity[1]}), which is not a chromaticity."));
+
+        WhitePoint = (chromaticity[0], chromaticity[1]);
+    }
+
     private void ResolveYCbCr()
     {
         var subsampling = Directory.TryReadUnsignedArray(TiffFormat.YCbCrSubSamplingTag, 2) ?? [2, 2];
@@ -518,9 +568,9 @@ internal sealed class TiffPage
     {
         var compression = Directory.TryGetUnsigned(TiffFormat.CompressionTag, out var value) ? value : TiffFormat.CompressionNone;
         if (compression is not (TiffFormat.CompressionNone or TiffFormat.CompressionCcittRle or TiffFormat.CompressionCcittFax3 or TiffFormat.CompressionCcittFax4 or TiffFormat.CompressionLzw
-            or TiffFormat.CompressionJpeg or TiffFormat.CompressionAdobeDeflate or TiffFormat.CompressionPackBits or TiffFormat.CompressionDeflate or TiffFormat.CompressionJpeg2000))
+            or TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg or TiffFormat.CompressionAdobeDeflate or TiffFormat.CompressionPackBits or TiffFormat.CompressionDeflate or TiffFormat.CompressionJpeg2000))
         {
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses {TiffFormat.GetCompressionName((long)compression)} compression; uncompressed, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3 and Group 4), JPEG and JPEG 2000 data are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: {compression}"));
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses {TiffFormat.GetCompressionName((long)compression)} compression; uncompressed, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3 and Group 4), JPEG (and old-style JPEG) and JPEG 2000 data are supported."),string.Create(CultureInfo.InvariantCulture, $"Compression: {compression}"));
         }
 
         Compression = (int)compression;
@@ -532,9 +582,10 @@ internal sealed class TiffPage
 
         IsPlanar = planar == TiffFormat.PlanarSeparate && SamplesPerPixel > 1;
 
-        // The planes of YCbCr data may be subsampled, each to its own size: they are not read
-        if (IsPlanar && IsYCbCr)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores YCbCr data in separate planes; separate planes are supported for grayscale, RGB and CMYK data, and YCbCr data is supported with chunky samples."), "PlanarConfiguration: 2 with YCbCr data");
+        // The chroma planes of subsampled YCbCr data would each have their own size, which libtiff does not read either:
+        // the planes of YCbCr data are read when they are not subsampled, and uncompressed or with a lossless compression
+        if (IsPlanar && IsYCbCr && (YCbCr is not { HorizontalSubsampling: 1, VerticalSubsampling: 1 } || Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg or TiffFormat.CompressionJpeg2000))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores subsampled or JPEG-compressed YCbCr data in separate planes; YCbCr planes are supported without subsampling and with the lossless compressions, and YCbCr data with chunky samples otherwise."), "PlanarConfiguration: 2 with YCbCr data");
 
         // TIFF 6.0 only allows the reversed order for bilevel data (uncompressed or CCITT), where it is the order of fax devices
         var fillOrder = Directory.TryGetUnsigned(TiffFormat.FillOrderTag, out var fillOrderValue) ? fillOrderValue : TiffFormat.FillOrderMostSignificantBitFirst;
@@ -601,8 +652,8 @@ internal sealed class TiffPage
         if (BitsPerSample is not (8 or 16))
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {BitsPerSample}-bit samples; 8- and 16-bit samples are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG 2000 with {BitsPerSample}-bit samples"));
 
-        if (IsPalette || IsYCbCr)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {(IsPalette ? "palette indexes" : "YCbCr data")}; grayscale, RGB and CMYK data are supported."), "Compression: JPEG 2000 with this sample layout");
+        if (IsPalette || IsYCbCr || IsCieLab)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {(IsPalette ? "palette indexes" : TiffFormat.GetPhotometricName(Photometric) + " data")}; grayscale, RGB and CMYK data are supported."), "Compression: JPEG 2000 with this sample layout");
     }
 
     private void ResolveJpeg()
@@ -611,8 +662,21 @@ internal sealed class TiffPage
         if (BitsPerSample < 8)
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {BitsPerSample}-bit samples; samples of 8 to 16 bits are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG with {BitsPerSample}-bit samples"));
 
-        if (IsPalette || HasAlpha)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {(IsPalette ? "palette indexes" : "an alpha channel")}; grayscale, RGB, YCbCr and CMYK data without extra sample are supported."), "Compression: JPEG with this sample layout");
+        if (IsPalette || HasAlpha || IsCieLab)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {(IsPalette ? "palette indexes" : HasAlpha ? "an alpha channel" : TiffFormat.GetPhotometricName(Photometric) + " data")}; grayscale, RGB, YCbCr and CMYK data without extra sample are supported."), "Compression: JPEG with this sample layout");
+
+        if (IsOldJpeg)
+        {
+            // libtiff decodes these pages with the color conversion of the JPEG decoder, whatever ReferenceBlackWhite says
+            var process = Directory.TryGetUnsigned(TiffFormat.JpegProcTag, out var processValue) ? processValue : 1;
+            if (process != 1)
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} uses the JPEG process {process}; the baseline process (1) is supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: old-style JPEG with JPEGProc {process}"));
+
+            if (BitsPerSample != 8)
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} stores {BitsPerSample}-bit samples; 8-bit samples are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: old-style JPEG with {BitsPerSample}-bit samples"));
+
+            return;
+        }
 
         if (YCbCr is { IsJfifCompatible: false })
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with YCbCrCoefficients or ReferenceBlackWhite values other than the full-range ITU-R BT.601 ones of JFIF (black at 0, white at {(1 << BitsPerSample) - 1} and chroma centered on {1 << (BitsPerSample - 1)} for {BitsPerSample}-bit samples)."), "Compression: JPEG with other YCbCr coefficients");
@@ -636,6 +700,7 @@ internal sealed class TiffPage
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares both StripOffsets and TileOffsets."));
 
         IsTiled = hasTileOffsets;
+        var hasInterchangeFormat = IsOldJpeg && Directory.Find(TiffFormat.JpegInterchangeFormatTag) is not null;
         ushort offsetsTag, byteCountsTag;
         if (IsTiled)
         {
@@ -656,7 +721,8 @@ internal sealed class TiffPage
         }
         else
         {
-            if (!hasStripOffsets)
+            // An old-style JPEG page may keep its whole datastream in its JPEG interchange format
+            if (!hasStripOffsets && !hasInterchangeFormat)
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} has neither StripOffsets nor TileOffsets, so it stores no pixel data."));
 
             var rowsPerStrip = Directory.TryGetUnsigned(TiffFormat.RowsPerStripTag, out var value) ? value : uint.MaxValue;
@@ -675,16 +741,12 @@ internal sealed class TiffPage
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares strips of {BlockHeight} rows of YCbCr data whose chroma samples cover {conversion.VerticalSubsampling} rows."));
         }
 
-        // A row is held as stored samples, as pixels of the working representation, and for 16-bit inks as five native
-        // samples per pixel on the way to their conversion. A block of a planar page holds one sample per pixel
-        var blockRowLength = (((long)BlockWidth * BlockSamplesPerPixel * DecodedBitsPerSample) + 7) / 8;
-        var expandedRowLength = (long)Size.Width * Math.Max(PixelFormats.GetBytesPerPixel(SourcePixelFormat), IsCmyk ? 5 * sizeof(ushort) : 0);
-        if (blockRowLength > CheckedSizes.MaxBufferLength || RowLength > CheckedSizes.MaxBufferLength || expandedRowLength > CheckedSizes.MaxBufferLength)
-            throw CheckedSizes.CreateOverflowException(context.Limits);
-
-        BlockRowLength = (int)blockRowLength;
-        if (!CheckedSizes.TryMultiply(blockRowLength, BlockHeight, out var blockLength) || blockLength > CheckedSizes.MaxBufferLength)
-            throw CheckedSizes.CreateOverflowException(context.Limits);
+        var blockLength = ResolveBlockRowLength(context);
+        if (hasInterchangeFormat && (Directory.Find(offsetsTag) is null || Directory.Find(byteCountsTag) is null))
+        {
+            ResolveOldJpeg(context, hasBlocks: false);
+            return;
+        }
 
         // The blocks of the planes follow each other
         var blockCount = (long)BlocksAcross * BlocksDown * PlaneCount;
@@ -694,7 +756,7 @@ internal sealed class TiffPage
         // Leniently, the one uncompressed block of a page is as long as its geometry says when the byte counts are missing
         // or, for a strip, too small, as libtiff, Pillow and Apple ImageIO read it: these bytes are in the file, and a block
         // that runs past its end is still an error. Byte counts beyond the number of blocks are ignored, as they all do
-        var hasGeometricLength = _isLenient && blockCount == 1 && Compression == TiffFormat.CompressionNone && YCbCr is null;
+        var hasGeometricLength = _isLenient && blockCount == 1 && Compression == TiffFormat.CompressionNone && BlockYCbCr is null;
         if (Directory.Find(byteCountsTag) is not { } byteCountsField)
         {
             if (!hasGeometricLength)
@@ -712,6 +774,146 @@ internal sealed class TiffPage
         {
             BlockByteCounts[0] = (ulong)blockLength;
         }
+
+        if (IsOldJpeg)
+        {
+            ResolveOldJpeg(context, hasBlocks: true);
+        }
+    }
+
+    /// <summary>Computes <see cref="BlockRowLength"/> from the geometry of the blocks, and returns the length of a block.</summary>
+    private long ResolveBlockRowLength(ImageCodecContext context)
+    {
+        // A row is held as stored samples, as pixels of the working representation, and for 16-bit inks as five native
+        // samples per pixel on the way to their conversion. A block of a planar page holds one sample per pixel
+        var blockRowLength = (((long)BlockWidth * BlockSamplesPerPixel * DecodedBitsPerSample) + 7) / 8;
+        var expandedRowLength = (long)Size.Width * Math.Max(PixelFormats.GetBytesPerPixel(SourcePixelFormat), IsCmyk ? 5 * sizeof(ushort) : 0);
+        if (blockRowLength > CheckedSizes.MaxBufferLength || RowLength > CheckedSizes.MaxBufferLength || expandedRowLength > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(context.Limits);
+
+        BlockRowLength = (int)blockRowLength;
+        if (!CheckedSizes.TryMultiply(blockRowLength, BlockHeight, out var blockLength) || blockLength > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(context.Limits);
+
+        return blockLength;
+    }
+
+    /// <summary>
+    /// Resolves how the blocks of an old-style JPEG page are decoded (<see cref="TiffOldJpegLayout"/>). A page decoded as a
+    /// single datastream gets a single block, as tall as the page.
+    /// </summary>
+    private void ResolveOldJpeg(ImageCodecContext context, bool hasBlocks)
+    {
+        var source = Directory.Source;
+        if (Directory.TryGetUnsigned(TiffFormat.JpegInterchangeFormatTag, out var offset))
+        {
+            ulong? length = Directory.TryGetUnsigned(TiffFormat.JpegInterchangeFormatLengthTag, out var lengthValue) ? lengthValue : null;
+            if (offset >= (ulong)source.Length)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} declares its JPEG interchange format at offset {offset}, outside the input."));
+
+            // The header is read in growing pieces, so that the scan that may follow it is not read
+            var available = (ulong)source.Length - offset;
+            var limit = Math.Min(length ?? available, available);
+            foreach (var piece in (ReadOnlySpan<long>)[4096, TiffFormat.MaxJpegTablesLength, TiffFormat.MaxOldJpegHeaderLength])
+            {
+                if (TryReadOldJpegHeader(offset, (long)Math.Min((ulong)piece, limit), length, hasBlocks, isLast: (ulong)piece >= limit || piece == TiffFormat.MaxOldJpegHeaderLength))
+                    break;
+            }
+        }
+        else
+        {
+            OldJpeg = ReadOldJpegTables();
+        }
+
+        if (OldJpeg!.IsWholeImage)
+        {
+            // The blocks are the slices of one scan, whose frame covers the page
+            IsTiled = false;
+            IsPlanar = false;
+            BlockWidth = Size.Width;
+            BlockHeight = Size.Height;
+            BlocksAcross = 1;
+            BlocksDown = 1;
+            _ = ResolveBlockRowLength(context);
+            var total = 0UL;
+            foreach (var (_, rangeLength) in OldJpeg.DataRanges)
+            {
+                total += rangeLength;
+            }
+
+            BlockOffsets = [OldJpeg.DataRanges[0].Offset];
+            BlockByteCounts = [total];
+        }
+    }
+
+    /// <summary>Reads the header of the JPEG interchange format of an old-style JPEG page from its first <paramref name="readLength"/> bytes.</summary>
+    /// <returns><see langword="false"/> when the bytes end before the header, and more of them can be read.</returns>
+    private bool TryReadOldJpegHeader(ulong offset, long readLength, ulong? length, bool hasBlocks, bool isLast)
+    {
+        using var buffer = Directory.Source.ReadToBuffer((long)offset, readLength);
+
+        // A malformed header is reported by the parse of the layout
+        var headerLength = TiffOldJpegLayout.FindHeaderLength(buffer.Span);
+        if (headerLength == 0)
+        {
+            if (isLast)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG interchange format of the old-style JPEG page {Index} has no start-of-scan marker in its first {buffer.Length} bytes."));
+
+            return false;
+        }
+
+        OldJpeg = TiffOldJpegLayout.FromInterchangeFormat(this, headerLength > 0 ? buffer.Span[..headerLength] : buffer.Span, offset, length, hasBlocks);
+        return true;
+    }
+
+    /// <summary>Reads the tables of an old-style JPEG page that has no JPEG interchange format, from its tags.</summary>
+    private TiffOldJpegLayout ReadOldJpegTables()
+    {
+        var count = SamplesPerPixel;
+        var quantizationOffsets = Directory.TryReadUnsignedArray(TiffFormat.JpegQTablesTag, count);
+        var dcOffsets = Directory.TryReadUnsignedArray(TiffFormat.JpegDcTablesTag, count);
+        var acOffsets = Directory.TryReadUnsignedArray(TiffFormat.JpegAcTablesTag, count);
+        if (quantizationOffsets?.Length != count || dcOffsets?.Length != count || acOffsets?.Length != count)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} has neither a JPEG interchange format nor the JPEGQTables, JPEGDCTables and JPEGACTables tags of its {count} component(s)."));
+
+        var quantization = new byte[count][];
+        var dc = new byte[count][];
+        var ac = new byte[count][];
+        var offsets = new (ulong, ulong, ulong)[count];
+        for (var i = 0; i < count; i++)
+        {
+            quantization[i] = ReadOldJpegBytes(quantizationOffsets[i], 64);
+            dc[i] = ReadHuffmanTable(dcOffsets[i]);
+            ac[i] = ReadHuffmanTable(acOffsets[i]);
+            offsets[i] = (quantizationOffsets[i], dcOffsets[i], acOffsets[i]);
+        }
+
+        var restartInterval = Directory.TryGetUnsigned(TiffFormat.JpegRestartIntervalTag, out var interval) ? interval : 0;
+        if (restartInterval > ushort.MaxValue)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {Index} declares the restart interval {restartInterval}; the largest one is 65,535."));
+
+        return TiffOldJpegLayout.FromTables(this, quantization, dc, ac, offsets, (int)restartInterval);
+
+        byte[] ReadHuffmanTable(ulong offset)
+        {
+            // The 16 numbers of codes of each length, then the values of the codes
+            var counts = ReadOldJpegBytes(offset, 16);
+            var valueCount = counts.Sum(static value => value);
+            if (valueCount is 0 or > 256)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"An old-style JPEG Huffman table of the TIFF page {Index} declares {valueCount} codes."));
+
+            return ReadOldJpegBytes(offset, 16 + valueCount);
+        }
+    }
+
+    private byte[] ReadOldJpegBytes(ulong offset, int length)
+    {
+        var source = Directory.Source;
+        if (offset > (ulong)source.Length || (ulong)source.Length - offset < (ulong)length)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"An old-style JPEG table of the TIFF page {Index} is outside the input."));
+
+        using var buffer = source.ReadToBuffer((long)offset, length);
+        return buffer.Span.ToArray();
     }
 
     private void ResolveMetadata(ImageCodecContext context)
@@ -724,7 +926,8 @@ internal sealed class TiffPage
             builder.Metadata.Orientation = (ExifOrientation)orientation;
         }
 
-        if (Directory.TryReadBytes(TiffFormat.IccProfileTag, context.Limits.MaxMetadataBytes) is { } icc)
+        // The pixels of an L*a*b* page are converted from the colorimetry it declares: a profile it embeds does not describe them once loaded
+        if (!IsCieLab && Directory.TryReadBytes(TiffFormat.IccProfileTag, context.Limits.MaxMetadataBytes) is { } icc)
         {
             // A profile describes the stored samples: a CMYK one for inks, which the conversion of the page then reads
             builder.Charge(icc.Length);

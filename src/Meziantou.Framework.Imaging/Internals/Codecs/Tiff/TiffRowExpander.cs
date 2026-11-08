@@ -43,8 +43,11 @@ internal sealed class TiffRowExpander : IDisposable
 
     /// <summary>Creates the expander of a page.</summary>
     /// <param name="page">The page.</param>
-    /// <param name="inkConversion">The conversion of the inks of a CMYK page to RGB; <see langword="null"/> for the other pages.</param>
-    /// <param name="scope">The scope charged for the lookup table of a palette and the scratch row of 16-bit inks.</param>
+    /// <param name="inkConversion">
+    /// The conversion of the inks of a CMYK page, or of the colors of an L*a*b* page, to RGB; <see langword="null"/> for
+    /// the other pages.
+    /// </param>
+    /// <param name="scope">The scope charged for the lookup table of a palette and the scratch rows of the conversions.</param>
     public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope)
         : this(page, inkConversion, scope, page.Size.Width, nativeInks: false)
     {
@@ -60,8 +63,8 @@ internal sealed class TiffRowExpander : IDisposable
     {
         ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(scope);
-        if (nativeInks ? !page.IsCmyk || page.HasAlpha || inkConversion is not null : page.IsCmyk != (inkConversion is not null))
-            throw new ArgumentException("A CMYK page, and only it, needs the conversion of its inks, unless they are expanded as CMYK pixels.", nameof(inkConversion));
+        if (nativeInks ? !page.IsCmyk || page.HasAlpha || inkConversion is not null : (page.IsCmyk || page.IsCieLab) != (inkConversion is not null))
+            throw new ArgumentException("A CMYK or L*a*b* page, and only it, needs the conversion of its colors, unless the inks of a CMYK page are expanded as CMYK pixels.", nameof(inkConversion));
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(width, page.Size.Width);
@@ -78,6 +81,11 @@ internal sealed class TiffRowExpander : IDisposable
         {
             // Five 16-bit samples per pixel in native byte order: the inks and the alpha sample, opaque when the page has none
             _inks = scope.Rent(checked(_width * 5 * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
+        }
+        else if (page.IsCieLab && (page.BitsPerSample == 16 || page.Photometric == TiffFormat.PhotometricCieLab))
+        {
+            // The samples of a row with unsigned a* and b*: as stored for 8 bits, four per pixel in native byte order for 16 bits
+            _inks = scope.Rent(checked(page.BitsPerSample == 8 ? _width * page.SamplesPerPixel : _width * 4 * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
         }
     }
 
@@ -106,6 +114,10 @@ internal sealed class TiffRowExpander : IDisposable
         {
             ExpandInks(stored, destination);
         }
+        else if (page.IsCieLab)
+        {
+            ExpandCieLab(stored, destination);
+        }
         else if (page.IsFloatingPoint)
         {
             ExpandFloats(stored, destination);
@@ -113,6 +125,11 @@ internal sealed class TiffRowExpander : IDisposable
         else if (page.BitsPerSample < 8)
         {
             ExpandPackedGray(stored, destination);
+        }
+        else if (page.IsYCbCr && page.IsPlanar)
+        {
+            // The interleaved planes of YCbCr data without subsampling: each pixel is a data unit of its own
+            page.YCbCr!.Convert(stored[..(_width * 3)], destination, _width, rowCount: 1);
         }
         else if (page.BitsPerSample == 8)
         {
@@ -240,6 +257,52 @@ internal sealed class TiffRowExpander : IDisposable
         }
 
         ColorConversionKernels.Convert<ushort, IccUInt16Sample>(_inkConversion!, inks, unsafe(MemoryMarshal.Cast<byte, ushort>(destination)), 5, 4);
+    }
+
+    /// <summary>
+    /// Converts L*a*b* colors to RGB. The signed a* and b* samples of <c>CIELab</c> become the unsigned samples larger by
+    /// half of their range (their sign bit is flipped), which is how <c>ICCLab</c> stores them and what the decoding stage
+    /// of the conversion reads. An alpha sample is copied.
+    /// </summary>
+    private void ExpandCieLab(ReadOnlySpan<byte> stored, Span<byte> destination)
+    {
+        var page = _page;
+        var samplesPerPixel = page.SamplesPerPixel;
+        var count = _width * samplesPerPixel;
+        var isSigned = page.Photometric == TiffFormat.PhotometricCieLab;
+        if (page.BitsPerSample == 8)
+        {
+            var samples = stored[..count];
+            if (isSigned)
+            {
+                var row = _inks!.Span[..count];
+                samples.CopyTo(row);
+                for (var i = 0; i < row.Length; i += samplesPerPixel)
+                {
+                    row[i + 1] ^= 0x80;
+                    row[i + 2] ^= 0x80;
+                }
+
+                samples = row;
+            }
+
+            ColorConversionKernels.Convert<byte, IccByteSample>(_inkConversion!, samples, destination, samplesPerPixel, samplesPerPixel);
+            return;
+        }
+
+        // Rgba64: four samples per pixel, opaque when the page has no alpha sample
+        var words = unsafe(MemoryMarshal.Cast<byte, ushort>(_inks!.Span))[..(_width * 4)];
+        for (var x = 0; x < _width; x++)
+        {
+            var offset = x * 4;
+            var index = x * samplesPerPixel;
+            words[offset] = ReadWord(stored, index);
+            words[offset + 1] = (ushort)(ReadWord(stored, index + 1) ^ 0x8000);
+            words[offset + 2] = (ushort)(ReadWord(stored, index + 2) ^ 0x8000);
+            words[offset + 3] = samplesPerPixel == 4 ? ReadWord(stored, index + 3) : ushort.MaxValue;
+        }
+
+        ColorConversionKernels.Convert<ushort, IccUInt16Sample>(_inkConversion!, words, unsafe(MemoryMarshal.Cast<byte, ushort>(destination)), 4, 4);
     }
 
     /// <summary>

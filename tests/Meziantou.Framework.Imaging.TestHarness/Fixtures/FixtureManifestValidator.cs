@@ -50,7 +50,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102", "Cmyk32", "Cmyk64" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.ColorModel"/> (library <c>ImageColorModel</c> names).</summary>
-    public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck" };
+    public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck", "CieLab" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.IccProfile"/>.</summary>
     public static IReadOnlySet<string> AllowedIccProfiles { get; } = new HashSet<string>(StringComparer.Ordinal) { "none", "rgb", "gray" };

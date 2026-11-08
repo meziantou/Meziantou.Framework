@@ -139,9 +139,14 @@ public static class TextShaper
     /// forms (rule L4 of the Unicode Bidirectional Algorithm): they are not replaced again, and the mirrored characters
     /// that have no mirrored form still get the mirrored forms of the font (<c>rtlm</c>).
     /// </param>
+    /// <param name="pointSize">
+    /// The size of the text, in points (the size of an em), or 0 when it is not known. A font of Apple Advanced
+    /// Typography may have a tracking table (<c>trak</c>): the space it adds to the advance of every glyph depends on
+    /// the size, and is added only when a size is given.
+    /// </param>
     /// <exception cref="InvalidFontException">A layout table of the font is malformed.</exception>
     /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
-    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null, ShapingCache? cache = null, bool areCharactersMirrored = false)
+    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null, ShapingCache? cache = null, bool areCharactersMirrored = false, double pointSize = 0)
     {
         buffer.StartShaping();
         SetCharacterProperties(buffer);
@@ -160,7 +165,18 @@ public static class TextShaper
         if (!isPlanned)
         {
             planned.ScriptTag = face.Gsub?.FindScriptTag(face.GsubData.Span, scripts) ?? 0;
+
+            // A font of Apple Advanced Typography does the work of the models in its morx table.
+            planned.MorxFlags = AatShaping.UsesMorx(face) ? AatShaping.GetChainFlags(face, features) : null;
+            planned.UsesKerx = AatShaping.UsesKerx(face, planned.MorxFlags is not null);
             var model = GetShaper(script, planned.ScriptTag);
+
+            // The model of the script still decides what is done with the advances and the places of the marks.
+            planned.MarkModel = model;
+            if (planned.MorxFlags is not null)
+            {
+                model = ScriptShaperKind.Default;
+            }
 
             // The letters of Arabic and of Syriac join along a horizontal line only: upright, each one is on its own
             if (isVertical && model == ScriptShaperKind.Arabic)
@@ -181,7 +197,8 @@ public static class TextShaper
             };
 
             // A font of Thai made before OpenType Layout, which has no substitution for the script, has the forms of
-            // its marks as characters of the private use area.
+            // its marks as characters of the private use area. A font of Apple Advanced Typography makes them with its
+            // morx table.
             planned.HasThaiPrivateUseForms = model == ScriptShaperKind.Thai && script == UnicodeScript.Thai
                 && (face.Gsub is not { } thaiTable || thaiTable.FindLanguageSystem(face.GsubData.Span, scripts, languages) == 0);
         }
@@ -195,10 +212,6 @@ public static class TextShaper
         if (shaper == ScriptShaperKind.Thai)
         {
             ThaiShaper.DecomposeSaraAm(buffer);
-            if (hasThaiPrivateUseForms)
-            {
-                ThaiShaper.RecordPrivateUseForms(buffer);
-            }
         }
         else if (shaper == ScriptShaperKind.Hangul)
         {
@@ -207,6 +220,11 @@ public static class TextShaper
         else if (shaper is ScriptShaperKind.Indic or ScriptShaperKind.Universal)
         {
             IndicShaper.SeparateVowelSequences(buffer, script);
+        }
+
+        if (hasThaiPrivateUseForms)
+        {
+            ThaiShaper.RecordPrivateUseForms(buffer);
         }
 
         // A font that positions the points of Hebrew needs no precomposed letter.
@@ -241,7 +259,7 @@ public static class TextShaper
         if (!isPlanned)
         {
             var hasSubstitutionFractions = false;
-            planned.Substitutions = face.Gsub is { } gsub ? CollectLookups(gsub, face.GsubData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out hasSubstitutionFractions, out _) : [];
+            planned.Substitutions = face.Gsub is { } gsub && planned.MorxFlags is null ? CollectLookups(gsub, face.GsubData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out hasSubstitutionFractions, out _) : [];
             planned.HasFractions = hasSubstitutionFractions;
         }
 
@@ -252,7 +270,7 @@ public static class TextShaper
         // from the presentation forms it has as characters.
         if (!isPlanned)
         {
-            planned.HasArabicPresentationForms = shaper == ScriptShaperKind.Arabic && script == UnicodeScript.Arabic && (face.Gsub is not { } arabicTable || arabicTable.FindLanguageSystem(face.GsubData.Span, scripts, languages) == 0);
+            planned.HasArabicPresentationForms = shaper == ScriptShaperKind.Arabic && planned.MorxFlags is null && script == UnicodeScript.Arabic && (face.Gsub is not { } arabicTable || arabicTable.FindLanguageSystem(face.GsubData.Span, scripts, languages) == 0);
         }
 
         if (planned.HasArabicPresentationForms)
@@ -268,7 +286,11 @@ public static class TextShaper
 
         var indic = planned.Indic;
 
-        if (face.Gsub is { } substitutionTable)
+        if (planned.MorxFlags is { } morxFlags)
+        {
+            MorxProcessor.Apply(buffer, face, face.Morx!, face.MorxData, morxFlags, isRightToLeft, isVertical);
+        }
+        else if (face.Gsub is { } substitutionTable)
         {
             applier.Begin(substitutionTable, face.GsubData, isPositioning: false, isRightToLeft, digests: cache?.GetDigests(face, isPositioning: false) ?? ShapingCache.Create(face, isPositioning: false));
         }
@@ -363,7 +385,9 @@ public static class TextShaper
         // be added back using the 'dist' feature").
         // A font without positioning table places no mark: a mark that has an advance is then drawn before the pen it
         // would have moved, over the glyph it follows.
-        var marksAreMovedBack = face.Gpos is null && !isRightToLeft;
+        // A font kerned with its kerx table is not positioned with its GPOS table.
+        var positioningTable = planned.UsesKerx ? null : face.Gpos;
+        var marksAreMovedBack = positioningTable is null && !isRightToLeft;
         var marksHaveNoAdvanceBeforePositioning = shaper is ScriptShaperKind.Myanmar or ScriptShaperKind.Universal;
         if (marksHaveNoAdvanceBeforePositioning)
         {
@@ -380,7 +404,7 @@ public static class TextShaper
         }
 
         var hasKerningFeature = false;
-        if (face.Gpos is { } gpos)
+        if (positioningTable is { } gpos)
         {
             if (!isPlanned)
             {
@@ -408,8 +432,23 @@ public static class TextShaper
             }
         }
 
+        // The kerning of a font of Apple Advanced Typography sees the glyphs in the order they are drawn.
+        if (planned.UsesKerx && (!plan.TryGetMask(Kern, out var aatKerningMask) || aatKerningMask != 0))
+        {
+            if (isRightToLeft)
+            {
+                buffer.Reverse();
+            }
+
+            KerxProcessor.Apply(buffer, face, isVertical);
+            if (isRightToLeft)
+            {
+                buffer.Reverse();
+            }
+        }
+
         // The pairs of the kerning table are those of a horizontal line
-        if (!isVertical && !hasKerningFeature && face.HasLegacyKerning && (!plan.TryGetMask(Kern, out var kerningMask) || kerningMask != 0))
+        else if (!isVertical && !hasKerningFeature && face.HasLegacyKerning && (!plan.TryGetMask(Kern, out var kerningMask) || kerningMask != 0))
         {
             ApplyLegacyKerning(buffer, face, isRightToLeft);
         }
@@ -417,7 +456,15 @@ public static class TextShaper
         // A mark does not move the pen. Without positioning lookups, a mark that has an advance is drawn before the pen
         // it would have moved, over the glyph it follows. The fonts of Hangul and of the Indic scripts give their marks
         // the advance they are to have: a vowel sign written after its consonant is a mark that takes room.
-        var marksHaveNoAdvance = shaper is not (ScriptShaperKind.Hangul or ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar or ScriptShaperKind.Universal);
+        // A font of Apple Advanced Typography (shaped by its morx table) treats its marks as the model of the script
+        // does. Without positioning table, it gives them their advance: the advance is removed only where the marks
+        // are then placed from the shapes of the glyphs, and a mark without a glyph before it is not moved back. A font
+        // kerned with its kerx table, or whose kerning table has cross-stream kerning, places its marks itself.
+        var isAat = planned.MorxFlags is not null;
+        var markModel = isAat ? planned.MarkModel : shaper;
+        var hasFallbackMarks = !isVertical && positioningTable is null && !planned.UsesKerx && (markModel is ScriptShaperKind.Default or ScriptShaperKind.Arabic or ScriptShaperKind.Hebrew) && !(isAat && face.HasCrossStreamKerning);
+        var marksHaveNoAdvance = isAat && positioningTable is null ? hasFallbackMarks : markModel is not (ScriptShaperKind.Hangul or ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar or ScriptShaperKind.Universal);
+        marksAreMovedBack &= !isAat;
         for (var i = 0; i < info.Length; i++)
         {
             if (info[i].IsMark && marksHaveNoAdvance)
@@ -438,10 +485,30 @@ public static class TextShaper
             }
         }
 
+        // The tracking of the size: the same space after every glyph that takes room (not after a mark, nor after a
+        // character without visible form), before the marks are placed from the shapes of the glyphs.
+        if (pointSize > 0 && face.Trak is { } trak && trak.GetTracking(pointSize, isVertical) is var tracking and not 0)
+        {
+            for (var i = 0; i < info.Length; i++)
+            {
+                if (!info[i].IsMark && !info[i].IsIgnorable)
+                {
+                    if (isVertical)
+                    {
+                        positions[i].YAdvance -= tracking;
+                    }
+                    else
+                    {
+                        positions[i].XAdvance += tracking;
+                    }
+                }
+            }
+        }
+
         // A font without positioning table places no mark: the marks are placed from the shapes of the glyphs. The
         // fonts of the scripts that have a model of their own draw their marks where they belong, and those of Thai
         // have the marks of each place as glyphs of their own.
-        if (!isVertical && face.Gpos is null && shaper is ScriptShaperKind.Default or ScriptShaperKind.Arabic or ScriptShaperKind.Hebrew)
+        if (hasFallbackMarks)
         {
             FallbackMarkPositioner.Apply(buffer, face, isRightToLeft);
         }
@@ -510,6 +577,15 @@ public static class TextShaper
         public List<PlannedLookup>? Positionings { get; set; }
 
         public bool HasKerningFeature { get; set; }
+
+        /// <summary>Gets or sets the flags of the chains of the <c>morx</c> table, or <see langword="null"/> when the font is shaped with its <c>GSUB</c> table.</summary>
+        public uint[]? MorxFlags { get; set; }
+
+        /// <summary>Gets or sets the model of the script, which the shaper of a font of Apple Advanced Typography uses for the marks only.</summary>
+        public ScriptShaperKind MarkModel { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the font is kerned with its <c>kerx</c> table.</summary>
+        public bool UsesKerx { get; set; }
 
         /// <summary>Gets or sets the kerning of the pairs of glyphs, when the positioning lookups only kern pairs.</summary>
         public PairKerningCache? PairKerning { get; set; }

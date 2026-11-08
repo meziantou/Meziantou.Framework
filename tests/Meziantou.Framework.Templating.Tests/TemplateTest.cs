@@ -1522,6 +1522,510 @@ public class TemplateTest
         Assert.False(template.IsBuilt);
     }
 
+    [Fact]
+    public void Template_RenderPartial()
+    {
+        #region Template_RenderPartial
+        var loader = new InMemoryTemplateLoader
+        {
+            { "greeting", "Dear <%= Name %>," },
+        };
+
+        using var template = new Template { TemplateLoader = loader };
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        template.Load("<%@ render greeting %> your order has shipped.");
+
+        var result = template.Run("Meziantou");
+        Assert.Equal("Dear Meziantou, your order has shipped.", result);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_RenderPartialWithParameters()
+    {
+        #region Template_RenderPartialWithParameters
+        var loader = new InMemoryTemplateLoader
+        {
+            {
+                "line", """
+                <%@ parameter string Product %>
+                <%@ parameter int Quantity = 1 %>
+                - <%= Product %> x<%= Quantity %>
+
+                """
+            },
+        };
+
+        using var template = new Template { TemplateLoader = loader };
+        template.Load("""
+            Order:
+            <%@ render line Product: "Apples", Quantity: 3 %>
+            <%@ render line Product: "Pears" %>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("""
+            Order:
+            - Apples x3
+            - Pears x1
+
+            """, result);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_RenderRecursivePartial()
+    {
+        #region Template_RenderRecursivePartial
+        var loader = new InMemoryTemplateLoader
+        {
+            {
+                "menu-item", """
+                <%@ parameter Meziantou.Framework.Templating.Tests.MenuItem Item %>
+                <%@ parameter int Depth %>
+                <%= new string(' ', Depth * 2) %>- <%= Item.Title %>
+                <% foreach (var child in Item.Children) { %>
+                <%@ render menu-item Item: child, Depth: Depth + 1 %>
+                <% } %>
+                """
+            },
+        };
+
+        using var template = new Template { TemplateLoader = loader };
+        template.AssemblyReferences.Add(typeof(MenuItem));
+        template.Arguments.Add(new TemplateArgument("Menu", typeof(MenuItem)));
+        template.Load("<%@ render menu-item Item: Menu, Depth: 0 %>");
+
+        var menu = new MenuItem("Home", [new MenuItem("Products", [new MenuItem("Laptops", [])]), new MenuItem("Contact", [])]);
+        var result = template.Run(menu);
+        Assert.Equal("""
+            - Home
+              - Products
+                - Laptops
+              - Contact
+
+            """, result);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_Layout()
+    {
+        #region Template_Layout
+        var loader = new InMemoryTemplateLoader
+        {
+            {
+                "layout", """
+                <html>
+                <head><title><%@ rendersection title %></title></head>
+                <body>
+                <%@ renderbody %>
+                <%@ rendersection footer optional %>
+                </body>
+                </html>
+                """
+            },
+        };
+
+        using var template = new Template { TemplateLoader = loader };
+        template.Load("""
+            <%@ layout layout %>
+            <p>Hello!</p>
+            <%@ section title %>Welcome<%@ endsection %>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("""
+            <html>
+            <head><title>Welcome</title></head>
+            <body>
+            <p>Hello!</p>
+            </body>
+            </html>
+            """, result);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_LayoutWithParameters()
+    {
+        #region Template_LayoutWithParameters
+        var loader = new InMemoryTemplateLoader
+        {
+            { "layout", "<%@ parameter string Title %><h1><%= Title %></h1><%@ renderbody %>" },
+        };
+
+        using var template = new Template { TemplateLoader = loader };
+        template.Arguments.Add(new TemplateArgument("UserName", typeof(string)));
+        template.Load("""<%@ layout layout Title: "Welcome " + UserName %><p>Your account is ready.</p>""");
+
+        var result = template.Run("Meziantou");
+        Assert.Equal("<h1>Welcome Meziantou</h1><p>Your account is ready.</p>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_FileSystemTemplateLoader()
+    {
+        #region Template_FileSystemTemplateLoader
+        // emails/welcome.txt renders emails/shared/footer.txt
+        var templatesDirectory = Directory.CreateTempSubdirectory("templates").FullName;
+        Directory.CreateDirectory(Path.Combine(templatesDirectory, "emails", "shared"));
+        File.WriteAllText(Path.Combine(templatesDirectory, "emails", "shared", "footer.txt"), "-- The team");
+        File.WriteAllText(Path.Combine(templatesDirectory, "emails", "welcome.txt"), "Welcome! <%@ render shared/footer.txt %>");
+
+        using var template = new Template
+        {
+            TemplateLoader = new FileSystemTemplateLoader(templatesDirectory),
+            SourceFileName = Path.Combine("emails", "welcome.txt"),
+        };
+        template.Load(File.ReadAllText(Path.Combine(templatesDirectory, template.SourceFileName)));
+
+        var result = template.Run();
+        Assert.Equal("Welcome! -- The team", result);
+        #endregion
+
+        Directory.Delete(templatesDirectory, recursive: true);
+    }
+
+    [Fact]
+    public void Template_MissingPartial()
+    {
+        #region Template_MissingPartial
+        using var template = new Template
+        {
+            TemplateLoader = new InMemoryTemplateLoader(),
+            SourceFileName = "order.txt",
+        };
+        template.Load("Order:\n<%@ render header %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("order.txt(2,4): The template 'header' was not found.", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_RenderPartial_WithoutTemplateLoader_Throws()
+    {
+        using var template = new Template();
+        template.Load("<%@ render header %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("(1,4): The template 'header' cannot be loaded because the TemplateLoader property of the template is not set.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_RenderPartial_QuotedName()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "my partial", "<%@ parameter int Value %><%= Value * 2 %>" } } };
+        template.Load("""<%@ render "my partial" Value: 21 %>""");
+
+        Assert.Equal("42", template.Run());
+    }
+
+    [Fact]
+    public void Template_RenderPartial_RenderedTwiceIsCompiledOnce()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "item", "[<%@ parameter int Value %><%= Value %>]" } } };
+        template.Load("<%@ render item Value: 1 %><%@ render item Value: 2 %>");
+
+        Assert.Equal("[1][2]", template.Run());
+        Assert.HasCount(2, template.SourceCode!.Split("void __Partial_", StringSplitOptions.None));
+    }
+
+    [Fact]
+    public void Template_RenderPartial_PartialRendersPartial()
+    {
+        var loader = new InMemoryTemplateLoader
+        {
+            { "outer", "(<%@ render inner %>)" },
+            { "inner", "<%= Name %>" },
+        };
+        using var template = new Template { TemplateLoader = loader };
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        template.Load("<%@ render outer %>");
+
+        Assert.Equal("(Meziantou)", template.Run("Meziantou"));
+    }
+
+    [Fact]
+    public void Template_RenderPartial_ParameterCanShadowTemplateArgument()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "p", "<%@ parameter string Name %><% var value = Name; %><%= value %>" } } };
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        template.Load("""<% var value = Name; %><%= value %>-<%@ render p Name: "Partial" %>""");
+
+        Assert.Equal("Root-Partial", template.Run("Root"));
+    }
+
+    [Fact]
+    public void Template_RenderPartial_AppliesTheDirectivesOfThePartial()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "p", "<%@ using System.IO %><%= Path.GetExtension(\"report.txt\") %>" } } };
+        template.Load("<%@ render p %>");
+
+        Assert.Equal(".txt", template.Run());
+        Assert.Contains("System.IO", template.Usings);
+    }
+
+    [Fact]
+    public void Template_RenderPartial_ClassMemberBlocksOfThePartial()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "p", "<%+ private static string Shout(string value) => value.ToUpperInvariant(); %><%= Shout(\"hi\") %>" } } };
+        template.Load("<%@ render p %><%@ render p %>");
+
+        Assert.Equal("HIHI", template.Run());
+    }
+
+    [Fact]
+    public void Template_RenderPartial_CompilationErrorReportsThePositionInThePartial()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "header", "Hello\n<%= Nmae %>" } } };
+        template.Load("<%@ render header %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Contains("header(2,5)", exception.Message);
+        Assert.Contains("CS0103", exception.Message);
+    }
+
+    [Fact]
+    public void Template_RenderPartial_InvalidArgumentReportsThePositionOfTheArgument()
+    {
+        using var template = new Template
+        {
+            TemplateLoader = new InMemoryTemplateLoader { { "line", "<%@ parameter string Product %><%= Product %>" } },
+            SourceFileName = "order.txt",
+        };
+        template.Load("Order:\n<%@ render line Product: 42 %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Contains("order.txt(2,26)", exception.Message);
+        Assert.Contains("CS1503", exception.Message);
+    }
+
+    [Fact]
+    public void Template_RenderPartial_InvalidParameterReportsThePositionOfTheDirective()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "line", "Line\n<%@ parameter UnknownType Product %>" } } };
+        template.Load("<%@ render line Product: null %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Contains("line(2,15)", exception.Message);
+        Assert.Contains("CS0246", exception.Message);
+    }
+
+    [Fact]
+    public void Template_RenderPartial_FailedBuildReloadsThePartials()
+    {
+        var loader = new InMemoryTemplateLoader { { "p", "<%@ using System.IO %><%= Nope %>" } };
+        using var template = new Template { TemplateLoader = loader };
+        template.Load("<%@ render p %>");
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        loader.Add("p", "<%@ using System.IO %><%= Path.GetExtension(\"report.txt\") %>");
+        Assert.Equal(".txt", template.Run());
+    }
+
+    [Fact]
+    public void Template_RenderPartial_PartialCannotDefineSections()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "p", "<%@ section title %>Title<%@ endsection %>" } } };
+        template.Load("<%@ render p %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("p(1,4): A partial template cannot define sections.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_RenderPartial_PartialCannotHaveALayout()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "p", "<%@ layout l %>" } } };
+        template.Load("<%@ render p %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("p(1,4): A partial template cannot have a layout.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_ParameterDirective_IsNotValidInTheTemplate()
+    {
+        using var template = new Template();
+        template.Load("<%@ parameter string Name %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.StartsWith("(1,4): The parameter directive declares a parameter of a partial template or a layout.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_FooterSectionOnSeveralLines()
+    {
+        var loader = new InMemoryTemplateLoader
+        {
+            {
+                "layout", """
+                <%@ renderbody %>
+                <%@ rendersection footer %>
+                """
+            },
+        };
+        using var template = new Template { TemplateLoader = loader };
+        template.Load("""
+            <%@ layout layout %>
+            Body
+            <%@ section footer %>
+            Line 1
+            Line 2
+            <%@ endsection %>
+            """);
+
+        Assert.Equal("""
+            Body
+            Line 1
+            Line 2
+
+            """, template.Run());
+    }
+
+    [Fact]
+    public void Template_Layout_NestedLayouts()
+    {
+        var loader = new InMemoryTemplateLoader
+        {
+            { "outer", "<title><%@ rendersection title %></title><%@ renderbody %>" },
+            { "inner", "<%@ layout outer %>[inner <%@ renderbody %>]<%@ section title %>Site - <%@ rendersection title %><%@ endsection %>" },
+        };
+        using var template = new Template { TemplateLoader = loader };
+        template.Load("<%@ layout inner %>body<%@ section title %>Home<%@ endsection %>");
+
+        Assert.Equal("<title>Site - Home</title>[inner body]", template.Run());
+    }
+
+    [Fact]
+    public void Template_Layout_NestedLayoutsWithParameters()
+    {
+        var loader = new InMemoryTemplateLoader
+        {
+            { "outer", "<%@ parameter string Title %><h1><%= Title %></h1><%@ renderbody %>" },
+            { "inner", "<%@ parameter string Title %><%@ layout outer Title: \"Site - \" + Title %><div><%@ renderbody %></div>" },
+        };
+        using var template = new Template { TemplateLoader = loader };
+        template.Load("<%@ layout inner Title: \"Home\" %>body");
+
+        Assert.Equal("<h1>Site - Home</h1><div>body</div>", template.Run());
+    }
+
+    [Fact]
+    public void Template_Layout_BodyUsesTemplateArgumentsAndPartials()
+    {
+        var loader = new InMemoryTemplateLoader
+        {
+            { "layout", "<%@ render header %>|<%@ renderbody %>" },
+            { "header", "Header for <%= Name %>" },
+        };
+        using var template = new Template { TemplateLoader = loader };
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        template.Load("<%@ layout layout %>Body for <%= Name %> <%@ render header %>");
+
+        Assert.Equal("Header for Meziantou|Body for Meziantou Header for Meziantou", template.Run("Meziantou"));
+    }
+
+    [Fact]
+    public void Template_Layout_RecursiveLayoutThrows()
+    {
+        var loader = new InMemoryTemplateLoader
+        {
+            { "a", "<%@ layout b %><%@ renderbody %>" },
+            { "b", "<%@ layout a %><%@ renderbody %>" },
+        };
+        using var template = new Template { TemplateLoader = loader };
+        template.Load("<%@ layout a %>body");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("b(1,4): The layout 'a' renders itself through its layouts.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_SectionNotRenderedThrows()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "layout", "<%@ renderbody %>" } } };
+        template.Load("<%@ layout layout %>body<%@ section titel %>Home<%@ endsection %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("(1,28): The section 'titel' is not rendered by the layout 'layout'.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_RequiredSectionNotDefinedThrows()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "layout", "<%@ rendersection title %><%@ renderbody %>" } } };
+        template.Load("<%@ layout layout %>body");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.StartsWith("layout(1,4): The section 'title' is required by the layout, but it is not defined.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_WithoutRenderBodyThrows()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "layout", "Layout" } } };
+        template.Load("<%@ layout layout %>body");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("(1,4): The layout 'layout' does not render the body: add a renderbody directive.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_SectionWithoutLayoutThrows()
+    {
+        using var template = new Template();
+        template.Load("<%@ section title %>Home<%@ endsection %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("(1,4): Sections can only be defined by a template that has a layout.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_UnendedSectionThrows()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "layout", "<%@ renderbody %>" } } };
+        template.Load("<%@ layout layout %><%@ section title %>Home");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("(1,24): The section 'title' is not ended: add an endsection directive.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_DuplicateSectionThrows()
+    {
+        using var template = new Template { TemplateLoader = new InMemoryTemplateLoader { { "layout", "<%@ renderbody %>" } } };
+        template.Load("<%@ layout layout %><%@ section a %><%@ endsection %><%@ section a %><%@ endsection %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("(1,57): The section 'a' is defined twice.", exception.Message);
+    }
+
+    [Fact]
+    public void Template_Layout_RenderBodyOutsideOfALayoutThrows()
+    {
+        using var template = new Template();
+        template.Load("<%@ renderbody %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Equal("(1,4): The renderbody directive can only be used in a layout.", exception.Message);
+    }
+
+    [Fact]
+    public void FileSystemTemplateLoader_GetFullName()
+    {
+        var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "templates"));
+        var loader = new FileSystemTemplateLoader(root);
+
+        Assert.Equal(Path.Combine(root, "header.txt"), loader.GetFullName("header.txt", referrerFullName: null));
+        Assert.Equal(Path.Combine(root, "emails", "header.txt"), loader.GetFullName("header.txt", Path.Combine("emails", "welcome.txt")));
+        Assert.Equal(Path.Combine(root, "shared", "header.txt"), loader.GetFullName(Path.Combine("..", "shared", "header.txt"), Path.Combine(root, "emails", "welcome.txt")));
+        Assert.Null(loader.GetText(Path.Combine(root, "does-not-exist.txt")));
+    }
+
     // The template must not be reachable from the caller frame when the collection runs, so keep it
     // in a non-inlined method and only return a weak reference to the load context it created.
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1593,6 +2097,10 @@ public class TemplateTest
 #pragma warning disable MA0048 // File name must match type name
 #region Template_InvoiceType
 public sealed record Invoice(string Customer, int ItemCount);
+#endregion
+
+#region Template_MenuItemType
+public sealed record MenuItem(string Title, IReadOnlyList<MenuItem> Children);
 #endregion
 
 #region Template_ReportTemplateBase

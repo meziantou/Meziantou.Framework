@@ -11,6 +11,7 @@ A powerful and flexible .NET template engine that allows you to create text temp
 - **Custom output types** - Use any output writer type for your templates
 - **Using directives** - Import namespaces and types for use in templates
 - **Class member blocks** - Add methods, fields, and properties to the generated template class
+- **Partial templates and layouts** - Render other templates, with parameters, and wrap templates in layouts with sections
 - **Debug support** - Generate debug symbols for template debugging
 - **Unloadable** - Dispose a template to unload the assembly it was compiled into
 
@@ -190,6 +191,83 @@ template.AssemblyReferences.Add(@"c:\libs\other-library.dll");
 template.IncludedSourceFiles.Add(@"c:\templates\shared-helpers.cs");
 ```
 <!-- endref -->
+
+### Partial Templates and Layouts
+
+A template renders other templates, found by its `TemplateLoader`, with the `render` directive. A partial template
+declares its parameters with the `parameter` directive:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_RenderPartialWithParameters;format=md-fenced-code-block;dedent=true -->
+```csharp
+var loader = new InMemoryTemplateLoader
+{
+    {
+        "line", """
+        <%@ parameter string Product %>
+        <%@ parameter int Quantity = 1 %>
+        - <%= Product %> x<%= Quantity %>
+
+        """
+    },
+};
+
+using var template = new Template { TemplateLoader = loader };
+template.Load("""
+    Order:
+    <%@ render line Product: "Apples", Quantity: 3 %>
+    <%@ render line Product: "Pears" %>
+    """);
+
+var result = template.Run();
+Assert.Equal("""
+    Order:
+    - Apples x3
+    - Pears x1
+
+    """, result);
+```
+<!-- endref -->
+
+The `layout` directive wraps a template in a layout, which renders the body with `renderbody` and the sections of the
+template with `rendersection`:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Layout;format=md-fenced-code-block;dedent=true -->
+```csharp
+var loader = new InMemoryTemplateLoader
+{
+    {
+        "layout", """
+        <html>
+        <head><title><%@ rendersection title %></title></head>
+        <body>
+        <%@ renderbody %>
+        <%@ rendersection footer optional %>
+        </body>
+        </html>
+        """
+    },
+};
+
+using var template = new Template { TemplateLoader = loader };
+template.Load("""
+    <%@ layout layout %>
+    <p>Hello!</p>
+    <%@ section title %>Welcome<%@ endsection %>
+    """);
+
+var result = template.Run();
+Assert.Equal("""
+    <html>
+    <head><title>Welcome</title></head>
+    <body>
+    <p>Hello!</p>
+    </body>
+    </html>
+    """, result);
+```
+<!-- endref -->
+
+Use `FileSystemTemplateLoader` to load the templates from files, relative to the template that renders them.
 
 ## Advanced Usage
 

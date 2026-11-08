@@ -83,6 +83,14 @@ namespace Meziantou.Framework.Templating
         protected override void ValidateItem(Meziantou.Framework.Templating.FileReference item) { }
     }
 
+    public sealed class FileSystemTemplateLoader : Meziantou.Framework.Templating.TemplateLoader
+    {
+        public string RootDirectory { get => throw null; }
+        public FileSystemTemplateLoader(string rootDirectory) { }
+        public override string GetFullName(string name, string? referrerFullName) => throw null;
+        public override string? GetText(string fullName) => throw null;
+    }
+
     public abstract class FreezableCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -101,6 +109,15 @@ namespace Meziantou.Framework.Templating
         public void RemoveAt(int index) { }
         protected void ThrowIfFrozen() { }
         protected virtual void ValidateItem(T item) { }
+    }
+
+    public sealed class InMemoryTemplateLoader : Meziantou.Framework.Templating.TemplateLoader, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable
+    {
+        public void Add(string name, string text) { }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public override string? GetText(string fullName) => throw null;
+        public bool Remove(string name) => throw null;
     }
 
     public sealed class IndentedTextWriter : System.IO.TextWriter
@@ -178,6 +195,7 @@ namespace Meziantou.Framework.Templating
         public string? SourceCode { get => throw null; }
         public string? SourceFileName { get => throw null; set { } }
         public string StartCodeBlockDelimiter { get => throw null; set { } }
+        public Meziantou.Framework.Templating.TemplateLoader? TemplateLoader { get => throw null; set { } }
         public bool ThrowOnMissingArgument { get => throw null; set { } }
         public Meziantou.Framework.Templating.UsingCollection Usings { get => throw null; }
         public void Build(System.Threading.CancellationToken cancellationToken) { }
@@ -235,6 +253,12 @@ namespace Meziantou.Framework.Templating
     {
         public TemplateException(string message) { }
         public TemplateException(string message, System.Exception innerException) { }
+    }
+
+    public abstract class TemplateLoader
+    {
+        public virtual string GetFullName(string name, string? referrerFullName) => throw null;
+        public abstract string? GetText(string fullName);
     }
 
     public class TextBlock : Meziantou.Framework.Templating.TemplateBlock

@@ -23,6 +23,8 @@ assembly, then runs it with the arguments you pass.
   [Passing arguments](04-PassingArguments.md).
 - **Use .NET libraries** from a template: import namespaces, reference assemblies, include C# files and share helpers
   through a base class. See [Using code and libraries](05-UsingCodeAndLibraries.md).
+- **Share a header, a footer or a layout** between templates with partial templates, layouts and sections. See
+  [Composing templates](12-ComposingTemplates.md).
 - **Write HTML emails** that encode every value for its context, and get the subject and the embedded images of the
   message. See [HTML emails](06-HtmlEmails/01-Overview.md).
 - **Generate files from scripts and builds** with the command-line tool, which also reads T4-style templates. See

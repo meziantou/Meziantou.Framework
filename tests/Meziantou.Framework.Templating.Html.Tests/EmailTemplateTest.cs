@@ -561,6 +561,26 @@ public class EmailTemplateTest
         return loadContext;
     }
 
+    [Fact]
+    public void HtmlEmailTemplate_LayoutAndPartial()
+    {
+        #region HtmlEmailTemplate_LayoutAndPartial
+        var loader = new InMemoryTemplateLoader
+        {
+            { "layout", "<html><head><title>{{@begin_section title}}{{@rendersection title}}{{@end_section}}</title></head><body>{{@renderbody}}{{@render footer}}</body></html>" },
+            { "footer", "<p>Sent to {{#html email}}</p>" },
+        };
+
+        using var template = new HtmlEmailTemplate { TemplateLoader = loader };
+        template.Arguments.Add(new TemplateArgument("email", typeof(string)));
+        template.Load("{{@layout layout}}<p>Welcome!</p>{{@section title}}Fish & Chips{{@endsection}}");
+
+        var result = template.Run(out var metadata, new Dictionary<string, object?>(StringComparer.Ordinal) { ["email"] = "<john@example.com>" });
+        Assert.Equal("<html><head><title>Fish & Chips</title></head><body><p>Welcome!</p><p>Sent to &lt;john@example.com&gt;</p></body></html>", result);
+        Assert.Equal("Fish & Chips", metadata?.Title);
+        #endregion
+    }
+
     private sealed class TemplateTrackingItsLoadContext : HtmlEmailTemplate
     {
         public WeakReference? LoadContext { get; private set; }

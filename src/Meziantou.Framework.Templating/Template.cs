@@ -96,6 +96,9 @@ public class Template : IDisposable
     /// <summary>Gets the list of C# source files included in the template compilation.</summary>
     public FileReferenceCollection IncludedSourceFiles { get; } = [];
 
+    /// <summary>Gets or sets the loader that finds the partial templates and the layouts that this template renders with the <c>render</c> and <c>layout</c> directives.</summary>
+    public TemplateLoader? TemplateLoader { get; set; }
+
     /// <summary>Gets or sets a value indicating whether to compile the template in debug mode.</summary>
     public bool Debug { get; set; }
 
@@ -131,6 +134,14 @@ public class Template : IDisposable
     {
         ThrowIfBuilt();
 
+        var blocks = ParseBlocks(text);
+        Blocks.Clear();
+        Blocks.AddRange(blocks);
+    }
+
+    /// <summary>Splits the text of a template into blocks, using the delimiters and the block factories of this template.</summary>
+    internal List<TemplateBlock> ParseBlocks(string text)
+    {
         var startCodeBlockDelimiter = StartCodeBlockDelimiter;
         var endCodeBlockDelimiter = EndCodeBlockDelimiter;
         var span = text.AsSpan();
@@ -180,8 +191,7 @@ public class Template : IDisposable
         }
 
         blocks.Sort(TemplateBlockComparer.IndexComparer);
-        Blocks.Clear();
-        Blocks.AddRange(blocks);
+        return blocks;
 
         TemplateBlock? AddBlock(List<TemplateBlock> blocks, bool codeBlock, ReadOnlySpan<char> span, ref TextPositionTracker position, int length, ref int blockIndex)
         {
@@ -482,7 +492,11 @@ public class Template : IDisposable
 
     private void BuildCore(CancellationToken cancellationToken)
     {
+        // Partials and layouts are loaded before the directives are applied: their directives
+        // (using, reference, …) apply to this template too.
+        var composition = TemplateComposition.Create(this);
         ApplyDirectives();
+        composition?.ApplyDirectives();
 
         using var sw = new StringWriter();
         using (var tw = new IndentedTextWriter(sw))
@@ -535,18 +549,25 @@ public class Template : IDisposable
             tw.WriteLine("{");
             tw.Indent++;
 
-            foreach (var block in Blocks)
+            if (composition is null)
             {
-                if (block is ClassMemberBlock)
-                    continue;
+                foreach (var block in Blocks)
+                {
+                    if (block is ClassMemberBlock)
+                        continue;
 
-                WriteBlock(tw, block);
+                    WriteBlock(tw, block);
+                }
+            }
+            else
+            {
+                composition.WriteRunMethodBody(tw);
             }
 
             tw.Indent--;
             tw.WriteLine("}");
 
-            foreach (var block in Blocks)
+            foreach (var block in composition?.ClassMemberBlocks ?? Blocks)
             {
                 if (block is not ClassMemberBlock)
                     continue;
@@ -567,7 +588,7 @@ public class Template : IDisposable
         }
     }
 
-    private void WriteBlock(IndentedTextWriter writer, TemplateBlock block)
+    internal void WriteBlock(IndentedTextWriter writer, TemplateBlock block)
     {
         var code = block.BuildCode();
         if (block is CodeBlock or ClassMemberBlock && code.Length > 0 && block.Text.Length > 0)
@@ -579,7 +600,7 @@ public class Template : IDisposable
             if (textOffset >= 0)
             {
                 var generatedCodeColumnOffset = (writer.Indent * IndentedTextWriter.DefaultTabString.Length) + textOffset;
-                writer.WriteLineNoTabs(CreateLineDirective(block.Span, generatedCodeColumnOffset));
+                writer.WriteLineNoTabs(CreateLineDirective(block.SourceFileName ?? SourceFileName, block.Span, generatedCodeColumnOffset));
                 writer.WriteLine(code);
                 writer.WriteLineNoTabs("#line default");
                 return;
@@ -589,9 +610,9 @@ public class Template : IDisposable
         writer.WriteLine(code);
     }
 
-    private string CreateLineDirective(TextSpan span, int generatedCodeColumnOffset)
+    internal static string CreateLineDirective(string? sourceFileName, TextSpan span, int generatedCodeColumnOffset)
     {
-        var fileName = SyntaxFactory.Literal(SourceFileName ?? string.Empty).Text;
+        var fileName = SyntaxFactory.Literal(sourceFileName ?? string.Empty).Text;
         return string.Create(CultureInfo.InvariantCulture, $"#line ({span.Start.Line}, {span.Start.Column}) - ({span.End.Line}, {span.End.Column}) {generatedCodeColumnOffset} {fileName}");
     }
 

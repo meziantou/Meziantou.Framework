@@ -32,6 +32,9 @@ public abstract class TemplateBlock
     /// <summary>Gets or sets the source span of the block in the source template.</summary>
     public TextSpan Span { get; internal set; }
 
+    /// <summary>Gets the name of the file that contains the block, when it differs from the file of the template: the full name of the partial template or the layout that the block comes from.</summary>
+    internal string? SourceFileName { get; set; }
+
     /// <summary>Builds the C# code for this block.</summary>
     /// <returns>The generated C# code.</returns>
     public abstract string BuildCode();

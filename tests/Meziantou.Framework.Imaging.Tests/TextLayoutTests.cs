@@ -1774,6 +1774,105 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void ARubyAnnotationIsCenteredAboveItsBase()
+    {
+        // The base, one (A, 16 pixels) and three (C, 12 pixels), is 28 pixels long; its annotation, four ones at 8
+        // pixels per em, is 32 pixels long: the base gets 2 pixels before it and 2 after it.
+        var style = new TextStyle(Ideographs, 16);
+        var annotationStyle = new TextStyle(Ideographs, 8);
+        var text = new RichTextBuilder().AppendRuby("\u4E00\u4E09", style, "\u4E00\u4E00\u4E00\u4E00", annotationStyle).Append("\u4E00", style).Build();
+        Assert.Equal(2, text.Spans.Count);
+        Assert.Equal("\u4E00\u4E00\u4E00\u4E00", text.Spans[0].RubyText);
+        Assert.Same(annotationStyle, text.Spans[0].RubyStyle);
+        Assert.Null(text.Spans[1].RubyText);
+        Assert.Equal("\u4E00\u4E09\u4E00", text.Text);
+
+        // The annotation, 8 pixels tall, stands on the ascent of the base (13 pixels): the baseline is 21 pixels down.
+        // It starts at 0 and its ones are drawn from 1 to 31, from half a pixel down to its baseline at 6.5 pixels.
+        var layout = TextLayout.Create(text);
+        Assert.Equal(48, layout.Width);
+        Assert.Equal(24, layout.Height);
+        Assert.Equal(21, layout.Baseline);
+        Assert.Equal(RectangleD.FromLTRB(1, 0.5, 46, 24), layout.InkBounds);
+        Assert.Equal(18, layout.GetCaretRectangle(1).X);
+        Assert.Equal(32, layout.GetCaretRectangle(2).X);
+
+        // A line never ends inside the base
+        var narrow = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 1 });
+        Assert.Equal(2, narrow.LineCount);
+        Assert.Equal((0, 2), (narrow.Lines[0].Start, narrow.Lines[0].Length));
+        Assert.Equal(3, TextLayout.Create("\u4E00\u4E09\u4E00", style, new TextLayoutOptions { MaxWidth = 1 }).LineCount);
+        Assert.Equal(2, TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 1, OverflowWrap = TextOverflowWrap.Anywhere }).LineCount);
+
+        // An empty annotation keeps the base whole, and adds nothing
+        var bare = TextLayout.Create(new RichTextBuilder().AppendRuby("\u4E00\u4E09", style, "", annotationStyle).Build(), new TextLayoutOptions { MaxWidth = 1 });
+        Assert.Equal(1, bare.LineCount);
+        Assert.Equal(16, bare.Height);
+        Assert.Throws<ArgumentException>(() => new RichTextBuilder().AppendRuby("", style, "\u4E00", annotationStyle));
+    }
+
+    [Theory]
+    [InlineData(TextWritingMode.VerticalRightToLeft)]
+    [InlineData(TextWritingMode.VerticalLeftToRight)]
+    public void ARubyAnnotationIsOnTheRightOfItsBaseInAVerticalLine(TextWritingMode mode)
+    {
+        // The base, one and three, is 32 pixels long down the column, as its annotation of four ones at 8 pixels per em.
+        // The column of the base is 16 pixels wide around its central baseline; the column of the annotation, 8 pixels
+        // wide, is on its right.
+        var style = new TextStyle(Ideographs, 16);
+        var text = new RichTextBuilder().AppendRuby("\u4E00\u4E09", style, "\u4E00\u4E00\u4E00\u4E00", new TextStyle(Ideographs, 8)).Build();
+        var layout = TextLayout.Create(text, Vertical(mode: mode));
+        Assert.Equal(24, layout.Width);
+        Assert.Equal(32, layout.Height);
+        Assert.Equal(8, layout.Baseline);
+        Assert.Equal(2, layout.InkBounds.Left);
+        Assert.Equal(23, layout.InkBounds.Right);
+        Assert.Equal(1, layout.InkBounds.Top);
+
+        // The annotation is drawn: the right column has ink, from the first one to the last one.
+        var samples = RenderLayout(layout);
+        Assert.True(samples[(4 * 24) + 20] > 0);
+        Assert.True(samples[(28 * 24) + 20] > 0);
+        Assert.Equal(0, samples[(4 * 24) + 15]);
+    }
+
+    [Fact]
+    public void ARubyIsHintedAndDrawnWithItsText()
+    {
+        var font = Font.Load(HintedFontPath("DroidSans"));
+        var text = new RichTextBuilder().Append("The ", new TextStyle(font, 13)).AppendRuby("ruby", new TextStyle(font, 13), "annotation", new TextStyle(font, 7)).Build();
+        foreach (var hinting in (TextHinting[])[TextHinting.None, TextHinting.Light, TextHinting.Full])
+        {
+            foreach (var mode in (TextWritingMode[])[TextWritingMode.Horizontal, TextWritingMode.VerticalRightToLeft])
+            {
+                var layout = TextLayout.Create(text, new TextLayoutOptions { Hinting = hinting, WritingMode = mode });
+                var samples = RenderLayout(layout);
+                Assert.Contains(samples, sample => sample > 0);
+
+                // What is measured is what is drawn
+                Assert.Equal(samples, RenderLayout(layout, path: true));
+            }
+        }
+    }
+
+    private static int[] RenderLayout(TextLayout layout, bool path = false)
+    {
+        using var image = new Image<Gray8>((int)Math.Ceiling(layout.Width), (int)Math.Ceiling(layout.Height), new Gray8(0));
+        image.Draw(canvas =>
+        {
+            if (path)
+            {
+                canvas.Fill(White, layout.ToPath(new PointD(0, 0)));
+            }
+            else
+            {
+                canvas.FillText(White, layout, new PointD(0, 0));
+            }
+        }, Ct);
+        return DrawingTestSupport.ReadSamples(image.Frames[0]);
+    }
+
+    [Fact]
     public void AVerticalLineSetsUprightCharactersOneUnderTheOther()
     {
         // The line is 16 pixels wide, the ascent and the descent of the font, and its baseline is in its middle.

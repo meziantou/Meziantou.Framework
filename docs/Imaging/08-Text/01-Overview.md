@@ -28,7 +28,8 @@ The usual flow is: load a font once, create a [TextLayout](cref:Meziantou.Framew
   limits that protect you from hostile fonts.
 - [Drawing text](03-DrawingText.md): draw a string, place it by a point of its box, wrap paragraphs, give parts of the
   text their own style, and fit a text in a box.
-- [Text layout](04-TextLayout.md): fallback fonts, right-to-left and vertical text, alignment and hyphenation,
+- [Text layout](04-TextLayout.md): fallback fonts, right-to-left and vertical text, alignment and hyphenation, ruby,
   synthetic bold and oblique, the language of a text and how it is shaped.
 - [Text on paths and measuring](05-TextOnPathsAndMeasuring.md): make a text follow a curve, measure it, find the
-  character under a point, draw carets and selections, draw your own glyph runs, and hint small text.
+  character under a point, draw carets and selections, draw your own glyph runs, hint small text, and render it for
+  LCD screens.

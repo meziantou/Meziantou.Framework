@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// </remarks>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "An engine only lives in Create, which disposes what it rents")]
-internal sealed class TextLayoutEngine
+internal sealed partial class TextLayoutEngine
 {
     private const int SoftHyphen = 0x00AD;
 
@@ -75,8 +75,11 @@ internal sealed class TextLayoutEngine
     private readonly TextSpan[] _spans;
     private readonly TextLayoutOptions _options;
 
-    // The hinted glyphs, when the text is hinted: a horizontal layout with TextLayoutOptions.Hinting.
+    // The hinted glyphs, when the text is hinted: a layout with TextLayoutOptions.Hinting.
     private readonly TextGlyphHinter? _hinter;
+
+    // The annotation of each span that is the base of a ruby, or null when the text has no ruby.
+    private RubyAnnotation?[]? _rubies;
     private readonly ImageResourceLimits _limits;
     private readonly FontResourceLimits _fontLimits;
     private readonly GlyphBuffer _buffer;
@@ -175,6 +178,8 @@ internal sealed class TextLayoutEngine
 
     private void Run()
     {
+        _rubies = CreateRubies();
+
         // The paragraphs: the text between two mandatory breaks. The break opportunities of the whole text are found
         // once; a paragraph ends with the characters of its line break, which are not shaped.
         var breaks = new List<int>();
@@ -289,8 +294,9 @@ internal sealed class TextLayoutEngine
         paragraph.Advances = new double[content.Length];
         Itemize(paragraph);
 
-        // A line never ends inside a text set in the room of one upright character
-        if (paragraph.CombinedEnds.Length != 0)
+        // A line never ends inside a text set in the room of one upright character, nor inside the base of a ruby
+        paragraph.RubyEnds = FindRubyEnds(paragraph);
+        if (paragraph.CombinedEnds.Length != 0 || paragraph.RubyEnds.Length != 0)
         {
             paragraph.Breaks.RemoveAll(position => IsInsideCombined(paragraph, position));
         }
@@ -438,7 +444,7 @@ internal sealed class TextLayoutEngine
                 || scripts[i] != scripts[start]
                 || !ReferenceEquals(fonts[i], fonts[start])
                 || (_isVertical && upright[i] != upright[start])
-                || (nextSpan != span && (_spans[span].IsPlaceholder || _spans[nextSpan].IsPlaceholder || !AreShapedTogether(_spans[span].Style, _spans[nextSpan].Style))))
+                || (nextSpan != span && (_spans[span].IsPlaceholder || _spans[nextSpan].IsPlaceholder || _spans[span].RubyText is not null || _spans[nextSpan].RubyText is not null || !AreShapedTogether(_spans[span].Style, _spans[nextSpan].Style))))
             {
                 var style = _spans[span].Style;
                 var isCombined = combined.Length != 0 && combined[start] != 0;
@@ -452,6 +458,7 @@ internal sealed class TextLayoutEngine
                     Script = scripts[start],
                     IsTabulation = content[start] == '\t' && !isCombined,
                     Placeholder = _spans[span].IsPlaceholder ? span : -1,
+                    Ruby = _spans[span].RubyText is not null ? span : -1,
                     IsUpright = _isVertical && upright[start],
                     IsCombined = isCombined,
                     IsCombinedRightToLeft = isCombined && combinedRightToLeft[start],
@@ -599,16 +606,24 @@ internal sealed class TextLayoutEngine
         return ends ?? [];
     }
 
-    /// <summary>Determines whether a position of a paragraph is inside a text set in the room of one upright character: a line never ends there.</summary>
+    /// <summary>
+    /// Determines whether a position of a paragraph is inside a text set in the room of one upright character, or
+    /// inside the base of a ruby: a line never ends there.
+    /// </summary>
     private static bool IsInsideCombined(Paragraph paragraph, int position)
-        => paragraph.CombinedEnds.Length != 0 && position > paragraph.Start && position < paragraph.End && paragraph.CombinedEnds[position - 1 - paragraph.Start] > position;
+        => position > paragraph.Start && position < paragraph.End
+            && ((paragraph.CombinedEnds.Length != 0 && paragraph.CombinedEnds[position - 1 - paragraph.Start] > position)
+                || (paragraph.RubyEnds.Length != 0 && paragraph.RubyEnds[position - 1 - paragraph.Start] > position));
 
-    /// <summary>Gets the end of the unit of text at a position: its grapheme cluster, or the text set in the room of one upright character that starts there.</summary>
+    /// <summary>Gets the end of the unit of text at a position: its grapheme cluster, the text set in the room of one upright character that starts there, or the base of a ruby that starts there.</summary>
     private static int GetUnitEnd(Paragraph paragraph, ReadOnlySpan<char> text, int position)
     {
         var index = position - paragraph.Start;
         if ((uint)index < (uint)paragraph.CombinedEnds.Length && paragraph.CombinedEnds[index] != 0)
             return Math.Min(paragraph.CombinedEnds[index], text.Length);
+
+        if ((uint)index < (uint)paragraph.RubyEnds.Length && paragraph.RubyEnds[index] != 0)
+            return Math.Min(paragraph.RubyEnds[index], text.Length);
 
         return position + Math.Max(Unicode.GetGraphemeClusterLength(text[position..]), 1);
     }
@@ -846,6 +861,24 @@ internal sealed class TextLayoutEngine
         if (style.LetterSpacing != 0 || style.WordSpacing != 0)
         {
             AddSpacing(glyphs, style, isRightToLeft);
+        }
+
+        // A base shorter than its annotation gets half of the difference before it and half after it
+        if (item.Ruby >= 0 && glyphs.Length != 0 && _rubies![item.Ruby] is { Padding: > 0 } ruby)
+        {
+            var span = _spans[item.Ruby];
+            var isFirst = item.Start == span.Start;
+            var isLast = item.End == span.Start + span.Length;
+            if (isRightToLeft ? isLast : isFirst)
+            {
+                glyphs[0].Advance += ruby.Padding;
+                glyphs[0].XOffset += ruby.Padding;
+            }
+
+            if (isRightToLeft ? isFirst : isLast)
+            {
+                glyphs[^1].Advance += ruby.Padding;
+            }
         }
 
         // An item without character, which only holds what a line adds, has no advance to record.
@@ -1831,6 +1864,13 @@ internal sealed class TextLayoutEngine
             var isHanging = item.Start >= contentEnd && item.Start < item.End;
             var central = IncludeMetrics(line, item.Font, GetSize(item.Style), item.Script);
             var baselineShift = item.IsUpright ? 0 : central;
+
+            // The annotation of a ruby stands on the ascent of its base: the line is as tall as they are together
+            if (item.Ruby >= 0 && _rubies![item.Ruby] is { Annotation: not null } ruby)
+            {
+                line.Ascent = Math.Max(line.Ascent, ruby.BaseAbove + ruby.Extent);
+            }
+
             if (item.IsTabulation)
             {
                 line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = GetSize(item.Style), Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0, Central = central, Justification = classifies ? JustificationClass.Barrier : JustificationClass.None });
@@ -1968,7 +2008,7 @@ internal sealed class TextLayoutEngine
                 Shape(paragraph, item);
             }
 
-            var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation, Placeholder = item.Placeholder, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft };
+            var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation, Placeholder = item.Placeholder, Ruby = item.Ruby, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft };
             item.End = position;
             paragraph.Items.Insert(i + 1, second);
             if (item.Start >= lineStart)
@@ -2028,7 +2068,7 @@ internal sealed class TextLayoutEngine
         var end = FindShapingEnd(paragraph, item);
         if (end < item.End)
         {
-            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft });
+            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true, Ruby = item.Ruby, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft });
             item.End = end;
         }
 
@@ -2039,7 +2079,7 @@ internal sealed class TextLayoutEngine
     {
         return ReferenceEquals(first.Style, second.Style) && ReferenceEquals(first.Font, second.Font) && first.Level == second.Level && first.Script == second.Script
             && !first.IsTabulation && !second.IsTabulation && first.Placeholder < 0 && second.Placeholder < 0 && first.IsUpright == second.IsUpright
-            && !first.IsCombined && !second.IsCombined;
+            && !first.IsCombined && !second.IsCombined && first.Ruby == second.Ruby;
     }
 
     /// <summary>
@@ -2438,6 +2478,11 @@ internal sealed class TextLayoutEngine
             AddDecorations(decorations, brushes, decoration, baseline);
             AddBackground(backgrounds, brushes, background, baseline);
             AddHitBoxes(line, placed, x, hitBoxes, boundaries, clusters);
+            if (_rubies is not null)
+            {
+                AddRubyAnnotations(new RubyPlacement(line, x, baseline, lineRight, glyphs, positions, linePositions, anchors, runs, brushes, outlines, decorations, backgrounds));
+            }
+
             if (_isVertical)
             {
                 Turn(decorations, firstDecoration, lineDecorations, lineRight, line.Y);
@@ -2883,6 +2928,9 @@ internal sealed class TextLayoutEngine
         /// <summary>The span of the placeholder the item is, or -1: one character that takes the room of what the caller draws there.</summary>
         public int Placeholder = -1;
 
+        /// <summary>The span of the ruby whose base the item is part of, or -1.</summary>
+        public int Ruby = -1;
+
         /// <summary>The glyphs of the item are upright in a vertical line, and shaped for it; the others are on their side, shaped as in a horizontal line.</summary>
         public bool IsUpright;
 
@@ -2942,6 +2990,9 @@ internal sealed class TextLayoutEngine
         /// or 0; empty when the paragraph has no such text.
         /// </summary>
         public int[] CombinedEnds { get; set; } = [];
+
+        /// <summary>Gets or sets, for each character of the paragraph, the end of the base of the ruby it is in, or 0; empty when the paragraph has no ruby.</summary>
+        public int[] RubyEnds { get; set; } = [];
     }
 
     private sealed class Line

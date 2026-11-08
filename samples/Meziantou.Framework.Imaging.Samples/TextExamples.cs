@@ -174,4 +174,35 @@ internal static class TextExamples
         image.Save(outputPath);
     }
     #endregion
+
+    /// <summary>Ruby: the reading of Japanese words in kana beside them, in a horizontal and a vertical layout.</summary>
+    #region Imaging_DrawRuby
+    public static void DrawRuby(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var text = new TextStyle(font, size: 28);
+        var reading = new TextStyle(font, size: 14);
+
+        // The base is part of the text; the annotation is set beside it, at half the size, and a line never ends inside the base
+        var rubyText = new RichTextBuilder()
+            .AppendRuby("東京", text, "とうきょう", reading)
+            .Append("の", text)
+            .AppendRuby("日本語", text, "にほんご", reading)
+            .Build();
+
+        // Above the base in a horizontal layout, on its right in a vertical one
+        var horizontal = TextLayout.Create(rubyText);
+        var vertical = TextLayout.Create(rubyText, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft });
+
+        var width = (int)Math.Ceiling(horizontal.Width + vertical.Width) + 40;
+        var height = (int)Math.Ceiling(Math.Max(horizontal.Height, vertical.Height)) + 20;
+        using var image = new Image<Rgba32>(width, height, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            canvas.FillText(new Rgba32(0, 0, 0), horizontal, new PointD(10, 10));
+            canvas.FillText(new Rgba32(0, 0, 0), vertical, new PointD(horizontal.Width + 30, 10));
+        });
+        image.Save(outputPath);
+    }
+    #endregion
 }

@@ -987,6 +987,329 @@ public sealed class DrawingGradientTests
         Assert.InRange(changed, 100, expectedSamples.Length);
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Mesh gradients
+    // -----------------------------------------------------------------------------------------------------------------
+
+    // The 12 boundary points of a square patch with straight sides, the control points at a third and two thirds
+    private static PointD[] SquareBoundary(double left, double top, double size)
+    {
+        var third = size / 3;
+        return
+        [
+            new(left, top), new(left + third, top), new(left + (2 * third), top), new(left + size, top),
+            new(left + size, top + third), new(left + size, top + (2 * third)), new(left + size, top + size),
+            new(left + (2 * third), top + size), new(left + third, top + size), new(left, top + size),
+            new(left, top + (2 * third)), new(left, top + third),
+        ];
+    }
+
+    private static int RoundPaint(double value) => (int)Math.Floor(value + 0.5 + (1.0 / 1048576));
+
+    [Fact]
+    public void AMeshGradientPatchWithStraightSidesMixesItsCornerColorsBilinearly()
+    {
+        // The parameters of a square patch with evenly spaced control points are the position: u = x / 8, v = y / 8. The
+        // color of a pixel is the bilinear mix of the corners at its center.
+        int[] corners = [0, 100, 255, 50];
+        var patch = MeshGradientPatch.CreateCoons(SquareBoundary(0, 0, 8), [.. corners.Select(c => (Rgba64)new Rgba32((byte)c, (byte)c, (byte)c))]);
+        var brush = new MeshGradientBrush([patch]);
+        Assert.Single(brush.Patches.ToArray());
+        Assert.True(brush.Transform.IsIdentity);
+        Assert.Equal(16, patch.ControlPoints.Length);
+        Assert.Equal(new PointD(8, 8), patch.GetPoint(1, 1));
+        Assert.Equal(new PointD(2, 6), patch.GetPoint(0.25, 0.75));
+
+        var expected = new int[8][];
+        for (var y = 0; y < 8; y++)
+        {
+            expected[y] = new int[8];
+            for (var x = 0; x < 8; x++)
+            {
+                var u = (x + 0.5) / 8;
+                var v = (y + 0.5) / 8;
+                expected[y][x] = RoundPaint(((1 - u) * (1 - v) * corners[0]) + (u * (1 - v) * corners[1]) + (u * v * corners[2]) + ((1 - u) * v * corners[3]));
+            }
+        }
+
+        AssertFill(8, 8, brush, expected);
+
+        // A horizontal ramp from 0 to 255: 255 (x + 0.5) / 8
+        var ramp = MeshGradientPatch.CreateCoons(SquareBoundary(0, 0, 8), [new Rgba32(0, 0, 0), new Rgba32(255, 255, 255), new Rgba32(255, 255, 255), new Rgba32(0, 0, 0)]);
+        int[] row = [16, 48, 80, 112, 143, 175, 207, 239];
+        AssertFill(8, 2, new MeshGradientBrush([ramp]), [row, row]);
+    }
+
+    [Fact]
+    public void ACoonsPatchIsTheTensorProductPatchOfItsBoundary()
+    {
+        // The Coons surface, the sum of the two ruled surfaces of opposite sides minus the bilinear surface of the corners,
+        // is the tensor-product surface whose inner points CreateCoons computes
+        PointD[] boundary =
+        [
+            new(0, 0), new(30, -10), new(70, 15), new(100, 0),
+            new(110, 40), new(90, 70), new(105, 100),
+            new(60, 120), new(35, 80), new(-5, 95),
+            new(10, 60), new(-15, 30),
+        ];
+        var patch = MeshGradientPatch.CreateCoons(boundary, [new Rgba32(1, 2, 3)]);
+        for (var i = 0; i <= 10; i++)
+        {
+            for (var j = 0; j <= 10; j++)
+            {
+                var u = i / 10.0;
+                var v = j / 10.0;
+                var top = Bezier(boundary[0], boundary[1], boundary[2], boundary[3], u);
+                var bottom = Bezier(boundary[9], boundary[8], boundary[7], boundary[6], u);
+                var left = Bezier(boundary[0], boundary[11], boundary[10], boundary[9], v);
+                var right = Bezier(boundary[3], boundary[4], boundary[5], boundary[6], v);
+                var x = ((1 - v) * top.X) + (v * bottom.X) + ((1 - u) * left.X) + (u * right.X)
+                    - (((1 - u) * (1 - v) * boundary[0].X) + (u * (1 - v) * boundary[3].X) + (u * v * boundary[6].X) + ((1 - u) * v * boundary[9].X));
+                var y = ((1 - v) * top.Y) + (v * bottom.Y) + ((1 - u) * left.Y) + (u * right.Y)
+                    - (((1 - u) * (1 - v) * boundary[0].Y) + (u * (1 - v) * boundary[3].Y) + (u * v * boundary[6].Y) + ((1 - u) * v * boundary[9].Y));
+                var point = patch.GetPoint(u, v);
+                Assert.Equal(x, point.X, 1e-9);
+                Assert.Equal(y, point.Y, 1e-9);
+            }
+        }
+
+        static PointD Bezier(PointD a, PointD b, PointD c, PointD d, double t)
+        {
+            var s = 1 - t;
+            return new PointD(
+                (s * s * s * a.X) + (3 * s * s * t * b.X) + (3 * s * t * t * c.X) + (t * t * t * d.X),
+                (s * s * s * a.Y) + (3 * s * s * t * b.Y) + (3 * s * t * t * c.Y) + (t * t * t * d.Y));
+        }
+    }
+
+    [Fact]
+    public void ACurvedMeshGradientPaintsTheParametersOfEachPixel()
+    {
+        // A patch with curved sides and a horizontal ramp (u from 0 to 1): every pixel inside it has the color 255 u of the
+        // parameters of its center, found by inverting the surface with Newton's method
+        PointD[] boundary =
+        [
+            new(2, 3), new(12, -2), new(22, 6), new(30, 2),
+            new(33, 12), new(27, 20), new(31, 30),
+            new(21, 33), new(11, 26), new(1, 31),
+            new(6, 21), new(-1, 11),
+        ];
+        var patch = MeshGradientPatch.CreateCoons(boundary, [new Rgba32(0, 0, 0), new Rgba32(255, 255, 255), new Rgba32(255, 255, 255), new Rgba32(0, 0, 0)]);
+        using var image = Fill(32, 32, new MeshGradientBrush([patch]));
+        var checkedPixels = 0;
+        for (var y = 0; y < 32; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                if (!TryInvert(patch, x + 0.5, y + 0.5, out var u, out _))
+                    continue;
+
+                checkedPixels++;
+                Assert.True(Math.Abs((255 * u) - image.Frames[0][x, y].Value) <= 1, $"pixel ({x}, {y}): {255 * u} != {image.Frames[0][x, y].Value}");
+            }
+        }
+
+        Assert.True(checkedPixels > 500);
+
+        // Newton's method from the middle of the patch; the parameters must stay inside the patch with a margin, so
+        // that the pixels near the sides (where the triangles may differ by a tenth of a pixel) are skipped
+        static bool TryInvert(MeshGradientPatch patch, double x, double y, out double u, out double v)
+        {
+            u = 0.5;
+            v = 0.5;
+            for (var i = 0; i < 50; i++)
+            {
+                var p = patch.GetPoint(u, v);
+                var du = patch.GetPoint(u + 1e-7, v);
+                var dv = patch.GetPoint(u, v + 1e-7);
+                var a = (du.X - p.X) / 1e-7;
+                var b = (dv.X - p.X) / 1e-7;
+                var c = (du.Y - p.Y) / 1e-7;
+                var d = (dv.Y - p.Y) / 1e-7;
+                var determinant = (a * d) - (b * c);
+                var ex = x - p.X;
+                var ey = y - p.Y;
+                u += ((d * ex) - (b * ey)) / determinant;
+                v += ((a * ey) - (c * ex)) / determinant;
+            }
+
+            var reached = patch.GetPoint(u, v);
+            return Math.Abs(reached.X - x) < 1e-6 && Math.Abs(reached.Y - y) < 1e-6 && u is > 0.05 and < 0.95 && v is > 0.05 and < 0.95;
+        }
+    }
+
+    [Fact]
+    public void AMeshGradientPaintsItsPatchesInOrderAndNothingOutsideThem()
+    {
+        // Two overlapping squares, 0 to 6 then 3 to 9 along x: the second one, white, covers the first one, gray; the
+        // pixels outside both keep their black
+        var first = MeshGradientPatch.CreateCoons(SquareBoundary(0, 0, 6), [new Rgba32(100, 100, 100)]);
+        var second = MeshGradientPatch.CreateCoons(SquareBoundary(3, 0, 6), [new Rgba32(255, 255, 255)]);
+        int[] row = [100, 100, 100, 255, 255, 255, 255, 255, 255, 0];
+        AssertFill(10, 7, new MeshGradientBrush([first, second]), [row, row, row, row, row, row, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]);
+        AssertFill(10, 1, new MeshGradientBrush([second, first]), [[100, 100, 100, 100, 100, 100, 255, 255, 255, 0]]);
+
+        // A patch of one color paints what a solid brush paints, inside the patch
+        var solid = MeshGradientPatch.CreateTensorProduct(
+            [new(0, 0), new(2, 0), new(4, 0), new(6, 0), new(0, 2), new(2, 2), new(4, 2), new(6, 2), new(0, 4), new(2, 4), new(4, 4), new(6, 4), new(0, 6), new(2, 6), new(4, 6), new(6, 6)],
+            [new Rgba64(10000, 20000, 30000, 40000)]);
+        using var meshImage = new Image<Rgba64>(6, 6);
+        using var solidImage = new Image<Rgba64>(6, 6);
+        meshImage.Frames[0].Draw(canvas => canvas.Fill(new MeshGradientBrush([solid])), Ct);
+        solidImage.Frames[0].Draw(canvas => canvas.Fill(new Rgba64(10000, 20000, 30000, 40000)), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(solidImage.Frames[0]), DrawingTestSupport.ReadSamples(meshImage.Frames[0]));
+    }
+
+    [Fact]
+    public void AFoldedMeshGradientShowsTheLargestParameters()
+    {
+        // The top and bottom sides go out to the right and come back to the left: the patch covers its area twice
+        // The x of a top point is 72 u (1 - u)^2 - 48 u^2 (1 - u) + 0 u^3 = 24 u (1 - u)(3 - 5 u): it goes out to the right,
+        // then back through 0 at u = 0.6 to the left. A pixel center x > 0 is reached twice for u < 0.6; the largest
+        // one is painted. A ramp from black (u = 0) to white (u = 1) is then brighter than for the first u.
+        var patch = MeshGradientPatch.CreateCoons(
+            [new(0, 0), new(24, 0), new(-16, 0), new(0, 0), new(0, 2), new(0, 4), new(0, 6), new(-16, 6), new(24, 6), new(0, 6), new(0, 4), new(0, 2)],
+            [new Rgba32(0, 0, 0), new Rgba32(255, 255, 255), new Rgba32(255, 255, 255), new Rgba32(0, 0, 0)]);
+        using var image = Fill(8, 6, new MeshGradientBrush([patch]));
+        for (var x = 0; x < 5; x++)
+        {
+            var center = x + 0.5;
+
+            // The largest root below 0.6 of 24 u (1 - u)(3 - 5 u) = center, by bisection on the decreasing part
+            double low = 0.25;
+            double high = 0.6;
+            for (var i = 0; i < 100; i++)
+            {
+                var middle = (low + high) / 2;
+                if (24 * middle * (1 - middle) * (3 - (5 * middle)) > center)
+                {
+                    low = middle;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+
+            Assert.True(Math.Abs((255 * low) - image.Frames[0][x, 3].Value) <= 1, $"pixel {x}: {255 * low} != {image.Frames[0][x, 3].Value}");
+        }
+    }
+
+    [Fact]
+    public void AMeshGradientFollowsItsTransformation()
+    {
+        var moved = MeshGradientPatch.CreateCoons(SquareBoundary(2, 1, 4), [new Rgba32(0, 0, 0), new Rgba32(255, 255, 255), new Rgba32(80, 80, 80), new Rgba32(30, 30, 30)]);
+        var original = MeshGradientPatch.CreateCoons(SquareBoundary(0, 0, 4), [new Rgba32(0, 0, 0), new Rgba32(255, 255, 255), new Rgba32(80, 80, 80), new Rgba32(30, 30, 30)]);
+        using var expected = Fill(8, 8, new MeshGradientBrush([moved]));
+        using var actual = Fill(8, 8, new MeshGradientBrush([original]) { Transform = AffineTransform.CreateTranslation(2, 1) });
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+        Assert.Contains(DrawingTestSupport.ReadSamples(actual.Frames[0]), sample => sample != 0);
+
+        // A transformation that flattens the plane paints nothing
+        AssertFill(2, 2, new MeshGradientBrush([original]) { Transform = AffineTransform.CreateScale(0, 1) }, [[0, 0], [0, 0]]);
+    }
+
+    [Fact]
+    public void AMeshGradientInterpolatesPremultipliedColors()
+    {
+        // Red to transparent along u: the transparent corners do not darken the red
+        var patch = MeshGradientPatch.CreateCoons(SquareBoundary(0, 0, 4), [new Rgba32(255, 0, 0), new Rgba32(0, 0, 0, 0), new Rgba32(0, 0, 0, 0), new Rgba32(255, 0, 0)]);
+        using var image = new Image<Rgba32>(4, 1);
+        image.Frames[0].Draw(canvas => canvas.Fill(new MeshGradientBrush([patch])), Ct);
+        Assert.Equal(new Rgba32(255, 0, 0, 223), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(255, 0, 0, 32), image.Frames[0][3, 0]);
+    }
+
+    // Ghostscript 10.06.0, "gs -sDEVICE=ppmraw -r72", of a 40x40 pt white page whose content is
+    // "1 0 0 -1 0 40 cm /Sh0 sh": the PDF shading type 6 (Coons) or 7 (tensor product) of the patches of
+    // MeshGradientsMatchGhostscript, as 40 x 40 RGB pixels
+    private const string GhostscriptCoons = "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////2QAl0QAtygA0vgE/tQBIqwBTowBamwBilABqjABx////////////////////////////////////////////////////AAD//////////////////////////////////////////////wAA9wAH7wAP6QAV4AMd2AQlzwcuxgk2vgs9tQlGrAhPpAdYmwZgkgVpiQRyfQCBeAKEbwCOZQCZXQChVQCpTQCx////NADKKwDTIgDcGQDlDwHtBQL2AAb3/////////////////////////////////////////wAA+gYE8QgN6AoV3wwd1w4lzhAtxhIzvhQ6tRNErBFMoxBUmw9dkg1liQxugQt2eAp/bwmJZgiTXQacVAWmSgSwPQDBNwPDLQXMIwbUGQfcEAjkBQntAAzv/////////////////////////////////////////xEA+hAE8BIN5xQV3xYc1hgkzRorxRwyvB06tBtBqxpJoxlRmhdZkRZiiRVqgRRyeBJ7bxGEZhCNXQ+WVA2gSgypQQqzOAu8LgzEIw3MGg7UEQ/bBhDjABLn/////////////////////////////////////////xoA+BoG7xwN5h4V3iAc1SIjzSQqxCUxvCY3syU/qyNHoiJOmiBWkR9eiR1mgBxudxt2bxl+ZhiHXReQVBWZSxSiQRKsOBO0LxS7JRXDGxbLEhbSCBfZABjf/////////////////////////////////////////yIA9yQG7iYN5igU3iob1SsizC0oxC4uvC81sy48qyxEoitLmilSkSdaiCZigCVpeCNxbyJ5ZiCCXR+KVB2SSxybQhqkORqsLxuzJhy7HB3CEx3JCR7QAB7X/////////////////////////////////////////i0A9i8H7TAN5jIT3jMZ1DUhzDYnwzgtuzgzsjc6qjVBojRHmjJPkTBWiC9dgC1keCxsbyp0Zil8XSeEVSWMTCSVQiKdOSKlMCKsJiOzHCS6EyTACiXGACTQ/////////////////////////////////////////TcA9TkH7ToN5DwT3D0a0z4fy0Alw0Eru0Exsj83qj4+oT1FmTtLkDlSiDhZgDZgdzRobzJvZjF2XS9/VS2GTCyNQiqWOSmdMCqkJiuqHSuxFCy3Cyy9ACrI/////////////////////////////////////////UEB9UIH7UQM5UUS3EYY1EcdzEgjw0opu0kus0g0qkc7oUVBmUNHkUJOiEBVgD5bdz1ibztqZjlxXjd4VTWATDOHQzGPOjGWMTGcKDKiHzOoFTOuDDO0ADe4/////////////////////////////////////////koA9kwF7k0L5U4R3U8W1VAczVEhxFImu1Iss1Exqk83oU4+mUxEkUpKiEhQgEdXd0Vdb0NlZkFsXj9zVT16TDuBQzmIOjmOMTmUJzqaHzqgFDumCzusAD2w/////////////////////////////////////////1UA91UF71YK5lcP3lgU1lkazVoexVsjvFsotFouq1g0olY6mVVAkVNGiFFMgE9Sd01ZbktfZklmXkdtVEV0TEN7Q0GBOkGHMEKNJ0KSHkKXFEOeCkKjAESn/////////////////////////////////////////10A+F4E8F8J52AO32ET1mIXzmMcxWQhvGQmtGMrq2Exol82mV08kVtCiFlIf1dNd1VUblNaZVFhXVBnVE1uS0t1Q0l7OUmBL0mGJkqLHUqQE0qVCUqaAEqf/////////////////////////////////////////2UA+WcD8WgI6GkN32oS12sWz2waxW0fvG0jtGwoq2otomgzmWY4kWQ+iGJDf2BJd15PblxVZVpbXFdhU1VoSlNvQVF1OFF6LlF/JVGEG1GIElGNCFGSAFCX/////////////////////////////////////////20A+W8D8nAH6XIL33MR2HQUz3UYx3YcvXchtXUlrHIqo3Avmm41kWw6iGo/f2lEd2ZKbmRQZWJVXF9cU11iSltoQVlvN1lzLll4JVl8G1mAEVmFCFmJAFeP////////////////////////////////////////////+3gC83kG6noK4nsO2X0S0H4Wx38avn8etX0irHsno3ksmncwkXU1iHM6f3E/dm9FbWxLZWlQXGdWUmVcSWNiQGFoN2FtLWBxJGB0GmB5EGB9BmCAAGR//////////////////////////////////////////////IEA9IIF64MJ4oQN2YUR0IYUx4cYv4gbtYYgrIQko4Epmn8tkX0yiHs2f3k7dndAbXRFZHJLW29QUm1WSWtbQGlhNmhlLGhpImhtGWdxD2d1BWd4AGp2/////////////////////////////////////////////YoA9IsE64wI4o0M2Y4P0Y8TyJAWv5AZto4drIwho4klmocqkYUuiIMyf4E3dn87bXxAZHpFW3dKUXVQSHNVP3BaNXBeK3BiIm9lGG9pDm9sAHBu/////////////////////////////////////////////////pIA9ZQE7JUH45UK2pYO0ZcRyJgUv5kXtpYarJQeo5Iimo8mkY0qiIsufokydoc3bYQ7ZIJAW39EUX1KSHpOP3hTNXhXK3daInddGHZhDXZkAHdm/////////////////////////////////////////////////5sA9pwD7Z0G5J4J2p8M0Z8PyKASv6EVtp8YrZwbo5ofmpgikZYmiJQqfpEtdY8ybIw2Y4o6Woc/UIVDR4JIP4BMNIBQKn9TIX5VFn5YDX5bAH1e/////////////////////////////////////////////////6MA9qUC7aYF5KcI26cL0qgOyakQv6oStqcVraUYo6IbmqAfkZ4ih5wlfpopdZctbJQxY5I1WY85UIw9R4pCPYhGM4dIKYdLIIZOFoZQDIVSAIRW/////////////////////////////////////////////////6sA9q4C7q4F5K8H27AK0rAMybEOv7IQtrATra0Vo6sYmqkbkaceh6QhfqIkdZ8obJwrY5kvWZczT5Q3RpE7PZA/M49BKY9DH45GFY1IC41JAIpO/////////////////////////////////////////////////7MA+LYC77cE5bgG3LgI0rkKyboMv7oOtrgQrLYTo7MVmrEYkK8ah6wdfqogdKcja6QmYqEqWJ4uT5sxRpk0PZc4Mpc6KJY7HpU9FJU/CpRBAJc+/////////////////////////////////////////////////8IA+L8B7r8D5MAG2sEH0cIJx8ILvcIMtMAOq70Qo7sSmrkUkLcXhrQZfrIbdK8ea6whYqkkWKYnT6MrRaAuO58xMZ4yKJ00Hp01FZw3C5s4AJ02/////////////////////////////////////////////////8oA9scB7MgD4skF2MkGz8oIxcoJvMoKs8cMqsUNosMPmcERj74ThrwVfroXdLYaa7McYrEfWK4hT6skRagoPKYqMqYrKaUsH6QtFqMuDKIvAKMu/////////////////////////////////////////////////c8A89AC6tAD4NEE19IGzdIGxNIHu9IIss8Jqc0LocsMl8gOjsYPhcMRfcETc74Va7sXYrgZWLUcT7MeRbAhPK4jM60kKqwkIaslF6omDqknAagnAKkn////////////////////////////////////////////+9gA8dkB6NkC3toD1doEy9oFwtsFudkGsdcHqNUIn9IJltAKjc4MhMsNfMgOc8YQasMSYsAUWb0WT7oYRrgaPLUcNLUdK7QdIrMdGbIeELEeB7AfAK8f/////////////////////////////////////////+AA+eEA7+EB5uIC3uIC0+IDyuMDweMDuOEEr98Ep9wFntoGldgHjdYIhNMJfNAKc80LassNYsgOWcUQUMISR8AUPr0VNbwVLLsWIroWGrkWEbgWCLcWALUX/////////////////////////////////////////+gA9uoA7eoB5uoB3uoB0esByOsBv+sBt+kBrucCpuQCneIDleAEjN0EhNsEfNgFc9UHatIIYtAJWc0KUMoLR8cNPsQONcMOLMIOIsEOGsAOEsAOCr8NALsP/////////////////////////////////////////fIA9PIA6/IA4/MA2fMA0PMAyvMAu/AAs+4ArOwApOsAnekAlOcAi+QAf+MAet8Bct0CatoCYtcDWdUFUNIFR88GPswINssILsoHI8kGG8gGFMcGC8YFAMEH//////////////////////////////////////8A+/oA8vsA6PoA4PgA////////////////////////////////////////////////////aN4AYdwAWdsAUtkASNcAP9QBN9MALtIAJdAAHs4AFswAD8sAB8kA//////////////////////////////////////8A////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+
+    private const string GhostscriptTensor = "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8HgA////////////////////////////////////////////////////////////TC0OUzAOWjMNYTcMaDoMbj0LeEELg0YJh0gKjUwKlE8Jm1IIolUIqVgHr1sHul8EvWEGw2QGyWcGz2oF1W0F23AF4XMF53UE7XgE8HwI////////////////////////////////////////////////NCIRPicQRy0STzITVzYTXzoTZz4Tb0ITd0YTfkkThk0TjVATk1MSmlYRoVoRqF0Qr2AQtmMPvGYPw2kPyWwPz28O1XEO23QO4XcO53oO7X0N8YAQ////////////////////////////////FBQUHBcTIhoSKyAVNCYXPiwZRzIbTzcbVjocXj4cZkIcbkYcdkocfU4chFEcjFUbk1gbmVsaoF4ap2EZrmUZtWgZvGsYwm0YyHAYz3MY1XYX23kX4XwX538X7oIX8YQY////////////////////////////////FBQUGBkZIR8bKiUdNCsfPTEhRzcjTzskVj8kXUMkZUckbUskdE4kfFIlg1YkilkkklwkmWAjoGMjp2YirmkitWwiu28hwnIhyHUhzngh1Xsh234g4YEg6IQg7ocg8okg////////////////////////////////Eh0kFx8iISQkKiomMzEoPTYqRjwsTkAsVUQsXUgtZEstbE8tc1Mte1YtglotiV0tkGEsmGQsn2cspmssrW4rtHEru3QrwXcqx3oqznwq1H8q24Iq4oYp6Ikp74wp8o0o////////////////////////////////ESIsFiQsICotKTAvMzUxPDsyRkE0TUU1VEk1W0w1Y1A1alM2clc2els2gV42iGI2j2U1l2g1nmw1pW81rHI0s3Y0unk0wXs0x34zzoEz1IQz24cz4ooz6I0y75Ey85Ew////////////////////////////////ESc0Fio1IDA3KTU4MTo5Oj86RUY8TEo9U009WlA+YlQ+aVg+cVs+eF8/gWM/h2Y+jmo+lm0+nXA+pHM+q3c9s3o9un09wIA9x4M9zoY81Ik824w84o886JI875U79JpA////////////////////////////////ECs8FjA+IDZAKDtBMT9COURDQUlES05GUVFGWVVGYFlGaFxHcGBHd2RHf2dHhmtHjm5HlXFHnHRGo3hGq3tGsn5GuYJGwIVGx4hFzotF1I5F25FF4pRF6JdE75pE9J5H////////////////////////////////DzBEFzZIHztJKEBKMERLOElMQE5NSFJOUFVOWFlOX11OZ2BOb2RPdmhPf2xPhm9PjXJPlHVPm3lOo3xOqn9OsYNOuYZOwIlOx4xOzo9N1JJN25VN4phN6JtN755N9KJP////////////////////////////////DjlTFjtRHkBRJkRSL0lTN01UP1JVR1ZWT1lWV11WX2FWZmRWbmhWdmxXf3BXhnNXjXZXlHpWm31WooBWqYNWsodWuopWwI1Wx5BWzpNW1JZV25lV4pxV6aBV8KNV9aVW////////////////////////////////DT5aFUBZHURaJUlbLU1bNlJcPlZdRlpeTl5eVmFeXmVeZWhebWxednBef3RehnhejXtek35emoFeooReqohesoteuo9ewZJex5Vezphe1Jte255e4qFe6aRe8Kde9ale////////////////////////////////DUJiFEVhHEliJE1jLFJkNFZkPVplRV5lTWJmVWVmXWlmZGxmbXFmdnVmf3lmhnxmjX9mk4JmmoVmoYhmqoxmso9mupNmwZZmx5lmzpxm1J9m3KJm46Vm6qlm9a1l////////////////////////////////////DEZpFEppG05qI1JrK1ZsM1psO15tRGJtTGZuU2puW21uY3FubHRudXluf31uhoBujINukoZumYluoY1uqZBusZRuupduwJpux51uzaBu1KNu3Kdu5Kpu661v9rFt////////////////////////////////////DEtwEk9xGlJyIVZzKVp0Ml50OmJ1QmZ1Smp1Um52WnF2YnV1anh1c3x1foF2hYV2iod2kYp2mY12oJF2qJR2sJd2upt2wJ52xqF2zaR21ah23Kt25K537LJ39rV0////////////////////////////////////////EVN6F1d6H1p7KF57MGJ8OWZ9QWp9SW59UXJ9WXV9YXl9aX19coB9eoR9hIh9iYt9kY59mJF+oJV+qJh+r5t+t59+vqJ+xqV+zal+1ax+3a9/5LN/7LZ/972D////////////////////////////////////////D1eCFVuCHl+DJmODL2eEN2uFQG+FSHKFUHaFWHqFYH2FaIGFcYSFeYiFgYyFiI+FkJKFmJWFn5mFp5yFr5+FtqOFvqaGxqmGzq2G1bCG3bSG5LeH7LqH98GK////////////////////////////////////////DFuKFF+KHWOLJWeLLmuMNm+MP3ONR3eNT3qNWH6NYIGNaIWNcImNeIyNgJCNiJONkJaNl5mNn52Np6CNrqONtqaNvqqNxq2OzrGO1bSO3biO5LuO7L6P+MSR////////////////////////////////////////C2CRE2SSHGiTJGyTLXCUNXSUPneVR3uVT3+VV4KVX4aVZ4mVb42Vd5CVf5SVh5eVj5qUl52Un6GVp6SVrqeVtqqUvq6UxrGVzrWV1biW3byW5b+W7cOX+MiY////////////////////////////////////////CmSZEmiaG2ybJHCbLHScNXicPXydRoCdToOdVoedXoqdZo6dbpGdd5Sdf5ich5ucj56cl6Gcn6Wcpqicrquctq6cvrKcxrWczbmd1byd3cCe5cOe7cef9suf+cyf////////////////////////////////////CWihEW2iGnGiI3WjK3mkNHykPYClRYSlTYelVYulXY6lZpKlbpWkdpikfpykhp+kjqKklqWknqmkpqykrq+jtrKjvrWjxbmkzbyk1cCl3cSm5cem7sun9s+n+dCn////////////////////////////////////B22pEHGpGXWqInmrK32rM4GsPIWsRIitTIytVY+tXZOtZZasbZmsdZysfqCshqOsjqaslqmsnq2rprCrrrOrtrarvbmrxb2rzcCs1cSs3cit5cuu7s+v9tOv+dSu////////////////////////////////////BnGwD3WxGHqyIX2yKoGzMoW0O4m0RI21TJC1VJS1XJe0ZJq0bZ20daC0faS0hae0jaqzla2znbGzpbSzrbeytbqyvb2yxcGzzcSz1ci03cy15c+27dO39te3+te1////////////////////////////////////BnW2Dnq5F366IIK6KYa7MYq8Oo28Q5G9S5W9U5i8W5u8ZJ68bKG8dKW8fKi7hKu7jK67lbG7nbS6pbi6rbu6tb66vcG6xcW6zci71cy83dC95dO97de+9du/+9/D////////////////////////////////////BH3EDX7BFoLBH4bCKIrDMY7DOpLEQpbFS5nFU5zEW5/EY6LEa6bEdKnDfKzDhK/DjLLDlLXCnLnCpLzCrb/CtcLBvcXBxcnCzczC1dDD3dPE5NfF7NvG9N7G++LJ////////////////////////////////////BX/IDYPIFofJH4vKKI/KMZPLOpfMQpvNSp7NUqHNW6TMY6fMa6rMc67MfLHMhLTLjLbLlLrKnL3KpMDKrMPKtMbJvcnJxMzJzNDK1NPL3NfL5NrM7N7N8+HO/ObQ////////////////////////////////////BoTPDojQF4zRIJDSKZTSMpjTOpzUQqDVSqPVUqbVWqnVY6zVa6/Uc7LUe7XUhLjTi7vTk77Sm8HSo8TSrMfStMrRvc3RxNDRy9TR09fS29rT497U6+HU8uXV/OnX////////////////////////////////////B4nXD43YGJHZIZXZKZnaMp3bOqHdQqXeSqjeUqvdWq3dYrHda7Tdc7fce7rcg73bi7/bk8Lbm8Xao8jarMvZtM7ZvdLYxNXZzNjZ09va2t7a4uHb6eXc8ejc+Ovd/O3d////////////////////////////AozeCI7eEJLfGZbgIZrhKZ7jMqLkOqblQ6rmSq3mUrDmWrLlYrXlarjlc7vke77kg8Hki8Tjk8fjm8nio8ziq8/htNPhvdbgxNngy9zh0t/h2eLi4eXi6Ojj8Ovj9+7k/fDk////////////////////////////ApDkCZPmEZfnGpvoIp/pKqPrMqfsOqvtQ6/uSrLuUrXuWrfuYrrtar3tcsDte8Psg8bsi8jrksvrms7qotDqqtPptNbovdroxN3oy+Dp0eLp2OXp4Ojq5+vq7+7r9vLr/fTr////////////////////////////AZXsCpntEpzuGqDwIqTxKqjzMqz0OrD2Q7T3Srf2Urn2Wrz2Yr/1asH1csT1e8f0g8r0is30ks/zmtLyodXyqdfxstrwvd7wxOHwyuPw0Obx2Onx3+zx5u/y7vLy9fXz/vfx////////////////////////////Apr0C571E6L2G6b4I6r5K637M7H9O7X+Rrr/Tbz/Ur7+WsH+YsT+asb9csn9esz9gs78idH8kdT7mdb6odn6qdv5sd74vOL3wuT4yOf4z+r41+z53u/55fL57fX69Pj6/vv4////////////////////////AKD/A5/7C6P9E6f+HKr/I63/////////////////////////////////////////////////////////mdn/oNv/p97/ruD/teP/w+j/yuv/0O3/1/D/3fL/5PX/6/f/8fr/+Pz/////////////////////////AKD/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MeshGradientsMatchGhostscript(bool tensor)
+    {
+        MeshGradientPatch patch;
+        if (tensor)
+        {
+            // The order of a PDF type 7 stream is p00 p01 p02 p03 p13 p23 p33 p32 p31 p30 p20 p10 p11 p12 p22 p21
+            patch = MeshGradientPatch.CreateTensorProduct(
+                [new(5, 8), new(12, 4), new(22, 6), new(35, 5), new(3, 16), new(14, 15), new(24, 12), new(36, 14), new(8, 26), new(14, 26), new(26, 28), new(33, 24), new(4, 37), new(15, 33), new(25, 38), new(37, 36)],
+                [new Rgba32(20, 20, 20), new Rgba32(240, 120, 0), new Rgba32(255, 255, 255), new Rgba32(0, 160, 255)]);
+        }
+        else
+        {
+            // The order of a PDF type 6 stream: p00 p01 p02 p03 p13 p23 p33 p32 p31 p30 p20 p10, colors c00 c03 c33 c30
+            patch = MeshGradientPatch.CreateCoons(
+                [new(2, 3), new(12, -2), new(22, 6), new(30, 2), new(33, 12), new(27, 20), new(31, 30), new(21, 33), new(11, 26), new(1, 31), new(6, 21), new(-1, 11)],
+                [new Rgba32(255, 0, 0), new Rgba32(0, 0, 255), new Rgba32(0, 200, 0), new Rgba32(255, 255, 0)]);
+        }
+
+        using var image = new Image<Rgba32>(40, 40, new Rgba32(255, 255, 255));
+        image.Frames[0].Draw(canvas => canvas.Fill(new MeshGradientBrush([patch])), Ct);
+        var expected = Convert.FromBase64String(tensor ? GhostscriptTensor : GhostscriptCoons);
+        var white = new Rgba32(255, 255, 255);
+        bool IsPainted(int x, int y) => (uint)x < 40 && (uint)y < 40 && new Rgba32(expected[3 * ((40 * y) + x)], expected[(3 * ((40 * y) + x)) + 1], expected[(3 * ((40 * y) + x)) + 2]) != white;
+
+        // Ghostscript paints the pixels a patch touches, this brush the pixels whose center it covers: the pixels only
+        // Ghostscript paints are next to a painted pixel, and this brush paints no pixel Ghostscript does not
+        var largest = 0;
+        var interior = 0;
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                var actual = image.Frames[0][x, y];
+                if (actual != white)
+                {
+                    Assert.True(IsPainted(x, y), $"pixel ({x}, {y}) is not painted by Ghostscript");
+                }
+                else if (IsPainted(x, y))
+                {
+                    var neighbor = false;
+                    for (var dy = -1; dy <= 1; dy++)
+                    {
+                        for (var dx = -1; dx <= 1; dx++)
+                        {
+                            neighbor |= (uint)(x + dx) < 40 && (uint)(y + dy) < 40 && image.Frames[0][x + dx, y + dy] != white;
+                        }
+                    }
+
+                    Assert.True(neighbor, $"pixel ({x}, {y}) is painted by Ghostscript far from the patch");
+                    continue;
+                }
+
+                // The colors of the pixels away from the sides differ by the subdivisions of each rasterizer
+                if (!(IsPainted(x - 1, y) && IsPainted(x + 1, y) && IsPainted(x, y - 1) && IsPainted(x, y + 1) && IsPainted(x, y)))
+                    continue;
+
+                interior++;
+                var offset = 3 * ((40 * y) + x);
+                largest = Math.Max(largest, Math.Max(Math.Abs(actual.R - expected[offset]), Math.Max(Math.Abs(actual.G - expected[offset + 1]), Math.Abs(actual.B - expected[offset + 2]))));
+            }
+        }
+
+        Assert.True(interior > 600, $"{interior} interior pixels");
+        Assert.True(largest <= 8, $"largest difference {largest}");
+    }
+
+    [Fact]
+    public void MeshGradientArgumentsAreValidated()
+    {
+        Assert.Throws<ArgumentException>(() => MeshGradientPatch.CreateCoons(new PointD[11], [default]));
+        Assert.Throws<ArgumentException>(() => MeshGradientPatch.CreateCoons(new PointD[12], [default, default]));
+        Assert.Throws<ArgumentException>(() => MeshGradientPatch.CreateTensorProduct(new PointD[12], [default]));
+        Assert.Throws<ArgumentException>(() => MeshGradientPatch.CreateTensorProduct([.. Enumerable.Repeat(new PointD(double.NaN, 0), 16)], [default]));
+        Assert.Throws<ArgumentException>(() => new MeshGradientBrush([]));
+        Assert.Throws<ArgumentException>(() => new MeshGradientBrush([null!]));
+        var colors = MeshGradientPatch.CreateCoons(new PointD[12], [new Rgba32(1, 2, 3)]).CornerColors.ToArray();
+        Assert.HasCount(4, colors);
+        Assert.All(colors, color => Assert.Equal((Rgba64)new Rgba32(1, 2, 3), color));
+    }
+
     private static Image<Gray8> Fill(int width, int height, Brush brush)
     {
         var image = new Image<Gray8>(width, height, new Gray8(0));

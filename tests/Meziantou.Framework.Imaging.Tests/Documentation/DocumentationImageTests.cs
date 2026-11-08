@@ -198,6 +198,9 @@ public sealed class DocumentationImageTests : IDisposable
     public void DrawGradients() => AssertImage(Drawing, nameof(DrawingExamples.DrawGradients), DrawingExamples.DrawGradients);
 
     [Fact]
+    public void DrawMeshGradient() => AssertImage(Drawing, nameof(DrawingExamples.DrawMeshGradient), DrawingExamples.DrawMeshGradient);
+
+    [Fact]
     public void DrawGradientColorSpaces() => AssertImage(Drawing, nameof(DrawingExamples.DrawGradientColorSpaces), DrawingExamples.DrawGradientColorSpaces);
 
     [Fact]

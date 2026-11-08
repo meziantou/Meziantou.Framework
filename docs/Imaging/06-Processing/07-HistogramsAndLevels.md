@@ -41,7 +41,8 @@ public static ImageHistogram EnhanceContrast(string inputPath, string outputPath
 that [Grayscale](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Grayscale) stores), [Red](cref:Meziantou.Framework.Imaging.HistogramChannel.Red), [Green](cref:Meziantou.Framework.Imaging.HistogramChannel.Green), [Blue](cref:Meziantou.Framework.Imaging.HistogramChannel.Blue) or [Alpha](cref:Meziantou.Framework.Imaging.HistogramChannel.Alpha). On an image, it counts every frame and the poster; on a
 frame, that frame only. It never changes the image.
 
-The [ImageHistogram](cref:Meziantou.Framework.Imaging.ImageHistogram) has one bin per level: [BinCount](cref:Meziantou.Framework.Imaging.ImageHistogram.BinCount) is 256 for 8-bit samples and 65,536 for 16-bit samples.
+The [ImageHistogram](cref:Meziantou.Framework.Imaging.ImageHistogram) has one bin per level: [BinCount](cref:Meziantou.Framework.Imaging.ImageHistogram.BinCount) is 256 for 8-bit samples and 65,536 for 16-bit and
+floating-point samples (see [Pixel formats](#pixel-formats)).
 [Counts](cref:Meziantou.Framework.Imaging.ImageHistogram.Counts), or the indexer, gives the number of pixels of each level, and [TotalCount](cref:Meziantou.Framework.Imaging.ImageHistogram.TotalCount) their sum. [GetOtsuThreshold()](cref:Meziantou.Framework.Imaging.ImageHistogram.GetOtsuThreshold)
 returns the level that best separates the dark pixels from the bright ones (see [Binarization](09-Binarization.md)).
 
@@ -90,10 +91,14 @@ all of them.
 
 The computation is made on the stored samples, at their precision, in exact integer arithmetic (except the blend of the
 adaptive mode): the results are the same on every platform. [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) do not count fully transparent
-pixels, but they remap them. Floating-point formats ([RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf)) have no discrete levels:
-[ComputeHistogram](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ComputeHistogram), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) throw an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) on them, so convert them to
-[Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) first with [CloneAs\<Rgba64\>()](cref:Meziantou.Framework.Imaging.Image.CloneAs). The mapping tables are charged to the
-allocation limit of the image, and are allocated before any pixel changes.
+pixels, but they remap them. The mapping tables are charged to the allocation limit of the image, and are allocated
+before any pixel changes.
+
+Floating-point formats ([RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf)) have no discrete levels: their samples are binned to 65,536
+levels from 0 to 1, the level of a value `v` being `round(65535 v)`. Values below 0 (and values that are not numbers)
+count as the first level, values above 1 as the last one. [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) write a remapped sample as its new
+level divided by 65,535, the precision of a 16-bit image; a sample whose level does not change keeps its exact value,
+so the values above 1 of an HDR image stay as they are unless the brightest level moves.
 
 ## Adjust the levels and the curves
 

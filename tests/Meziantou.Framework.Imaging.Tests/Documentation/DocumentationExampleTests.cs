@@ -1055,6 +1055,76 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DetectCannyEdgesDrawsThinOutlines()
+    {
+        // A 16x16 opaque black image with a white square from (4, 4) to (11, 11)
+        var input = GetPath("square.png");
+        using (var source = new Image<Rgba32>(16, 16, new Rgba32(0, 0, 0)))
+        {
+            for (var y = 4; y < 12; y++)
+            {
+                for (var x = 4; x < 12; x++)
+                {
+                    source.Frames[0][x, y] = new Rgba32(255, 255, 255);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var edgesPath = GetPath("square-edges.png");
+        Examples.DetectCannyEdges(input, edgesPath);
+
+        // The outline of the square, one pixel wide: the pixels inside and far outside are black, and each row of the
+        // square has an edge on each side and nothing between them
+        using var edges = Image.Load<Rgba32>(edgesPath);
+        var white = new Rgba32(255, 255, 255);
+        var black = new Rgba32(0, 0, 0);
+        Assert.Equal(black, edges.Frames[0][7, 7]);
+        Assert.Equal(black, edges.Frames[0][0, 0]);
+        Assert.Equal(black, edges.Frames[0][15, 8]);
+        for (var y = 6; y < 10; y++)
+        {
+            var row = Enumerable.Range(0, 16).Where(x => edges.Frames[0][x, y] == white).ToArray();
+            Assert.HasCount(2, row);
+            Assert.Contains(row[0], new[] { 3, 4 });
+            Assert.Contains(row[1], new[] { 11, 12 });
+        }
+    }
+
+    [Fact]
+    public void AverageWithRightAndBottomNeighborsUsesTheAnchorAndTheDivisor()
+    {
+        // A 3x2 opaque gray image: 0 40 80 on the first row, 120 160 200 on the second one
+        var input = GetPath("grid.png");
+        using (var source = new Image<Rgba32>(3, 2))
+        {
+            for (var y = 0; y < 2; y++)
+            {
+                for (var x = 0; x < 3; x++)
+                {
+                    var value = (byte)(40 * ((3 * y) + x));
+                    source.Frames[0][x, y] = new Rgba32(value, value, value);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var outputPath = GetPath("grid-averaged.png");
+        Examples.AverageWithRightAndBottomNeighbors(input, outputPath);
+
+        // (0 + 40 + 120 + 160) / 4 = 80, (40 + 80 + 160 + 200) / 4 = 120, and the last column reads itself again beyond
+        // the edge (Clamp): (80 + 80 + 200 + 200) / 4 = 140; the last row reads itself twice: (120 + 160 + 120 + 160) / 4
+        using var averaged = Image.Load<Rgba32>(outputPath);
+        Assert.Equal(new Rgba32(80, 80, 80), averaged.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(120, 120, 120), averaged.Frames[0][1, 0]);
+        Assert.Equal(new Rgba32(140, 140, 140), averaged.Frames[0][2, 0]);
+        Assert.Equal(new Rgba32(140, 140, 140), averaged.Frames[0][0, 1]);
+        Assert.Equal(new Rgba32(200, 200, 200), averaged.Frames[0][2, 1]);
+    }
+
+    [Fact]
     public void CleanUpScanRemovesSpecksAndSharpensEdges()
     {
         // A 9x9 opaque image: 50 on the left (columns 0 to 4), 200 on the right, and a white speck at (2, 2)
@@ -3665,6 +3735,30 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.Equal(expected[i][1], frame[x + 37, 45] == Colors.SteelBlue);
             Assert.Equal(expected[i][2], frame[x + 62, 45] == Colors.SteelBlue);
         }
+    }
+
+    [Fact]
+    public void DrawMeshGradientPaintsTheCornerColorsOfItsPatches()
+    {
+        var output = GetPath("mesh-gradient.png");
+        DrawingExamples.DrawMeshGradient(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+
+        // Near the corners, the colors of the corners: crimson at the top left of the first patch, dark violet at the bottom
+        // right of the second one
+        Assert.True(frame[12, 14].R > 180 && frame[12, 14].G < 80);
+        Assert.True(frame[245, 98].B > 150 && frame[245, 98].G < 60);
+
+        // The shared corner at the top (130, 10) is gold for both patches, and the patches meet without a seam
+        Assert.True(frame[130, 13].R > 220 && frame[130, 13].G > 180 && frame[130, 13].B < 80);
+        var leftOfEdge = frame[128, 50];
+        var rightOfEdge = frame[131, 50];
+        Assert.True(Math.Abs(leftOfEdge.R - rightOfEdge.R) < 24 && Math.Abs(leftOfEdge.G - rightOfEdge.G) < 24 && Math.Abs(leftOfEdge.B - rightOfEdge.B) < 24);
+
+        // Outside the patches, above the wavy top side, the white of the canvas
+        Assert.Equal(Colors.White, frame[200, 1]);
     }
 
     [Fact]

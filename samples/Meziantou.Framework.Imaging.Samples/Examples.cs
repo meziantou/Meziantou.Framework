@@ -127,6 +127,33 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>The thin edges of an image found by the Canny detector.</summary>
+    #region Imaging_CannyEdges
+    public static void DetectCannyEdges(string inputPath, string edgesPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Lines one pixel wide, white on black. A larger Sigma blurs more before the gradient is computed, and ignores more
+        // noise; the thresholds are fractions of the range: a gradient above 0.3 is an edge, and one above 0.1 continues it
+        image.DetectCannyEdges(new CannyEdgeOptions { Sigma = 1.5, LowThreshold = 0.1, HighThreshold = 0.3 });
+        image.Save(edgesPath);
+    }
+    #endregion
+
+    /// <summary>A convolution matrix of even dimensions, with an anchor and a divisor.</summary>
+    #region Imaging_ConvolveEvenKernel
+    public static void AverageWithRightAndBottomNeighbors(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // A 2x2 box: every pixel becomes the mean of itself (the anchor, the top-left weight) and of its right, bottom and
+        // bottom-right neighbors. The divisor divides the sums: the weights stay integers.
+        var box = new ConvolutionKernel(2, 2, [1, 1, 1, 1]);
+        image.Convolve(new ConvolutionOptions(box) { Anchor = new Point(0, 0), Divisor = 4 });
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>A scan cleaned up by a median and an unsharp mask, then a soft background made by a box blur and a separable matrix.</summary>
     #region Imaging_BlurAndSharpen
     public static void CleanUpScan(string inputPath, string cleanedPath, string backgroundPath)

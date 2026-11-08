@@ -2011,10 +2011,10 @@ public sealed class ConvolutionTests
     {
         Assert.Throws<ArgumentOutOfRangeException>("width", () => new ConvolutionKernel(0, 1, []));
         Assert.Throws<ArgumentOutOfRangeException>("width", () => new ConvolutionKernel(-3, 1, []));
-        Assert.Throws<ArgumentOutOfRangeException>("width", () => new ConvolutionKernel(2, 1, [1, 1]));
+        Assert.Equal(2, new ConvolutionKernel(2, 1, [1, 1]).Width);
         Assert.Throws<ArgumentOutOfRangeException>("height", () => new ConvolutionKernel(1, 0, []));
         Assert.Throws<ArgumentOutOfRangeException>("height", () => new ConvolutionKernel(1, -1, []));
-        Assert.Throws<ArgumentOutOfRangeException>("height", () => new ConvolutionKernel(1, 4, [1, 1, 1, 1]));
+        Assert.Equal(4, new ConvolutionKernel(1, 4, [1, 1, 1, 1]).Height);
         Assert.Throws<ArgumentException>("values", () => new ConvolutionKernel(3, 3, new double[8]));
         Assert.Throws<ArgumentException>("values", () => new ConvolutionKernel(3, 3, new double[10]));
         Assert.Throws<ArgumentException>("values", () => new ConvolutionKernel(1, 1, [double.NaN]));

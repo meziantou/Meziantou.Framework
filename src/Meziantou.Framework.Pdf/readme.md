@@ -32,7 +32,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile, compressed without loss with the PNG predictors or as JPEG, black and white images compressed with CCITT Group 4 or JBIG2), the document information and the XMP
   metadata, the outline (bookmarks), links and annotations (notes, text markups, free texts, stamps, flags), page
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
-  (`PdfContentBuilder.DrawTextBox`), pages moved, duplicated, removed and imported from other documents (merging), a
+  (`PdfContentBuilder.DrawTextBox`: Unicode line breaking, soft hyphens and pluggable hyphenation), tables
+  (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page), pages moved, duplicated, removed and imported from other documents (merging), a
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), positioned
   text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
   layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction

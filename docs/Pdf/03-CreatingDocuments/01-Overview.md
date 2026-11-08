@@ -136,9 +136,10 @@ version (`Information.Producer` is empty unless you set it), so a test can compa
 ## In this section
 
 - [Shapes and colors](02-ShapesAndColors.md): paths, fills and outlines, colors, line styles, transformations and clips.
-- [Text](03-Text.md): the standard fonts, positioning, aligning and wrapping text, and the text state.
+- [Text](03-Text.md): the standard fonts, positioning, aligning, wrapping and hyphenating text, and the text state.
 - [Fonts](04-Fonts.md): embed TrueType and OpenType fonts, for any language.
 - [Images](05-Images.md): draw JPEG, PNG and other images.
 - [Gradients and patterns](06-GradientsAndPatterns.md): shadings, tiling patterns and shading patterns.
 - [Reusable content](07-ReusableContent.md): forms, painted as many times as needed.
 - [Transparency](08-Transparency.md): opacity, blend modes, soft masks and transparency groups.
+- [Tables](09-Tables.md): columns, borders, cells broken into lines, and tables that continue on the next pages.

@@ -226,9 +226,9 @@ public static partial class JavaScriptEngineFuzzTargets
             }
         }
 
-        protected override void OnStatement(JsDebugEvent debugEvent) => OnEvent(debugEvent, isDebuggerStatement: false);
+        protected internal override void OnStatement(JsDebugEvent debugEvent) => OnEvent(debugEvent, isDebuggerStatement: false);
 
-        protected override void OnDebuggerStatement(JsDebugEvent debugEvent) => OnEvent(debugEvent, isDebuggerStatement: true);
+        protected internal override void OnDebuggerStatement(JsDebugEvent debugEvent) => OnEvent(debugEvent, isDebuggerStatement: true);
 
         // A failure is recorded rather than thrown: the exceptions of the callbacks go through the engine
         private void Fail(string message) => _failure ??= message;

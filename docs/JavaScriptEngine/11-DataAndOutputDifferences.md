@@ -11,7 +11,7 @@ documentation describes this data:
 
 | Data | Version | Used by |
 |---|---|---|
-| Unicode | 18.0.0 | the identifiers of the parser, the property escapes and the case-insensitive matching of `RegExp`, `toUpperCase`, `toLowerCase`, `normalize` |
+| Unicode | 18.0.0 | the identifiers of the parser, the group names, the property escapes and the case-insensitive matching of `RegExp`, `toUpperCase`, `toLowerCase`, `normalize` |
 | CLDR | 49.0.0 | `Intl`, the `toLocaleString` methods |
 | Unicode Collation Algorithm | 18.0.0 | `Intl.Collator`, `localeCompare` |
 | IANA time zone database | 2026f | `Date`, `Intl.DateTimeFormat`, `Temporal` |

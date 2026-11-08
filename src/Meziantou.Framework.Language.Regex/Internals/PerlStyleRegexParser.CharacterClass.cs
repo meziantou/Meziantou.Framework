@@ -231,8 +231,11 @@ internal abstract partial class PerlStyleRegexParser
                     members.Add(element.Node);
 
                     // Where a shorthand may be an endpoint, "[\d-x]" is three members, and the "x" after the dash is
-                    // an endpoint too, so it cannot start a range of its own.
-                    if (AllowsShorthandClassInRange && Scanner.Current == '-' && Scanner.Position + 1 < Text.Length && Scanner.Peek() != ']')
+                    // an endpoint too, so it cannot start a range of its own. A shorthand that is such an endpoint, as
+                    // in "[\d-\D-x]", ends the range: the dash after it is read again, and may start a range.
+                    var endsRange = noRangeStart;
+                    noRangeStart = false;
+                    if (!endsRange && AllowsShorthandClassInRange && Scanner.Current == '-' && Scanner.Position + 1 < Text.Length && Scanner.Peek() != ']')
                     {
                         var dashStart = Scanner.Position;
                         Scanner.Position++;
@@ -320,7 +323,7 @@ internal abstract partial class PerlStyleRegexParser
     /// </summary>
     private void ReportClassAsRangeStart(RegexSyntaxNode member)
     {
-        if (!ReportsShorthandClassAsRangeStart || Scanner.Current != '-' || Scanner.Peek() is ']' or '\0' || ClassSetOperatorLength(Scanner.Position) > 0)
+        if (!ReportsShorthandClassAsRangeStart || Scanner.Current != '-' || Scanner.Peek() is ']' || Scanner.Position + 1 >= Text.Length || ClassSetOperatorLength(Scanner.Position) > 0)
             return;
 
         AddDiagnostic(
@@ -502,6 +505,9 @@ internal abstract partial class PerlStyleRegexParser
         return (ch == '&' || ch == '-') && Text[position + 1] == ch ? 2 : 0;
     }
 
+    private bool IsReservedDoublePunctuatorAt(int position) =>
+        position + 1 < Text.Length && Text[position + 1] == Text[position] && ReservedDoublePunctuators.Contains(Text[position], StringComparison.Ordinal);
+
     /// <summary>
     /// Reads one member of a class set: a nested class, a string disjunction, a shorthand or property, a single
     /// character, or a range between two characters.
@@ -516,7 +522,7 @@ internal abstract partial class PerlStyleRegexParser
         if (Scanner.Current == '\\' && Scanner.Peek() == 'q' && Scanner.Peek(2) == '{')
             return new ClassSetMember(ParseClassStringLiteral(), LastSetMemberMayContainStrings, IsRange: false);
 
-        if (Scanner.Position + 1 < Text.Length && Scanner.Peek() == Scanner.Current && ReservedDoublePunctuators.Contains(Scanner.Current, StringComparison.Ordinal))
+        if (IsReservedDoublePunctuatorAt(Scanner.Position))
             return new ClassSetMember(SkipReservedDoublePunctuator(), MayContainStrings: false, IsRange: false);
 
         var element = ReadClassSetCharacter();
@@ -527,8 +533,9 @@ internal abstract partial class PerlStyleRegexParser
             return new ClassSetMember(element.Node, LastSetMemberMayContainStrings, IsRange: false);
         }
 
-        // "[a-]" is not a range: the dash has nothing after it, and on its own it is a syntax character.
-        if (Scanner.Current != '-' || Scanner.Peek() is '-' or ']' || IsAtBodyEnd(Scanner.Position + 1))
+        // "[a-]" is not a range: the dash has nothing after it, and on its own it is a syntax character. Neither is
+        // "[a-&&b]" nor "[a-!!]": an operator or a doubled punctuator is not a character, so it cannot end a range.
+        if (Scanner.Current != '-' || Scanner.Peek() is '-' or ']' || IsAtBodyEnd(Scanner.Position + 1) || ClassSetOperatorLength(Scanner.Position + 1) > 0 || IsReservedDoublePunctuatorAt(Scanner.Position + 1))
             return new ClassSetMember(element.Node, MayContainStrings: false, IsRange: false);
 
         var hyphenStart = Scanner.Position;
@@ -955,6 +962,14 @@ internal abstract partial class PerlStyleRegexParser
                 default:
                     Scanner.Position++;
                     var value = ScanCharEscape();
+                    if (value == "\\c")
+                    {
+                        // The web-compatibility "\c" not followed by a control letter is a backslash, and the "c" is the
+                        // next member of the class, which a range may start from or end at
+                        Scanner.Position = start + 1;
+                        value = "\\";
+                    }
+
                     return new ClassElement(
                         new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, start, leadingTrivia: null, value), Options),
                         FirstCodePoint(value),

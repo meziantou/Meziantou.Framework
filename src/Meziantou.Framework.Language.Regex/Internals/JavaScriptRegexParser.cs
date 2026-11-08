@@ -36,8 +36,10 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
 
     protected override bool AllowsIdentityEscape(char ch)
     {
+        // Annex B lets a backslash escape any character but "c", and but "k" once the pattern has a group name: "\k"
+        // is then a named backreference, which cannot appear in a class.
         if (!UsesStrictGrammar)
-            return true;
+            return ch != 'k' || !IsInCharacterClass || !HasAnyGroupName;
 
         // The strict grammar allows only these, plus "-" inside a character class, and under the "v" flag the
         // punctuators the class set grammar reserves.

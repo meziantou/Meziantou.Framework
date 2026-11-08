@@ -1172,10 +1172,11 @@ internal sealed class TdsQueryEngineExecutor
             SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
             SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
             SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlLikeBooleanExpression likeExpression => BuildLikeBoolean(likeExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
             SqlNotBooleanExpression notExpression => BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext, !negated),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => BuildBinaryBoolean(binary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: true),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => BuildBinaryBoolean(orBinary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: false),
-            _ => throw new TdsQueryEngineException("Only comparison, IN, EXISTS, and IS NULL predicates combined with AND/OR/NOT are supported."),
+            _ => throw new TdsQueryEngineException("Only comparison, IN, EXISTS, LIKE, and IS NULL predicates combined with AND/OR/NOT are supported."),
         };
     }
 
@@ -1396,6 +1397,62 @@ internal sealed class TdsQueryEngineExecutor
 
         // EXISTS is never UNKNOWN, so it can be negated directly.
         return negated ? Expression.Not(any) : any;
+    }
+
+    /// <remarks>
+    /// <c>x LIKE p</c> and <c>x NOT LIKE p</c> are UNKNOWN when x, p or the escape character is NULL. A constant pattern
+    /// made of literal text with an optional <c>%</c> at its ends is translated to <c>==</c>, <c>StartsWith</c>,
+    /// <c>EndsWith</c> or <c>Contains</c>, which LINQ providers usually support. Other patterns call
+    /// <see cref="SqlLikePattern.Like(string?, string?, string?)"/>.
+    /// </remarks>
+    private Expression BuildLikeBoolean(SqlLikeBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)
+    {
+        var value = BuildScalar(expression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
+        var pattern = BuildScalar(expression.LikePattern, aliases, parameter, parameters, cteRoots, queryExecutionContext, typeof(string));
+        var escape = expression.EscapeClause is null
+            ? null
+            : BuildScalar(expression.EscapeClause, aliases, parameter, parameters, cteRoots, queryExecutionContext, typeof(string));
+        if (IsNullConstant(value) || IsNullConstant(pattern) || (escape is not null && IsNullConstant(escape)))
+        {
+            return Expression.Constant(value: false, typeof(bool));
+        }
+
+        // SQL Server converts a value of another type to text, e.g. Id LIKE '4%'
+        value = EnsureString(value);
+        pattern = EnsureString(pattern);
+        escape = escape is null ? null : EnsureString(escape);
+
+        var hasNot = expression.HasNot ^ negated;
+        if (pattern is ConstantExpression { Value: string patternText } && escape is null or ConstantExpression)
+        {
+            var escapeCharacter = SqlLikePattern.GetEscapeCharacter((string?)((ConstantExpression?)escape)?.Value);
+            if (SqlLikePattern.TryGetSimplePattern(patternText, escapeCharacter, out var kind, out var text))
+            {
+                var textExpression = Expression.Constant(text, typeof(string));
+                var ordinal = Expression.Constant(StringComparison.Ordinal);
+                Expression match = kind switch
+                {
+                    SqlLikePattern.SimplePatternKind.Equals => Expression.Equal(value, textExpression),
+                    SqlLikePattern.SimplePatternKind.StartsWith => Expression.Call(value, typeof(string).GetMethod(nameof(string.StartsWith), [typeof(string), typeof(StringComparison)])!, textExpression, ordinal),
+                    SqlLikePattern.SimplePatternKind.EndsWith => Expression.Call(value, typeof(string).GetMethod(nameof(string.EndsWith), [typeof(string), typeof(StringComparison)])!, textExpression, ordinal),
+                    _ => Expression.Call(value, typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!, textExpression),
+                };
+
+                if (hasNot)
+                {
+                    match = Expression.Not(match);
+                }
+
+                return CanBeNull(value) ? Expression.AndAlso(BuildIsNotNull(value), match) : match;
+            }
+        }
+
+        var call = Expression.Call(
+            typeof(SqlLikePattern).GetMethod(nameof(SqlLikePattern.Like))!,
+            value,
+            pattern,
+            escape ?? Expression.Constant(null, typeof(string)));
+        return Expression.Equal(call, Expression.Constant(!hasNot, typeof(bool?)));
     }
 
     private Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, bool negated)

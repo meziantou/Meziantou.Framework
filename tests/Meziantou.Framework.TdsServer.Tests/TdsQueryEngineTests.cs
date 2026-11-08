@@ -4365,6 +4365,242 @@ public sealed class TdsQueryEngineTests
             expectedMaterializedQueries: null);
     }
 
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_PrefixPattern_UsesStartsWith()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name LIKE 'A%'
+                    """;
+            },
+            """
+            Id
+            1
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name != null) AndAlso customer.Name.StartsWith(\"A\", Ordinal))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_ContainsPattern_UsesContains()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name LIKE '%i%'
+                    """;
+            },
+            """
+            Id
+            1
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name != null) AndAlso customer.Name.Contains(\"i\"))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WildcardsAndCharacterSets_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name LIKE '[A-C]_%'
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (Like(customer.Name, \"[A-C]_%\", null) == True)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithParameterPattern_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Name LIKE @pattern";
+                _ = command.Parameters.Add(new SqlParameter("@pattern", SqlDbType.NVarChar, 50) { Value = "%b" });
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_NotLike_ExcludesNullValues()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name NOT LIKE 'A%'
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso Not(nullableCustomer.Name.StartsWith(\"A\", Ordinal)))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_NotOfLike_ExcludesNullValues()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name LIKE '_li%')
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (Like(nullableCustomer.Name, \"_li%\", null) == False)).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithColumnPattern_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name LIKE Name
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (Like(nullableCustomer.Name, nullableCustomer.Name, null) == True)).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithEscape_MatchesWildcardCharacters()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Name + '_%' LIKE 'B%!_!%' ESCAPE '!'
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Like_WithInvalidEscape_ReturnsError()
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = "SELECT Id FROM customers WHERE Name LIKE 'A%' ESCAPE '!!'",
+            expectedMessageContains: "ESCAPE");
+    }
+
+    [Theory]
+    [InlineData("Name LIKE 'A%'", new[] { 1 })]
+    [InlineData("Name LIKE '%e'", new[] { 1 })]
+    [InlineData("Name LIKE '%i%'", new[] { 1, 4 })]
+    [InlineData("Name LIKE 'Bob'", new[] { 2 })]
+    [InlineData("Name LIKE 'bob'", new int[0])]
+    [InlineData("Name LIKE '_ob'", new[] { 2 })]
+    [InlineData("Name LIKE 'B_'", new int[0])]
+    [InlineData("Name LIKE 'A%e'", new[] { 1 })]
+    [InlineData("Name LIKE 'D_v%'", new[] { 4 })]
+    [InlineData("Name LIKE '%'", new[] { 1, 2, 4 })]
+    [InlineData("Name LIKE ''", new int[0])]
+    [InlineData("Name LIKE '_____'", new[] { 1, 4 })]
+    [InlineData("Name LIKE '%_%_%_%_%_%'", new[] { 1, 4 })]
+    [InlineData("Name LIKE '[AB]%'", new[] { 1, 2 })]
+    [InlineData("Name LIKE '[^AB]%'", new[] { 4 })]
+    [InlineData("Name LIKE '[A-C]%'", new[] { 1, 2 })]
+    [InlineData("Name LIKE '[C-A]%'", new[] { 1, 2 })]
+    [InlineData("Name LIKE '%[dD]'", new[] { 4 })]
+    [InlineData("Name LIKE '[-B]%'", new[] { 2 })]
+    [InlineData("Name LIKE '[B-]%'", new[] { 2 })]
+    [InlineData("Name LIKE '[]%'", new int[0])]
+    [InlineData("Name LIKE '[^]%'", new[] { 1, 2, 4 })]
+    [InlineData("Name LIKE '[A'", new int[0])]
+    [InlineData("Name + '[A' LIKE '%[A'", new[] { 1, 2, 4 })]
+    [InlineData("Name + '.*' LIKE 'Bob.*'", new[] { 2 })]
+    [InlineData("Name + '.*' LIKE '_ob.*'", new[] { 2 })]
+    [InlineData("Name NOT LIKE '%i%'", new[] { 2 })]
+    [InlineData("Name NOT LIKE '_ob'", new[] { 1, 4 })]
+    [InlineData("Name LIKE 'Bo!b' ESCAPE '!'", new[] { 2 })]
+    [InlineData("Name LIKE 'Bob!' ESCAPE '!'", new int[0])]
+    [InlineData("Name + '%' LIKE '%!%' ESCAPE '!'", new[] { 1, 2, 4 })]
+    [InlineData("Name + '[x]' LIKE '%![x]' ESCAPE '!'", new[] { 1, 2, 4 })]
+    [InlineData("Name + 'x' LIKE '%[!x]' ESCAPE '!'", new[] { 1, 2, 4 })]
+    [InlineData("Name + '%' LIKE 'Bob%%' ESCAPE '%'", new[] { 2 })]
+    [InlineData("Name + '_' LIKE '%__' ESCAPE '_'", new[] { 1, 2, 4 })]
+    [InlineData("Id LIKE '4'", new[] { 4 })]
+    [InlineData("Name LIKE NULL", new int[0])]
+    [InlineData("Name NOT LIKE NULL", new int[0])]
+    [InlineData("NULL LIKE '%'", new int[0])]
+    [InlineData("Name LIKE '%' ESCAPE NULL", new int[0])]
+    public async Task QueryEngine_Like_MatchesPattern(string predicate, int[] expectedIds)
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        var result = await handler(
+            new TdsQueryContext
+            {
+                RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+                RequestType = TdsQueryRequestType.SqlBatch,
+                CommandText = "SELECT Id FROM customers WHERE " + predicate,
+                HasCompleteParameters = true,
+            },
+            CancellationToken.None);
+
+        Assert.Null(result.Error?.Message);
+        var resultSet = Assert.Single(result.ResultSets);
+        Assert.Equal(expectedIds, [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))]);
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();

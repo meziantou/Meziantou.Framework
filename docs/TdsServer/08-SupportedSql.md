@@ -16,8 +16,8 @@ the problem.
 - `INNER JOIN`, `LEFT JOIN` and `RIGHT JOIN`, on query roots or derived tables.
 - `CROSS APPLY` over the `nodes()` method of an XML column.
 - `WHERE` with comparisons, `AND`, `OR`, `NOT`, `IS NULL`, `IS NOT NULL`, `IN` and `NOT IN` (value lists and simple
-  subqueries, which can reference the outer query), and `EXISTS` and `NOT EXISTS` (simple subqueries, which can
-  reference the outer query).
+  subqueries, which can reference the outer query), `EXISTS` and `NOT EXISTS` (simple subqueries, which can reference
+  the outer query), and `LIKE` and `NOT LIKE` (see [LIKE](#like)).
 - `GROUP BY` on one or more columns, `HAVING`, and the aggregates `COUNT(*)`, `SUM`, `MIN`, `MAX` and `AVG`.
 - `ORDER BY`, with `OFFSET … FETCH`.
 - `UNION` and `UNION ALL`.
@@ -53,6 +53,19 @@ The engine follows the three-valued logic of SQL:
 - `JOIN … ON` never matches a `NULL` key, not even with another `NULL` key. An outer join keeps the row of its outer
   side with `NULL` columns for the other side.
 
+## LIKE
+
+`LIKE` and `NOT LIKE` support the wildcards of SQL Server: `%` matches any string, `_` any character, `[abc]` and
+`[a-c]` one character of the set, and `[^abc]` one character outside of it. `ESCAPE '!'` makes the character after `!`
+a literal, as in `LIKE '100!%' ESCAPE '!'`. A value of another type is converted to text, as in `Id LIKE '4%'`.
+
+- Characters are compared ordinally, as `=` is: `LIKE 'a%'` does not match `Alice`. SQL Server compares them with the
+  collation of the column, which ignores case by default.
+- A `NULL` value, pattern or escape character matches no row, with `LIKE` and with `NOT LIKE`.
+- A pattern given as a literal or a parameter, made of text with an optional `%` at its start and its end, is translated
+  to `==`, `StartsWith`, `EndsWith` or `Contains`, so a LINQ provider can run it. Other patterns call a .NET method,
+  which LINQ to objects runs but other providers may not.
+
 ## XML methods
 
 The XML methods take XPath 1.0 expressions, not XQuery. Common paths such as `/root/item[@id="2"]/text()` behave the
@@ -64,7 +77,6 @@ engine options.
 
 ## Not supported
 
-- `LIKE`.
 - Recursive common table expressions.
 - Many subquery forms, such as scalar subqueries in the selected columns.
 - `INSERT`, `UPDATE`, `DELETE`, `MERGE` and other statements that change data, and any statement other than `SELECT`.

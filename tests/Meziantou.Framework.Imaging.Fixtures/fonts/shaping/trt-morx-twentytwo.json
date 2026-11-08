@@ -1,0 +1,18 @@
+{
+  "tool": "hb-shape 14.6.0 --shapers=ot --font-funcs=ot",
+  "cases": [
+    {
+      "text": "0041",
+      "glyphs": [
+        [
+          4,
+          0,
+          0,
+          0,
+          596,
+          0
+        ]
+      ]
+    }
+  ]
+}

@@ -85,7 +85,7 @@ allocates nothing. The overloads that take a state and a static callback avoid t
 
 ## Untrusted input and cancellation
 
-Drawing is sequential. The time a shape takes grows with the number of its edges and of the points where they cross,
+The time a shape takes grows with the number of its edges and of the points where they cross,
 and a very short dash pattern on a large canvas makes millions of dashes. When shapes come from untrusted input, pass a
 `CancellationToken` to `Draw`: it is checked by every shape, every 64 rows, every few thousand crossings and every few
 hundred dashes. A canceled drawing leaves the shapes already drawn, and the image stays valid.

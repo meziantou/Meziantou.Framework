@@ -4,7 +4,7 @@ namespace Meziantou.Framework;
 
 internal static class HuntSzymanskiDiff
 {
-    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer)
+    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
     {
         var leftModified = new bool[left.Length];
         var rightModified = new bool[right.Length];
@@ -36,7 +36,7 @@ internal static class HuntSzymanskiDiff
         }
 
         var rightPositions = BuildRightPositions(right, rightStart, rightEnd, comparer);
-        var current = BuildCandidateLinks(left, leftStart, leftEnd, rightPositions);
+        var current = BuildCandidateLinks(left, leftStart, leftEnd, rightPositions, budget);
         while (current is not null)
         {
             leftModified[current.LeftIndex] = false;
@@ -61,13 +61,17 @@ internal static class HuntSzymanskiDiff
         return positionsByToken;
     }
 
-    private static MatchNode? BuildCandidateLinks(string[] left, int leftStart, int leftEnd, Dictionary<string, List<int>> rightPositions)
+    private static MatchNode? BuildCandidateLinks(string[] left, int leftStart, int leftEnd, Dictionary<string, List<int>> rightPositions, DiffBudget budget)
     {
         var thresholds = new List<int>();
         var links = new List<MatchNode?>();
 
         for (var leftIndex = leftStart; leftIndex < leftEnd; leftIndex++)
         {
+            // Without a match, every chunk of the region stays modified: it is reported as replaced
+            if (budget.IsExpired())
+                return null;
+
             if (!rightPositions.TryGetValue(left[leftIndex], out var matches))
                 continue;
 

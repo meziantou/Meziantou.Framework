@@ -78,10 +78,10 @@ internal sealed class PixelConversionPlan
     public bool IsIdentity => SourceFormat == DestinationFormat;
 
     /// <summary>Gets the ICC profile to attach to the converted pixels, or <see langword="null"/>.</summary>
-    public IccProfile? ColorProfile { get; }
+    public IccProfile? ColorProfile { get; private set; }
 
     /// <summary>Gets a value indicating whether an incompatible source profile was removed (<see cref="PixelConversionOptions.DiscardIncompatibleColorProfile"/>).</summary>
-    public bool ColorProfileDiscarded { get; }
+    public bool ColorProfileDiscarded { get; private set; }
 
     /// <summary>Gets the image format reported in exceptions, or <see cref="ImageFormat.Unknown"/>.</summary>
     public ImageFormat Format { get; }
@@ -116,6 +116,19 @@ internal sealed class PixelConversionPlan
         options ??= PixelConversionOptions.Default;
         var profile = ColorProfileCompatibility.Resolve(sourceProfile, destinationFormat, options.DiscardIncompatibleColorProfile, format);
         return new PixelConversionPlan(sourceFormat, destinationFormat, options, profile, profileDiscarded: sourceProfile is not null && profile is null, format);
+    }
+
+    /// <summary>
+    /// Replaces the ICC profile of the source with one found once the plan was made (a BMP profile stored after the pixel
+    /// data), with the rules of <see cref="Create(PixelFormat, PixelFormat, PixelConversionOptions?, IccProfile?, ImageFormat)"/>.
+    /// The conversion of the samples does not depend on the profile.
+    /// </summary>
+    /// <param name="sourceProfile">The ICC profile of the source.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The profile is incompatible with the destination and may not be discarded.</exception>
+    public void AdoptSourceColorProfile(IccProfile sourceProfile)
+    {
+        ColorProfile = ColorProfileCompatibility.Resolve(sourceProfile, DestinationFormat, _options.DiscardIncompatibleColorProfile, Format);
+        ColorProfileDiscarded = ColorProfile is null;
     }
 
     /// <summary>Throws if a source row would lose alpha under this plan (alpha removed, no background, non-opaque pixel).</summary>

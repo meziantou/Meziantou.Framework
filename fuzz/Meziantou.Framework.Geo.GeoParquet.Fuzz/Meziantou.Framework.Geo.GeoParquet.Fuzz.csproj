@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Geo.GeoParquet. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- A Meziantou.Framework.Geo.GeoParquet namespace would hide the GeoParquet class -->
+    <RootNamespace>Meziantou.Framework.GeoParquetFuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Parquet files of the unit tests (the GeoParquet test data and the files pyarrow writes) are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Geo.GeoParquet.Tests\TestData\**\*.parquet" LogicalName="TestData/%(RecursiveDir)%(FileName)%(Extension)" Link="Seeds\%(RecursiveDir)%(FileName)%(Extension)" />
+    <!-- The features are described and exercised as in the GeoPackage targets -->
+    <Compile Include="..\Meziantou.Framework.Geo.GeoPackage.Fuzz\GeoFeatureDescriber.cs" Link="GeoFeatureDescriber.cs" />
+    <Compile Include="..\Meziantou.Framework.Geo.Fuzz\ShortReadStream.cs" Link="ShortReadStream.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.GeoParquet\Meziantou.Framework.Geo.GeoParquet.csproj" />
+  </ItemGroup>
+</Project>

@@ -8,8 +8,10 @@ description: What the barcode packages do not do.
   Code 93, Code 128, GS1-128, EAN-8, EAN-13, UPC-A, Codabar and ITF. Other linear barcodes (UPC-E, GS1 DataBar) are not
   supported, nor are the variants of the two-dimensional ones (Data Matrix rectangular extension, Macro and Micro PDF417,
   Aztec Runes).
-- **GS1 syntax only.** GS1-128 elements are checked against the syntax rules of element strings, not against the GS1
-  dictionary of application identifiers: the format of the data and its check digits are not verified.
+- **GS1 dictionary checks are opt-in.** GS1-128 elements are checked against the syntax rules of element strings
+  unless you pass [Gs1ValidationMode.Dictionary](cref:Meziantou.Framework.Barcodes.Gs1ValidationMode.Dictionary). The
+  dictionary does not know which GS1 Company Prefixes are allocated: a key is checked for its format and check digit,
+  not for its owner.
 - **Mixed modes in standard QR codes only.** [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) splits a text into segments of different modes,
   except a text with non-ASCII characters other than kanji and kana; Micro QR codes and rMQR codes encode the whole
   text in one mode. There is no API to choose the segments yourself.

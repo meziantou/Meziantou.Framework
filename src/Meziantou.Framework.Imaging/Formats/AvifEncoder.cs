@@ -97,15 +97,17 @@ public sealed class AvifEncoder : ImageEncoder
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="AvifChromaSubsampling"/>.</exception>
     public AvifChromaSubsampling ChromaSubsampling
     {
-        get;
+        get => _chromaSubsampling;
         init
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The chroma subsampling is not valid.");
 
-            field = value;
+            _chromaSubsampling = value;
         }
     }
+
+    private AvifChromaSubsampling _chromaSubsampling;
 
     /// <summary>
     /// Gets the number of bits of a sample: 8, 10 or 12, or <see langword="null"/> (the default) for the depth of the pixel
@@ -164,15 +166,17 @@ public sealed class AvifEncoder : ImageEncoder
     /// <exception cref="ArgumentOutOfRangeException">A side of the tiles is not between 64 and 65,536.</exception>
     public Size? GridTileSize
     {
-        get;
+        get => _gridTileSize;
         init
         {
             if (value is { } tile && (tile.Width is < 64 or > 65536 || tile.Height is < 64 or > 65536))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "Each side of a tile must be between 64 and 65,536 pixels.");
 
-            field = value;
+            _gridTileSize = value;
         }
     }
+
+    private Size? _gridTileSize;
 
     /// <summary>
     /// Gets a value indicating whether the AV1 frames are split into tiles from their size, so that they are coded and
@@ -268,5 +272,35 @@ public sealed class AvifEncoder : ImageEncoder
 
             field = value;
         }
+    }
+
+    /// <summary>
+    /// Gets the gain map written next to the image, or <see langword="null"/> (the default) for none.
+    /// </summary>
+    /// <remarks>
+    /// The gain map image is a hidden AV1 image item, and a tone map derived item (<c>tmap</c>, whose data is the metadata of
+    /// ISO 21496-1) derives the alternate rendition from the primary image and the gain map; an <c>altr</c> group offers the
+    /// tone map item and the primary image as alternatives, and the file type lists the <c>tmap</c> brand. The CICP color
+    /// description and the ICC profile of the gain map image become the <c>colr</c> properties of the tone map item (the
+    /// color space of the alternate rendition); its other metadata is not written. The image must be a still image, and the
+    /// gain map image opaque. The gain map image is encoded with the same settings, but with full chroma resolution
+    /// (<see cref="AvifChromaSubsampling.Ratio444"/>: the gain amplifies its errors) and never as a grid
+    /// (<see cref="GridTileSize"/> applies to the primary image only). The encoded images are kept in memory until the file
+    /// is written.
+    /// </remarks>
+    public GainMap? GainMap
+    {
+        get => _gainMap;
+        init => _gainMap = value;
+    }
+
+    private GainMap? _gainMap;
+
+    /// <inheritdoc />
+    private protected override void PrepareGainMapImageSettings()
+    {
+        _gainMap = null;
+        _gridTileSize = null;
+        _chromaSubsampling = AvifChromaSubsampling.Ratio444;
     }
 }

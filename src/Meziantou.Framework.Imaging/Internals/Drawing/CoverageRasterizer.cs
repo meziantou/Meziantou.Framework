@@ -138,6 +138,12 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Gets the number of pixels of the current run. The first and the last ones are covered.</summary>
     public int Count { get; private set; }
 
+    /// <summary>
+    /// Gets, after <see cref="Begin(EdgeBuilder, FillRule, bool, CancellationToken)"/>, a bound of the number of pixels the
+    /// runs may cover: the rows of the edges, from the leftmost edge to the right side of the frame.
+    /// </summary>
+    public long EstimatedPixels { get; private set; }
+
     /// <summary>Gets the coverage of the pixels of the current run, from 0 to <see cref="FullCoverage"/>.</summary>
     public ReadOnlySpan<uint> Coverage => CoverageRow.Slice(X, Count);
 
@@ -246,6 +252,7 @@ internal sealed class CoverageRasterizer : IDisposable
         _events = 0;
         Count = 0;
         var list = edges.Edges;
+        var left = double.PositiveInfinity;
         foreach (ref readonly var edge in list)
         {
             var first = GetFirstRow(edge);
@@ -255,7 +262,11 @@ internal sealed class CoverageRasterizer : IDisposable
             deltas[end]--;
             _firstRow = Math.Min(_firstRow, first);
             _lastRow = Math.Max(_lastRow, end);
+            left = Math.Min(left, Math.Min(edge.X0, edge.X1));
         }
+
+        // What is inside after the last edge of a row goes on to the right side of the frame
+        EstimatedPixels = _edgeCount == 0 ? 0 : (long)(_lastRow - _firstRow) * (_width - (int)Math.Clamp(Math.Floor(left), 0, _width));
 
         _row = _firstRow;
         if (_edgeCount == 0)

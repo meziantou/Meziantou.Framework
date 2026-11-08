@@ -22,6 +22,7 @@ internal static class ImageFormatNames
         ImageFormat.Heic => "HEIC",
         ImageFormat.Jpeg2000 => "JPEG 2000",
         ImageFormat.OpenExr => "OpenEXR",
+        ImageFormat.Custom => "custom",
         _ => "image",
     };
 }

@@ -13,6 +13,7 @@ src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph
 src/Meziantou.Framework.WebPlatform.Playwright/Scripts/*.js
 tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
 tests/Meziantou.Framework.Charts.Tests/TestData/countries-110m.geojson
+tests/Meziantou.Framework.Geo.GeoParquet.Tests/TestData/
 tests/Meziantou.Framework.Geo.Tests/TestData/flatgeobuf/
 tests/Meziantou.Framework.HtmlToMarkdown.Tests/TestData/Specs/
 tests/Meziantou.Framework.Imaging.Fixtures/font-suites/
@@ -26,3 +27,5 @@ tests/Meziantou.Framework.Pdf.Fixtures/arlington/
 tests/Meziantou.Framework.WebPlatform.SpecData/
 tests/Meziantou.Framework.WebPlatform.Tests/Css/Fonts/Resources/HarfBuzz/
 tests/Meziantou.Framework.Yaml.Tests/files/yaml-test-suite/
+src/Meziantou.Framework.Barcodes/Internal/Gs1/gs1-syntax-dictionary.txt
+tests/Meziantou.Framework.Barcodes.Tests/Gs1/gs1-linter-tests.json

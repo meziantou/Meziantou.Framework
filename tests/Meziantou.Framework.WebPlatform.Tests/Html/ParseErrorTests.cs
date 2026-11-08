@@ -11,6 +11,31 @@ public sealed class ParseErrorTests
     }
 
     [Fact]
+    public void MaxElementCount_LimitsTheElementsCreatedByTheParser()
+    {
+        #region WebPlatform_MaxElementCount
+        var options = new HtmlParserOptions { MaxElementCount = 1_000 };
+
+        // Each paragraph recreates the open formatting elements: 100 x 100 elements from about 1,600 characters
+        var html = "<p>" + string.Concat(Enumerable.Range(0, 100).Select(i => $"<b class={i}>")) + string.Concat(Enumerable.Repeat("<p>x", 100));
+        Assert.Throws<HtmlParserLimitExceededException>(() => HtmlDocumentParser.ParseDocument(html, options));
+
+        var body = HtmlDocumentParser.ParseDocument("").Body!;
+        Assert.Throws<HtmlParserLimitExceededException>(() => new HtmlDocumentParser(options).ParseFragment(html, body));
+        #endregion
+    }
+
+    [Fact]
+    public void MaxElementCount_CountsTheImpliedElements()
+    {
+        // The parser creates head and body for the p element (the root html element of a document is not counted)
+        var options = new HtmlParserOptions { MaxElementCount = 3 };
+        Assert.Equal("<p>a</p>", HtmlDocumentParser.ParseDocument("<p>a", options).Body!.InnerHtml);
+        Assert.Throws<HtmlParserLimitExceededException>(() => HtmlDocumentParser.ParseDocument("<p>a<b>", options));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HtmlParserOptions { MaxElementCount = -1 });
+    }
+
+    [Fact]
     public void TreeBuilderErrors_AreReportedAtTheEndOfTheToken()
     {
         // The errors of the tree construction are at the last character of the token, the end-of-file errors at the end of the input

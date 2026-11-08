@@ -38,12 +38,19 @@ namespace Meziantou.Framework.WebPlatform
         public override string ToString() => throw null;
     }
 
+    public sealed class HtmlParserLimitExceededException : System.Exception
+    {
+        public HtmlParserLimitExceededException(string message) { }
+        public HtmlParserLimitExceededException(string message, System.Exception innerException) { }
+    }
+
     public sealed class HtmlParserOptions
     {
         public bool AllowDeclarativeShadowRoots { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CustomElementRegistry? CustomElementRegistry { get => throw null; init { } }
         public string DefaultEncoding { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.EncodingDetector? EncodingDetector { get => throw null; init { } }
+        public int? MaxElementCount { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.HtmlParseError>? ParseErrorHandler { get => throw null; init { } }
         public bool ScriptingEnabled { get => throw null; init { } }
         public string? TransportEncoding { get => throw null; init { } }

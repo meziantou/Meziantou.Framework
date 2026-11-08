@@ -6,12 +6,12 @@ internal static class MyersDiff
 {
     private const int StackAllocationThreshold = 128;
 
-    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer)
+    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
     {
-        return Compute(left.AsSpan(), right.AsSpan(), comparer);
+        return Compute(left.AsSpan(), right.AsSpan(), comparer, budget);
     }
 
-    internal static DiffComputationResult Compute(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer)
+    internal static DiffComputationResult Compute(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer, DiffBudget budget)
     {
         var h = new Dictionary<string, int>(left.Length + right.Length, comparer);
         var leftCodesBuffer = left.Length <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[left.Length];
@@ -37,7 +37,7 @@ internal static class MyersDiff
         var upVector = upVectorBuffer[..vectorLength];
         upVector.Clear();
 
-        LongCommonSubsequence(leftCodes, leftModified, 0, leftCodes.Length, rightCodes, rightModified, 0, rightCodes.Length, downVector, upVector);
+        LongCommonSubsequence(leftCodes, leftModified, 0, leftCodes.Length, rightCodes, rightModified, 0, rightCodes.Length, downVector, upVector, budget);
 
         Optimize(leftCodes, leftModified);
         Optimize(rightCodes, rightModified);
@@ -104,7 +104,12 @@ internal static class MyersDiff
         }
     }
 
-    private static SMSRD ShortestMiddleSnake(ReadOnlySpan<int> dataLeft, int lowerLeft, int upperLeft, ReadOnlySpan<int> dataRight, int lowerRight, int upperRight, Span<int> downVector, Span<int> upVector)
+    /// <summary>
+    /// Finds the point where the shortest edit script of the region crosses its middle diagonal. Returns
+    /// <see langword="false"/> when the region must be reported as replaced: the time limit is reached, or the edit cost
+    /// limit is reached before the search moves away from the corners of the region.
+    /// </summary>
+    private static bool ShortestMiddleSnake(ReadOnlySpan<int> dataLeft, int lowerLeft, int upperLeft, ReadOnlySpan<int> dataRight, int lowerRight, int upperRight, Span<int> downVector, Span<int> upVector, DiffBudget budget, out SMSRD result)
     {
         var max = dataLeft.Length + dataRight.Length + 1;
 
@@ -124,6 +129,17 @@ internal static class MyersDiff
 
         for (var d = 0; d <= maxD; d++)
         {
+            if (budget.IsExpired())
+            {
+                result = default;
+                return false;
+            }
+
+            // Iteration d finds edit scripts of 2d-1 or 2d edits. Past the limit, split the region at the furthest
+            // point the previous iteration reached, as git does: the diff stays valid but may not be minimal.
+            if ((2L * d) - 1 > budget.MaxEditCost)
+                return FindFurthestPoint(lowerLeft, upperLeft, lowerRight, upperRight, downVector, downOffset, downK, upVector, upOffset, upK, d - 1, out result);
+
             for (var k = downK - d; k <= downK + d; k += 2)
             {
                 int x;
@@ -154,7 +170,8 @@ internal static class MyersDiff
                 {
                     if (upVector[upOffset + k] <= downVector[downOffset + k])
                     {
-                        return new SMSRD { X = downVector[downOffset + k], Y = downVector[downOffset + k] - k };
+                        result = new SMSRD { X = downVector[downOffset + k], Y = downVector[downOffset + k] - k };
+                        return true;
                     }
                 }
             }
@@ -189,13 +206,60 @@ internal static class MyersDiff
                 {
                     if (upVector[upOffset + k] <= downVector[downOffset + k])
                     {
-                        return new SMSRD { X = downVector[downOffset + k], Y = downVector[downOffset + k] - k };
+                        result = new SMSRD { X = downVector[downOffset + k], Y = downVector[downOffset + k] - k };
+                        return true;
                     }
                 }
             }
         }
 
         throw new InvalidOperationException("Diff algorithm failed to find a middle snake.");
+    }
+
+    /// <summary>
+    /// Finds, among the points the forward and backward searches reached at step <paramref name="d"/>, the one furthest
+    /// from the corner it started from. Any point of the region splits it into two regions whose diffs give a valid diff,
+    /// and a point strictly between the corners makes both regions smaller.
+    /// </summary>
+    private static bool FindFurthestPoint(int lowerLeft, int upperLeft, int lowerRight, int upperRight, Span<int> downVector, int downOffset, int downK, Span<int> upVector, int upOffset, int upK, int d, out SMSRD result)
+    {
+        var lowerSum = lowerLeft + lowerRight;
+        var upperSum = upperLeft + upperRight;
+        var bestProgress = 0;
+        result = default;
+
+        // The searches do not clamp the diagonals to the region, so skip the points that fall outside of it
+        for (var k = downK - d; k <= downK + d; k += 2)
+        {
+            var x = downVector[downOffset + k];
+            var y = x - k;
+            if (x < lowerLeft || x > upperLeft || y < lowerRight || y > upperRight || x + y >= upperSum)
+                continue;
+
+            var progress = x + y - lowerSum;
+            if (progress > bestProgress)
+            {
+                bestProgress = progress;
+                result = new SMSRD { X = x, Y = y };
+            }
+        }
+
+        for (var k = upK - d; k <= upK + d; k += 2)
+        {
+            var x = upVector[upOffset + k];
+            var y = x - k;
+            if (x < lowerLeft || x > upperLeft || y < lowerRight || y > upperRight || x + y <= lowerSum)
+                continue;
+
+            var progress = upperSum - (x + y);
+            if (progress > bestProgress)
+            {
+                bestProgress = progress;
+                result = new SMSRD { X = x, Y = y };
+            }
+        }
+
+        return bestProgress > 0;
     }
 
     private static void LongCommonSubsequence(
@@ -208,39 +272,46 @@ internal static class MyersDiff
         int lowerRight,
         int upperRight,
         Span<int> downVector,
-        Span<int> upVector)
+        Span<int> upVector,
+        DiffBudget budget)
     {
-        while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft[lowerLeft] == dataRight[lowerRight])
+        // Recurse on the smaller of the two regions around the split and iterate on the larger one, so the depth stays
+        // logarithmic even when the edit cost limit splits the regions close to their corners.
+        while (true)
         {
-            lowerLeft++;
-            lowerRight++;
-        }
-
-        while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft[upperLeft - 1] == dataRight[upperRight - 1])
-        {
-            --upperLeft;
-            --upperRight;
-        }
-
-        if (lowerLeft == upperLeft)
-        {
-            while (lowerRight < upperRight)
+            while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft[lowerLeft] == dataRight[lowerRight])
             {
-                rightModified[lowerRight++] = true;
+                lowerLeft++;
+                lowerRight++;
             }
-        }
-        else if (lowerRight == upperRight)
-        {
-            while (lowerLeft < upperLeft)
+
+            while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft[upperLeft - 1] == dataRight[upperRight - 1])
             {
-                leftModified[lowerLeft++] = true;
+                --upperLeft;
+                --upperRight;
             }
-        }
-        else
-        {
-            var smsrd = ShortestMiddleSnake(dataLeft, lowerLeft, upperLeft, dataRight, lowerRight, upperRight, downVector, upVector);
-            LongCommonSubsequence(dataLeft, leftModified, lowerLeft, smsrd.X, dataRight, rightModified, lowerRight, smsrd.Y, downVector, upVector);
-            LongCommonSubsequence(dataLeft, leftModified, smsrd.X, upperLeft, dataRight, rightModified, smsrd.Y, upperRight, downVector, upVector);
+
+            if (lowerLeft == upperLeft || lowerRight == upperRight || !ShortestMiddleSnake(dataLeft, lowerLeft, upperLeft, dataRight, lowerRight, upperRight, downVector, upVector, budget, out var smsrd))
+            {
+                leftModified.AsSpan(lowerLeft, upperLeft - lowerLeft).Fill(true);
+                rightModified.AsSpan(lowerRight, upperRight - lowerRight).Fill(true);
+                return;
+            }
+
+            var lowerSize = smsrd.X - lowerLeft + smsrd.Y - lowerRight;
+            var upperSize = upperLeft - smsrd.X + upperRight - smsrd.Y;
+            if (lowerSize <= upperSize)
+            {
+                LongCommonSubsequence(dataLeft, leftModified, lowerLeft, smsrd.X, dataRight, rightModified, lowerRight, smsrd.Y, downVector, upVector, budget);
+                lowerLeft = smsrd.X;
+                lowerRight = smsrd.Y;
+            }
+            else
+            {
+                LongCommonSubsequence(dataLeft, leftModified, smsrd.X, upperLeft, dataRight, rightModified, smsrd.Y, upperRight, downVector, upVector, budget);
+                upperLeft = smsrd.X;
+                upperRight = smsrd.Y;
+            }
         }
     }
 

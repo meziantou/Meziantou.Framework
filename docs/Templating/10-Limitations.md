@@ -31,7 +31,8 @@ description: What the template engine, the HTML email templates and the command-
 
 ## Command-line tool
 
-- No arguments can be passed to the template.
-- One template per run.
+- Arguments passed with `--arg` are strings, and the arguments of a JSON file have the types of their JSON values:
+  values of your own types cannot be passed. See [Pass arguments](07-CommandLineTool.md#pass-arguments).
+- Every template of a run receives the same arguments.
 - T4 templates are read with the syntax of the library: only the delimiters and the `extension` of the `output`
   directive come from T4.

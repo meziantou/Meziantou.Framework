@@ -124,6 +124,53 @@ public abstract class GeoGeometry
         return GeoOperations.Combine(this, other, PolygonCombineMode.Exclude, nameof(other));
     }
 
+    /// <summary>Gets the smallest convex polygon that contains every position of the geometry.</summary>
+    /// <returns>
+    /// The convex hull: a <see cref="GeoPolygon"/> whose exterior ring turns counter-clockwise, a <see cref="GeoLineString"/>
+    /// between the two ends when the positions are on a line, a <see cref="GeoPoint"/> when they are all the same, or
+    /// <see langword="null"/> for an empty geometry. The positions of the result are positions of the geometry.
+    /// </returns>
+    /// <remarks>The hull is computed on the longitudes and latitudes, as on an equirectangular map: its edges are straight in degrees.</remarks>
+    public GeoGeometry? ConvexHull() => GeoConvexHull.GetConvexHull(this);
+
+    /// <summary>Gets the shortest distance between this geometry and another one, on the WGS 84 ellipsoid.</summary>
+    /// <param name="other">The other geometry.</param>
+    /// <returns>
+    /// The distance, in meters: 0 when the geometries meet, such as a point inside a polygon or two lines that cross.
+    /// <see langword="null"/> when one of the geometries is empty. The altitudes are ignored.
+    /// </returns>
+    /// <remarks>
+    /// The edges are straight in degrees, as for the other operations, and the inside of the polygons is the inside as
+    /// tested by <see cref="GeoPolygon.Contains"/>. The distance between the nearest positions is computed with the formulas
+    /// of Vincenty, accurate to a millimeter, except for nearly antipodal positions, where it is the great-circle distance
+    /// (within 0.5%). The nearest position of an edge is found to a fraction of a millimeter on edges of a few kilometers.
+    /// </remarks>
+    public double? Distance(GeoGeometry other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return GeoDistance.GetDistance(this, other);
+    }
+
+    /// <summary>Gets the area within a distance of the geometry, such as a zone around a position for a geofence or a corridor along a route.</summary>
+    /// <param name="distance">
+    /// The distance, in meters. A negative distance shrinks the polygons; the points and lines then have no buffer.
+    /// </param>
+    /// <param name="options">The shape of the joins and of the ends of the lines, or <see langword="null"/> for round ones.</param>
+    /// <returns>
+    /// The buffer, a <see cref="GeoPolygon"/> or a <see cref="GeoMultiPolygon"/>, or <see langword="null"/> when it is empty:
+    /// a point or a line with a distance of 0 or less, or a polygon that shrinks to nothing.
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="distance"/> is infinite or not a number.</exception>
+    /// <exception cref="InvalidOperationException">A coordinate of a polygon is not a number between -100,000 and 100,000.</exception>
+    /// <remarks>
+    /// The positions at the distance are computed on the WGS 84 ellipsoid, and joined by edges straight in degrees: the
+    /// circles are polygons of 4 × <see cref="GeoBufferOptions.SegmentsPerQuarterCircle"/> sides. The edges of the geometry
+    /// are cut in pieces that span less than half a degree of latitude. The result is combined as by <see cref="Union"/>: its positions are on
+    /// the grid of ten-millionths of a degree. A buffer that contains a pole is not handled, and one that crosses the
+    /// 180th meridian has longitudes beyond 180 or -180.
+    /// </remarks>
+    public GeoGeometry? Buffer(double distance, GeoBufferOptions? options = null) => GeoBuffer.Buffer(this, distance, options ?? new GeoBufferOptions());
+
     /// <summary>Gets a geometry of the same type whose positions are transformed, such as positions in another coordinate system converted to longitudes and latitudes.</summary>
     /// <param name="transform">The function that transforms each position.</param>
     /// <returns>The transformed geometry.</returns>

@@ -404,6 +404,154 @@ public sealed class DecodeInteropTests
         Assert.Equal("0109521234543213", result.Text);
     }
 
+    public static TheoryData<Barcode2DType, string> Barcode2DVariants()
+    {
+        var data = new TheoryData<Barcode2DType, string>();
+        foreach (var type in Enum.GetValues<Barcode2DType>())
+        {
+            foreach (var variant in new[] { "ToPng", "ToImage", "Canvas", "CanvasFractional", "CanvasGradient", "CanvasRotated" })
+            {
+                data.Add(type, variant);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(Barcode2DVariants))]
+    public async Task Barcode2D_AreDecoded(Barcode2DType type, string variant)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        foreach (var (barcode, data) in GetSampleBarcode2D(type))
+        {
+            Assert.Equal(type, barcode.Type);
+            var path = directory.FullPath / $"2d-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, RenderBarcode2D(barcode, variant), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        Assert.NotEmpty(cases);
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: $"{type} {Escape(data)}");
+            Assert.Equal(GetZXingFormat(type), result.Format);
+            Assert.Equal(data, result.Text, message: $"{type} {Escape(data)}");
+        }
+    }
+
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix)]
+    [InlineData(Barcode2DType.Pdf417)]
+    [InlineData(Barcode2DType.Aztec)]
+    public async Task RandomBarcode2DPayloads_AreDecoded(Barcode2DType type)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(20261108 + (int)type);
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        while (cases.Count < RandomPayloadsPerType)
+        {
+            var data = CreateRandomText(random, 300);
+            Barcode2D barcode;
+            try
+            {
+                barcode = type switch
+                {
+                    Barcode2DType.DataMatrix => Barcode2D.CreateDataMatrix(data),
+                    Barcode2DType.Pdf417 => Barcode2D.CreatePdf417(data),
+                    _ => Barcode2D.CreateAztec(data),
+                };
+            }
+            catch (InvalidOperationException)
+            {
+                // The data does not fit: another payload is drawn
+                continue;
+            }
+
+            var path = directory.FullPath / $"random-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = results.SingleOrDefault(result => result.FilePath == path);
+            Assert.NotNull(result, message: $"{type} {Escape(data)}");
+            Assert.Equal(data, result.Text, message: $"{type} {Escape(data)}");
+        }
+    }
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleBarcode2D(Barcode2DType type) => type switch
+    {
+        Barcode2DType.DataMatrix => GetSampleDataMatrixCodes(),
+        Barcode2DType.Pdf417 => GetSamplePdf417Codes(),
+        _ => GetSampleAztecCodes(),
+    };
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleDataMatrixCodes()
+    {
+        yield break;
+    }
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSamplePdf417Codes()
+    {
+        yield break;
+    }
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleAztecCodes()
+    {
+        yield break;
+    }
+
+    private static string GetZXingFormat(Barcode2DType type) => type switch
+    {
+        Barcode2DType.DataMatrix => "Data Matrix",
+        Barcode2DType.Pdf417 => "PDF417",
+        _ => "Aztec",
+    };
+
+    private static byte[] RenderBarcode2D(Barcode2D barcode, string variant)
+    {
+        if (variant is "ToPng")
+            return barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 4 });
+
+        if (variant is "ToImage")
+        {
+            using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+            return Encode(image);
+        }
+
+        var options = variant switch
+        {
+            "CanvasFractional" => new Barcode2DDrawingOptions { ModuleSize = 3.5, SnapToPixels = false },
+            "CanvasGradient" => new Barcode2DDrawingOptions { ModuleSize = 4, DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(400, 400), [new GradientStop(0, Colors.Black), new GradientStop(1, new Rgba32(0x00, 0x33, 0x66))]) },
+            _ => new Barcode2DDrawingOptions { ModuleSize = 4 },
+        };
+
+        var size = Barcode2DImageRenderer.MeasureBarcode2D(barcode, options);
+        if (variant is "CanvasRotated")
+        {
+            var side = (int)Math.Ceiling(Math.Max(size.Width, size.Height)) + 80;
+            using var rotated = new Image<Rgba32>(side, side, Colors.White);
+            rotated.Draw((barcode, options, size, side), static (canvas, state) =>
+            {
+                var center = new PointD(state.side / 2.0, state.side / 2.0);
+                var angle = state.barcode.Type is Barcode2DType.Pdf417 ? 3 : 10;
+                canvas.Transform(AffineTransform.CreateRotation(angle, center), state, static (canvas, state) => canvas.DrawBarcode2D(state.barcode, new PointD((state.side - state.size.Width) / 2, (state.side - state.size.Height) / 2), state.options));
+            });
+            return Encode(rotated);
+        }
+
+        using var canvas = new Image<Rgba32>((int)Math.Ceiling(size.Width) + 60, (int)Math.Ceiling(size.Height) + 60, Colors.White);
+        canvas.Draw((barcode, options), static (canvas, state) => canvas.DrawBarcode2D(state.barcode, new PointD(30.3, 30.6), state.options));
+        return Encode(canvas);
+    }
+
     private static IEnumerable<(QRCode QRCode, string Data)> GetSampleQRCodes()
     {
         foreach (var level in Enum.GetValues<ErrorCorrectionLevel>())

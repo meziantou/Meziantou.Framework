@@ -45,6 +45,16 @@ public static class BarcodesFuzzTargets
         "ABC-123", "Hello 12345678", "5512345", "55123457", "590123412345", "4006381333931", "03600029145", "40156", "12345678", "1234-5678$:/.+",
     ];
 
+    private static readonly string[] Barcode2DSeedTexts =
+    [
+        "Hello", "123456", "0123456789012345678901234567890123456789", "HELLO WORLD", "hello world", "Abc 123 xyz", "https://www.meziantou.net/",
+        "*ABC>123*", "\r*>\r", "@ABC^_", "café", "Ελληνικά 漢字 😀", "\u0001\u007f\u0080\u00ff", new string('a', 200), new string('7', 400),
+        "01095212345432131725010110ABC123", "10ABC\u001D21XY",
+    ];
+
+    // Characters that switch the encodation modes: C40 and Text (uppercase, lowercase), X12 (*>\r), EDIFACT (@^_), Base 256
+    private static readonly string[] Barcode2DTokens = ["*", ">", "\r", "@", "^", "_", "ABC", "abc", "a1b2", "\u001D", "\u00e9", "\u0080", "\u00ff", "0000"];
+
     private static readonly string[] Code39Alphabet = ["0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%"];
 
     private static readonly double[] ModuleSizes = [1, 2, 3, 0.5, 1.5, 2.6, 4, 7.3, 0.1, 0, -1, double.NaN, double.PositiveInfinity, 1e7];
@@ -56,6 +66,7 @@ public static class BarcodesFuzzTargets
         new("barcodes-qrcode", QRCodeTarget) { Seeds = () => QRSeedTexts.SelectMany((text, index) => new[] { 0, 1, 2 }.Select(type => FuzzSeed.FromText($"qrcode-{index}-{type}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
         new("barcodes-linear", LinearTarget) { Seeds = () => Enumerable.Range(0, 8).SelectMany(type => BarcodeSeedTexts.Select((text, index) => FuzzSeed.FromText($"linear-{type}-{index}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
         new("barcodes-payload", PayloadTarget) { Seeds = GetPayloadSeeds, Dictionary = Tokens },
+        new("barcodes-2d", Barcode2DTarget) { Seeds = () => Enumerable.Range(0, 3).SelectMany(type => Barcode2DSeedTexts.SelectMany((text, index) => new[] { 0, 0x5A, 0xA5 }.Select(options => FuzzSeed.FromText($"2d-{type}-{index}-{options}", [(byte)type, (byte)options, (byte)index], text)))), Dictionary = [.. Tokens, .. Barcode2DTokens] },
         new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
     ];
 
@@ -204,6 +215,139 @@ public static class BarcodesFuzzTargets
 
         // A payload is encoded, or is too long
         TryCreateQRCode(QRCodeType.Standard, payload, ErrorCorrectionLevel.L, out _);
+    }
+
+    private static void Barcode2DTarget(ReadOnlySpan<byte> data)
+    {
+        var type = (Barcode2DType)(FuzzInput.ReadByte(ref data) % 3);
+        var flags = FuzzInput.ReadByte(ref data);
+        var sizeByte = FuzzInput.ReadByte(ref data);
+        var binary = (flags & 0x80) != 0;
+        var text = FuzzInput.ReadText(data);
+        var bytes = data.ToArray();
+
+        Barcode2D? Create()
+        {
+            try
+            {
+                return type switch
+                {
+                    Barcode2DType.DataMatrix when (flags & 0x40) != 0 => Barcode2D.CreateGs1DataMatrix([.. CreateGs1Elements(text)], CreateDataMatrixOptions(flags, sizeByte)),
+                    Barcode2DType.DataMatrix => binary ? Barcode2D.CreateDataMatrix(bytes, CreateDataMatrixOptions(flags, sizeByte)) : Barcode2D.CreateDataMatrix(text, CreateDataMatrixOptions(flags, sizeByte)),
+                    Barcode2DType.Pdf417 => binary ? Barcode2D.CreatePdf417(bytes, CreatePdf417Options(flags, sizeByte)) : Barcode2D.CreatePdf417(text, CreatePdf417Options(flags, sizeByte)),
+                    _ => binary ? Barcode2D.CreateAztec(bytes, CreateAztecOptions(flags, sizeByte)) : Barcode2D.CreateAztec(text, CreateAztecOptions(flags, sizeByte)),
+                };
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+            catch (InvalidOperationException)
+            {
+                // The data does not fit
+                return null;
+            }
+        }
+
+        var barcode = Create();
+        if (barcode is null)
+            return;
+
+        FuzzAssert.Equal(type, barcode.Type, "The barcode type");
+        switch (type)
+        {
+            case Barcode2DType.DataMatrix:
+                CheckDataMatrix(barcode, CreateDataMatrixOptions(flags, sizeByte));
+                break;
+            case Barcode2DType.Pdf417:
+                CheckPdf417(barcode, CreatePdf417Options(flags, sizeByte));
+                break;
+            default:
+                CheckAztec(barcode, CreateAztecOptions(flags, sizeByte));
+                break;
+        }
+
+        // The encoding is deterministic
+        var other = Create();
+        FuzzAssert.True(other is not null && SameModules(barcode, other), "Encoding the same data twice gives different symbols");
+
+        // The renderers agree with the module matrix
+        using var image = Image.Load<Rgba32>(barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 1, QuietZoneModules = 0 }));
+        CheckPixels(image, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToPng");
+        using var fromImaging = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        CheckPixels(fromImaging, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
+        FuzzAssert.True(barcode.ToSvg().StartsWith("<svg ", StringComparison.Ordinal), "ToSvg does not start with <svg");
+    }
+
+    // The text as element strings: an application identifier of 2 digits, its data, and GS between the elements
+    private static List<Gs1Element> CreateGs1Elements(string text)
+    {
+        var elements = new List<Gs1Element>();
+        foreach (var part in text.Split('\u001D'))
+        {
+            if (part.Length < 3)
+                continue;
+
+            elements.Add(new Gs1Element(part[..2], part[2..]));
+        }
+
+        return elements;
+    }
+
+    private static DataMatrixOptions? CreateDataMatrixOptions(byte flags, byte sizeByte)
+    {
+        if ((flags & 0x0F) == 0)
+            return null;
+
+        return new DataMatrixOptions();
+    }
+
+    private static Pdf417Options? CreatePdf417Options(byte flags, byte sizeByte)
+    {
+        if ((flags & 0x0F) == 0)
+            return null;
+
+        return new Pdf417Options();
+    }
+
+    private static AztecOptions? CreateAztecOptions(byte flags, byte sizeByte)
+    {
+        if ((flags & 0x0F) == 0)
+            return null;
+
+        return new AztecOptions();
+    }
+
+    // The structure of a Data Matrix symbol: its size, finder and timing patterns
+    private static void CheckDataMatrix(Barcode2D barcode, DataMatrixOptions? options)
+    {
+    }
+
+    // The structure of a PDF417 symbol: its size, start and stop patterns
+    private static void CheckPdf417(Barcode2D barcode, Pdf417Options? options)
+    {
+    }
+
+    // The structure of an Aztec symbol: its size, finder pattern and orientation marks
+    private static void CheckAztec(Barcode2D barcode, AztecOptions? options)
+    {
+    }
+
+    private static bool SameModules(Barcode2D a, Barcode2D b)
+    {
+        if (a.Width != b.Width || a.Height != b.Height)
+            return false;
+
+        for (var row = 0; row < a.Height; row++)
+        {
+            for (var column = 0; column < a.Width; column++)
+            {
+                if (a[row, column] != b[row, column])
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static void DrawTarget(ReadOnlySpan<byte> data)

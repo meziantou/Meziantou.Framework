@@ -4,6 +4,13 @@
 
 namespace Meziantou.Framework.Barcodes
 {
+    public sealed class AztecOptions
+    {
+        public bool? Compact { get => throw null; set { } }
+        public int ErrorCorrectionPercent { get => throw null; set { } }
+        public int? Layers { get => throw null; set { } }
+    }
+
     public sealed class Barcode
     {
         public int Height { get => throw null; }
@@ -20,6 +27,59 @@ namespace Meziantou.Framework.Barcodes
         public static Meziantou.Framework.Barcodes.Barcode CreateGs1128(params System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateItf(string data) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateUpcA(string data, string? extension = null) => throw null;
+    }
+
+    public sealed class Barcode2D
+    {
+        public int Height { get => throw null; }
+        public bool this[int row, int column] { get => throw null; }
+        public Meziantou.Framework.Barcodes.Barcode2DType Type { get => throw null; }
+        public int Width { get => throw null; }
+        public static Meziantou.Framework.Barcodes.Barcode2D CreateAztec(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.AztecOptions? options = null) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2D CreateAztec(string data, Meziantou.Framework.Barcodes.AztecOptions? options = null) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2D CreateDataMatrix(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.DataMatrixOptions? options = null) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2D CreateDataMatrix(string data, Meziantou.Framework.Barcodes.DataMatrixOptions? options = null) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2D CreateGs1DataMatrix(params System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2D CreateGs1DataMatrix(System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements, Meziantou.Framework.Barcodes.DataMatrixOptions? options) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2D CreatePdf417(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.Pdf417Options? options = null) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode2D CreatePdf417(string data, Meziantou.Framework.Barcodes.Pdf417Options? options = null) => throw null;
+    }
+
+    public sealed class Barcode2DPngOptions
+    {
+        public Meziantou.Framework.Barcodes.Color DarkColor { get => throw null; set { } }
+        public Meziantou.Framework.Barcodes.Color LightColor { get => throw null; set { } }
+        public int ModuleSize { get => throw null; set { } }
+        public int QuietZoneModules { get => throw null; set { } }
+    }
+
+    public static class Barcode2DPngRenderer
+    {
+        public static byte[] ToPng(this Meziantou.Framework.Barcodes.Barcode2D barcode) => throw null;
+        public static byte[] ToPng(this Meziantou.Framework.Barcodes.Barcode2D barcode, Meziantou.Framework.Barcodes.Barcode2DPngOptions options) => throw null;
+        public static void WriteToPng(this Meziantou.Framework.Barcodes.Barcode2D barcode, System.IO.Stream stream) { }
+        public static void WriteToPng(this Meziantou.Framework.Barcodes.Barcode2D barcode, System.IO.Stream stream, Meziantou.Framework.Barcodes.Barcode2DPngOptions options) { }
+    }
+
+    public sealed class Barcode2DSvgOptions
+    {
+        public Meziantou.Framework.Barcodes.Color DarkColor { get => throw null; set { } }
+        public Meziantou.Framework.Barcodes.Color LightColor { get => throw null; set { } }
+        public int ModuleSize { get => throw null; set { } }
+        public int QuietZoneModules { get => throw null; set { } }
+    }
+
+    public static class Barcode2DSvgRenderer
+    {
+        public static string ToSvg(this Meziantou.Framework.Barcodes.Barcode2D barcode) => throw null;
+        public static string ToSvg(this Meziantou.Framework.Barcodes.Barcode2D barcode, Meziantou.Framework.Barcodes.Barcode2DSvgOptions options) => throw null;
+    }
+
+    public enum Barcode2DType
+    {
+        DataMatrix = 0,
+        Pdf417 = 1,
+        Aztec = 2,
     }
 
     public sealed class BarcodePngOptions
@@ -94,6 +154,20 @@ namespace Meziantou.Framework.Barcodes
         public static bool operator !=(Meziantou.Framework.Barcodes.Color left, Meziantou.Framework.Barcodes.Color right) => throw null;
     }
 
+    public sealed class DataMatrixOptions
+    {
+        public int? Height { get => throw null; set { } }
+        public Meziantou.Framework.Barcodes.DataMatrixShape Shape { get => throw null; set { } }
+        public int? Width { get => throw null; set { } }
+    }
+
+    public enum DataMatrixShape
+    {
+        Square = 0,
+        Rectangle = 1,
+        Any = 2,
+    }
+
     public enum ErrorCorrectionLevel
     {
         L = 0,
@@ -127,6 +201,13 @@ namespace Meziantou.Framework.Barcodes
     {
         Totp = 0,
         Hotp = 1,
+    }
+
+    public sealed class Pdf417Options
+    {
+        public int? Columns { get => throw null; set { } }
+        public int RowHeight { get => throw null; set { } }
+        public int? SecurityLevel { get => throw null; set { } }
     }
 
     public sealed class QRCode

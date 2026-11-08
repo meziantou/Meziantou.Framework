@@ -149,6 +149,12 @@ internal static class TiffFormat
     /// <summary>The largest accepted <c>JPEGTables</c> field: four quantization tables and eight Huffman tables fit in far less.</summary>
     public const int MaxJpegTablesLength = 64 * 1024;
 
+    /// <summary>
+    /// The largest number of bytes read for the header of the JPEG interchange format of an old-style JPEG page (its
+    /// markers before the first start of scan): application segments such as thumbnails can make it long.
+    /// </summary>
+    public const int MaxOldJpegHeaderLength = 1024 * 1024;
+
     // ResolutionUnit values
     public const int ResolutionUnitNone = 1;
     public const int ResolutionUnitInch = 2;

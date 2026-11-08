@@ -101,6 +101,11 @@ internal sealed class TiffRowExpander : IDisposable
         {
             ExpandPackedGray(stored, destination);
         }
+        else if (page.IsYCbCr && page.IsPlanar)
+        {
+            // The interleaved planes of YCbCr data without subsampling: each pixel is a data unit of its own
+            page.YCbCr!.Convert(stored[..(_width * 3)], destination, _width, rowCount: 1);
+        }
         else if (page.BitsPerSample == 8)
         {
             ExpandBytes(stored, destination);

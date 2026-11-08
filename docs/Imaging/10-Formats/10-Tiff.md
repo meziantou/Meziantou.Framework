@@ -12,8 +12,8 @@ destination.**
 | | Reading | Writing |
 | --- | --- | --- |
 | Container | Classic TIFF and BigTIFF, both byte orders, strips and tiles, chunky samples and separate planes, multi-page documents | Classic TIFF (default) or BigTIFF, both byte orders, strips or tiles, chunky samples, multi-page documents |
-| Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; CMYK with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, bilevel, palette, 32-bit floating-point |
-| Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, JPEG 2000 | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
+| Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; CMYK and CIE L\*a\*b\* with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, bilevel, palette, 32-bit floating-point |
+| Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, old-style JPEG, JPEG 2000 | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
 
 [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first page. Floating-point pages load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) (16 bits) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat).
@@ -118,9 +118,19 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
   [Pixel formats](../04-Concepts/05-PixelFormats.md).
 - CMYK pages load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts them to RGB (see
   [Color management](../09-Color/03-ColorManagement.md)). CMYK is never written.
+- CIE L\*a\*b\* pages (`CIELab`, and 8-bit `ICCLab`) load only with
+  [ImageDecodeOptions.CieLabConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CieLabConversion), which converts their colors, relative to the
+  `WhitePoint` of the page (D50 without one), to an RGB profile, sRGB by default. Colors outside its gamut are
+  clipped or mapped, as [CieLabConversionOptions.Transform](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.Transform) says. Identification reports
+  [ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab). Pages that store only the lightness, `ITULab` and 16-bit `ICCLab` are rejected.
+- Old-style JPEG pages (TIFF 6.0 compression 6) are read as libtiff reads them: with the header of
+  `JPEGInterchangeFormat` or with the tables of the `JPEGQTables`, `JPEGDCTables` and `JPEGACTables` tags, each strip or
+  tile is decoded as a JPEG datastream of its own. Only the baseline process with 8-bit samples is read; the lossless
+  process and separate planes with an interchange format are rejected.
+- YCbCr data in separate planes is read when it is not subsampled (`YCbCrSubSampling` 1, 1), like libtiff;
+  subsampled or JPEG-compressed planes are rejected.
 - The orientation of a page is reported, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient).
-- Old-style JPEG compression, L\*a\*b\* data, YCbCr data in separate planes and 64-bit floating-point samples are
-  rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Compressed data is never repaired: a damaged strip is an
+- 64-bit floating-point samples are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Compressed data is never repaired: a damaged strip is an
   [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException), never a page completed with white.
 - Some writers store one `BitsPerSample` value for all the samples, extra values, or no byte counts for a page of one
   uncompressed strip. These files are rejected by default; the

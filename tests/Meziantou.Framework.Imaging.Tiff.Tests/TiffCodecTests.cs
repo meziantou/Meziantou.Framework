@@ -424,7 +424,6 @@ public sealed class TiffCodecTests
     }
 
     [Theory]
-    [InlineData(6, "old-style JPEG")]
     [InlineData(32771, "compression 32771")]
     [InlineData(34713, "compression 34713")]
     public void UnsupportedCompressionIsRecognizedAndRejected(int compression, string name)
@@ -677,6 +676,7 @@ public sealed class TiffCodecTests
         "rgb-8-packbits-tiles", "rgb-16-uncompressed-tiles-big-endian", "rgba-8-deflate-tiles", "rgba-16-lzw-predictor-strips",
         "rgb-signed-16-deflate-predictor-strips", "rgba-float-32-deflate-float-predictor-tiles", "gray-alpha-half-16-lzw-float-predictor-strips",
         "rgb-float-24-uncompressed-strips", "cmyk-8-lzw-predictor-tiles", "cmyk-alpha-16-deflate-strips",
+        "ycbcr-8-lzw-strips", "ycbcr-8-packbits-tiles-big-endian", "lab-8-deflate-predictor-tiles", "lab-alpha-16-lzw-strips",
     ];
 
     [Theory]
@@ -685,7 +685,7 @@ public sealed class TiffCodecTests
     {
         // The planes hold the samples of the chunky page, each compressed and predicted on its own by the reference codecs
         var bigEndian = name.EndsWith("-big-endian", StringComparison.Ordinal);
-        var options = name.StartsWith("cmyk-", StringComparison.Ordinal) ? InkOptions : ImageDecodeOptions.Default;
+        var options = name.StartsWith("cmyk-", StringComparison.Ordinal) ? InkOptions : name.StartsWith("lab-", StringComparison.Ordinal) ? new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default } : ImageDecodeOptions.Default;
         var chunky = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(CreatePlanarPageSpec(name, planar: false)).Build();
         var planar = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(CreatePlanarPageSpec(name, planar: true)).Build();
         using var expected = Image.Load(chunky, options);
@@ -817,9 +817,9 @@ public sealed class TiffCodecTests
     }
 
     [Fact]
-    public void YCbCrPlanesAndUnknownPlanarConfigurationsAreRejected()
+    public void SubsampledYCbCrPlanesAndUnknownPlanarConfigurationsAreRejected()
     {
-        // The planes of YCbCr data may each have their own size: they are not read, by Identify either
+        // The planes of subsampled YCbCr data would each have their own size: they are not read, by Identify either
         var ycbcr = new TiffFileBuilder().AddPage(new TiffPageSpec
         {
             Width = 2,
@@ -827,7 +827,7 @@ public sealed class TiffCodecTests
             SamplesPerPixel = 3,
             Photometric = 6,
             PlanarConfiguration = 2,
-            ExtraFields = { TiffFieldSpec.Shorts(530, [1, 1]) },
+            ExtraFields = { TiffFieldSpec.Shorts(530, [2, 1]) },
             Samples = new byte[12],
         }).Build();
         Assert.Equal("PlanarConfiguration: 2 with YCbCr data", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(ycbcr)).Feature);
@@ -856,6 +856,8 @@ public sealed class TiffCodecTests
             "gray" => (2, 1, true),
             "rgb" => (3, 2, false),
             "rgba" => (4, 2, true),
+            "ycbcr" => (3, 6, false),
+            "lab" => name.StartsWith("lab-alpha-", StringComparison.Ordinal) ? (4, 8, true) : (3, 8, false),
             _ => name.StartsWith("cmyk-alpha-", StringComparison.Ordinal) ? (5, 5, true) : (4, 5, false),
         };
 
@@ -866,7 +868,7 @@ public sealed class TiffCodecTests
         var tiled = name.Contains("-tiles", StringComparison.Ordinal);
         var samples = new byte[Width * Height * samplesPerPixel * bitsPerSample / 8];
         Noise(samples, name.Length);
-        return new TiffPageSpec
+        var page = new TiffPageSpec
         {
             Width = Width,
             Height = Height,
@@ -883,6 +885,14 @@ public sealed class TiffCodecTests
             PlanarConfiguration = planar ? 2 : null,
             Samples = samples,
         };
+
+        // YCbCr samples without subsampling: each pixel is a data unit of its own
+        if (photometric == 6)
+        {
+            page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [1, 1]));
+        }
+
+        return page;
     }
 
     /// <summary>
@@ -1935,6 +1945,288 @@ public sealed class TiffCodecTests
         Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
         Assert.Equal([.. strips.SelectMany(static strip => strip.GetExpectedPixels())], GetBytes(image));
     }
+
+    [Theory]
+    [InlineData(2, 2, 3, false, 0)]
+    [InlineData(1, 1, 3, false, 0)]
+    [InlineData(2, 1, 3, true, 0)]
+    [InlineData(1, 1, 1, false, 0)]
+    [InlineData(1, 1, 1, true, 0)]
+    [InlineData(2, 2, 3, false, 2)]
+    public void OldJpegPagesWithTablesInTagsDecodeLikeTheirBlocks(int horizontal, int vertical, int componentCount, bool tiled, int restartInterval)
+    {
+        // TIFF 6.0 section 22: the tables are in JPEGQTables, JPEGDCTables and JPEGACTables, and each strip or tile holds
+        // the entropy-coded data of a frame of its size, without markers. The blocks are written by the test-side encoder,
+        // with the same tables, and the page is expected to have their pixels (libtiff reads such pages the same way)
+        const int Width = 21;
+        const int Height = 37;
+        (int H, int V)[] sampling = componentCount == 1 ? [(1, 1)] : [(horizontal, vertical), (1, 1), (1, 1)];
+        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled);
+        var options = new JpegTestEncodeOptions { RestartInterval = restartInterval };
+        var encoded = blocks.Select(block => ParseJpeg(block.Image.Encode(options))).ToArray();
+        var tables = encoded[0];
+        var page = new TiffPageSpec
+        {
+            Width = Width,
+            Height = Height,
+            SamplesPerPixel = componentCount,
+            Photometric = componentCount == 1 ? 1 : 6,
+            Compression = 6,
+            RowsPerStrip = 16,
+            TileWidth = tiled ? 16 : null,
+            TileLength = tiled ? 16 : null,
+            EncodedBlocks = [.. encoded.Select(static block => block.Scan)],
+            Samples = [],
+        };
+        if (componentCount == 3)
+        {
+            page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [(ushort)horizontal, (ushort)vertical]));
+        }
+
+        if (restartInterval > 0)
+        {
+            page.ExtraFields.Add(TiffFieldSpec.Short(515, (ushort)restartInterval));
+        }
+
+        // The tables are appended to the file, at offsets the tags give: each component reads its own tables
+        var blob = new List<byte>();
+        var quantization = new ulong[componentCount];
+        var dc = new ulong[componentCount];
+        var ac = new ulong[componentCount];
+        var data = BuildWithAppendedData(page, blob, offset =>
+        {
+            blob.Clear();
+            for (var component = 0; component < componentCount; component++)
+            {
+                quantization[component] = offset + (ulong)blob.Count;
+                blob.AddRange(tables.QuantizationTables[tables.ComponentQuantization[component]]);
+                dc[component] = offset + (ulong)blob.Count;
+                blob.AddRange(tables.HuffmanTables[(0, tables.ScanSelectors[component].Dc)]);
+                ac[component] = offset + (ulong)blob.Count;
+                blob.AddRange(tables.HuffmanTables[(1, tables.ScanSelectors[component].Ac)]);
+            }
+
+            return [new TiffFieldSpec(512, 3, [1]), new TiffFieldSpec(519, 4, quantization), new TiffFieldSpec(520, 4, dc), new TiffFieldSpec(521, 4, ac)];
+        });
+
+        using var image = Image.Load(data);
+        Assert.Equal(componentCount == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks, componentCount), GetBytes(image));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OldJpegPagesWithAJpegInterchangeFormatDecodeLikeLibTiff(bool frameOfThePage)
+    {
+        // JPEGInterchangeFormat points at the markers of the image up to its start of scan, and each strip holds the
+        // entropy-coded data of its rows, coded on its own: libtiff requires the frame of the header to be as tall as the
+        // page and decodes each strip with its height. A frame as tall as a strip describes the same strips
+        const int Width = 19;
+        const int Height = 41;
+        (int H, int V)[] sampling = [(2, 2), (1, 1), (1, 1)];
+        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled: false);
+        var datastreams = blocks.Select(static block => block.Image.Encode()).ToArray();
+        var headerLength = ParseJpeg(datastreams[0]).HeaderLength;
+        var header = datastreams[0][..headerLength];
+        if (frameOfThePage)
+        {
+            var frame = FindSegment(header, 0xC0);
+            header[frame + 5] = 0;
+            header[frame + 6] = Height;
+        }
+
+        var page = new TiffPageSpec
+        {
+            Width = Width,
+            Height = Height,
+            SamplesPerPixel = 3,
+            Photometric = 6,
+            Compression = 6,
+            RowsPerStrip = 16,
+            EncodedBlocks = [.. datastreams.Select(static datastream => datastream[ParseJpeg(datastream).HeaderLength..^2])],
+            Samples = [],
+        };
+        page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
+        var data = BuildWithAppendedData(page, [.. header], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)header.Length])]);
+        using var image = Image.Load(data);
+        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks, 3), GetBytes(image));
+
+        // A frame of another height describes neither the page nor its strips
+        var frameHeader = header.ToArray();
+        frameHeader[FindSegment(frameHeader, 0xC0) + 6] = 7;
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [.. frameHeader], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)frameHeader.Length])])));
+    }
+
+    [Fact]
+    public void OldJpegPagesWithoutStripsDecodeTheirJpegInterchangeFormat()
+    {
+        // Some writers store the whole JPEG datastream at JPEGInterchangeFormat, and no byte counts for the strips
+        (int H, int V)[] sampling = [(2, 1), (1, 1), (1, 1)];
+        var jpeg = JpegTestImage.CreateRandom(23, 18, sampling, seed: 41);
+        var datastream = jpeg.Encode();
+        var page = new TiffPageSpec { Width = 23, Height = 18, SamplesPerPixel = 3, Photometric = 6, Compression = 6, OmitByteCounts = true, EncodedBlocks = [[0]], Samples = [] };
+        page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 1]));
+        var data = BuildWithAppendedData(page, [.. datastream], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)datastream.Length])]);
+        var info = Image.Identify(data);
+        Assert.Equal(ImageColorModel.YCbCr, info.ColorModel);
+        using var image = Image.Load(data);
+        Assert.Equal(jpeg.GetExpectedPixels(), GetBytes(image));
+
+        // Without its length, the datastream cannot be delimited
+        var withoutLength = BuildWithAppendedData(page, [.. datastream], offset => [new TiffFieldSpec(513, 4, [offset])]);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(withoutLength));
+    }
+
+    [Fact]
+    public void UnsupportedOrMalformedOldJpegPagesAreRejected()
+    {
+        var page = new TiffPageSpec { Width = 8, Height = 8, SamplesPerPixel = 1, Compression = 6, EncodedBlocks = [[0]], Samples = [] };
+        Assert.Equal("Compression: old-style JPEG with JPEGProc 14", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(BuildWithAppendedData(page, [], _ => [new TiffFieldSpec(512, 3, [14])]))).Feature);
+
+        // Neither an interchange format nor tables, an interchange format without start of scan or outside the input
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [], _ => [])));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [0xFF, 0xD8, 0xFF, 0xD9], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [4])])));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [], offset => [new TiffFieldSpec(513, 4, [offset + 100])])));
+
+        var deep = new TiffPageSpec { Width = 8, Height = 8, SamplesPerPixel = 1, BitsPerSample = 12, Compression = 6, EncodedBlocks = [[0]], Samples = [] };
+        Assert.Equal("BitsPerSample: 12", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(new TiffFileBuilder().AddPage(deep).Build())).Feature);
+    }
+
+    /// <summary>The blocks of an old-style JPEG page: one test image per strip or 16x16 tile, all with the quantization tables of the first one.</summary>
+    private static (int X, int Y, JpegTestImage Image)[] CreateOldJpegBlocks(int width, int height, (int H, int V)[] sampling, bool tiled)
+    {
+        var result = new List<(int, int, JpegTestImage)>();
+        ushort[][]? quantization = null;
+        var seed = 100;
+        for (var y = 0; y < height; y += 16)
+        {
+            for (var x = 0; x < width; x += tiled ? 16 : width)
+            {
+                // A tile is coded in full; a strip has the rows of the page it covers
+                var blockWidth = tiled ? 16 : width;
+                var blockHeight = tiled ? 16 : Math.Min(16, height - y);
+                var random = JpegTestImage.CreateRandom(blockWidth, blockHeight, sampling, seed++);
+                quantization ??= random.QuantizationTables;
+                var image = JpegTestImage.FromCoefficients(blockWidth, blockHeight, sampling, quantization, (component, blockX, blockY) => random.Components[component].Blocks[(blockY * random.Components[component].BlocksX) + blockX]);
+                result.Add((x, y, image));
+            }
+        }
+
+        return [.. result];
+    }
+
+    /// <summary>The pixels of a page made of the blocks of <see cref="CreateOldJpegBlocks"/>.</summary>
+    private static byte[] ComposeOldJpegPixels(int width, int height, (int X, int Y, JpegTestImage Image)[] blocks, int bytesPerPixel)
+    {
+        var result = new byte[width * height * bytesPerPixel];
+        foreach (var (x, y, image) in blocks)
+        {
+            var pixels = image.GetExpectedPixels();
+            for (var row = 0; row < image.Height && y + row < height; row++)
+            {
+                var columns = Math.Min(image.Width, width - x);
+                pixels.AsSpan(row * image.Width * bytesPerPixel, columns * bytesPerPixel).CopyTo(result.AsSpan((((y + row) * width) + x) * bytesPerPixel));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Builds a page whose tags point at bytes appended to the file: <paramref name="createFields"/> receives the offset of
+    /// the appended bytes (the length of the file, which the values of the fields do not change) and gives the fields.
+    /// </summary>
+    private static byte[] BuildWithAppendedData(TiffPageSpec page, List<byte> appended, Func<ulong, TiffFieldSpec[]> createFields)
+    {
+        TiffPageSpec WithFields(TiffFieldSpec[] fields)
+        {
+            var copy = new TiffPageSpec { Width = page.Width, Height = page.Height, BitsPerSample = page.BitsPerSample, SamplesPerPixel = page.SamplesPerPixel, Photometric = page.Photometric, Compression = page.Compression, RowsPerStrip = page.RowsPerStrip, TileWidth = page.TileWidth, TileLength = page.TileLength, OmitByteCounts = page.OmitByteCounts, EncodedBlocks = page.EncodedBlocks, Samples = page.Samples };
+            foreach (var field in page.ExtraFields.Concat(fields))
+            {
+                copy.ExtraFields.Add(field);
+            }
+
+            return copy;
+        }
+
+        var length = (ulong)new TiffFileBuilder().AddPage(WithFields(createFields(0))).Build().Length;
+        var fields = createFields(length);
+        return [.. new TiffFileBuilder().AddPage(WithFields(fields)).Build(), .. appended];
+    }
+
+    private static int FindSegment(byte[] datastream, byte marker)
+    {
+        var position = 2;
+        while (datastream[position + 1] != marker)
+        {
+            position += 2 + ((datastream[position + 2] << 8) | datastream[position + 3]);
+        }
+
+        return position;
+    }
+
+    /// <summary>Reads the tables, the frame and the scan of a baseline datastream written by <see cref="JpegTestImage"/>.</summary>
+    private static ParsedJpeg ParseJpeg(byte[] datastream)
+    {
+        var quantization = new Dictionary<int, byte[]>();
+        var huffman = new Dictionary<(int Class, int Id), byte[]>();
+        var componentQuantization = new List<int>();
+        var selectors = new List<(int Dc, int Ac)>();
+        var position = 2;
+        while (true)
+        {
+            var marker = datastream[position + 1];
+            var length = (datastream[position + 2] << 8) | datastream[position + 3];
+            var payload = datastream.AsSpan(position + 4, length - 2);
+            switch (marker)
+            {
+                case 0xDB:
+                    for (var i = 0; i < payload.Length; i += 65)
+                    {
+                        quantization[payload[i] & 15] = payload.Slice(i + 1, 64).ToArray();
+                    }
+
+                    break;
+
+                case 0xC4:
+                    for (var i = 0; i < payload.Length;)
+                    {
+                        var count = 16;
+                        for (var k = 0; k < 16; k++)
+                        {
+                            count += payload[i + 1 + k];
+                        }
+
+                        huffman[(payload[i] >> 4, payload[i] & 15)] = payload.Slice(i + 1, count).ToArray();
+                        i += 1 + count;
+                    }
+
+                    break;
+
+                case 0xC0:
+                    for (var i = 0; i < payload[5]; i++)
+                    {
+                        componentQuantization.Add(payload[6 + (i * 3) + 2]);
+                    }
+
+                    break;
+
+                case 0xDA:
+                    for (var i = 0; i < payload[0]; i++)
+                    {
+                        selectors.Add((payload[2 + (i * 2)] >> 4, payload[2 + (i * 2)] & 15));
+                    }
+
+                    position += 2 + length;
+                    return new ParsedJpeg(quantization, huffman, [.. componentQuantization], [.. selectors], position, datastream[position..^2]);
+            }
+
+            position += 2 + length;
+        }
+    }
+
+    private sealed record ParsedJpeg(Dictionary<int, byte[]> QuantizationTables, Dictionary<(int Class, int Id), byte[]> HuffmanTables, int[] ComponentQuantization, (int Dc, int Ac)[] ScanSelectors, int HeaderLength, byte[] Scan);
 
     [Fact]
     public void JpegStripsUseTheTablesOfTheJpegTablesTag()

@@ -452,6 +452,31 @@ public sealed class ExrCompressionTests
         Assert.Equal(0x0000, table[0x8001]);
     }
 
+    [Fact]
+    public void TheDwaPerceptualCurveIsAPowerOfTheCodedValue()
+    {
+        // toLinear(x) = half(x^2.2) up to 1, half(9.025^(x - 1)) above, in single precision: the hash of the 65,536
+        // little-endian values and some of them (section 8.13)
+        var table = ExrDwa.GetToLinearTable();
+        var bytes = new byte[table.Length * 2];
+        for (var i = 0; i < table.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2 * i), table[i]);
+        }
+
+        Assert.Equal("72e80880a49b9428073cf87e2b181a6da74cfac9f8f7f4c6e459f0ac1f0225a5", Convert.ToHexStringLower(SHA256.HashData(bytes)));
+        Assert.Equal(0x0000, table[0x0001]);
+        Assert.Equal(0x32F7, table[0x3800]);
+        Assert.Equal(0x3C00, table[0x3C00]);
+        Assert.Equal(0x3C02, table[0x3C01]);
+        Assert.Equal(0x4883, table[0x4000]);
+        Assert.Equal(0x7C00, table[0x4900]);
+        Assert.Equal(0x0000, table[0x7C00]);
+        Assert.Equal(0x8000, table[0x8001]);
+        Assert.Equal(0xC883, table[0xC000]);
+        Assert.Equal(0xFC00, table[0xFBFF]);
+    }
+
     private static ushort[] ToUInt16(byte[] bytes)
     {
         var values = new ushort[bytes.Length / 2];

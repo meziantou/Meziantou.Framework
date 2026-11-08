@@ -1508,9 +1508,17 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class OpenExrDecodingOptions
     {
+        public Meziantou.Framework.Imaging.OpenExrDeepDataMode DeepData { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.OpenExrDecodingOptions Default { get => throw null; }
         public string? Layer { get => throw null; init { } }
+        public string? Part { get => throw null; init { } }
         public Meziantou.Framework.Imaging.OpenExrWindowMode WindowMode { get => throw null; init { } }
+    }
+
+    public enum OpenExrDeepDataMode
+    {
+        Reject = 0,
+        Flatten = 1,
     }
 
     public enum OpenExrWindowMode

@@ -716,16 +716,20 @@ public sealed class ExrDecoderTests
         AssertInvalid(builder => builder.Set("type", "string", ExrFileBuilder.Text("tiledimage")));
         AssertInvalid(builder => builder.Set("chunkCount", "int", ExrFileBuilder.Ints(2)));
 
-        AssertUnsupported(builder => builder.Set("compression", "compression", [8]));
-        AssertUnsupported(builder => builder.Set("compression", "compression", [13]));
+        AssertInvalid(builder => builder.Set("type", "string", ExrFileBuilder.Text("deepscanline")));
+        AssertInvalid(builder => builder.VersionField = 2 | 0x800);
+        AssertInvalid(builder => builder.VersionField = 2 | 0x200 | 0x1000);
+
+        AssertUnsupported(builder => builder.Set("compression", "compression", [10]));
+        AssertUnsupported(builder => builder.Set("compression", "compression", [11]));
+        AssertUnsupported(builder => builder.Set("compression", "compression", [12]));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("R"), HalfChannel("Z"))));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("diffuse.R"))));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("R"), HalfChannel("Y"))));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("A"))));
-        AssertUnsupported(builder => builder.Set("type", "string", ExrFileBuilder.Text("deepscanline")));
+        AssertUnsupported(builder => { builder.VersionField = 2 | 0x800; builder.Set("type", "string", ExrFileBuilder.Text("deepscanline")); });
+        AssertUnsupported(builder => builder.Set("name", "string", ExrFileBuilder.Text("left")), new OpenExrDecodingOptions { Part = "right" });
         AssertUnsupported(builder => builder.VersionField = 1);
-        AssertUnsupported(builder => builder.VersionField = 2 | 0x800);
-        AssertUnsupported(builder => builder.VersionField = 2 | 0x1000);
         AssertUnsupported(builder => builder.VersionField = 2 | 0x2000);
 
         // Long names need the flag; other attributes are skipped
@@ -739,11 +743,12 @@ public sealed class ExrDecoderTests
             Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
         }
 
-        static void AssertUnsupported(Action<ExrFileBuilder> change)
+        static void AssertUnsupported(Action<ExrFileBuilder> change, OpenExrDecodingOptions? options = null)
         {
             var data = Build(change);
-            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
-            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data));
+            var configuration = new ImageConfiguration { OpenExrDecoding = options ?? OpenExrDecodingOptions.Default };
+            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = configuration }));
+            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = configuration }));
         }
 
         static byte[] Build(Action<ExrFileBuilder> change)

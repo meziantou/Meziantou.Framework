@@ -1569,6 +1569,23 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>OpenEXR: a part of a multi-part file, and deep data flattened.</summary>
+    #region Imaging_OpenExrPartsAndDeepData
+    public static (Image RightEye, Image Flattened) LoadStereoAndDeep(string stereoPath, string deepPath)
+    {
+        // A multi-part file stores several images (the views of a stereo pair, the passes of a renderer): the default
+        // options reject it, since the other parts would be lost. Part selects one by its name
+        var stereo = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { Part = "right" } };
+        var rightEye = Image.Load(stereoPath, new ImageDecodeOptions { Configuration = stereo });
+
+        // Deep data store a list of samples per pixel, each at its depth (Z): Flatten composites them front to back, as
+        // OpenEXR does, into one RGBA color per pixel; the depths are lost
+        var deep = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { DeepData = OpenExrDeepDataMode.Flatten } };
+        var flattened = Image.Load(deepPath, new ImageDecodeOptions { Configuration = deep });
+        return (rightEye, flattened);
+    }
+    #endregion
+
     /// <summary>Progressive reading: the renderings of a frame before it is complete.</summary>
     #region Imaging_ProgressiveRead
     public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefinement> show)

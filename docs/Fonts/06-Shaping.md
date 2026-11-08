@@ -150,6 +150,25 @@ the clusters between [Start](cref:Meziantou.Framework.Fonts.ShapingFeature.Start
 - `new ShapingFeature("smcp")` turns the small capitals on;
 - `new ShapingFeature(ShapingFeature.ToTag("salt"), 2, start, end)` selects the second stylistic alternate of a range.
 
+## Fonts of Apple systems
+
+The fonts made for macOS and iOS often shape text with the tables of Apple Advanced Typography instead of `GSUB` and
+`GPOS`. [Shape](cref:Meziantou.Framework.Fonts.TextShaper.Shape) uses them without any setting:
+
+- `morx`: the substitutions, ligatures, insertions and reorderings of the font. A font that has this table is shaped
+  with it, whatever its `GSUB` table has; the shaping models of the scripts are not applied, as the table does their
+  work. The marks keep the advances the font gives them; without positioning table, they are placed from the shapes of
+  the glyphs, as for any font, unless the font places them itself.
+- `kerx`: the kerning of pairs, in context, and the placement of a glyph by an anchor point (`ankr`). It is used
+  instead of `GPOS` when the font has no `GSUB` table or is shaped with `morx`.
+- `feat`: the features the font has. An OpenType feature you give to [Shape](cref:Meziantou.Framework.Fonts.TextShaper.Shape) selects the matching setting of the font
+  (`liga` the common ligatures, `smcp` the small capitals, `ss01` the first stylistic set, `-liga` turns them off),
+  when the font lists that feature. The features applied by default select nothing: what the font does by default is
+  what it was made to do.
+- `trak`: the spacing of the size of the text. Give the size in points with the `pointSize` argument of
+  [Shape](cref:Meziantou.Framework.Fonts.TextShaper.Shape): every glyph that takes room gets the space the font asks for at that size. Without size, the text has no
+  tracking.
+
 ## Limits
 
 The glyphs of a shaped text are bounded by [FontResourceLimits.MaxTextGlyphs](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxTextGlyphs), and the work of the lookups of the font

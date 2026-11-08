@@ -39,6 +39,7 @@
     <ProjectReference Include="..\Meziantou.Framework.SimpleQueryLanguage.Fuzz\Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.SyntaxHighlighting.Fuzz\Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.TdsServer.Fuzz\Meziantou.Framework.TdsServer.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.TextDiff.Fuzz\Meziantou.Framework.TextDiff.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Toml.Fuzz\Meziantou.Framework.Toml.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Unicode.Fuzz\Meziantou.Framework.Unicode.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Uri.Fuzz\Meziantou.Framework.Uri.Fuzz.csproj" />

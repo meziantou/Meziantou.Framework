@@ -180,6 +180,9 @@ public sealed class LayoutTable
     /// <summary>Gets the index, in the feature list, of a feature of a language system.</summary>
     public static int GetFeatureIndex(ReadOnlySpan<byte> table, int languageSystem, int index) => FontBinary.UInt16(table, languageSystem + 6 + (index * 2));
 
+    /// <summary>Gets the number of scripts of the script list.</summary>
+    public int GetScriptCount(ReadOnlySpan<byte> table) => FontBinary.UInt16(table, _scripts);
+
     /// <summary>Gets the number of features of the feature list.</summary>
     public int GetFeatureListCount(ReadOnlySpan<byte> table) => FontBinary.UInt16(table, _features);
 

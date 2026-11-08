@@ -53,6 +53,13 @@ internal static class TiffPageDecoder
             inkConversion = transform.Pipeline;
             profile = conversion.DestinationProfile;
         }
+        else if (page.IsCieLab)
+        {
+            // L*a*b* colors are colorimetric: they are converted to the destination profile, which labels the image
+            var conversion = request.CieLabConversion ?? throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} stores {TiffFormat.GetPhotometricName(page.Photometric)} samples, which are only loaded with a color conversion: set the CieLabConversion property of the decode options."), string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {page.Photometric} without color conversion"));
+            inkConversion = conversion.CreatePipeline(CreateCieLabDecoding(page), CreateCieLabAdaptation(page));
+            profile = conversion.DestinationProfile;
+        }
 
         var area = request.GetRegion(page.Size, ImageFormat.Tiff);
         var window = TiffBlockWindow.Create(page, area);
@@ -80,6 +87,38 @@ internal static class TiffPageDecoder
 
         sink.EndImage();
         return sink.Build(page.Metadata, animation: null);
+    }
+
+    /// <summary>
+    /// Creates the stage that turns the normalized samples of an L*a*b* page into L* (0 to 100), a* and b*. The expander
+    /// gives the signed a* and b* of <c>CIELab</c> as unsigned samples larger by half of their range, which is how
+    /// <c>ICCLab</c> stores them (TIFF 6.0 section 23; Adobe Photoshop TIFF Technical Notes): 8-bit a* and b* are integers
+    /// from -128 to 127, 16-bit ones multiples of 1/256 from -128 to 128 - 1/256.
+    /// </summary>
+    private static IccMatrixStage CreateCieLabDecoding(TiffPage page)
+    {
+        var max = (double)((1 << page.BitsPerSample) - 1);
+        var unit = page.BitsPerSample == 8 ? 1 : 256.0;
+        var offset = (1 << (page.BitsPerSample - 1)) / unit;
+        return IccMatrixStage.CreateScale(100, max / unit, max / unit, 0, -offset, -offset);
+    }
+
+    /// <summary>
+    /// Creates the stage that turns CIEXYZ relative to the white of the connection space into CIEXYZ adapted from the white
+    /// point of the page with the linear Bradford transform, or returns <see langword="null"/> when the page declares none.
+    /// </summary>
+    private static IccMatrixStage? CreateCieLabAdaptation(TiffPage page)
+    {
+        if (page.WhitePoint is not var (x, y))
+            return null;
+
+        // The colors relative to the white point: the same L*a*b* values give the colorimetry of the connection space scaled by the ratio of the whites
+        var (whiteX, whiteY, whiteZ) = (x / y, 1.0, (1 - x - y) / y);
+        var relative = new ColorValueMatrix(whiteX / IccColorimetry.D50X, 0, 0, 0, whiteY / IccColorimetry.D50Y, 0, 0, 0, whiteZ / IccColorimetry.D50Z);
+        var adaptation = ColorValueMath.GetBradfordAdaptation(whiteX, whiteY, whiteZ, IccColorimetry.D50X, IccColorimetry.D50Y, IccColorimetry.D50Z).Multiply(relative);
+        Span<double> matrix = stackalloc double[9];
+        adaptation.CopyTo(matrix);
+        return new IccMatrixStage(matrix);
     }
 
     private static void DecodeStrips(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, TiffRowExpander expander, Span<byte> expanded, Rectangle area, TiffBlockWindow window, ColumnSpan columns)

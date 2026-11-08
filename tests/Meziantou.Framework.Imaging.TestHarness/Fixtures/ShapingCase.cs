@@ -29,6 +29,10 @@ public sealed class ShapingCase
     [JsonPropertyName("direction")]
     public string? Direction { get; init; }
 
+    /// <summary>Gets the size of the text in points, which the tracking of a font depends on; <see langword="null"/> when the shaper is given none.</summary>
+    [JsonPropertyName("pointSize")]
+    public double? PointSize { get; init; }
+
     [JsonPropertyName("glyphs")]
     public required IReadOnlyList<IReadOnlyList<int>> Glyphs { get; init; }
 

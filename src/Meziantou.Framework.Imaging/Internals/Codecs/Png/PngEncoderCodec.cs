@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -367,6 +368,8 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
                         PngEncoderCodec.WritePalette(output, _indexedRows.Colors);
                     }
 
+                    _metadata.WriteChunks(PngChunkPosition.BeforeImageData, output);
+
                     _step = StartImage();
                     if (_step == Step.FrameControl)
                         goto case Step.FrameControl;
@@ -424,6 +427,7 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
                     return true;
 
                 case Step.Trailer:
+                    _metadata.WriteChunks(PngChunkPosition.AfterImageData, output);
                     PngChunkWriter.Write(output, PngChunkWriter.Iend, []);
                     _step = Step.None;
                     return true;

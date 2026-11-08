@@ -984,6 +984,15 @@ reads these images.
   (read the `tmap` item instead), and `avifgainmaputil tonemap` is not an oracle (its output differs from the formula by
   several percent): the AVIF references are the formula evaluated with numpy on the planes libavif decodes. Both tools
   upsample a smaller gain map with their own filter, which Ultra HDR leaves to the reader: compare with a tolerance.
+- Writing (`JpegEncoder.GainMap`, `AvifEncoder.GainMap`) never touches the sessions of the formats:
+  `GainMapEncoderSession` buffers the file of the primary image, the gain map image is saved with a copy of the
+  settings (`ImageEncoder.CloneForGainMapImage`: no gain map, 4:4:4, no AVIF grid), and an assembler rewrites the two
+  files (`JpegGainMapAssembler`: XMP merged, ISO 21496-1 APP2 segments, the `MPF` index of libultrahdr 1.4;
+  `AvifGainMapAssembler`: the boxes of `HeifFileWriter` with a hidden gain map item, a `tmap` item, a `dimg`
+  reference, an `altr` group and the `tmap` brand, as libavif 1.3 writes them). The JPEG gain map is 4:4:4 because a
+  4:2:0 gain map (or base image) makes libultrahdr and this library disagree by several percent: their chroma upsampling
+  differs, and the gain multiplies the difference. Check new output with `ultrahdr_app -m 1` and
+  `avifgainmaputil printmetadata` in the fixtures image.
 
 ## Drawing
 

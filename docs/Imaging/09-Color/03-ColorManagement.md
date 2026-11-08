@@ -19,7 +19,7 @@ loads and saves an image, and it converts colors only when you ask for it.
 - `Metadata.TransferFunction` is [Linear](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.TransferFunction) for the linear-light samples of QOI and JPEG XL files, [Srgb](cref:Meziantou.Framework.Imaging.Metadata.ColorTransferFunction.Srgb) otherwise.
 - [Metadata.ContentLightLevel](cref:Meziantou.Framework.Imaging.Metadata.ContentLightLevel) and `Metadata.MasteringDisplay` describe how HDR samples were mastered.
 
-Only [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) and a load with [CmykConversionOptions](cref:Meziantou.Framework.Imaging.CmykConversionOptions) convert colors, and the pixels
+Only [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) and a load with [CmykConversionOptions](cref:Meziantou.Framework.Imaging.CmykConversionOptions) or [CieLabConversionOptions](cref:Meziantou.Framework.Imaging.CieLabConversionOptions) convert colors, and the pixels
 and their label always change together. To draw sRGB colors on an image of another color space, see
 [Drawing](../07-Drawing/01-Overview.md).
 
@@ -145,6 +145,24 @@ public static Image LoadCmykJpeg(string path)
 [ImageReaderOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageReaderOptions.CmykConversion) does the same for
 [streaming readers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
 
+## Load CIE L\*a\*b\* images
+
+No pixel format holds L\*a\*b\* samples either, so a TIFF page of L\*a\*b\* colors is only loaded with
+[ImageDecodeOptions.CieLabConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CieLabConversion): `new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default }` converts
+it to sRGB. Without it, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reports
+[ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab).
+
+| [CieLabConversionOptions](cref:Meziantou.Framework.Imaging.CieLabConversionOptions) | Default | What it does |
+| --- | --- | --- |
+| [DestinationProfile](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.DestinationProfile) | [IccProfile.Srgb](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Srgb) | The RGB profile of the loaded pixels, which are labeled with it |
+| [Transform](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.Transform) | [IccColorTransformOptions.Default](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.Default) | The rendering intent, the black point compensation and the gamut mapping |
+
+- The colors are relative to the white point of the file, D50 when it declares none. They are adapted to the D50 white
+  of the ICC profile connection space with the linear Bradford transform, then converted to the destination profile.
+- L\*a\*b\* holds colors that no RGB profile can show: the colors outside the gamut of the destination are clipped,
+  or mapped as [IccColorTransformOptions.GamutMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.GamutMapping) says. A profile embedded in the file is not used.
+- The loaded image has [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) pixels, [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) with an alpha sample, and [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) for 16-bit samples.
+
 ## Convert sample buffers
 
 [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) is the conversion between two profiles that [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) uses, for your own buffers of
@@ -217,6 +235,53 @@ public static IReadOnlyList<AuxiliaryImageKind> SaveHdrRendition(string photoPat
 - The result is linear light where 1 is the white of SDR, in the primaries of the photo, with nothing clipped. The
   parameters come from the ISO 21496-1 metadata (JPEG, HEIC, AVIF) or from the `hdrgm` XMP properties of Ultra HDR;
   the gain maps of Apple that have no ISO 21496-1 metadata are listed without parameters.
+
+## Write a photo with its gain map
+
+[JpegEncoder.GainMap](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.GainMap) and [AvifEncoder.GainMap](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GainMap) write a gain map next to the image: an Ultra HDR JPEG file, or an
+AVIF file with a tone map item. A [GainMap](cref:Meziantou.Framework.Imaging.Formats.GainMap) is the gain map image and its [GainMapMetadata](cref:Meziantou.Framework.Imaging.Metadata.GainMapMetadata), for example the
+ones of a photo that was read, after the same edit:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_WriteGainMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeHdrPhoto(string photoPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    var images = AuxiliaryImageCollection.Load(photoPath);
+    if (images.GainMapImage is { GainMapMetadata: { } metadata } gainMapImage)
+    {
+        // The samples of the gain map are its coded values, often at a fraction of the size of the photo: it gets the
+        // same geometry (the same resize, crop or rotation), scaled to its own size
+        using var gainMap = gainMapImage.Decode();
+        var scaleX = (double)gainMap.Width / photo.Width;
+        var scaleY = (double)gainMap.Height / photo.Height;
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        gainMap.Resize(new ResizeOptions(Math.Max(1, (int)Math.Round(photo.Width * scaleX, MidpointRounding.AwayFromZero)), Math.Max(1, (int)Math.Round(photo.Height * scaleY, MidpointRounding.AwayFromZero))) { Mode = ResizeMode.Stretch });
+
+        // An Ultra HDR file: the gain map image follows the photo, with its parameters (ISO 21496-1 and XMP). An
+        // AvifEncoder with a GainMap writes the same photo as an AVIF file
+        photo.Save(outputPath, new JpegEncoder { Quality = 90, GainMap = new GainMap(gainMap, metadata) });
+    }
+    else
+    {
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        photo.Save(outputPath, new JpegEncoder { Quality = 90 });
+    }
+}
+```
+<!-- endref -->
+
+- The samples of the gain map image are its coded values, as [AuxiliaryImage.Decode](cref:Meziantou.Framework.Imaging.AuxiliaryImage.Decode) returns them: a grayscale image gives
+  one gain for the three channels. Its color description (ICC profile or CICP) is the one of the alternate rendition,
+  which a gain map that does not use the color space of the base image applies in.
+- The gain map image is encoded with the settings of the encoder, but with full chroma resolution: the gain multiplies
+  its errors. Both images are kept in memory until the file is written.
+- The parameters are written as the metadata of ISO 21496-1 and, in a JPEG file, as the `hdrgm` XMP properties of
+  Ultra HDR 1.0, merged with the XMP packet of each image. XMP cannot describe a gain map in the color space of the
+  alternate rendition: the readers of Ultra HDR 1.0, which only read XMP, apply such a gain map in the color space of
+  the base image.
+- Only a still image has a gain map: an animation, or an animated gain map image, throws an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). The gain map image of an AVIF file must be opaque.
 
 ## Choose a rendering intent
 

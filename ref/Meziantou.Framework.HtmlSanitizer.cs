@@ -8,6 +8,8 @@ namespace Meziantou.Framework.Sanitizers
     {
         public bool AllowComments { get => throw null; set { } }
         public System.Collections.Generic.ISet<string> BlockedElements { get => throw null; }
+        public int MaxElementCount { get => throw null; set { } }
+        public int MaxInputLength { get => throw null; set { } }
         public System.Collections.Generic.ISet<string> SrcsetAttributes { get => throw null; }
         public System.Collections.Generic.ISet<string> UriAttributes { get => throw null; }
         public System.Collections.Generic.ISet<string> ValidAttributePrefixes { get => throw null; }

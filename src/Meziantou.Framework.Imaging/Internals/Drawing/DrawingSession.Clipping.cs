@@ -164,7 +164,10 @@ internal sealed partial class DrawingSession
     /// <param name="coverage">The coverages of the run; replaced by those of the pixels the clip keeps.</param>
     /// <param name="skipped">The number of pixels removed from the start of the run.</param>
     /// <returns><see langword="false"/> when nothing of the run gets through.</returns>
-    private bool ApplyClip(int y, ref int x, ref ReadOnlySpan<uint> coverage, out int skipped)
+    private bool ApplyClip(int y, ref int x, ref ReadOnlySpan<uint> coverage, out int skipped) => ApplyClip(y, ref x, ref coverage, out skipped, _clipRow);
+
+    /// <summary>Applies the clip to a run, the products of the coverages written to <paramref name="row"/>.</summary>
+    private bool ApplyClip(int y, ref int x, ref ReadOnlySpan<uint> coverage, out int skipped, PooledBuffer? row)
     {
         skipped = 0;
         var level = _clipLevels[_clipDepth - 1];
@@ -183,17 +186,17 @@ internal sealed partial class DrawingSession
             return true;
 
         var owner = _clipLevels[level.MaskLevel];
-        var product = unsafe(MemoryMarshal.Cast<byte, uint>(_clipRow!.Span))[..coverage.Length];
+        var product = unsafe(MemoryMarshal.Cast<byte, uint>(row!.Span))[..coverage.Length];
         var any = Multiply(coverage, owner.Mask.Slice(((y - owner.MaskTop) * owner.MaskWidth) + (x - owner.MaskLeft), coverage.Length), product);
         coverage = product;
         return any;
     }
 
     /// <summary>Multiplies the coverages of a run by an opacity, into the row of the session.</summary>
-    private ReadOnlySpan<uint> ApplyOpacity(ReadOnlySpan<uint> coverage, uint opacity)
+    private static ReadOnlySpan<uint> ApplyOpacity(ReadOnlySpan<uint> coverage, uint opacity, PooledBuffer? row)
     {
         // The run may already be in that row, after a clip: each value is read before it is written
-        var product = unsafe(MemoryMarshal.Cast<byte, uint>(_clipRow!.Span))[..coverage.Length];
+        var product = unsafe(MemoryMarshal.Cast<byte, uint>(row!.Span))[..coverage.Length];
         CoverageKernels.Scale(coverage, opacity, product);
         return product;
     }

@@ -145,8 +145,12 @@ public sealed class ImageConfiguration
     /// encoder compresses the LZW and Deflate strips, the OpenEXR decoder and encoder process the chunks, the JPEG 2000
     /// decoder and encoder code the code-blocks and split the wavelet transforms, the AVIF decoder and encoder code the tiles
     /// of an AV1 frame that has several (unless the frame is a grid tile coded alongside other tiles), and the HEIC decoder
-    /// decodes the tiles and the rows of the wavefront of a picture that start at entry points. The other decoders (the HEVC
-    /// in-loop filters included), the encoders and the other operations run on the calling thread.
+    /// decodes the tiles and the rows of the wavefront of a picture that start at entry points. Drawing uses it too: the
+    /// rows of a shape, an image or a layer that may cover at least 131,072 pixels are composited by up to this many
+    /// workers, by batches of rows, while the calling thread computes the coverages of the next rows; the pixels and the
+    /// errors are those of one worker. Each worker needs about 128 KB and 40 bytes per pixel of the width of the canvas,
+    /// charged to <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>. The other decoders (the HEVC in-loop filters
+    /// included), the encoders and the other operations run on the calling thread.
     /// </para>
     /// <para>
     /// Keep the default in services that already process several images concurrently: the bound applies per operation, so

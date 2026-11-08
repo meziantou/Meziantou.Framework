@@ -2992,6 +2992,37 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void SetClientHints(string origin, System.Collections.Generic.IEnumerable<string> clientHints) { }
     }
 
+    public enum AccessibilityCheckedState
+    {
+        False = 0,
+        True = 1,
+        Mixed = 2,
+    }
+
+    public sealed class AccessibilityNode
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.AccessibilityNode> Children { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Node Node { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.AccessibilityNode? Parent { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.AccessibilityProperties Properties { get => throw null; }
+        public string ToAriaSnapshot() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class AccessibilityProperties
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AccessibilityCheckedState? Checked { get => throw null; }
+        public string Description { get => throw null; }
+        public bool Disabled { get => throw null; }
+        public bool? Expanded { get => throw null; }
+        public bool IsHidden { get => throw null; }
+        public int? Level { get => throw null; }
+        public string Name { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.AccessibilityCheckedState? Pressed { get => throw null; }
+        public string Role { get => throw null; }
+        public bool? Selected { get => throw null; }
+    }
+
     public sealed class AddEventListenerOptions : Meziantou.Framework.WebPlatform.Dom.EventListenerOptions
     {
         public bool Once { get => throw null; init { } }
@@ -5258,6 +5289,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void BeforeHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
         public void BeforeHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public void BeforeHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
+        public Meziantou.Framework.WebPlatform.Dom.AccessibilityNode? CaptureAccessibilityTree() => throw null;
         public bool CheckVisibility(Meziantou.Framework.WebPlatform.Dom.CheckVisibilityOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Element? Closest(Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList selectors) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Element? Closest(string selectors) => throw null;
@@ -5265,6 +5297,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.DomPoint ConvertPointFromNode(Meziantou.Framework.WebPlatform.Dom.DomPointInit point, Meziantou.Framework.WebPlatform.Dom.GeometryNode from, Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.DomQuad ConvertQuadFromNode(Meziantou.Framework.WebPlatform.Dom.DomQuadInit quad, Meziantou.Framework.WebPlatform.Dom.GeometryNode from, Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.DomQuad ConvertRectFromNode(Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly rect, Meziantou.Framework.WebPlatform.Dom.GeometryNode from, Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions? options = null) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.AccessibilityProperties GetAccessibilityProperties() => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Animations.Animation> GetAnimations(Meziantou.Framework.WebPlatform.Dom.GetAnimationsOptions? options = null) => throw null;
         public string? GetAttribute(string qualifiedName) => throw null;
         public string? GetAttributeNS(string? @namespace, string localName) => throw null;

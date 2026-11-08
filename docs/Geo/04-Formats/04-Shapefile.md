@@ -54,6 +54,29 @@ Assert.True(polygon.Contains(new GeoPosition(5, 5)));
 - The `.prj` file is not read: the coordinates must be longitudes and latitudes. A shapefile in a projected coordinate
   system, such as UTM, gives positions in meters that the library cannot convert.
 
+## Read a large shapefile
+
+[Shapefile.ReadFeaturesAsync](cref:Meziantou.Framework.Geo.Shapefile.ReadFeaturesAsync) returns the features one at a
+time: it reads a record of the `.shp` file and a record of the `.dbf` file for each feature, and keeps no other one in
+memory. It reads files or streams, and [Shapefile.ReadZipFeaturesAsync](cref:Meziantou.Framework.Geo.Shapefile.ReadZipFeaturesAsync)
+reads the shapefile of a zip archive, decompressing the files as the features are read. The features are the ones
+[Read](cref:Meziantou.Framework.Geo.Shapefile.Read) returns:
+
+<!-- ref:../../../tests/Meziantou.Framework.Geo.Tests/ShapefileTests.cs;region=Geo_ShapefileReadFeaturesAsync;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The records of the .shp and .dbf files are read one at a time, as the features are enumerated
+var names = new List<string?>();
+await foreach (var feature in Shapefile.ReadFeaturesAsync("TestData/shapefile/points.shp"))
+{
+    names.Add((string?)feature.Properties["name"]);
+}
+
+Assert.Equal("Paris", names[0]);
+```
+<!-- endref -->
+
+Invalid data throws a `FormatException` when the reader reaches it: the features before it are returned first.
+
 ## Write a shapefile
 
 [Shapefile.Write](cref:Meziantou.Framework.Geo.Shapefile.Write) writes the `.shp`, `.shx`, `.dbf`, `.cpg` (UTF-8) and

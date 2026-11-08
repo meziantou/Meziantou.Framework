@@ -864,4 +864,148 @@ public sealed class ShapefileTests
         var read = Shapefile.Read(new MemoryStream(shp.ToArray()), new MemoryStream(dbf.ToArray()));
         Assert.HasCount(2, Assert.IsType<GeoMultiPolygon>(read[0].Geometry).Polygons);
     }
+
+    [Theory]
+    [InlineData("points")]
+    [InlineData("lines")]
+    [InlineData("polygons")]
+    [InlineData("pointz")]
+    [InlineData("pointm")]
+    [InlineData("linem")]
+    [InlineData("polygonz")]
+    [InlineData("multipatch")]
+    [InlineData("multipointzm")]
+    [InlineData("latin1")]
+    [InlineData("cp1252")]
+    public async Task ReadFeaturesAsync_MatchesRead(string name)
+    {
+        var expected = Shapefile.Read(GetPath(name + ".shp"));
+        expected.Name = null;
+        var fromPath = await Shapefile.ReadFeaturesAsync(GetPath(name + ".shp"), cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(GeoJson.Format(expected), GeoJson.Format(new GeoFeatureCollection(fromPath)));
+
+        // From streams that return a few bytes per read, without the encoding of the .cpg file
+        var dbfPath = Directory.EnumerateFiles(Path.GetDirectoryName(GetPath(name))!, name + ".dbf", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive }).Single();
+        using var shp = new CountingStream(File.ReadAllBytes(GetPath(name + ".shp")), canSeek: false, maxReadLength: 3);
+        using var dbf = new CountingStream(File.ReadAllBytes(dbfPath), canSeek: false, maxReadLength: 3);
+        using var shpSync = File.OpenRead(GetPath(name + ".shp"));
+        using var dbfSync = File.OpenRead(dbfPath);
+        var expectedFromStreams = Shapefile.Read(shpSync, dbfSync);
+        var fromStreams = await Shapefile.ReadFeaturesAsync(shp, dbf, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(GeoJson.Format(expectedFromStreams), GeoJson.Format(new GeoFeatureCollection(fromStreams)));
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_WithoutDbf()
+    {
+        using var shp = File.OpenRead(GetPath("points.shp"));
+        var features = await Shapefile.ReadFeaturesAsync(shp, dbf: null, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.HasCount(3, features);
+        Assert.All(features, feature => Assert.Empty(feature.Properties));
+    }
+
+    [Fact]
+    public async Task ReadZipFeaturesAsync()
+    {
+        using var stream = new MemoryStream();
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            archive.CreateEntryFromFile(GetPath("points.shp"), "data/Points.SHP");
+            archive.CreateEntryFromFile(GetPath("points.dbf"), "data/Points.dbf");
+            archive.CreateEntryFromFile(GetPath("points.cpg"), "data/points.CPG");
+            archive.CreateEntryFromFile(GetPath("lines.shp"), "lines.shp");
+        }
+
+        stream.Position = 0;
+        await Assert.ThrowsAsync<FormatException>(async () => await Shapefile.ReadZipFeaturesAsync(stream, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+        stream.Position = 0;
+        var points = await Shapefile.ReadZipFeaturesAsync(stream, "points", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Zürich – 日本", points[1].Properties["name"]);
+        stream.Position = 0;
+        var lines = await Shapefile.ReadZipFeaturesAsync(stream, "LINES", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.HasCount(2, lines);
+        stream.Position = 0;
+        await Assert.ThrowsAsync<ArgumentException>(async () => await Shapefile.ReadZipFeaturesAsync(stream, "roads", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+
+        using var zip = File.OpenRead(GetPath("countries.zip"));
+        var expected = Shapefile.ReadZip(zip);
+        expected.Name = null;
+        zip.Position = 0;
+        var countries = await Shapefile.ReadZipFeaturesAsync(zip, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(GeoJson.Format(expected), GeoJson.Format(new GeoFeatureCollection(countries)));
+
+        using var notZip = new MemoryStream([1, 2, 3, 4]);
+        await Assert.ThrowsAsync<FormatException>(async () => await Shapefile.ReadZipFeaturesAsync(notZip, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_Invalid()
+    {
+        using var shp = new MemoryStream([1, 2, 3]);
+        await Assert.ThrowsAsync<FormatException>(async () => await Shapefile.ReadFeaturesAsync(shp, dbf: null, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+
+        // A .dbf file that declares more records than it has
+        var dbfBytes = File.ReadAllBytes(GetPath("points.dbf"));
+        BinaryPrimitives.WriteUInt32LittleEndian(dbfBytes.AsSpan(4), 10);
+        using var points = File.OpenRead(GetPath("points.shp"));
+        using var dbf = new MemoryStream(dbfBytes);
+        var read = 0;
+        await Assert.ThrowsAsync<FormatException>(async () =>
+        {
+            await foreach (var feature in Shapefile.ReadFeaturesAsync(points, dbf, cancellationToken: TestContext.Current.CancellationToken))
+            {
+                read++;
+            }
+        });
+        Assert.Equal(3, read);
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_LargeShapefile_ReadsAsTheFeaturesAreEnumerated()
+    {
+        // The files of one point, whose record is repeated 300,000 times: about 8 MB of .shp and 6 MB of .dbf, generated as they are read
+        const int Count = 300_000;
+        using var shpTemplate = new MemoryStream();
+        using var shxTemplate = new MemoryStream();
+        using var dbfTemplate = new MemoryStream();
+        Shapefile.Write([new GeoFeature(new GeoPoint(new GeoPosition(2.35, 48.86)), new Dictionary<string, object?> { ["name"] = "Paris" })], shpTemplate, shxTemplate, dbfTemplate);
+        var shpBytes = shpTemplate.ToArray();
+        var shpHeader = shpBytes[..100];
+        var shpRecord = shpBytes[100..];
+        BinaryPrimitives.WriteInt32BigEndian(shpHeader.AsSpan(24), (int)((100 + ((long)shpRecord.Length * Count)) / 2));
+        var dbfBytes = dbfTemplate.ToArray();
+        var dbfHeaderLength = BinaryPrimitives.ReadUInt16LittleEndian(dbfBytes.AsSpan(8));
+        var dbfHeader = dbfBytes[..dbfHeaderLength];
+        var dbfRecord = dbfBytes[dbfHeaderLength..^1];
+        BinaryPrimitives.WriteUInt32LittleEndian(dbfHeader.AsSpan(4), Count);
+
+        using var shp = new RepeatedRecordStream(shpHeader, shpRecord, Count, []);
+        using var dbf = new RepeatedRecordStream(dbfHeader, dbfRecord, Count, [0x1A]);
+        var index = 0;
+        await foreach (var feature in Shapefile.ReadFeaturesAsync(shp, dbf, cancellationToken: TestContext.Current.CancellationToken))
+        {
+            // The record of a feature is read when the feature is returned, not before
+            Assert.Equal(100 + ((index + 1L) * shpRecord.Length), shp.Position);
+            Assert.Equal(dbfHeader.Length + ((index + 1L) * dbfRecord.Length), dbf.Position);
+            Assert.Equal("Paris", feature.Properties["name"]);
+            index++;
+        }
+
+        Assert.Equal(Count, index);
+    }
+
+    [Fact]
+    public async Task Documentation_ReadFeaturesAsync()
+    {
+        #region Geo_ShapefileReadFeaturesAsync
+        // The records of the .shp and .dbf files are read one at a time, as the features are enumerated
+        var names = new List<string?>();
+        await foreach (var feature in Shapefile.ReadFeaturesAsync("TestData/shapefile/points.shp"))
+        {
+            names.Add((string?)feature.Properties["name"]);
+        }
+
+        Assert.Equal("Paris", names[0]);
+        #endregion
+    }
 }

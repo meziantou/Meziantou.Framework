@@ -50,6 +50,8 @@ namespace Meziantou.Framework.Geo
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.ReadOnlySpan<byte> data, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(string path, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.Geo.GeoFeature> ReadFeaturesAsync(System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.Geo.GeoFeature> ReadFeaturesAsync(string path, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static byte[] Write(Meziantou.Framework.Geo.GeoFeatureCollection features, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) => throw null;
         public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) { }
         public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, string path, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) { }
@@ -153,6 +155,7 @@ namespace Meziantou.Framework.Geo
         public static Meziantou.Framework.Geo.GeoFeatureCollection Parse(string json) => throw null;
         public static Meziantou.Framework.Geo.GeoGeometry ParseGeometry(string json) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.IO.Stream utf8Json) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.Geo.GeoFeature> ReadFeaturesAsync(System.IO.Stream utf8Json, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream utf8Json, Meziantou.Framework.Geo.GeoJsonWriterOptions? options = null) { }
     }
 
@@ -294,8 +297,11 @@ namespace Meziantou.Framework.Geo
     {
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(string shpPath, Meziantou.Framework.Geo.ShapefileReaderOptions? options = null) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.IO.Stream shp, System.IO.Stream? dbf, Meziantou.Framework.Geo.ShapefileReaderOptions? options = null) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.Geo.GeoFeature> ReadFeaturesAsync(string shpPath, Meziantou.Framework.Geo.ShapefileReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.Geo.GeoFeature> ReadFeaturesAsync(System.IO.Stream shp, System.IO.Stream? dbf, Meziantou.Framework.Geo.ShapefileReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection ReadZip(System.IO.Stream zip, Meziantou.Framework.Geo.ShapefileReaderOptions? options = null) => throw null;
         public static Meziantou.Framework.Geo.GeoFeatureCollection ReadZip(System.IO.Stream zip, string layerName, Meziantou.Framework.Geo.ShapefileReaderOptions? options = null) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.Geo.GeoFeature> ReadZipFeaturesAsync(System.IO.Stream zip, string? layerName = null, Meziantou.Framework.Geo.ShapefileReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, string shpPath) { }
         public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream shp, System.IO.Stream shx, System.IO.Stream dbf) { }
         public static void WriteZip(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream zip, string name) { }

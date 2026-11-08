@@ -5,7 +5,8 @@ description: The supported formats, what each one is for, and how to convert a f
 
 Every format is a static class. The classes of the formats that hold features have the same methods: `Read` reads a
 stream, `Parse` reads a string, `Write` writes to a stream and `Format` returns a string. They all return and take a
-[GeoFeatureCollection](cref:Meziantou.Framework.Geo.GeoFeatureCollection).
+[GeoFeatureCollection](cref:Meziantou.Framework.Geo.GeoFeatureCollection). GeoJSON, Shapefile and FlatGeobuf also have
+`ReadFeaturesAsync`, which returns the features of a large file one at a time instead of a collection.
 
 | Format | Class | Use it for |
 |---|---|---|
@@ -31,4 +32,7 @@ holds a single type of geometry.
 - A position that is not a finite number cannot be written: the writers throw an `ArgumentException`.
 - The XML readers process no document type definition and resolve no external entity, and no reader downloads
   anything. The binary readers check every count against the size of the data before they allocate.
-- The readers load the whole document in memory: check the size of the files you accept from users.
+- `Read` and `Parse` load the whole document in memory: check the size of the files you accept from users. The
+  `ReadFeaturesAsync` methods of [GeoJson](cref:Meziantou.Framework.Geo.GeoJson),
+  [Shapefile](cref:Meziantou.Framework.Geo.Shapefile) and [FlatGeobuf](cref:Meziantou.Framework.Geo.FlatGeobuf) read
+  the features one at a time, with bounded memory: only the feature being read is in memory, so its size is the limit.

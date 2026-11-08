@@ -9,8 +9,8 @@ name: `.shp` holds the geometries, `.dbf` the attributes, `.shx` an index, `.cpg
 
 ## Read a shapefile
 
-[Shapefile.Read](cref:Meziantou.Framework.Geo.Shapefile.Read) reads the `.shp` file and the `.dbf` and `.cpg` files
-next to it:
+[Shapefile.Read](cref:Meziantou.Framework.Geo.Shapefile.Read) reads the `.shp` file and the `.dbf`, `.cpg` and `.prj`
+files next to it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Geo.Tests/ShapefileTests.cs;region=Geo_ShapefileRead;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -51,8 +51,12 @@ Assert.True(polygon.Contains(new GeoPosition(5, 5)));
   ISO-8859-1 and Windows-1252 are always supported; the other code pages need a provider, such as
   `CodePagesEncodingProvider`, registered by your application. Set
   [Encoding](cref:Meziantou.Framework.Geo.ShapefileReaderOptions.Encoding) when a file declares a wrong encoding.
-- The `.prj` file is not read: the coordinates must be longitudes and latitudes. A shapefile in a projected coordinate
-  system, such as UTM, gives positions in meters that the library cannot convert.
+- The `.prj` file gives the
+  [CoordinateReferenceSystem](cref:Meziantou.Framework.Geo.GeoFeatureCollection.CoordinateReferenceSystem) of the
+  features, or `null` when there is none or it is not supported. The positions are those of the file, in meters for a
+  shapefile in UTM or Lambert 93: set [TransformToWgs84](cref:Meziantou.Framework.Geo.ShapefileReaderOptions.TransformToWgs84)
+  to convert them to longitudes and latitudes. See
+  [coordinate reference systems](../05-Projections.md#read-the-coordinate-reference-system-of-a-file).
 
 ## Write a shapefile
 

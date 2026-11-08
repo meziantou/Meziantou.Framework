@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Geo;
 /// <c>ZM</c> tags, also written after the type as in PostGIS (<c>POINTZ</c>), positions of 3 numbers without a tag
 /// (an altitude) or of 4 numbers (an altitude and a measure), the multipoints with and without parentheses around
 /// their points (<c>MULTIPOINT ((1 2), (3 4))</c> and <c>MULTIPOINT (1 2, 3 4)</c>) and the <c>SRID=4326;</c> prefix of
-/// the extended WKT of PostGIS (EWKT), which is ignored. It keeps the Z values as <see cref="GeoPosition.Altitude"/>
+/// the extended WKT of PostGIS (EWKT), which <see cref="Parse(string, out int?)"/> returns. It keeps the Z values as <see cref="GeoPosition.Altitude"/>
 /// and drops the M values (measures). A child of a <c>GEOMETRYCOLLECTION</c> without a tag uses the tag of the
 /// collection.
 /// </para>
@@ -35,10 +35,20 @@ public static class WellKnownText
     /// <param name="text">The text, such as <c>POINT (2.35 48.86)</c> or <c>SRID=4326;LINESTRING Z (0 0 10, 1 1 20)</c>.</param>
     /// <returns>The geometry.</returns>
     /// <exception cref="FormatException">The text is not the WKT of a supported geometry. The message gives the position of the error in the text.</exception>
-    public static GeoGeometry Parse(string text)
+    public static GeoGeometry Parse(string text) => Parse(text, out _);
+
+    /// <summary>Reads the WKT, or the extended WKT of PostGIS, of a geometry, and the SRID of the extended WKT.</summary>
+    /// <param name="text">The text, such as <c>SRID=2154;POINT (652310.72 6862414.64)</c>.</param>
+    /// <param name="srid">The SRID of the <c>SRID=</c> prefix, usually an EPSG code that <see cref="CoordinateReferenceSystem.FromEpsg"/> converts to a coordinate reference system, or <see langword="null"/> when the text has no prefix.</param>
+    /// <returns>The geometry, with the coordinates of the text: they are not converted.</returns>
+    /// <exception cref="FormatException">The text is not the WKT of a supported geometry. The message gives the position of the error in the text.</exception>
+    public static GeoGeometry Parse(string text, out int? srid)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return new Parser(text).ParseRoot();
+        var parser = new Parser(text);
+        var geometry = parser.ParseRoot();
+        srid = parser.Srid;
+        return geometry;
     }
 
     /// <summary>Writes the WKT of a geometry, such as <c>POINT (2.35 48.86)</c>.</summary>
@@ -170,6 +180,8 @@ public static class WellKnownText
     {
         private int _position;
 
+        public int? Srid { get; private set; }
+
         public GeoGeometry ParseRoot()
         {
             SkipWhitespace();
@@ -188,8 +200,10 @@ public static class WellKnownText
                     _position++;
                 }
 
-                if (!int.TryParse(text.AsSpan(start, _position - start), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _))
+                if (!int.TryParse(text.AsSpan(start, _position - start), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var srid))
                     throw Error("Expected the SRID number", start);
+
+                Srid = srid;
 
                 Expect(';');
             }

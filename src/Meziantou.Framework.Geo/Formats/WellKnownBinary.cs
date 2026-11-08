@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Geo;
 /// <para>
 /// The reader accepts both byte orders, for each nested geometry, the ISO type codes of the geometries with an altitude
 /// or a measure (1001 for a point with Z, 2001 with M, 3001 with Z and M), and the flags of EWKB (Z, M, and SRID
-/// followed by the SRID, which is ignored). It keeps the Z values as <see cref="GeoPosition.Altitude"/>, a NaN Z value
+/// followed by the SRID, which <see cref="Read(ReadOnlySpan{byte}, out int?)"/> returns). It keeps the Z values as <see cref="GeoPosition.Altitude"/>, a NaN Z value
 /// becoming no altitude, and drops the M values (measures). An empty point, written with NaN coordinates as GEOS and
 /// PostGIS do, becomes an empty <see cref="GeoMultiPoint"/>, as a <see cref="GeoPoint"/> always has a position, and the
 /// empty points of a multipoint are skipped. The other types are rejected, such as a circular string, a triangle or a TIN.
@@ -35,13 +35,21 @@ public static class WellKnownBinary
     /// <param name="data">The WKB.</param>
     /// <returns>The geometry.</returns>
     /// <exception cref="FormatException">The data is not the WKB of a supported geometry, is truncated, or has bytes after the geometry.</exception>
-    public static GeoGeometry Read(ReadOnlySpan<byte> data)
+    public static GeoGeometry Read(ReadOnlySpan<byte> data) => Read(data, out _);
+
+    /// <summary>Reads the WKB, or the EWKB, of a geometry, and the SRID of the EWKB.</summary>
+    /// <param name="data">The WKB.</param>
+    /// <param name="srid">The SRID of the root geometry of the EWKB, usually an EPSG code that <see cref="CoordinateReferenceSystem.FromEpsg"/> converts to a coordinate reference system, or <see langword="null"/> when it has none.</param>
+    /// <returns>The geometry, with the coordinates of the data: they are not converted.</returns>
+    /// <exception cref="FormatException">The data is not the WKB of a supported geometry, is truncated, or has bytes after the geometry.</exception>
+    public static GeoGeometry Read(ReadOnlySpan<byte> data, out int? srid)
     {
         var reader = new Reader(data);
         var geometry = reader.ReadGeometry(depth: 0, expectedType: null) ?? new GeoMultiPoint([]);
         if (reader.Offset != data.Length)
             throw new FormatException($"The WKB has {(data.Length - reader.Offset).ToString(CultureInfo.InvariantCulture)} bytes after the geometry, at offset {reader.Offset.ToString(CultureInfo.InvariantCulture)}.");
 
+        srid = reader.Srid;
         return geometry;
     }
 
@@ -49,7 +57,14 @@ public static class WellKnownBinary
     /// <param name="hex">The hexadecimal text, in any case, such as <c>0101000000000000000000F03F0000000000000040</c>.</param>
     /// <returns>The geometry.</returns>
     /// <exception cref="FormatException">The text is not hexadecimal, or not the WKB of a supported geometry.</exception>
-    public static GeoGeometry ParseHex(string hex)
+    public static GeoGeometry ParseHex(string hex) => ParseHex(hex, out _);
+
+    /// <summary>Reads the hexadecimal text of the WKB, or the EWKB, of a geometry, as PostGIS writes a <c>geometry</c> value, and the SRID of the EWKB.</summary>
+    /// <param name="hex">The hexadecimal text, in any case, such as <c>0101000020E6100000000000000000F03F0000000000000040</c>.</param>
+    /// <param name="srid">The SRID of the root geometry of the EWKB, or <see langword="null"/> when it has none.</param>
+    /// <returns>The geometry, with the coordinates of the data: they are not converted.</returns>
+    /// <exception cref="FormatException">The text is not hexadecimal, or not the WKB of a supported geometry.</exception>
+    public static GeoGeometry ParseHex(string hex, out int? srid)
     {
         ArgumentNullException.ThrowIfNull(hex);
         byte[] data;
@@ -62,7 +77,7 @@ public static class WellKnownBinary
             throw new FormatException("The text is not hexadecimal: " + ex.Message, ex);
         }
 
-        return Read(data);
+        return Read(data, out srid);
     }
 
     /// <summary>Writes the WKB of a geometry, in little-endian order.</summary>
@@ -202,6 +217,8 @@ public static class WellKnownBinary
 
         public int Offset { get; private set; }
 
+        public int? Srid { get; private set; }
+
         /// <summary>Reads a geometry. Returns <see langword="null"/> for an empty point.</summary>
         public GeoGeometry? ReadGeometry(int depth, GeoGeometryType? expectedType)
         {
@@ -246,7 +263,11 @@ public static class WellKnownBinary
 
             if (hasSrid)
             {
-                _ = ReadUInt32();
+                var srid = ReadUInt32();
+                if (depth is 0)
+                {
+                    Srid = unchecked((int)srid);
+                }
             }
 
             var dimensions = 2 + (hasZ ? 1 : 0) + (hasM ? 1 : 0);

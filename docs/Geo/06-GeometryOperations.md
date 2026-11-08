@@ -107,7 +107,9 @@ theirs, whatever the direction of the rings: repair polygons whose rings cross w
 type of the geometry. Use it to convert data that is not in longitudes and latitudes, such as the shapefiles of
 [OpenStreetMap Data](https://osmdata.openstreetmap.de/) in Web Mercator (EPSG:3857), whose coordinates are meters:
 [MercatorProjection](cref:Meziantou.Framework.Geo.MercatorProjection) converts them back once they are divided by the
-radius of that projection, 6,378,137 meters.
+radius of that projection, 6,378,137 meters. For the common projected systems, such as Web Mercator, UTM or Lambert 93,
+the overload that takes two [coordinate reference systems](05-Projections.md#convert-between-coordinate-reference-systems)
+does the conversion.
 
 <!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=GeoGeometry_Transform;format=md-fenced-code-block;dedent=true -->
 ```csharp

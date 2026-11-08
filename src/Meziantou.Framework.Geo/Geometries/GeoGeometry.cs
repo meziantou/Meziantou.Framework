@@ -133,6 +133,18 @@ public abstract class GeoGeometry
         return GeoOperations.Transform(this, transform);
     }
 
+    /// <summary>Gets a geometry of the same type whose positions are converted from a coordinate reference system to another one, such as from Lambert 93 to the longitudes and latitudes of WGS 84.</summary>
+    /// <param name="source">The coordinate reference system of the positions of this geometry.</param>
+    /// <param name="target">The coordinate reference system to convert the positions to, such as <see cref="CoordinateReferenceSystem.Wgs84"/>.</param>
+    /// <returns>The converted geometry.</returns>
+    /// <remarks>The positions are converted one by one: the edges between them are not curved to follow the projection.</remarks>
+    public GeoGeometry Transform(CoordinateReferenceSystem source, CoordinateReferenceSystem target)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(target);
+        return GeoOperations.Transform(this, position => source.Transform(position, target));
+    }
+
     /// <summary>Gets the rings of the polygons of the geometry as closed lines, such as the coastlines of land polygons.</summary>
     /// <returns>A line for each ring of each polygon, exterior rings and holes, in order. Nothing for points and lines.</returns>
     public IEnumerable<GeoLineString> GetBoundaryLines() => GeoOperations.GetBoundaryLines(this);

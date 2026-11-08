@@ -25,6 +25,54 @@ namespace Meziantou.Framework.Geo
         protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
     }
 
+    public abstract class CoordinateConversion
+    {
+        public double CentralMeridian { get => throw null; init { } }
+        public double FalseEasting { get => throw null; init { } }
+        public double FalseNorthing { get => throw null; init { } }
+        public double LatitudeOfOrigin { get => throw null; init { } }
+        public abstract (double Easting, double Northing) Project(double lambda, double phi, Meziantou.Framework.Geo.Ellipsoid ellipsoid);
+        public abstract (double Lambda, double Phi) Unproject(double easting, double northing, Meziantou.Framework.Geo.Ellipsoid ellipsoid);
+    }
+
+    public abstract class CoordinateReferenceSystem
+    {
+        public int? EpsgCode { get => throw null; init { } }
+        public abstract bool IsGeographic { get; }
+        public static Meziantou.Framework.Geo.ProjectedCoordinateSystem Lambert93 { get => throw null; }
+        public string Name { get => throw null; }
+        public static Meziantou.Framework.Geo.ProjectedCoordinateSystem WebMercator { get => throw null; }
+        public static Meziantou.Framework.Geo.GeographicCoordinateSystem Wgs84 { get => throw null; }
+        protected CoordinateReferenceSystem(string name) { }
+        public static Meziantou.Framework.Geo.CoordinateReferenceSystem? FromEpsg(int code) => throw null;
+        public abstract Meziantou.Framework.Geo.GeoPosition FromWgs84(Meziantou.Framework.Geo.GeoPosition position);
+        public static Meziantou.Framework.Geo.CoordinateReferenceSystem ParseWkt(string wkt) => throw null;
+        public override string ToString() => throw null;
+        public abstract Meziantou.Framework.Geo.GeoPosition ToWgs84(Meziantou.Framework.Geo.GeoPosition position);
+        public Meziantou.Framework.Geo.GeoPosition Transform(Meziantou.Framework.Geo.GeoPosition position, Meziantou.Framework.Geo.CoordinateReferenceSystem target) => throw null;
+        public static Meziantou.Framework.Geo.ProjectedCoordinateSystem Utm(int zone, bool isNorthernHemisphere) => throw null;
+    }
+
+    public sealed class Ellipsoid
+    {
+        public static Meziantou.Framework.Geo.Ellipsoid Airy1830 { get => throw null; }
+        public static Meziantou.Framework.Geo.Ellipsoid Bessel1841 { get => throw null; }
+        public static Meziantou.Framework.Geo.Ellipsoid Clarke1866 { get => throw null; }
+        public static Meziantou.Framework.Geo.Ellipsoid Clarke1880Ign { get => throw null; }
+        public double Eccentricity { get => throw null; }
+        public double EccentricitySquared { get => throw null; }
+        public double Flattening { get => throw null; }
+        public static Meziantou.Framework.Geo.Ellipsoid Grs80 { get => throw null; }
+        public static Meziantou.Framework.Geo.Ellipsoid International1924 { get => throw null; }
+        public double InverseFlattening { get => throw null; }
+        public string Name { get => throw null; }
+        public double SemiMajorAxis { get => throw null; }
+        public double SemiMinorAxis { get => throw null; }
+        public static Meziantou.Framework.Geo.Ellipsoid Wgs84 { get => throw null; }
+        public Ellipsoid(string name, double semiMajorAxis, double inverseFlattening) { }
+        public override string ToString() => throw null;
+    }
+
     public static class EncodedPolyline
     {
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Geo.GeoPosition> Decode(string encoded, int precision = 5) => throw null;
@@ -102,6 +150,7 @@ namespace Meziantou.Framework.Geo
 
     public sealed class GeoFeatureCollection : System.Collections.ObjectModel.Collection<Meziantou.Framework.Geo.GeoFeature>
     {
+        public Meziantou.Framework.Geo.CoordinateReferenceSystem? CoordinateReferenceSystem { get => throw null; set { } }
         public string? Name { get => throw null; set { } }
         public GeoFeatureCollection(System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoFeature> features) { }
         public Meziantou.Framework.Geo.GeoBounds? GetBounds() => throw null;
@@ -124,6 +173,7 @@ namespace Meziantou.Framework.Geo
         public Meziantou.Framework.Geo.GeoGeometry MakeValid() => throw null;
         public Meziantou.Framework.Geo.GeoGeometry? Simplify(double tolerance) => throw null;
         public Meziantou.Framework.Geo.GeoGeometry Transform(System.Func<Meziantou.Framework.Geo.GeoPosition, Meziantou.Framework.Geo.GeoPosition> transform) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry Transform(Meziantou.Framework.Geo.CoordinateReferenceSystem source, Meziantou.Framework.Geo.CoordinateReferenceSystem target) => throw null;
         public Meziantou.Framework.Geo.GeoGeometry? Union(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
     }
 
@@ -247,6 +297,18 @@ namespace Meziantou.Framework.Geo
         protected abstract (double X, double Y) ProjectRadians(double lambda, double phi);
     }
 
+    public sealed class GeographicCoordinateSystem : Meziantou.Framework.Geo.CoordinateReferenceSystem
+    {
+        public double AngularUnit { get => throw null; init { } }
+        public Meziantou.Framework.Geo.Ellipsoid Ellipsoid { get => throw null; }
+        public override bool IsGeographic { get => throw null; }
+        public double PrimeMeridian { get => throw null; init { } }
+        public Meziantou.Framework.Geo.HelmertTransformation? ToWgs84Transformation { get => throw null; init { } }
+        public GeographicCoordinateSystem(string name, Meziantou.Framework.Geo.Ellipsoid ellipsoid) : base(default(string)) { }
+        public override Meziantou.Framework.Geo.GeoPosition FromWgs84(Meziantou.Framework.Geo.GeoPosition position) => throw null;
+        public override Meziantou.Framework.Geo.GeoPosition ToWgs84(Meziantou.Framework.Geo.GeoPosition position) => throw null;
+    }
+
     public static class Gpx
     {
         public const string TypePropertyName = "gpxType";
@@ -260,6 +322,29 @@ namespace Meziantou.Framework.Geo
     {
         public string Creator { get => throw null; set { } }
         public bool Indented { get => throw null; set { } }
+    }
+
+    public readonly struct HelmertTransformation : System.IEquatable<Meziantou.Framework.Geo.HelmertTransformation>
+    {
+        public double RotationX { get => throw null; init { } }
+        public double RotationY { get => throw null; init { } }
+        public double RotationZ { get => throw null; init { } }
+        public double ScaleDifference { get => throw null; init { } }
+        public double TranslationX { get => throw null; init { } }
+        public double TranslationY { get => throw null; init { } }
+        public double TranslationZ { get => throw null; init { } }
+        public HelmertTransformation(double TranslationX, double TranslationY, double TranslationZ, double RotationX = 0d, double RotationY = 0d, double RotationZ = 0d, double ScaleDifference = 0d) { }
+        public void Deconstruct(out double TranslationX, out double TranslationY, out double TranslationZ, out double RotationX, out double RotationY, out double RotationZ, out double ScaleDifference) => throw null;
+        public bool Equals(Meziantou.Framework.Geo.HelmertTransformation other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Geo.HelmertTransformation left, Meziantou.Framework.Geo.HelmertTransformation right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Geo.HelmertTransformation left, Meziantou.Framework.Geo.HelmertTransformation right) => throw null;
     }
 
     public static class Kml
@@ -283,11 +368,40 @@ namespace Meziantou.Framework.Geo
         public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream stream, Meziantou.Framework.Geo.KmlWriterOptions? options = null) { }
     }
 
+    public sealed class LambertConformalConicConversion : Meziantou.Framework.Geo.CoordinateConversion
+    {
+        public double ScaleFactor { get => throw null; init { } }
+        public double? StandardParallel1 { get => throw null; init { } }
+        public double? StandardParallel2 { get => throw null; init { } }
+        public override (double Easting, double Northing) Project(double lambda, double phi, Meziantou.Framework.Geo.Ellipsoid ellipsoid) => throw null;
+        public override (double Lambda, double Phi) Unproject(double easting, double northing, Meziantou.Framework.Geo.Ellipsoid ellipsoid) => throw null;
+    }
+
+    public sealed class MercatorConversion : Meziantou.Framework.Geo.CoordinateConversion
+    {
+        public bool IsSpherical { get => throw null; init { } }
+        public double ScaleFactor { get => throw null; init { } }
+        public double? StandardParallel { get => throw null; init { } }
+        public override (double Easting, double Northing) Project(double lambda, double phi, Meziantou.Framework.Geo.Ellipsoid ellipsoid) => throw null;
+        public override (double Lambda, double Phi) Unproject(double easting, double northing, Meziantou.Framework.Geo.Ellipsoid ellipsoid) => throw null;
+    }
+
     public sealed class MercatorProjection : Meziantou.Framework.Geo.GeoProjection
     {
         public override double MaxLatitude { get => throw null; }
         protected override (double Lambda, double Phi)? InvertRadians(double x, double y) => throw null;
         protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
+    }
+
+    public sealed class ProjectedCoordinateSystem : Meziantou.Framework.Geo.CoordinateReferenceSystem
+    {
+        public Meziantou.Framework.Geo.CoordinateConversion Conversion { get => throw null; }
+        public Meziantou.Framework.Geo.GeographicCoordinateSystem GeographicCoordinateSystem { get => throw null; }
+        public override bool IsGeographic { get => throw null; }
+        public double LinearUnit { get => throw null; init { } }
+        public ProjectedCoordinateSystem(string name, Meziantou.Framework.Geo.GeographicCoordinateSystem geographicCoordinateSystem, Meziantou.Framework.Geo.CoordinateConversion conversion) : base(default(string)) { }
+        public override Meziantou.Framework.Geo.GeoPosition FromWgs84(Meziantou.Framework.Geo.GeoPosition position) => throw null;
+        public override Meziantou.Framework.Geo.GeoPosition ToWgs84(Meziantou.Framework.Geo.GeoPosition position) => throw null;
     }
 
     public static class Shapefile
@@ -304,6 +418,7 @@ namespace Meziantou.Framework.Geo
     public sealed class ShapefileReaderOptions
     {
         public System.Text.Encoding? Encoding { get => throw null; set { } }
+        public bool TransformToWgs84 { get => throw null; set { } }
     }
 
     public static class TopoJson
@@ -326,11 +441,20 @@ namespace Meziantou.Framework.Geo
         public int? Quantization { get => throw null; set { } }
     }
 
+    public sealed class TransverseMercatorConversion : Meziantou.Framework.Geo.CoordinateConversion
+    {
+        public double ScaleFactor { get => throw null; init { } }
+        public override (double Easting, double Northing) Project(double lambda, double phi, Meziantou.Framework.Geo.Ellipsoid ellipsoid) => throw null;
+        public override (double Lambda, double Phi) Unproject(double easting, double northing, Meziantou.Framework.Geo.Ellipsoid ellipsoid) => throw null;
+    }
+
     public static class WellKnownBinary
     {
         public static string FormatHex(Meziantou.Framework.Geo.GeoGeometry geometry) => throw null;
         public static Meziantou.Framework.Geo.GeoGeometry ParseHex(string hex) => throw null;
+        public static Meziantou.Framework.Geo.GeoGeometry ParseHex(string hex, out int? srid) => throw null;
         public static Meziantou.Framework.Geo.GeoGeometry Read(System.ReadOnlySpan<byte> data) => throw null;
+        public static Meziantou.Framework.Geo.GeoGeometry Read(System.ReadOnlySpan<byte> data, out int? srid) => throw null;
         public static byte[] Write(Meziantou.Framework.Geo.GeoGeometry geometry) => throw null;
         public static void Write(Meziantou.Framework.Geo.GeoGeometry geometry, System.Buffers.IBufferWriter<byte> writer) { }
     }
@@ -339,5 +463,6 @@ namespace Meziantou.Framework.Geo
     {
         public static string Format(Meziantou.Framework.Geo.GeoGeometry geometry) => throw null;
         public static Meziantou.Framework.Geo.GeoGeometry Parse(string text) => throw null;
+        public static Meziantou.Framework.Geo.GeoGeometry Parse(string text, out int? srid) => throw null;
     }
 }

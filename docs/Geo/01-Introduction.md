@@ -9,9 +9,9 @@ dependency outside .NET, and it supports trimming.
 ## What you can do with it
 
 - **Read and write the common formats**: GeoJSON, TopoJSON, Shapefile, KML and KMZ, GPX, WKT and WKB, encoded
-  polylines, and FlatGeobuf, and read GeoPackage files with the `Meziantou.Framework.Geo.GeoPackage` package. Every
-  reader returns the same model, so converting a file is a read and a write, and GeoJSON, Shapefile, FlatGeobuf and
-  GeoPackage files can be read one feature at a time. See [formats](04-Formats/01-Overview.md).
+  polylines, and FlatGeobuf, and read GeoPackage and GeoParquet files with the `Meziantou.Framework.Geo.GeoPackage` and
+  `Meziantou.Framework.Geo.GeoParquet` packages. Every reader returns the same model, so converting a file is a read
+  and a write, and GeoJSON, Shapefile, FlatGeobuf, GeoPackage and GeoParquet files can be read a part at a time. See [formats](04-Formats/01-Overview.md).
 - **Work with features and geometries**: points, lines, polygons and their collections, with their properties; get
   their bounds, a position to label them, distances, and whether a position is inside an area. See
   [features and geometries](03-FeaturesAndGeometries.md).

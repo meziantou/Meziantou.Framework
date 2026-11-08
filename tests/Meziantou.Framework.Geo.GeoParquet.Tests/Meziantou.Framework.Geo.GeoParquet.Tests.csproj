@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- A Meziantou.Framework.Geo.GeoParquet namespace would hide the GeoParquet class -->
+    <RootNamespace>Meziantou.Framework.Geo.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The test data of the GeoParquet specification, https://github.com/opengeospatial/geoparquet (Apache 2.0, see LICENSE.txt) -->
+    <None Update="TestData/**" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../Meziantou.Framework.Geo.Tests/CountingStream.cs" Link="CountingStream.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Geo.GeoParquet/Meziantou.Framework.Geo.GeoParquet.csproj" />
+  </ItemGroup>
+
+</Project>

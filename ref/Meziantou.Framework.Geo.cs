@@ -233,6 +233,8 @@ namespace Meziantou.Framework.Geo
         public double? Altitude { get => throw null; init { } }
         public double Latitude { get => throw null; init { } }
         public double Longitude { get => throw null; init { } }
+        public double? Measure { get => throw null; init { } }
+        public System.DateTimeOffset? Time { get => throw null; init { } }
         public GeoPosition(double Longitude, double Latitude, double? Altitude = null) { }
         public void Deconstruct(out double Longitude, out double Latitude, out double? Altitude) => throw null;
         public bool Equals(Meziantou.Framework.Geo.GeoPosition other) => throw null;

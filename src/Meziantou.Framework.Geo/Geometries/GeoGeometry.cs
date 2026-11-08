@@ -113,7 +113,8 @@ public abstract class GeoGeometry
     /// <returns>
     /// The repaired geometry: a polygon becomes a <see cref="GeoPolygon"/>, or a <see cref="GeoMultiPolygon"/> when it is
     /// cut in several parts. The positions of the polygons move to the nearest ten-millionth of a degree (about a centimeter),
-    /// and lose their altitude. The consecutive repeated positions of the lines are removed; the points are unchanged.
+    /// and lose their altitude, measure and time. The consecutive repeated positions of the lines (same coordinates and
+    /// altitude) are removed, the first one being kept; the points are unchanged.
     /// </returns>
     /// <exception cref="InvalidOperationException">A coordinate of a polygon is not a number between -100,000 and 100,000.</exception>
     /// <remarks>The computation is exact on the grid of ten-millionths of a degree, as on an equirectangular map: the edges are straight in degrees.</remarks>
@@ -124,7 +125,8 @@ public abstract class GeoGeometry
     /// <returns>
     /// The part of the geometry that is inside the box, or <see langword="null"/> when nothing is. The geometry itself when
     /// it is entirely inside. A line that leaves the box and comes back becomes a <see cref="GeoMultiLineString"/>. The
-    /// polygons are cut as by <see cref="Intersection"/>.
+    /// polygons are cut as by <see cref="Intersection"/>. Where a line crosses the side of the box, the new position gets
+    /// the altitude, the measure and the time interpolated between the positions around it, when both have one.
     /// </returns>
     /// <exception cref="ArgumentException">The box is empty: its south side is north of its north side.</exception>
     /// <remarks>
@@ -185,7 +187,7 @@ public abstract class GeoGeometry
     }
 
     /// <summary>Gets a geometry of the same type whose positions are transformed, such as positions in another coordinate system converted to longitudes and latitudes.</summary>
-    /// <param name="transform">The function that transforms each position.</param>
+    /// <param name="transform">The function that transforms each position. Return <c>position with { Longitude = ..., Latitude = ... }</c> to keep its altitude, measure and time.</param>
     /// <returns>The transformed geometry.</returns>
     public GeoGeometry Transform(Func<GeoPosition, GeoPosition> transform)
     {

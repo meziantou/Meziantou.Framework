@@ -36,8 +36,11 @@ public sealed class WellKnownBinaryTests
 
         if (columns[4] is not "-")
         {
-            Assert.Equal(text, WellKnownText.Format(WellKnownText.Parse(columns[4])));
-            Assert.Equal(columns[5], WellKnownBinary.FormatHex(geometry));
+            // The writers keep the M values, as GDAL's ISO WKB does; the last two columns are what GDAL writes without them
+            Assert.Equal(columns[1], WellKnownBinary.FormatHex(geometry));
+            var withoutMeasures = geometry.Transform(position => position with { Measure = null });
+            Assert.Equal(WellKnownText.Format(withoutMeasures), WellKnownText.Format(WellKnownText.Parse(columns[4])));
+            Assert.Equal(columns[5], WellKnownBinary.FormatHex(withoutMeasures));
         }
     }
 
@@ -59,8 +62,32 @@ public sealed class WellKnownBinaryTests
     public void Read_ExtendedWkbWithMeasures()
     {
         // POINT M (1 2 4) and POINT ZM (1 2 3 4) with the EWKB flags, big-endian
-        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00400000013FF000000000000040000000000000004010000000000000")).Position);
-        Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00C00000013FF0000000000000400000000000000040080000000000004010000000000000")).Position);
+        Assert.Equal(new GeoPosition(1, 2) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00400000013FF000000000000040000000000000004010000000000000")).Position);
+        Assert.Equal(new GeoPosition(1, 2, 3) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00C00000013FF0000000000000400000000000000040080000000000004010000000000000")).Position);
+    }
+
+    [Fact]
+    public void Write_Measures()
+    {
+        // POINT M (1 2 3): type 2001; POINT ZM (1 2 3 4): type 3001
+        Assert.Equal("01D1070000000000000000F03F00000000000000400000000000000840", WellKnownBinary.FormatHex(new GeoPoint(new GeoPosition(1, 2) { Measure = 3 })));
+        Assert.Equal("01B90B0000000000000000F03F000000000000004000000000000008400000000000001040", WellKnownBinary.FormatHex(new GeoPoint(new GeoPosition(1, 2, 3) { Measure = 4 })));
+
+        // A missing measure is written as NaN, which reads back as no measure; the times are not written
+        GeoGeometry[] geometries =
+        [
+            new GeoLineString([new GeoPosition(0, 0) { Measure = 1 }, new GeoPosition(1, 1), new GeoPosition(2, 2, 3) { Measure = -4, Time = DateTimeOffset.UnixEpoch }]),
+            new GeoMultiPoint([new GeoPosition(1, 2) { Measure = 3 }, new GeoPosition(4, 5) { Measure = 6 }]),
+            new GeoMultiPolygon([new GeoPolygon([[new GeoPosition(0, 0) { Measure = 1 }, new GeoPosition(1, 0) { Measure = 2 }, new GeoPosition(1, 1) { Measure = 3 }, new GeoPosition(0, 0) { Measure = 1 }]])]),
+            new GeoGeometryCollection([new GeoPoint(new GeoPosition(1, 2) { Measure = 3 }), new GeoMultiLineString([new GeoLineString([new GeoPosition(0, 0) { Measure = 0 }, new GeoPosition(1, 1) { Measure = 1 }])])]),
+        ];
+
+        foreach (var geometry in geometries)
+        {
+            var copy = WellKnownBinary.Read(WellKnownBinary.Write(geometry));
+            Assert.Equal(geometry.Type, copy.Type);
+            Assert.Equal(geometry.GetPositions().Select(position => position with { Altitude = geometry.GetPositions().Any(p => p.Altitude is not null) ? position.Altitude ?? 0 : null, Time = null }), copy.GetPositions());
+        }
     }
 
     [Fact]

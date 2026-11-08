@@ -42,8 +42,9 @@ Assert.True(polygon.Contains(new GeoPosition(5, 5)));
 <!-- endref -->
 
 - The [Name](cref:Meziantou.Framework.Geo.GeoFeatureCollection.Name) of the collection is the name of the file.
-- The geometries are points, multipoints, lines and polygons, with their Z values as altitudes; the M values
-  (measures) are dropped. The rings of the polygons are grouped into polygons and holes by their orientation, and by
+- The geometries are points, multipoints, lines and polygons, with their Z values as altitudes and their M values as
+  [measures](cref:Meziantou.Framework.Geo.GeoPosition.Measure). An M value below -10<sup>38</sup>, the "no data" value
+  of the format, is no measure. The rings of the polygons are grouped into polygons and holes by their orientation, and by
   their nesting when the file has the wrong orientation.
 - The attributes are a `string`, a `double`, a `bool` or a `DateOnly`, by the type of their field. An empty value is
   `null`. Deleted records are skipped. The features have no [Id](cref:Meziantou.Framework.Geo.GeoFeature.Id).
@@ -82,6 +83,9 @@ Shapefile.WriteZip(features, zip, "cities");
   [GeoGeometryCollection](cref:Meziantou.Framework.Geo.GeoGeometryCollection), throws an `ArgumentException`. Write
   each type to its own shapefile.
 - When a position has an altitude, every position is written with one, and 0 for those that have none.
+- When a position has a measure, the M values are written: in the Z shapes when there are altitudes, else in the M
+  shapes (PointM, MultiPointM, PolyLineM, PolygonM). The positions without measure get the "no data" value. The times
+  are not written.
 - The fields are the properties of the features. Their names are cut to 10 characters and made unique, as GDAL does.
   The text values are cut to 254 bytes, before a UTF-8 sequence that does not fit whole. A field whose values have different types is written as text.
 - The identifiers are not written: shapefiles have none.

@@ -101,8 +101,9 @@ internal static class RawTdsClient
             responses.Add(response);
         }
 
-        // Keep the server running until it has seen the client go away.
-        client.Client.Shutdown(SocketShutdown.Both);
+        // Keep the server running until it has seen the client go away: the server closes the connection when it
+        // reads the end of the stream. Windows refuses to read from a socket shut down in both directions.
+        client.Client.Shutdown(SocketShutdown.Send);
         _ = await stream.ReadAsync(new byte[1], cancellationTokenSource.Token);
         return responses;
     }

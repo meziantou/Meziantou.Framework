@@ -3067,6 +3067,56 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task SqlClient_Mars_SessionsShareTheTransactionOfTheConnection()
+    {
+        var transactionIds = new ConcurrentQueue<long?>();
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) =>
+            {
+                transactionIds.Enqueue(context.TransactionId);
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([1]);
+                resultSet.Rows.Add([2]);
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30) + ";MultipleActiveResultSets=True");
+        await connection.OpenAsync();
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+
+        await using var first = connection.CreateCommand();
+        first.Transaction = transaction;
+        first.CommandText = "SELECT Value FROM first";
+        await using var second = connection.CreateCommand();
+        second.Transaction = transaction;
+        second.CommandText = "SELECT Value FROM second";
+
+        await using (var firstReader = await first.ExecuteReaderAsync())
+        await using (var secondReader = await second.ExecuteReaderAsync())
+        {
+            Assert.True(await firstReader.ReadAsync());
+            Assert.True(await secondReader.ReadAsync());
+        }
+
+        await transaction.CommitAsync();
+
+        var ids = transactionIds.ToArray();
+        Assert.HasCount(2, ids);
+        Assert.NotNull(ids[0]);
+        Assert.Equal(ids[0], ids[1]);
+    }
+
+    [Fact]
     public async Task Documentation_Transactions()
     {
         #region TdsServer_Transactions

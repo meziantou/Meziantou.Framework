@@ -212,6 +212,7 @@ internal sealed partial class TdsConnectionProcessor
         finally
         {
             await AbortTransactionAsync(transactions).ConfigureAwait(false);
+            transactions?.Dispose();
             if (sslStream is not null)
             {
                 await sslStream.DisposeAsync().ConfigureAwait(false);

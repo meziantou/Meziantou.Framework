@@ -7,7 +7,11 @@ using Meziantou.Framework.Tds.Handler;
 namespace Meziantou.Framework.Tds.Protocol;
 
 /// <summary>Tracks the transaction of a connection and answers the transaction manager requests (MS-TDS 2.2.6.9).</summary>
-internal sealed class TdsTransactionManager
+/// <remarks>
+/// The MARS sessions of a connection share its transaction, so requests are processed one at a time and the
+/// identifier of the transaction can be read from any session.
+/// </remarks>
+internal sealed class TdsTransactionManager : IDisposable
 {
     private const ushort BeginTransactionRequest = 5;
     private const ushort CommitTransactionRequest = 7;
@@ -20,7 +24,11 @@ internal sealed class TdsTransactionManager
     private readonly EndPoint _remoteEndPoint;
     private readonly ClaimsPrincipal? _userContext;
     private readonly List<string> _savepoints = [];
+    private readonly SemaphoreSlim _lock = new(1, 1);
     private string? _transactionName;
+
+    // 0 when there is no transaction: identifiers start at 1.
+    private long _transactionId;
 
     public TdsTransactionManager(TdsTransactionDelegate? handler, EndPoint remoteEndPoint, ClaimsPrincipal? userContext)
     {
@@ -30,9 +38,28 @@ internal sealed class TdsTransactionManager
     }
 
     /// <summary>Gets the identifier of the active transaction, or <see langword="null"/> when there is none.</summary>
-    public long? TransactionId { get; private set; }
+    public long? TransactionId
+    {
+        get => Interlocked.Read(ref _transactionId) is var id and not 0 ? id : null;
+        private set => Interlocked.Exchange(ref _transactionId, value ?? 0);
+    }
 
     public async ValueTask<byte[]> ProcessAsync(byte[] payload, CancellationToken cancellationToken)
+    {
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await ProcessCoreAsync(payload, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public void Dispose() => _lock.Dispose();
+
+    private async ValueTask<byte[]> ProcessCoreAsync(byte[] payload, CancellationToken cancellationToken)
     {
         if (!TryParse(payload, out var request))
         {
@@ -50,6 +77,19 @@ internal sealed class TdsTransactionManager
 
     /// <summary>Rolls back the active transaction because the connection is closing, as SQL Server does.</summary>
     public async ValueTask AbortAsync()
+    {
+        await _lock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            await AbortCoreAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    private async ValueTask AbortCoreAsync()
     {
         if (TransactionId is not { } transactionId)
         {

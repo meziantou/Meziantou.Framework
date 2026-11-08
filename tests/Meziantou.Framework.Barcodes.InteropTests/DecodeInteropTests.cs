@@ -437,8 +437,8 @@ public sealed class DecodeInteropTests
         var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
         foreach (var (path, data) in cases)
         {
-            var result = Assert.Single(results, result => result.FilePath == path, message: $"{type} {Escape(data)}");
-            Assert.Equal(GetZXingFormat(type), result.Format);
+            // ZXingReader can also see a linear barcode in the modules of a large symbol
+            var result = Assert.Single(results, result => result.FilePath == path && result.Format == GetZXingFormat(type), message: $"{type} {Escape(data)}");
             Assert.Equal(data, result.Text, message: $"{type} {Escape(data)}");
         }
     }
@@ -480,7 +480,7 @@ public sealed class DecodeInteropTests
         var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
         foreach (var (path, data) in cases)
         {
-            var result = results.SingleOrDefault(result => result.FilePath == path);
+            var result = results.SingleOrDefault(result => result.FilePath == path && result.Format == GetZXingFormat(type));
             Assert.NotNull(result, message: $"{type} {Escape(data)}");
             Assert.Equal(data, result.Text, message: $"{type} {Escape(data)}");
         }

@@ -123,7 +123,8 @@ internal sealed class ExrChunkDecompressor : IDisposable
     /// <exception cref="InvalidImageContentException">The data are malformed.</exception>
     public void DecompressDeepTable(ReadOnlySpan<byte> stored, Span<byte> destination, int width, int tileLength)
     {
-        if (stored.Length != destination.Length && (stored.Length == tileLength || (_compression == ExrCompressionMethod.None && stored.Length > destination.Length && tileLength > 0)))
+        // Only a tile has such a table, and it holds the clipped table
+        if (tileLength > 0 && stored.Length > destination.Length && (stored.Length == tileLength || _compression == ExrCompressionMethod.None))
         {
             stored[..destination.Length].CopyTo(destination);
             return;

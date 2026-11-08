@@ -19,8 +19,10 @@ description: What the library does not do, so that you can plan around it.
 - The documents encrypted for certificates (the public-key security handler) need RSA certificates: the elliptic-curve
   recipients (key agreement) are not supported. Their crypt filters share one key: when the recipients are in several
   crypt filters, those of the streams are used.
-- The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
-  detect columns, and it does not recognize the text of scanned pages.
+- The text extraction does not recognize the text of scanned pages. Its reading order of the layout
+  ([Read the columns in order](05-ReadingAndModifying/03-ExtractingText.md#read-the-columns-in-order)) finds the columns
+  from the blank spaces of the page: it reads them from left to right, and keeps the order of the content for the text
+  written vertically.
 - The library reports the permissions of an encrypted document, but does not enforce them.
 - A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
   file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.

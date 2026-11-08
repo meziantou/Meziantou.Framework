@@ -19,7 +19,7 @@ answers.
 - **Answer queries and stored procedure calls**: read the SQL text, the procedure name and the typed parameters, and
   return result sets, informational messages or SQL Server-style errors. See [Handling queries](05-HandlingQueries.md)
   and [Returning results](06-ReturningResults.md).
-- **Receive bulk loads** from `SqlBulkCopy`. See [Bulk loads](12-BulkLoads.md).
+- **Receive bulk loads** from `SqlBulkCopy`. See [Bulk loads](11-BulkLoads.md).
 - **Encrypt connections** with TLS, from a PFX file or a PEM certificate and key. See [Encryption](09-Encryption.md).
 
 ## How it works
@@ -50,4 +50,4 @@ The server runs either inside an ASP.NET Core application, on Kestrel, or on its
 
 - [Getting started](02-GettingStarted.md): install the package, start a server and query it.
 - [Connecting clients](10-ConnectingClients.md): the connection strings that work with the server.
-- [Limitations](11-Limitations.md): what the server does not do.
+- [Limitations](12-Limitations.md): what the server does not do.

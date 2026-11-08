@@ -17,7 +17,7 @@ The library implements the protocol of SQL Server, not a database. This page lis
 - **SQL batches, RPC calls and bulk loads only.** Transactions (`BeginTransaction`) are not supported: their requests,
   like any other request type, return the error 50001 "Unsupported packet type".
 - **Bulk loads are received batch by batch**: a batch of `SqlBulkCopy` cannot be larger than `MaxMessageSize`, and
-  decimal columns are declared `decimal(38, 10)`. See [Bulk loads](12-BulkLoads.md).
+  decimal columns are declared `decimal(38, 10)`. See [Bulk loads](11-BulkLoads.md).
 - **No output parameters, return values or row counts**: `ExecuteNonQuery` returns -1.
 - **Errors close the `SqlClient` connection**: the server sends errors with the "server error" status, which
   `SqlClient` treats as severe. See [Return an error](06-ReturningResults.md#return-an-error).

@@ -21,7 +21,8 @@ internal sealed class GeoPackageTable(string name, SqliteCommand command, (strin
             _ => throw new FormatException($"A geometry of the table '{name}' is not a blob."),
         };
 
-        if (bounds is { } box && (geometry?.GetBounds() is not { } geometryBounds || geometryBounds.West > box.East || geometryBounds.East < box.West || geometryBounds.South > box.North || geometryBounds.North < box.South))
+        // Bounds of NaN, from a position of NaN coordinates, do not intersect the box
+        if (bounds is { } box && (geometry?.GetBounds() is not { } geometryBounds || !(geometryBounds.West <= box.East && geometryBounds.East >= box.West && geometryBounds.South <= box.North && geometryBounds.North >= box.South)))
             return null;
 
         var id = reader.IsDBNull(1) ? null : Convert.ToString(reader.GetValue(1), CultureInfo.InvariantCulture);

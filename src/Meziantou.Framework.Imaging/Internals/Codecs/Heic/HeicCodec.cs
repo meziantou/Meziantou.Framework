@@ -20,6 +20,9 @@ internal sealed class HeicCodec : ImageCodec
 
     public override ImageFormat Format => ImageFormat.Heic;
 
+    /// <summary>Gets a value indicating that the decoder writes an area of the image only, and decodes only the tiles of a grid that it needs (<see cref="ImageDecodeRequest.Region"/>).</summary>
+    public override bool SupportsRegionDecoding => true;
+
     /// <summary>Determines whether the data start with a file type box whose major brand is an HEIC brand (12 bytes).</summary>
     /// <remarks>
     /// A file type box may store its size in the 64-bit field, which moves the major brand to offset 16: the detection

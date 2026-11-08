@@ -167,10 +167,14 @@ the language of the text. No patterns are provided with the library. [HyphenChar
 the end of the line.
 
 Thai, Lao, Khmer and Burmese are written without spaces between words, and the Unicode algorithm leaves their line
-breaks to a dictionary. Without one, such a text is only broken at a space, or anywhere with
-`OverflowWrap = Anywhere`. Set [TextLayoutOptions.LineBreakDictionary](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreakDictionary) to a [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) of
-`Meziantou.Framework.Unicode`, loaded from a list of words, to break lines between words. No word list is provided
-with the library.
+breaks to a dictionary. A line of such text can end before each of its words, as ICU finds them: the library uses the
+word lists and the dictionary break engines of ICU, from `Meziantou.Framework.Unicode.Dictionaries`, and its breaks
+are those of the line break iterator of ICU, which the browsers use. The other scripts written without spaces, such
+as Tai Tham, are only broken at a space, or anywhere with `OverflowWrap = Anywhere`.
+
+To use your own words, set [TextLayoutOptions.LineBreakDictionary](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreakDictionary) to a [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) of
+`Meziantou.Framework.Unicode`, loaded from a list of words: it replaces the word lists of ICU. A dictionary without
+words, `LineBreakDictionary.Parse("")`, only breaks such text at a space.
 
 Lines are broken one after the other, each as full as possible, not by optimizing the whole paragraph.
 

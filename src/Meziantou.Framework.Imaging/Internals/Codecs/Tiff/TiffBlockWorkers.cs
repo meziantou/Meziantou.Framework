@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// each block is compressed on its own and its predictor works within its rows, so the blocks do not depend on each
 /// other. The blocks are decoded by batches of one block per worker and handed over in their decoding order
 /// (<see cref="TiffPage.GetBlockIndex"/>: the order of the blocks, or the planes of one place of a planar page together),
-/// on the calling thread, so the pixels and the errors are those of one worker.
+/// on the calling thread, so the pixels and the errors are those of one worker. A region decodes the blocks of its window
+/// only (<see cref="TiffBlockWindow"/>): a batch holds the next blocks of the window, and the others are never read.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,13 +32,16 @@ internal sealed class TiffBlockWorkers : IDisposable
     private readonly TiffBlockReader.Workspace[] _workspaces;
     private readonly TiffBlockReader.FetchedBlock[] _blocks;
     private readonly ExceptionDispatchInfo?[] _errors;
-    private int _start;
+    private readonly int[] _positions;
+    private readonly TiffBlockWindow _window;
     private int _count;
 
-    private TiffBlockWorkers(RandomAccessSource source, TiffPage page, TiffBlockReader reader, int workers)
+    private TiffBlockWorkers(RandomAccessSource source, TiffPage page, TiffBlockReader reader, TiffBlockWindow window, int workers)
     {
         _reader = reader;
         _page = page;
+        _window = window;
+        _positions = new int[workers];
         _cancellationToken = source.Context.CancellationToken;
         _workspaces = new TiffBlockReader.Workspace[workers];
         _blocks = new TiffBlockReader.FetchedBlock[workers];
@@ -63,14 +67,15 @@ internal sealed class TiffBlockWorkers : IDisposable
     /// <param name="source">The input, whose context gives the number of workers and whose scope is charged for them.</param>
     /// <param name="page">The page.</param>
     /// <param name="reader">The reader of the blocks of the page.</param>
+    /// <param name="window">The blocks that are decoded.</param>
     /// <returns>The workers, which the caller disposes, or <see langword="null"/>.</returns>
-    public static TiffBlockWorkers? Create(RandomAccessSource source, TiffPage page, TiffBlockReader reader)
+    public static TiffBlockWorkers? Create(RandomAccessSource source, TiffPage page, TiffBlockReader reader, TiffBlockWindow window)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(reader);
-        var workers = GetWorkerCount(page, source.Scope, source.Context.Configuration.MaxDegreeOfParallelism);
-        return workers > 1 ? new TiffBlockWorkers(source, page, reader, workers) : null;
+        var workers = GetWorkerCount(page, source.Scope, source.Context.Configuration.MaxDegreeOfParallelism, window.GetBlockCount(page));
+        return workers > 1 ? new TiffBlockWorkers(source, page, reader, window, workers) : null;
     }
 
     /// <summary>
@@ -78,9 +83,8 @@ internal sealed class TiffBlockWorkers : IDisposable
     /// block, for blocks that cost little to decode (<see cref="TiffBlockReader.CanDecodeInParallel"/>), and as many as the
     /// live bytes the scope has left can give working memory to.
     /// </summary>
-    internal static int GetWorkerCount(TiffPage page, AllocationScope scope, int maxDegreeOfParallelism)
+    private static int GetWorkerCount(TiffPage page, AllocationScope scope, int maxDegreeOfParallelism, int blockCount)
     {
-        var blockCount = page.BlockOffsets.Length;
         if (maxDegreeOfParallelism <= 1 || blockCount < 2 || (long)page.Size.Width * page.Size.Height < RowBands.MinPixelsForParallelism || !TiffBlockReader.CanDecodeInParallel(page))
             return 1;
 
@@ -90,20 +94,24 @@ internal sealed class TiffBlockWorkers : IDisposable
     }
 
     /// <summary>Gets the rows of the next block, decoding the batch that starts at it when it is not decoded yet.</summary>
-    /// <param name="position">The position of the block in the decoding order (<see cref="TiffPage.GetBlockIndex"/>): the blocks are read in that order.</param>
+    /// <param name="position">The position of the block in the decoding order (<see cref="TiffPage.GetBlockIndex"/>): the blocks of the window are read in that order.</param>
     /// <returns>The rows of the block that belong to the page, valid until the next call.</returns>
     /// <exception cref="InvalidImageContentException">The block, or the input, is malformed.</exception>
     public ReadOnlySpan<byte> Next(int position)
     {
-        if (position < _start || position > _start + _count)
-            throw new ArgumentOutOfRangeException(nameof(position), position, "The blocks are read in their order.");
+        if (!_window.Contains(_page, position) || (_count > 0 && position < _positions[0]))
+            throw new ArgumentOutOfRangeException(nameof(position), position, "The blocks of the window are read in their order.");
 
-        if (position == _start + _count)
+        var slot = Array.IndexOf(_positions, position, 0, _count);
+        if (slot < 0)
         {
+            if (_count > 0 && position < _positions[_count - 1])
+                throw new ArgumentOutOfRangeException(nameof(position), position, "The blocks of the window are read in their order.");
+
             DecodeBatch(position);
+            slot = 0;
         }
 
-        var slot = position - _start;
         _errors[slot]?.Throw();
         return _workspaces[slot].GetBlock(_page).Span[..(GetRowCount(_page.GetBlockIndex(position)) * _page.BlockRowLength)];
     }
@@ -133,16 +141,19 @@ internal sealed class TiffBlockWorkers : IDisposable
     private void DecodeBatch(int start)
     {
         ReleaseBatch();
-        _start = start;
         var total = _page.BlockOffsets.Length;
         var count = 0;
-        while (count < _workspaces.Length && start + count < total)
+        for (var position = start; count < _workspaces.Length && position < total; position++)
         {
+            if (!_window.Contains(_page, position))
+                continue;
+
             // The input is read on this thread, in the order of the blocks; the batch ends at the first block that cannot be read
             var slot = count++;
+            _positions[slot] = position;
             try
             {
-                var index = _page.GetBlockIndex(start + slot);
+                var index = _page.GetBlockIndex(position);
                 _blocks[slot] = _reader.Fetch(index, GetRowCount(index), _workspaces[slot]);
             }
             catch (Exception exception)

@@ -33,10 +33,11 @@ Assert.Equal([4, 7, 11, 14, 19], breaks); // before each word, and at the end of
 ```
 <!-- endref -->
 
-The dictionary also works with the text layout of [Meziantou.Framework.Imaging](../Imaging/08-Text/04-TextLayout.md#hyphenation-and-scripts-without-spaces)
-([TextLayoutOptions.LineBreakDictionary](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreakDictionary)). A [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) segments text with its own rule, described in
+A [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) segments text with its own rule, described in
 [Line breaking](08-LineBreaking.md#how-the-words-are-chosen): its breaks are close to the ones of the engines below, but
-not always the same.
+not always the same. The text layout of [Meziantou.Framework.Imaging](../Imaging/08-Text/04-TextLayout.md#hyphenation-and-scripts-without-spaces)
+uses the engines by default, and breaks its lines as the line break iterator of ICU does; a dictionary given to
+[TextLayoutOptions.LineBreakDictionary](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreakDictionary) replaces them.
 
 ## Find the words of a run
 

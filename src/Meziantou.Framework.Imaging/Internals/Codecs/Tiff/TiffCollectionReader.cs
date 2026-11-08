@@ -19,6 +19,9 @@ internal sealed class TiffCollectionReader : ImageCollectionReader
 
     public override int Count => _pages.Length;
 
+    /// <summary>Gets a value indicating that a page decodes only the strips or the tiles that an area meets (<see cref="ImageDecodeRequest.Region"/>).</summary>
+    public override bool SupportsRegionDecoding => true;
+
     /// <summary>Reads the header and resolves every page of a document.</summary>
     /// <param name="input">The random-access input; the reader takes ownership.</param>
     /// <param name="configuration">The configuration.</param>

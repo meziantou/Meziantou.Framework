@@ -40,6 +40,20 @@ all:
   and the alpha channel is kept. [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk). See [Color management](../09-Color/03-ColorManagement.md).
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadJpegxl;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static string DescribeJpegXl(string path)
+{
+    var info = Image.Identify(path);
+
+    // A CMYK file (ImageColorModel.Cmyk: a black extra channel) is only loaded with a color conversion, here to sRGB
+    // from the CMYK profile of the file; the other files ignore the option
+    using var image = Image.Load(path, new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default });
+
+    // Floating-point samples, and integer samples of 17 to 24 bits, load as RgbaHalf or RgbaFloat: values above 1
+    // (highlights) and below 0 are kept, in the color encoding of the file (Metadata.TransferFunction, Cicp, IccProfile)
+    return $"{info.ColorModel}, {info.BitsPerComponent} bits: {image.PixelFormat}";
+}
+```
 <!-- endref -->
 
 Layers (frames without duration) are composited with the frames they belong to, with the blend modes and the

@@ -1,6 +1,6 @@
 ---
 title: Features and geometries
-description: Build features in memory, and compute bounds, label positions, distances and point-in-polygon tests.
+description: Build features in memory, and compute bounds, label positions, distances and point-in-polygon tests, with straight or great-circle edges and across the 180th meridian.
 ---
 
 ## Features
@@ -62,7 +62,8 @@ pattern matching gives its members:
   contains the geometry, and [GeoFeatureCollection.GetBounds](cref:Meziantou.Framework.Geo.GeoFeatureCollection.GetBounds)
   the box of a whole map.
 - [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) is a position to label the geometry: the
-  centroid of its largest polygon, so the islands of a country do not pull the label into the sea.
+  centroid of its largest polygon, so the islands of a country do not pull the label into the sea. A shape that
+  crosses the 180th meridian keeps its label on its side of the world.
 
 ## Measures and times
 
@@ -148,3 +149,75 @@ Assert.False(polygon.Contains(new GeoPosition(Longitude: 12, Latitude: 5)));
 
 The test treats the edges as straight lines in degrees, as on an equirectangular map, not as great circles. The
 difference matters only for long edges far from the equator. The result is unspecified for a position on an edge.
+
+## Great circles
+
+A plane flies along a great circle, not along a straight line on a map. Pass
+[GeoEdgeType.Geodesic](cref:Meziantou.Framework.Geo.GeoEdgeType.Geodesic) to
+[GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains),
+[GeoMultiPolygon.Contains](cref:Meziantou.Framework.Geo.GeoMultiPolygon.Contains),
+[GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds) and
+[GeoFeatureCollection.GetBounds](cref:Meziantou.Framework.Geo.GeoFeatureCollection.GetBounds) to treat each edge as the
+shortest great-circle arc between its ends. The default, [GeoEdgeType.Planar](cref:Meziantou.Framework.Geo.GeoEdgeType.Planar),
+keeps the straight lines in degrees, as RFC 7946 defines them. An edge between two positions of the same latitude bends
+toward the nearest pole:
+
+<!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=Geo_GeodesicContains;format=md-fenced-code-block;dedent=true -->
+```csharp
+var polygon = new GeoPolygon([[new(-60, 70), new(60, 70), new(60, 80), new(-60, 80), new(-60, 70)]]);
+
+// Straight in degrees, the edges follow the parallels 70 and 80
+Assert.True(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 75)));
+Assert.False(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 82)));
+
+// As great circles, they bend toward the North Pole: the southern edge passes at 79.7° on the meridian 0
+Assert.False(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 75), GeoEdgeType.Geodesic));
+Assert.True(polygon.Contains(new GeoPosition(Longitude: 0, Latitude: 82), GeoEdgeType.Geodesic));
+```
+<!-- endref -->
+
+The geodesic test computes on a sphere. The rings may turn in either direction: the polygon is the side of its exterior
+ring that does not contain the poles, except for a ring that goes around a pole, such as the coast of Antarctica, which
+contains the pole it is nearest to.
+
+## The 180th meridian
+
+The shapes around the Pacific, such as Fiji, the east of Russia or a flight from Tokyo to San Francisco, cross the 180th
+meridian, where the longitude jumps from 180 to -180. Straight in degrees, an edge from the longitude 179 to the
+longitude -179 goes the long way around the world, through the Greenwich meridian. There are two ways to handle them:
+
+- Split them along the meridian with [SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian),
+  as [RFC 7946](https://www.rfc-editor.org/rfc/rfc7946#section-3.1.9) wants it. The parts on each side then work with
+  every method: see [Split along the 180th meridian](06-GeometryOperations.md#split-along-the-180th-meridian).
+  [CrossesAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.CrossesAntimeridian) tells whether a geometry has an
+  edge to split: its ends are more than 180° of longitude apart.
+- Use great-circle edges: they take the shortest way, across the meridian when it is shorter.
+
+The box of a shape that crosses the meridian crosses it too: its west side is east of its east side, as
+[RFC 7946](https://www.rfc-editor.org/rfc/rfc7946#section-5.2) allows.
+[GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds) gives such a box with great-circle edges, for a geometry
+whose edges cross the meridian and for the parts of a split one:
+
+<!-- ref:../../tests/Meziantou.Framework.Geo.Tests/GeometryTests.cs;region=Geo_GeodesicBounds;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tokyo = new GeoPosition(Longitude: 139.69, Latitude: 35.69);
+var sanFrancisco = new GeoPosition(Longitude: -122.42, Latitude: 37.77);
+var route = new GeoLineString([tokyo, sanFrancisco]);
+
+// Straight in degrees, the edge goes the long way, over Asia, Europe and the Atlantic
+Assert.Equal(new GeoBounds(-122.42, 35.69, 139.69, 37.77), route.GetBounds());
+
+// As a great circle, it crosses the Pacific and goes north of both cities
+var bounds = route.GetBounds(GeoEdgeType.Geodesic)!.Value;
+Assert.True(bounds.CrossesAntimeridian());
+Assert.Equal((139.69, -122.42), (bounds.West, bounds.East));
+Assert.Equal(48.7, bounds.North, 1);
+```
+<!-- endref -->
+
+[CrossesAntimeridian](cref:Meziantou.Framework.Geo.GeoBounds.CrossesAntimeridian) tells whether a box crosses the meridian.
+[GeoBounds.Contains](cref:Meziantou.Framework.Geo.GeoBounds.Contains),
+[Intersects](cref:Meziantou.Framework.Geo.GeoBounds.Intersects), [Union](cref:Meziantou.Framework.Geo.GeoBounds.Union) and
+[Clip](cref:Meziantou.Framework.Geo.GeoGeometry.Clip) accept such boxes. `GetBounds()` without an argument keeps the box
+of the positions, which never crosses the meridian: the readers, the writers and the spatial indexes of FlatGeobuf and
+GeoPackage files use it, and expect boxes that do not cross the meridian.

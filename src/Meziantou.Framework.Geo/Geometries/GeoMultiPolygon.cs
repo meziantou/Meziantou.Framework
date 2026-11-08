@@ -21,6 +21,16 @@ public sealed class GeoMultiPolygon : GeoGeometry
     /// <returns><see langword="true"/> when the position is inside one of the polygons; otherwise, <see langword="false"/>.</returns>
     public bool Contains(GeoPosition position) => Polygons.Any(polygon => polygon.Contains(position));
 
+    /// <summary>Gets a value that indicates whether a position is inside one of the polygons, whose edges are drawn as an edge type says. See <see cref="GeoPolygon.Contains(GeoPosition, GeoEdgeType)"/>.</summary>
+    /// <param name="position">The position. The altitude is ignored.</param>
+    /// <param name="edgeType">How the edges are drawn.</param>
+    /// <returns><see langword="true"/> when the position is inside one of the polygons; otherwise, <see langword="false"/>.</returns>
+    public bool Contains(GeoPosition position, GeoEdgeType edgeType)
+    {
+        GeoPolygon.ValidateEdgeType(edgeType);
+        return Polygons.Any(polygon => polygon.Contains(position, edgeType));
+    }
+
     /// <inheritdoc />
     public override IEnumerable<GeoPosition> GetPositions() => Polygons.SelectMany(polygon => polygon.GetPositions());
 }

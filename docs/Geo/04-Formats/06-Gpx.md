@@ -41,8 +41,30 @@ Each waypoint, route and track is a feature, in the order of the document:
   `wpt`, `rte` or `trk`.
 - The other properties are `name`, `cmt`, `desc`, `src`, `type` and `sym` as strings, the `number` of a route or a
   track as a `double`, and the `time` of a waypoint as a `DateTimeOffset`.
-- The points of the routes and tracks keep their position and elevation only: their time, and the data of the
-  `extensions` such as the heart rate, are dropped. The links and the other data of the waypoints are dropped too.
+- The `time` of each point is the [Time](cref:Meziantou.Framework.Geo.GeoPosition.Time) of its position. The other
+  data of the points of the routes and tracks, such as the heart rate of their `extensions`, is dropped. The links and
+  the other data of the waypoints are dropped too.
+
+The times give the speed of a track:
+
+<!-- ref:../../../tests/Meziantou.Framework.Geo.Tests/GpxTests.cs;region=Geo_GpxTrackTimes;format=md-fenced-code-block;dedent=true -->
+```csharp
+GeoFeatureCollection features;
+using (var stream = File.OpenRead("run.gpx"))
+{
+    features = Gpx.Read(stream);
+}
+
+// The time of each point of the track is the Time of its position
+var segment = ((GeoMultiLineString)features[0].Geometry!).LineStrings[0];
+var start = segment.Positions[0].Time!.Value;
+var end = segment.Positions[^1].Time!.Value;
+var speed = segment.GetLength() / (end - start).TotalSeconds; // meters per second
+
+Assert.Equal(new DateTimeOffset(2024, 9, 1, 7, 0, 0, TimeSpan.Zero), start);
+Assert.Equal(11.6, speed, 1);
+```
+<!-- endref -->
 
 ## Write a GPX file
 
@@ -73,8 +95,10 @@ using (var stream = File.Create("mont-blanc.gpx"))
 - A point is a waypoint, a line is a route, and a multi-line is a track. Set `gpxType` to `trk` to write a line as a
   track of one segment.
 - As GPX requires, the waypoints come first, then the routes, then the tracks.
-- The writer writes the properties the reader reads; the other properties and the identifiers are dropped, as GPX has
-  no element for them.
+- The time of a position is the `time` of its point, in UTC. A waypoint whose position has no time gets its `time`
+  property.
+- The writer writes the properties the reader reads; the other properties, the identifiers and the measures are
+  dropped, as GPX has no element for them.
 - GPX has no polygons: writing a polygon, a collection or a feature without a geometry throws an `ArgumentException`.
 - [GpxWriterOptions](cref:Meziantou.Framework.Geo.GpxWriterOptions) sets the
   [Creator](cref:Meziantou.Framework.Geo.GpxWriterOptions.Creator) of the file and whether it is

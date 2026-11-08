@@ -668,15 +668,16 @@ public sealed class PdfContentBuilder
     }
 
     /// <summary>
-    /// Draws a text in a rectangle, broken into lines that fit its width: at the spaces, inside a word only when the word
-    /// is wider than the rectangle. The line feeds of the text start new paragraphs. The lines that do not fit in the
+    /// Draws a text in a rectangle, broken into lines that fit its width at the break opportunities of the Unicode line
+    /// breaking algorithm (UAX #14): after the spaces and the hyphens, between ideographs. A word wider than the rectangle
+    /// is broken between its characters. The line feeds of the text start new paragraphs. The lines that do not fit in the
     /// height of the rectangle are not drawn.
     /// </summary>
     /// <param name="text">The text.</param>
     /// <param name="font">The font.</param>
     /// <param name="fontSize">The font size.</param>
     /// <param name="rectangle">The rectangle: the first baseline is below its top by the ascent of the font.</param>
-    /// <param name="options">The alignment and the line height, or <see langword="null"/> for the defaults.</param>
+    /// <param name="options">The alignment, the line height and the hyphenation, or <see langword="null"/> for the defaults.</param>
     /// <returns>The builder.</returns>
     /// <exception cref="ArgumentException">A character of the text has no glyph in the font. Nothing is drawn.</exception>
     public PdfContentBuilder DrawTextBox(string text, PdfFont font, double fontSize, PdfRectangle rectangle, PdfTextBoxOptions? options = null) => DrawTextBox(text, font, fontSize, rectangle, options, out _);
@@ -686,7 +687,7 @@ public sealed class PdfContentBuilder
     /// <param name="font">The font.</param>
     /// <param name="fontSize">The font size, more than 0.</param>
     /// <param name="rectangle">The rectangle: the first baseline is below its top by the ascent of the font.</param>
-    /// <param name="options">The alignment and the line height, or <see langword="null"/> for the defaults.</param>
+    /// <param name="options">The alignment, the line height and the hyphenation, or <see langword="null"/> for the defaults.</param>
     /// <param name="remainingText">The text of the lines that do not fit in the height of the rectangle, from the start of the first of them; empty when the whole text is drawn.</param>
     /// <returns>The builder.</returns>
     /// <exception cref="ArgumentException">A character of the text has no glyph in the font. Nothing is drawn.</exception>
@@ -700,44 +701,81 @@ public sealed class PdfContentBuilder
         EnsureNotInText();
 
         // Lay out first: a character the font does not have leaves the content unchanged
-        var lines = PdfTextWrapper.Wrap(text, font, fontSize, rectangle.Width);
+        var lines = PdfTextWrapper.Wrap(text, font, fontSize, rectangle.Width, options.Hyphenator);
+        var count = GetFittingLineCount(lines.Count, font, fontSize, options.LineHeight, rectangle.Height);
+        remainingText = count < lines.Count ? text[lines[count].Start..] : "";
+        return DrawLines(lines, 0, count, font, fontSize, rectangle.Left, rectangle.Width, rectangle.Top, options.Alignment, options.LineHeight);
+    }
+
+    /// <summary>
+    /// Draws a table in a rectangle: the rows from the top of the rectangle, as many as fit in its height, with the
+    /// borders, the backgrounds and the texts of the cells broken into lines. Call it again with the result to continue
+    /// the table in another rectangle (on the next page): the header rows are drawn again at its top.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="rectangle">The rectangle: the table starts at its top left corner, and the widths of its columns are computed from its width.</param>
+    /// <param name="previous">The result of the call that drew the previous part of the table, or <see langword="null"/> to draw it from the start.</param>
+    /// <returns>Whether the whole table is drawn, the bottom of the part drawn, and where the next part starts.</returns>
+    /// <remarks>
+    /// A row that does not fit in the height left is drawn in the next rectangle, unless it is the first row of the
+    /// rectangle after the header rows: the lines of its cells are then split between the rectangles. When the first
+    /// rectangle has no room for a row, nothing is drawn and the table starts in the next one. The widths of the columns
+    /// are computed once, and computed again only when the width of the rectangle changes, so that the columns of the
+    /// parts are aligned.
+    /// </remarks>
+    /// <exception cref="ArgumentException">A character of a cell has no glyph in its font, the cells of a row span more columns than the table has, or <paramref name="previous"/> is the result of a complete table. Nothing is drawn.</exception>
+    /// <exception cref="InvalidOperationException">The table has no column, or the rectangle is too small for the header rows and a line of the next row.</exception>
+    public PdfTableDrawResult DrawTable(PdfTable table, PdfRectangle rectangle, PdfTableDrawResult? previous = null)
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        EnsureNotInText();
+        return PdfTableRenderer.Draw(this, table, rectangle, previous);
+    }
+
+    internal static int GetFittingLineCount(int lineCount, PdfFont font, double fontSize, double lineHeight, double height)
+    {
         var ascent = font.Ascent * fontSize / 1000;
         var descent = font.Descent * fontSize / 1000;
-        var lineHeight = options.LineHeight * fontSize;
         var count = 0;
-        while (count < lines.Count && rectangle.Top - ascent - (count * lineHeight) + descent >= rectangle.Bottom - 1e-9)
+        while (count < lineCount && -ascent - (count * lineHeight * fontSize) + descent >= -height - 1e-9)
         {
             count++;
         }
 
-        remainingText = count < lines.Count ? text[lines[count].Start..] : "";
+        return count;
+    }
+
+    internal PdfContentBuilder DrawLines(List<PdfTextWrapper.Line> lines, int first, int count, PdfFont font, double fontSize, double left, double width, double top, PdfTextAlignment alignment, double lineHeightFactor)
+    {
         if (count == 0)
             return this;
 
+        var ascent = font.Ascent * fontSize / 1000;
+        var lineHeight = lineHeightFactor * fontSize;
         var widths = new double[count];
         for (var i = 0; i < count; i++)
         {
-            widths[i] = font.GetTextWidth(lines[i].Text, fontSize);
+            widths[i] = font.GetTextWidth(lines[first + i].Text, fontSize);
         }
 
         BeginText().SetFont(font, fontSize);
         for (var i = 0; i < count; i++)
         {
-            var line = lines[i];
+            var line = lines[first + i];
             if (line.Text.Length == 0)
                 continue;
 
-            var free = rectangle.Width - widths[i];
-            var x = options.Alignment switch
+            var free = width - widths[i];
+            var x = alignment switch
             {
-                PdfTextAlignment.Center => rectangle.Left + (free / 2),
-                PdfTextAlignment.Right => rectangle.Left + free,
-                _ => rectangle.Left,
+                PdfTextAlignment.Center => left + (free / 2),
+                PdfTextAlignment.Right => left + free,
+                _ => left,
             };
-            SetTextMatrix(PdfMatrix.CreateTranslation(x, rectangle.Top - ascent - (i * lineHeight)));
+            SetTextMatrix(PdfMatrix.CreateTranslation(x, top - ascent - (i * lineHeight)));
 
             var words = line.Text.Split(' ');
-            if (options.Alignment == PdfTextAlignment.Justify && !line.EndsParagraph && words.Length > 1 && free > 0)
+            if (alignment == PdfTextAlignment.Justify && !line.EndsParagraph && words.Length > 1 && free > 0)
             {
                 // The space left is shared by the gaps between the words: TJ moves the text by minus the adjustment, in thousandths of the font size
                 var adjustment = -free / (words.Length - 1) * 1000 / fontSize;

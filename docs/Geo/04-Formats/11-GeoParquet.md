@@ -57,8 +57,8 @@ The features are kept whole: a feature that crosses the edge of the box is not c
 
 - **Geometries**: the primary geometry column of the `geo` metadata, or the one that
   [GeometryColumn](cref:Meziantou.Framework.Geo.GeoParquetReaderOptions.GeometryColumn) names, read as
-  [WellKnownBinary](cref:Meziantou.Framework.Geo.WellKnownBinary) reads it, with the altitudes; the M values are
-  dropped. A `null` or empty geometry gives a feature without geometry. The native (GeoArrow) encodings throw a
+  [WellKnownBinary](cref:Meziantou.Framework.Geo.WellKnownBinary) reads it, with the altitudes and the
+  measures. A `null` or empty geometry gives a feature without geometry. The native (GeoArrow) encodings throw a
   `FormatException`: only WKB is read.
 - **Properties**: the other top-level columns, with the .NET type of the column, such as an `int`, a `long`, a
   `double`, a `string`, a `DateTime` or an array of bytes. A `null` value is not a property. The columns of structures,

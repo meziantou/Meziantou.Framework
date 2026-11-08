@@ -129,7 +129,9 @@ The client calls it as it would call a SQL Server procedure. See [Connecting cli
 ## Parameters
 
 Each [TdsQueryParameter](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter) has a [Name](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.Name) (with its `@` prefix, as the client sent it), a [Type](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.Type) (a [TdsColumnType](cref:Meziantou.Framework.Tds.Handler.TdsColumnType)) and a
-`Value`. A SQL `NULL` is `DBNull.Value`, and [IsNull](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.IsNull) is `true`.
+`Value`. A SQL `NULL` is `DBNull.Value`, and [IsNull](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.IsNull) is `true`. [IsOutput](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.IsOutput) is `true` for the parameters the
+client declares as `Output` or `InputOutput`: return their values as shown in
+[Return output parameters and a return value](06-ReturningResults.md#return-output-parameters-and-a-return-value).
 
 The conversion methods return `null` for a SQL `NULL`, and for a value they cannot convert:
 
@@ -150,6 +152,66 @@ before that parameter, and [HasCompleteParameters](cref:Meziantou.Framework.Tds.
 [Read the parameters of a query](#read-the-parameters-of-a-query) does, rather than run them with missing values. The
 query engine rejects them.
 
+## Transactions
+
+The server accepts the transactions of the client: `SqlConnection.BeginTransaction`, `SqlTransaction.Commit`,
+`Rollback` and `Save`, so code that runs its commands in a transaction, like the `SaveChanges` of EF Core, works without
+a handler. The server tracks the transaction of each connection:
+
+- [TransactionId](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.TransactionId) is the identifier of the transaction a request runs in, or `null` outside a transaction. Use it to
+  stage the changes of a transaction until it is committed.
+- Savepoints are tracked by name: a rollback to a savepoint keeps the transaction, and drops the savepoints created
+  after it.
+- When a connection closes during a transaction, the transaction is rolled back.
+
+The server does not run the T-SQL statements `BEGIN TRANSACTION`, `COMMIT` or `ROLLBACK`: they reach the query handler
+as any other SQL text.
+
+To observe the transactions, or to reject a request, set [TransactionHandler](cref:Meziantou.Framework.Tds.TdsServerOptions.TransactionHandler). Return `null` to accept the
+request, or the error to send to the client:
+
+<!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsServerProtocolTests.cs;region=TdsServer_Transactions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var events = new ConcurrentQueue<string>();
+var options = new TdsServerOptions();
+options.TransactionHandler = (context, cancellationToken) =>
+{
+    events.Enqueue($"{context.RequestType} {context.SavepointName} {context.IsolationLevel}".TrimEnd());
+    if (context.RequestType is TdsTransactionRequestType.Begin && context.IsolationLevel is IsolationLevel.Snapshot)
+    {
+        return ValueTask.FromResult<TdsQueryError?>(new TdsQueryError
+        {
+            Number = 3952,
+            Message = "Snapshot isolation transaction failed accessing database 'master' because snapshot isolation is not allowed in this database.",
+        });
+    }
+
+    return ValueTask.FromResult<TdsQueryError?>(null);
+};
+```
+<!-- endref -->
+
+The [TdsTransactionContext](cref:Meziantou.Framework.Tds.Handler.TdsTransactionContext) gives the request:
+
+| Property | Value |
+| --- | --- |
+| [RequestType](cref:Meziantou.Framework.Tds.Handler.TdsTransactionContext.RequestType) | [Begin](cref:Meziantou.Framework.Tds.Handler.TdsTransactionRequestType.Begin), [Commit](cref:Meziantou.Framework.Tds.Handler.TdsTransactionRequestType.Commit), [Rollback](cref:Meziantou.Framework.Tds.Handler.TdsTransactionRequestType.Rollback) or [Save](cref:Meziantou.Framework.Tds.Handler.TdsTransactionRequestType.Save) |
+| [TransactionId](cref:Meziantou.Framework.Tds.Handler.TdsTransactionContext.TransactionId) | The transaction; for [Begin](cref:Meziantou.Framework.Tds.Handler.TdsTransactionRequestType.Begin), the identifier it gets when the request is accepted |
+| [IsolationLevel](cref:Meziantou.Framework.Tds.Handler.TdsTransactionContext.IsolationLevel) | The isolation level requested by [Begin](cref:Meziantou.Framework.Tds.Handler.TdsTransactionRequestType.Begin) |
+| [SavepointName](cref:Meziantou.Framework.Tds.Handler.TdsTransactionContext.SavepointName) | The savepoint to create, or to roll back to; `null` when a rollback ends the transaction |
+| [TransactionName](cref:Meziantou.Framework.Tds.Handler.TdsTransactionContext.TransactionName) | The name given to `BeginTransaction`, if any |
+| [IsConnectionClosing](cref:Meziantou.Framework.Tds.Handler.TdsTransactionContext.IsConnectionClosing) | `true` for the rollback of a connection that closed during a transaction; the error returned is ignored |
+
+When the handler rejects a request, the transaction is unchanged. The server returns the errors of SQL Server for the
+requests that do not match the state of the transaction:
+
+| Number | Cause |
+| --- | --- |
+| 628 | A savepoint without a transaction. |
+| 3902, 3903 | A commit or a rollback without a transaction. |
+| 6401 | A rollback to a savepoint that does not exist. |
+| 50006 | A transaction begins while another one is active. |
+
 ## Cancellation
 
 The `CancellationToken` of the handler is canceled when the client cancels the command (`SqlCommand.Cancel`, or the
@@ -163,6 +225,12 @@ and the connection stays usable. The result of the abandoned handler is discarde
 
 A connection runs one request at a time: the handler is not called again for the same connection until it returns.
 Different connections call the handler concurrently.
+
+A connection with Multiple Active Result Sets (`MultipleActiveResultSets=True`) is the exception: the client opens
+several sessions on the connection, one per open `SqlDataReader`, and each session runs its requests independently of
+the others. The handler can then be called concurrently for the same connection, and a slow request does not hold up
+the requests of the other sessions. The server sends the rows of a session as fast as the client reads them, so a
+reader the client leaves open does not block the other readers.
 
 ## Exceptions
 

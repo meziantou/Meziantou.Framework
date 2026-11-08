@@ -13,4 +13,11 @@ public sealed class PdfTextExtractionOptions
     /// what the fonts map their glyphs to.
     /// </summary>
     public bool ExpandLigatures { get; init; }
+
+    /// <summary>
+    /// Gets the order of the lines: the order of the content (<see cref="PdfTextReadingOrder.Content"/>, the default), or
+    /// the reading order found from the layout of the page (<see cref="PdfTextReadingOrder.Layout"/>), which reads the
+    /// columns of a page one after the other.
+    /// </summary>
+    public PdfTextReadingOrder ReadingOrder { get; init; }
 }

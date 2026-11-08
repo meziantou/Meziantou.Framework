@@ -20,7 +20,24 @@ internal static class TdsResponseSerializer
     private const ushort DoneFinal = 0x0000;
     private const ushort DoneMore = 0x0001;
     private const ushort DoneError = 0x0002;
+    private const ushort DoneCount = 0x0010;
     private const ushort DoneAttention = 0x0020;
+
+    // DONE token types (MS-TDS 2.2.7.6-8). RPC responses end with DONEPROC, and the statements they run end with
+    // DONEINPROC.
+    private const byte DoneToken = 0xFD;
+    private const byte DoneProcToken = 0xFE;
+    private const byte DoneInProcToken = 0xFF;
+
+    // The CurCmd of a DONE token. SqlClient ignores the row count of a SELECT for RecordsAffected, as SQL Server
+    // sends it for every statement.
+    private const ushort CurCmdNone = 0x00;
+    private const ushort CurCmdSelect = 0xC1;
+
+    // ENVCHANGE types of the transaction manager (MS-TDS 2.2.7.9).
+    private const byte EnvChangeBeginTransaction = 8;
+    private const byte EnvChangeCommitTransaction = 9;
+    private const byte EnvChangeRollbackTransaction = 10;
 
     // A token's length field is 16 bits, so a message has to leave room for the rest of the token body.
     private const int MaxTokenMessageLength = 32000;
@@ -78,7 +95,7 @@ internal static class TdsResponseSerializer
         return stream.ToArray();
     }
 
-    public static byte[] CreateQueryResponse(TdsQueryResult result, int payloadSizePerPacket)
+    public static byte[] CreateQueryResponse(TdsQueryResult result, int payloadSizePerPacket, bool isRpc = false)
     {
         ArgumentNullException.ThrowIfNull(result);
 
@@ -98,20 +115,120 @@ internal static class TdsResponseSerializer
             WriteInfoToken(writer, message);
         }
 
+        // Without a row count, output parameters or a return value, the DONE token of the last result set ends the
+        // response. Otherwise, they follow the result sets and a final DONE token carries the row count.
+        var hasTrailer = isRpc
+            || result.RecordsAffected is not null
+            || result.ReturnValue is not null
+            || result.OutputParameters.Count > 0
+            || result.ResultSets.Count == 0;
+
+        var resultSetDoneToken = isRpc ? DoneInProcToken : DoneToken;
         for (var i = 0; i < result.ResultSets.Count; i++)
         {
             var resultSet = result.ResultSets[i];
-            var hasMoreResults = i + 1 < result.ResultSets.Count;
-            WriteResultSet(writer, resultSet, hasMoreResults, payloadSizePerPacket);
+            var hasMoreResults = hasTrailer || i + 1 < result.ResultSets.Count;
+            WriteResultSet(writer, resultSet, resultSetDoneToken, hasMoreResults, payloadSizePerPacket);
         }
 
-        if (result.ResultSets.Count == 0)
+        if (hasTrailer)
         {
-            WriteDoneToken(writer, status: DoneFinal, rowCount: 0);
+            if (result.ReturnValue is { } returnValue)
+            {
+                writer.Write((byte)0x79); // RETURNSTATUS
+                writer.Write(returnValue);
+            }
+
+            for (var i = 0; i < result.OutputParameters.Count; i++)
+            {
+                WriteReturnValueToken(writer, result.OutputParameters[i], ordinal: (ushort)i, payloadSizePerPacket);
+            }
+
+            var status = result.RecordsAffected is not null ? DoneCount : DoneFinal;
+            var rowCount = result.RecordsAffected is { } recordsAffected ? (ulong)Math.Max(recordsAffected, 0) : 0;
+            WriteDoneToken(writer, isRpc ? DoneProcToken : DoneToken, status, CurCmdNone, rowCount);
         }
 
         writer.Flush();
         return stream.ToArray();
+    }
+
+    /// <summary>Creates the response of a transaction manager request.</summary>
+    /// <param name="endedTransactionId">The transaction the request committed or rolled back, if any.</param>
+    /// <param name="committed">Whether <paramref name="endedTransactionId"/> was committed rather than rolled back.</param>
+    /// <param name="begunTransactionId">The transaction the request began, if any.</param>
+    /// <param name="error">The error that ends the request, if any.</param>
+    public static byte[] CreateTransactionResponse(long? endedTransactionId, bool committed, long? begunTransactionId, TdsQueryError? error = null)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.Unicode, leaveOpen: true);
+
+        if (endedTransactionId is { } endedId)
+        {
+            var environmentType = committed ? EnvChangeCommitTransaction : EnvChangeRollbackTransaction;
+            WriteTransactionEnvironmentChangeToken(writer, environmentType, newValue: null, oldValue: endedId);
+        }
+
+        if (begunTransactionId is { } begunId)
+        {
+            WriteTransactionEnvironmentChangeToken(writer, EnvChangeBeginTransaction, newValue: begunId, oldValue: null);
+        }
+
+        if (error is not null)
+        {
+            WriteErrorToken(writer, error.Number, error.State, error.Class, error.Message);
+            WriteDoneToken(writer, status: DoneError, rowCount: 0);
+        }
+        else
+        {
+            WriteDoneToken(writer, status: DoneFinal, rowCount: 0);
+        }
+        writer.Flush();
+        return stream.ToArray();
+    }
+
+    private static void WriteTransactionEnvironmentChangeToken(BinaryWriter writer, byte environmentType, long? newValue, long? oldValue)
+    {
+        using var bodyStream = new MemoryStream();
+        using var bodyWriter = new BinaryWriter(bodyStream, Encoding.Unicode, leaveOpen: true);
+        bodyWriter.Write(environmentType);
+        WriteTransactionDescriptor(bodyWriter, newValue);
+        WriteTransactionDescriptor(bodyWriter, oldValue);
+        bodyWriter.Flush();
+
+        WriteToken(writer, token: 0xE3, bodyStream);
+
+        static void WriteTransactionDescriptor(BinaryWriter writer, long? value)
+        {
+            if (value is { } descriptor)
+            {
+                writer.Write((byte)sizeof(long));
+                writer.Write(descriptor);
+            }
+            else
+            {
+                writer.Write((byte)0);
+            }
+        }
+    }
+
+    private static void WriteReturnValueToken(BinaryWriter writer, TdsOutputParameter parameter, ushort ordinal, int payloadSizePerPacket)
+    {
+        var name = parameter.Name.StartsWith('@', StringComparison.Ordinal) ? parameter.Name : "@" + parameter.Name;
+        var value = parameter.Value is DBNull ? null : parameter.Value;
+
+        // Output parameters are always nullable, so they use the nullable variants of the types.
+        var column = new TdsColumn(name, parameter.Type, isNullable: true);
+        var encoding = GetColumnEncoding(column, value is null ? [] : [value]);
+
+        writer.Write((byte)0xAC); // RETURNVALUE
+        writer.Write(ordinal);
+        WriteBVarChar(writer, name);
+        writer.Write((byte)0x01); // fByRefValue: output parameter
+        writer.Write((uint)0); // UserType
+        writer.Write((ushort)0x0001); // Flags: nullable
+        WriteTypeInfo(writer, column, encoding);
+        WriteColumnValue(writer, column, encoding, payloadSizePerPacket, value);
     }
 
     public static byte[] CreateAttentionResponse()
@@ -124,7 +241,7 @@ internal static class TdsResponseSerializer
         return stream.ToArray();
     }
 
-    private static void WriteResultSet(BinaryWriter writer, TdsResultSet resultSet, bool hasMoreResults, int payloadSizePerPacket)
+    private static void WriteResultSet(BinaryWriter writer, TdsResultSet resultSet, byte doneToken, bool hasMoreResults, int payloadSizePerPacket)
     {
         var encodings = GetColumnEncodings(resultSet);
         WriteColumnMetadataToken(writer, resultSet.Columns, encodings);
@@ -134,8 +251,8 @@ internal static class TdsResponseSerializer
             WriteRowToken(writer, resultSet.Columns, encodings, payloadSizePerPacket, row);
         }
 
-        var status = hasMoreResults ? DoneMore : DoneFinal;
-        WriteDoneToken(writer, status, (ulong)resultSet.Rows.Count);
+        var status = (ushort)((hasMoreResults ? DoneMore : DoneFinal) | DoneCount);
+        WriteDoneToken(writer, doneToken, status, CurCmdSelect, (ulong)resultSet.Rows.Count);
     }
 
     /// <summary>
@@ -147,46 +264,49 @@ internal static class TdsResponseSerializer
         var result = new ColumnEncoding[resultSet.Columns.Count];
         for (var i = 0; i < resultSet.Columns.Count; i++)
         {
-            var column = resultSet.Columns[i];
-            if (column.ColumnType is TdsColumnType.Decimal)
-            {
-                result[i] = new ColumnEncoding(UsePartialLength: false, GetDecimalScale(resultSet, i));
-                continue;
-            }
+            var columnIndex = i;
+            result[i] = GetColumnEncoding(resultSet.Columns[i], resultSet.Rows.Select(row => columnIndex < row.Count ? row[columnIndex] : null));
+        }
 
-            if (!UsesTextEncoding(column.ColumnType) && column.ColumnType is not TdsColumnType.Binary)
-            {
-                continue;
-            }
+        return result;
+    }
 
-            foreach (var row in resultSet.Rows)
+    private static ColumnEncoding GetColumnEncoding(TdsColumn column, IEnumerable<object?> values)
+    {
+        if (column.ColumnType is TdsColumnType.Decimal)
+        {
+            return new ColumnEncoding(UsePartialLength: false, GetDecimalScale(values));
+        }
+
+        if (UsesTextEncoding(column.ColumnType) || column.ColumnType is TdsColumnType.Binary)
+        {
+            foreach (var value in values)
             {
-                if (i < row.Count && ExceedsFixedColumnLength(column, row[i]))
+                if (ExceedsFixedColumnLength(column, value))
                 {
-                    result[i] = new ColumnEncoding(UsePartialLength: true, Scale: 0);
-                    break;
+                    return new ColumnEncoding(UsePartialLength: true, Scale: 0);
                 }
             }
         }
 
-        return result;
+        return default;
     }
 
     /// <summary>
     /// A decimal column carries a single scale for every row, so use the largest scale present. .NET decimals
     /// track their own scale, and values are rescaled to the column's when written.
     /// </summary>
-    private static byte GetDecimalScale(TdsResultSet resultSet, int columnIndex)
+    private static byte GetDecimalScale(IEnumerable<object?> values)
     {
         byte scale = 0;
-        foreach (var row in resultSet.Rows)
+        foreach (var rawValue in values)
         {
-            if (columnIndex >= row.Count || row[columnIndex] is null)
+            if (rawValue is null)
             {
                 continue;
             }
 
-            var value = Convert.ToDecimal(row[columnIndex], CultureInfo.InvariantCulture);
+            var value = Convert.ToDecimal(rawValue, CultureInfo.InvariantCulture);
             var valueScale = (byte)((decimal.GetBits(value)[3] >> 16) & 0xFF);
             if (valueScale > scale)
             {
@@ -285,9 +405,14 @@ internal static class TdsResponseSerializer
 
     private static void WriteDoneToken(BinaryWriter writer, ushort status, ulong rowCount)
     {
-        writer.Write((byte)0xFD);
+        WriteDoneToken(writer, DoneToken, status, CurCmdNone, rowCount);
+    }
+
+    private static void WriteDoneToken(BinaryWriter writer, byte token, ushort status, ushort currentCommand, ulong rowCount)
+    {
+        writer.Write(token);
         writer.Write(status);
-        writer.Write((ushort)0);
+        writer.Write(currentCommand);
         writer.Write(rowCount);
     }
 
@@ -298,168 +423,170 @@ internal static class TdsResponseSerializer
         for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
         {
             var column = columns[columnIndex];
-            var encoding = encodings[columnIndex];
-            var declaredLength = encoding.UsePartialLength ? PartiallyLengthPrefixedMarker : MaxVariableColumnLength;
             writer.Write((uint)0);
             var flags = column.IsNullable ? (ushort)0x0001 : (ushort)0x0000;
             writer.Write(flags);
-
-            switch (column.ColumnType)
-            {
-                case TdsColumnType.TinyInt:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x26); // INTN
-                        writer.Write((byte)1);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x30); // TINYINT
-                    }
-                    break;
-                case TdsColumnType.SmallInt:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x26); // INTN
-                        writer.Write((byte)2);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x34); // SMALLINT
-                    }
-                    break;
-                case TdsColumnType.Int32:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x26); // INTN
-                        writer.Write((byte)4);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x38); // INT
-                    }
-                    break;
-                case TdsColumnType.Int64:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x26); // INTN
-                        writer.Write((byte)8);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x7F); // BIGINT
-                    }
-                    break;
-                case TdsColumnType.Boolean:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x68); // BITN
-                        writer.Write((byte)1);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x32); // BIT
-                    }
-                    break;
-                case TdsColumnType.Real:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x6D); // FLTN
-                        writer.Write((byte)4);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x3B); // REAL
-                    }
-                    break;
-                case TdsColumnType.Double:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x6D); // FLTN
-                        writer.Write((byte)8);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x3E); // FLOAT
-                    }
-                    break;
-                case TdsColumnType.Decimal:
-                    writer.Write((byte)0x6A); // DECIMALN
-                    writer.Write(DecimalMaxLength);
-                    writer.Write(DecimalPrecision);
-                    writer.Write(encoding.Scale);
-                    break;
-                case TdsColumnType.Money:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x6E); // MONEYN
-                        writer.Write((byte)8);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x3C); // MONEY
-                    }
-                    break;
-                case TdsColumnType.SmallMoney:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x6E); // MONEYN
-                        writer.Write((byte)4);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x7A); // SMALLMONEY
-                    }
-                    break;
-                case TdsColumnType.Guid:
-                    writer.Write((byte)0x24); // GUIDN
-                    writer.Write((byte)16);
-                    break;
-                case TdsColumnType.Date:
-                    writer.Write((byte)0x28); // DATEN carries no scale
-                    break;
-                case TdsColumnType.Time:
-                    writer.Write((byte)0x29); // TIMEN
-                    writer.Write(TemporalScale);
-                    break;
-                case TdsColumnType.DateTime:
-                    if (column.IsNullable)
-                    {
-                        writer.Write((byte)0x6F); // DATETIMN
-                        writer.Write((byte)8);
-                    }
-                    else
-                    {
-                        writer.Write((byte)0x3D); // DATETIME
-                    }
-                    break;
-                case TdsColumnType.DateTime2:
-                    writer.Write((byte)0x2A); // DATETIME2N
-                    writer.Write(TemporalScale);
-                    break;
-                case TdsColumnType.DateTimeOffset:
-                    writer.Write((byte)0x2B); // DATETIMEOFFSETN
-                    writer.Write(TemporalScale);
-                    break;
-                case TdsColumnType.Xml:
-                    writer.Write((byte)0xF1); // XML
-                    writer.Write((byte)0); // no schema collection
-                    break;
-                case TdsColumnType.Binary:
-                    writer.Write((byte)0xA5); // VARBINARY
-                    writer.Write(declaredLength);
-                    break;
-                case TdsColumnType.Json:
-                    writer.Write((byte)0xF4); // JSON
-                    break;
-                default:
-                    writer.Write((byte)0xE7); // NVARCHAR
-                    writer.Write(declaredLength);
-                    writer.Write(DefaultCollation);
-                    break;
-            }
-
+            WriteTypeInfo(writer, column, encodings[columnIndex]);
             WriteBVarChar(writer, column.Name);
+        }
+    }
+
+    private static void WriteTypeInfo(BinaryWriter writer, TdsColumn column, ColumnEncoding encoding)
+    {
+        var declaredLength = encoding.UsePartialLength ? PartiallyLengthPrefixedMarker : MaxVariableColumnLength;
+        switch (column.ColumnType)
+        {
+            case TdsColumnType.TinyInt:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x26); // INTN
+                    writer.Write((byte)1);
+                }
+                else
+                {
+                    writer.Write((byte)0x30); // TINYINT
+                }
+                break;
+            case TdsColumnType.SmallInt:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x26); // INTN
+                    writer.Write((byte)2);
+                }
+                else
+                {
+                    writer.Write((byte)0x34); // SMALLINT
+                }
+                break;
+            case TdsColumnType.Int32:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x26); // INTN
+                    writer.Write((byte)4);
+                }
+                else
+                {
+                    writer.Write((byte)0x38); // INT
+                }
+                break;
+            case TdsColumnType.Int64:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x26); // INTN
+                    writer.Write((byte)8);
+                }
+                else
+                {
+                    writer.Write((byte)0x7F); // BIGINT
+                }
+                break;
+            case TdsColumnType.Boolean:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x68); // BITN
+                    writer.Write((byte)1);
+                }
+                else
+                {
+                    writer.Write((byte)0x32); // BIT
+                }
+                break;
+            case TdsColumnType.Real:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x6D); // FLTN
+                    writer.Write((byte)4);
+                }
+                else
+                {
+                    writer.Write((byte)0x3B); // REAL
+                }
+                break;
+            case TdsColumnType.Double:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x6D); // FLTN
+                    writer.Write((byte)8);
+                }
+                else
+                {
+                    writer.Write((byte)0x3E); // FLOAT
+                }
+                break;
+            case TdsColumnType.Decimal:
+                writer.Write((byte)0x6A); // DECIMALN
+                writer.Write(DecimalMaxLength);
+                writer.Write(DecimalPrecision);
+                writer.Write(encoding.Scale);
+                break;
+            case TdsColumnType.Money:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x6E); // MONEYN
+                    writer.Write((byte)8);
+                }
+                else
+                {
+                    writer.Write((byte)0x3C); // MONEY
+                }
+                break;
+            case TdsColumnType.SmallMoney:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x6E); // MONEYN
+                    writer.Write((byte)4);
+                }
+                else
+                {
+                    writer.Write((byte)0x7A); // SMALLMONEY
+                }
+                break;
+            case TdsColumnType.Guid:
+                writer.Write((byte)0x24); // GUIDN
+                writer.Write((byte)16);
+                break;
+            case TdsColumnType.Date:
+                writer.Write((byte)0x28); // DATEN carries no scale
+                break;
+            case TdsColumnType.Time:
+                writer.Write((byte)0x29); // TIMEN
+                writer.Write(TemporalScale);
+                break;
+            case TdsColumnType.DateTime:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0x6F); // DATETIMN
+                    writer.Write((byte)8);
+                }
+                else
+                {
+                    writer.Write((byte)0x3D); // DATETIME
+                }
+                break;
+            case TdsColumnType.DateTime2:
+                writer.Write((byte)0x2A); // DATETIME2N
+                writer.Write(TemporalScale);
+                break;
+            case TdsColumnType.DateTimeOffset:
+                writer.Write((byte)0x2B); // DATETIMEOFFSETN
+                writer.Write(TemporalScale);
+                break;
+            case TdsColumnType.Xml:
+                writer.Write((byte)0xF1); // XML
+                writer.Write((byte)0); // no schema collection
+                break;
+            case TdsColumnType.Binary:
+                writer.Write((byte)0xA5); // VARBINARY
+                writer.Write(declaredLength);
+                break;
+            case TdsColumnType.Json:
+                writer.Write((byte)0xF4); // JSON
+                break;
+            default:
+                writer.Write((byte)0xE7); // NVARCHAR
+                writer.Write(declaredLength);
+                writer.Write(DefaultCollation);
+                break;
         }
     }
 
@@ -781,7 +908,9 @@ internal static class TdsResponseSerializer
             {
                 string text => text,
                 JsonNode jsonNode => jsonNode.ToJsonString(),
-                _ => JsonSerializer.Serialize(value),
+                JsonElement jsonElement => jsonElement.GetRawText(),
+                JsonDocument jsonDocument => jsonDocument.RootElement.GetRawText(),
+                _ => SerializeJsonWithReflection(value),
             },
             TdsColumnType.Decimal => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture).ToString(System.Globalization.CultureInfo.InvariantCulture),
             TdsColumnType.Money => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture).ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -791,6 +920,18 @@ internal static class TdsResponseSerializer
             TdsColumnType.Variant => value.ToString() ?? string.Empty,
             _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
         };
+    }
+
+    // Trimmed and Native AOT applications disable reflection-based serialization by default
+    // (JsonSerializerIsReflectionEnabledByDefault=false). The trimmer then removes the reflection call.
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Guarded by JsonSerializer.IsReflectionEnabledByDefault, which is false in trimmed applications")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Guarded by JsonSerializer.IsReflectionEnabledByDefault, which is false in Native AOT applications")]
+    private static string SerializeJsonWithReflection(object value)
+    {
+        if (!JsonSerializer.IsReflectionEnabledByDefault)
+            throw new InvalidOperationException($"Cannot serialize a value of type '{value.GetType()}' to JSON because reflection-based serialization is disabled. Return a string, a JsonNode, a JsonElement or a JsonDocument instead.");
+
+        return JsonSerializer.Serialize(value, value.GetType());
     }
 
     private static void WriteToken(BinaryWriter writer, byte token, MemoryStream bodyStream)

@@ -391,6 +391,22 @@ internal static class TdsWire
                     resultSet.Rows.Add(row);
                     break;
 
+                case 0x79:
+                    // RETURNSTATUS
+                    _ = reader.ReadUInt32();
+                    break;
+
+                case 0xAC:
+                    // RETURNVALUE
+                    _ = reader.ReadUInt16(); // ordinal
+                    _ = reader.ReadUtf16(reader.ReadByte() * 2); // name
+                    _ = reader.ReadByte(); // status
+                    _ = reader.ReadUInt32(); // user type
+                    var returnValueFlags = reader.ReadUInt16();
+                    var returnValueColumn = ReadTypeInfo(ref reader, (returnValueFlags & 0x0001) != 0);
+                    _ = ReadValue(ref reader, returnValueColumn, payloadSizePerPacket);
+                    break;
+
                 case 0xFD or 0xFE or 0xFF:
                     var status = reader.ReadUInt16();
                     _ = reader.ReadUInt16(); // current command

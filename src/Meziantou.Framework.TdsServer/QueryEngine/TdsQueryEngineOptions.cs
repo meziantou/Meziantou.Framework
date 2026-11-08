@@ -21,6 +21,14 @@ public sealed class TdsQueryEngineOptions
         return true;
     };
 
+    /// <summary>Initializes a new instance of the <see cref="TdsQueryEngineOptions"/> class with the default scalar functions.</summary>
+    [RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
+    public TdsQueryEngineOptions()
+    {
+        ScalarFunctions = SqlFunctions.CreateDefaultScalarFunctions();
+    }
+
     /// <summary>Gets the stored procedures available to RPC requests.</summary>
     /// <remarks>Stored procedure delegates can declare parameters matching RPC parameters, plus optional injected <see cref="TdsQueryContext" /> and <see cref="CancellationToken" /> parameters.</remarks>
     public IDictionary<string, Delegate> StoredProcedures { get; } = new Dictionary<string, Delegate>(StringComparer.OrdinalIgnoreCase);
@@ -32,7 +40,7 @@ public sealed class TdsQueryEngineOptions
     public TdsQueryMaterializer MaterializeAsync { get; set; } = DefaultMaterializeAsync;
 
     /// <summary>Gets the scalar SQL function mappings used by the query translator.</summary>
-    public IDictionary<string, TdsQueryScalarFunction> ScalarFunctions { get; } = SqlFunctions.CreateDefaultScalarFunctions();
+    public IDictionary<string, TdsQueryScalarFunction> ScalarFunctions { get; }
 
     /// <summary>Gets or sets the authorization callback used for stored procedures and query roots.</summary>
     public TdsQueryEngineAuthorizationHandler IsAuthorized { get; set; } = DefaultIsAuthorized;

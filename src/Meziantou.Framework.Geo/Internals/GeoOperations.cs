@@ -131,7 +131,7 @@ internal static class GeoOperations
     private static bool IsSupported(double value) => Math.Abs(value) <= PolygonCombiner.MaxCoordinate;
 
     /// <summary>Checks that the polygons of a geometry fit on the grid of the combiner; the other geometries are not moved to it.</summary>
-    private static void ValidateCoordinates(GeoGeometry geometry, string? paramName)
+    internal static void ValidateCoordinates(GeoGeometry geometry, string? paramName)
     {
         foreach (var simple in geometry.GetSimpleGeometries())
         {
@@ -308,7 +308,7 @@ internal static class GeoOperations
             var end = t1 == 1 ? b : Interpolate(a, b, t1);
 
             // A segment that only touches the box, or a repeated position
-            if (start == end)
+            if (IsSameLocation(start, end))
             {
                 if (t1 < 1)
                 {
@@ -318,7 +318,7 @@ internal static class GeoOperations
                 continue;
             }
 
-            if (current.Count == 0 || current[^1] != start)
+            if (current.Count == 0 || !IsSameLocation(current[^1], start))
             {
                 Flush();
                 current.Add(start);
@@ -390,7 +390,9 @@ internal static class GeoOperations
     private static GeoPosition Interpolate(GeoPosition a, GeoPosition b, double t)
     {
         double? altitude = a.Altitude is { } altitudeA && b.Altitude is { } altitudeB ? altitudeA + ((altitudeB - altitudeA) * t) : null;
-        return new GeoPosition(a.Longitude + ((b.Longitude - a.Longitude) * t), a.Latitude + ((b.Latitude - a.Latitude) * t), altitude);
+        double? measure = a.Measure is { } measureA && b.Measure is { } measureB ? measureA + ((measureB - measureA) * t) : null;
+        DateTimeOffset? time = a.Time is { } timeA && b.Time is { } timeB ? timeA + ((timeB - timeA) * t) : null;
+        return new GeoPosition(a.Longitude + ((b.Longitude - a.Longitude) * t), a.Latitude + ((b.Latitude - a.Latitude) * t), altitude) { Measure = measure, Time = time };
     }
 
     private static GeoGeometry? ToLineGeometry(List<GeoPosition[]> pieces, bool asMultiLineString)
@@ -420,7 +422,7 @@ internal static class GeoOperations
     }
 
     /// <summary>Gets the rings of the polygons of a geometry, the exterior rings counter-clockwise and the holes clockwise.</summary>
-    private static IEnumerable<IReadOnlyList<GeoPosition>> GetOrientedRings(GeoGeometry geometry)
+    internal static IEnumerable<IReadOnlyList<GeoPosition>> GetOrientedRings(GeoGeometry geometry)
     {
         foreach (var simple in geometry.GetSimpleGeometries())
         {
@@ -439,7 +441,7 @@ internal static class GeoOperations
     private static bool IsPolygonal(GeoGeometry geometry) => geometry.GetSimpleGeometries().All(simple => simple is GeoPolygon);
 
     /// <summary>Builds polygons from contours: each counter-clockwise contour is an exterior ring, and each clockwise one a hole of the smallest exterior ring around it.</summary>
-    private static GeoGeometry ToGeometry(List<(long X, long Y)[]> contours, bool asMultiPolygon)
+    internal static GeoGeometry ToGeometry(List<(long X, long Y)[]> contours, bool asMultiPolygon)
     {
         var shells = new List<(long X, long Y)[]>();
         var holes = new List<(long X, long Y)[]>();
@@ -582,7 +584,7 @@ internal static class GeoOperations
         var result = new List<GeoPosition>(positions.Count);
         foreach (var position in positions)
         {
-            if (result.Count == 0 || result[^1] != position)
+            if (result.Count == 0 || !IsSameLocation(result[^1], position))
             {
                 result.Add(position);
             }
@@ -590,6 +592,9 @@ internal static class GeoOperations
 
         return [.. result];
     }
+
+    // The measures and the times are not compared: a GPS that does not move records the same location at different times
+    private static bool IsSameLocation(GeoPosition a, GeoPosition b) => a.Longitude.Equals(b.Longitude) && a.Latitude.Equals(b.Latitude) && a.Altitude.Equals(b.Altitude);
 
     private static bool IsClosed(IReadOnlyList<GeoPosition> ring) => ring.Count > 1 && ring[0].Longitude == ring[^1].Longitude && ring[0].Latitude == ring[^1].Latitude;
 

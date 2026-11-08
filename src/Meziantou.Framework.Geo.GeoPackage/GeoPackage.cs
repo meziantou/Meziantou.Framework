@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Geo;
 /// <remarks>
 /// <para>
 /// The geometries are the standard GeoPackage geometries: a header, then the WKB of the geometry, read as
-/// <see cref="WellKnownBinary"/> reads it, with the altitudes (Z) and without the M values. An empty geometry and a
+/// <see cref="WellKnownBinary"/> reads it, with the altitudes (Z) and the measures (M). An empty geometry and a
 /// <see langword="null"/> one give a feature without geometry; the extended geometries of extensions throw a
 /// <see cref="FormatException"/>. The coordinate system of the table is not read: the coordinates are expected to be
 /// longitudes and latitudes (EPSG:4326, the coordinate system of most files), and are not converted otherwise.

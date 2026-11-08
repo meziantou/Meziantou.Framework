@@ -2,12 +2,16 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using Meziantou.Framework.Tds.Handler;
+using Meziantou.Framework.Tds.Hosting;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
@@ -574,6 +578,177 @@ public sealed class TdsServerProtocolTests
         var exception = await Assert.ThrowsAsync<SqlException>(() => ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString()));
 
         Assert.Equal(50005, exception.Number);
+    }
+
+    [Fact]
+    public async Task SqlServerBrowser_UnicastInstance_ReturnsTcpPort()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.SqlServerBrowser = new TdsSqlServerBrowserOptions { InstanceName = "TEST", ServerName = "MYSERVER", Port = 0 };
+
+        using var server = CreateBrowserTestServer(options);
+        await server.StartAsync();
+        var tcpPort = Assert.Single(server.Ports);
+        var browserPort = server.SqlServerBrowserPort ?? throw new InvalidOperationException("The SQL Server Browser responder is not running");
+
+        var response = await SendSqlServerBrowserRequestAsync(browserPort, [0x04, .. "test"u8, 0x00]);
+
+        Assert.Equal($"ServerName;MYSERVER;InstanceName;TEST;IsClustered;No;Version;1.0.0.0;tcp;{tcpPort};;", response);
+    }
+
+    [Theory]
+    [InlineData((byte)0x02)]
+    [InlineData((byte)0x03)]
+    public async Task SqlServerBrowser_ListInstances_ReturnsTcpPort(byte requestType)
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.EnableSqlServerBrowser("TEST", port: 0);
+
+        using var server = CreateBrowserTestServer(options);
+        await server.StartAsync();
+        var tcpPort = Assert.Single(server.Ports);
+
+        var response = await SendSqlServerBrowserRequestAsync(server.SqlServerBrowserPort!.Value, [requestType]);
+
+        Assert.Contains(";InstanceName;TEST;", response);
+        Assert.EndsWith($";tcp;{tcpPort};;", response);
+    }
+
+    [Fact]
+    public async Task SqlServerBrowser_UnknownInstance_DoesNotAnswer()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.EnableSqlServerBrowser("TEST", port: 0);
+
+        using var server = CreateBrowserTestServer(options);
+        await server.StartAsync();
+
+        await Assert.ThrowsAsync<TimeoutException>(() => SendSqlServerBrowserRequestAsync(server.SqlServerBrowserPort!.Value, [0x04, .. "OTHER"u8, 0x00], TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
+    public async Task SqlServerBrowser_Hosted_AdvertisesKestrelPort()
+    {
+        int browserPort;
+        using (var probe = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+        {
+            browserPort = ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
+        }
+
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.AddTdsServer(options =>
+        {
+            options.AddTcpListener(0, IPAddress.Loopback);
+            options.EnableSqlServerBrowser("HOSTED", browserPort);
+        });
+
+        await using var app = builder.Build();
+        app.MapTdsHandlers(
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await app.StartAsync();
+        try
+        {
+            var response = await SendSqlServerBrowserRequestAsync(browserPort, [0x04, .. "HOSTED"u8, 0x00]);
+            var tcpPort = int.Parse(response.Split(';')[9], CultureInfo.InvariantCulture);
+            Assert.NotEqual(0, tcpPort);
+
+            await using var connection = new SqlConnection(CreateConnectionString(tcpPort));
+            await connection.OpenAsync();
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SqlClient_InstanceName_ConnectsThroughSqlServerBrowser()
+    {
+        // SqlClient always sends its SQL Server Browser request to UDP port 1434. The test process of each target
+        // framework runs this test, so a lock file serializes them. Skip when another program owns the port.
+        await using var portLock = await AcquireFileLockAsync(Path.Combine(Path.GetTempPath(), "Meziantou.Framework.TdsServer.Tests.SqlServerBrowser.lock"));
+        if (!IsUdpPortAvailable(TdsSqlServerBrowserOptions.DefaultPort))
+        {
+            global::Xunit.Assert.Skip($"UDP port {TdsSqlServerBrowserOptions.DefaultPort} is not available");
+        }
+
+        #region TdsServer_SqlServerBrowser
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        options.EnableSqlServerBrowser("SALES"); // UDP port 1434, on 127.0.0.1
+
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            queryHandler: (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = @"127.0.0.1\SALES", // host\instance: the client asks the SQL Server Browser for the port
+            UserID = "app",
+            Password = "Password123!",
+            Encrypt = SqlConnectionEncryptOption.Optional,
+        }.ConnectionString;
+
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        #endregion
+
+        Assert.Equal(ConnectionState.Open, connection.State);
+    }
+
+    private static bool IsUdpPortAvailable(int port)
+    {
+        try
+        {
+            using var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
+            return true;
+        }
+        catch (SocketException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<FileStream> AcquireFileLockAsync(string path)
+    {
+        var deadline = DateTime.UtcNow.AddMinutes(1);
+        while (true)
+        {
+            try
+            {
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+            }
+        }
+    }
+
+    private static TdsServer CreateBrowserTestServer(TdsServerOptions options)
+    {
+        return new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+    }
+
+    private static async Task<string> SendSqlServerBrowserRequestAsync(int port, byte[] request, TimeSpan? timeout = null)
+    {
+        using var client = new UdpClient(AddressFamily.InterNetwork);
+        await client.SendAsync(request, new IPEndPoint(IPAddress.Loopback, port));
+        var result = await client.ReceiveAsync().WaitAsync(timeout ?? TimeSpan.FromSeconds(30));
+
+        var buffer = result.Buffer;
+        Assert.Equal(0x05, buffer[0]);
+        Assert.Equal(buffer.Length - 3, BinaryPrimitives.ReadUInt16LittleEndian(buffer.AsSpan(1)));
+        return System.Text.Encoding.ASCII.GetString(buffer, 3, buffer.Length - 3);
     }
 
     private static async Task<object[]> ReadRowAsync(TdsResultSet resultSet)
@@ -1400,6 +1575,149 @@ public sealed class TdsServerProtocolTests
 
         await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: "True"));
         _ = await Assert.ThrowsAnyAsync<SqlException>(() => connection.OpenAsync());
+    }
+
+    [Fact]
+    public async Task SqlClient_EncryptStrict_Connects()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 42)));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        // Strict encryption always validates the certificate, so the client pins the self-signed one
+        await using var connection = new SqlConnection(CreateStrictConnectionString(port, tlsCertificateFiles.PemCertificatePath));
+        await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await connection.OpenAsync();
+            return true;
+        });
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            Assert.Equal(42, Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture));
+        }
+    }
+
+    [Fact]
+    public async Task SqlClient_EncryptStrict_AndPreLoginEncryption_WorkOnSameEndpoint()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions
+        {
+            TlsPemCertificatePath = tlsCertificateFiles.PemCertificatePath,
+            TlsPemPrivateKeyPath = tlsCertificateFiles.PemPrivateKeyPath,
+            RequireEncryption = true,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1)));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        var strictResult = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateStrictConnectionString(port, tlsCertificateFiles.PemCertificatePath));
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            return Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
+        });
+        var mandatoryResult = await ExecuteScalarWithTransientSqlRetryAsync(port, encrypt: "Mandatory");
+
+        Assert.Equal(1, strictResult);
+        Assert.Equal(1, mandatoryResult);
+    }
+
+    [Fact]
+    public async Task SqlClient_EncryptStrict_WhenServerDoesNotSupportEncryption_Throws()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateStrictConnectionString(port, tlsCertificateFiles.PemCertificatePath));
+        _ = await Assert.ThrowsAnyAsync<SqlException>(() => connection.OpenAsync());
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5398:Avoid hardcoded SslProtocols values", Justification = "The test checks that the server accepts TLS 1.3")]
+    public async Task RawClient_EncryptStrict_NegotiatesTds80AlpnOverTls13()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsMacOS(), "SslStream does not support TLS 1.3 on macOS.");
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows() && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348), "TLS 1.3 requires Windows 11 or Windows Server 2022.");
+
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+        using var serverCertificate = X509Certificate2.CreateFromPem(File.ReadAllText(tlsCertificateFiles.PemCertificatePath));
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
+        await using var sslStream = new SslStream(client.GetStream());
+        await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+        {
+            TargetHost = "localhost",
+            EnabledSslProtocols = SslProtocols.Tls13,
+            ApplicationProtocols = [new SslApplicationProtocol("tds/8.0")],
+            RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => certificate is not null && certificate.GetCertHashString() == serverCertificate.Thumbprint,
+        }, cancellationTokenSource.Token);
+
+        Assert.Equal(SslProtocols.Tls13, sslStream.SslProtocol);
+        Assert.Equal("tds/8.0", sslStream.NegotiatedApplicationProtocol.ToString());
+
+        // The PRELOGIN exchange happens inside the TLS session, and the server does not offer a second TLS upgrade
+        await sslStream.WriteAsync(RawTdsClient.CreateTdsMessage(0x12, [0x01, 0x00, 0x06, 0x00, 0x01, 0xFF, 0x00]), cancellationTokenSource.Token);
+        var (preLoginType, preLoginPayload) = await RawTdsClient.ReadTdsMessageAsync(sslStream, cancellationTokenSource.Token);
+        Assert.Equal(0x12, preLoginType);
+        Assert.Equal(0x02, preLoginPayload[6]); // ENCRYPT_NOT_SUP
+
+        await sslStream.WriteAsync(RawTdsClient.CreateTdsMessage(0x10, new byte[94]), cancellationTokenSource.Token);
+        var (loginType, loginPayload) = await RawTdsClient.ReadTdsMessageAsync(sslStream, cancellationTokenSource.Token);
+        Assert.Equal(0x04, loginType);
+        Assert.Contains((byte)0xAD, loginPayload); // LOGINACK
     }
 
     [Fact]
@@ -2505,9 +2823,911 @@ public sealed class TdsServerProtocolTests
         #endregion
     }
 
+    [Fact]
+    public async Task Documentation_RecordsAffected()
+    {
+        #region TdsServer_RecordsAffected
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            if (context.CommandText?.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return ValueTask.FromResult(new TdsQueryResult { RecordsAffected = 3 });
+            }
+
+            return ValueTask.FromResult(new TdsQueryResult());
+        };
+        #endregion
+
+        await using var connection = await OpenConnectionAsync(query);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE customers SET Name = 'Bob'";
+        Assert.Equal(3, await command.ExecuteNonQueryAsync());
+
+        command.CommandText = "DELETE FROM nothing";
+        Assert.Equal(-1, await command.ExecuteNonQueryAsync());
+    }
+
+    [Fact]
+    public async Task Documentation_OutputParameters()
+    {
+        #region TdsServer_OutputParameters
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            if (context.RequestType == TdsQueryRequestType.Rpc && string.Equals(context.ProcedureName, "CreateCustomer", StringComparison.OrdinalIgnoreCase))
+            {
+                var result = new TdsQueryResult
+                {
+                    RecordsAffected = 1,
+                    ReturnValue = 0,
+                };
+
+                result.OutputParameters.Add(new TdsOutputParameter("@id", TdsColumnType.Int32, 42));
+                return ValueTask.FromResult(result);
+            }
+
+            return ValueTask.FromResult(new TdsQueryResult());
+        };
+        #endregion
+
+        await using var connection = await OpenConnectionAsync(query);
+
+        #region TdsServer_ReadOutputParameters
+        await using var command = connection.CreateCommand();
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = "CreateCustomer";
+        command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 100) { Value = "Alice" });
+        var id = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Direction = ParameterDirection.Output });
+        var returnValue = command.Parameters.Add(new SqlParameter("@return", SqlDbType.Int) { Direction = ParameterDirection.ReturnValue });
+
+        var recordsAffected = await command.ExecuteNonQueryAsync();
+        Assert.Equal(1, recordsAffected);
+        Assert.Equal(42, id.Value);
+        Assert.Equal(0, returnValue.Value);
+        #endregion
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_RowsAreNotCountedAsRecordsAffected()
+    {
+        var statementCounts = new List<int>();
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            var resultSet = new TdsResultSet();
+            resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+            resultSet.Rows.Add([1]);
+            resultSet.Rows.Add([2]);
+
+            var result = new TdsQueryResult();
+            result.ResultSets.Add(resultSet);
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Value FROM numbers";
+        command.StatementCompleted += (sender, e) => statementCounts.Add(e.RecordCount);
+
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            Assert.True(await reader.ReadAsync());
+            Assert.True(await reader.ReadAsync());
+            Assert.False(await reader.ReadAsync());
+            Assert.False(await reader.NextResultAsync());
+            Assert.Equal(-1, reader.RecordsAffected);
+        }
+
+        Assert.Equal(-1, await command.ExecuteNonQueryAsync());
+        Assert.Equal([2, 2], statementCounts);
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSetsFollowedByRecordsAffected_ReturnsBoth()
+    {
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            var result = new TdsQueryResult { RecordsAffected = 5 };
+            for (var i = 0; i < 2; i++)
+            {
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([i]);
+                result.ResultSets.Add(resultSet);
+            }
+
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE numbers SET Value = 0 OUTPUT inserted.Value";
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(0, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+        Assert.False(await reader.NextResultAsync());
+        await reader.CloseAsync();
+        Assert.Equal(5, reader.RecordsAffected);
+    }
+
+    [Fact]
+    public async Task SqlClient_StoredProcedure_ResultSetAndOutputParameters()
+    {
+        TdsQueryContext? capturedContext = null;
+        var largeText = new string('x', 20_000);
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            capturedContext = context;
+            var resultSet = new TdsResultSet();
+            resultSet.Columns.Add(new TdsColumn("Name", TdsColumnType.NVarChar));
+            resultSet.Rows.Add(["Alice"]);
+
+            var result = new TdsQueryResult { ReturnValue = 7 };
+            result.ResultSets.Add(resultSet);
+            result.OutputParameters.Add(new TdsOutputParameter("count", TdsColumnType.Int64, 12L));
+            result.OutputParameters.Add(new TdsOutputParameter("@total", TdsColumnType.Decimal, 12.345m));
+            result.OutputParameters.Add(new TdsOutputParameter("@text", TdsColumnType.NVarChar, largeText));
+            result.OutputParameters.Add(new TdsOutputParameter("@missing", TdsColumnType.Guid, DBNull.Value));
+            result.OutputParameters.Add(new TdsOutputParameter("@unknown", TdsColumnType.Int32, 1));
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = "GetCustomers";
+        var input = command.Parameters.Add(new SqlParameter("@filter", SqlDbType.NVarChar, 50) { Value = "A%" });
+        var count = command.Parameters.Add(new SqlParameter("@count", SqlDbType.BigInt) { Direction = ParameterDirection.InputOutput, Value = 1L });
+        var total = command.Parameters.Add(new SqlParameter("@total", SqlDbType.Decimal) { Direction = ParameterDirection.Output, Precision = 38, Scale = 3 });
+        var text = command.Parameters.Add(new SqlParameter("@text", SqlDbType.NVarChar, -1) { Direction = ParameterDirection.Output });
+        var missing = command.Parameters.Add(new SqlParameter("@missing", SqlDbType.UniqueIdentifier) { Direction = ParameterDirection.Output });
+        var returnValue = command.Parameters.Add(new SqlParameter("@return", SqlDbType.Int) { Direction = ParameterDirection.ReturnValue });
+
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal("Alice", reader.GetString(0));
+            Assert.False(await reader.ReadAsync());
+        }
+
+        Assert.Equal(12L, count.Value);
+        Assert.Equal(12.345m, total.Value);
+        Assert.Equal(largeText, text.Value);
+        Assert.Equal(DBNull.Value, missing.Value);
+        Assert.Equal(7, returnValue.Value);
+        Assert.Equal("A%", input.Value);
+
+        Assert.NotNull(capturedContext);
+        Assert.False(capturedContext.Parameters.Single(parameter => parameter.Name == "@filter").IsOutput);
+        Assert.True(capturedContext.Parameters.Single(parameter => parameter.Name == "@count").IsOutput);
+        Assert.True(capturedContext.Parameters.Single(parameter => parameter.Name == "@total").IsOutput);
+    }
+
+    [Fact]
+    public async Task SqlClient_ParameterizedQuery_OutputParameter()
+    {
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            var result = new TdsQueryResult { RecordsAffected = 1 };
+            if (context.Parameters.FirstOrDefault(parameter => parameter.Name == "@id") is { IsOutput: true })
+            {
+                result.OutputParameters.Add(new TdsOutputParameter("@id", TdsColumnType.Int32, 5));
+            }
+
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO customers (Name) VALUES (@name); SET @id = SCOPE_IDENTITY()";
+        command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 100) { Value = "Alice" });
+        var id = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Direction = ParameterDirection.Output });
+
+        Assert.Equal(1, await command.ExecuteNonQueryAsync());
+        Assert.Equal(5, id.Value);
+    }
+
+    [Fact]
+    public async Task SqlClient_Transaction_WithoutHandler_CommitsAndRollsBack()
+    {
+        var transactionIds = new List<long?>();
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            transactionIds.Add(context.TransactionId);
+            return ValueTask.FromResult(new TdsQueryResult { RecordsAffected = 1 });
+        });
+
+        await using (var transaction = (SqlTransaction)await connection.BeginTransactionAsync())
+        {
+            await using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "UPDATE customers SET Name = 'Bob'";
+            Assert.Equal(1, await command.ExecuteNonQueryAsync());
+            await transaction.CommitAsync();
+        }
+
+        await using (var transaction = (SqlTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable))
+        {
+            await using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "UPDATE customers SET Name = 'Bob'";
+            Assert.Equal(1, await command.ExecuteNonQueryAsync());
+            await transaction.RollbackAsync();
+        }
+
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE customers SET Name = 'Bob'";
+            Assert.Equal(1, await command.ExecuteNonQueryAsync());
+        }
+
+        Assert.Equal(ConnectionState.Open, connection.State);
+        Assert.HasCount(3, transactionIds);
+        Assert.NotNull(transactionIds[0]);
+        Assert.NotNull(transactionIds[1]);
+        Assert.NotEqual(transactionIds[0], transactionIds[1]);
+        Assert.Null(transactionIds[2]);
+    }
+
+    [Fact]
+    public async Task SqlClient_Mars_SessionsShareTheTransactionOfTheConnection()
+    {
+        var transactionIds = new ConcurrentQueue<long?>();
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) =>
+            {
+                transactionIds.Enqueue(context.TransactionId);
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([1]);
+                resultSet.Rows.Add([2]);
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30) + ";MultipleActiveResultSets=True");
+        await connection.OpenAsync();
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+
+        await using var first = connection.CreateCommand();
+        first.Transaction = transaction;
+        first.CommandText = "SELECT Value FROM first";
+        await using var second = connection.CreateCommand();
+        second.Transaction = transaction;
+        second.CommandText = "SELECT Value FROM second";
+
+        await using (var firstReader = await first.ExecuteReaderAsync())
+        await using (var secondReader = await second.ExecuteReaderAsync())
+        {
+            Assert.True(await firstReader.ReadAsync());
+            Assert.True(await secondReader.ReadAsync());
+        }
+
+        await transaction.CommitAsync();
+
+        var ids = transactionIds.ToArray();
+        Assert.HasCount(2, ids);
+        Assert.NotNull(ids[0]);
+        Assert.Equal(ids[0], ids[1]);
+    }
+
+    [Fact]
+    public async Task Documentation_Transactions()
+    {
+        #region TdsServer_Transactions
+        var events = new ConcurrentQueue<string>();
+        var options = new TdsServerOptions();
+        options.TransactionHandler = (context, cancellationToken) =>
+        {
+            events.Enqueue($"{context.RequestType} {context.SavepointName} {context.IsolationLevel}".TrimEnd());
+            if (context.RequestType is TdsTransactionRequestType.Begin && context.IsolationLevel is IsolationLevel.Snapshot)
+            {
+                return ValueTask.FromResult<TdsQueryError?>(new TdsQueryError
+                {
+                    Number = 3952,
+                    Message = "Snapshot isolation transaction failed accessing database 'master' because snapshot isolation is not allowed in this database.",
+                });
+            }
+
+            return ValueTask.FromResult<TdsQueryError?>(null);
+        };
+        #endregion
+
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+        await connection.OpenAsync();
+
+        var exception = await Assert.ThrowsAsync<SqlException>(async () => await connection.BeginTransactionAsync(IsolationLevel.Snapshot));
+        Assert.Equal(3952, exception.Number);
+        Assert.Equal(ConnectionState.Open, connection.State);
+
+        await using (var transaction = (SqlTransaction)await connection.BeginTransactionAsync(IsolationLevel.ReadCommitted))
+        {
+            transaction.Save("first");
+            transaction.Save("second");
+            transaction.Rollback("first");
+            transaction.Save("third");
+            Assert.Throws<SqlException>(() => transaction.Rollback("second"));
+            transaction.Commit();
+        }
+
+        Assert.Equal(
+            [
+                "Begin  Snapshot",
+                "Begin  ReadCommitted",
+                "Save first Unspecified",
+                "Save second Unspecified",
+                "Rollback first Unspecified",
+                "Save third Unspecified",
+                "Commit  Unspecified",
+            ],
+            events.ToArray());
+    }
+
+    [Fact]
+    public async Task RawClient_Transaction_RolledBackWhenTheConnectionCloses()
+    {
+        var events = new ConcurrentQueue<TdsTransactionContext>();
+        var closingRollback = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.TransactionHandler = (context, cancellationToken) =>
+        {
+            events.Enqueue(context);
+            if (context.IsConnectionClosing)
+            {
+                closingRollback.TrySetResult();
+            }
+
+            return ValueTask.FromResult<TdsQueryError?>(null);
+        };
+
+        var responses = await RawTdsClient.SendTransactionManagerRequestsAsync(options, CreateTransactionManagerPayload(5, [0x02, 0x00]));
+        await closingRollback.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        var response = Assert.Single(responses);
+        Assert.Equal(0xE3, response[0]); // ENVCHANGE
+        Assert.Equal(8, response[3]); // Begin Transaction
+        var transactionId = BinaryPrimitives.ReadInt64LittleEndian(response.AsSpan(5, 8));
+
+        var contexts = events.ToArray();
+        Assert.HasCount(2, contexts);
+        Assert.Equal(TdsTransactionRequestType.Begin, contexts[0].RequestType);
+        Assert.Equal(IsolationLevel.ReadCommitted, contexts[0].IsolationLevel);
+        Assert.Equal(transactionId, contexts[0].TransactionId);
+        Assert.False(contexts[0].IsConnectionClosing);
+        Assert.Equal(TdsTransactionRequestType.Rollback, contexts[1].RequestType);
+        Assert.Equal(transactionId, contexts[1].TransactionId);
+        Assert.True(contexts[1].IsConnectionClosing);
+    }
+
+    [Fact]
+    public async Task RawClient_TransactionManager_InvalidRequests_ReturnErrorsAndKeepTheConnectionOpen()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        var responses = await RawTdsClient.SendTransactionManagerRequestsAsync(
+            options,
+            CreateTransactionManagerPayload(7, [0x00, 0x00]), // commit without a transaction
+            CreateTransactionManagerPayload(8, [0x00, 0x00]), // rollback without a transaction
+            CreateTransactionManagerPayload(9, [0x02, (byte)'s', 0x00]), // savepoint without a transaction
+            CreateTransactionManagerPayload(0, []), // TM_GET_DTC_ADDRESS
+            CreateTransactionManagerPayload(5, [0x02, 0x04, (byte)'t']), // truncated transaction name
+            CreateTransactionManagerPayload(5, [0x00, 0x00]), // begin
+            CreateTransactionManagerPayload(5, [0x00, 0x00]), // begin while a transaction is active
+            CreateTransactionManagerPayload(8, [0x04, (byte)'s', 0x00, (byte)'p', 0x00, 0x00])); // rollback to an unknown savepoint
+
+        Assert.Equal([3902u, 3903u, 628u, 50001u, 50001u, 0u, 50006u, 6401u], responses.Select(GetErrorNumber).ToArray());
+
+        static uint GetErrorNumber(byte[] response)
+        {
+            return response[0] is 0xAA ? BinaryPrimitives.ReadUInt32LittleEndian(response.AsSpan(3, 4)) : 0u;
+        }
+    }
+
+    private static byte[] CreateTransactionManagerPayload(ushort requestType, byte[] data)
+    {
+        // ALL_HEADERS with a transaction descriptor header, as SqlClient sends it.
+        var payload = new byte[22 + 2 + data.Length];
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), 22);
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(4, 4), 18);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(8, 2), 2);
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(18, 4), 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(22, 2), requestType);
+        data.CopyTo(payload.AsSpan(24));
+        return payload;
+    }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The server is disposed with the connection.")]
+    private static async Task<SqlConnection> OpenConnectionAsync(TdsQueryDelegate query)
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), query);
+        var connection = new SqlConnection();
+        connection.Disposed += (sender, e) => server.Dispose();
+        try
+        {
+            await server.StartAsync();
+            connection.ConnectionString = CreateConnectionString(Assert.Single(server.Ports), connectTimeout: 30);
+            await connection.OpenAsync();
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync();
+            throw;
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_BulkLoad()
+    {
+        #region TdsServer_BulkLoad
+        var orders = new List<IReadOnlyList<object?>>();
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        options.BulkLoadHandler = new TdsBulkLoadHandler
+        {
+            // SqlBulkCopy asks for the columns of the destination table first
+            GetTableColumns = (context, cancellationToken) =>
+            {
+                IReadOnlyList<TdsColumn>? columns = context.TableName == "Orders"
+                    ? [new TdsColumn("Id", TdsColumnType.Int32, isNullable: false), new TdsColumn("Customer", TdsColumnType.NVarChar), new TdsColumn("Amount", TdsColumnType.Decimal)]
+                    : null; // the table does not exist
+                return ValueTask.FromResult(columns);
+            },
+
+            // Then it sends the rows, one call per batch
+            LoadRows = (context, cancellationToken) =>
+            {
+                lock (orders)
+                {
+                    orders.AddRange(context.Rows);
+                }
+
+                return ValueTask.FromResult(TdsBulkLoadResult.Success());
+            },
+        };
+
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            queryHandler: (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+
+        using var table = new DataTable();
+        table.Columns.Add("Id", typeof(int));
+        table.Columns.Add("Customer", typeof(string));
+        table.Columns.Add("Amount", typeof(decimal));
+        table.Rows.Add(1, "Alice", 12.5m);
+        table.Rows.Add(2, "Bob", 7m);
+
+        await using var connection = new SqlConnection($"Server=127.0.0.1,{server.Ports[0]};User ID=app;Password=Password123!;Encrypt=Optional");
+        await connection.OpenAsync();
+
+        using var bulkCopy = new SqlBulkCopy(connection) { DestinationTableName = "dbo.Orders" };
+        await bulkCopy.WriteToServerAsync(table);
+
+        Assert.HasCount(2, orders);
+        Assert.Equal(1, orders[0][0]);
+        Assert.Equal("Alice", orders[0][1]);
+        Assert.Equal(12.5m, orders[0][2]);
+        #endregion
+    }
+
+    [Fact]
+    public async Task SqlClient_BulkCopy_TypedColumns_InBatches_ReachTheBulkLoadHandler()
+    {
+        TdsColumn[] columns =
+        [
+            new TdsColumn("Id", TdsColumnType.Int32, isNullable: false),
+            new TdsColumn("Count", TdsColumnType.Int64),
+            new TdsColumn("Flag", TdsColumnType.Boolean),
+            new TdsColumn("Ratio", TdsColumnType.Double),
+            new TdsColumn("Amount", TdsColumnType.Decimal),
+            new TdsColumn("Name", TdsColumnType.NVarChar),
+            new TdsColumn("Data", TdsColumnType.Binary),
+            new TdsColumn("Key", TdsColumnType.Guid),
+            new TdsColumn("Created", TdsColumnType.DateTime2),
+            new TdsColumn("Updated", TdsColumnType.DateTimeOffset),
+        ];
+
+        var tableContexts = new ConcurrentQueue<TdsBulkLoadTableContext>();
+        var loads = new ConcurrentQueue<TdsBulkLoadContext>();
+        var queryCount = 0;
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.BulkLoadHandler = new TdsBulkLoadHandler
+        {
+            GetTableColumns = (context, cancellationToken) =>
+            {
+                tableContexts.Enqueue(context);
+                return ValueTask.FromResult<IReadOnlyList<TdsColumn>?>(columns);
+            },
+            LoadRows = (context, cancellationToken) =>
+            {
+                loads.Enqueue(context);
+                return ValueTask.FromResult(TdsBulkLoadResult.Success());
+            },
+        };
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master", CreateUserContext("loader"))),
+            (context, cancellationToken) =>
+            {
+                Interlocked.Increment(ref queryCount);
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        var longName = new string('x', 10_000);
+        var key = Guid.NewGuid();
+        var created = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Unspecified).AddTicks(1234567);
+        var updated = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.FromHours(2));
+        using var table = new DataTable();
+        foreach (var (name, type) in new[] { ("Id", typeof(int)), ("Count", typeof(long)), ("Flag", typeof(bool)), ("Ratio", typeof(double)), ("Amount", typeof(decimal)), ("Name", typeof(string)), ("Data", typeof(byte[])), ("Key", typeof(Guid)), ("Created", typeof(DateTime)), ("Updated", typeof(DateTimeOffset)) })
+        {
+            table.Columns.Add(name, type);
+        }
+
+        table.Rows.Add(1, 10L, true, 0.5, 123.456m, "Alice", new byte[] { 1, 2, 3 }, key, created, updated);
+        table.Rows.Add(2, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value);
+        table.Rows.Add(3, long.MaxValue, false, -1.25, -0.000001m, longName, new byte[9000], key, created, updated);
+        table.Rows.Add(4, 0L, true, 0d, 0m, string.Empty, Array.Empty<byte>(), key, created, updated);
+        table.Rows.Add(5, -1L, false, 1d, 1m, "Eve", new byte[] { 255 }, key, created, updated);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+        await connection.OpenAsync();
+
+        using (var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock, externalTransaction: null))
+        {
+            bulkCopy.DestinationTableName = "[sales].[Order Lines]";
+            bulkCopy.BatchSize = 2;
+            await bulkCopy.WriteToServerAsync(table);
+        }
+
+        var tableContext = Assert.Single(tableContexts);
+        Assert.Equal("Order Lines", tableContext.TableName);
+        Assert.Equal("sales", tableContext.SchemaName);
+        Assert.Null(tableContext.DatabaseName);
+        Assert.Equal("loader", tableContext.UserContext?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+        // Five rows in batches of two
+        Assert.Equal([2, 2, 1], loads.Select(load => load.Rows.Count));
+        var load = loads.First();
+        Assert.Equal("Order Lines", load.TableName);
+        Assert.Equal("sales", load.SchemaName);
+        Assert.Equal(["KEEP_NULLS", "TABLOCK"], load.Options);
+        Assert.Equal(columns.Select(column => (column.Name, column.ColumnType, column.IsNullable)), load.Columns.Select(column => (column.Name, column.ColumnType, column.IsNullable)));
+
+        var rows = loads.SelectMany(load => load.Rows).ToList();
+        Assert.Equal([1, 10L, true, 0.5, 123.456m, "Alice", new byte[] { 1, 2, 3 }, key, created, updated], rows[0]);
+        Assert.Equal([2, null, null, null, null, null, null, null, null, null], rows[1]);
+        Assert.Equal(longName, rows[2][5]);
+        Assert.Equal(new byte[9000], rows[2][6]);
+        Assert.Equal(-0.000001m, rows[2][4]);
+        Assert.Equal(string.Empty, rows[3][5]);
+        Assert.Equal(Array.Empty<byte>(), rows[3][6]);
+
+        // The bulk copy requests do not reach the query handler, and the connection keeps serving queries
+        Assert.Equal(0, queryCount);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        _ = await command.ExecuteScalarAsync();
+        Assert.Equal(1, queryCount);
+    }
+
+    [Fact]
+    public async Task SqlClient_BulkCopy_UnknownTable_ThrowsInvalidObjectName()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.BulkLoadHandler = new TdsBulkLoadHandler
+        {
+            GetTableColumns = (context, cancellationToken) => ValueTask.FromResult<IReadOnlyList<TdsColumn>?>(null),
+            LoadRows = (context, cancellationToken) => throw new InvalidOperationException("No rows expected"),
+        };
+
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var table = new DataTable();
+        table.Columns.Add("Id", typeof(int));
+        table.Rows.Add(1);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+        using var bulkCopy = new SqlBulkCopy(connection) { DestinationTableName = "Missing" };
+        // SqlBulkCopy wraps the error of the server, as it does with SQL Server
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => bulkCopy.WriteToServerAsync(table));
+        var sqlException = Assert.IsType<SqlException>(exception.InnerException);
+        Assert.Equal(208, sqlException.Number);
+        Assert.Equal("Invalid object name 'Missing'.", sqlException.Message);
+        Assert.Equal(ConnectionState.Open, connection.State);
+    }
+
+    [Fact]
+    public async Task SqlClient_BulkCopy_HandlerError_IsThrownAndTheConnectionStaysUsable()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.BulkLoadHandler = new TdsBulkLoadHandler
+        {
+            GetTableColumns = (context, cancellationToken) => ValueTask.FromResult<IReadOnlyList<TdsColumn>?>([new TdsColumn("Id", TdsColumnType.Int32)]),
+            LoadRows = (context, cancellationToken) => ValueTask.FromResult(TdsBulkLoadResult.FromError(new TdsQueryError { Number = 2627, Message = "Violation of PRIMARY KEY constraint." })),
+        };
+
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 42)));
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var table = new DataTable();
+        table.Columns.Add("Id", typeof(int));
+        table.Rows.Add(1);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+        using (var bulkCopy = new SqlBulkCopy(connection) { DestinationTableName = "T" })
+        {
+            var exception = await Assert.ThrowsAsync<SqlException>(() => bulkCopy.WriteToServerAsync(table));
+            Assert.Equal(2627, exception.Number);
+            Assert.Equal("Violation of PRIMARY KEY constraint.", exception.Message);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 42";
+        Assert.Equal(42, await command.ExecuteScalarAsync());
+    }
+
+    [Fact]
+    public async Task RawClient_BulkLoad_WithoutBulkLoadHandler_ReturnsAnError()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+
+        using var client = await RawTdsConnection.ConnectAsync(Assert.Single(server.Ports));
+        await client.SendMessageAsync(0x10, RawTdsConnection.CreateLogin7());
+        _ = await client.ReadMessageAsync();
+
+        // A BULK LOAD message with no rows: a DONE token
+        await client.SendMessageAsync(0x07, [0xFD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        var (packetType, payload) = await client.ReadMessageAsync();
+        Assert.Equal(0x04, packetType);
+        Assert.Equal(50001u, RawTdsConnection.GetErrorNumber(payload));
+    }
+
+    [Theory]
+    [InlineData("Optional")]
+    [InlineData("True")]
+    public async Task SqlClient_Mars_TwoReadersAreReadAtTheSameTime(string encrypt)
+    {
+        const int RowCount = 2000;
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+        var options = new TdsServerOptions
+        {
+            // Optional downgrades to clear text after the login; True keeps SMP inside TLS
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                // A result large enough to span many packets, so the server has to wait for the client to read it
+                var prefix = context.CommandText!.Replace("SELECT ", "", StringComparison.Ordinal);
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.NVarChar));
+                for (var i = 0; i < RowCount; i++)
+                {
+                    resultSet.Rows.Add([$"{prefix}-{i.ToString(CultureInfo.InvariantCulture)}-{new string('-', 40)}"]);
+                }
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: encrypt, connectTimeout: 30) + ";MultipleActiveResultSets=True");
+        await connection.OpenAsync();
+
+        await using var command1 = connection.CreateCommand();
+        command1.CommandText = "SELECT A";
+        await using var reader1 = await command1.ExecuteReaderAsync();
+        Assert.True(await reader1.ReadAsync());
+        Assert.StartsWith("A-0-", reader1.GetString(0), StringComparison.Ordinal);
+
+        // The second reader opens while the first one has most of its rows left
+        await using var command2 = connection.CreateCommand();
+        command2.CommandText = "SELECT B";
+        await using var reader2 = await command2.ExecuteReaderAsync();
+        for (var i = 1; i < RowCount; i++)
+        {
+            Assert.True(await reader1.ReadAsync());
+            Assert.True(await reader2.ReadAsync());
+            Assert.StartsWith($"A-{i.ToString(CultureInfo.InvariantCulture)}-", reader1.GetString(0), StringComparison.Ordinal);
+            Assert.StartsWith($"B-{(i - 1).ToString(CultureInfo.InvariantCulture)}-", reader2.GetString(0), StringComparison.Ordinal);
+        }
+
+        Assert.False(await reader1.ReadAsync());
+        Assert.True(await reader2.ReadAsync());
+        Assert.False(await reader2.ReadAsync());
+        await reader1.CloseAsync();
+        await reader2.CloseAsync();
+
+        await using var command3 = connection.CreateCommand();
+        command3.CommandText = "SELECT C";
+        Assert.Equal("C-0-" + new string('-', 40), await command3.ExecuteScalarAsync());
+    }
+
+    [Fact]
+    public async Task RawClient_Mars_SessionsAreServedIndependently()
+    {
+        var secondRequestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            async (context, cancellationToken) =>
+            {
+                if (context.CommandText == "first")
+                {
+                    // Without MARS, this request would block the connection and the second one would never be read
+                    await secondRequestReceived.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+                }
+                else
+                {
+                    secondRequestReceived.TrySetResult();
+                }
+
+                return CreateScalarResultSet(TdsColumnType.NVarChar, context.CommandText!);
+            });
+
+        await server.StartAsync();
+
+        using var client = await RawTdsConnection.ConnectAsync(Assert.Single(server.Ports), mars: true);
+        await client.SendMessageAsync(0x10, RawTdsConnection.CreateLogin7());
+        _ = await client.ReadMessageAsync();
+
+        const byte Syn = 0x01, Fin = 0x04, Data = 0x08;
+        await client.SendSmpAsync(Syn, sessionId: 0, sequenceNumber: 0, window: 4);
+        await client.SendSmpAsync(Syn, sessionId: 1, sequenceNumber: 0, window: 4);
+        await client.SendSmpAsync(Data, sessionId: 0, sequenceNumber: 1, window: 4, RawTdsConnection.CreateTdsMessage(0x01, RawTdsConnection.CreateSqlBatch("first")));
+        await client.SendSmpAsync(Data, sessionId: 1, sequenceNumber: 1, window: 4, RawTdsConnection.CreateTdsMessage(0x01, RawTdsConnection.CreateSqlBatch("second")));
+
+        // The first request completes only once the second one is handled, so both are answered only if the sessions
+        // run independently. Once the second request unblocks the first one, they can be answered in any order.
+        var responses = new[] { await client.ReadSmpAsync(), await client.ReadSmpAsync() }.OrderBy(response => response.SessionId).ToArray();
+        var firstResponse = responses[0];
+        Assert.Equal((Data, (ushort)0, 1u), (firstResponse.Flags, firstResponse.SessionId, firstResponse.SequenceNumber));
+        Assert.Equal(0x04, firstResponse.Data[0]); // a TDS packet of tabular result
+        Assert.True(ContainsUtf16(firstResponse.Data, "first"));
+
+        var secondResponse = responses[1];
+        Assert.Equal((Data, (ushort)1, 1u), (secondResponse.Flags, secondResponse.SessionId, secondResponse.SequenceNumber));
+        Assert.True(ContainsUtf16(secondResponse.Data, "second"));
+
+        // Closing a session: the server acknowledges the FIN with its own
+        await client.SendSmpAsync(Fin, sessionId: 0, sequenceNumber: 1, window: 5);
+        var fin = await client.ReadSmpAsync();
+        Assert.Equal((Fin, (ushort)0), (fin.Flags, fin.SessionId));
+
+        // The other session keeps working
+        await client.SendSmpAsync(Data, sessionId: 1, sequenceNumber: 2, window: 5, RawTdsConnection.CreateTdsMessage(0x01, RawTdsConnection.CreateSqlBatch("third")));
+        var thirdResponse = await client.ReadSmpAsync();
+        Assert.Equal((Data, (ushort)1, 2u), (thirdResponse.Flags, thirdResponse.SessionId, thirdResponse.SequenceNumber));
+        Assert.True(ContainsUtf16(thirdResponse.Data, "third"));
+    }
+
+    [Fact]
+    public async Task RawClient_Sspi_TheAuthenticationHandlerTakesPartInTheExchange()
+    {
+        var receivedTokens = new ConcurrentQueue<(bool IsIntegratedSecurity, string Token)>();
+        using var state = new DisposableState();
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        var userContextTask = new TaskCompletionSource<ClaimsPrincipal?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) =>
+            {
+                var token = System.Text.Encoding.ASCII.GetString(context.SspiToken.Span);
+                receivedTokens.Enqueue((context.IsIntegratedSecurity, token));
+                context.Items[typeof(DisposableState)] = state;
+                return ValueTask.FromResult(token switch
+                {
+                    "negotiate" => TdsAuthenticationResult.ContinueSspi("challenge"u8.ToArray()),
+                    "authenticate" => TdsAuthenticationResult.Success("final"u8.ToArray(), "master", CreateUserContext("DOMAIN\\user")),
+                    _ => TdsAuthenticationResult.Fail("Unexpected SSPI token"),
+                });
+            },
+            (context, cancellationToken) =>
+            {
+                userContextTask.TrySetResult(context.UserContext);
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        using var client = await RawTdsConnection.ConnectAsync(Assert.Single(server.Ports));
+        await client.SendMessageAsync(0x10, RawTdsConnection.CreateLogin7(sspi: "negotiate"u8.ToArray()));
+
+        // The server sends the handler's token in an SSPI token (0xED), and waits for the client's answer
+        var (packetType, challenge) = await client.ReadMessageAsync();
+        Assert.Equal(0x04, packetType);
+        Assert.Equal([0xED, 9, 0, .. "challenge"u8], challenge);
+        Assert.False(state.IsDisposed);
+
+        await client.SendMessageAsync(0x11, "authenticate"u8.ToArray());
+        var (_, loginResponse) = await client.ReadMessageAsync();
+        Assert.Equal([0xED, 5, 0, .. "final"u8], loginResponse[..8]);
+        Assert.Equal(0xAD, loginResponse[8]); // LOGINACK follows the last token
+        Assert.Equal([(true, "negotiate"), (true, "authenticate")], receivedTokens);
+        Assert.True(state.IsDisposed);
+
+        await client.SendMessageAsync(0x01, RawTdsConnection.CreateSqlBatch("SELECT 1"));
+        var userContext = await userContextTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("DOMAIN\\user", userContext?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+    }
+
+    [Fact]
+    public async Task RawClient_Sspi_ClientThatAnswersWithAnotherMessage_IsRejected()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.ContinueSspi("challenge"u8.ToArray())),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        using var client = await RawTdsConnection.ConnectAsync(Assert.Single(server.Ports));
+        await client.SendMessageAsync(0x10, RawTdsConnection.CreateLogin7(sspi: "negotiate"u8.ToArray()));
+        _ = await client.ReadMessageAsync();
+
+        await client.SendMessageAsync(0x01, RawTdsConnection.CreateSqlBatch("SELECT 1"));
+        var (_, response) = await client.ReadMessageAsync();
+        Assert.Equal(18456u, RawTdsConnection.GetErrorNumber(response));
+    }
+
+    private static bool ContainsUtf16(byte[] data, string value) => data.AsSpan().IndexOf(System.Text.Encoding.Unicode.GetBytes(value)) >= 0;
+
+    private sealed class DisposableState : IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose() => IsDisposed = true;
+    }
+
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)
     {
         return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout={connectTimeout}";
+    }
+
+    private static string CreateStrictConnectionString(int port, string serverCertificatePath)
+    {
+        return CreateConnectionString(port, encrypt: "Strict", trustServerCertificate: false, connectTimeout: 15) + $";Server Certificate={serverCertificatePath}";
     }
 
     private static TlsCertificateFiles CreateTlsCertificateFiles()

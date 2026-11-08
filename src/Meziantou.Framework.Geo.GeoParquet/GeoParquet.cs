@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Geo;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The geometries are read as <see cref="WellKnownBinary"/> reads them, with their altitudes (Z) and without the M values.
+/// The geometries are read as <see cref="WellKnownBinary"/> reads them, with their altitudes (Z) and measures (M).
 /// A <see langword="null"/> or empty geometry gives a feature without geometry. The geometry columns encoded with the
 /// native (GeoArrow) encodings throw a <see cref="FormatException"/>. The coordinate system of the column is not read:
 /// the coordinates are expected to be longitudes and latitudes (OGC:CRS84, the default of GeoParquet), and are not

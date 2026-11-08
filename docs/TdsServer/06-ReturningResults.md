@@ -1,9 +1,10 @@
 ---
 title: Returning results
-description: Return result sets with typed columns, several result sets, informational messages and SQL Server-style errors.
+description: Return result sets with typed columns, several result sets, informational messages, row counts, output parameters and SQL Server-style errors.
 ---
 
-The query handler returns a [TdsQueryResult](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult), which holds the result sets, the informational messages, or an error.
+The query handler returns a [TdsQueryResult](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult), which holds the result sets, the informational messages, the number of affected
+rows, the output parameters and the return value, or an error.
 An empty [TdsQueryResult](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult) is a valid answer: the command succeeds and returns no rows.
 
 ## Return rows
@@ -90,7 +91,7 @@ The type of a column sets the SQL Server type the client receives, and how the v
 | [DateTime2](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.DateTime2) | `datetime2(7)` | A `DateTime`, a `DateOnly` or a `DateTimeOffset` |
 | `DateTimeOffset` | `datetimeoffset(7)` | A `DateTimeOffset`; a `DateTime` gets the offset 0 |
 | [Xml](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Xml) | `xml` | The text of the value (`ToString()`), for instance a `string` or an `XDocument` |
-| [Json](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Json) | `json` | A JSON `string`, a `JsonNode`, or any object, serialized with `System.Text.Json` |
+| [Json](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Json) | `json` | A JSON `string`, a `JsonNode`, a `JsonElement`, a `JsonDocument`, or any object, serialized with `System.Text.Json` (not in [trimmed applications](03-HostingTheServer.md#trimming-and-native-aot)) |
 | [Variant](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Variant), [UserDefined](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.UserDefined), `Table` | `nvarchar` | The text of the value (`ToString()`) |
 
 - The scale of a [Decimal](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Decimal) column is the largest scale of its values, so `49.90m` and `19.5m` are sent with two
@@ -101,6 +102,83 @@ The type of a column sets the SQL Server type the client receives, and how the v
 A value that cannot be converted to the type of its column (a text in an [Int32](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Int32) column, for instance) makes the
 server return the error 50005 "Failed to build the query response" instead of the result sets. The connection is not
 dropped by the server.
+
+## Return a row count
+
+Set [RecordsAffected](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult.RecordsAffected) to the number of rows an `INSERT`, `UPDATE` or `DELETE` changed:
+
+<!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsServerProtocolTests.cs;region=TdsServer_RecordsAffected;format=md-fenced-code-block;dedent=true -->
+```csharp
+TdsQueryDelegate query = (context, cancellationToken) =>
+{
+    if (context.CommandText?.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase) == true)
+    {
+        return ValueTask.FromResult(new TdsQueryResult { RecordsAffected = 3 });
+    }
+
+    return ValueTask.FromResult(new TdsQueryResult());
+};
+```
+<!-- endref -->
+
+- `ExecuteNonQuery` returns it, and so does `SqlDataReader.RecordsAffected` once the reader is closed. Data access
+  code that checks the count, like the optimistic concurrency checks of EF Core, relies on it.
+- When it is `null`, no count is sent and `ExecuteNonQuery` returns -1, as with `SET NOCOUNT ON`.
+- The rows of the result sets are not counted: SQL Server does not count the rows of a `SELECT` either. `SqlClient`
+  still reports them with the `SqlCommand.StatementCompleted` event.
+
+## Return output parameters and a return value
+
+A parameter that the client declares with the direction `Output` or `InputOutput` has
+[IsOutput](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.IsOutput) set. Send its value back with [OutputParameters](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult.OutputParameters), and the return status of a stored procedure with
+[ReturnValue](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult.ReturnValue):
+
+<!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsServerProtocolTests.cs;region=TdsServer_OutputParameters;format=md-fenced-code-block;dedent=true -->
+```csharp
+TdsQueryDelegate query = (context, cancellationToken) =>
+{
+    if (context.RequestType == TdsQueryRequestType.Rpc && string.Equals(context.ProcedureName, "CreateCustomer", StringComparison.OrdinalIgnoreCase))
+    {
+        var result = new TdsQueryResult
+        {
+            RecordsAffected = 1,
+            ReturnValue = 0,
+        };
+
+        result.OutputParameters.Add(new TdsOutputParameter("@id", TdsColumnType.Int32, 42));
+        return ValueTask.FromResult(result);
+    }
+
+    return ValueTask.FromResult(new TdsQueryResult());
+};
+```
+<!-- endref -->
+
+The client reads them from its parameters once the command completes; with `ExecuteReader`, once the reader is closed:
+
+<!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsServerProtocolTests.cs;region=TdsServer_ReadOutputParameters;format=md-fenced-code-block;dedent=true -->
+```csharp
+await using var command = connection.CreateCommand();
+command.CommandType = CommandType.StoredProcedure;
+command.CommandText = "CreateCustomer";
+command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 100) { Value = "Alice" });
+var id = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Direction = ParameterDirection.Output });
+var returnValue = command.Parameters.Add(new SqlParameter("@return", SqlDbType.Int) { Direction = ParameterDirection.ReturnValue });
+
+var recordsAffected = await command.ExecuteNonQueryAsync();
+Assert.Equal(1, recordsAffected);
+Assert.Equal(42, id.Value);
+Assert.Equal(0, returnValue.Value);
+```
+<!-- endref -->
+
+- A [TdsOutputParameter](cref:Meziantou.Framework.Tds.Handler.TdsOutputParameter) has a name, with or without its `@` prefix, a type and a value; `null` and `DBNull.Value` are
+  SQL `NULL`. The values are converted as the values of a column of the same type, see [Column types](#column-types).
+- The client matches the values to its parameters by name, and ignores a value whose name has no `Output` or
+  `InputOutput` parameter.
+- [ReturnValue](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult.ReturnValue) goes to the parameter whose direction is `ReturnValue`. When it is `null`, that parameter keeps its value.
+- Output parameters also work with the commands sent through `sp_executesql`, such as
+  `INSERT … ; SET @id = SCOPE_IDENTITY()`.
 
 ## Return an error
 
@@ -130,17 +208,16 @@ The client throws a `SqlException` with the [Number](cref:Meziantou.Framework.Td
 when the client handles specific errors. When [Error](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult.Error) is set, the result sets and informational messages are not
 sent. Messages longer than the protocol allows are truncated.
 
-The server sends errors with the "server error" status of the protocol. `SqlClient` treats them as severe: it adds
-"A severe error occurred on the current command. The results, if any, should be discarded." to the message of the
-exception and closes the connection. Open a new connection to send the next command; with connection pooling, `Open`
-does it for you.
+The connection stays open after an error, as with SQL Server: the next command runs on the same connection. Like
+SQL Server, `SqlClient` closes the connection when the severity is 20 or more, so keep the default severity, 16, for
+the errors of a command.
 
 ## Errors sent by the server
 
 | Number | Cause |
 | --- | --- |
 | 18456 | A rejected login, unless the authentication handler sets another number. |
-| 50001 | A request type that the server does not support, such as a transaction request. |
+| 50001 | A request type that the server does not support, such as a distributed transaction request. |
 | 50002 | The query handler threw an exception. |
 | 50003 | No query handler is registered (ASP.NET Core hosting). |
 | 50005 | The result could not be serialized: a value does not match its column type. |

@@ -21,4 +21,21 @@ public partial class Element
     /// </summary>
     [NotInIdl("Accessible name of the accessibility tree (WebDriver Get Computed Label), not exposed to scripts")]
     public string ComputedName => Accessibility.GetName(this);
+
+    /// <summary>
+    /// Returns the properties that the accessibility tree exposes for the element: its role, its accessible name and
+    /// description, and its states (checked, pressed, expanded, selected, disabled, level). The values are computed when the
+    /// method is called; use <see cref="CaptureAccessibilityTree"/> for the whole subtree.
+    /// </summary>
+    [NotInIdl("Properties of the accessibility tree (WebDriver accessibility properties), not exposed to scripts")]
+    public AccessibilityProperties GetAccessibilityProperties() => Accessibility.GetProperties(this);
+
+    /// <summary>
+    /// Captures the accessibility tree rooted at the element: a snapshot that does not follow the later changes of the
+    /// document, in the format of the aria snapshots of Playwright (<see cref="AccessibilityNode.ToAriaSnapshot"/>). The hidden
+    /// subtrees are excluded; the elements without a role, the presentational elements and the generic elements are replaced by
+    /// their children. Returns <see langword="null"/> when the element is hidden.
+    /// </summary>
+    [NotInIdl("Snapshot of the accessibility tree (as Playwright aria snapshots), not exposed to scripts")]
+    public AccessibilityNode? CaptureAccessibilityTree() => Accessibility.CaptureTree(this);
 }

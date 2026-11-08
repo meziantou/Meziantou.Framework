@@ -11,20 +11,25 @@ dependency outside .NET, and it supports trimming.
 - **Read and write the common formats**: GeoJSON, TopoJSON, Shapefile, KML and KMZ, GPX, WKT and WKB, encoded
   polylines, and FlatGeobuf, and read GeoPackage and GeoParquet files with the `Meziantou.Framework.Geo.GeoPackage` and
   `Meziantou.Framework.Geo.GeoParquet` packages. Every reader returns the same model, so converting a file is a read
-  and a write, and GeoJSON, Shapefile, FlatGeobuf, GeoPackage and GeoParquet files can be read a part at a time. See [formats](04-Formats/01-Overview.md).
-- **Work with features and geometries**: points, lines, polygons and their collections, with their properties; get
-  their bounds, a position to label them, distances, and whether a position is inside an area. See
+  and a write, and GeoJSON, Shapefile, FlatGeobuf, GeoPackage and GeoParquet files can be read a part at a time. See
+  [formats](04-Formats/01-Overview.md).
+- **Work with features and geometries**: points, lines, polygons and their collections, with their properties, and
+  positions with an optional altitude, measure and time, such as the points of a GPS track; get their bounds, a
+  position to label them, distances, and whether a position is inside an area, with straight or great-circle edges and
+  across the 180th meridian. See
   [features and geometries](03-FeaturesAndGeometries.md).
 - **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth, Albers and
   azimuthal equidistant projections. See [projections](05-Projections.md).
-- **Transform geometries**: repair invalid polygons, clip to a box, simplify, combine polygons (union, intersection,
-  difference), and convert positions from another coordinate system. See
+- **Transform geometries**: repair invalid polygons, clip to a box, simplify, split along the 180th meridian, combine
+  polygons (union, intersection, difference), measure the distance between geometries, compute buffers and convex
+  hulls, and convert positions from another coordinate system. See
   [geometry operations](06-GeometryOperations.md).
 - **Draw maps**: `Meziantou.Framework.Charts` draws the features as choropleths and points on maps. See
   [maps](../Charts/04-Gallery/09-Maps.md).
 
-The positions are longitudes and latitudes in degrees, on WGS 84, as GPS devices, GeoJSON and web maps use them. The
-library does not convert between coordinate reference systems.
+The positions are longitudes and latitudes in degrees, on WGS 84, as GPS devices, GeoJSON and web maps use them.
+[Coordinate reference systems](05-Projections.md#convert-between-coordinate-reference-systems) convert data in UTM,
+Lambert 93, Web Mercator and other projections to them.
 
 ## Namespace
 

@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Tds
     public sealed class TdsServer : System.IDisposable
     {
         public System.Collections.Generic.IReadOnlyList<int> Ports { get => throw null; }
+        public int? SqlServerBrowserPort { get => throw null; }
         public TdsServer(Meziantou.Framework.Tds.TdsServerOptions? options, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler) { }
         public TdsServer(Meziantou.Framework.Tds.TdsServerOptions? options, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler, Microsoft.Extensions.Logging.ILogger? logger) { }
         public void Dispose() { }
@@ -18,14 +19,28 @@ namespace Meziantou.Framework.Tds
         public const int DefaultMaxMessageSize = 16777216;
         public const int MaximumPacketSize = 65535;
         public const int MinimumPacketSize = 512;
+        public Meziantou.Framework.Tds.Handler.TdsBulkLoadHandler? BulkLoadHandler { get => throw null; set { } }
         public int MaxMessageSize { get => throw null; set { } }
         public int PacketSize { get => throw null; set { } }
         public bool RequireEncryption { get => throw null; set { } }
+        public Meziantou.Framework.Tds.TdsSqlServerBrowserOptions? SqlServerBrowser { get => throw null; set { } }
         public string? TlsPemCertificatePath { get => throw null; set { } }
         public string? TlsPemPrivateKeyPath { get => throw null; set { } }
         public string? TlsPfxPassword { get => throw null; set { } }
         public string? TlsPfxPath { get => throw null; set { } }
+        public Meziantou.Framework.Tds.Handler.TdsTransactionDelegate? TransactionHandler { get => throw null; set { } }
         public Meziantou.Framework.Tds.TdsServerOptions AddTcpListener(int port = 1433, System.Net.IPAddress? bindAddress = null) => throw null;
+        public Meziantou.Framework.Tds.TdsServerOptions EnableSqlServerBrowser(string instanceName, int port = 1434, System.Net.IPAddress? bindAddress = null) => throw null;
+    }
+
+    public sealed class TdsSqlServerBrowserOptions
+    {
+        public const string DefaultInstanceName = "MSSQLSERVER";
+        public const int DefaultPort = 1434;
+        public System.Net.IPAddress BindAddress { get => throw null; set { } }
+        public string InstanceName { get => throw null; set { } }
+        public int Port { get => throw null; set { } }
+        public string? ServerName { get => throw null; set { } }
     }
 
     public sealed class TdsTcpListenerOptions
@@ -41,8 +56,11 @@ namespace Meziantou.Framework.Tds.Handler
         public string? ApplicationName { get => throw null; init { } }
         public string? AuthenticationToken { get => throw null; init { } }
         public string? Database { get => throw null; init { } }
+        public bool IsIntegratedSecurity { get => throw null; init { } }
+        public System.Collections.Generic.IDictionary<object, object?> Items { get => throw null; }
         public string? Password { get => throw null; init { } }
         public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte> SspiToken { get => throw null; }
         public string? UserName { get => throw null; init { } }
     }
 
@@ -56,10 +74,52 @@ namespace Meziantou.Framework.Tds.Handler
         public uint ErrorNumber { get => throw null; }
         public byte ErrorState { get => throw null; }
         public bool IsAuthenticated { get => throw null; }
+        public bool IsSspiContinuationNeeded { get => throw null; }
+        public System.ReadOnlyMemory<byte> SspiToken { get => throw null; }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; }
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult ContinueSspi(System.ReadOnlyMemory<byte> sspiToken) => throw null;
         public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456U, byte errorState = 1, byte errorClass = 14) => throw null;
         public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(System.ReadOnlyMemory<byte> sspiToken, string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
     }
+
+    public sealed class TdsBulkLoadContext
+    {
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Tds.Handler.TdsColumn> Columns { get => throw null; init { } }
+        public string? DatabaseName { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Options { get => throw null; init { } }
+        public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>> Rows { get => throw null; init { } }
+        public string? SchemaName { get => throw null; init { } }
+        public required string TableName { get => throw null; init { } }
+        public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
+    }
+
+    public delegate System.Threading.Tasks.ValueTask<Meziantou.Framework.Tds.Handler.TdsBulkLoadResult> TdsBulkLoadDelegate(Meziantou.Framework.Tds.Handler.TdsBulkLoadContext context, System.Threading.CancellationToken cancellationToken);
+
+    public sealed class TdsBulkLoadHandler
+    {
+        public required Meziantou.Framework.Tds.Handler.TdsBulkLoadTableDelegate GetTableColumns { get => throw null; init { } }
+        public required Meziantou.Framework.Tds.Handler.TdsBulkLoadDelegate LoadRows { get => throw null; init { } }
+    }
+
+    public sealed class TdsBulkLoadResult
+    {
+        public Meziantou.Framework.Tds.Handler.TdsQueryError? Error { get => throw null; }
+        public static Meziantou.Framework.Tds.Handler.TdsBulkLoadResult FromError(Meziantou.Framework.Tds.Handler.TdsQueryError error) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsBulkLoadResult Success() => throw null;
+    }
+
+    public sealed class TdsBulkLoadTableContext
+    {
+        public string? DatabaseName { get => throw null; init { } }
+        public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public string? SchemaName { get => throw null; init { } }
+        public required string TableName { get => throw null; init { } }
+        public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
+    }
+
+    public delegate System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Tds.Handler.TdsColumn>?> TdsBulkLoadTableDelegate(Meziantou.Framework.Tds.Handler.TdsBulkLoadTableContext context, System.Threading.CancellationToken cancellationToken);
 
     public sealed class TdsColumn
     {
@@ -96,6 +156,14 @@ namespace Meziantou.Framework.Tds.Handler
         Table = 22,
     }
 
+    public sealed class TdsOutputParameter
+    {
+        public string Name { get => throw null; }
+        public Meziantou.Framework.Tds.Handler.TdsColumnType Type { get => throw null; }
+        public object? Value { get => throw null; }
+        public TdsOutputParameter(string name, Meziantou.Framework.Tds.Handler.TdsColumnType type, object? value) { }
+    }
+
     public sealed class TdsQueryContext
     {
         public string? CommandText { get => throw null; init { } }
@@ -104,6 +172,7 @@ namespace Meziantou.Framework.Tds.Handler
         public string? ProcedureName { get => throw null; init { } }
         public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
         public required Meziantou.Framework.Tds.Handler.TdsQueryRequestType RequestType { get => throw null; init { } }
+        public long? TransactionId { get => throw null; init { } }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
     }
 
@@ -120,6 +189,7 @@ namespace Meziantou.Framework.Tds.Handler
     public sealed class TdsQueryParameter
     {
         public bool IsNull { get => throw null; }
+        public bool IsOutput { get => throw null; init { } }
         public required string Name { get => throw null; init { } }
         public required Meziantou.Framework.Tds.Handler.TdsColumnType Type { get => throw null; init { } }
         public required object Value { get => throw null; init { } }
@@ -144,7 +214,10 @@ namespace Meziantou.Framework.Tds.Handler
     {
         public Meziantou.Framework.Tds.Handler.TdsQueryError? Error { get => throw null; set { } }
         public System.Collections.ObjectModel.Collection<string> InfoMessages { get => throw null; }
+        public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsOutputParameter> OutputParameters { get => throw null; }
+        public long? RecordsAffected { get => throw null; set { } }
         public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsResultSet> ResultSets { get => throw null; }
+        public int? ReturnValue { get => throw null; set { } }
         public static Meziantou.Framework.Tds.Handler.TdsQueryResult FromError(Meziantou.Framework.Tds.Handler.TdsQueryError error) => throw null;
     }
 
@@ -153,13 +226,38 @@ namespace Meziantou.Framework.Tds.Handler
         public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsColumn> Columns { get => throw null; }
         public System.Collections.ObjectModel.Collection<System.Collections.Generic.IReadOnlyList<object?>> Rows { get => throw null; }
     }
+
+    public sealed class TdsTransactionContext
+    {
+        public bool IsConnectionClosing { get => throw null; init { } }
+        public System.Data.IsolationLevel IsolationLevel { get => throw null; init { } }
+        public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public required Meziantou.Framework.Tds.Handler.TdsTransactionRequestType RequestType { get => throw null; init { } }
+        public string? SavepointName { get => throw null; init { } }
+        public required long TransactionId { get => throw null; init { } }
+        public string? TransactionName { get => throw null; init { } }
+        public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
+    }
+
+    public delegate System.Threading.Tasks.ValueTask<Meziantou.Framework.Tds.Handler.TdsQueryError?> TdsTransactionDelegate(Meziantou.Framework.Tds.Handler.TdsTransactionContext context, System.Threading.CancellationToken cancellationToken);
+
+    public enum TdsTransactionRequestType
+    {
+        Begin = 0,
+        Commit = 1,
+        Rollback = 2,
+        Save = 3,
+    }
 }
 namespace Meziantou.Framework.Tds.Hosting
 {
     public static class TdsEndpointRouteBuilderExtensions
     {
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsAuthenticationHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate handler) => throw null;
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsBulkLoadHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsBulkLoadHandler handler) => throw null;
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsHandlers(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticate, Meziantou.Framework.Tds.Handler.TdsQueryDelegate query) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The query engine compiles LINQ expression trees and creates projection types and generic instantiations at run time.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The query engine translates SQL into LINQ expression trees and reads the members of the query roots and stored procedures with reflection.")]
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryEngine(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsQueryDelegate handler) => throw null;
     }
@@ -173,6 +271,8 @@ namespace Meziantou.Framework.Tds.QueryEngine
 {
     public static class TdsQueryEngine
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The query engine compiles LINQ expression trees and creates projection types and generic instantiations at run time.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The query engine translates SQL into LINQ expression trees and reads the members of the query roots and stored procedures with reflection.")]
         public static Meziantou.Framework.Tds.Handler.TdsQueryDelegate CreateQueryHandler(Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
     }
 

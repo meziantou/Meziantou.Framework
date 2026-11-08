@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using Meziantou.Framework.Tds.Handler;
 
 namespace Meziantou.Framework.Tds;
 
@@ -71,6 +72,13 @@ public sealed class TdsServerOptions
     /// </remarks>
     public bool RequireEncryption { get; set; }
 
+    /// <summary>Gets or sets the handler of the bulk loads sent by <c>SqlBulkCopy</c>.</summary>
+    /// <remarks>
+    /// When this is <see langword="null"/>, the requests that <c>SqlBulkCopy</c> sends to read the destination table go
+    /// to the query handler, and its rows are rejected with the error 50001.
+    /// </remarks>
+    public TdsBulkLoadHandler? BulkLoadHandler { get; set; }
+
     /// <summary>Gets or sets the path to a PFX certificate file used for TLS.</summary>
     public string? TlsPfxPath { get; set; }
 
@@ -82,6 +90,43 @@ public sealed class TdsServerOptions
 
     /// <summary>Gets or sets the path to a PEM private key file used for TLS.</summary>
     public string? TlsPemPrivateKeyPath { get; set; }
+
+    /// <summary>Gets or sets the callback invoked when a client begins, commits or rolls back a transaction, or creates a savepoint.</summary>
+    /// <remarks>
+    /// The server accepts transaction requests without a handler, so <c>SqlConnection.BeginTransaction</c> works
+    /// even when nothing tracks transactions. Set it to observe the transactions, or to reject a request by
+    /// returning an error. When a connection closes with an active transaction, the handler is called with a
+    /// rollback request whose <see cref="Handler.TdsTransactionContext.IsConnectionClosing"/> is <see langword="true"/>.
+    /// </remarks>
+    public Handler.TdsTransactionDelegate? TransactionHandler { get; set; }
+
+    /// <summary>Gets or sets the SQL Server Browser responder options, or <see langword="null"/> to disable the responder.</summary>
+    /// <remarks>
+    /// The responder answers the SQL Server Resolution Protocol on UDP, so clients can connect with an instance name
+    /// (<c>host\INSTANCE</c>) instead of <c>host,port</c>. It advertises the port of the first TCP listener.
+    /// </remarks>
+    public TdsSqlServerBrowserOptions? SqlServerBrowser { get; set; }
+
+    /// <summary>Enables the SQL Server Browser responder, so clients can connect with an instance name (<c>host\INSTANCE</c>).</summary>
+    /// <param name="instanceName">The instance name to advertise.</param>
+    /// <param name="port">UDP port to listen on. Clients only query <see cref="TdsSqlServerBrowserOptions.DefaultPort"/>.</param>
+    /// <param name="bindAddress">Address to bind to. Defaults to loopback.</param>
+    /// <returns>The current options instance.</returns>
+    public TdsServerOptions EnableSqlServerBrowser(string instanceName, int port = TdsSqlServerBrowserOptions.DefaultPort, IPAddress? bindAddress = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(instanceName);
+        ArgumentOutOfRangeException.ThrowIfLessThan(port, IPEndPoint.MinPort);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, IPEndPoint.MaxPort);
+
+        SqlServerBrowser = new TdsSqlServerBrowserOptions
+        {
+            InstanceName = instanceName,
+            Port = port,
+            BindAddress = bindAddress ?? IPAddress.Loopback,
+        };
+
+        return this;
+    }
 
     /// <summary>Adds a TCP listener.</summary>
     /// <param name="port">TCP port to listen on.</param>

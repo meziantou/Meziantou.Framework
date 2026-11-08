@@ -5,13 +5,18 @@ description: What the library does not do, so that you can plan around it.
 
 ## Creating documents
 
-- The content builder breaks a text into lines at its spaces ([Wrap a paragraph](03-CreatingDocuments/03-Text.md#wrap-a-paragraph)),
-  but it does not apply the Unicode line breaking rules, hyphenate words, nor lay out tables.
+- The content builder breaks the lines of a text box and of the cells of a table with the Unicode line breaking
+  algorithm, without a dictionary: the languages written without spaces between their words (Thai, Lao, Khmer,
+  Burmese) are broken between their characters only when a word does not fit. It does not apply the bidirectional
+  algorithm to the lines.
+- The cells of a table hold text: no image, nested table or cell that spans several rows. The justified lines stretch
+  the spaces only.
 - The standard 14 fonts show the characters of `WinAnsiEncoding` (Symbol and ZapfDingbats their own); other characters
   need an embedded font.
 - The fonts with CFF2 outlines, the bitmap fonts and the instances of variable fonts are not embedded.
-- The API reads, fills and flattens interactive form fields, but does not create them; the appearances it writes for
-  the values of the fields use the standard 14 fonts.
+- The appearances the API writes for the values of form fields use the font of their default appearance when the form
+  knows it, otherwise the standard 14 fonts: the fields of a saved document that use an embedded font need the font
+  again to be filled ([Use an embedded font](05-ReadingAndModifying/09-Forms.md#use-an-embedded-font)).
 - A page copied from another document is not tagged: the structure tree belongs to the document of the page.
 
 ## Reading and extracting
@@ -19,8 +24,10 @@ description: What the library does not do, so that you can plan around it.
 - The documents encrypted for certificates (the public-key security handler) need RSA certificates: the elliptic-curve
   recipients (key agreement) are not supported. Their crypt filters share one key: when the recipients are in several
   crypt filters, those of the streams are used.
-- The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
-  detect columns, and it does not recognize the text of scanned pages.
+- The text extraction does not recognize the text of scanned pages. Its reading order of the layout
+  ([Read the columns in order](05-ReadingAndModifying/03-ExtractingText.md#read-the-columns-in-order)) finds the columns
+  from the blank spaces of the page: it reads them from left to right, and keeps the order of the content for the text
+  written vertically.
 - The library reports the permissions of an encrypted document, but does not enforce them.
 - A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
   file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
@@ -35,8 +42,8 @@ description: What the library does not do, so that you can plan around it.
 - The save checks what the conformance levels require of the document as a whole. The content (the order of the
   structure, the alternate descriptions, the colors of the annotations of PDF/A-1, the values of the numbers) must follow
   the other rules of the level: validate the documents with veraPDF.
-- Signatures are invisible: the library does not draw an appearance for the signature field. It writes PAdES B-B and B-T
-  signatures; the levels with validation data (B-LT, B-LTA) are not written.
+- A visible signature is a new signature field: an existing signature field that is not signed yet keeps its widget,
+  and the library does not draw an appearance for it.
 - The verification of a signature does not decide whether the signer is trusted: the application builds the certificate
   chain.
 - The writer encrypts the embedded files with the method of the other streams.

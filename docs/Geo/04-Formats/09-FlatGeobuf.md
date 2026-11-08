@@ -77,9 +77,11 @@ node of the index, 16 by default.
 
 ## What is kept
 
-- **Geometries**: points, lines, polygons, their multi-geometries and geometry collections, with their altitudes. A
-  file with an altitude for one position gets one for every position: the others get 0. The curves, surfaces and
-  triangles of other writers throw a `FormatException`; the M and time values are dropped.
+- **Geometries**: points, lines, polygons, their multi-geometries and geometry collections, with their altitudes and
+  their [measures](cref:Meziantou.Framework.Geo.GeoPosition.Measure) (the M values). A file with an altitude for one
+  position gets one for every position: the others get 0. Likewise for the measures: the others get NaN, which reads
+  back as no measure. The curves, surfaces and triangles of other writers throw a `FormatException`; the T and TM
+  values are dropped, as the format does not define them.
 - **Properties**: each column has a type, given by the values of the property: integers, numbers, booleans, strings,
   dates and times (to the millisecond), arrays of bytes, and `JsonElement` objects and arrays as JSON. A property whose
   values have different types is written as the most general type that holds them: a `long`, a `double`, or else the

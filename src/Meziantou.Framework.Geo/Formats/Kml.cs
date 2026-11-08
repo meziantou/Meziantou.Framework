@@ -26,8 +26,9 @@ namespace Meziantou.Framework.Geo;
 /// ring alone as a line), <c>Polygon</c>, <c>MultiGeometry</c> (a <see cref="GeoMultiPoint"/>,
 /// <see cref="GeoMultiLineString"/> or <see cref="GeoMultiPolygon"/> when its items are all points, all lines or all
 /// polygons; otherwise, a <see cref="GeoGeometryCollection"/>), and <c>gx:Track</c> and <c>gx:MultiTrack</c> (lines
-/// through their <c>gx:coord</c> positions). The altitudes are kept as they are written, whatever the
-/// <c>altitudeMode</c>. The styles, the time primitives, the <c>Model</c> geometries, the overlays and the network links
+/// through their <c>gx:coord</c> positions, the <c>when</c> elements becoming the <see cref="GeoPosition.Time"/> of the
+/// positions; a <c>when</c> without a time of day, such as a date alone, gives no time). The altitudes are kept as they
+/// are written, whatever the <c>altitudeMode</c>. The styles, the time primitives of the placemarks, the <c>Model</c> geometries, the overlays and the network links
 /// are ignored, and nothing is downloaded. The elements are matched by their local name, so KML 2.0, 2.1 and 2.2 and
 /// the Google extensions are read. A document type definition is rejected and no external entity is resolved.
 /// </para>
@@ -38,13 +39,16 @@ namespace Meziantou.Framework.Geo;
 /// the string properties named by <see cref="KmlWriterOptions"/>, and the other properties go in <c>ExtendedData</c>
 /// as <c>Data</c> items with their text, independent of the culture (the <see langword="null"/> values are skipped).
 /// The multi-geometries and the collections become <c>MultiGeometry</c> elements, the rings of the polygons are closed,
-/// and a geometry with altitudes gets the <c>absolute</c> altitude mode.
+/// and a geometry with altitudes gets the <c>absolute</c> altitude mode. A <see cref="GeoLineString"/> whose positions
+/// all have a time is a <c>gx:Track</c>, and a <see cref="GeoMultiLineString"/> of such lines a <c>gx:MultiTrack</c>;
+/// the times of the other positions and the measures are not written.
 /// </para>
 /// </remarks>
 public static class Kml
 {
     /// <summary>The namespace of KML 2.2.</summary>
     internal const string Namespace = "http://www.opengis.net/kml/2.2";
+    private const string GxNamespace = "http://www.google.com/kml/ext/2.2";
 
     private const string FolderProperty = "folder";
 
@@ -395,23 +399,45 @@ public static class Kml
         return new GeoGeometryCollection(geometries);
     }
 
-    // A gx:coord is "longitude latitude altitude", separated by spaces
+    // A gx:coord is "longitude latitude altitude", separated by spaces. The n-th when element is the time of the n-th gx:coord.
     private static List<GeoPosition> ReadTrack(XElement track)
     {
         var positions = new List<GeoPosition>();
-        foreach (var coord in track.Elements())
+        var times = new List<DateTimeOffset?>();
+        foreach (var child in track.Elements())
         {
-            if (coord.Name.LocalName is not "coord")
-                continue;
+            switch (child.Name.LocalName)
+            {
+                case "when":
+                    times.Add(ParseTime(child.Value));
+                    break;
 
-            var values = coord.Value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            if (values.Length is < 2 or > 3)
-                throw new FormatException($"'{coord.Value}' is not a KML track position.");
+                case "coord":
+                    var values = child.Value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                    if (values.Length is < 2 or > 3)
+                        throw new FormatException($"'{child.Value}' is not a KML track position.");
 
-            positions.Add(new GeoPosition(ParseNumber(values[0]), ParseNumber(values[1]), values.Length > 2 ? ParseNumber(values[2]) : null));
+                    positions.Add(new GeoPosition(ParseNumber(values[0]), ParseNumber(values[1]), values.Length > 2 ? ParseNumber(values[2]) : null));
+                    break;
+            }
+        }
+
+        for (var i = 0; i < positions.Count && i < times.Count; i++)
+        {
+            positions[i] = positions[i] with { Time = times[i] };
         }
 
         return positions;
+    }
+
+    // A when is an XML Schema dateTime, or a date, a year and month or a year, which are not a time
+    private static DateTimeOffset? ParseTime(string text)
+    {
+        text = text.Trim();
+        if (text.Contains('T', StringComparison.Ordinal) && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var value))
+            return value;
+
+        return null;
     }
 
     private static List<GeoPosition> ReadCoordinates(XElement element) => ParseCoordinates(GetChild(element, "coordinates")?.Value ?? "");
@@ -598,6 +624,20 @@ public static class Kml
                 writer.WriteEndElement();
                 break;
 
+            case GeoLineString lineString when HasTimes(lineString):
+                WriteTrack(writer, lineString);
+                break;
+
+            case GeoMultiLineString multiLineString when multiLineString.LineStrings.Count > 0 && multiLineString.LineStrings.All(HasTimes):
+                writer.WriteStartElement("gx", "MultiTrack", GxNamespace);
+                foreach (var item in multiLineString.LineStrings)
+                {
+                    WriteTrack(writer, item);
+                }
+
+                writer.WriteEndElement();
+                break;
+
             case GeoLineString lineString:
                 writer.WriteStartElement("LineString", Namespace);
                 WriteAltitudeMode(writer, geometry);
@@ -639,6 +679,29 @@ public static class Kml
                 writer.WriteEndElement();
                 break;
         }
+    }
+
+    private static bool HasTimes(GeoLineString lineString) => lineString.Positions.Count > 0 && lineString.Positions.All(position => position.Time is not null);
+
+    // A line whose positions all have a time is a gx:Track: the when elements, then the gx:coord elements
+    private static void WriteTrack(XmlWriter writer, GeoLineString lineString)
+    {
+        writer.WriteStartElement("gx", "Track", GxNamespace);
+        WriteAltitudeMode(writer, lineString);
+        foreach (var position in lineString.Positions)
+        {
+            writer.WriteElementString("when", Namespace, position.Time.GetValueOrDefault().ToString("yyyy-MM-dd'T'HH:mm:ss.FFFFFFFzzz", CultureInfo.InvariantCulture));
+        }
+
+        foreach (var position in lineString.Positions)
+        {
+            var text = position.Altitude is { } altitude
+                ? string.Create(CultureInfo.InvariantCulture, $"{position.Longitude} {position.Latitude} {altitude}")
+                : string.Create(CultureInfo.InvariantCulture, $"{position.Longitude} {position.Latitude}");
+            writer.WriteElementString("gx", "coord", GxNamespace, text);
+        }
+
+        writer.WriteEndElement();
     }
 
     // Without an altitude mode, KML clamps the geometries to the ground and ignores their altitudes

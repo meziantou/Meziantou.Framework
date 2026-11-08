@@ -33,6 +33,12 @@ public sealed class FontFace
     private readonly int _gsubLength;
     private readonly int _gposOffset;
     private readonly int _gposLength;
+    private readonly int _morxOffset;
+    private readonly int _morxLength;
+    private readonly int _kerxOffset;
+    private readonly int _kerxLength;
+    private readonly int _ankrOffset;
+    private readonly int _ankrLength;
     private readonly MathTable? _math;
     private readonly int _mathOffset;
     private readonly int _mathLength;
@@ -233,6 +239,7 @@ public sealed class FontFace
         {
             var kern = KernTable.Read(file.Slice(_kernOffset, _kernLength));
             _kern = kern.IsEmpty ? null : kern;
+            HasCrossStreamKerning = KernTable.HasCrossStreamSubtable(file.Slice(_kernOffset, _kernLength));
         }
 
         // MATH: the constants and the glyph variants of mathematical layout. A table whose header is not understood is
@@ -256,6 +263,29 @@ public sealed class FontFace
         if (_directory.TryFind(FontTags.Gpos, out _gposOffset, out _gposLength))
         {
             Gpos = LayoutTable.Read(file.Slice(_gposOffset, _gposLength));
+        }
+
+        // The tables of Apple Advanced Typography, which the fonts made for Apple systems have in the place of GSUB and
+        // GPOS. A table whose header is malformed is left out, as the layout tables are.
+        if (_directory.TryFind(FontTags.Morx, out _morxOffset, out _morxLength))
+        {
+            Morx = ReadOptional(file.Slice(_morxOffset, _morxLength), MorxTable.Read);
+        }
+
+        if (_directory.TryFind(FontTags.Kerx, out _kerxOffset, out _kerxLength))
+        {
+            Kerx = ReadOptional(file.Slice(_kerxOffset, _kerxLength), KerxTable.Read);
+        }
+
+        _directory.TryFind(FontTags.Ankr, out _ankrOffset, out _ankrLength);
+        if (TryGetTable(FontTags.Feat, out var feat))
+        {
+            Feat = ReadOptional(feat.Span, FeatTable.Read);
+        }
+
+        if (TryGetTable(FontTags.Trak, out var trak))
+        {
+            Trak = ReadOptional(trak.Span, TrakTable.Read);
         }
 
         // The outlines: TrueType (glyf and loca), or CFF.
@@ -495,6 +525,27 @@ public sealed class FontFace
 
     /// <summary>Gets the bytes of the <c>GPOS</c> table; empty when the face has none.</summary>
     public ReadOnlyMemory<byte> GposData => Gpos is null ? default : Data.RawBytes.AsMemory(_gposOffset, _gposLength);
+
+    /// <summary>Gets the extended glyph metamorphosis table of Apple Advanced Typography, or <see langword="null"/>.</summary>
+    internal MorxTable? Morx { get; }
+
+    /// <summary>Gets the bytes of the <c>morx</c> table; empty when the face has none.</summary>
+    internal ReadOnlySpan<byte> MorxData => Morx is null ? default : Data.RawBytes.AsSpan(_morxOffset, _morxLength);
+
+    /// <summary>Gets the extended kerning table of Apple Advanced Typography, or <see langword="null"/>.</summary>
+    internal KerxTable? Kerx { get; }
+
+    /// <summary>Gets the bytes of the <c>kerx</c> table; empty when the face has none.</summary>
+    internal ReadOnlySpan<byte> KerxData => Kerx is null ? default : Data.RawBytes.AsSpan(_kerxOffset, _kerxLength);
+
+    /// <summary>Gets the bytes of the <c>ankr</c> table, the anchor points of the <c>kerx</c> table; empty when the face has none.</summary>
+    internal ReadOnlySpan<byte> AnkrData => Data.RawBytes.AsSpan(_ankrOffset, _ankrLength);
+
+    /// <summary>Gets the feature name table of Apple Advanced Typography, or <see langword="null"/>.</summary>
+    internal FeatTable? Feat { get; }
+
+    /// <summary>Gets the tracking table of Apple Advanced Typography, or <see langword="null"/>.</summary>
+    internal TrakTable? Trak { get; }
 
     /// <summary>Gets the tags of the tables of the face, in increasing order.</summary>
     public ReadOnlySpan<uint> TableTags => _directory.Tags;
@@ -1228,6 +1279,20 @@ public sealed class FontFace
     /// <summary>Gets where the <c>glyf</c> table starts in the bytes of the font.</summary>
     internal int GlyfOffset => _glyfOffset;
 
+    /// <summary>Reads a table the font can be used without: a malformed header leaves it out.</summary>
+    private static T? ReadOptional<T>(ReadOnlySpan<byte> table, Func<ReadOnlySpan<byte>, T> read)
+        where T : class
+    {
+        try
+        {
+            return read(table);
+        }
+        catch (InvalidFontException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Finds a table in the bytes of the font.</summary>
     internal bool TryFindTable(uint tag, out int offset, out int length) => _directory.TryFind(tag, out offset, out length);
 
@@ -1248,6 +1313,9 @@ public sealed class FontFace
             Coordinates = varies ? _instance!.Coordinates : default,
         };
     }
+
+    /// <summary>Gets a value indicating whether the legacy kerning table of the font has cross-stream kerning, which places marks.</summary>
+    internal bool HasCrossStreamKerning { get; }
 
     /// <summary>Gets a value indicating whether the font has pair adjustments in its legacy kerning table.</summary>
     public bool HasLegacyKerning => _kern is not null;

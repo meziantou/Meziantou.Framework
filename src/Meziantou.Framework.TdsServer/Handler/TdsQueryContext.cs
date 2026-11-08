@@ -31,4 +31,10 @@ public sealed class TdsQueryContext
 
     /// <summary>Gets the authenticated user context associated with this query request.</summary>
     public ClaimsPrincipal? UserContext { get; init; }
+
+    /// <summary>
+    /// Gets the identifier of the transaction the request runs in, or <see langword="null"/> when the connection has
+    /// no active transaction. See <see cref="TdsTransactionContext.TransactionId"/>.
+    /// </summary>
+    public long? TransactionId { get; init; }
 }

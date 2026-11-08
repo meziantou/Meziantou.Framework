@@ -19,6 +19,7 @@ namespace Meziantou.Framework.Tds
         public const int DefaultMaxMessageSize = 16777216;
         public const int MaximumPacketSize = 65535;
         public const int MinimumPacketSize = 512;
+        public Meziantou.Framework.Tds.Handler.TdsBulkLoadHandler? BulkLoadHandler { get => throw null; set { } }
         public int MaxMessageSize { get => throw null; set { } }
         public int PacketSize { get => throw null; set { } }
         public bool RequireEncryption { get => throw null; set { } }
@@ -54,8 +55,11 @@ namespace Meziantou.Framework.Tds.Handler
         public string? ApplicationName { get => throw null; init { } }
         public string? AuthenticationToken { get => throw null; init { } }
         public string? Database { get => throw null; init { } }
+        public bool IsIntegratedSecurity { get => throw null; init { } }
+        public System.Collections.Generic.IDictionary<object, object?> Items { get => throw null; }
         public string? Password { get => throw null; init { } }
         public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte> SspiToken { get => throw null; }
         public string? UserName { get => throw null; init { } }
     }
 
@@ -69,10 +73,52 @@ namespace Meziantou.Framework.Tds.Handler
         public uint ErrorNumber { get => throw null; }
         public byte ErrorState { get => throw null; }
         public bool IsAuthenticated { get => throw null; }
+        public bool IsSspiContinuationNeeded { get => throw null; }
+        public System.ReadOnlyMemory<byte> SspiToken { get => throw null; }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; }
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult ContinueSspi(System.ReadOnlyMemory<byte> sspiToken) => throw null;
         public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456U, byte errorState = 1, byte errorClass = 14) => throw null;
         public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(System.ReadOnlyMemory<byte> sspiToken, string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
     }
+
+    public sealed class TdsBulkLoadContext
+    {
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Tds.Handler.TdsColumn> Columns { get => throw null; init { } }
+        public string? DatabaseName { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Options { get => throw null; init { } }
+        public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>> Rows { get => throw null; init { } }
+        public string? SchemaName { get => throw null; init { } }
+        public required string TableName { get => throw null; init { } }
+        public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
+    }
+
+    public delegate System.Threading.Tasks.ValueTask<Meziantou.Framework.Tds.Handler.TdsBulkLoadResult> TdsBulkLoadDelegate(Meziantou.Framework.Tds.Handler.TdsBulkLoadContext context, System.Threading.CancellationToken cancellationToken);
+
+    public sealed class TdsBulkLoadHandler
+    {
+        public required Meziantou.Framework.Tds.Handler.TdsBulkLoadTableDelegate GetTableColumns { get => throw null; init { } }
+        public required Meziantou.Framework.Tds.Handler.TdsBulkLoadDelegate LoadRows { get => throw null; init { } }
+    }
+
+    public sealed class TdsBulkLoadResult
+    {
+        public Meziantou.Framework.Tds.Handler.TdsQueryError? Error { get => throw null; }
+        public static Meziantou.Framework.Tds.Handler.TdsBulkLoadResult FromError(Meziantou.Framework.Tds.Handler.TdsQueryError error) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsBulkLoadResult Success() => throw null;
+    }
+
+    public sealed class TdsBulkLoadTableContext
+    {
+        public string? DatabaseName { get => throw null; init { } }
+        public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
+        public string? SchemaName { get => throw null; init { } }
+        public required string TableName { get => throw null; init { } }
+        public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
+    }
+
+    public delegate System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Tds.Handler.TdsColumn>?> TdsBulkLoadTableDelegate(Meziantou.Framework.Tds.Handler.TdsBulkLoadTableContext context, System.Threading.CancellationToken cancellationToken);
 
     public sealed class TdsColumn
     {
@@ -172,6 +218,7 @@ namespace Meziantou.Framework.Tds.Hosting
     public static class TdsEndpointRouteBuilderExtensions
     {
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsAuthenticationHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate handler) => throw null;
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsBulkLoadHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsBulkLoadHandler handler) => throw null;
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsHandlers(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticate, Meziantou.Framework.Tds.Handler.TdsQueryDelegate query) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The query engine compiles LINQ expression trees and creates projection types and generic instantiations at run time.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The query engine translates SQL into LINQ expression trees and reads the members of the query roots and stored procedures with reflection.")]

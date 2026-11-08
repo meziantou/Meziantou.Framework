@@ -15,10 +15,10 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 ## Protocol
 
-- **SQL batches and RPC calls only.** Transactions (`BeginTransaction`) and bulk loads (`SqlBulkCopy`) are not
-  supported: their requests, like any other request type, return the error 50001 "Unsupported packet type".
-- **No Multiple Active Result Sets (MARS)**: a connection with `MultipleActiveResultSets=True` fails.
-- **One request at a time per connection.**
+- **SQL batches, RPC calls and bulk loads only.** Transactions (`BeginTransaction`) are not supported: their requests,
+  like any other request type, return the error 50001 "Unsupported packet type".
+- **Bulk loads are received batch by batch**: a batch of `SqlBulkCopy` cannot be larger than `MaxMessageSize`, and
+  decimal columns are declared `decimal(38, 10)`. See [Bulk loads](11-BulkLoads.md).
 - **No output parameters, return values or row counts**: `ExecuteNonQuery` returns -1.
 - **Errors close the `SqlClient` connection**: the server sends errors with the "server error" status, which
   `SqlClient` treats as severe. See [Return an error](06-ReturningResults.md#return-an-error).
@@ -26,8 +26,8 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 ## Authentication and encryption
 
-- **SQL logins only.** There is no SSPI exchange, so integrated Windows authentication (NTLM, Kerberos) and Microsoft
-  Entra ID authentication are not supported. See [Authentication](04-Authentication.md).
+- **No Microsoft Entra ID authentication.** SQL logins and integrated Windows authentication (NTLM, Kerberos, through
+  an SSPI exchange run by the authentication handler) are supported. See [Authentication](04-Authentication.md).
 - **TLS 1.2 when TLS is negotiated in the TDS PRELOGIN exchange** (`Encrypt=True` or `Optional`). Use
   `Encrypt=Strict` for TLS 1.3. See [Encryption](09-Encryption.md).
 - **No encryption by default**: without a certificate, passwords and data travel in clear text.

@@ -164,6 +164,12 @@ and the connection stays usable. The result of the abandoned handler is discarde
 A connection runs one request at a time: the handler is not called again for the same connection until it returns.
 Different connections call the handler concurrently.
 
+A connection with Multiple Active Result Sets (`MultipleActiveResultSets=True`) is the exception: the client opens
+several sessions on the connection, one per open `SqlDataReader`, and each session runs its requests independently of
+the others. The handler can then be called concurrently for the same connection, and a slow request does not hold up
+the requests of the other sessions. The server sends the rows of a session as fast as the client reads them, so a
+reader the client leaves open does not block the other readers.
+
 ## Exceptions
 
 When the handler throws, the server logs the exception and returns the error 50002 "Unhandled query handler

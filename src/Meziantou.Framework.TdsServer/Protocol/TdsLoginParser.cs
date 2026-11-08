@@ -5,6 +5,8 @@ namespace Meziantou.Framework.Tds.Protocol;
 internal static class TdsLoginParser
 {
     private const int FixedLength = 94;
+    private const int OptionFlags2Offset = 25;
+    private const byte IntegratedSecurityFlag = 0x80;
 
     public static TdsLoginRequest Parse(ReadOnlySpan<byte> payload)
     {
@@ -26,6 +28,7 @@ internal static class TdsLoginParser
             ApplicationName = applicationName,
             Database = database,
             Sspi = sspi,
+            IsIntegratedSecurity = (payload[OptionFlags2Offset] & IntegratedSecurityFlag) != 0,
         };
     }
 
@@ -83,7 +86,19 @@ internal static class TdsLoginParser
         }
 
         var offset = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(78, 2));
-        var length = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(80, 2));
+        int length = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(80, 2));
+        if (length == ushort.MaxValue)
+        {
+            // A token of 64 KiB or more stores its length in cbSSPILong, at the end of the fixed part.
+            var longLength = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(90, 4));
+            if (longLength > int.MaxValue)
+            {
+                return [];
+            }
+
+            length = (int)longLength;
+        }
+
         if (length == 0)
         {
             return [];

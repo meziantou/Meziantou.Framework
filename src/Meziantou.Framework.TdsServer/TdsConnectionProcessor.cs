@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.Tds;
 
-internal sealed class TdsConnectionProcessor
+internal sealed partial class TdsConnectionProcessor
 {
     /// <summary>The content type of a TLS handshake record, the first byte a TDS 8.0 client sends.</summary>
     private const byte TlsHandshakeRecordType = 0x16;
@@ -48,7 +48,6 @@ internal sealed class TdsConnectionProcessor
 
         var writer = new TdsPacketWriter(output, _options.PacketSize);
         SslStream? sslStream = null;
-        Task<TdsPacket?>? pendingRead = null;
         var usingTls = false;
         TdsPreLoginNegotiationResult? negotiationResult;
         try
@@ -167,9 +166,16 @@ internal sealed class TdsConnectionProcessor
                 AuthenticationToken = login.AuthenticationToken,
                 Database = login.Database,
                 ApplicationName = login.ApplicationName,
+                IsIntegratedSecurity = login.IsIntegratedSecurity,
+                SspiToken = login.Sspi,
             };
 
-            var authenticationResult = await _authenticationHandler(authenticationContext, cancellationToken).ConfigureAwait(false);
+            var authenticationResult = await AuthenticateAsync(input, writer, authenticationContext, cancellationToken).ConfigureAwait(false);
+            if (authenticationResult is null)
+            {
+                return;
+            }
+
             if (!authenticationResult.IsAuthenticated)
             {
                 await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateLoginError(authenticationResult), cancellationToken).ConfigureAwait(false);
@@ -186,8 +192,36 @@ internal sealed class TdsConnectionProcessor
                 writer = new TdsPacketWriter(output, _options.PacketSize);
             }
 
-            await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateLoginSuccess(authenticationResult), cancellationToken).ConfigureAwait(false);
+            await writer.WriteAsync(TdsPacketType.TabularResult, CreateLoginSuccessResponse(authenticationResult), cancellationToken).ConfigureAwait(false);
 
+            if (TdsSmpConnection.IsMarsRequested(preLoginPacket.Payload))
+            {
+                await ProcessMarsSessionsAsync(input, output, remoteEndPoint, authenticationResult, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            await ProcessRequestsAsync(input, writer, remoteEndPoint, authenticationResult, cancellationToken).ConfigureAwait(false);
+        }
+        catch (AuthenticationException ex)
+        {
+            _logger.LogDebug(ex, "TLS authentication failed");
+        }
+        finally
+        {
+            if (sslStream is not null)
+            {
+                await sslStream.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Serves the requests of one session: the connection, or one MARS session of the connection.</summary>
+    private async Task ProcessRequestsAsync(Stream input, TdsPacketWriter writer, EndPoint remoteEndPoint, TdsAuthenticationResult authenticationResult, CancellationToken cancellationToken)
+    {
+        Task<TdsPacket?>? pendingRead = null;
+        var session = new TdsSessionState();
+        try
+        {
             TdsPacket? bufferedPacket = null;
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -219,7 +253,7 @@ internal sealed class TdsConnectionProcessor
                     continue;
                 }
 
-                if (packet.Type != TdsPacketType.SqlBatch && packet.Type != TdsPacketType.Rpc)
+                if (packet.Type != TdsPacketType.SqlBatch && packet.Type != TdsPacketType.Rpc && packet.Type != TdsPacketType.BulkLoad)
                 {
                     await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateProtocolError(50001, $"Unsupported packet type: {packet.Type}"), cancellationToken).ConfigureAwait(false);
                     continue;
@@ -231,7 +265,7 @@ internal sealed class TdsConnectionProcessor
                 var requestCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 try
                 {
-                    var executionTask = ExecuteRequestAsync(packet, remoteEndPoint, authenticationResult.UserContext, writer.PayloadSizePerPacket, requestCancellationTokenSource.Token);
+                    var executionTask = ExecuteRequestAsync(packet, remoteEndPoint, authenticationResult.UserContext, session, writer.PayloadSizePerPacket, requestCancellationTokenSource.Token);
                     var attentionReceived = false;
                     while (!executionTask.IsCompleted && !attentionReceived && bufferedPacket is null)
                     {
@@ -297,25 +331,27 @@ internal sealed class TdsConnectionProcessor
                 }
             }
         }
-        catch (AuthenticationException ex)
-        {
-            _logger.LogDebug(ex, "TLS authentication failed");
-        }
         finally
         {
             ObserveExceptions(pendingRead);
-            if (sslStream is not null)
-            {
-                await sslStream.DisposeAsync().ConfigureAwait(false);
-            }
         }
     }
 
-    private async Task<byte[]> ExecuteRequestAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, int payloadSizePerPacket, CancellationToken cancellationToken)
+    private async Task<byte[]> ExecuteRequestAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, TdsSessionState session, int payloadSizePerPacket, CancellationToken cancellationToken)
     {
         try
         {
+            if (packet.Type == TdsPacketType.BulkLoad)
+            {
+                return await ExecuteBulkLoadAsync(packet, remoteEndPoint, userContext, session, payloadSizePerPacket, cancellationToken).ConfigureAwait(false);
+            }
+
             var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, userContext);
+            if (await TryExecuteBulkCopyCommandAsync(queryContext, session, payloadSizePerPacket, cancellationToken).ConfigureAwait(false) is { } bulkCopyResponse)
+            {
+                return bulkCopyResponse;
+            }
+
             TdsQueryResult queryResult;
             try
             {

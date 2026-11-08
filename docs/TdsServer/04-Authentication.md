@@ -50,9 +50,11 @@ number 18456 and the message `Login failed for user 'app'.`
 | [ApplicationName](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.ApplicationName) | The `Application Name` of the connection string, or the default name of the client |
 | [RemoteEndPoint](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.RemoteEndPoint) | The address and port of the client |
 | [AuthenticationToken](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.AuthenticationToken) | The SSPI data of the login packet, Base64-encoded, or `null` when the client sent none |
+| [IsIntegratedSecurity](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.IsIntegratedSecurity) | `true` when the client asks for Windows authentication (`Integrated Security=true`) |
+| [SspiToken](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.SspiToken) | The SSPI token of the current round of the [SSPI exchange](#integrated-windows-authentication-sspi) |
+| [Items](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.Items) | State kept across the rounds of the SSPI exchange |
 
-The server does not run an SSPI exchange: integrated Windows authentication and Microsoft Entra ID authentication are
-not supported. [AuthenticationToken](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.AuthenticationToken) only exposes the first SSPI message, for custom schemes.
+Microsoft Entra ID authentication (`Authentication=Active Directory …`) is not supported.
 
 Without TLS, the password travels with the obfuscation of the TDS protocol only, which anyone on the network can
 reverse. See [Encryption](09-Encryption.md).
@@ -76,3 +78,53 @@ number SQL Server uses for failed logins, the state to 1 and the class to 14; pa
 The handler runs for every connection, before its first query: keep it fast. An exception thrown by the handler
 closes the connection without a login error, so the client only sees a broken connection: return [Fail](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationResult.Fail) instead. Its
 `CancellationToken` is canceled when the server stops.
+
+## Integrated Windows authentication (SSPI)
+
+With `Integrated Security=true`, the client logs in with an SSPI token (NTLM or Kerberos) instead of a user name and a
+password. The exchange takes several round trips, and the authentication handler takes part in each of them:
+
+1. The server calls the handler with the first token of the client in
+   [SspiToken](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.SspiToken).
+2. When the exchange needs another round, the handler returns
+   [TdsAuthenticationResult.ContinueSspi](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationResult.ContinueSspi) with the token for the client. The server sends it, waits
+   for the answer of the client, and calls the handler again with the same context, whose
+   [SspiToken](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.SspiToken) is now that answer.
+3. The handler ends the exchange with [Success](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationResult.Success), which takes the last token of the exchange when there is
+   one (Kerberos mutual authentication), or with [Fail](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationResult.Fail).
+
+The server does not validate the tokens: the handler does, for instance with `NegotiateAuthentication`:
+
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/Examples.cs;region=TdsServer_IntegratedSecurity;format=md-fenced-code-block;dedent=true -->
+```csharp
+TdsAuthenticationDelegate authenticate = (context, cancellationToken) =>
+{
+    if (!context.IsIntegratedSecurity)
+    {
+        return ValueTask.FromResult(TdsAuthenticationResult.Fail("Use Integrated Security=true."));
+    }
+
+    // Every round of the exchange gets the same context: keep the state of the exchange in Items. The server
+    // disposes the NegotiateAuthentication instance once the login completes.
+    if (!context.Items.TryGetValue(typeof(NegotiateAuthentication), out var value) || value is not NegotiateAuthentication negotiate)
+    {
+        negotiate = new NegotiateAuthentication(new NegotiateAuthenticationServerOptions());
+        context.Items[typeof(NegotiateAuthentication)] = negotiate;
+    }
+
+    var outgoingToken = negotiate.GetOutgoingBlob(context.SspiToken.Span, out var status);
+    var result = status switch
+    {
+        NegotiateAuthenticationStatusCode.ContinueNeeded => TdsAuthenticationResult.ContinueSspi(outgoingToken),
+        NegotiateAuthenticationStatusCode.Completed => TdsAuthenticationResult.Success(outgoingToken, userContext: new ClaimsPrincipal(negotiate.RemoteIdentity)),
+        _ => TdsAuthenticationResult.Fail("Login failed."),
+    };
+
+    return ValueTask.FromResult(result);
+};
+```
+<!-- endref -->
+
+[Items](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.Items) keeps the state of the exchange from one round to the next. The server disposes its
+`IDisposable` values once the login succeeds or fails, including when the client disconnects in the middle of the
+exchange. A login takes at most 16 rounds.

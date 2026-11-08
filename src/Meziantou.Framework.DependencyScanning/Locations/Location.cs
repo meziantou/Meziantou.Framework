@@ -9,9 +9,11 @@ namespace Meziantou.Framework.DependencyScanning;
 public abstract class Location
 {
     private string? _currentValue;
-    private Location? _sibling;
+    private Location[] _siblings = [];
 
     protected IFileSystem FileSystem { get; }
+
+    internal IFileSystem LocationFileSystem => FileSystem;
 
     protected Location(IFileSystem fileSystem, string filePath)
     {
@@ -40,20 +42,32 @@ public abstract class Location
         }
     }
 
-    /// <summary>Links this location to the other location of its dependency, so that it follows the shifts an update of the other one causes.</summary>
+    /// <summary>Links this location to another location of its dependency, so that it follows the shifts an update of the other one causes.</summary>
+    /// <remarks>A location shared by several dependencies, such as the definition of a property, has a sibling for each of them.</remarks>
     internal void LinkSibling(Location sibling)
     {
-        if (!ReferenceEquals(sibling, this))
+        if (ReferenceEquals(sibling, this))
+            return;
+
+        while (true)
         {
-            Interlocked.CompareExchange(ref _sibling, sibling, comparand: null);
+            var siblings = Volatile.Read(ref _siblings);
+            if (Array.IndexOf(siblings, sibling) >= 0)
+                return;
+
+            if (Interlocked.CompareExchange(ref _siblings, [.. siblings, sibling], siblings) == siblings)
+                return;
         }
     }
 
-    /// <summary>Tells the other location of the dependency that this location replaced <paramref name="oldLength"/> characters at <paramref name="start"/> with <paramref name="newLength"/> characters.</summary>
+    /// <summary>Tells the other locations of the dependency that this location replaced <paramref name="oldLength"/> characters at <paramref name="start"/> with <paramref name="newLength"/> characters.</summary>
     /// <remarks>The name and the version of a dependency often share a line or a value, such as <c>FROM node:18</c>, so updating the first one moves the second one.</remarks>
     private protected void NotifyValueReplaced(int start, int oldLength, int newLength)
     {
-        Volatile.Read(ref _sibling)?.OnSiblingValueReplaced(this, start, oldLength, newLength);
+        foreach (var sibling in Volatile.Read(ref _siblings))
+        {
+            sibling.OnSiblingValueReplaced(this, start, oldLength, newLength);
+        }
     }
 
     /// <summary>Moves this location when the other location of its dependency replaced a value before it, in the same line or value.</summary>
